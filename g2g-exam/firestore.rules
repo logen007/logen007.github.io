@@ -17,6 +17,14 @@ service cloud.firestore {
         || globalSettings().auth.allowedDomain == ''
         || request.auth.token.email.matches('.*@' + globalSettings().auth.allowedDomain + '$');
     }
+    function answerWindowOpen() {
+      return resource.data.currentDeadlineMs == 0
+        || request.time.toMillis() <= resource.data.currentDeadlineMs + 3000;
+    }
+    function onlyCurrentSectionAnswersChanged() {
+      return request.resource.data.answers.diff(resource.data.answers)
+        .affectedKeys().hasOnly(resource.data.currentQuestionIds);
+    }
 
     match /publicSettings/{id} {
       allow read: if true;
@@ -93,6 +101,8 @@ service cloud.firestore {
     match /attempts/{id} {
       allow read: if isTeacher() || (activeUser() && resource.data.studentId == request.auth.uid);
       allow create: if false;
+      // Học viên chỉ được autosave đáp án của phần đang làm, trong thời gian phần đó còn hiệu lực.
+      // Mọi thay đổi trạng thái/timer/điểm đều phải đi qua Cloud Functions.
       allow update: if activeUser()
         && resource.data.studentId == request.auth.uid
         && resource.data.status == 'in_progress'
@@ -100,7 +110,13 @@ service cloud.firestore {
         && request.resource.data.studentId == resource.data.studentId
         && request.resource.data.examId == resource.data.examId
         && request.resource.data.attemptNo == resource.data.attemptNo
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answers','updatedAt']);
+        && request.resource.data.currentSectionIndex == resource.data.currentSectionIndex
+        && request.resource.data.currentSectionId == resource.data.currentSectionId
+        && request.resource.data.currentDeadlineMs == resource.data.currentDeadlineMs
+        && request.resource.data.currentQuestionIds == resource.data.currentQuestionIds
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answers','updatedAt'])
+        && onlyCurrentSectionAnswersChanged()
+        && answerWindowOpen();
       allow delete: if false;
     }
 
