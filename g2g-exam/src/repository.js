@@ -3,7 +3,7 @@ import { clone, normalizeState, nowIso } from './core.js';
 import { seedState } from './seed.js';
 
 export class LocalRepository {
-  constructor(){ this.mode='local'; this.listeners=new Set(); this.state=null; this.currentUserId=sessionStorage.getItem('g2g.demo.user')||'student-a'; }
+  constructor(){ this.mode='local'; this.listeners=new Set(); this.state=null; this.currentUserId=sessionStorage.getItem('g2g.demo.user')||null; }
   async init(){
     const raw=localStorage.getItem(APP_CONFIG.storageKey);
     try{ this.state=raw?normalizeState(JSON.parse(raw)):normalizeState(seedState); }catch{ this.state=normalizeState(seedState); }
@@ -17,7 +17,7 @@ export class LocalRepository {
   async getState(){ return clone(this.state); }
   async replaceState(next){ this.state=normalizeState(next); this.persist(); return clone(this.state); }
   async transaction(mutator){ const next=clone(this.state); const result=await mutator(next); this.state=normalizeState(next); this.persist(); return result; }
-  async signInDemo(userId){ if(!this.state.users.some(u=>u.id===userId)) throw new Error('Tài khoản demo không tồn tại.'); this.currentUserId=userId; sessionStorage.setItem('g2g.demo.user',userId); return this.state.users.find(u=>u.id===userId); }
+  async signInDemo(userId){ if(!this.state.users.some(u=>u.id===userId)) throw new Error('Tài khoản demo không tồn tại.'); this.currentUserId=userId; sessionStorage.setItem('g2g.demo.user',userId); return clone(this.state.users.find(u=>u.id===userId)); }
   async signOut(){ this.currentUserId=null; sessionStorage.removeItem('g2g.demo.user'); }
   async getCurrentUser(){ return this.currentUserId?clone(this.state.users.find(u=>u.id===this.currentUserId)||null):null; }
   async reset(){ this.state=normalizeState(seedState); this.persist(); }
@@ -26,14 +26,14 @@ export class LocalRepository {
 export class FirebaseRepository {
   constructor(config){ this.mode='firebase'; this.config=config; this.listeners=new Set(); this.state=normalizeState({}); this.auth=null; this.db=null; this.firebase=null; this.unsubscribe=[]; }
   async init(){
-    const [{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged},{getFirestore,collection,getDocs,doc,getDoc,setDoc,deleteDoc,writeBatch,onSnapshot,serverTimestamp,enableIndexedDbPersistence}] = await Promise.all([
+    const [{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged},{getFirestore,collection,getDocs,doc,getDoc,setDoc,deleteDoc,writeBatch,onSnapshot,enableIndexedDbPersistence}] = await Promise.all([
       import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
       import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js'),
       import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js')
     ]);
     const app=initializeApp(this.config); this.auth=getAuth(app); this.db=getFirestore(app);
     try{ await enableIndexedDbPersistence(this.db); }catch{}
-    this.firebase={GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged,collection,getDocs,doc,getDoc,setDoc,deleteDoc,writeBatch,onSnapshot,serverTimestamp};
+    this.firebase={GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged,collection,getDocs,doc,getDoc,setDoc,deleteDoc,writeBatch,onSnapshot};
     await new Promise(resolve=>{ const off=onAuthStateChanged(this.auth,()=>{off();resolve();}); });
     if(this.auth.currentUser){ await this.reload(); this.attachSnapshots(); }
     return this;
@@ -44,7 +44,8 @@ export class FirebaseRepository {
     this.state=normalizeState(next); this.emit(); return this.state;
   }
   attachSnapshots(){
-    for(const name of ['questions','exams','attempts','gradingRequests','notifications']){
+    if(this.unsubscribe.length) return;
+    for(const name of ['users','questions','exams','attempts','gradingRequests','notifications']){
       const unsub=this.firebase.onSnapshot(this.firebase.collection(this.db,name),snap=>{ this.state[name]=snap.docs.map(d=>({id:d.id,...d.data()})); this.state.revision=Date.now(); this.emit(); }); this.unsubscribe.push(unsub);
     }
   }
@@ -58,8 +59,8 @@ export class FirebaseRepository {
     const created={name:authUser.displayName||authUser.email?.split('@')[0]||'Học viên',email:authUser.email||'',role:'student',active:true,createdAt:nowIso()};
     await this.firebase.setDoc(ref,created,{merge:true}); this.state.users.push({id:authUser.uid,...created}); return {id:authUser.uid,...created};
   }
-  async signInGoogle(){ const provider=new this.firebase.GoogleAuthProvider(); await this.firebase.signInWithPopup(this.auth,provider); const user=await this.getCurrentUser(); await this.reload(); if(!this.unsubscribe.length) this.attachSnapshots(); return user; }
-  async signOut(){ await this.firebase.signOut(this.auth); }
+  async signInGoogle(){ const provider=new this.firebase.GoogleAuthProvider(); await this.firebase.signInWithPopup(this.auth,provider); const user=await this.getCurrentUser(); await this.reload(); this.attachSnapshots(); return user; }
+  async signOut(){ await this.firebase.signOut(this.auth); for(const u of this.unsubscribe.splice(0)) try{u();}catch{} this.state=normalizeState({}); }
   async transaction(mutator){
     const before=clone(this.state); const next=clone(this.state); const result=await mutator(next); await this.persistDiff(before,next); this.state=normalizeState(next); this.emit(); return result;
   }
