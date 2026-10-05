@@ -4,7 +4,17 @@ const { getFirestore } = require('firebase-admin/firestore');
 const db = getFirestore();
 
 const DEFAULT_SETTINGS={
+  auth:{googleLoginEnabled:true,allowNewStudents:true},
   exam:{allowRetake:true,allowRestart:true},
+  email:{
+    enabled:true,
+    provider:'firebase_trigger',
+    senderName:'G2G Career',
+    senderEmail:'admin@g2gcareer.com',
+    replyTo:'admin@g2gcareer.com',
+    resultSubject:'G2G – Đã có kết quả {exam}',
+    resultBody:'Xin chào {student},\n\nKết quả bài thi {exam} của bạn đã được công bố.\nĐiểm: {score}\nKết quả: {result}\n\nVui lòng đăng nhập hệ thống G2G để xem chi tiết.'
+  },
   results:{notifyResultEmail:true,resultEmailSubject:'G2G – Đã có kết quả {exam}'},
   operations:{maintenanceMode:false,maintenanceMessage:'Hệ thống đang bảo trì. Vui lòng quay lại sau.'}
 };
@@ -21,20 +31,30 @@ async function getUser(uid){
 }
 function isTeacher(user){ return user?.role==='teacher'||user?.role==='master'; }
 function lockId(uid,examId){ return `${uid}__${examId}`.replaceAll('/','_'); }
+function escHtml(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 async function loadSystemSettings(){
   const snap=await db.collection('settings').doc('global').get();
   const data=snap.exists?snap.data():{};
+  const email={...DEFAULT_SETTINGS.email,...(data.email||{})};
+  if(!data.email){
+    email.enabled=data.results?.notifyResultEmail??DEFAULT_SETTINGS.email.enabled;
+    email.resultSubject=data.results?.resultEmailSubject||DEFAULT_SETTINGS.email.resultSubject;
+  }
   return {
+    auth:{...DEFAULT_SETTINGS.auth,...(data.auth||{})},
     exam:{...DEFAULT_SETTINGS.exam,...(data.exam||{})},
+    email,
     results:{...DEFAULT_SETTINGS.results,...(data.results||{})},
     operations:{...DEFAULT_SETTINGS.operations,...(data.operations||{})}
   };
 }
-function resultSubject(template,attempt){
-  return String(template||DEFAULT_SETTINGS.results.resultEmailSubject)
+function templateValue(template,attempt,priv){
+  return String(template||'')
     .replaceAll('{exam}',attempt.examTitle||'bài thi')
-    .replaceAll('{student}',attempt.studentName||'học viên');
+    .replaceAll('{student}',attempt.studentName||'học viên')
+    .replaceAll('{score}',String(priv.totalScore??''))
+    .replaceAll('{result}',String(priv.result||''));
 }
 
 async function canGrade(user,exam){
@@ -66,10 +86,6 @@ async function loadManualLimits(exam){
   return limits;
 }
 
-/**
- * Khởi tạo lượt thi bằng một lock document theo student+exam.
- * Mục tiêu: hai lần bấm Bắt đầu gần như đồng thời không tạo hai attempt khác nhau.
- */
 exports.startAttemptSecure = onCall(async request => {
   const uid=requireAuth(request);
   const user=await getUser(uid);
@@ -80,7 +96,6 @@ exports.startAttemptSecure = onCall(async request => {
   if(exam.status!=='published') throw new HttpsError('failed-precondition','Bài thi chưa mở cho học viên.');
   const systemSettings=await loadSystemSettings();
 
-  // Baseline giúp tương thích dữ liệu cũ trước khi collection attemptLocks tồn tại.
   const oldSnap=await db.collection('attempts').where('studentId','==',uid).get();
   const oldMine=oldSnap.docs.map(d=>({id:d.id,...d.data()})).filter(a=>a.examId===examId);
   const baseline=Math.max(0,...oldMine.map(a=>Number(a.attemptNo||0)));
@@ -99,7 +114,6 @@ exports.startAttemptSecure = onCall(async request => {
       if(cSnap.exists) current={id:cSnap.id,...cSnap.data(),ref:cRef};
     }
 
-    // Bảo trì không đẩy học viên đang làm dở ra khỏi bài hiện tại.
     if(current?.status==='in_progress'&&!restart){
       if(!lSnap.exists) tx.set(lRef,{studentId:uid,examId,currentAttemptId:current.id,counter:Math.max(baseline,Number(current.attemptNo||0)),updatedAt:now()},{merge:true});
       return {attemptId:current.id,resumed:true};
@@ -143,10 +157,6 @@ exports.startAttemptSecure = onCall(async request => {
   return result;
 });
 
-/**
- * Chấm bài transaction-safe. Nếu hai giáo viên lưu gần nhau, transaction sẽ đọc lại
- * điểm mới nhất rồi merge theo kỹ năng thay vì ghi đè cả object bằng bản cũ.
- */
 exports.saveManualGrade = onCall(async request => {
   const uid=requireAuth(request),user=await getUser(uid);
   if(!isTeacher(user)) throw new HttpsError('permission-denied','Chỉ giáo viên được chấm bài.');
@@ -192,9 +202,6 @@ exports.saveManualGrade = onCall(async request => {
   return out;
 });
 
-/**
- * Công bố kết quả idempotent: double click/retry mạng không được tạo hai email.
- */
 exports.publishAttemptResult = onCall(async request => {
   const uid=requireAuth(request),user=await getUser(uid);
   if(!isTeacher(user)) throw new HttpsError('permission-denied','Chỉ giáo viên được công bố kết quả.');
@@ -223,19 +230,26 @@ exports.publishAttemptResult = onCall(async request => {
     const priv=pSnap.data();
     if(!Number.isFinite(Number(priv.totalScore))) throw new HttpsError('failed-precondition','Bài chưa có tổng điểm hợp lệ.');
     const at=now();
-    const subject=resultSubject(systemSettings.results.resultEmailSubject,attempt);
-    const emailEnabled=Boolean(systemSettings.results.notifyResultEmail);
+    const subject=templateValue(systemSettings.email.resultSubject,attempt,priv);
+    const body=templateValue(systemSettings.email.resultBody,attempt,priv);
+    const emailEnabled=Boolean(systemSettings.email.enabled);
     const notificationStatus=!emailEnabled?'email_disabled':attempt.studentEmail?'queued':'no_email';
     tx.update(aRef,{
       status:'published',publishedAt:at,updatedAt:at,
       autoScore:Number(priv.autoScore||0),manualScores:priv.manualScores||{},sectionScores:priv.sectionScores||{},
       totalScore:Number(priv.totalScore),result:priv.result||'',reviewerId:priv.reviewerId||null,reviewerName:priv.reviewerName||null,feedback:priv.feedback||''
     });
-    tx.set(notificationRef,{type:'result_published',status:notificationStatus,to:attempt.studentEmail||'',studentId:attempt.studentId,attemptId,subject,body:'Kết quả thi thử của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.',createdAt:at},{merge:false});
+    tx.set(notificationRef,{type:'result_published',status:notificationStatus,to:attempt.studentEmail||'',studentId:attempt.studentId,attemptId,subject,body,createdAt:at},{merge:false});
     if(emailEnabled&&attempt.studentEmail){
-      tx.set(mailRef,{to:[attempt.studentEmail],message:{subject,text:'Kết quả thi thử của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.',html:'<p>Kết quả thi thử của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.</p>'}},{merge:false});
+      const html=body.split('\n').map(line=>`<p>${escHtml(line)||'&nbsp;'}</p>`).join('');
+      tx.set(mailRef,{
+        to:[attempt.studentEmail],
+        ...(systemSettings.email.senderEmail?{from:`${systemSettings.email.senderName} <${systemSettings.email.senderEmail}>`}:{}),
+        ...(systemSettings.email.replyTo?{replyTo:systemSettings.email.replyTo}:{}),
+        message:{subject,text:body,html}
+      },{merge:false});
     }
-    tx.set(auditRef,{at,userId:user.id,userName:user.name||'',action:'publish_result',entityType:'attempt',entityId:attemptId,detail:{studentId:attempt.studentId,emailEnabled,notificationStatus}},{merge:false});
+    tx.set(auditRef,{at,userId:user.id,userName:user.name||'',action:'publish_result',entityType:'attempt',entityId:attemptId,detail:{studentId:attempt.studentId,emailEnabled,emailProvider:systemSettings.email.provider,notificationStatus}},{merge:false});
     return {status:'published',alreadyPublished:false};
   });
 });
