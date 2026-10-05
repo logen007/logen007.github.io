@@ -1,19 +1,19 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { getFirestore } = require('firebase-admin/firestore');
+const { sendConfiguredEmail, renderTemplate } = require('./mailer.js');
 
 const db = getFirestore();
+const REGION='asia-southeast1';
 
 const DEFAULT_SETTINGS={
-  auth:{googleLoginEnabled:true,allowNewStudents:true},
+  general:{publicUrl:'https://logen007.github.io/g2g-exam/'},
+  auth:{googleLoginEnabled:true,allowNewStudents:true,allowedDomain:''},
   exam:{allowRetake:true,allowRestart:true},
   email:{
     enabled:true,
-    provider:'firebase_trigger',
-    senderName:'G2G Career',
-    senderEmail:'admin@g2gcareer.com',
-    replyTo:'admin@g2gcareer.com',
     resultSubject:'G2G – Đã có kết quả {exam}',
-    resultBody:'Xin chào {student},\n\nKết quả bài thi {exam} của bạn đã được công bố.\nĐiểm: {score}\nKết quả: {result}\n\nVui lòng đăng nhập hệ thống G2G để xem chi tiết.'
+    resultText:'Xin chào {student},\n\nKết quả bài thi {exam} của bạn đã được công bố.\nĐiểm: {score}\nKết quả: {result}\n\nXem chi tiết: {url}',
+    resultHtml:'<p>Xin chào <strong>{student}</strong>,</p><p>Kết quả bài thi <strong>{exam}</strong> của bạn đã được công bố.</p><p>Điểm: <strong>{score}</strong><br>Kết quả: <strong>{result}</strong></p><p><a href="{url}">Đăng nhập hệ thống G2G để xem chi tiết</a></p>'
   },
   results:{notifyResultEmail:true,resultEmailSubject:'G2G – Đã có kết quả {exam}'},
   operations:{maintenanceMode:false,maintenanceMessage:'Hệ thống đang bảo trì. Vui lòng quay lại sau.'}
@@ -31,7 +31,6 @@ async function getUser(uid){
 }
 function isTeacher(user){ return user?.role==='teacher'||user?.role==='master'; }
 function lockId(uid,examId){ return `${uid}__${examId}`.replaceAll('/','_'); }
-function escHtml(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 async function loadSystemSettings(){
   const snap=await db.collection('settings').doc('global').get();
@@ -42,6 +41,7 @@ async function loadSystemSettings(){
     email.resultSubject=data.results?.resultEmailSubject||DEFAULT_SETTINGS.email.resultSubject;
   }
   return {
+    general:{...DEFAULT_SETTINGS.general,...(data.general||{})},
     auth:{...DEFAULT_SETTINGS.auth,...(data.auth||{})},
     exam:{...DEFAULT_SETTINGS.exam,...(data.exam||{})},
     email,
@@ -49,12 +49,14 @@ async function loadSystemSettings(){
     operations:{...DEFAULT_SETTINGS.operations,...(data.operations||{})}
   };
 }
-function templateValue(template,attempt,priv){
-  return String(template||'')
-    .replaceAll('{exam}',attempt.examTitle||'bài thi')
-    .replaceAll('{student}',attempt.studentName||'học viên')
-    .replaceAll('{score}',String(priv.totalScore??''))
-    .replaceAll('{result}',String(priv.result||''));
+function emailVars(attempt,priv,settings){
+  return {
+    exam:attempt.examTitle||'bài thi',
+    student:attempt.studentName||'học viên',
+    score:String(priv.totalScore??attempt.totalScore??''),
+    result:String(priv.result||attempt.result||''),
+    url:String(settings.general?.publicUrl||DEFAULT_SETTINGS.general.publicUrl)
+  };
 }
 
 async function canGrade(user,exam){
@@ -86,7 +88,7 @@ async function loadManualLimits(exam){
   return limits;
 }
 
-exports.startAttemptSecure = onCall(async request => {
+exports.startAttemptSecure = onCall({region:REGION},async request => {
   const uid=requireAuth(request);
   const user=await getUser(uid);
   if(user.role!=='student'||user.active===false) throw new HttpsError('permission-denied','Tài khoản này không phải học viên đang hoạt động.');
@@ -157,7 +159,7 @@ exports.startAttemptSecure = onCall(async request => {
   return result;
 });
 
-exports.saveManualGrade = onCall(async request => {
+exports.saveManualGrade = onCall({region:REGION},async request => {
   const uid=requireAuth(request),user=await getUser(uid);
   if(!isTeacher(user)) throw new HttpsError('permission-denied','Chỉ giáo viên được chấm bài.');
   const {attemptId,scores={},feedback}=request.data||{};
@@ -202,7 +204,37 @@ exports.saveManualGrade = onCall(async request => {
   return out;
 });
 
-exports.publishAttemptResult = onCall(async request => {
+async function deliverResultEmail(attemptId){
+  const nRef=db.collection('notifications').doc(`result-${attemptId}`);
+  const claim=await db.runTransaction(async tx=>{
+    const snap=await tx.get(nRef);
+    if(!snap.exists) return {send:false,status:'missing'};
+    const n=snap.data();
+    if(['sent','email_disabled','no_email'].includes(n.status)) return {send:false,status:n.status};
+    if(n.status==='sending'){
+      const age=Date.now()-Date.parse(n.sendingAt||0);
+      if(Number.isFinite(age)&&age<120000) return {send:false,status:'sending'};
+    }
+    if(!['queued','failed','sending'].includes(n.status)) return {send:false,status:n.status||'unknown'};
+    const at=now();
+    tx.set(nRef,{status:'sending',sendingAt:at,lastError:null},{merge:true});
+    return {send:true,notification:{...n,status:'sending',sendingAt:at}};
+  });
+  if(!claim.send) return claim;
+  const n=claim.notification;
+  try{
+    const sent=await sendConfiguredEmail({to:n.to,subject:n.subject,text:n.text,html:n.html});
+    await nRef.set({status:'sent',sentAt:now(),messageId:sent.messageId||'',lastError:null},{merge:true});
+    return {send:true,status:'sent',messageId:sent.messageId||''};
+  }catch(error){
+    const message=String(error?.message||'Không gửi được email.').slice(0,500);
+    await nRef.set({status:'failed',failedAt:now(),lastError:message},{merge:true});
+    console.error('Result email failed',attemptId,error);
+    return {send:true,status:'failed',error:message};
+  }
+}
+
+exports.publishAttemptResult = onCall({region:REGION,timeoutSeconds:60},async request => {
   const uid=requireAuth(request),user=await getUser(uid);
   if(!isTeacher(user)) throw new HttpsError('permission-denied','Chỉ giáo viên được công bố kết quả.');
   const attemptId=request.data?.attemptId;
@@ -213,12 +245,10 @@ exports.publishAttemptResult = onCall(async request => {
   const exam=await loadExam(initial.data().examId);
   if(!(user.role==='master'||exam.ownerId===user.id)) throw new HttpsError('permission-denied','Chỉ giáo viên tạo bài hoặc Quản trị cấp cao được công bố kết quả.');
   const systemSettings=await loadSystemSettings();
-
   const notificationRef=db.collection('notifications').doc(`result-${attemptId}`);
-  const mailRef=db.collection('mail').doc(`result-${attemptId}`);
   const auditRef=db.collection('auditLog').doc(`publish-${attemptId}`);
 
-  return await db.runTransaction(async tx=>{
+  const publication=await db.runTransaction(async tx=>{
     const aSnap=await tx.get(aRef);
     if(!aSnap.exists) throw new HttpsError('not-found','Không tìm thấy lượt thi.');
     const attempt={id:aSnap.id,...aSnap.data()};
@@ -230,8 +260,10 @@ exports.publishAttemptResult = onCall(async request => {
     const priv=pSnap.data();
     if(!Number.isFinite(Number(priv.totalScore))) throw new HttpsError('failed-precondition','Bài chưa có tổng điểm hợp lệ.');
     const at=now();
-    const subject=templateValue(systemSettings.email.resultSubject,attempt,priv);
-    const body=templateValue(systemSettings.email.resultBody,attempt,priv);
+    const vars=emailVars(attempt,priv,systemSettings);
+    const subject=renderTemplate(systemSettings.email.resultSubject,vars,false);
+    const text=renderTemplate(systemSettings.email.resultText,vars,false);
+    const html=renderTemplate(systemSettings.email.resultHtml,vars,true);
     const emailEnabled=Boolean(systemSettings.email.enabled);
     const notificationStatus=!emailEnabled?'email_disabled':attempt.studentEmail?'queued':'no_email';
     tx.update(aRef,{
@@ -239,17 +271,27 @@ exports.publishAttemptResult = onCall(async request => {
       autoScore:Number(priv.autoScore||0),manualScores:priv.manualScores||{},sectionScores:priv.sectionScores||{},
       totalScore:Number(priv.totalScore),result:priv.result||'',reviewerId:priv.reviewerId||null,reviewerName:priv.reviewerName||null,feedback:priv.feedback||''
     });
-    tx.set(notificationRef,{type:'result_published',status:notificationStatus,to:attempt.studentEmail||'',studentId:attempt.studentId,attemptId,subject,body,createdAt:at},{merge:false});
-    if(emailEnabled&&attempt.studentEmail){
-      const html=body.split('\n').map(line=>`<p>${escHtml(line)||'&nbsp;'}</p>`).join('');
-      tx.set(mailRef,{
-        to:[attempt.studentEmail],
-        ...(systemSettings.email.senderEmail?{from:`${systemSettings.email.senderName} <${systemSettings.email.senderEmail}>`}:{}),
-        ...(systemSettings.email.replyTo?{replyTo:systemSettings.email.replyTo}:{}),
-        message:{subject,text:body,html}
-      },{merge:false});
-    }
-    tx.set(auditRef,{at,userId:user.id,userName:user.name||'',action:'publish_result',entityType:'attempt',entityId:attemptId,detail:{studentId:attempt.studentId,emailEnabled,emailProvider:systemSettings.email.provider,notificationStatus}},{merge:false});
-    return {status:'published',alreadyPublished:false};
+    tx.set(notificationRef,{type:'result_published',status:notificationStatus,to:attempt.studentEmail||'',studentId:attempt.studentId,attemptId,subject,text,html,createdAt:at},{merge:false});
+    tx.set(auditRef,{at,userId:user.id,userName:user.name||'',action:'publish_result',entityType:'attempt',entityId:attemptId,detail:{studentId:attempt.studentId,emailEnabled,notificationStatus}},{merge:false});
+    return {status:'published',alreadyPublished:false,notificationStatus};
   });
+
+  const email=await deliverResultEmail(attemptId);
+  return {...publication,email};
+});
+
+exports.retryResultEmail = onCall({region:REGION,timeoutSeconds:60},async request=>{
+  const uid=requireAuth(request),user=await getUser(uid);
+  if(!isTeacher(user)) throw new HttpsError('permission-denied','Chỉ giáo viên được gửi lại email kết quả.');
+  const attemptId=request.data?.attemptId;
+  if(!attemptId) throw new HttpsError('invalid-argument','Thiếu mã lượt thi.');
+  const aSnap=await db.collection('attempts').doc(attemptId).get();
+  if(!aSnap.exists) throw new HttpsError('not-found','Không tìm thấy lượt thi.');
+  const attempt={id:aSnap.id,...aSnap.data()};
+  const exam=await loadExam(attempt.examId);
+  if(!(user.role==='master'||exam.ownerId===user.id)) throw new HttpsError('permission-denied','Chỉ giáo viên tạo bài hoặc Quản trị cấp cao được gửi lại email.');
+  if(attempt.status!=='published') throw new HttpsError('failed-precondition','Kết quả chưa được công bố.');
+  const result=await deliverResultEmail(attemptId);
+  await db.collection('auditLog').add({at:now(),userId:user.id,userName:user.name||'',action:'retry_result_email',entityType:'attempt',entityId:attemptId,detail:{status:result.status}});
+  return result;
 });
