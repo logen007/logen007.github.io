@@ -23,7 +23,7 @@ export class FirebaseRepository {
     const [{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged},{getFirestore,collection,getDocs,doc,getDoc,setDoc,deleteDoc,writeBatch,onSnapshot,query,where,enableIndexedDbPersistence},{getFunctions,httpsCallable}] = await Promise.all([
       import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'), import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js'), import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js'), import('https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js')
     ]);
-    const app=initializeApp(this.config); this.auth=getAuth(app); this.db=getFirestore(app); this.functions=getFunctions(app); try{ await enableIndexedDbPersistence(this.db); }catch{}
+    const app=initializeApp(this.config); this.auth=getAuth(app); this.db=getFirestore(app); this.functions=getFunctions(app,APP_CONFIG.functionsRegion); try{ await enableIndexedDbPersistence(this.db); }catch{}
     this.firebase={GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged,collection,getDocs,doc,getDoc,setDoc,deleteDoc,writeBatch,onSnapshot,query,where,httpsCallable};
     await new Promise(resolve=>{ const off=onAuthStateChanged(this.auth,()=>{off();resolve();}); }); if(this.auth.currentUser){ await this.reload(); this.attachSnapshots(); } return this;
   }
@@ -62,7 +62,8 @@ export class FirebaseRepository {
   }
   async replaceState(next){ const before=clone(this.state); await this.persistDiff(before,next); this.state=normalizeState(next); this.emit(); return clone(this.state); }
   async persistDiff(before,after){
-    const batch=this.firebase.writeBatch(this.db), collections=['users','questions','exams','attempts','gradingRequests','auditLog'];
+    // auditLog, notifications và mail là dữ liệu server quản lý; client không được ghi trực tiếp.
+    const batch=this.firebase.writeBatch(this.db), collections=['users','questions','exams','attempts','gradingRequests'];
     for(const name of collections){ const a=new Map((before[name]||[]).map(x=>[x.id,x])), b=new Map((after[name]||[]).map(x=>[x.id,x])); for(const [id,item] of b){ const prev=a.get(id); if(!prev||JSON.stringify(prev)!==JSON.stringify(item)){ const payload=clone(item); delete payload.id; batch.set(this.firebase.doc(this.db,name,id),payload,{merge:false}); } } for(const id of a.keys()) if(!b.has(id)) batch.delete(this.firebase.doc(this.db,name,id)); }
     await batch.commit();
   }
