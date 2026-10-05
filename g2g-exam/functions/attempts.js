@@ -19,7 +19,8 @@ exports.startAttemptSecure = onCall(async request => {
   if(user.role!=='student' || user.active===false) throw new HttpsError('permission-denied','Tài khoản này không phải học viên đang hoạt động.');
   const {examId,restart=false}=request.data||{};
   if(!examId) throw new HttpsError('invalid-argument','Thiếu mã bài thi.');
-  const examSnap=await db.collection('exams').doc(examId).get();
+  const examRef=db.collection('exams').doc(examId);
+  const examSnap=await examRef.get();
   if(!examSnap.exists) throw new HttpsError('not-found','Không tìm thấy bài thi.');
   const exam={id:examSnap.id,...examSnap.data()};
   if(exam.status!=='published') throw new HttpsError('failed-precondition','Bài thi chưa mở cho học viên.');
@@ -48,17 +49,10 @@ exports.startAttemptSecure = onCall(async request => {
     currentSectionIndex:0,
     sectionStates:firstSectionState(exam),
     answers:{},
-    autoScore:0,
-    manualScores:{},
-    sectionScores:{},
-    totalScore:null,
-    result:null,
-    reviewerId:null,
-    reviewerName:null,
-    feedback:'',
     publishedAt:null
   };
   batch.set(ref,attempt);
+  if(!exam.locked) batch.set(examRef,{locked:true,lockedAt:startedAt},{merge:true});
   batch.set(db.collection('auditLog').doc(),{at:startedAt,userId:uid,userName:user.name||'',action:'start_attempt',entityType:'attempt',entityId:ref.id,detail:{examId,restart:Boolean(restart)}});
   await batch.commit();
   return {attemptId:ref.id,resumed:false};
