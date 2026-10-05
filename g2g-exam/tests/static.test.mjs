@@ -59,14 +59,16 @@ test('Không còn các nhãn tiếng Anh cũ dễ lọt ra giao diện', () => {
   }
 });
 
-test('Trang Quản trị nạp Cài đặt hệ thống và có các nhóm cấu hình chính', () => {
+test('Trang Quản trị có Cài đặt cho Google Login, email và vận hành', () => {
   const html = read('vi.html');
   const source = read('src/settings.js');
   assert.match(html, /src=["']\.\/src\/settings\.js/);
-  for (const text of ['Cài đặt hệ thống','Thông tin hệ thống','Quyền làm bài','Kết quả & email','Vận hành / bảo trì','Quản trị cấp cao']) {
+  for (const text of ['Cài đặt hệ thống','Thông tin hệ thống','Đăng nhập bằng Google','Gửi email kết quả','Quyền làm bài','Vận hành / bảo trì','Kết nối hạ tầng']) {
     assert.ok(source.includes(text), `Thiếu nội dung Cài đặt: ${text}`);
   }
-  assert.ok(source.includes('updateSystemSettings'));
+  for (const text of ['settingGoogleLogin','settingAllowNewStudents','settingSenderEmail','settingReplyTo','settingEmailSubject','settingEmailBody','sendTestEmail']) {
+    assert.ok(source.includes(text), `Thiếu điều khiển Cài đặt: ${text}`);
+  }
 });
 
 test('Cài đặt production chỉ được ghi qua backend của Quản trị cấp cao', () => {
@@ -74,15 +76,31 @@ test('Cài đặt production chỉ được ghi qua backend của Quản trị c
   const rules = read('firestore.rules');
   assert.ok(fn.includes("user.role!=='master'"));
   assert.ok(fn.includes('update_system_settings'));
+  assert.ok(fn.includes('sendTestEmail'));
   assert.match(rules, /match \/settings\/\{id\}/);
   assert.match(rules, /match \/settings\/\{id\}[\s\S]*?allow write: if false;/);
 });
 
-test('Các cài đặt vận hành được backend thi và email sử dụng', () => {
+test('Đăng ký học viên mới tuân theo Google Login và cài đặt đăng ký', () => {
+  const rules = read('firestore.rules');
+  assert.ok(rules.includes('registrationAllowed'));
+  assert.ok(rules.includes('googleLoginEnabled'));
+  assert.ok(rules.includes('allowNewStudents'));
+});
+
+test('Backend công bố kết quả dùng cấu hình email mới và giữ tương thích dữ liệu cũ', () => {
   const source = read('functions/concurrency.js');
-  for (const text of ['maintenanceMode','allowRetake','allowRestart','notifyResultEmail','resultEmailSubject']) {
+  for (const text of ['maintenanceMode','allowRetake','allowRestart','email.enabled','email.resultSubject','email.resultBody','senderEmail','replyTo','notifyResultEmail']) {
     assert.ok(source.includes(text), `Backend chưa dùng setting: ${text}`);
   }
+});
+
+test('Secret không được đặt trong cấu hình giao diện', () => {
+  const source = read('src/settings.js');
+  assert.equal(/clientSecret\s*[:=]/i.test(source), false);
+  assert.equal(/smtpPassword\s*[:=]/i.test(source), false);
+  assert.equal(/serviceAccount\s*[:=]/i.test(source), false);
+  assert.ok(source.includes('Secret Manager'));
 });
 
 test('Trang có trình xử lý lỗi runtime để tránh màn hình trắng', () => {
