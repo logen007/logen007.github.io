@@ -4,6 +4,7 @@ const secureGrading = require('./secure-grading.js');
 const integrity = require('./integrity.js');
 const concurrency = require('./concurrency.js');
 const settings = require('./settings.js');
+const mailer = require('./mailer.js');
 
 module.exports = {
   ...base,
@@ -12,4 +13,7 @@ module.exports = {
   ...integrity,
   ...concurrency,
   ...settings,
+  updateSmtpSecret: mailer.updateSmtpSecret,
+  getInfrastructureStatus: mailer.getInfrastructureStatus,
+  testSmtp: mailer.testSmtp,
 };
