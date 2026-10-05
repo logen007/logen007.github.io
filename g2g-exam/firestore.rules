@@ -23,6 +23,7 @@ service cloud.firestore {
         isTeacher()
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
+        && resource.data.locked != true
       );
       allow delete: if isMaster();
     }
@@ -39,6 +40,13 @@ service cloud.firestore {
         isTeacher()
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
+        && (
+          resource.data.locked != true
+          || (
+            request.resource.data.status == 'trash'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','deletedAt','updatedAt'])
+          )
+        )
       );
       allow delete: if isMaster();
     }
@@ -59,7 +67,6 @@ service cloud.firestore {
       allow delete: if isMaster();
     }
 
-    // Public attempt chỉ chứa tiến trình và đáp án. Điểm chưa công bố nằm ở attemptPrivate.
     match /attempts/{id} {
       allow read: if isTeacher() || (activeUser() && resource.data.studentId == request.auth.uid);
       allow create: if false;
@@ -74,7 +81,6 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Điểm tự động, điểm chấm tay và nhận xét trước khi công bố: học viên không bao giờ đọc được.
     match /attemptPrivate/{id} {
       allow read: if isTeacher();
       allow write: if false;
