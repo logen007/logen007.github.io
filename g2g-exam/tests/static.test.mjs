@@ -59,14 +59,14 @@ test('Không còn các nhãn tiếng Anh cũ dễ lọt ra giao diện', () => {
   }
 });
 
-test('Trang Quản trị có Cài đặt cho Google Login, email và vận hành', () => {
+test('Trang Quản trị có đầy đủ Cài đặt Google, SMTP, email và vận hành', () => {
   const html = read('vi.html');
   const source = read('src/settings.js');
   assert.match(html, /src=["']\.\/src\/settings\.js/);
-  for (const text of ['Cài đặt hệ thống','Thông tin hệ thống','Đăng nhập bằng Google','Gửi email kết quả','Quyền làm bài','Vận hành / bảo trì','Kết nối hạ tầng']) {
+  for (const text of ['Cài đặt hệ thống','Thông tin hệ thống','Đăng nhập Google','Máy chủ gửi thư SMTP','Email kết quả','Quyền làm bài','Vận hành và bảo trì','Kết nối hạ tầng']) {
     assert.ok(source.includes(text), `Thiếu nội dung Cài đặt: ${text}`);
   }
-  for (const text of ['settingGoogleLogin','settingAllowNewStudents','settingSenderEmail','settingReplyTo','settingEmailSubject','settingEmailBody','sendTestEmail']) {
+  for (const text of ['settingGoogleLogin','settingAllowNewStudents','settingAllowedDomain','settingSmtpHost','settingSmtpPort','settingSmtpSecurity','settingSmtpUsername','settingSmtpPassword','settingSmtpFromEmail','settingSmtpReplyTo','settingEmailSubject','settingEmailText','settingEmailHtml','testSmtp']) {
     assert.ok(source.includes(text), `Thiếu điều khiển Cài đặt: ${text}`);
   }
 });
@@ -76,31 +76,44 @@ test('Cài đặt production chỉ được ghi qua backend của Quản trị c
   const rules = read('firestore.rules');
   assert.ok(fn.includes("user.role!=='master'"));
   assert.ok(fn.includes('update_system_settings'));
-  assert.ok(fn.includes('sendTestEmail'));
   assert.match(rules, /match \/settings\/\{id\}/);
   assert.match(rules, /match \/settings\/\{id\}[\s\S]*?allow write: if false;/);
 });
 
-test('Đăng ký học viên mới tuân theo Google Login và cài đặt đăng ký', () => {
+test('Đăng ký học viên mới tuân theo cấu hình đăng nhập Google', () => {
   const rules = read('firestore.rules');
-  assert.ok(rules.includes('registrationAllowed'));
-  assert.ok(rules.includes('googleLoginEnabled'));
-  assert.ok(rules.includes('allowNewStudents'));
+  const repository = read('src/repository.js');
+  for (const text of ['googleLoginEnabled','allowNewStudents','signupDomainAllowed','allowedDomain']) assert.ok(rules.includes(text), `Rules thiếu: ${text}`);
+  for (const text of ['googleLoginEnabled','allowNewStudents','allowedDomain']) assert.ok(repository.includes(text), `Repository thiếu: ${text}`);
+  assert.match(rules, /match \/publicSettings\/\{id\}/);
 });
 
-test('Backend công bố kết quả dùng cấu hình email mới và giữ tương thích dữ liệu cũ', () => {
+test('SMTP dùng Secret Manager và Nodemailer, không dùng hàng đợi mail cũ', () => {
+  const mailer = read('functions/mailer.js');
+  const concurrency = read('functions/concurrency.js');
+  const pkg = JSON.parse(read('functions/package.json'));
+  assert.ok(mailer.includes('SecretManagerServiceClient'));
+  assert.ok(mailer.includes("SMTP_SECRET_ID = 'SMTP_PASSWORD'"));
+  assert.ok(mailer.includes('updateSmtpSecret'));
+  assert.ok(mailer.includes('testSmtp'));
+  assert.ok(mailer.includes('nodemailer'));
+  assert.ok(pkg.dependencies.nodemailer);
+  assert.ok(pkg.dependencies['@google-cloud/secret-manager']);
+  assert.ok(concurrency.includes('sendConfiguredEmail'));
+  assert.equal(concurrency.includes("collection('mail')"), false);
+});
+
+test('Công bố kết quả giữ trạng thái email idempotent và có thể gửi lại', () => {
   const source = read('functions/concurrency.js');
-  for (const text of ['maintenanceMode','allowRetake','allowRestart','email.enabled','email.resultSubject','email.resultBody','senderEmail','replyTo','notifyResultEmail']) {
-    assert.ok(source.includes(text), `Backend chưa dùng setting: ${text}`);
-  }
+  for (const text of ['deliverResultEmail','queued','sending','sent','failed','retryResultEmail','alreadyPublished']) assert.ok(source.includes(text), `Thiếu trạng thái email: ${text}`);
 });
 
-test('Secret không được đặt trong cấu hình giao diện', () => {
-  const source = read('src/settings.js');
-  assert.equal(/clientSecret\s*[:=]/i.test(source), false);
-  assert.equal(/smtpPassword\s*[:=]/i.test(source), false);
-  assert.equal(/serviceAccount\s*[:=]/i.test(source), false);
-  assert.ok(source.includes('Secret Manager'));
+test('Secret SMTP không nằm trong document Cài đặt', () => {
+  const backend = read('functions/settings.js');
+  const frontend = read('src/settings.js');
+  assert.equal(/smtp:\s*\{[^}]*password\s*:/is.test(backend), false);
+  assert.equal(/smtp:\s*\{[^}]*password\s*:/is.test(frontend), false);
+  assert.ok(frontend.includes('Secret Manager'));
 });
 
 test('Trang có trình xử lý lỗi runtime để tránh màn hình trắng', () => {
