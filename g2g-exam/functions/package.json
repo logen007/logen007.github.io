@@ -2,7 +2,7 @@
   "name": "g2g-exam-functions",
   "private": true,
   "engines": {"node": "22"},
-  "main": "index.js",
+  "main": "bootstrap.js",
   "dependencies": {
     "firebase-admin": "^13.0.2",
     "firebase-functions": "^6.2.0"
