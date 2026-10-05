@@ -1,0 +1,93 @@
+/* Bổ sung giao diện vận hành: giữ file gốc ổn định, các chỉnh sửa responsive đặt riêng để dễ bảo trì. */
+:root{--tap:44px}
+
+.audio-thi{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0;padding:12px 14px;border:1px solid var(--vien);border-radius:var(--r);background:#fbfbfd}
+.audio-thi .phu-de{flex:1;min-width:180px}
+
+/* Bảng dài không ép các nút rơi từng chữ. */
+.hanh-dong-bang{min-width:max-content}
+.bang td:last-child,.bang th:last-child{white-space:nowrap}
+.bang td b{overflow-wrap:anywhere}
+
+/* Trình tạo câu hỏi */
+.noi-hop .cai-dat{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+.noi-hop .cai-dat textarea{min-height:96px;resize:vertical}
+.noi-hop input[type="file"]{height:auto;padding:9px}
+#matchingFields,#choiceFields{min-width:0}
+
+/* Trình tạo đề: không cho toolbar phá layout khi tên dài. */
+.xay-dung .tieu-de-trang{align-items:flex-start}
+.xay-dung .tieu-de-trang>div:first-child{min-width:0}
+.xay-dung .tieu-de-trang h1{overflow-wrap:anywhere}
+.cau-item .nhom-nut{flex:0 0 auto}
+
+/* Form chấm bài */
+.manual-score{font-variant-numeric:tabular-nums}
+.phieu-cham h3{margin-top:22px}
+.bai-lam{white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* Trạng thái focus rõ ràng, phù hợp thao tác phòng thi bằng bàn phím. */
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(51,43,84,.18);outline-offset:2px;border-color:var(--tim)}
+.nut,.icon-btn,.muc-ben,.dang-nhap-google{touch-action:manipulation}
+
+/* Màn hình thi: chiều rộng đọc dễ, nút điều hướng không chạy vị trí. */
+.to-thi{max-width:1120px;margin-inline:auto}
+.dieu-huong-thi{position:sticky;bottom:0;background:rgba(255,255,255,.96);border-top:1px solid var(--vien);padding:12px 0 calc(12px + env(safe-area-inset-bottom));z-index:15}
+.dieu-huong-thi .nut{min-width:112px}
+.answer-text{font-size:15px}
+
+/* Mobile */
+@media(max-width:760px){
+  .thanh-dau{height:auto;min-height:60px;padding:9px 12px;gap:8px}
+  .thanh-dau>.nhom-nut{flex-wrap:nowrap;gap:6px}
+  .thanh-dau .nhan{display:none}
+  .khung{padding:18px 12px 32px}
+  .tieu-de-trang{display:flex;align-items:flex-start;flex-direction:column}
+  .tieu-de-trang>.nhom-nut,.tieu-de-trang>button{width:100%}
+  .tieu-de-trang>.nhom-nut .nut{flex:1 1 auto}
+  .danh-sach-de{grid-template-columns:1fr}
+  .the-de{min-height:0}
+  .the-de .hanh-dong .nut{flex:1 1 140px}
+  .hang-thong-ke{grid-template-columns:1fr 1fr}
+  .bo-loc{display:grid;grid-template-columns:1fr}
+  .truong,.truong.tim{min-width:0;width:100%}
+  .table-wrap{margin-inline:-12px;border-left:0;border-right:0;border-radius:0}
+  .bang{min-width:720px}
+  .xay-dung{grid-template-columns:1fr}
+  .xay-dung .cot-xay:last-child{grid-column:auto}
+  .cot-xay{padding:13px}
+  .cau-item{align-items:flex-start;flex-direction:column}
+  .cau-item .nhom-nut{width:100%}
+  .cau-item .nhom-nut .nut{flex:1 1 auto}
+  .luoi-chon{grid-template-columns:1fr}
+  .noi-hop{width:100%;padding:16px;border-radius:10px;max-height:94dvh}
+  .hop-chon{padding:8px}
+  .chan-hop{align-items:stretch;flex-direction:column}
+  .chan-hop .nhom-nut{width:100%}
+  .chan-hop .nhom-nut .nut,.chan-hop>.nut{flex:1 1 auto}
+  .cham-bai{grid-template-columns:1fr}
+  .ds-cham,.phieu-cham{min-height:0}
+  .noi-dung-thi{padding:16px 12px 84px}
+  .thanh-thi{padding:0 12px}
+  .thong-tin-thi{gap:10px}
+  .to-thi{padding:14px;min-height:0}
+  .dieu-huong-thi{margin:14px -12px 0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));gap:8px}
+  .dieu-huong-thi .nut{min-width:0;flex:1 1 0}
+  .dieu-huong-thi .tien-do{flex:0 0 auto;max-width:80px;text-align:center}
+  .dap-an{width:100%;max-width:none}
+  .audio-thi{align-items:stretch;flex-direction:column}
+  .audio-thi .nut{width:100%}
+  .audio-thi .phu-de{min-width:0}
+}
+
+@media(max-width:420px){
+  .ten-he-thong small{display:none}
+  .logo{padding:6px}
+  .hang-thong-ke{grid-template-columns:1fr}
+  .tong-quan-hv{grid-template-columns:1fr}
+  .tong-quan-hv .o:first-child{grid-column:auto}
+  .nhom-nut>.nut{flex:1 1 auto}
+  .dieu-huong-thi .tien-do{font-size:10px}
+}
+
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
