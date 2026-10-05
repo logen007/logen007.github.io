@@ -1,0 +1,27 @@
+name: G2G Exam Check
+on:
+  push:
+    paths:
+      - 'g2g-exam/**'
+      - '.github/workflows/g2g-check.yml'
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: |
+          node --check g2g-exam/src/app.js
+          node --check g2g-exam/src/core.js
+          node --check g2g-exam/src/repository.js
+          node --check g2g-exam/src/media.js
+          node --check g2g-exam/functions/index.js
+          node --check g2g-exam/functions/attempts.js
+          node --check g2g-exam/functions/secure-grading.js
+      - name: Run core tests
+        working-directory: g2g-exam
+        run: npm test
