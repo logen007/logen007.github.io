@@ -1,7 +1,7 @@
 export const APP_CONFIG = {
-  version: 2,
-  storageKey: 'g2g.exam.v2',
-  storageRevisionKey: 'g2g.exam.v2.rev',
+  version: 3,
+  storageKey: 'g2g.exam.v3',
+  storageRevisionKey: 'g2g.exam.v3.rev',
   autosaveMs: 2500,
   backend: 'auto',
   firebaseConfig: () => (globalThis.G2G_FIREBASE_CONFIG || null),
