@@ -16,7 +16,6 @@ service cloud.firestore {
       allow update, delete: if isMaster();
     }
 
-    // Bản đầy đủ có đáp án đúng: học viên tuyệt đối không được đọc.
     match /questions/{id} {
       allow read: if isTeacher();
       allow create: if isTeacher() && request.resource.data.ownerId == request.auth.uid;
@@ -25,11 +24,9 @@ service cloud.firestore {
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
       );
-      // Giáo viên chỉ soft-delete bằng status=trash. Xóa document thật chỉ Master Admin.
       allow delete: if isMaster();
     }
 
-    // Bản học viên: Cloud Function tự đồng bộ và đã loại đáp án/rubric riêng tư.
     match /questionPublic/{id} {
       allow read: if activeUser();
       allow write: if false;
@@ -43,7 +40,6 @@ service cloud.firestore {
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
       );
-      // Giáo viên chỉ đưa vào Thùng rác; xóa vĩnh viễn chỉ Master Admin.
       allow delete: if isMaster();
     }
 
@@ -63,8 +59,7 @@ service cloud.firestore {
       allow delete: if isMaster();
     }
 
-    // Tạo lượt, chuyển phần, bỏ lượt, nộp bài, chấm và công bố đều do Cloud Functions xử lý.
-    // Học viên chỉ được autosave câu trả lời của chính lượt đang làm.
+    // Public attempt chỉ chứa tiến trình và đáp án. Điểm chưa công bố nằm ở attemptPrivate.
     match /attempts/{id} {
       allow read: if isTeacher() || (activeUser() && resource.data.studentId == request.auth.uid);
       allow create: if false;
@@ -77,6 +72,12 @@ service cloud.firestore {
         && request.resource.data.attemptNo == resource.data.attemptNo
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answers','updatedAt']);
       allow delete: if false;
+    }
+
+    // Điểm tự động, điểm chấm tay và nhận xét trước khi công bố: học viên không bao giờ đọc được.
+    match /attemptPrivate/{id} {
+      allow read: if isTeacher();
+      allow write: if false;
     }
 
     match /notifications/{id} {
