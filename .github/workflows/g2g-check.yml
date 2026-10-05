@@ -27,6 +27,15 @@ jobs:
           node --check g2g-exam/functions/settings.js
           node --check g2g-exam/functions/mailer.js
           node --check g2g-exam/functions/bootstrap.js
+          node --check g2g-exam/server/src/index.js
+          node --check g2g-exam/server/src/db.js
+          node --check g2g-exam/server/src/auth.js
+          node --check g2g-exam/server/src/mail.js
+          node --check g2g-exam/server/src/state.js
+          node --check g2g-exam/server/src/actions.js
+          node --check g2g-exam/server/runtime/repository.js
+          node --check g2g-exam/server/runtime/media.js
+          node --check g2g-exam/server/runtime/settings.js
       - name: Run tests
         working-directory: g2g-exam
         run: npm test
