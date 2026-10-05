@@ -25,6 +25,8 @@ jobs:
           node --check g2g-exam/functions/secure-grading.js
           node --check g2g-exam/functions/concurrency.js
           node --check g2g-exam/functions/settings.js
+          node --check g2g-exam/functions/mailer.js
+          node --check g2g-exam/functions/bootstrap.js
       - name: Run tests
         working-directory: g2g-exam
         run: npm test
