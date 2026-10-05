@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>G2G Thi thử tiếng Đức</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#f7f7fa}iframe{display:block;width:100%;height:100%;border:0;background:#f7f7fa}
+</style>
+</head>
+<body>
+<iframe id="examFrame" src="./vi.html" title="G2G Thi thử tiếng Đức"></iframe>
+<script>
+(() => {
+  const frame = document.getElementById('examFrame');
+  let observer;
+  function patchResult(doc){
+    const text = doc.body?.innerText || '';
+    if (!text.includes('HOÀN THÀNH LẦN THI') || !text.includes('214 / 300')) return;
+    const originalBack = doc.getElementById('back');
+    const card = [...doc.querySelectorAll('.card')].find(el => el.innerText.includes('HOÀN THÀNH LẦN THI'));
+    if (!card || card.dataset.waitingPatched === '1') return;
+    card.dataset.waitingPatched = '1';
+    const old = card.innerHTML;
+    card.innerHTML = `
+      <div class="kicker">ĐÃ NỘP BÀI THÀNH CÔNG</div>
+      <div style="width:64px;height:64px;margin:18px auto 14px;border-radius:50%;display:grid;place-items:center;background:#f0eef7;color:#423765;font-size:28px;font-weight:800">✓</div>
+      <h1 style="margin:0 0 10px">Bài thi của bạn đã được ghi nhận</h1>
+      <div style="font-size:15px;color:#777585;margin-bottom:18px">TELC B1 – Đề thi thử 03</div>
+      <span class="status gray" style="font-size:12px;padding:8px 12px">ĐANG CHỜ CHẤM</span>
+      <div style="margin:26px auto 0;max-width:540px;border:1px solid #e7e5ec;background:#fafafd;border-radius:10px;padding:20px;text-align:left">
+        <div style="font-weight:750;margin-bottom:8px">Chưa có kết quả cuối cùng</div>
+        <div class="sub" style="font-size:13px;line-height:1.7">Bài thi có các phần cần giáo viên chấm thủ công. Điểm tổng và trạng thái Đạt/Không đạt sẽ chỉ hiển thị sau khi việc chấm bài hoàn tất.</div>
+      </div>
+      <div style="margin:12px auto 0;max-width:540px;border:1px solid #ded9ec;background:#f4f1fa;border-radius:10px;padding:18px;text-align:left">
+        <div style="font-weight:750;color:#423765;margin-bottom:6px">Thông báo kết quả qua email</div>
+        <div class="sub" style="font-size:13px;line-height:1.7">Khi giáo viên hoàn tất chấm và công bố kết quả, hệ thống sẽ gửi thông báo đến email bạn đã dùng để đăng nhập. Bạn cũng có thể đăng nhập lại để xem kết quả và lịch sử các lần thi.</div>
+      </div>
+      <button class="btn primary" id="waitingBack" style="margin-top:24px">Về danh sách bài thi</button>
+    `;
+    const btn = doc.getElementById('waitingBack');
+    if (btn) btn.addEventListener('click', () => {
+      if (originalBack && typeof originalBack.click === 'function') originalBack.click();
+      else location.reload();
+    });
+  }
+  function init(){
+    const doc = frame.contentDocument;
+    if (!doc) return;
+    if (observer) observer.disconnect();
+    observer = new MutationObserver(() => patchResult(doc));
+    observer.observe(doc.documentElement,{childList:true,subtree:true,characterData:true});
+    patchResult(doc);
+  }
+  frame.addEventListener('load', init);
+})();
+</script>
+</body>
+</html>
