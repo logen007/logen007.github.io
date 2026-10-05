@@ -2,6 +2,8 @@ import { APP_CONFIG, isFirebaseConfigured } from './config.js';
 import { clone, normalizeState, nowIso } from './core.js';
 import { seedState } from './seed.js';
 
+const PRIVATE_ATTEMPT_FIELDS=['autoScore','manualScores','sectionScores','totalScore','result','reviewerId','reviewerName','feedback','rubrics'];
+
 export class LocalRepository {
   constructor(){ this.mode='local'; this.listeners=new Set(); this.state=null; this.currentUserId=sessionStorage.getItem('g2g.demo.user')||null; }
   async init(){
@@ -27,6 +29,7 @@ export class FirebaseRepository {
   constructor(config){
     this.mode='firebase'; this.config=config; this.listeners=new Set(); this.state=normalizeState({});
     this.auth=null; this.db=null; this.functions=null; this.firebase=null; this.unsubscribe=[]; this.role=null;
+    this.publicAttempts=[]; this.privateAttempts=[];
   }
 
   async init(){
@@ -63,11 +66,14 @@ export class FirebaseRepository {
       next.questions=await this.list('questionPublic',[['status','==','active']]);
       next.attempts=await this.list('attempts',[['studentId','==',me.id]]);
       next.notifications=await this.list('notifications',[['studentId','==',me.id]]);
+      this.publicAttempts=next.attempts; this.privateAttempts=[];
     } else {
       next.users=await this.list('users');
       next.questions=await this.list('questions');
       next.exams=await this.list('exams');
-      next.attempts=await this.list('attempts');
+      this.publicAttempts=await this.list('attempts');
+      this.privateAttempts=await this.list('attemptPrivate');
+      next.attempts=mergeAttempts(this.publicAttempts,this.privateAttempts);
       next.gradingRequests=await this.list('gradingRequests');
       if(me.role==='master') next.auditLog=await this.list('auditLog');
     }
@@ -89,7 +95,12 @@ export class FirebaseRepository {
       watch('attempts','attempts',[['studentId','==',uid]]);
       watch('notifications','notifications',[['studentId','==',uid]]);
     } else {
-      watch('users','users'); watch('questions','questions'); watch('exams','exams'); watch('attempts','attempts'); watch('gradingRequests','gradingRequests');
+      watch('users','users'); watch('questions','questions'); watch('exams','exams'); watch('gradingRequests','gradingRequests');
+      const attemptRef=this.firebase.collection(this.db,'attempts');
+      const privateRef=this.firebase.collection(this.db,'attemptPrivate');
+      const recompute=()=>{ this.state.attempts=mergeAttempts(this.publicAttempts,this.privateAttempts); this.state.revision=Date.now(); this.emit(); };
+      this.unsubscribe.push(this.firebase.onSnapshot(attemptRef,snap=>{ this.publicAttempts=snap.docs.map(d=>({id:d.id,...d.data()})); recompute(); }));
+      this.unsubscribe.push(this.firebase.onSnapshot(privateRef,snap=>{ this.privateAttempts=snap.docs.map(d=>({id:d.id,...d.data()})); recompute(); }));
       if(this.role==='master') watch('auditLog','auditLog');
     }
   }
@@ -110,14 +121,13 @@ export class FirebaseRepository {
   async signInGoogle(){
     const provider=new this.firebase.GoogleAuthProvider();
     await this.firebase.signInWithPopup(this.auth,provider);
-    const user=await this.getCurrentUser();
-    await this.reload(); this.attachSnapshots(); return user;
+    const user=await this.getCurrentUser(); await this.reload(); this.attachSnapshots(); return user;
   }
 
   async signOut(){
     await this.firebase.signOut(this.auth);
     for(const u of this.unsubscribe.splice(0)) try{u();}catch{}
-    this.state=normalizeState({}); this.role=null; this.emit();
+    this.state=normalizeState({}); this.role=null; this.publicAttempts=[]; this.privateAttempts=[]; this.emit();
   }
 
   async transaction(mutator){
@@ -129,7 +139,7 @@ export class FirebaseRepository {
     const beforeAttempts=new Map((before.attempts||[]).map(a=>[a.id,a]));
     const handled=new Set();
 
-    // Lượt thi mới và thao tác làm lại được tạo trên server để attemptNo/timer không thể bị giả mạo.
+    // Tạo/làm lại lượt thi phải do server cấp attemptNo và đồng hồ.
     for(const fresh of next.attempts||[]){
       if(beforeAttempts.has(fresh.id)) continue;
       const previous=before.attempts?.find(a=>a.studentId===fresh.studentId&&a.examId===fresh.examId&&a.status==='in_progress');
@@ -142,25 +152,21 @@ export class FirebaseRepository {
 
     for(const changed of next.attempts||[]){
       const prev=beforeAttempts.get(changed.id); if(!prev||handled.has(changed.id)) continue;
-
       if(prev.status==='in_progress' && changed.status!=='in_progress'){
         if(changed.status==='abandoned') secureOps.push({type:'abandon',id:changed.id});
         else secureOps.push({type:'submit',id:changed.id});
         replaceAttempt(persistNext,prev); handled.add(changed.id); continue;
       }
-
       const sectionChanged=prev.currentSectionIndex!==changed.currentSectionIndex || JSON.stringify(prev.sectionStates||{})!==JSON.stringify(changed.sectionStates||{});
       if(prev.status==='in_progress' && sectionChanged){
         secureOps.push({type:'section',id:changed.id,index:Number(changed.currentSectionIndex||0)});
         replaceAttempt(persistNext,prev); handled.add(changed.id); continue;
       }
-
       const gradeChanged=JSON.stringify(prev.manualScores||{})!==JSON.stringify(changed.manualScores||{}) || prev.feedback!==changed.feedback;
       if(gradeChanged){
         secureOps.push({type:'grade',id:changed.id,scores:clone(changed.manualScores||{}),feedback:changed.feedback||''});
         replaceAttempt(persistNext,prev); handled.add(changed.id); continue;
       }
-
       if(prev.status==='ready' && changed.status==='published'){
         secureOps.push({type:'publish',id:changed.id});
         replaceAttempt(persistNext,prev); handled.add(changed.id);
@@ -184,31 +190,25 @@ export class FirebaseRepository {
       await this.reload();
       const mapped=result?.id && startLocalToActual.get(result.id);
       if(mapped) return this.state.attempts.find(a=>a.id===mapped)||null;
-      if(result?.id){
-        const actual=this.state.attempts.find(a=>a.id===result.id);
-        if(actual) return actual;
-      }
+      if(result?.id){ const actual=this.state.attempts.find(a=>a.id===result.id); if(actual) return actual; }
     } else {
       this.state=normalizeState(next); this.emit();
     }
     return result;
   }
 
-  async replaceState(next){
-    const before=clone(this.state); await this.persistDiff(before,next); this.state=normalizeState(next); this.emit(); return clone(this.state);
-  }
+  async replaceState(next){ const before=clone(this.state); await this.persistDiff(before,next); this.state=normalizeState(next); this.emit(); return clone(this.state); }
 
   async persistDiff(before,after){
-    // notifications/mail/auditLog do server quản lý. Client chỉ ghi dữ liệu nghiệp vụ được Rules cho phép.
+    // Dữ liệu điểm chưa công bố, notification, email và audit chỉ do server quản lý.
     const batch=this.firebase.writeBatch(this.db), collections=['users','questions','exams','attempts','gradingRequests'];
     for(const name of collections){
       const a=new Map((before[name]||[]).map(x=>[x.id,x])), b=new Map((after[name]||[]).map(x=>[x.id,x]));
       for(const [id,item] of b){
         const prev=a.get(id);
-        if(!prev||JSON.stringify(prev)!==JSON.stringify(item)){
-          const payload=clone(item); delete payload.id;
-          batch.set(this.firebase.doc(this.db,name,id),payload,{merge:false});
-        }
+        const nextPayload=name==='attempts'?publicAttemptPayload(item):stripId(item);
+        const prevPayload=prev?(name==='attempts'?publicAttemptPayload(prev):stripId(prev)):null;
+        if(!prev||JSON.stringify(prevPayload)!==JSON.stringify(nextPayload)) batch.set(this.firebase.doc(this.db,name,id),nextPayload,{merge:false});
       }
       for(const id of a.keys()) if(!b.has(id)) batch.delete(this.firebase.doc(this.db,name,id));
     }
@@ -222,6 +222,16 @@ export class FirebaseRepository {
   async setUserRoleSecure(userId,role){ await this.call('setUserRole',{userId,role}); await this.reload(); return this.state.users.find(u=>u.id===userId); }
 }
 
+function stripId(item){ const payload=clone(item); delete payload.id; return payload; }
+function publicAttemptPayload(item){
+  const payload=stripId(item);
+  if(payload.status!=='published') for(const key of PRIVATE_ATTEMPT_FIELDS) delete payload[key];
+  return payload;
+}
+function mergeAttempts(publicItems,privateItems){
+  const privateMap=new Map((privateItems||[]).map(x=>[x.id,x]));
+  return (publicItems||[]).map(a=>{ const p=privateMap.get(a.id); return p?{...a,...p,id:a.id}:a; });
+}
 function replaceAttempt(state,attempt){ const i=(state.attempts||[]).findIndex(a=>a.id===attempt.id); if(i>=0) state.attempts[i]=clone(attempt); }
 
 export async function createRepository(){
