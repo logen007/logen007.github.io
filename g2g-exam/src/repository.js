@@ -55,6 +55,13 @@ export class FirebaseRepository {
     return snap.docs.map(d=>({id:d.id,...d.data()}));
   }
 
+  async getPublicSettings(){
+    try{
+      const snap=await this.firebase.getDoc(this.firebase.doc(this.db,'publicSettings','global'));
+      return snap.exists()?snap.data():{};
+    }catch{return {};}
+  }
+
   async reload(){
     const me=await this.getCurrentUser();
     if(!me){ this.state=normalizeState({}); this.role=null; this.emit(); return this.state; }
@@ -119,9 +126,28 @@ export class FirebaseRepository {
   }
 
   async signInGoogle(){
+    const before=await this.getPublicSettings();
+    if(before.auth?.googleLoginEnabled===false) throw new Error('Đăng nhập Google đang được Quản trị viên tạm tắt.');
     const provider=new this.firebase.GoogleAuthProvider();
     await this.firebase.signInWithPopup(this.auth,provider);
-    const user=await this.getCurrentUser(); await this.reload(); this.attachSnapshots(); return user;
+    try{
+      const authUser=this.auth.currentUser;
+      if(!authUser) throw new Error('Không lấy được tài khoản Google.');
+      const latest=await this.getPublicSettings();
+      if(latest.auth?.googleLoginEnabled===false) throw new Error('Đăng nhập Google đang được Quản trị viên tạm tắt.');
+      const userRef=this.firebase.doc(this.db,'users',authUser.uid),userSnap=await this.firebase.getDoc(userRef);
+      if(!userSnap.exists()){
+        if(latest.auth?.allowNewStudents===false) throw new Error('Hệ thống hiện không nhận thêm tài khoản học viên mới.');
+        const domain=String(latest.auth?.allowedDomain||'').trim().toLowerCase();
+        const email=String(authUser.email||'').trim().toLowerCase();
+        if(domain&&!email.endsWith(`@${domain}`)) throw new Error(`Chỉ tài khoản email thuộc tên miền ${domain} được đăng ký.`);
+      }
+      const user=await this.getCurrentUser();
+      await this.reload(); this.attachSnapshots(); return user;
+    }catch(error){
+      try{await this.firebase.signOut(this.auth);}catch{}
+      throw error;
+    }
   }
 
   async signOut(){
@@ -139,7 +165,6 @@ export class FirebaseRepository {
     const beforeAttempts=new Map((before.attempts||[]).map(a=>[a.id,a]));
     const handled=new Set();
 
-    // Tạo/làm lại lượt thi phải do server cấp attemptNo và đồng hồ.
     for(const fresh of next.attempts||[]){
       if(beforeAttempts.has(fresh.id)) continue;
       const previous=before.attempts?.find(a=>a.studentId===fresh.studentId&&a.examId===fresh.examId&&a.status==='in_progress');
@@ -200,7 +225,6 @@ export class FirebaseRepository {
   async replaceState(next){ const before=clone(this.state); await this.persistDiff(before,next); this.state=normalizeState(next); this.emit(); return clone(this.state); }
 
   async persistDiff(before,after){
-    // Dữ liệu điểm chưa công bố, notification, email và audit chỉ do server quản lý.
     const batch=this.firebase.writeBatch(this.db), collections=['users','questions','exams','attempts','gradingRequests'];
     for(const name of collections){
       const a=new Map((before[name]||[]).map(x=>[x.id,x])), b=new Map((after[name]||[]).map(x=>[x.id,x]));
