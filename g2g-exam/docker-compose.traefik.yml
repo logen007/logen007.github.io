@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: g2g_exam
+      POSTGRES_USER: g2g
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - g2g_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U g2g -d g2g_exam"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - g2g_internal
+
+  app:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - server/.env
+    environment:
+      DATABASE_URL: postgresql://g2g:${POSTGRES_PASSWORD}@postgres:5432/g2g_exam
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - g2g_uploads:/data/uploads
+    networks:
+      - g2g_internal
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK:?TRAEFIK_NETWORK is required}
+      - traefik.http.routers.g2g-exam.rule=Host(`${G2G_HOST:-exam.g2gcareer.com}`)
+      - traefik.http.routers.g2g-exam.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.g2g-exam.tls=true
+      - traefik.http.routers.g2g-exam.tls.certresolver=${TRAEFIK_CERTRESOLVER:?TRAEFIK_CERTRESOLVER is required}
+      - traefik.http.services.g2g-exam.loadbalancer.server.port=8080
+
+networks:
+  g2g_internal:
+    internal: true
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:?TRAEFIK_NETWORK is required}
+
+volumes:
+  g2g_pgdata:
+  g2g_uploads:
