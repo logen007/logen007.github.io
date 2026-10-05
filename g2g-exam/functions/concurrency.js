@@ -3,6 +3,12 @@ const { getFirestore } = require('firebase-admin/firestore');
 
 const db = getFirestore();
 
+const DEFAULT_SETTINGS={
+  exam:{allowRetake:true,allowRestart:true},
+  results:{notifyResultEmail:true,resultEmailSubject:'G2G – Đã có kết quả {exam}'},
+  operations:{maintenanceMode:false,maintenanceMessage:'Hệ thống đang bảo trì. Vui lòng quay lại sau.'}
+};
+
 function now(){ return new Date().toISOString(); }
 function requireAuth(request){
   if(!request.auth) throw new HttpsError('unauthenticated','Bạn cần đăng nhập.');
@@ -15,6 +21,21 @@ async function getUser(uid){
 }
 function isTeacher(user){ return user?.role==='teacher'||user?.role==='master'; }
 function lockId(uid,examId){ return `${uid}__${examId}`.replaceAll('/','_'); }
+
+async function loadSystemSettings(){
+  const snap=await db.collection('settings').doc('global').get();
+  const data=snap.exists?snap.data():{};
+  return {
+    exam:{...DEFAULT_SETTINGS.exam,...(data.exam||{})},
+    results:{...DEFAULT_SETTINGS.results,...(data.results||{})},
+    operations:{...DEFAULT_SETTINGS.operations,...(data.operations||{})}
+  };
+}
+function resultSubject(template,attempt){
+  return String(template||DEFAULT_SETTINGS.results.resultEmailSubject)
+    .replaceAll('{exam}',attempt.examTitle||'bài thi')
+    .replaceAll('{student}',attempt.studentName||'học viên');
+}
 
 async function canGrade(user,exam){
   if(user.role==='master'||exam.ownerId===user.id) return true;
@@ -57,6 +78,7 @@ exports.startAttemptSecure = onCall(async request => {
   if(!examId) throw new HttpsError('invalid-argument','Thiếu mã bài thi.');
   const exam=await loadExam(examId);
   if(exam.status!=='published') throw new HttpsError('failed-precondition','Bài thi chưa mở cho học viên.');
+  const systemSettings=await loadSystemSettings();
 
   // Baseline giúp tương thích dữ liệu cũ trước khi collection attemptLocks tồn tại.
   const oldSnap=await db.collection('attempts').where('studentId','==',uid).get();
@@ -77,9 +99,21 @@ exports.startAttemptSecure = onCall(async request => {
       if(cSnap.exists) current={id:cSnap.id,...cSnap.data(),ref:cRef};
     }
 
+    // Bảo trì không đẩy học viên đang làm dở ra khỏi bài hiện tại.
     if(current?.status==='in_progress'&&!restart){
       if(!lSnap.exists) tx.set(lRef,{studentId:uid,examId,currentAttemptId:current.id,counter:Math.max(baseline,Number(current.attemptNo||0)),updatedAt:now()},{merge:true});
       return {attemptId:current.id,resumed:true};
+    }
+
+    if(systemSettings.operations.maintenanceMode){
+      throw new HttpsError('failed-precondition',String(systemSettings.operations.maintenanceMessage||DEFAULT_SETTINGS.operations.maintenanceMessage));
+    }
+    if(restart&&!systemSettings.exam.allowRestart){
+      throw new HttpsError('failed-precondition','Hệ thống hiện không cho phép bỏ lượt đang làm để bắt đầu lại.');
+    }
+    const priorCount=Math.max(baseline,Number(lock.counter||0));
+    if(priorCount>0&&current?.status!=='in_progress'&&!systemSettings.exam.allowRetake){
+      throw new HttpsError('failed-precondition','Bài thi này hiện không cho phép thi lại.');
     }
 
     if(current?.status==='in_progress'&&restart){
@@ -171,6 +205,7 @@ exports.publishAttemptResult = onCall(async request => {
   if(!initial.exists) throw new HttpsError('not-found','Không tìm thấy lượt thi.');
   const exam=await loadExam(initial.data().examId);
   if(!(user.role==='master'||exam.ownerId===user.id)) throw new HttpsError('permission-denied','Chỉ giáo viên tạo bài hoặc Quản trị cấp cao được công bố kết quả.');
+  const systemSettings=await loadSystemSettings();
 
   const notificationRef=db.collection('notifications').doc(`result-${attemptId}`);
   const mailRef=db.collection('mail').doc(`result-${attemptId}`);
@@ -188,16 +223,19 @@ exports.publishAttemptResult = onCall(async request => {
     const priv=pSnap.data();
     if(!Number.isFinite(Number(priv.totalScore))) throw new HttpsError('failed-precondition','Bài chưa có tổng điểm hợp lệ.');
     const at=now();
+    const subject=resultSubject(systemSettings.results.resultEmailSubject,attempt);
+    const emailEnabled=Boolean(systemSettings.results.notifyResultEmail);
+    const notificationStatus=!emailEnabled?'email_disabled':attempt.studentEmail?'queued':'no_email';
     tx.update(aRef,{
       status:'published',publishedAt:at,updatedAt:at,
       autoScore:Number(priv.autoScore||0),manualScores:priv.manualScores||{},sectionScores:priv.sectionScores||{},
       totalScore:Number(priv.totalScore),result:priv.result||'',reviewerId:priv.reviewerId||null,reviewerName:priv.reviewerName||null,feedback:priv.feedback||''
     });
-    tx.set(notificationRef,{type:'result_published',status:'queued',to:attempt.studentEmail||'',studentId:attempt.studentId,attemptId,subject:`G2G – Đã có kết quả ${attempt.examTitle}`,body:'Kết quả thi thử của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.',createdAt:at},{merge:false});
-    if(attempt.studentEmail){
-      tx.set(mailRef,{to:[attempt.studentEmail],message:{subject:`G2G – Đã có kết quả ${attempt.examTitle}`,text:'Kết quả thi thử của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.',html:'<p>Kết quả thi thử của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.</p>'}},{merge:false});
+    tx.set(notificationRef,{type:'result_published',status:notificationStatus,to:attempt.studentEmail||'',studentId:attempt.studentId,attemptId,subject,body:'Kết quả thi thử của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.',createdAt:at},{merge:false});
+    if(emailEnabled&&attempt.studentEmail){
+      tx.set(mailRef,{to:[attempt.studentEmail],message:{subject,text:'Kết quả thi thử của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.',html:'<p>Kết quả thi thử của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.</p>'}},{merge:false});
     }
-    tx.set(auditRef,{at,userId:user.id,userName:user.name||'',action:'publish_result',entityType:'attempt',entityId:attemptId,detail:{studentId:attempt.studentId}},{merge:false});
+    tx.set(auditRef,{at,userId:user.id,userName:user.name||'',action:'publish_result',entityType:'attempt',entityId:attemptId,detail:{studentId:attempt.studentId,emailEnabled,notificationStatus}},{merge:false});
     return {status:'published',alreadyPublished:false};
   });
 });
