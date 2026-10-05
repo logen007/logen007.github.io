@@ -26,6 +26,24 @@
 .phieu-cham h3{margin-top:22px}
 .bai-lam{white-space:pre-wrap;overflow-wrap:anywhere}
 
+/* Cài đặt hệ thống */
+.cai-dat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.cai-dat-card{padding:0;overflow:hidden}
+.cai-dat-card-head{padding:18px 20px 14px;border-bottom:1px solid var(--vien)}
+.cai-dat-card-head h2{margin:0 0 5px;font-size:17px}
+.cai-dat-card-head p{margin:0;color:var(--mo);font-size:13px;line-height:1.5}
+.cai-dat-fields{display:grid;gap:16px;padding:18px 20px 20px}
+.cai-dat-field{display:grid;gap:7px;min-width:0}
+.cai-dat-field>span{font-weight:700;font-size:13px}
+.cai-dat-field small,.cai-dat-toggle small{display:block;color:var(--mo);font-weight:400;line-height:1.45;margin-top:3px}
+.cai-dat-field textarea.truong{height:auto;min-height:92px;resize:vertical}
+.cai-dat-toggle{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--vien);border-radius:var(--r);cursor:pointer}
+.cai-dat-toggle input{margin-top:3px;flex:0 0 auto}
+.cai-dat-toggle span{min-width:0;font-size:13px}
+.cai-dat-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding:14px 16px;border:1px solid var(--vien);border-radius:var(--r);background:#fff;position:sticky;bottom:12px;z-index:12}
+.cai-dat-footer .loi{font-weight:700}
+.canh-bao-bao-tri{padding:10px 18px;text-align:center;border-bottom:1px solid var(--vien);font-size:13px;font-weight:700;background:#fff8e8}
+
 /* Trạng thái focus rõ ràng, phù hợp thao tác phòng thi bằng bàn phím. */
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(51,43,84,.18);outline-offset:2px;border-color:var(--tim)}
 .nut,.icon-btn,.muc-ben,.dang-nhap-google{touch-action:manipulation}
@@ -78,6 +96,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .audio-thi{align-items:stretch;flex-direction:column}
   .audio-thi .nut{width:100%}
   .audio-thi .phu-de{min-width:0}
+  .cai-dat-grid{grid-template-columns:1fr}
+  .cai-dat-footer{align-items:stretch;flex-direction:column;bottom:8px}
+  .cai-dat-footer .nut{width:100%}
 }
 
 @media(max-width:420px){
