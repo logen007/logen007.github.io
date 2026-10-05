@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS={
   },
   exam:{allowRetake:true,allowRestart:true},
   smtp:{
-    enabled:true,
+    enabled:false,
     host:'',
     port:587,
     security:'starttls',
@@ -32,13 +32,13 @@ const DEFAULT_SETTINGS={
     rejectUnauthorized:true
   },
   email:{
-    enabled:true,
+    enabled:false,
     resultSubject:'G2G – Đã có kết quả {exam}',
     resultText:'Xin chào {student},\n\nKết quả bài thi {exam} của bạn đã được công bố.\nĐiểm: {score}\nKết quả: {result}\n\nXem chi tiết: {url}',
     resultHtml:'<p>Xin chào <strong>{student}</strong>,</p><p>Kết quả bài thi <strong>{exam}</strong> của bạn đã được công bố.</p><p>Điểm: <strong>{score}</strong><br>Kết quả: <strong>{result}</strong></p><p><a href="{url}">Đăng nhập hệ thống G2G để xem chi tiết</a></p>'
   },
   // Tương thích với dữ liệu/các bản code cũ.
-  results:{notifyResultEmail:true,resultEmailSubject:'G2G – Đã có kết quả {exam}'},
+  results:{notifyResultEmail:false,resultEmailSubject:'G2G – Đã có kết quả {exam}'},
   operations:{
     maintenanceMode:false,
     maintenanceMessage:'Hệ thống đang bảo trì. Vui lòng quay lại sau.'
