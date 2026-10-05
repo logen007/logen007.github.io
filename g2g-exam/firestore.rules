@@ -6,12 +6,15 @@ service cloud.firestore {
     function activeUser() { return signedIn() && me().active != false; }
     function isMaster() { return activeUser() && me().role == 'master'; }
     function isTeacher() { return activeUser() && (me().role == 'teacher' || me().role == 'master'); }
-    function settingsExists() { return exists(/databases/$(database)/documents/settings/global); }
-    function registrationAllowed() {
-      return !settingsExists() || (
-        get(/databases/$(database)/documents/settings/global).data.auth.googleLoginEnabled != false
-        && get(/databases/$(database)/documents/settings/global).data.auth.allowNewStudents != false
-      );
+    function globalSettings() { return get(/databases/$(database)/documents/settings/global).data; }
+    function signupDomainAllowed() {
+      return globalSettings().auth.allowedDomain == ''
+        || request.auth.token.email.matches('.*@' + globalSettings().auth.allowedDomain + '$');
+    }
+
+    match /publicSettings/{id} {
+      allow read: if true;
+      allow write: if false;
     }
 
     match /users/{uid} {
@@ -19,15 +22,15 @@ service cloud.firestore {
         && uid == request.auth.uid
         && request.resource.data.role == 'student'
         && request.resource.data.active == true
-        && registrationAllowed();
+        && globalSettings().auth.googleLoginEnabled == true
+        && globalSettings().auth.allowNewStudents == true
+        && signupDomainAllowed();
       allow read: if signedIn() && (uid == request.auth.uid || isTeacher());
       allow update, delete: if isMaster();
     }
 
-    // Chỉ chứa cấu hình vận hành không bí mật để trang đăng nhập có thể biết
-    // Google Login/bảo trì đang bật hay tắt. Secret/API key không bao giờ lưu ở đây.
     match /settings/{id} {
-      allow read: if id == 'global';
+      allow read: if activeUser();
       allow write: if false;
     }
 
