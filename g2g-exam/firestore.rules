@@ -16,6 +16,11 @@ service cloud.firestore {
       allow update, delete: if isMaster();
     }
 
+    match /settings/{id} {
+      allow read: if activeUser();
+      allow write: if false;
+    }
+
     match /questions/{id} {
       allow read: if isTeacher();
       allow create: if isTeacher() && request.resource.data.ownerId == request.auth.uid;
