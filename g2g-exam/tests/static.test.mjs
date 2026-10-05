@@ -61,7 +61,8 @@ test('Không còn các nhãn tiếng Anh cũ dễ lọt ra giao diện', () => {
 test('Trang có trình xử lý lỗi runtime để tránh màn hình trắng', () => {
   const html = read('vi.html');
   assert.ok(html.includes('window.addEventListener'));
-  assert.ok(html.includes('Có lỗi khi tải hệ thống'));
+  assert.ok(html.includes('Hệ thống chưa tải được'));
+  assert.ok(html.includes('Tải lại'));
 });
 
 console.log(`\n${passed} kiểm thử tĩnh đã đạt.`);
