@@ -22,11 +22,11 @@ test('Trang tiếng Việt có vùng ứng dụng và nạp module chính', () =
 test('Các tài nguyên CSS/JS mà vi.html tham chiếu đều tồn tại và không rỗng', () => {
   const html = read('vi.html');
   const refs = [...html.matchAll(/(?:src|href)=["']\.\/([^"'#?]+)/g)].map(m => m[1]);
-  assert.ok(refs.length >= 3);
+  assert.ok(refs.length >= 4);
   for (const ref of refs) assert.ok(existsNonEmpty(ref), `Thiếu hoặc rỗng: ${ref}`);
 });
 
-test('Chuỗi import tương đối của module chính không trỏ tới file thiếu', () => {
+test('Chuỗi import tương đối của các module giao diện không trỏ tới file thiếu', () => {
   const seen = new Set();
   const visit = rel => {
     if (seen.has(rel)) return;
@@ -42,6 +42,7 @@ test('Chuỗi import tương đối của module chính không trỏ tới file 
     }
   };
   visit('src/app.js');
+  visit('src/settings.js');
 });
 
 test('Giao diện chính dùng nhãn tiếng Việt ở các khu vực vận hành quan trọng', () => {
@@ -55,6 +56,32 @@ test('Không còn các nhãn tiếng Anh cũ dễ lọt ra giao diện', () => {
   const source = read('src/app.js');
   for (const text of ['Question Bank','Exam Builder','Save Draft','Publish Result','Previous','Next']) {
     assert.equal(source.includes(text), false, `Còn nhãn tiếng Anh: ${text}`);
+  }
+});
+
+test('Trang Quản trị nạp Cài đặt hệ thống và có các nhóm cấu hình chính', () => {
+  const html = read('vi.html');
+  const source = read('src/settings.js');
+  assert.match(html, /src=["']\.\/src\/settings\.js/);
+  for (const text of ['Cài đặt hệ thống','Thông tin hệ thống','Quyền làm bài','Kết quả & email','Vận hành / bảo trì','Quản trị cấp cao']) {
+    assert.ok(source.includes(text), `Thiếu nội dung Cài đặt: ${text}`);
+  }
+  assert.ok(source.includes('updateSystemSettings'));
+});
+
+test('Cài đặt production chỉ được ghi qua backend của Quản trị cấp cao', () => {
+  const fn = read('functions/settings.js');
+  const rules = read('firestore.rules');
+  assert.ok(fn.includes("user.role!=='master'"));
+  assert.ok(fn.includes('update_system_settings'));
+  assert.match(rules, /match \/settings\/\{id\}/);
+  assert.match(rules, /match \/settings\/\{id\}[\s\S]*?allow write: if false;/);
+});
+
+test('Các cài đặt vận hành được backend thi và email sử dụng', () => {
+  const source = read('functions/concurrency.js');
+  for (const text of ['maintenanceMode','allowRetake','allowRestart','notifyResultEmail','resultEmailSubject']) {
+    assert.ok(source.includes(text), `Backend chưa dùng setting: ${text}`);
   }
 });
 
