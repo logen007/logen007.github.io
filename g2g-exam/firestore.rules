@@ -6,9 +6,15 @@ service cloud.firestore {
     function activeUser() { return signedIn() && me().active != false; }
     function isMaster() { return activeUser() && me().role == 'master'; }
     function isTeacher() { return activeUser() && (me().role == 'teacher' || me().role == 'master'); }
+    function settingsExist() { return exists(/databases/$(database)/documents/settings/global); }
     function globalSettings() { return get(/databases/$(database)/documents/settings/global).data; }
+    function signupEnabled() {
+      return !settingsExist()
+        || (globalSettings().auth.googleLoginEnabled == true && globalSettings().auth.allowNewStudents == true);
+    }
     function signupDomainAllowed() {
-      return globalSettings().auth.allowedDomain == ''
+      return !settingsExist()
+        || globalSettings().auth.allowedDomain == ''
         || request.auth.token.email.matches('.*@' + globalSettings().auth.allowedDomain + '$');
     }
 
@@ -22,8 +28,7 @@ service cloud.firestore {
         && uid == request.auth.uid
         && request.resource.data.role == 'student'
         && request.resource.data.active == true
-        && globalSettings().auth.googleLoginEnabled == true
-        && globalSettings().auth.allowNewStudents == true
+        && signupEnabled()
         && signupDomainAllowed();
       allow read: if signedIn() && (uid == request.auth.uid || isTeacher());
       allow update, delete: if isMaster();
