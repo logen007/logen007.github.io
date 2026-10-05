@@ -2,14 +2,20 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     function signedIn() { return request.auth != null; }
+    function userDoc() { return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)); }
+    function activeStaff() {
+      return signedIn()
+        && userDoc().data.active != false
+        && (userDoc().data.role == 'teacher' || userDoc().data.role == 'master');
+    }
 
     match /question-audio/{ownerId}/{questionId}/{fileName} {
       allow read: if signedIn();
-      allow create, update: if signedIn()
+      allow create, update: if activeStaff()
         && request.auth.uid == ownerId
         && request.resource.size < 25 * 1024 * 1024
         && request.resource.contentType.matches('audio/.*');
-      allow delete: if signedIn() && request.auth.uid == ownerId;
+      allow delete: if activeStaff() && request.auth.uid == ownerId;
     }
   }
 }
