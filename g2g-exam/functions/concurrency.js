@@ -1,0 +1,203 @@
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { getFirestore } = require('firebase-admin/firestore');
+
+const db = getFirestore();
+
+function now(){ return new Date().toISOString(); }
+function requireAuth(request){
+  if(!request.auth) throw new HttpsError('unauthenticated','Bạn cần đăng nhập.');
+  return request.auth.uid;
+}
+async function getUser(uid){
+  const snap=await db.collection('users').doc(uid).get();
+  if(!snap.exists) throw new HttpsError('permission-denied','Không tìm thấy tài khoản.');
+  return {id:uid,...snap.data()};
+}
+function isTeacher(user){ return user?.role==='teacher'||user?.role==='master'; }
+function lockId(uid,examId){ return `${uid}__${examId}`.replaceAll('/','_'); }
+
+async function canGrade(user,exam){
+  if(user.role==='master'||exam.ownerId===user.id) return true;
+  if(user.role!=='teacher') return false;
+  const snap=await db.collection('gradingRequests').where('examId','==',exam.id).get();
+  return snap.docs.some(d=>{
+    const x=d.data();
+    return x.requesterId===user.id&&x.status==='approved';
+  });
+}
+
+async function loadExam(examId){
+  const snap=await db.collection('exams').doc(examId).get();
+  if(!snap.exists) throw new HttpsError('not-found','Không tìm thấy bài thi.');
+  return {id:snap.id,...snap.data()};
+}
+
+async function loadManualLimits(exam){
+  const qids=[...new Set((exam.sections||[]).flatMap(s=>s.questionIds||[]))];
+  const snaps=await Promise.all(qids.map(id=>db.collection('questions').doc(id).get()));
+  const limits={};
+  for(const snap of snaps){
+    if(!snap.exists) continue;
+    const q=snap.data();
+    if(q.autoGrade) continue;
+    limits[q.skill]=(limits[q.skill]||0)+Number(q.maxScore||0);
+  }
+  return limits;
+}
+
+/**
+ * Khởi tạo lượt thi bằng một lock document theo student+exam.
+ * Mục tiêu: hai lần bấm Bắt đầu gần như đồng thời không tạo hai attempt khác nhau.
+ */
+exports.startAttemptSecure = onCall(async request => {
+  const uid=requireAuth(request);
+  const user=await getUser(uid);
+  if(user.role!=='student'||user.active===false) throw new HttpsError('permission-denied','Tài khoản này không phải học viên đang hoạt động.');
+  const {examId,restart=false}=request.data||{};
+  if(!examId) throw new HttpsError('invalid-argument','Thiếu mã bài thi.');
+  const exam=await loadExam(examId);
+  if(exam.status!=='published') throw new HttpsError('failed-precondition','Bài thi chưa mở cho học viên.');
+
+  // Baseline giúp tương thích dữ liệu cũ trước khi collection attemptLocks tồn tại.
+  const oldSnap=await db.collection('attempts').where('studentId','==',uid).get();
+  const oldMine=oldSnap.docs.map(d=>({id:d.id,...d.data()})).filter(a=>a.examId===examId);
+  const baseline=Math.max(0,...oldMine.map(a=>Number(a.attemptNo||0)));
+  const legacyCurrent=oldMine.find(a=>a.status==='in_progress');
+  const lRef=db.collection('attemptLocks').doc(lockId(uid,examId));
+  const candidateRef=db.collection('attempts').doc();
+
+  const result=await db.runTransaction(async tx=>{
+    const lSnap=await tx.get(lRef);
+    const lock=lSnap.exists?lSnap.data():{};
+    const currentId=lock.currentAttemptId||legacyCurrent?.id||null;
+    let current=null;
+    if(currentId){
+      const cRef=db.collection('attempts').doc(currentId);
+      const cSnap=await tx.get(cRef);
+      if(cSnap.exists) current={id:cSnap.id,...cSnap.data(),ref:cRef};
+    }
+
+    if(current?.status==='in_progress'&&!restart){
+      if(!lSnap.exists) tx.set(lRef,{studentId:uid,examId,currentAttemptId:current.id,counter:Math.max(baseline,Number(current.attemptNo||0)),updatedAt:now()},{merge:true});
+      return {attemptId:current.id,resumed:true};
+    }
+
+    if(current?.status==='in_progress'&&restart){
+      tx.update(current.ref,{status:'abandoned',abandonedAt:now(),updatedAt:now()});
+    }
+
+    const attemptNo=Math.max(baseline,Number(lock.counter||0))+1;
+    const startedAt=now();
+    const first=exam.sections?.[0];
+    const sectionStates={};
+    if(first){
+      const ms=Math.max(1,Number(first.timeMinutes||30))*60*1000;
+      sectionStates[first.id]={startedAt,deadlineAt:new Date(Date.now()+ms).toISOString()};
+    }
+    const attempt={
+      examId,examTitle:exam.title,examVersion:Number(exam.version||1),
+      studentId:uid,studentName:user.name||'',studentEmail:user.email||'',attemptNo,
+      status:'in_progress',startedAt,updatedAt:startedAt,currentSectionIndex:0,
+      sectionStates,answers:{},publishedAt:null
+    };
+    tx.set(candidateRef,attempt);
+    tx.set(lRef,{studentId:uid,examId,currentAttemptId:candidateRef.id,counter:attemptNo,updatedAt:startedAt},{merge:false});
+    tx.set(db.collection('auditLog').doc(),{at:startedAt,userId:uid,userName:user.name||'',action:'start_attempt',entityType:'attempt',entityId:candidateRef.id,detail:{examId,restart:Boolean(restart)}});
+    return {attemptId:candidateRef.id,resumed:false};
+  });
+
+  return result;
+});
+
+/**
+ * Chấm bài transaction-safe. Nếu hai giáo viên lưu gần nhau, transaction sẽ đọc lại
+ * điểm mới nhất rồi merge theo kỹ năng thay vì ghi đè cả object bằng bản cũ.
+ */
+exports.saveManualGrade = onCall(async request => {
+  const uid=requireAuth(request),user=await getUser(uid);
+  if(!isTeacher(user)) throw new HttpsError('permission-denied','Chỉ giáo viên được chấm bài.');
+  const {attemptId,scores={},feedback}=request.data||{};
+  if(!attemptId) throw new HttpsError('invalid-argument','Thiếu mã lượt thi.');
+
+  const aRef=db.collection('attempts').doc(attemptId);
+  const initial=await aRef.get();
+  if(!initial.exists) throw new HttpsError('not-found','Không tìm thấy lượt thi.');
+  const initialAttempt={id:initial.id,...initial.data()};
+  const exam=await loadExam(initialAttempt.examId);
+  if(!(await canGrade(user,exam))) throw new HttpsError('permission-denied','Bạn chưa được cấp quyền chấm bài này.');
+  const limits=await loadManualLimits(exam);
+
+  const out=await db.runTransaction(async tx=>{
+    const aSnap=await tx.get(aRef);
+    if(!aSnap.exists) throw new HttpsError('not-found','Không tìm thấy lượt thi.');
+    const attempt={id:aSnap.id,...aSnap.data()};
+    if(!['grading','ready'].includes(attempt.status)) throw new HttpsError('failed-precondition','Bài không ở trạng thái chấm.');
+    const pRef=db.collection('attemptPrivate').doc(attemptId);
+    const pSnap=await tx.get(pRef);
+    const priv=pSnap.exists?pSnap.data():{};
+    const clean={...(priv.manualScores||{})};
+    for(const [skill,value] of Object.entries(scores||{})){
+      if(!(skill in limits)) continue;
+      const n=Number(value);
+      if(!Number.isFinite(n)||n<0||n>limits[skill]) throw new HttpsError('invalid-argument',`Điểm ${skill} phải nằm trong khoảng 0–${limits[skill]}.`);
+      clean[skill]=n;
+    }
+    const complete=Object.keys(limits).every(skill=>Number.isFinite(Number(clean[skill])));
+    const manualTotal=Object.values(clean).reduce((n,v)=>n+(Number(v)||0),0);
+    const autoScore=Number(priv.autoScore||0);
+    const totalScore=complete?autoScore+manualTotal:null;
+    const result=complete?(totalScore>=Number(exam.passScore||180)?'Đạt':'Chưa đạt'):null;
+    const status=complete?'ready':'grading',at=now();
+    const nextPrivate={...priv,autoScore,manualScores:clean,reviewerId:user.id,reviewerName:user.name||'',totalScore,result,updatedAt:at};
+    if(feedback!==undefined) nextPrivate.feedback=String(feedback||'');
+    tx.set(pRef,nextPrivate,{merge:true});
+    tx.update(aRef,{status,updatedAt:at});
+    tx.set(db.collection('auditLog').doc(),{at,userId:user.id,userName:user.name||'',action:'save_grade',entityType:'attempt',entityId:attemptId,detail:{complete,status}});
+    return {status,totalScore};
+  });
+  return out;
+});
+
+/**
+ * Công bố kết quả idempotent: double click/retry mạng không được tạo hai email.
+ */
+exports.publishAttemptResult = onCall(async request => {
+  const uid=requireAuth(request),user=await getUser(uid);
+  if(!isTeacher(user)) throw new HttpsError('permission-denied','Chỉ giáo viên được công bố kết quả.');
+  const attemptId=request.data?.attemptId;
+  if(!attemptId) throw new HttpsError('invalid-argument','Thiếu mã lượt thi.');
+  const aRef=db.collection('attempts').doc(attemptId);
+  const initial=await aRef.get();
+  if(!initial.exists) throw new HttpsError('not-found','Không tìm thấy lượt thi.');
+  const exam=await loadExam(initial.data().examId);
+  if(!(user.role==='master'||exam.ownerId===user.id)) throw new HttpsError('permission-denied','Chỉ giáo viên tạo bài hoặc Quản trị cấp cao được công bố kết quả.');
+
+  const notificationRef=db.collection('notifications').doc(`result-${attemptId}`);
+  const mailRef=db.collection('mail').doc(`result-${attemptId}`);
+  const auditRef=db.collection('auditLog').doc(`publish-${attemptId}`);
+
+  return await db.runTransaction(async tx=>{
+    const aSnap=await tx.get(aRef);
+    if(!aSnap.exists) throw new HttpsError('not-found','Không tìm thấy lượt thi.');
+    const attempt={id:aSnap.id,...aSnap.data()};
+    if(attempt.status==='published') return {status:'published',alreadyPublished:true};
+    if(attempt.status!=='ready') throw new HttpsError('failed-precondition','Bài chưa được chấm đủ.');
+    const pRef=db.collection('attemptPrivate').doc(attemptId);
+    const pSnap=await tx.get(pRef);
+    if(!pSnap.exists) throw new HttpsError('failed-precondition','Không tìm thấy dữ liệu chấm điểm.');
+    const priv=pSnap.data();
+    if(!Number.isFinite(Number(priv.totalScore))) throw new HttpsError('failed-precondition','Bài chưa có tổng điểm hợp lệ.');
+    const at=now();
+    tx.update(aRef,{
+      status:'published',publishedAt:at,updatedAt:at,
+      autoScore:Number(priv.autoScore||0),manualScores:priv.manualScores||{},sectionScores:priv.sectionScores||{},
+      totalScore:Number(priv.totalScore),result:priv.result||'',reviewerId:priv.reviewerId||null,reviewerName:priv.reviewerName||null,feedback:priv.feedback||''
+    });
+    tx.set(notificationRef,{type:'result_published',status:'queued',to:attempt.studentEmail||'',studentId:attempt.studentId,attemptId,subject:`G2G – Đã có kết quả ${attempt.examTitle}`,body:'Kết quả thi thử của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.',createdAt:at},{merge:false});
+    if(attempt.studentEmail){
+      tx.set(mailRef,{to:[attempt.studentEmail],message:{subject:`G2G – Đã có kết quả ${attempt.examTitle}`,text:'Kết quả thi thử của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.',html:'<p>Kết quả thi thử của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.</p>'}},{merge:false});
+    }
+    tx.set(auditRef,{at,userId:user.id,userName:user.name||'',action:'publish_result',entityType:'attempt',entityId:attemptId,detail:{studentId:attempt.studentId}},{merge:false});
+    return {status:'published',alreadyPublished:false};
+  });
+});
