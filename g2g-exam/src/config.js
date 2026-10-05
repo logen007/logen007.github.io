@@ -5,6 +5,7 @@ export const APP_CONFIG = {
   autosaveMs: 2500,
   backend: 'auto',
   firebaseConfig: () => (globalThis.G2G_FIREBASE_CONFIG || null),
+  functionsRegion: 'asia-southeast1',
   emailCollection: 'mail',
   defaultPassScore: 180,
   locale: 'vi-VN',
