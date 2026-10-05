@@ -8,10 +8,12 @@ const mailer = require('./mailer.js');
 
 module.exports = {
   ...base,
-  ...attempts,
   ...secureGrading,
   ...integrity,
   ...concurrency,
+  // attempt lifecycle functions intentionally come last so the hardened
+  // deadline-aware start/section/abandon implementations win on name clashes.
+  ...attempts,
   ...settings,
   updateSmtpSecret: mailer.updateSmtpSecret,
   getInfrastructureStatus: mailer.getInfrastructureStatus,
