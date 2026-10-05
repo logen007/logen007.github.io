@@ -35,7 +35,7 @@ async function loadSettings(){
 function smtpSettings(settings){
   const s=settings.smtp||{};
   return {
-    enabled:s.enabled!==false,
+    enabled:Boolean(s.enabled),
     host:String(s.host||'').trim(),
     port:Math.max(1,Math.min(65535,Number(s.port||587))),
     security:['ssl','starttls','none'].includes(s.security)?s.security:'starttls',
@@ -124,10 +124,10 @@ function renderTemplate(template,vars={},html=false){
   return out;
 }
 
-async function sendConfiguredEmail({to,subject,text,html}){
+async function sendConfiguredEmail({to,subject,text,html,ignoreDisabled=false}){
   const settings=await loadSettings();
   const smtp=smtpSettings(settings);
-  if(!smtp.enabled) throw new Error('SMTP đang bị tắt trong Cài đặt.');
+  if(!smtp.enabled&&!ignoreDisabled) throw new Error('SMTP đang bị tắt trong Cài đặt.');
   const password=smtp.username?await getSmtpPassword():'';
   const transporter=buildTransport(smtp,password);
   const info=await transporter.sendMail({
@@ -156,7 +156,7 @@ exports.getInfrastructureStatus = onCall({region:REGION},async request=>{
     functionsRegion:REGION,
     firestore:true,
     functions:true,
-    googleLoginConfigured:Boolean(settings.auth?.googleEnabled),
+    googleLoginConfigured:Boolean(settings.auth?.googleLoginEnabled),
     smtp:{
       enabled:smtp.enabled,
       configured:Boolean(smtp.host&&smtp.fromEmail&&(!smtp.username||secret.configured)),
@@ -180,7 +180,8 @@ exports.testSmtp = onCall({region:REGION,timeoutSeconds:60},async request=>{
       to,
       subject:`${systemName} – Kiểm tra SMTP`,
       text:`Đây là email kiểm tra SMTP từ ${systemName}. Nếu bạn nhận được email này, cấu hình gửi mail đang hoạt động.`,
-      html:`<p>Đây là email kiểm tra SMTP từ <strong>${htmlEscape(systemName)}</strong>.</p><p>Nếu bạn nhận được email này, cấu hình gửi mail đang hoạt động.</p>`
+      html:`<p>Đây là email kiểm tra SMTP từ <strong>${htmlEscape(systemName)}</strong>.</p><p>Nếu bạn nhận được email này, cấu hình gửi mail đang hoạt động.</p>`,
+      ignoreDisabled:true
     });
     await db.collection('auditLog').add({at:now(),userId:user.id,userName:user.name||'',action:'test_smtp',entityType:'settings',entityId:'smtp',detail:{to,messageId:sent.messageId}});
     return {ok:true,messageId:sent.messageId};
