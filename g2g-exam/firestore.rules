@@ -6,18 +6,28 @@ service cloud.firestore {
     function activeUser() { return signedIn() && me().active != false; }
     function isMaster() { return activeUser() && me().role == 'master'; }
     function isTeacher() { return activeUser() && (me().role == 'teacher' || me().role == 'master'); }
+    function settingsExists() { return exists(/databases/$(database)/documents/settings/global); }
+    function registrationAllowed() {
+      return !settingsExists() || (
+        get(/databases/$(database)/documents/settings/global).data.auth.googleLoginEnabled != false
+        && get(/databases/$(database)/documents/settings/global).data.auth.allowNewStudents != false
+      );
+    }
 
     match /users/{uid} {
       allow create: if signedIn()
         && uid == request.auth.uid
         && request.resource.data.role == 'student'
-        && request.resource.data.active == true;
+        && request.resource.data.active == true
+        && registrationAllowed();
       allow read: if signedIn() && (uid == request.auth.uid || isTeacher());
       allow update, delete: if isMaster();
     }
 
+    // Chỉ chứa cấu hình vận hành không bí mật để trang đăng nhập có thể biết
+    // Google Login/bảo trì đang bật hay tắt. Secret/API key không bao giờ lưu ở đây.
     match /settings/{id} {
-      allow read: if activeUser();
+      allow read: if id == 'global';
       allow write: if false;
     }
 
