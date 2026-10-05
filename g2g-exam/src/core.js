@@ -29,6 +29,7 @@ export function canDeleteQuestion(user,q){ return canEditQuestion(user,q); }
 export function canPermanentlyDelete(user){ return isMaster(user); }
 export function canEditExam(user,exam){ return Boolean(user && exam && (isMaster(user) || (isTeacher(user)&&exam.ownerId===user.id))); }
 export function canSeeTrash(user){ return isMaster(user); }
+export function canPublishExamResult(user,exam){ return Boolean(user && exam && (isMaster(user) || (isTeacher(user)&&exam.ownerId===user.id))); }
 
 export function canGradeExam(state,user,exam){
   if (!isTeacher(user) || !exam) return false;
@@ -89,18 +90,30 @@ function questionScore(q,answer){
   return 0;
 }
 
+function startSectionClock(attempt,exam,index){
+  const sec=exam.sections?.[index]; if(!sec) return;
+  attempt.sectionStates ||= {};
+  if(!attempt.sectionStates[sec.id]){
+    const startedAt=nowIso();
+    const ms=Math.max(1,Number(sec.timeMinutes||30))*60*1000;
+    attempt.sectionStates[sec.id]={startedAt,deadlineAt:new Date(Date.now()+ms).toISOString()};
+  }
+}
+
 export function startAttempt(state,user,examId,{restart=false}={}){
   if(!isStudent(user)) throw new Error('Chỉ học viên mới được bắt đầu bài thi.');
   const exam=byId(state.exams,examId); if(!exam||exam.status!=='published') throw new Error('Bài thi chưa mở cho học viên.');
   const current=state.attempts.find(a=>a.examId===examId&&a.studentId===user.id&&a.status===ATTEMPT_STATUS.IN_PROGRESS);
-  if(current&&!restart) return current;
-  if(current&&restart){ current.status=ATTEMPT_STATUS.ABANDONED; current.abandonedAt=nowIso(); }
+  if(current&&!restart){ startSectionClock(current,exam,current.currentSectionIndex||0); return current; }
+  if(current&&restart){ current.status=ATTEMPT_STATUS.ABANDONED; current.abandonedAt=nowIso(); current.updatedAt=nowIso(); }
   const attemptNo=1+Math.max(0,...state.attempts.filter(a=>a.examId===examId&&a.studentId===user.id).map(a=>Number(a.attemptNo||0)));
-  const a={ id:uid('att'), examId, examTitle:exam.title, examVersion:exam.version||1, studentId:user.id, studentName:user.name, studentEmail:user.email, attemptNo, status:ATTEMPT_STATUS.IN_PROGRESS, startedAt:nowIso(), updatedAt:nowIso(), currentSectionIndex:0, answers:{}, autoScore:0, manualScores:{}, sectionScores:{}, totalScore:null, result:null, reviewerId:null, reviewerName:null, feedback:'', publishedAt:null };
+  const a={ id:uid('att'), examId, examTitle:exam.title, examVersion:exam.version||1, studentId:user.id, studentName:user.name, studentEmail:user.email, attemptNo, status:ATTEMPT_STATUS.IN_PROGRESS, startedAt:nowIso(), updatedAt:nowIso(), currentSectionIndex:0, sectionStates:{}, answers:{}, autoScore:0, manualScores:{}, sectionScores:{}, totalScore:null, result:null, reviewerId:null, reviewerName:null, feedback:'', publishedAt:null };
+  startSectionClock(a,exam,0);
   state.attempts.push(a); audit(state,user,'start_attempt','attempt',a.id,{examId,restart}); return a;
 }
 export function saveAnswer(state,user,attemptId,questionId,answer){ const a=byId(state.attempts,attemptId); if(!a) throw new Error('Không tìm thấy lượt thi.'); if(a.studentId!==user.id||!isStudent(user)) throw new Error('Bạn không có quyền sửa lượt thi này.'); if(a.status!==ATTEMPT_STATUS.IN_PROGRESS) throw new Error('Lượt thi này đã được nộp.'); a.answers[questionId]=clone(answer); a.updatedAt=nowIso(); return a; }
-export function setAttemptSection(state,user,attemptId,index){ const a=byId(state.attempts,attemptId); if(!a||a.studentId!==user.id) throw new Error('Không tìm thấy lượt thi.'); a.currentSectionIndex=Math.max(0,Number(index)||0); a.updatedAt=nowIso(); }
+export function setAttemptSection(state,user,attemptId,index){ const a=byId(state.attempts,attemptId); if(!a||a.studentId!==user.id||!isStudent(user)) throw new Error('Không tìm thấy lượt thi.'); if(a.status!==ATTEMPT_STATUS.IN_PROGRESS) throw new Error('Lượt thi này đã được nộp.'); const exam=byId(state.exams,a.examId); const safe=Math.min(Math.max(0,Number(index)||0),Math.max(0,(exam?.sections?.length||1)-1)); a.currentSectionIndex=safe; startSectionClock(a,exam,safe); a.updatedAt=nowIso(); return a; }
+export function getSectionRemainingSeconds(attempt,exam,index=attempt?.currentSectionIndex||0){ const sec=exam?.sections?.[index]; const deadline=sec&&attempt?.sectionStates?.[sec.id]?.deadlineAt; if(!deadline) return Math.max(0,Number(sec?.timeMinutes||0)*60); return Math.max(0,Math.ceil((new Date(deadline).getTime()-Date.now())/1000)); }
 
 export function calculateAutomaticScores(state,attempt){
   const exam=byId(state.exams,attempt.examId); if(!exam) throw new Error('Không tìm thấy bài thi.');
@@ -111,8 +124,8 @@ export function calculateAutomaticScores(state,attempt){
 export function hasManualQuestions(state,exam){ return exam.sections.some(sec=>sec.questionIds.some(qid=>!byId(state.questions,qid)?.autoGrade)); }
 export function submitAttempt(state,user,attemptId){ const a=byId(state.attempts,attemptId); if(!a) throw new Error('Không tìm thấy lượt thi.'); if(!isStudent(user)||a.studentId!==user.id) throw new Error('Bạn không có quyền nộp lượt thi này.'); if(a.status!==ATTEMPT_STATUS.IN_PROGRESS) return a; const exam=byId(state.exams,a.examId); const score=calculateAutomaticScores(state,a); a.autoScore=score.autoScore; a.sectionScores=score.sectionScores; a.status=hasManualQuestions(state,exam)?ATTEMPT_STATUS.GRADING:ATTEMPT_STATUS.READY; a.submittedAt=nowIso(); a.updatedAt=nowIso(); if(a.status===ATTEMPT_STATUS.READY){ a.totalScore=a.autoScore; a.result=a.totalScore>=exam.passScore?'Đạt':'Chưa đạt'; } audit(state,user,'submit_attempt','attempt',a.id); return a; }
 
-export function saveManualScore(state,user,attemptId,payload){ const a=byId(state.attempts,attemptId); if(!a) throw new Error('Không tìm thấy lượt thi.'); const exam=byId(state.exams,a.examId); if(!canGradeExam(state,user,exam)) throw new Error('Bạn chưa có quyền chấm bài thi này.'); if(![ATTEMPT_STATUS.GRADING,ATTEMPT_STATUS.READY].includes(a.status)) throw new Error('Bài này không ở trạng thái chấm.'); a.manualScores={...a.manualScores,...clone(payload.scores||{})}; if(payload.rubrics) a.rubrics={...(a.rubrics||{}),...clone(payload.rubrics)}; if('feedback' in payload) a.feedback=payload.feedback; a.reviewerId=user.id; a.reviewerName=user.name; a.updatedAt=nowIso(); const manualExpected=exam.sections.flatMap(sec=>sec.questionIds.map(id=>byId(state.questions,id))).filter(q=>q&&!q.autoGrade).map(q=>q.skill); const complete=manualExpected.every(skill=>Number.isFinite(Number(a.manualScores[skill]))); if(complete){ a.totalScore=Number(a.autoScore||0)+Object.values(a.manualScores).reduce((sum,n)=>sum+(Number(n)||0),0); a.result=a.totalScore>=exam.passScore?'Đạt':'Chưa đạt'; a.status=ATTEMPT_STATUS.READY; } else a.status=ATTEMPT_STATUS.GRADING; audit(state,user,'save_grade','attempt',attemptId,{complete}); return a; }
-export function publishAttempt(state,user,attemptId){ const a=byId(state.attempts,attemptId); if(!a) throw new Error('Không tìm thấy lượt thi.'); const exam=byId(state.exams,a.examId); if(!canGradeExam(state,user,exam)) throw new Error('Bạn không có quyền công bố kết quả bài thi này.'); if(a.status!==ATTEMPT_STATUS.READY) throw new Error('Bài thi chưa được chấm đủ để công bố.'); a.status=ATTEMPT_STATUS.PUBLISHED; a.publishedAt=nowIso(); a.updatedAt=nowIso(); const n={id:uid('notify'),type:'result_published',status:'queued',to:a.studentEmail,studentId:a.studentId,attemptId:a.id,subject:`G2G – Đã có kết quả ${a.examTitle}`,body:`Kết quả của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.`,createdAt:nowIso()}; state.notifications.push(n); audit(state,user,'publish_result','attempt',attemptId,{notificationId:n.id}); return a; }
+export function saveManualScore(state,user,attemptId,payload){ const a=byId(state.attempts,attemptId); if(!a) throw new Error('Không tìm thấy lượt thi.'); const exam=byId(state.exams,a.examId); if(!canGradeExam(state,user,exam)) throw new Error('Bạn chưa có quyền chấm bài thi này.'); if(![ATTEMPT_STATUS.GRADING,ATTEMPT_STATUS.READY].includes(a.status)) throw new Error('Bài này không ở trạng thái chấm.'); a.manualScores={...a.manualScores,...clone(payload.scores||{})}; if(payload.rubrics) a.rubrics={...(a.rubrics||{}),...clone(payload.rubrics)}; if('feedback' in payload) a.feedback=payload.feedback; a.reviewerId=user.id; a.reviewerName=user.name; a.updatedAt=nowIso(); const manualExpected=[...new Set(exam.sections.flatMap(sec=>sec.questionIds.map(id=>byId(state.questions,id))).filter(q=>q&&!q.autoGrade).map(q=>q.skill))]; const complete=manualExpected.every(skill=>Number.isFinite(Number(a.manualScores[skill]))); if(complete){ a.totalScore=Number(a.autoScore||0)+Object.values(a.manualScores).reduce((sum,n)=>sum+(Number(n)||0),0); a.result=a.totalScore>=exam.passScore?'Đạt':'Chưa đạt'; a.status=ATTEMPT_STATUS.READY; } else a.status=ATTEMPT_STATUS.GRADING; audit(state,user,'save_grade','attempt',attemptId,{complete}); return a; }
+export function publishAttempt(state,user,attemptId){ const a=byId(state.attempts,attemptId); if(!a) throw new Error('Không tìm thấy lượt thi.'); const exam=byId(state.exams,a.examId); if(!canPublishExamResult(user,exam)) throw new Error('Chỉ giáo viên tạo bài hoặc quản trị cấp cao được công bố kết quả.'); if(a.status!==ATTEMPT_STATUS.READY) throw new Error('Bài thi chưa được chấm đủ để công bố.'); a.status=ATTEMPT_STATUS.PUBLISHED; a.publishedAt=nowIso(); a.updatedAt=nowIso(); const n={id:uid('notify'),type:'result_published',status:'queued',to:a.studentEmail,studentId:a.studentId,attemptId:a.id,subject:`G2G – Đã có kết quả ${a.examTitle}`,body:`Kết quả của bạn đã được công bố. Vui lòng đăng nhập hệ thống G2G để xem chi tiết.`,createdAt:nowIso()}; state.notifications.push(n); audit(state,user,'publish_result','attempt',attemptId,{notificationId:n.id}); return a; }
 
 export function getStudentAttempts(state,studentId){ return state.attempts.filter(a=>a.studentId===studentId).sort((a,b)=>String(b.startedAt).localeCompare(String(a.startedAt))); }
 export function visibleStudentAttempt(a){ return a.status===ATTEMPT_STATUS.PUBLISHED ? a : {...a,totalScore:null,result:null,sectionScores:{},manualScores:{},feedback:''}; }
