@@ -29,6 +29,7 @@
 /* Cài đặt hệ thống */
 .cai-dat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
 .cai-dat-card{padding:0;overflow:hidden}
+.cai-dat-card-rong{grid-column:1/-1}
 .cai-dat-card-head{padding:18px 20px 14px;border-bottom:1px solid var(--vien)}
 .cai-dat-card-head h2{margin:0 0 5px;font-size:17px}
 .cai-dat-card-head p{margin:0;color:var(--mo);font-size:13px;line-height:1.5}
@@ -44,6 +45,23 @@
 .cai-dat-footer .loi{font-weight:700}
 .canh-bao-bao-tri{padding:10px 18px;text-align:center;border-bottom:1px solid var(--vien);font-size:13px;font-weight:700;background:#fff8e8}
 
+.tich-hop-tong-quan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.tich-hop-tong-quan>div{display:flex;flex-direction:column;gap:7px;padding:13px 14px;border:1px solid var(--vien);border-radius:var(--r);background:#fff;min-width:0}
+.tich-hop-tong-quan b{font-size:12px;color:var(--mo)}
+.tich-hop-status{display:inline-flex;align-items:center;width:max-content;max-width:100%;gap:5px;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:800;white-space:nowrap}
+.tich-hop-status.ok{background:#eaf6ef;color:#26734f}
+.tich-hop-status.off{background:#f1f1f4;color:#6a6875}
+.ma-he-thong{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tich-hop-info{display:grid;gap:8px;padding:12px;border:1px dashed var(--vien);border-radius:var(--r);background:#fbfbfd}
+.tich-hop-info small{color:var(--mo);line-height:1.5}
+.email-test{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.email-test .nut{min-height:40px}
+.dong-tich-hop{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--vien)}
+.dong-tich-hop:last-of-type{border-bottom:0}
+.dong-tich-hop>div{display:grid;gap:3px;min-width:0}
+.dong-tich-hop small{color:var(--mo)}
+.ghi-chu-bao-mat{margin-top:8px;padding:13px 14px;border:1px solid #eadfb8;border-radius:var(--r);background:#fffaf0;font-size:12px;line-height:1.55}
+
 /* Trạng thái focus rõ ràng, phù hợp thao tác phòng thi bằng bàn phím. */
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(51,43,84,.18);outline-offset:2px;border-color:var(--tim)}
 .nut,.icon-btn,.muc-ben,.dang-nhap-google{touch-action:manipulation}
@@ -55,6 +73,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .answer-text{font-size:15px}
 
 /* Mobile */
+@media(max-width:900px){
+  .tich-hop-tong-quan{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(max-width:760px){
   .thanh-dau{height:auto;min-height:60px;padding:9px 12px;gap:8px}
   .thanh-dau>.nhom-nut{flex-wrap:nowrap;gap:6px}
@@ -97,8 +118,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .audio-thi .nut{width:100%}
   .audio-thi .phu-de{min-width:0}
   .cai-dat-grid{grid-template-columns:1fr}
+  .cai-dat-card-rong{grid-column:auto}
   .cai-dat-footer{align-items:stretch;flex-direction:column;bottom:8px}
   .cai-dat-footer .nut{width:100%}
+  .email-test{grid-template-columns:1fr}
+  .email-test .nut{width:100%}
+  .dong-tich-hop{align-items:flex-start}
 }
 
 @media(max-width:420px){
@@ -109,6 +134,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .tong-quan-hv .o:first-child{grid-column:auto}
   .nhom-nut>.nut{flex:1 1 auto}
   .dieu-huong-thi .tien-do{font-size:10px}
+  .tich-hop-tong-quan{grid-template-columns:1fr}
 }
 
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
