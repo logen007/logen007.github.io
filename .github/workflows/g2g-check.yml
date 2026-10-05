@@ -22,6 +22,7 @@ jobs:
           node --check g2g-exam/functions/index.js
           node --check g2g-exam/functions/attempts.js
           node --check g2g-exam/functions/secure-grading.js
-      - name: Run core tests
+          node --check g2g-exam/functions/concurrency.js
+      - name: Run tests
         working-directory: g2g-exam
         run: npm test
