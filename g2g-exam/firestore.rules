@@ -7,65 +7,81 @@ service cloud.firestore {
     function isTeacher() { return signedIn() && (me().role == 'teacher' || me().role == 'master') && me().active != false; }
 
     match /users/{uid} {
-      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.role == 'student';
-      allow read: if signedIn();
+      allow create: if signedIn() && uid == request.auth.uid
+        && request.resource.data.role == 'student';
+      allow read: if signedIn() && (uid == request.auth.uid || isTeacher());
       allow update, delete: if isMaster();
     }
 
+    // Bản đầy đủ có đáp án đúng: chỉ giáo viên/quản trị đọc được.
     match /questions/{id} {
-      allow read: if signedIn();
+      allow read: if isTeacher();
       allow create: if isTeacher() && request.resource.data.ownerId == request.auth.uid;
       allow update, delete: if isMaster() || (isTeacher() && resource.data.ownerId == request.auth.uid);
     }
 
+    // Bản đã loại đáp án đúng do Cloud Function tạo cho học viên.
+    match /questionPublic/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     match /exams/{id} {
-      allow read: if signedIn() && (resource.data.status == 'published' || isTeacher());
+      allow read: if isTeacher() || (signedIn() && resource.data.status == 'published');
       allow create: if isTeacher() && request.resource.data.ownerId == request.auth.uid;
       allow update, delete: if isMaster() || (isTeacher() && resource.data.ownerId == request.auth.uid);
     }
 
     match /gradingRequests/{id} {
       allow read: if isTeacher();
-      allow create: if isTeacher() && request.resource.data.requesterId == request.auth.uid;
-      allow update: if isMaster()
-        || get(/databases/$(database)/documents/exams/$(resource.data.examId)).data.ownerId == request.auth.uid;
+      allow create: if isTeacher()
+        && request.resource.data.requesterId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update: if isMaster() || (
+        isTeacher()
+        && get(/databases/$(database)/documents/exams/$(resource.data.examId)).data.ownerId == request.auth.uid
+      );
       allow delete: if isMaster();
     }
 
-    // Điểm và trạng thái nộp/công bố là dữ liệu tin cậy phía server.
-    // Học viên chỉ được tạo lượt đang làm và cập nhật câu trả lời khi lượt vẫn đang làm.
-    // Nộp bài, chấm điểm và công bố kết quả phải đi qua Cloud Functions/Admin SDK.
+    // Học viên chỉ được tạo lượt đang làm, lưu đáp án, chuyển phần hoặc tự bỏ lượt.
+    // Nộp bài/chấm/công bố kết quả đi qua Cloud Functions bằng Admin SDK.
     match /attempts/{id} {
-      allow read: if signedIn() && (resource.data.studentId == request.auth.uid || isTeacher());
+      allow read: if isTeacher() || (signedIn() && resource.data.studentId == request.auth.uid);
       allow create: if signedIn()
         && request.resource.data.studentId == request.auth.uid
         && request.resource.data.status == 'in_progress'
         && request.resource.data.totalScore == null
         && request.resource.data.autoScore == 0;
-      allow update: if signedIn()
-        && resource.data.studentId == request.auth.uid
-        && resource.data.status == 'in_progress'
-        && request.resource.data.status == 'in_progress'
-        && request.resource.data.studentId == resource.data.studentId
-        && request.resource.data.examId == resource.data.examId
-        && request.resource.data.autoScore == resource.data.autoScore
-        && request.resource.data.manualScores == resource.data.manualScores
-        && request.resource.data.sectionScores == resource.data.sectionScores
-        && request.resource.data.totalScore == resource.data.totalScore
-        && request.resource.data.result == resource.data.result
-        && request.resource.data.reviewerId == resource.data.reviewerId
-        && request.resource.data.publishedAt == resource.data.publishedAt;
+      allow update: if signedIn() && resource.data.studentId == request.auth.uid && (
+        (
+          resource.data.status == 'in_progress'
+          && request.resource.data.status == 'in_progress'
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.examId == resource.data.examId
+          && request.resource.data.attemptNo == resource.data.attemptNo
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answers','currentSectionIndex','updatedAt'])
+        ) || (
+          resource.data.status == 'in_progress'
+          && request.resource.data.status == 'abandoned'
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.examId == resource.data.examId
+          && request.resource.data.attemptNo == resource.data.attemptNo
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','abandonedAt','updatedAt'])
+        )
+      );
       allow delete: if false;
     }
 
     match /notifications/{id} {
-      allow read: if signedIn() && (resource.data.studentId == request.auth.uid || isMaster());
+      allow read: if isTeacher() || (signedIn() && resource.data.studentId == request.auth.uid);
       allow write: if false;
     }
 
     match /auditLog/{id} {
       allow read: if isMaster();
-      allow write: if false;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
     }
 
     match /mail/{id} {
