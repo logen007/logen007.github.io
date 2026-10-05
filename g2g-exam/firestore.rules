@@ -5,15 +5,9 @@ service cloud.firestore {
     function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
     function isMaster() { return signedIn() && me().role == 'master' && me().active != false; }
     function isTeacher() { return signedIn() && (me().role == 'teacher' || me().role == 'master') && me().active != false; }
-    function isOwner(resourceData) { return signedIn() && resourceData.ownerId == request.auth.uid; }
-    function gradingApproved(examId) {
-      return signedIn() && exists(/databases/$(database)/documents/gradingRequests/$(examId + '_' + request.auth.uid))
-        && get(/databases/$(database)/documents/gradingRequests/$(examId + '_' + request.auth.uid)).data.status == 'approved';
-    }
 
     match /users/{uid} {
-      allow create: if signedIn() && request.auth.uid == uid
-        && request.resource.data.role == 'student';
+      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.role == 'student';
       allow read: if signedIn();
       allow update, delete: if isMaster();
     }
@@ -38,29 +32,29 @@ service cloud.firestore {
       allow delete: if isMaster();
     }
 
-    // Lượt thi chứa điểm và trạng thái nhạy cảm. Ở production nên ghi điểm/công bố
-    // qua Cloud Functions/Admin SDK. Client chỉ được đọc lượt của mình hoặc giáo viên có quyền.
+    // Điểm và trạng thái nộp/công bố là dữ liệu tin cậy phía server.
+    // Học viên chỉ được tạo lượt đang làm và cập nhật câu trả lời khi lượt vẫn đang làm.
+    // Nộp bài, chấm điểm và công bố kết quả phải đi qua Cloud Functions/Admin SDK.
     match /attempts/{id} {
-      allow read: if signedIn() && (
-        resource.data.studentId == request.auth.uid
-        || isMaster()
-        || (isTeacher() && (
-          get(/databases/$(database)/documents/exams/$(resource.data.examId)).data.ownerId == request.auth.uid
-          || gradingApproved(resource.data.examId)
-        ))
-      );
-      allow create: if signedIn() && request.resource.data.studentId == request.auth.uid
+      allow read: if signedIn() && (resource.data.studentId == request.auth.uid || isTeacher());
+      allow create: if signedIn()
+        && request.resource.data.studentId == request.auth.uid
         && request.resource.data.status == 'in_progress'
-        && request.resource.data.totalScore == null;
-      allow update: if signedIn() && resource.data.studentId == request.auth.uid
+        && request.resource.data.totalScore == null
+        && request.resource.data.autoScore == 0;
+      allow update: if signedIn()
+        && resource.data.studentId == request.auth.uid
         && resource.data.status == 'in_progress'
+        && request.resource.data.status == 'in_progress'
         && request.resource.data.studentId == resource.data.studentId
         && request.resource.data.examId == resource.data.examId
-        && request.resource.data.totalScore == resource.data.totalScore
         && request.resource.data.autoScore == resource.data.autoScore
         && request.resource.data.manualScores == resource.data.manualScores
+        && request.resource.data.sectionScores == resource.data.sectionScores
+        && request.resource.data.totalScore == resource.data.totalScore
         && request.resource.data.result == resource.data.result
-        && request.resource.data.status == 'in_progress';
+        && request.resource.data.reviewerId == resource.data.reviewerId
+        && request.resource.data.publishedAt == resource.data.publishedAt;
       allow delete: if false;
     }
 
