@@ -29,7 +29,7 @@
 /* Cài đặt hệ thống */
 .cai-dat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
 .cai-dat-card{padding:0;overflow:hidden}
-.cai-dat-card-rong{grid-column:1/-1}
+.cai-dat-card-rong,.cai-dat-wide{grid-column:1/-1}
 .cai-dat-card-head{padding:18px 20px 14px;border-bottom:1px solid var(--vien)}
 .cai-dat-card-head h2{margin:0 0 5px;font-size:17px}
 .cai-dat-card-head p{margin:0;color:var(--mo);font-size:13px;line-height:1.5}
@@ -37,18 +37,18 @@
 .cai-dat-field{display:grid;gap:7px;min-width:0}
 .cai-dat-field>span{font-weight:700;font-size:13px}
 .cai-dat-field small,.cai-dat-toggle small{display:block;color:var(--mo);font-weight:400;line-height:1.45;margin-top:3px}
-.cai-dat-field textarea.truong{height:auto;min-height:92px;resize:vertical}
-.cai-dat-toggle{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--vien);border-radius:var(--r);cursor:pointer}
+.cai-dat-field textarea.truong{height:auto;min-height:92px;resize:vertical;font-family:inherit;line-height:1.55}
+.cai-dat-toggle{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--vien);border-radius:var(--r);cursor:pointer;background:#fff}
 .cai-dat-toggle input{margin-top:3px;flex:0 0 auto}
 .cai-dat-toggle span{min-width:0;font-size:13px}
-.cai-dat-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding:14px 16px;border:1px solid var(--vien);border-radius:var(--r);background:#fff;position:sticky;bottom:12px;z-index:12}
-.cai-dat-footer .loi{font-weight:700}
+.cai-dat-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding:14px 16px;border:1px solid var(--vien);border-radius:var(--r);background:#fff;position:sticky;bottom:12px;z-index:12;box-shadow:0 8px 30px rgba(35,31,52,.08)}
+.cai-dat-footer .loi{font-weight:700;color:#a33f3f}
 .canh-bao-bao-tri{padding:10px 18px;text-align:center;border-bottom:1px solid var(--vien);font-size:13px;font-weight:700;background:#fff8e8}
 
 .tich-hop-tong-quan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
 .tich-hop-tong-quan>div{display:flex;flex-direction:column;gap:7px;padding:13px 14px;border:1px solid var(--vien);border-radius:var(--r);background:#fff;min-width:0}
 .tich-hop-tong-quan b{font-size:12px;color:var(--mo)}
-.tich-hop-status{display:inline-flex;align-items:center;width:max-content;max-width:100%;gap:5px;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:800;white-space:nowrap}
+.tich-hop-status{display:inline-flex;align-items:center;width:max-content;max-width:100%;gap:5px;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tich-hop-status.ok{background:#eaf6ef;color:#26734f}
 .tich-hop-status.off{background:#f1f1f4;color:#6a6875}
 .ma-he-thong{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -56,6 +56,14 @@
 .tich-hop-info small{color:var(--mo);line-height:1.5}
 .email-test{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
 .email-test .nut{min-height:40px}
+.secret-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.secret-row .nut{min-height:40px;white-space:nowrap}
+.secret-status{padding:11px 12px;border:1px solid #dfe7df;border-radius:var(--r);background:#f7fbf8;font-size:12px;line-height:1.5}
+.infra-list{display:grid;gap:0;border:1px solid var(--vien);border-radius:var(--r);overflow:hidden}
+.infra-list>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;padding:11px 12px;border-bottom:1px solid var(--vien);font-size:12px}
+.infra-list>div:last-child{border-bottom:0}
+.infra-list span{color:var(--mo)}
+.infra-list b{text-align:right;overflow-wrap:anywhere}
 .dong-tich-hop{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--vien)}
 .dong-tich-hop:last-of-type{border-bottom:0}
 .dong-tich-hop>div{display:grid;gap:3px;min-width:0}
@@ -118,12 +126,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .audio-thi .nut{width:100%}
   .audio-thi .phu-de{min-width:0}
   .cai-dat-grid{grid-template-columns:1fr}
-  .cai-dat-card-rong{grid-column:auto}
+  .cai-dat-card-rong,.cai-dat-wide{grid-column:auto}
   .cai-dat-footer{align-items:stretch;flex-direction:column;bottom:8px}
+  .cai-dat-footer .nhom-nut{width:100%;display:grid;grid-template-columns:1fr 1fr}
   .cai-dat-footer .nut{width:100%}
-  .email-test{grid-template-columns:1fr}
-  .email-test .nut{width:100%}
+  .email-test,.secret-row{grid-template-columns:1fr}
+  .email-test .nut,.secret-row .nut{width:100%}
   .dong-tich-hop{align-items:flex-start}
+  .infra-list>div{grid-template-columns:1fr;gap:3px}
+  .infra-list b{text-align:left}
 }
 
 @media(max-width:420px){
@@ -135,6 +146,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .nhom-nut>.nut{flex:1 1 auto}
   .dieu-huong-thi .tien-do{font-size:10px}
   .tich-hop-tong-quan{grid-template-columns:1fr}
+  .cai-dat-footer .nhom-nut{grid-template-columns:1fr}
 }
 
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
