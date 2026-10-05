@@ -79,29 +79,40 @@ function managedButton(button,disabled,label){
   if(!button)return;
   if(!button.dataset.g2gOriginalText)button.dataset.g2gOriginalText=button.textContent.trim();
   if(disabled){
-    button.disabled=true;
-    button.dataset.g2gManagedDisabled='1';
-    if(label)button.textContent=label;
+    if(!button.disabled)button.disabled=true;
+    if(button.dataset.g2gManagedDisabled!=='1')button.dataset.g2gManagedDisabled='1';
+    if(label&&button.textContent!==label)button.textContent=label;
   }else if(button.dataset.g2gManagedDisabled==='1'){
-    button.disabled=false;
-    button.textContent=button.dataset.g2gOriginalText||button.textContent;
+    if(button.disabled)button.disabled=false;
+    const original=button.dataset.g2gOriginalText||button.textContent;
+    if(button.textContent!==original)button.textContent=original;
     delete button.dataset.g2gManagedDisabled;
   }
 }
 
 function applyStudentControls(){
-  document.querySelector('[data-g2g-maintenance]')?.remove();
-  if(!isStudentDom())return;
+  const existing=document.querySelector('[data-g2g-maintenance]');
+  if(!isStudentDom()){
+    if(existing)existing.remove();
+    return;
+  }
   const maintenance=Boolean(settings.operations?.maintenanceMode);
   if(maintenance){
-    const header=document.querySelector('.thanh-dau');
-    if(header){
-      const el=document.createElement('div');
-      el.className='canh-bao-bao-tri';
-      el.dataset.g2gMaintenance='1';
-      el.textContent=settings.operations?.maintenanceMessage||DEFAULT_SETTINGS.operations.maintenanceMessage;
-      header.insertAdjacentElement('afterend',el);
+    const message=settings.operations?.maintenanceMessage||DEFAULT_SETTINGS.operations.maintenanceMessage;
+    if(existing){
+      if(existing.textContent!==message)existing.textContent=message;
+    }else{
+      const header=document.querySelector('.thanh-dau');
+      if(header){
+        const el=document.createElement('div');
+        el.className='canh-bao-bao-tri';
+        el.dataset.g2gMaintenance='1';
+        el.textContent=message;
+        header.insertAdjacentElement('afterend',el);
+      }
     }
+  }else if(existing){
+    existing.remove();
   }
   document.querySelectorAll('[data-action="start"]').forEach(button=>{
     const original=button.dataset.g2gOriginalText||button.textContent.trim();
@@ -129,8 +140,8 @@ function injectSettingsTab(){
     sidebar.appendChild(button);
   }
   if(settingsOpen){
-    sidebar.querySelectorAll('.muc-ben').forEach(x=>x.classList.remove('active'));
-    button.classList.add('active');
+    sidebar.querySelectorAll('.muc-ben.active').forEach(x=>{if(x!==button)x.classList.remove('active');});
+    if(!button.classList.contains('active'))button.classList.add('active');
   }
 }
 
