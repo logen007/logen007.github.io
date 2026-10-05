@@ -19,10 +19,12 @@ jobs:
           node --check g2g-exam/src/core.js
           node --check g2g-exam/src/repository.js
           node --check g2g-exam/src/media.js
+          node --check g2g-exam/src/settings.js
           node --check g2g-exam/functions/index.js
           node --check g2g-exam/functions/attempts.js
           node --check g2g-exam/functions/secure-grading.js
           node --check g2g-exam/functions/concurrency.js
+          node --check g2g-exam/functions/settings.js
       - name: Run tests
         working-directory: g2g-exam
         run: npm test
