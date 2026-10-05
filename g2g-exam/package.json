@@ -1,0 +1,8 @@
+{
+  "name": "g2g-mock-exam",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/core.test.mjs"
+  }
+}
