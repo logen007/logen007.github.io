@@ -6,11 +6,27 @@ const db = getFirestore();
 function nowIso(){ return new Date().toISOString(); }
 function requireAuth(request){ if(!request.auth) throw new HttpsError('unauthenticated','Bạn cần đăng nhập.'); return request.auth.uid; }
 async function getUser(uid){ const snap=await db.collection('users').doc(uid).get(); if(!snap.exists) throw new HttpsError('permission-denied','Không tìm thấy tài khoản.'); return {id:uid,...snap.data()}; }
-function firstSectionState(exam){
-  const sec=exam.sections?.[0]; if(!sec) return {};
+function sectionRuntime(sec,existingState=null){
+  if(!sec) return {state:null,deadlineMs:0,questionIds:[]};
+  if(existingState){
+    return {
+      state:existingState,
+      deadlineMs:sec.showTimer===false?0:Math.max(0,Date.parse(existingState.deadlineAt||'')||0),
+      questionIds:[...new Set(sec.questionIds||[])]
+    };
+  }
   const startedAt=nowIso();
-  const ms=Math.max(1,Number(sec.timeMinutes||30))*60*1000;
-  return {[sec.id]:{startedAt,deadlineAt:new Date(Date.now()+ms).toISOString()}};
+  const deadlineMs=sec.showTimer===false?0:Date.now()+Math.max(1,Number(sec.timeMinutes||30))*60*1000;
+  return {
+    state:{startedAt,deadlineAt:deadlineMs?new Date(deadlineMs).toISOString():null},
+    deadlineMs,
+    questionIds:[...new Set(sec.questionIds||[])]
+  };
+}
+function firstSectionState(exam){
+  const sec=exam.sections?.[0]; if(!sec) return {sectionStates:{},currentSectionId:null,currentQuestionIds:[],currentDeadlineMs:0};
+  const runtime=sectionRuntime(sec);
+  return {sectionStates:{[sec.id]:runtime.state},currentSectionId:sec.id,currentQuestionIds:runtime.questionIds,currentDeadlineMs:runtime.deadlineMs};
 }
 
 exports.startAttemptSecure = onCall(async request => {
@@ -35,6 +51,7 @@ exports.startAttemptSecure = onCall(async request => {
   const attemptNo=1+Math.max(0,...mine.map(a=>Number(a.attemptNo||0)));
   const ref=db.collection('attempts').doc();
   const startedAt=nowIso();
+  const runtime=firstSectionState(exam);
   const attempt={
     examId,
     examTitle:exam.title,
@@ -47,7 +64,10 @@ exports.startAttemptSecure = onCall(async request => {
     startedAt,
     updatedAt:startedAt,
     currentSectionIndex:0,
-    sectionStates:firstSectionState(exam),
+    currentSectionId:runtime.currentSectionId,
+    currentQuestionIds:runtime.currentQuestionIds,
+    currentDeadlineMs:runtime.currentDeadlineMs,
+    sectionStates:runtime.sectionStates,
     answers:{},
     publishedAt:null
   };
@@ -72,14 +92,18 @@ exports.setAttemptSectionSecure = onCall(async request => {
   const exam={id:examSnap.id,...examSnap.data()};
   const safe=Math.max(0,Math.min(Number(index)||0,Math.max(0,(exam.sections||[]).length-1)));
   const sec=exam.sections?.[safe];
-  const updates={currentSectionIndex:safe,updatedAt:nowIso()};
-  if(sec && !attempt.sectionStates?.[sec.id]){
-    const startedAt=nowIso();
-    const ms=Math.max(1,Number(sec.timeMinutes||30))*60*1000;
-    updates[`sectionStates.${sec.id}`]={startedAt,deadlineAt:new Date(Date.now()+ms).toISOString()};
-  }
+  const existing=sec?attempt.sectionStates?.[sec.id]:null;
+  const runtime=sectionRuntime(sec,existing);
+  const updates={
+    currentSectionIndex:safe,
+    currentSectionId:sec?.id||null,
+    currentQuestionIds:runtime.questionIds,
+    currentDeadlineMs:runtime.deadlineMs,
+    updatedAt:nowIso()
+  };
+  if(sec && !existing) updates[`sectionStates.${sec.id}`]=runtime.state;
   await ref.update(updates);
-  return {attemptId,index:safe};
+  return {attemptId,index:safe,currentSectionId:updates.currentSectionId,currentDeadlineMs:updates.currentDeadlineMs};
 });
 
 exports.abandonAttemptSecure = onCall(async request => {
