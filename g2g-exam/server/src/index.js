@@ -25,6 +25,20 @@ await app.register(cookie,{secret:process.env.COOKIE_SECRET||'development-only-c
 const origins=String(process.env.CORS_ORIGINS||'').split(',').map(x=>x.trim()).filter(Boolean);
 await app.register(cors,{origin:(origin,cb)=>{if(!origin||!origins.length||origins.includes(origin))cb(null,true);else cb(new Error('Origin không được phép.'),false);},credentials:true});
 await app.register(multipart,{limits:{fileSize:25*1024*1024,files:1}});
+
+// The app shell and runtime config must never be cached. Otherwise a browser or
+// reverse proxy can keep serving an old bootstrap page after a successful deploy.
+app.addHook('onSend',async(request,reply,payload)=>{
+  const pathname=String(request.url||'').split('?')[0];
+  if(['/', '/index.html', '/vi.html', '/runtime-config.js'].includes(pathname)){
+    reply.header('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    reply.header('Pragma','no-cache');
+    reply.header('Expires','0');
+    reply.header('Surrogate-Control','no-store');
+  }
+  return payload;
+});
+
 await app.register(fastifyStatic,{root:publicDir,prefix:'/',index:['index.html']});
 await registerAuthRoutes(app);
 
