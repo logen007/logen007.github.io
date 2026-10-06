@@ -39,9 +39,9 @@ test('Bản production không tự bật SMTP/email',()=>{
 test('Học viên không nhận đáp án đúng hoặc điểm riêng tư chưa công bố',()=>{
   const source=read('server/src/state.js');
   assert.ok(source.includes('delete q.correctAnswer'));
-  assert.ok(source.includes("user.role==='student'"));
-  assert.ok(source.includes('public_data'));
-  assert.equal(/student[\s\S]{0,800}private_data/.test(source),false);
+  const studentBlock=source.match(/if\(user\.role==='student'\)\{([\s\S]*?)return state;\s*\}/)?.[1]||'';
+  assert.ok(studentBlock.includes('SELECT id,public_data FROM attempts'));
+  assert.equal(studentBlock.includes('private_data'),false);
 });
 
 test('Role và thay đổi dữ liệu quan trọng được kiểm tra lại phía server',()=>{
