@@ -386,6 +386,10 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="edit-a1-group"]').forEach(b=>b.onclick=async()=>{
     const exam=byId(data.exams,ui.builderExamId),section=exam?.sections.find(s=>s.id===ui.builderSectionId);
     if(!exam||!section)return;
+    if(exam.provider!=='GOETHE'||exam.level!=='A1'){
+      notify('Template cụm này hiện chỉ áp dụng cho Goethe A1 · Nghe · Phần 1.');
+      return;
+    }
     const existingId=section.questionIds.map(id=>byId(data.questions,id)?.groupId).find(Boolean)||null;
     const {openA1ListeningPart1Editor}=await import('./question-groups/bootstrap.js');
     const commit=ops=>repo.transaction(st=>{for(const op of ops){st[op.collection]||=[];const i=st[op.collection].findIndex(x=>x.id===op.id);if(i>=0)st[op.collection][i]=op.item;else st[op.collection].push(op.item);}});
@@ -445,10 +449,11 @@ async function createNewExam(){
   });
   if(!setup)return;
   const {level,provider,title}=setup;
+  const isGoetheA1=provider.toUpperCase()==='GOETHE'&&level==='A1';
   const stamp=Date.now();
   const exam=await act(()=>repo.transaction(st=>createExam(st,user,{
     title,level,provider:provider.toUpperCase(),sections:[
-      {id:`sec-${stamp}-1`,name:'Nghe · Phần 1',timeMinutes:20,maxScore:10,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]}
+      {id:`sec-${stamp}-1`,name:isGoetheA1?'Nghe · Phần 1':'Phần 1',timeMinutes:isGoetheA1?20:30,maxScore:isGoetheA1?10:0,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]}
     ]
   })),null,{rerender:false});
   if(exam){data=await repo.getState();openBuilder(exam.id);}
@@ -465,6 +470,12 @@ function openBuilder(id){
 function bindBuilder(){
   const exam=byId(data.exams,ui.builderExamId);
   if(!exam)return;
+  app.querySelectorAll('[data-action="edit-a1-group"]').forEach(button=>{
+    if(exam.provider!=='GOETHE'||exam.level!=='A1'){
+      button.disabled=true;
+      button.textContent='Template phần này sẽ cấu hình riêng';
+    }
+  });
   app.querySelectorAll('[data-action="back-admin"]').forEach(b=>b.onclick=()=>{ui.view='admin';ui.adminTab='exams';render();});
   app.querySelectorAll('[data-action="select-section"]').forEach(b=>b.onclick=e=>{if(e.target.closest('.phan-tool'))return;ui.builderSectionId=b.dataset.id;render();});
   app.querySelectorAll('[data-action="add-section"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>addSection(st,user,exam.id,{name:'Phần mới',timeMinutes:30})),'Đã thêm phần.'));
