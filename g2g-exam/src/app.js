@@ -1,16 +1,28 @@
-import { createRepository } from './repository.js';
+import {createRepository} from './repository.js';
 import {
-  ROLES, ATTEMPT_STATUS, byId, isMaster, isTeacher, isStudent,
-  canEditQuestion, canEditExam, canGradeExam, getPublishedExams, getVisibleQuestions,
-  createQuestion, updateQuestion, softDeleteQuestion, restoreQuestion, permanentlyDeleteQuestion,
-  createExam, updateExam, softDeleteExam, restoreExam, permanentlyDeleteExam,
-  addSection, removeSection, moveSection, updateSection, addQuestionsToSection,
-  removeQuestionFromSection, moveQuestion, requestGrading, resolveGradingRequest,
-  startAttempt, saveAnswer, setAttemptSection, getSectionRemainingSeconds, submitAttempt,
-  saveManualScore, publishAttempt, getStudentResults, getLatestPublishedAttempt,
-  getBestPublishedAttempt, gradebookRows, pendingGradingAttempts, publishExam, summarizeExam
+  ATTEMPT_STATUS,byId,isMaster,isStudent,canEditExam,canGradeExam,
+  createQuestion,updateQuestion,softDeleteQuestion,restoreQuestion,permanentlyDeleteQuestion,
+  createExam,updateExam,softDeleteExam,restoreExam,permanentlyDeleteExam,
+  addSection,removeSection,moveSection,updateSection,addQuestionsToSection,
+  removeQuestionFromSection,moveQuestion,requestGrading,resolveGradingRequest,
+  startAttempt,saveAnswer,setAttemptSection,getSectionRemainingSeconds,submitAttempt,
+  saveManualScore,publishAttempt,publishExam
 } from './core.js';
-import { uploadQuestionAudio } from './media.js';
+import {uploadQuestionAudio} from './media.js';
+import {countWords} from './ui/format.js';
+import {topbarHtml} from './ui/layout.js';
+import {
+  loginHtml,studentHomeHtml,studentResultsHtml,examHtml,submittedHtml
+} from './views/student.js';
+import {
+  adminShellHtml,examAdminHtml,bankAdminHtml,gradingAdminHtml,gradesAdminHtml,
+  teachersAdminHtml,trashAdminHtml
+} from './views/admin.js';
+import {examBuilderHtml,gradingDetailHtml} from './views/builder.js';
+import {
+  questionModalHtml,bankPickerHtml,previewExamModalHtml,previewQuestionModalHtml,
+  studentGradeModalHtml
+} from './views/modals.js';
 
 const app=document.getElementById('app');
 const toast=document.getElementById('toast');
@@ -30,153 +42,221 @@ const ui={
 
 repo.subscribe(next=>{
   data=next;
-  if(['exam','builder','grading-detail'].includes(ui.view)||document.getElementById('modal')) return;
+  if(['exam','builder','grading-detail'].includes(ui.view)||document.getElementById('modal'))return;
   clearTimeout(realtimeRenderTimer);
   realtimeRenderTimer=setTimeout(()=>render(),80);
 });
 window.addEventListener('online',()=>{ui.online=true;if(ui.view!=='exam')render();});
 window.addEventListener('offline',()=>{ui.online=false;if(ui.view!=='exam')render();});
 
-function esc(v=''){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
-function fmtDate(v){if(!v)return'—';try{return new Intl.DateTimeFormat('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(v));}catch{return'—';}}
-function statusText(s){return({in_progress:'Đang làm',grading:'Đang chờ chấm',ready:'Sẵn sàng công bố',published:'Đã có điểm',abandoned:'Bỏ dở',draft:'Bản nháp',trash:'Thùng rác'})[s]||s;}
-function statusClass(s){return s==='published'||s==='ready'?'xanh':s==='grading'?'vang':s==='abandoned'||s==='trash'?'xam':'';}
-function typeLabel(t){return({single:'Một đáp án',truefalse:'Đúng / Sai',matching:'Ghép nội dung',cloze:'Điền từ',writing:'Viết',speaking:'Nói'})[t]||t;}
-function notify(msg){toast.textContent=msg;toast.classList.remove('an');clearTimeout(notify.t);notify.t=setTimeout(()=>toast.classList.add('an'),2700);}
-function clearTimer(){if(timerHandle){clearInterval(timerHandle);timerHandle=null;}timerBusy=false;}
-async function act(fn,success,{rerender=true}={}){try{const r=await fn();data=await repo.getState();if(success)notify(success);if(rerender)render();return r;}catch(e){console.error(e);notify(e?.message||'Có lỗi xảy ra.');return null;}}
+function layout(content){
+  return topbarHtml({user,mode:repo.mode,online:ui.online})+content;
+}
 
-function topbar(){
-  return `<header class="thanh-dau"><div class="thuong-hieu"><div class="logo">G2G</div><div class="ten-he-thong"><strong>Thi thử tiếng Đức</strong><small>Mô phỏng trải nghiệm thi trên máy tính</small></div></div><div class="nhom-nut"><span class="nhan">${isStudent(user)?'Học viên':isMaster(user)?'Quản trị cấp cao':'Giáo viên'}</span><button class="nut nho" data-action="logout">Đăng xuất</button></div></header>${repo.mode==='local'?'<div class="canh-bao-che-do">Đang chạy chế độ thử nghiệm trên trình duyệt. Khi cấu hình Firebase, hệ thống tự chuyển sang đăng nhập Google và dữ liệu thật.</div>':''}${!ui.online?'<div class="offline">Mất kết nối mạng. Hãy giữ trang mở; dữ liệu sẽ tiếp tục đồng bộ khi có mạng.</div>':''}`;
+function notify(msg){
+  toast.textContent=msg;
+  toast.classList.remove('an');
+  clearTimeout(notify.t);
+  notify.t=setTimeout(()=>toast.classList.add('an'),2700);
+}
+
+function clearTimer(){
+  if(timerHandle){clearInterval(timerHandle);timerHandle=null;}
+  timerBusy=false;
+}
+
+async function act(fn,success,{rerender=true}={}){
+  try{
+    const result=await fn();
+    data=await repo.getState();
+    if(success)notify(success);
+    if(rerender)render();
+    return result;
+  }catch(error){
+    console.error(error);
+    notify(error?.message||'Có lỗi xảy ra.');
+    return null;
+  }
 }
 
 function loginView(){
-  const demo=repo.mode==='local'?`<div class="che-do-demo"><div class="phu-de">Tài khoản thử nghiệm</div><div class="chon-demo"><button class="nut full demo-login" data-id="student-a">Vào vai Học viên</button><button class="nut full demo-login" data-id="teacher-lan">Vào vai Cô Lan</button><button class="nut full demo-login" data-id="master-1">Vào vai Quản trị cấp cao</button></div></div>`:'';
-  app.innerHTML=`<main class="dang-nhap"><section class="gioi-thieu"><div class="nhan-muc">G2G CAREER · THI THỬ</div><h1>Luyện đến khi bước vào phòng thi thật không còn bỡ ngỡ.</h1><p>Hệ thống giúp học viên quen giao diện, cách chuyển phần, đồng hồ, nghe âm thanh, viết bài và nộp bài trên máy tính.</p><div class="phu-de">Đọc hiểu · Ngữ pháp · Nghe hiểu · Viết · Nói</div></section><section class="hop-dang-nhap"><h2>Đăng nhập</h2><p>Học viên dùng tài khoản Google. Kết quả và toàn bộ lịch sử các lần thi được lưu theo tài khoản.</p><button class="dang-nhap-google" id="googleLogin">Đăng nhập bằng Google</button>${demo}</section></main>`;
-  document.getElementById('googleLogin').onclick=async()=>{if(repo.mode!=='firebase'){notify('Chưa cấu hình Firebase. Hãy dùng tài khoản thử nghiệm bên dưới.');return;}try{user=await repo.signInGoogle();data=await repo.getState();ui.view=isStudent(user)?'student-home':'admin';render();}catch(e){notify(e?.message||'Không đăng nhập được bằng Google.');}};
-  app.querySelectorAll('.demo-login').forEach(b=>b.onclick=async()=>{user=await repo.signInDemo(b.dataset.id);data=await repo.getState();ui.view=isStudent(user)?'student-home':'admin';render();});
+  app.innerHTML=loginHtml({mode:repo.mode});
+  document.getElementById('googleLogin').onclick=async()=>{
+    if(repo.mode==='local'){
+      notify('Đây là bản demo cục bộ. Đăng nhập Google chỉ hoạt động trên máy chủ G2G.');
+      return;
+    }
+    try{
+      user=await repo.signInGoogle();
+      data=await repo.getState();
+      ui.view=isStudent(user)?'student-home':'admin';
+      render();
+    }catch(error){
+      notify(error?.message||'Không đăng nhập được bằng Google.');
+    }
+  };
+  app.querySelectorAll('.demo-login').forEach(button=>button.onclick=async()=>{
+    user=await repo.signInDemo(button.dataset.id);
+    data=await repo.getState();
+    ui.view=isStudent(user)?'student-home':'admin';
+    render();
+  });
 }
 
-function studentHome(){
-  const exams=getPublishedExams(data),attempts=getStudentResults(data,user.id),latest=getLatestPublishedAttempt(data,user.id),best=getBestPublishedAttempt(data,user.id);
-  const latestExam=latest&&byId(data.exams,latest.examId);
-  app.innerHTML=topbar()+`<main class="khung"><div class="tieu-de-trang"><div><h1>Xin chào, ${esc(user.name)}</h1><p>Chọn bài thi để bắt đầu.</p></div><button class="nut" data-action="student-results">Xem toàn bộ kết quả</button></div>${latest?`<section class="the tong-quan-hv"><div class="o"><span>Bài thi gần nhất</span><b>${esc(latestExam?.title||latest.examTitle)}</b><small class="phu-de">${fmtDate(latest.submittedAt)} · Lần #${latest.attemptNo}</small></div><div class="o"><span>Điểm gần nhất</span><b>${latest.totalScore??'—'}</b></div><div class="o"><span>Điểm cao nhất</span><b>${best?.totalScore??'—'}</b></div><div class="o"><span>Số lần thi</span><b>${attempts.length}</b></div><div class="o"><span>Kết quả</span><b class="dat">${esc(latest.result||'—')}</b></div></section>`:''}<div class="tieu-de-trang" style="margin-top:26px"><div><h1 style="font-size:20px">Chọn bài thi</h1><p>${exams.length} bài đang mở</p></div></div><section class="danh-sach-de">${exams.map(ex=>studentExamCard(ex,attempts)).join('')}</section></main>`;
-}
-
-function studentExamCard(ex,attempts){
-  const mine=attempts.filter(a=>a.examId===ex.id),current=mine.find(a=>a.status===ATTEMPT_STATUS.IN_PROGRESS),waiting=mine.find(a=>a.status===ATTEMPT_STATUS.GRADING||a.status===ATTEMPT_STATUS.READY),published=mine.filter(a=>a.status===ATTEMPT_STATUS.PUBLISHED),best=[...published].sort((a,b)=>(b.totalScore||0)-(a.totalScore||0))[0];
-  const sum=summarizeExam(ex,data),mins=(ex.sections||[]).reduce((n,s)=>n+(Number(s.timeMinutes)||0),0);
-  return `<article class="the the-de"><span class="nhan">${esc(ex.level)} · THI THỬ</span><h3>${esc(ex.title)}</h3><div class="meta">${sum.sections} phần · ${sum.questions} câu · khoảng ${mins} phút</div><div class="day"></div><div class="chan"><span>${current?'Đang làm dở':waiting?'Có bài đang chờ chấm':mine.length?`Đã thi ${mine.length} lần`:'Chưa từng thi'}</span><b>${best?`Cao nhất ${best.totalScore}`:'Mới'}</b></div><div class="hanh-dong">${current?`<button class="nut chinh" data-action="resume" data-exam="${ex.id}" data-attempt="${current.id}">Tiếp tục</button><button class="nut" data-action="restart" data-exam="${ex.id}">Làm lại từ đầu</button>`:`<button class="nut chinh" data-action="start" data-exam="${ex.id}">${mine.length?'Thi lại':'Bắt đầu thi'}</button>`}</div></article>`;
-}
-
-function studentResultsView(){
-  const attempts=getStudentResults(data,user.id);
-  app.innerHTML=topbar()+`<main class="khung"><div class="tieu-de-trang"><div><h1>Toàn bộ kết quả</h1><p>Bài chưa được giáo viên công bố sẽ không hiển thị điểm.</p></div><button class="nut" data-action="student-home">Quay lại</button></div><div class="table-wrap"><table class="bang"><thead><tr><th>Bài thi</th><th>Lần thi</th><th>Ngày</th><th>Tổng điểm</th><th>Kết quả</th><th>Trạng thái</th></tr></thead><tbody>${attempts.map(a=>`<tr><td><b>${esc(a.examTitle)}</b></td><td>#${a.attemptNo}</td><td>${fmtDate(a.submittedAt||a.startedAt)}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?(a.totalScore??'—'):'—'}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?esc(a.result||'—'):'—'}</td><td><span class="nhan ${statusClass(a.status)}">${statusText(a.status)}</span></td></tr>`).join('')||'<tr><td colspan="6" class="rong">Chưa có lần thi nào.</td></tr>'}</tbody></table></div></main>`;
-}
+function studentHomeView(){app.innerHTML=layout(studentHomeHtml({data,user}));}
+function studentResultsView(){app.innerHTML=layout(studentResultsHtml({data,user}));}
+function submittedView(){app.innerHTML=layout(submittedHtml());}
 
 function examView(){
   clearTimer();
-  const attempt=byId(data.attempts,ui.attemptId); if(!attempt||attempt.studentId!==user.id||attempt.status!==ATTEMPT_STATUS.IN_PROGRESS){ui.view='student-home';render();return;}
-  const exam=byId(data.exams,attempt.examId); if(!exam){ui.view='student-home';render();return;}
-  const si=Math.min(attempt.currentSectionIndex||0,Math.max(0,exam.sections.length-1)),sec=exam.sections[si],qs=(sec.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
-  const answered=qs.filter(q=>answerPresent(attempt.answers?.[q.id],q)).length;
-  app.innerHTML=`<div class="thi"><header class="thanh-thi"><strong>G2G Thi thử</strong><div class="thong-tin-thi"><span>Phần ${si+1}/${exam.sections.length}</span><b id="examTimer">--:--</b></div></header>${!ui.online?'<div class="offline">Đang ngoại tuyến. Hãy giữ trang mở; câu trả lời sẽ tiếp tục được lưu trên thiết bị.</div>':''}<main class="noi-dung-thi"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(sec.name)}</h1><div class="phu-de">${sec.showTimer!==false?'Có giới hạn thời gian · ':''}${answered}/${qs.length} câu đã trả lời</div><section class="to-thi">${qs.map(q=>renderQuestion(q,attempt.answers?.[q.id],attempt)).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section><div class="dieu-huong-thi"><button class="nut" data-action="prev-section" ${si===0?'disabled':''}>Quay lại</button><span class="tien-do" id="saveState">Đã lưu</span><button class="nut chinh" data-action="${si===exam.sections.length-1?'submit-exam':'next-section'}">${si===exam.sections.length-1?'Nộp bài':'Tiếp theo'}</button></div></main></div>`;
-  bindExamInputs(attempt,qs); startExamTimer(attempt,exam,si);
+  const attempt=byId(data.attempts,ui.attemptId);
+  if(!attempt||attempt.studentId!==user.id||attempt.status!==ATTEMPT_STATUS.IN_PROGRESS){ui.view='student-home';render();return;}
+  const exam=byId(data.exams,attempt.examId);
+  if(!exam){ui.view='student-home';render();return;}
+  const sectionIndex=Math.min(attempt.currentSectionIndex||0,Math.max(0,exam.sections.length-1));
+  const section=exam.sections[sectionIndex];
+  const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
+  app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,online:ui.online});
+  bindExamInputs(attempt,questions);
+  startExamTimer(attempt,exam,sectionIndex);
 }
 
-function answerPresent(answer,q){if(q.type==='writing')return Boolean(String(answer||'').trim());if(q.type==='matching')return Array.isArray(answer)&&answer.some(Boolean);return answer!==undefined&&answer!==null&&answer!=='';}
-function renderQuestion(q,answer,attempt){
-  const audio=q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" ${sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`)?'disabled':''}>${sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`)?'Đã phát audio':'Phát audio'}</button><span class="phu-de">Audio chỉ phát theo quy định của đề thi.</span></div>`:'';
-  const head=`<div class="ma">${esc(q.code||'')}</div>${q.instruction?`<div class="phu-de">${esc(q.instruction)}</div>`:''}<div class="noi">${esc(q.prompt||q.title)}</div>${audio}`;
-  if(['single','cloze','truefalse'].includes(q.type)) return `<div class="cau-thi" data-q="${q.id}">${head}<select class="dap-an answer-one" data-q="${q.id}"><option value="">Chọn đáp án</option>${(q.choices||[]).map((c,i)=>`<option value="${i}" ${String(answer)===String(i)?'selected':''}>${esc(c)}</option>`).join('')}</select></div>`;
-  if(q.type==='matching') return `<div class="cau-thi" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div style="margin:12px 0"><b>${esc(p[0])}</b><select class="dap-an answer-match" data-q="${q.id}" data-i="${i}"><option value="">Chọn đáp án</option>${[...new Set((q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;
-  if(q.type==='writing') return `<div class="cau-thi" data-q="${q.id}">${head}<textarea class="viet answer-text" data-q="${q.id}" placeholder="Viết bài tại đây...">${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> từ</div></div>`;
-  if(q.type==='speaking') return `<div class="cau-thi" data-q="${q.id}">${head}<div class="goi-y">Phần Nói được thực hiện theo hướng dẫn của giáo viên/phòng thi thử và được chấm thủ công.</div></div>`;
-  return `<div class="cau-thi">${head}</div>`;
-}
-function countWords(v){return (String(v).trim().match(/\S+/g)||[]).length;}
-
-function bindExamInputs(attempt,qs){
+function bindExamInputs(attempt,questions){
   app.querySelectorAll('.answer-one').forEach(el=>el.onchange=()=>queueAnswer(attempt.id,el.dataset.q,el.value===''?null:Number(el.value),0));
-  app.querySelectorAll('.answer-match').forEach(el=>el.onchange=()=>{const qid=el.dataset.q,q=qs.find(x=>x.id===qid),values=Array(q?.pairs?.length||0).fill('');app.querySelectorAll(`.answer-match[data-q="${qid}"]`).forEach(x=>values[Number(x.dataset.i)]=x.value);queueAnswer(attempt.id,qid,values,0);});
-  app.querySelectorAll('.answer-text').forEach(el=>{el.oninput=()=>{const counter=el.parentElement?.querySelector('.word-count');if(counter)counter.textContent=countWords(el.value);queueAnswer(attempt.id,el.dataset.q,el.value,700);};el.onblur=()=>queueAnswer(attempt.id,el.dataset.q,el.value,0);});
-  app.querySelectorAll('.play-audio').forEach(btn=>btn.onclick=async()=>{const qid=btn.dataset.q,key=`g2g.audio.${attempt.id}.${qid}`,audio=document.getElementById(`audio-${qid}`);if(!audio||sessionStorage.getItem(key))return;try{sessionStorage.setItem(key,'1');btn.disabled=true;btn.textContent='Đang phát...';audio.addEventListener('ended',()=>{btn.textContent='Đã phát audio';},{once:true});audio.addEventListener('seeking',()=>{if(audio.currentTime>0.5)audio.currentTime=Math.max(0,audio.currentTime-0.25);});await audio.play();}catch(e){sessionStorage.removeItem(key);btn.disabled=false;btn.textContent='Phát audio';notify('Không phát được audio. Hãy kiểm tra kết nối hoặc tệp âm thanh.');}});
+  app.querySelectorAll('.answer-match').forEach(el=>el.onchange=()=>{
+    const qid=el.dataset.q,q=questions.find(x=>x.id===qid),values=Array(q?.pairs?.length||0).fill('');
+    app.querySelectorAll(`.answer-match[data-q="${qid}"]`).forEach(x=>values[Number(x.dataset.i)]=x.value);
+    queueAnswer(attempt.id,qid,values,0);
+  });
+  app.querySelectorAll('.answer-text').forEach(el=>{
+    el.oninput=()=>{
+      const counter=el.parentElement?.querySelector('.word-count');
+      if(counter)counter.textContent=countWords(el.value);
+      queueAnswer(attempt.id,el.dataset.q,el.value,700);
+    };
+    el.onblur=()=>queueAnswer(attempt.id,el.dataset.q,el.value,0);
+  });
+  app.querySelectorAll('.play-audio').forEach(btn=>btn.onclick=async()=>{
+    const qid=btn.dataset.q,key=`g2g.audio.${attempt.id}.${qid}`,audio=document.getElementById(`audio-${qid}`);
+    if(!audio||sessionStorage.getItem(key))return;
+    try{
+      sessionStorage.setItem(key,'1');
+      btn.disabled=true;
+      btn.textContent='Đang phát...';
+      audio.addEventListener('ended',()=>{btn.textContent='Đã phát audio';},{once:true});
+      audio.addEventListener('seeking',()=>{if(audio.currentTime>0.5)audio.currentTime=Math.max(0,audio.currentTime-0.25);});
+      await audio.play();
+    }catch(error){
+      sessionStorage.removeItem(key);
+      btn.disabled=false;
+      btn.textContent='Phát audio';
+      notify('Không phát được audio. Hãy kiểm tra kết nối hoặc tệp âm thanh.');
+    }
+  });
 }
 
 function queueAnswer(attemptId,qid,value,delay){
-  const key=`${attemptId}:${qid}`;clearTimeout(saveTimers.get(key));const saveState=document.getElementById('saveState');if(saveState)saveState.textContent='Đang lưu...';
-  saveTimers.set(key,setTimeout(async()=>{await act(()=>repo.transaction(st=>saveAnswer(st,user,attemptId,qid,value)),null,{rerender:false});const e=document.getElementById('saveState');if(e)e.textContent='Đã lưu';saveTimers.delete(key);},delay));
+  const key=`${attemptId}:${qid}`;
+  clearTimeout(saveTimers.get(key));
+  const saveState=document.getElementById('saveState');
+  if(saveState)saveState.textContent='Đang lưu...';
+  saveTimers.set(key,setTimeout(async()=>{
+    await act(()=>repo.transaction(st=>saveAnswer(st,user,attemptId,qid,value)),null,{rerender:false});
+    const el=document.getElementById('saveState');
+    if(el)el.textContent='Đã lưu';
+    saveTimers.delete(key);
+  },delay));
 }
-async function flushTextAnswers(){const pending=[...saveTimers.values()];for(const t of pending)clearTimeout(t);saveTimers.clear();const text=app.querySelector('.answer-text');if(text&&ui.attemptId)await act(()=>repo.transaction(st=>saveAnswer(st,user,ui.attemptId,text.dataset.q,text.value)),null,{rerender:false});}
+
+async function flushTextAnswers(){
+  const pending=[...saveTimers.values()];
+  for(const timer of pending)clearTimeout(timer);
+  saveTimers.clear();
+  const text=app.querySelector('.answer-text');
+  if(text&&ui.attemptId)await act(()=>repo.transaction(st=>saveAnswer(st,user,ui.attemptId,text.dataset.q,text.value)),null,{rerender:false});
+}
 
 function startExamTimer(attempt,exam,sectionIndex){
-  const sec=exam.sections[sectionIndex],el=document.getElementById('examTimer');
-  if(sec.showTimer===false){if(el)el.textContent='—';return;}
+  const section=exam.sections[sectionIndex],el=document.getElementById('examTimer');
+  if(section.showTimer===false){if(el)el.textContent='—';return;}
   const tick=async()=>{
-    const left=getSectionRemainingSeconds(attempt,exam,sectionIndex);if(el)el.textContent=`${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`;
-    if(left<=0&&!timerBusy){timerBusy=true;clearTimer();document.querySelectorAll('.answer-one,.answer-match,.answer-text,.play-audio').forEach(x=>x.disabled=true);if(sec.autoSubmit!==false){await flushTextAnswers();if(sectionIndex<exam.sections.length-1){await act(()=>repo.transaction(st=>setAttemptSection(st,user,attempt.id,sectionIndex+1)),null,{rerender:false});ui.view='exam';render();}else await submitCurrentExam(false);}else notify('Phần thi đã hết thời gian.');}
+    const left=getSectionRemainingSeconds(attempt,exam,sectionIndex);
+    if(el)el.textContent=`${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`;
+    if(left<=0&&!timerBusy){
+      timerBusy=true;
+      clearTimer();
+      document.querySelectorAll('.answer-one,.answer-match,.answer-text,.play-audio').forEach(x=>x.disabled=true);
+      if(section.autoSubmit!==false){
+        await flushTextAnswers();
+        if(sectionIndex<exam.sections.length-1){
+          await act(()=>repo.transaction(st=>setAttemptSection(st,user,attempt.id,sectionIndex+1)),null,{rerender:false});
+          ui.view='exam';
+          render();
+        }else await submitCurrentExam(false);
+      }else notify('Phần thi đã hết thời gian.');
+    }
   };
-  tick();timerHandle=setInterval(tick,1000);
-}
-async function submitCurrentExam(confirmFirst=true){if(confirmFirst&&!confirm('Nộp bài thi? Sau khi nộp bạn sẽ không thể sửa câu trả lời.'))return;await flushTextAnswers();const r=await act(()=>repo.transaction(st=>submitAttempt(st,user,ui.attemptId)),null,{rerender:false});if(r){data=await repo.getState();ui.view='submitted';render();}}
-
-function submittedView(){app.innerHTML=topbar()+`<main class="khung"><section class="the ket-qua-cho"><div class="vong">✓</div><div class="nhan-muc">ĐÃ NỘP BÀI THÀNH CÔNG</div><h1>Đang chờ kết quả</h1><span class="nhan vang">ĐANG CHỜ CHẤM</span><p>Bài thi đã được ghi nhận. Một số phần cần giáo viên chấm thủ công nên hệ thống chưa hiển thị điểm ngay.</p><div class="goi-y"><b>Khi có kết quả</b><br>Hệ thống sẽ gửi email đến địa chỉ bạn dùng để đăng nhập. Bạn cũng có thể quay lại trang kết quả để xem.</div><button class="nut" data-action="student-home" style="margin-top:18px">Về danh sách bài thi</button></section></main>`;}
-
-function adminShell(content){const tabs=[['exams','Bài thi'],['bank','Ngân hàng câu hỏi'],['grading','Chấm bài'],['grades','Bảng điểm'],...(isMaster(user)?[['teachers','Giáo viên'],['trash','Thùng rác']]:[])];return topbar()+`<div class="khung-quan-tri"><aside class="thanh-ben">${tabs.map(([k,l])=>`<button class="muc-ben ${ui.adminTab===k?'active':''}" data-action="admin-tab" data-tab="${k}">${l}</button>`).join('')}</aside><main class="noi-dung-quan-tri">${content}</main></div>`;}
-function adminView(){let content='';if(ui.adminTab==='exams')content=examAdmin();else if(ui.adminTab==='bank')content=bankAdmin();else if(ui.adminTab==='grading')content=gradingAdmin();else if(ui.adminTab==='grades')content=gradesAdmin();else if(ui.adminTab==='teachers')content=teachersAdmin();else if(ui.adminTab==='trash')content=trashAdmin();app.innerHTML=adminShell(content);}
-
-function examAdmin(){
-  const exams=data.exams.filter(x=>x.status!=='trash');
-  return `<div class="tieu-de-trang"><div><h1>Bài thi</h1><p>Giáo viên xem được bài của nhau; chỉ chủ bài hoặc Quản trị cấp cao được thay đổi.</p></div><button class="nut chinh" data-action="new-exam">+ Tạo bài thi</button></div><div class="table-wrap"><table class="bang"><thead><tr><th>Bài thi</th><th>Người tạo</th><th>Cấu trúc</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${exams.map(ex=>{const s=summarizeExam(ex,data),own=canEditExam(user,ex),req=data.gradingRequests.find(r=>r.examId===ex.id&&r.requesterId===user.id&&r.status==='pending');return `<tr><td><b>${esc(ex.title)}</b><span class="phu">${esc(ex.level)} · phiên bản ${ex.version||1}${ex.locked?' · đã khóa cấu trúc':''}</span></td><td>${esc(ex.ownerName)}</td><td>${s.sections} phần · ${s.questions} câu</td><td><span class="nhan ${ex.status==='published'?'xanh':'xam'}">${ex.status==='published'?'Đã xuất bản':'Bản nháp'}</span></td><td><div class="hanh-dong-bang">${own?`<button class="nut nho" data-action="edit-exam" data-id="${ex.id}">${ex.locked&&!isMaster(user)?'Xem cấu trúc':'Chỉnh sửa'}</button>${ex.status!=='published'?`<button class="nut nho chinh" data-action="publish-exam" data-id="${ex.id}">Xuất bản</button>`:''}<button class="nut nho nguy" data-action="delete-exam" data-id="${ex.id}">Xóa</button>`:`<button class="nut nho" data-action="view-exam" data-id="${ex.id}">Xem</button>${isTeacher(user)&&!isMaster(user)?`<button class="nut nho" data-action="request-grade" data-id="${ex.id}" ${req?'disabled':''}>${req?'Đã xin chấm':'Xin chấm'}</button>`:''}`}</div></td></tr>`;}).join('')}</tbody></table></div>`;
+  tick();
+  timerHandle=setInterval(tick,1000);
 }
 
-function bankAdmin(){
-  const qs=getVisibleQuestions(data,user),skills=[...new Set(qs.map(q=>q.skill))].sort();
-  return `<div class="tieu-de-trang"><div><h1>Ngân hàng câu hỏi</h1><p>Mọi giáo viên có thể xem và dùng lại. Chỉ chủ câu chưa khóa hoặc Quản trị cấp cao được sửa/xóa.</p></div><button class="nut chinh" data-action="new-question">+ Tạo câu hỏi</button></div><div class="hang-thong-ke"><div class="thong-ke"><span>Tổng câu</span><b>${qs.length}</b></div><div class="thong-ke"><span>Câu của tôi</span><b>${qs.filter(q=>q.ownerId===user.id).length}</b></div><div class="thong-ke"><span>Đã khóa</span><b>${qs.filter(q=>q.locked).length}</b></div><div class="thong-ke"><span>B1 / B2</span><b>${qs.filter(q=>q.level==='B1').length} / ${qs.filter(q=>q.level==='B2').length}</b></div></div><div class="bo-loc"><input class="truong tim" id="bankSearch" placeholder="Tìm mã hoặc tiêu đề..."><select class="truong" id="bankLevel"><option value="">Tất cả trình độ</option><option>B1</option><option>B2</option></select><select class="truong" id="bankSkill"><option value="">Tất cả kỹ năng</option>${skills.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div><div class="table-wrap"><table class="bang"><thead><tr><th>Mã</th><th>Câu hỏi</th><th>Phân loại</th><th>Người tạo</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="bankRows">${questionRows(qs)}</tbody></table></div>`;
-}
-function questionRows(qs){return qs.map(q=>`<tr data-search="${esc((q.code+' '+q.title).toLowerCase())}" data-level="${esc(q.level)}" data-skill="${esc(q.skill)}"><td><b>${esc(q.code)}</b></td><td><b>${esc(q.title)}</b><span class="phu">${typeLabel(q.type)}</span></td><td>${esc(q.level)} · ${esc(q.skill)}<span class="phu">${esc(q.part)}</span></td><td>${esc(q.ownerName)}</td><td><span class="nhan ${q.locked?'vang':'xam'}">${q.locked?'Đã khóa':'Có thể chỉnh sửa'}</span></td><td><div class="hanh-dong-bang">${canEditQuestion(user,q)?`<button class="nut nho" data-action="edit-question" data-id="${q.id}">Sửa</button><button class="nut nho nguy" data-action="delete-question" data-id="${q.id}">Xóa</button>`:`<button class="nut nho" data-action="preview-question" data-id="${q.id}">Xem</button>`}</div></td></tr>`).join('')||'<tr><td colspan="6" class="rong">Chưa có câu hỏi.</td></tr>';}
-
-function gradingAdmin(){
-  const attempts=pendingGradingAttempts(data,user),requests=data.gradingRequests.filter(r=>r.status==='pending'&&(isMaster(user)||byId(data.exams,r.examId)?.ownerId===user.id));
-  return `<div class="tieu-de-trang"><div><h1>Chấm bài</h1><p>Bài đã nộp và đang chờ chấm thủ công.</p></div></div><div class="hang-thong-ke"><div class="thong-ke"><span>Chờ / đang chấm</span><b>${attempts.filter(a=>a.status===ATTEMPT_STATUS.GRADING).length}</b></div><div class="thong-ke"><span>Sẵn sàng công bố</span><b>${attempts.filter(a=>a.status===ATTEMPT_STATUS.READY).length}</b></div><div class="thong-ke"><span>Yêu cầu xin chấm</span><b>${requests.length}</b></div><div class="thong-ke"><span>Đã công bố</span><b>${data.attempts.filter(a=>a.status===ATTEMPT_STATUS.PUBLISHED).length}</b></div></div><div class="table-wrap"><table class="bang"><thead><tr><th>Học viên</th><th>Bài thi</th><th>Lần</th><th>Điểm tự động</th><th>Trạng thái</th><th></th></tr></thead><tbody>${attempts.map(a=>`<tr><td><b>${esc(a.studentName)}</b><span class="phu">${esc(a.studentEmail)}</span></td><td>${esc(a.examTitle)}</td><td>#${a.attemptNo}</td><td>${a.autoScore??'—'}</td><td><span class="nhan ${statusClass(a.status)}">${statusText(a.status)}</span></td><td><button class="nut nho chinh" data-action="grade-attempt" data-id="${a.id}">${a.status===ATTEMPT_STATUS.READY?'Kiểm tra':'Chấm bài'}</button></td></tr>`).join('')||'<tr><td colspan="6" class="rong">Không có bài nào cần chấm.</td></tr>'}</tbody></table></div>${requests.length?`<div class="the" style="margin-top:16px"><h3>Yêu cầu xin chấm bài</h3>${requests.map(r=>`<div class="cau-item"><div class="noi"><b>${esc(r.requesterName)} xin chấm ${esc(r.examTitle)}</b></div><div class="nhom-nut"><button class="nut nho chinh" data-action="resolve-request" data-id="${r.id}" data-status="approved">Duyệt</button><button class="nut nho" data-action="resolve-request" data-id="${r.id}" data-status="rejected">Từ chối</button></div></div>`).join('')}</div>`:''}`;
+async function submitCurrentExam(confirmFirst=true){
+  if(confirmFirst&&!confirm('Nộp bài thi? Sau khi nộp bạn sẽ không thể sửa câu trả lời.'))return;
+  await flushTextAnswers();
+  const result=await act(()=>repo.transaction(st=>submitAttempt(st,user,ui.attemptId)),null,{rerender:false});
+  if(result){data=await repo.getState();ui.view='submitted';render();}
 }
 
-function gradesAdmin(){
-  if(ui.gradeMode==='all'){
-    const attempts=data.attempts.filter(a=>a.status===ATTEMPT_STATUS.PUBLISHED).sort((a,b)=>String(b.publishedAt||b.startedAt).localeCompare(String(a.publishedAt||a.startedAt)));
-    return `<div class="tieu-de-trang"><div><h1>Bảng điểm</h1><p>Toàn bộ các lần thi đã được công bố.</p></div></div>${gradeModeButtons()}<div class="table-wrap"><table class="bang"><thead><tr><th>Học viên</th><th>Bài thi</th><th>Lần</th><th>Ngày</th><th>Tổng điểm</th><th>Kết quả</th></tr></thead><tbody>${attempts.map(a=>`<tr><td><b>${esc(a.studentName)}</b></td><td>${esc(a.examTitle)}</td><td>#${a.attemptNo}</td><td>${fmtDate(a.publishedAt||a.submittedAt)}</td><td><b>${a.totalScore??'—'}</b></td><td>${esc(a.result||'—')}</td></tr>`).join('')||'<tr><td colspan="6" class="rong">Chưa có kết quả đã công bố.</td></tr>'}</tbody></table></div>`;
-  }
-  const rows=gradebookRows(data,ui.gradeMode);
-  return `<div class="tieu-de-trang"><div><h1>Bảng điểm</h1><p>Xem điểm cao nhất, điểm gần nhất hoặc toàn bộ lịch sử.</p></div></div>${gradeModeButtons()}<div class="table-wrap"><table class="bang"><thead><tr><th>Học viên</th><th>Bài thi</th><th>Tổng điểm</th><th>Kết quả</th><th>Số lần thi</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td><b>${esc(r.user.name)}</b><span class="phu">${esc(r.user.email)}</span></td><td>${esc(r.attempt?.examTitle||'—')}</td><td>${r.attempt?.totalScore??'—'}</td><td>${esc(r.attempt?.result||'—')}</td><td>${r.attempts.length}</td><td><button class="nut nho" data-action="student-grade-detail" data-id="${r.user.id}">Chi tiết</button></td></tr>`).join('')}</tbody></table></div>`;
+function adminView(){
+  let content='';
+  if(ui.adminTab==='exams')content=examAdminHtml({data,user});
+  else if(ui.adminTab==='bank')content=bankAdminHtml({data,user});
+  else if(ui.adminTab==='grading')content=gradingAdminHtml({data,user});
+  else if(ui.adminTab==='grades')content=gradesAdminHtml({data,ui});
+  else if(ui.adminTab==='teachers')content=teachersAdminHtml({data,user});
+  else if(ui.adminTab==='trash')content=trashAdminHtml({data});
+  app.innerHTML=layout(adminShellHtml({content,user,ui}));
 }
-function gradeModeButtons(){return `<div class="nhom-nut" style="margin-bottom:14px"><button class="nut ${ui.gradeMode==='best'?'chinh':''}" data-action="grade-mode" data-mode="best">Điểm cao nhất</button><button class="nut ${ui.gradeMode==='latest'?'chinh':''}" data-action="grade-mode" data-mode="latest">Điểm gần nhất</button><button class="nut ${ui.gradeMode==='all'?'chinh':''}" data-action="grade-mode" data-mode="all">Tất cả lần thi</button></div>`;}
-
-function teachersAdmin(){if(!isMaster(user))return'<div class="rong">Không có quyền.</div>';return `<div class="tieu-de-trang"><div><h1>Giáo viên & tài khoản</h1><p>Học viên cần đăng nhập Google ít nhất một lần trước khi được nâng quyền thành giáo viên.</p></div></div><div class="table-wrap"><table class="bang"><thead><tr><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Thao tác</th></tr></thead><tbody>${data.users.map(u=>`<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.email)}</td><td>${u.role==='master'?'Quản trị cấp cao':u.role==='teacher'?'Giáo viên':'Học viên'}</td><td>${u.id===user.id?'—':`<button class="nut nho" data-action="toggle-teacher" data-id="${u.id}">${u.role==='teacher'?'Chuyển về Học viên':'Đặt làm Giáo viên'}</button>`}</td></tr>`).join('')}</tbody></table></div>`;}
-function trashAdmin(){const exams=data.exams.filter(x=>x.status==='trash'),qs=data.questions.filter(x=>x.status==='trash');return `<div class="tieu-de-trang"><div><h1>Thùng rác</h1><p>Chỉ Quản trị cấp cao nhìn thấy và xóa vĩnh viễn. Dữ liệu đã có lịch sử thi sẽ được bảo vệ.</p></div></div><h3>Bài thi</h3>${trashTable(exams,'exam')}<h3 style="margin-top:20px">Câu hỏi</h3>${trashTable(qs,'question')}`;}
-function trashTable(items,type){return `<div class="table-wrap"><table class="bang"><tbody>${items.map(x=>`<tr><td><b>${esc(x.title)}</b></td><td>${esc(x.ownerName||'')}</td><td><div class="hanh-dong-bang"><button class="nut nho" data-action="restore-${type}" data-id="${x.id}">Khôi phục</button><button class="nut nho nguy" data-action="permanent-${type}" data-id="${x.id}">Xóa vĩnh viễn</button></div></td></tr>`).join('')||'<tr><td class="rong">Trống</td></tr>'}</tbody></table></div>`;}
 
 function examBuilderView(){
-  const ex=byId(data.exams,ui.builderExamId);if(!ex||!canEditExam(user,ex)){ui.view='admin';render();return;}
-  const sec=ex.sections.find(s=>s.id===ui.builderSectionId)||ex.sections[0];if(sec)ui.builderSectionId=sec.id;
-  const readOnly=Boolean(ex.locked&&!isMaster(user));
-  app.innerHTML=topbar()+`<main class="khung"><div class="tieu-de-trang"><div><h1>${esc(ex.title)}</h1><p>${readOnly?'Bài đã có lượt thi nên cấu trúc được khóa để bảo toàn lịch sử.':'Thêm, bớt, sắp xếp các phần và câu hỏi.'}</p></div><div class="nhom-nut"><button class="nut" data-action="back-admin">Quay lại</button><button class="nut ${ex.status==='published'?'':'chinh'}" data-action="publish-exam" data-id="${ex.id}" ${ex.status==='published'||readOnly?'disabled':''}>${ex.status==='published'?'Đã xuất bản':'Xuất bản'}</button></div></div>${readOnly?'<div class="goi-y" style="margin-bottom:14px"><b>Đã khóa cấu trúc</b><br>Để thay đổi nội dung, hãy tạo một bài/phiên bản mới. Chủ bài vẫn có thể đưa bài này vào Thùng rác từ danh sách bài thi.</div>':''}<div class="xay-dung"><aside class="cot-xay"><div class="nhan-muc">CẤU TRÚC BÀI THI</div><div class="cai-dat"><label>Tên bài thi</label><input id="examTitle" value="${esc(ex.title)}" ${readOnly?'disabled':''}></div>${ex.sections.map((s,i)=>`<div class="phan-item ${sec?.id===s.id?'active':''}" data-action="select-section" data-id="${s.id}"><div class="phan-head"><div><b>${String(i+1).padStart(2,'0')} · ${esc(s.name)}</b><div class="phu-de">${s.questionIds.length} câu</div></div>${readOnly?'':`<div class="phan-tool"><button class="icon-btn" data-action="move-section" data-id="${s.id}" data-dir="up">↑</button><button class="icon-btn" data-action="move-section" data-id="${s.id}" data-dir="down">↓</button><button class="icon-btn" data-action="remove-section" data-id="${s.id}">×</button></div>`}</div></div>`).join('')}${readOnly?'':'<button class="nut full" data-action="add-section" style="margin-top:10px">+ Thêm phần</button>'}</aside><section class="cot-xay"><div class="tieu-de-trang"><div><h1 style="font-size:20px">${esc(sec?.name||'Chưa có phần')}</h1><p>${readOnly?'Chỉ xem nội dung.':'Thêm câu từ ngân hàng hoặc tạo câu mới.'}</p></div>${readOnly?'':`<div class="nhom-nut"><button class="nut" data-action="open-bank-picker">+ Thêm từ ngân hàng</button><button class="nut chinh" data-action="new-question">+ Tạo câu mới</button></div>`}</div>${sec?(sec.questionIds||[]).map(qid=>{const q=byId(data.questions,qid);if(!q)return'';return `<div class="cau-item"><div class="noi"><b>${esc(q.code)} · ${esc(q.title)}</b><small>${esc(q.skill)} · ${q.maxScore} điểm</small></div>${readOnly?'':`<div class="nhom-nut"><button class="nut nho" data-action="move-question" data-id="${q.id}" data-dir="up">↑</button><button class="nut nho" data-action="move-question" data-id="${q.id}" data-dir="down">↓</button><button class="nut nho nguy" data-action="remove-question" data-id="${q.id}">Bỏ</button></div>`}</div>`;}).join(''):'<div class="rong">Hãy thêm một phần.</div>'}</section><aside class="cot-xay cai-dat"><div class="nhan-muc">CÀI ĐẶT PHẦN</div>${sec?`<label>Tên phần</label><input id="sectionName" value="${esc(sec.name)}" ${readOnly?'disabled':''}><label>Thời gian (phút)</label><input id="sectionTime" type="number" min="1" value="${sec.timeMinutes||30}" ${readOnly?'disabled':''}><label>Điểm tối đa</label><input id="sectionMax" type="number" min="0" value="${sec.maxScore||0}" ${readOnly?'disabled':''}><label class="check"><input id="showTimer" type="checkbox" ${sec.showTimer!==false?'checked':''} ${readOnly?'disabled':''}> Hiển thị đồng hồ</label><label class="check"><input id="autoSubmit" type="checkbox" ${sec.autoSubmit!==false?'checked':''} ${readOnly?'disabled':''}> Tự chuyển/nộp khi hết giờ</label><label class="check"><input id="shuffle" type="checkbox" ${sec.shuffle?'checked':''} ${readOnly?'disabled':''}> Trộn thứ tự câu hỏi</label>${readOnly?'':'<button class="nut full" data-action="save-section" style="margin-top:12px">Lưu cài đặt phần</button>'}`:''}<div class="goi-y"><b>Lưu ý</b><br>Mỗi lần học viên làm được lưu riêng. Khi đề đã có lượt thi, cấu trúc được khóa để điểm cũ không bị thay đổi.</div></aside></div></main>`;
+  const exam=byId(data.exams,ui.builderExamId);
+  if(!exam||!canEditExam(user,exam)){ui.view='admin';render();return;}
+  const section=exam.sections.find(s=>s.id===ui.builderSectionId)||exam.sections[0];
+  if(section)ui.builderSectionId=section.id;
+  const readOnly=Boolean(exam.locked&&!isMaster(user));
+  app.innerHTML=layout(examBuilderHtml({data,user,exam,section,readOnly}));
 }
 
 function gradingDetailView(){
-  const a=byId(data.attempts,ui.gradeAttemptId),ex=a&&byId(data.exams,a.examId);if(!a||!ex||!canGradeExam(data,user,ex)){ui.view='admin';render();return;}
-  const manualQs=ex.sections.flatMap(s=>s.questionIds.map(id=>byId(data.questions,id))).filter(q=>q&&!q.autoGrade),skills=[...new Set(manualQs.map(q=>q.skill))];
-  app.innerHTML=topbar()+`<main class="khung"><div class="tieu-de-trang"><div><h1>${esc(a.studentName)} · ${esc(a.examTitle)}</h1><p>Lần #${a.attemptNo} · ${fmtDate(a.submittedAt)}</p></div><div class="nhom-nut"><button class="nut" data-action="back-grading">Quay lại</button><button class="nut" data-action="save-grade">Lưu tạm</button>${(isMaster(user)||ex.ownerId===user.id)?'<button class="nut chinh" data-action="publish-result">Lưu & công bố</button>':''}</div></div><div class="cham-bai"><aside class="ds-cham"><div class="nhan-muc">BÀI LÀM CẦN CHẤM</div>${manualQs.map(q=>`<div class="hv-cham"><b>${esc(q.skill)} · ${esc(q.title)}</b><div class="phu-de">${q.maxScore} điểm</div></div>`).join('')}</aside><section class="phieu-cham"><div class="nhan-muc">BÀI LÀM</div>${manualQs.map(q=>`<h3>${esc(q.skill)} · ${esc(q.title)}</h3><div class="bai-lam">${q.type==='writing'?esc(a.answers?.[q.id]||'(Học viên chưa nhập nội dung)'):'Phần này được thực hiện trực tiếp/ghi âm theo quy trình phòng thi thử.'}</div>`).join('')}<h3>Phiếu chấm</h3>${skills.map(skill=>{const max=manualQs.filter(q=>q.skill===skill).reduce((n,q)=>n+(Number(q.maxScore)||0),0);return `<div class="tieu-chi"><div><b>${esc(skill)}</b><div class="phu-de">Tối đa ${max} điểm</div></div><input class="manual-score" data-skill="${esc(skill)}" data-max="${max}" type="number" min="0" max="${max}" value="${a.manualScores?.[skill]??''}"></div>`;}).join('')}<label class="phu-de" style="display:block;margin-top:14px">Nhận xét cho học viên</label><textarea class="nhan-xet" id="gradeFeedback">${esc(a.feedback||'')}</textarea><div class="tong-diem"><span>Điểm tự động</span><span>${a.autoScore??'—'}</span></div><div class="tong-diem"><span>Tổng hiện tại</span><span id="gradeTotal">${currentGradeTotal(a)}</span></div></section></div></main>`;bindGradeCalculator(a);
+  const attempt=byId(data.attempts,ui.gradeAttemptId),exam=attempt&&byId(data.exams,attempt.examId);
+  if(!attempt||!exam||!canGradeExam(data,user,exam)){ui.view='admin';render();return;}
+  app.innerHTML=layout(gradingDetailHtml({data,user,attempt,exam}));
+  bindGradeCalculator(attempt);
 }
-function currentGradeTotal(a){return(Number(a.autoScore)||0)+Object.values(a.manualScores||{}).reduce((s,n)=>s+(Number(n)||0),0);}
-function bindGradeCalculator(a){app.querySelectorAll('.manual-score').forEach(i=>i.oninput=()=>{let n=Number(a.autoScore)||0;app.querySelectorAll('.manual-score').forEach(x=>n+=Number(x.value)||0);document.getElementById('gradeTotal').textContent=n;});}
+
+function bindGradeCalculator(attempt){
+  app.querySelectorAll('.manual-score').forEach(input=>input.oninput=()=>{
+    let total=Number(attempt.autoScore)||0;
+    app.querySelectorAll('.manual-score').forEach(x=>total+=Number(x.value)||0);
+    document.getElementById('gradeTotal').textContent=total;
+  });
+}
 
 function questionModal(q=null,onCreated=null){
   const edit=Boolean(q);
-  app.insertAdjacentHTML('beforeend',`<div class="hop-chon" id="modal"><div class="noi-hop"><div class="dau-hop"><div><div class="nhan-muc">${edit?'CHỈNH SỬA CÂU HỎI':'TẠO CÂU HỎI'}</div><h2>${edit?esc(q.title):'Câu hỏi mới'}</h2></div><button class="nut nho" data-action="close-modal">×</button></div><div class="cai-dat"><label>Trình độ</label><select id="qLevel"><option ${q?.level==='B1'?'selected':''}>B1</option><option ${q?.level==='B2'?'selected':''}>B2</option></select><label>Kỹ năng</label><select id="qSkill">${['Đọc hiểu','Ngữ pháp','Nghe hiểu','Viết','Nói'].map(x=>`<option ${q?.skill===x?'selected':''}>${x}</option>`).join('')}</select><label>Phần</label><input id="qPart" value="${esc(q?.part||'Phần 1')}"><label>Loại câu</label><select id="qType">${[['single','Một đáp án'],['truefalse','Đúng / Sai'],['matching','Ghép nội dung'],['cloze','Điền từ'],['writing','Viết'],['speaking','Nói']].map(([v,l])=>`<option value="${v}" ${q?.type===v?'selected':''}>${l}</option>`).join('')}</select><label>Tiêu đề nội bộ</label><input id="qTitle" value="${esc(q?.title||'')}"><label>Hướng dẫn cho học viên</label><input id="qInstruction" value="${esc(q?.instruction||'')}"><label>Nội dung câu hỏi</label><textarea id="qPrompt">${esc(q?.prompt||'')}</textarea><div id="choiceFields"><label>Đáp án lựa chọn (mỗi dòng một đáp án)</label><textarea id="qChoices">${esc((q?.choices||[]).join('\n'))}</textarea><label>Vị trí đáp án đúng (bắt đầu từ 1)</label><input id="qCorrect" type="number" min="1" value="${q?.correctAnswer!=null?Number(q.correctAnswer)+1:1}"></div><div id="matchingFields"><label>Các cặp ghép (mỗi dòng: vế trái | vế phải)</label><textarea id="qPairs">${esc((q?.pairs||[]).map(x=>`${x[0]} | ${x[1]}`).join('\n'))}</textarea></div><label>Điểm tối đa</label><input id="qScore" type="number" min="0" value="${q?.maxScore||1}"><label>Audio hiện tại / URL audio</label><input id="qAudioUrl" value="${esc(q?.audioUrl||'')}"><label>Tải tệp audio</label><input id="qAudioFile" type="file" accept="audio/*"><div id="uploadState" class="phu-de"></div></div><div class="chan-hop"><span class="phu-de">Câu Viết/Nói được chấm thủ công. Câu đã dùng trong đề xuất bản sẽ được khóa nội dung.</span><div class="nhom-nut"><button class="nut" data-action="close-modal">Hủy</button><button class="nut chinh" id="saveQuestion">Lưu câu hỏi</button></div></div></div></div>`);
-  const sync=()=>{const type=document.getElementById('qType').value;document.getElementById('choiceFields').style.display=type==='matching'||type==='writing'||type==='speaking'?'none':'';document.getElementById('matchingFields').style.display=type==='matching'?'':'none';if(type==='truefalse'){document.getElementById('qChoices').value='Richtig\nFalsch';}};document.getElementById('qType').onchange=sync;sync();
+  app.insertAdjacentHTML('beforeend',questionModalHtml(q));
+  const sync=()=>{
+    const type=document.getElementById('qType').value;
+    document.getElementById('choiceFields').style.display=type==='matching'||type==='writing'||type==='speaking'?'none':'';
+    document.getElementById('matchingFields').style.display=type==='matching'?'':'none';
+    if(type==='truefalse')document.getElementById('qChoices').value='Richtig\nFalsch';
+  };
+  document.getElementById('qType').onchange=sync;
+  sync();
   bindModalClose();
   document.getElementById('saveQuestion').onclick=async()=>{
-    const btn=document.getElementById('saveQuestion');btn.disabled=true;
+    const btn=document.getElementById('saveQuestion');
+    btn.disabled=true;
     try{
       const type=document.getElementById('qType').value;
       let choices=document.getElementById('qChoices').value.split('\n').map(x=>x.trim()).filter(Boolean),pairs=[];
@@ -184,38 +264,92 @@ function questionModal(q=null,onCreated=null){
       if(type==='matching')pairs=document.getElementById('qPairs').value.split('\n').map(x=>x.split('|').map(y=>y.trim())).filter(x=>x.length>=2&&x[0]&&x[1]).map(x=>[x[0],x.slice(1).join(' | ')]);
       let audioUrl=document.getElementById('qAudioUrl').value.trim();
       const file=document.getElementById('qAudioFile').files?.[0];
-      if(file){document.getElementById('uploadState').textContent='Đang tải audio...';audioUrl=await uploadQuestionAudio(file,user.id,q?.id||'draft');document.getElementById('uploadState').textContent='Đã tải audio.';}
+      if(file){
+        document.getElementById('uploadState').textContent='Đang tải audio...';
+        audioUrl=await uploadQuestionAudio(file,user.id,q?.id||'draft');
+        document.getElementById('uploadState').textContent='Đã tải audio.';
+      }
       const score=Number(document.getElementById('qScore').value)||0;
-      const input={level:document.getElementById('qLevel').value,skill:document.getElementById('qSkill').value,part:document.getElementById('qPart').value,type,title:document.getElementById('qTitle').value,instruction:document.getElementById('qInstruction').value,prompt:document.getElementById('qPrompt').value,choices,pairs,correctAnswer:['single','cloze','truefalse'].includes(type)?Math.max(0,(Number(document.getElementById('qCorrect').value)||1)-1):null,maxScore:score,autoGrade:!['writing','speaking'].includes(type),audioUrl,rubric:type==='writing'?[{id:'task',label:'Hoàn thành yêu cầu',max:Math.round(score/3)},{id:'structure',label:'Tổ chức và diễn đạt',max:Math.round(score/3)},{id:'language',label:'Ngữ pháp và chính tả',max:score-2*Math.round(score/3)}]:type==='speaking'?[{id:'content',label:'Nội dung',max:Math.round(score/3)},{id:'fluency',label:'Độ trôi chảy',max:Math.round(score/3)},{id:'language',label:'Ngôn ngữ',max:score-2*Math.round(score/3)}]:[]};
+      const input={
+        level:document.getElementById('qLevel').value,
+        skill:document.getElementById('qSkill').value,
+        part:document.getElementById('qPart').value,
+        type,
+        title:document.getElementById('qTitle').value,
+        instruction:document.getElementById('qInstruction').value,
+        prompt:document.getElementById('qPrompt').value,
+        choices,pairs,
+        correctAnswer:['single','cloze','truefalse'].includes(type)?Math.max(0,(Number(document.getElementById('qCorrect').value)||1)-1):null,
+        maxScore:score,
+        autoGrade:!['writing','speaking'].includes(type),
+        audioUrl,
+        rubric:type==='writing'
+          ? [{id:'task',label:'Hoàn thành yêu cầu',max:Math.round(score/3)},{id:'structure',label:'Tổ chức và diễn đạt',max:Math.round(score/3)},{id:'language',label:'Ngữ pháp và chính tả',max:score-2*Math.round(score/3)}]
+          : type==='speaking'
+            ? [{id:'content',label:'Nội dung',max:Math.round(score/3)},{id:'fluency',label:'Độ trôi chảy',max:Math.round(score/3)},{id:'language',label:'Ngôn ngữ',max:score-2*Math.round(score/3)}]
+            : []
+      };
       const result=await act(()=>repo.transaction(st=>edit?updateQuestion(st,user,q.id,input):createQuestion(st,user,input)),edit?'Đã cập nhật câu hỏi.':'Đã tạo câu hỏi.',{rerender:false});
-      if(result){closeModal();data=await repo.getState();if(onCreated)await onCreated(result);render();}
-    }finally{if(document.getElementById('saveQuestion'))document.getElementById('saveQuestion').disabled=false;}
+      if(result){
+        closeModal();
+        data=await repo.getState();
+        if(onCreated)await onCreated(result);
+        render();
+      }
+    }finally{
+      if(document.getElementById('saveQuestion'))document.getElementById('saveQuestion').disabled=false;
+    }
   };
 }
 
 function bankPicker(){
-  const ex=byId(data.exams,ui.builderExamId),sec=ex?.sections.find(s=>s.id===ui.builderSectionId);if(!sec)return;const qs=getVisibleQuestions(data,user),skills=[...new Set(qs.map(q=>q.skill))].sort();
-  app.insertAdjacentHTML('beforeend',`<div class="hop-chon" id="modal"><div class="noi-hop"><div class="dau-hop"><div><div class="nhan-muc">THÊM TỪ NGÂN HÀNG CÂU HỎI</div><h2>Chọn câu hỏi</h2></div><button class="nut nho" data-action="close-modal">×</button></div><div class="bo-loc" style="margin-top:14px"><input id="pickerSearch" class="truong tim" placeholder="Tìm câu hỏi..."><select id="pickerLevel" class="truong"><option value="">Tất cả trình độ</option><option>B1</option><option>B2</option></select><select id="pickerSkill" class="truong"><option value="">Tất cả kỹ năng</option>${skills.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div><label class="check" style="margin:14px 0"><input id="selectAllBank" type="checkbox"> Chọn tất cả câu hỏi đang hiển thị</label><div class="luoi-chon" id="pickerList">${qs.map(q=>`<label class="dong-chon" data-search="${esc((q.code+' '+q.title).toLowerCase())}" data-level="${esc(q.level)}" data-skill="${esc(q.skill)}"><input class="bank-pick" type="checkbox" value="${q.id}" ${sec.questionIds.includes(q.id)?'checked':''}><span><b>${esc(q.code)} · ${esc(q.title)}</b><span class="phu-de">${esc(q.level)} · ${esc(q.skill)} · ${esc(q.part)}</span></span></label>`).join('')}</div><div class="chan-hop"><span id="pickCount" class="phu-de"></span><button class="nut chinh" id="addPicked">Áp dụng lựa chọn</button></div></div></div>`);
+  const exam=byId(data.exams,ui.builderExamId),section=exam?.sections.find(s=>s.id===ui.builderSectionId);
+  if(!section)return;
+  app.insertAdjacentHTML('beforeend',bankPickerHtml({data,user,exam,section}));
   bindModalClose();
-  const items=[...app.querySelectorAll('.bank-pick')],rows=[...app.querySelectorAll('.dong-chon')],all=document.getElementById('selectAllBank'),count=document.getElementById('pickCount'),search=document.getElementById('pickerSearch'),level=document.getElementById('pickerLevel'),skill=document.getElementById('pickerSkill');
+  const items=[...app.querySelectorAll('.bank-pick')],rows=[...app.querySelectorAll('.dong-chon')];
+  const all=document.getElementById('selectAllBank'),count=document.getElementById('pickCount'),search=document.getElementById('pickerSearch'),level=document.getElementById('pickerLevel'),skill=document.getElementById('pickerSkill');
   const visibleRows=()=>rows.filter(r=>r.style.display!=='none');
-  const syncCount=()=>{const n=items.filter(x=>x.checked).length,vis=visibleRows(),visInputs=vis.map(r=>r.querySelector('.bank-pick'));count.textContent=`Đã chọn ${n} câu`;all.checked=visInputs.length>0&&visInputs.every(x=>x.checked);all.indeterminate=visInputs.some(x=>x.checked)&&!visInputs.every(x=>x.checked);};
-  const filter=()=>{const q=search.value.toLowerCase().trim();rows.forEach(r=>{r.style.display=(!q||r.dataset.search.includes(q))&&(!level.value||r.dataset.level===level.value)&&(!skill.value||r.dataset.skill===skill.value)?'':'none';});syncCount();};
-  all.onchange=()=>{visibleRows().forEach(r=>r.querySelector('.bank-pick').checked=all.checked);syncCount();};items.forEach(x=>x.onchange=syncCount);search.oninput=filter;level.onchange=filter;skill.onchange=filter;filter();
-  document.getElementById('addPicked').onclick=async()=>{const ids=items.filter(x=>x.checked).map(x=>x.value);const r=await act(()=>repo.transaction(st=>updateSection(st,user,ex.id,sec.id,{questionIds:ids})),'Đã cập nhật câu hỏi trong phần.',{rerender:false});if(r!==null){closeModal();data=await repo.getState();render();}};
+  const syncCount=()=>{
+    const n=items.filter(x=>x.checked).length,vis=visibleRows(),visInputs=vis.map(r=>r.querySelector('.bank-pick'));
+    count.textContent=`Đã chọn ${n} câu`;
+    all.checked=visInputs.length>0&&visInputs.every(x=>x.checked);
+    all.indeterminate=visInputs.some(x=>x.checked)&&!visInputs.every(x=>x.checked);
+  };
+  const filter=()=>{
+    const q=search.value.toLowerCase().trim();
+    rows.forEach(r=>{r.style.display=(!q||r.dataset.search.includes(q))&&(!level.value||r.dataset.level===level.value)&&(!skill.value||r.dataset.skill===skill.value)?'':'none';});
+    syncCount();
+  };
+  all.onchange=()=>{visibleRows().forEach(r=>r.querySelector('.bank-pick').checked=all.checked);syncCount();};
+  items.forEach(x=>x.onchange=syncCount);
+  search.oninput=filter;level.onchange=filter;skill.onchange=filter;
+  filter();
+  document.getElementById('addPicked').onclick=async()=>{
+    const ids=items.filter(x=>x.checked).map(x=>x.value);
+    const result=await act(()=>repo.transaction(st=>updateSection(st,user,exam.id,section.id,{questionIds:ids})),'Đã cập nhật câu hỏi trong phần.',{rerender:false});
+    if(result!==null){closeModal();data=await repo.getState();render();}
+  };
 }
 
-function previewExamModal(ex){app.insertAdjacentHTML('beforeend',`<div class="hop-chon" id="modal"><div class="noi-hop"><div class="dau-hop"><div><div class="nhan-muc">XEM BÀI THI</div><h2>${esc(ex.title)}</h2></div><button class="nut nho" data-action="close-modal">×</button></div>${(ex.sections||[]).map((s,i)=>`<div class="the" style="margin-top:10px"><b>${i+1}. ${esc(s.name)}</b><div class="phu-de">${s.questionIds.length} câu · ${s.timeMinutes} phút</div></div>`).join('')}</div></div>`);bindModalClose();}
-function previewQuestionModal(q){app.insertAdjacentHTML('beforeend',`<div class="hop-chon" id="modal"><div class="noi-hop"><div class="dau-hop"><div><div class="nhan-muc">XEM CÂU HỎI</div><h2>${esc(q.code)} · ${esc(q.title)}</h2></div><button class="nut nho" data-action="close-modal">×</button></div><div class="the" style="margin-top:14px"><div class="phu-de">${esc(q.level)} · ${esc(q.skill)} · ${typeLabel(q.type)}</div><p>${esc(q.instruction||'')}</p><div class="bai-lam">${esc(q.prompt||'')}</div></div></div></div>`);bindModalClose();}
-function studentGradeModal(studentId){const st=byId(data.users,studentId),attempts=data.attempts.filter(a=>a.studentId===studentId).sort((a,b)=>String(b.startedAt).localeCompare(String(a.startedAt)));app.insertAdjacentHTML('beforeend',`<div class="hop-chon" id="modal"><div class="noi-hop"><div class="dau-hop"><div><div class="nhan-muc">LỊCH SỬ ĐIỂM</div><h2>${esc(st?.name||'Học viên')}</h2></div><button class="nut nho" data-action="close-modal">×</button></div><div class="table-wrap" style="margin-top:14px"><table class="bang"><thead><tr><th>Bài thi</th><th>Lần</th><th>Ngày</th><th>Điểm</th><th>Kết quả</th><th>Trạng thái</th></tr></thead><tbody>${attempts.map(a=>`<tr><td>${esc(a.examTitle)}</td><td>#${a.attemptNo}</td><td>${fmtDate(a.submittedAt||a.startedAt)}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?(a.totalScore??'—'):'—'}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?esc(a.result||'—'):'—'}</td><td>${statusText(a.status)}</td></tr>`).join('')}</tbody></table></div></div></div>`);bindModalClose();}
+function previewExamModal(ex){app.insertAdjacentHTML('beforeend',previewExamModalHtml(ex));bindModalClose();}
+function previewQuestionModal(q){app.insertAdjacentHTML('beforeend',previewQuestionModalHtml(q));bindModalClose();}
+function studentGradeModal(studentId){app.insertAdjacentHTML('beforeend',studentGradeModalHtml({data,studentId}));bindModalClose();}
 function closeModal(){document.getElementById('modal')?.remove();}
 function bindModalClose(){app.querySelectorAll('[data-action="close-modal"]').forEach(b=>b.onclick=closeModal);}
 
 function render(){
   clearTimer();
   if(!user){ui.view='login';loginView();return;}
-  if(ui.view==='student-home')studentHome();else if(ui.view==='student-results')studentResultsView();else if(ui.view==='exam')examView();else if(ui.view==='submitted')submittedView();else if(ui.view==='builder')examBuilderView();else if(ui.view==='grading-detail')gradingDetailView();else adminView();
-  bindGlobal();bindViewSpecific();
+  if(ui.view==='student-home')studentHomeView();
+  else if(ui.view==='student-results')studentResultsView();
+  else if(ui.view==='exam')examView();
+  else if(ui.view==='submitted')submittedView();
+  else if(ui.view==='builder')examBuilderView();
+  else if(ui.view==='grading-detail')gradingDetailView();
+  else adminView();
+  bindGlobal();
+  bindViewSpecific();
 }
 
 function bindGlobal(){
@@ -251,30 +385,121 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="restore-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>restoreQuestion(st,user,b.dataset.id)),'Đã khôi phục câu hỏi.'));
   app.querySelectorAll('[data-action="permanent-exam"]').forEach(b=>b.onclick=()=>{if(confirm('Xóa vĩnh viễn bài thi? Hành động không thể hoàn tác.'))act(()=>repo.transaction(st=>permanentlyDeleteExam(st,user,b.dataset.id)),'Đã xóa vĩnh viễn.');});
   app.querySelectorAll('[data-action="permanent-question"]').forEach(b=>b.onclick=()=>{if(confirm('Xóa vĩnh viễn câu hỏi? Hành động không thể hoàn tác.'))act(()=>repo.transaction(st=>permanentlyDeleteQuestion(st,user,b.dataset.id)),'Đã xóa vĩnh viễn.');});
-  bindBuilder();bindGrading();bindFilters();
+  bindBuilder();
+  bindGrading();
+  bindFilters();
 }
 
-async function beginAttempt(examId,restart){const a=await act(()=>repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});if(a){data=await repo.getState();ui.attemptId=a.id;ui.view='exam';render();}}
-async function moveAttemptSection(delta){await flushTextAnswers();const a=byId(data.attempts,ui.attemptId),ex=a&&byId(data.exams,a.examId);if(!a||!ex)return;const next=Math.max(0,Math.min(ex.sections.length-1,(a.currentSectionIndex||0)+delta));const r=await act(()=>repo.transaction(st=>setAttemptSection(st,user,a.id,next)),null,{rerender:false});if(r){data=await repo.getState();ui.view='exam';render();}}
-async function createNewExam(){const ex=await act(()=>repo.transaction(st=>createExam(st,user,{title:'Bài thi thử mới',level:'B1',sections:[{id:`sec-${Date.now()}-1`,name:'Đọc hiểu',timeMinutes:35,maxScore:75,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]},{id:`sec-${Date.now()}-2`,name:'Ngữ pháp',timeMinutes:20,maxScore:30,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]},{id:`sec-${Date.now()}-3`,name:'Nghe hiểu',timeMinutes:30,maxScore:75,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]},{id:`sec-${Date.now()}-4`,name:'Viết',timeMinutes:30,maxScore:45,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]},{id:`sec-${Date.now()}-5`,name:'Nói',timeMinutes:15,maxScore:75,showTimer:true,autoSubmit:false,shuffle:false,questionIds:[]}]})),null,{rerender:false});if(ex){data=await repo.getState();openBuilder(ex.id);}}
-function openBuilder(id){const ex=byId(data.exams,id);ui.builderExamId=id;ui.builderSectionId=ex?.sections?.[0]?.id||null;ui.view='builder';render();}
+async function beginAttempt(examId,restart){
+  const attempt=await act(()=>repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});
+  if(attempt){data=await repo.getState();ui.attemptId=attempt.id;ui.view='exam';render();}
+}
+
+async function moveAttemptSection(delta){
+  await flushTextAnswers();
+  const attempt=byId(data.attempts,ui.attemptId),exam=attempt&&byId(data.exams,attempt.examId);
+  if(!attempt||!exam)return;
+  const next=Math.max(0,Math.min(exam.sections.length-1,(attempt.currentSectionIndex||0)+delta));
+  const result=await act(()=>repo.transaction(st=>setAttemptSection(st,user,attempt.id,next)),null,{rerender:false});
+  if(result){data=await repo.getState();ui.view='exam';render();}
+}
+
+async function createNewExam(){
+  const stamp=Date.now();
+  const exam=await act(()=>repo.transaction(st=>createExam(st,user,{
+    title:'Bài thi thử mới',level:'B1',sections:[
+      {id:`sec-${stamp}-1`,name:'Đọc hiểu',timeMinutes:35,maxScore:75,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]},
+      {id:`sec-${stamp}-2`,name:'Ngữ pháp',timeMinutes:20,maxScore:30,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]},
+      {id:`sec-${stamp}-3`,name:'Nghe hiểu',timeMinutes:30,maxScore:75,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]},
+      {id:`sec-${stamp}-4`,name:'Viết',timeMinutes:30,maxScore:45,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]},
+      {id:`sec-${stamp}-5`,name:'Nói',timeMinutes:15,maxScore:75,showTimer:true,autoSubmit:false,shuffle:false,questionIds:[]}
+    ]
+  })),null,{rerender:false});
+  if(exam){data=await repo.getState();openBuilder(exam.id);}
+}
+
+function openBuilder(id){
+  const exam=byId(data.exams,id);
+  ui.builderExamId=id;
+  ui.builderSectionId=exam?.sections?.[0]?.id||null;
+  ui.view='builder';
+  render();
+}
 
 function bindBuilder(){
-  const ex=byId(data.exams,ui.builderExamId);if(!ex)return;
+  const exam=byId(data.exams,ui.builderExamId);
+  if(!exam)return;
   app.querySelectorAll('[data-action="back-admin"]').forEach(b=>b.onclick=()=>{ui.view='admin';ui.adminTab='exams';render();});
   app.querySelectorAll('[data-action="select-section"]').forEach(b=>b.onclick=e=>{if(e.target.closest('.phan-tool'))return;ui.builderSectionId=b.dataset.id;render();});
-  app.querySelectorAll('[data-action="add-section"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>addSection(st,user,ex.id,{name:'Phần mới',timeMinutes:30})),'Đã thêm phần.'));
-  app.querySelectorAll('[data-action="move-section"]').forEach(b=>b.onclick=e=>{e.stopPropagation();act(()=>repo.transaction(st=>moveSection(st,user,ex.id,b.dataset.id,b.dataset.dir)));});
-  app.querySelectorAll('[data-action="remove-section"]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(confirm('Bỏ phần này khỏi bài thi?'))act(()=>repo.transaction(st=>removeSection(st,user,ex.id,b.dataset.id)),'Đã bỏ phần.');});
-  app.querySelectorAll('[data-action="move-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>moveQuestion(st,user,ex.id,ui.builderSectionId,b.dataset.id,b.dataset.dir))));
-  app.querySelectorAll('[data-action="remove-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,ex.id,ui.builderSectionId,b.dataset.id)),'Đã bỏ câu khỏi phần.'));
+  app.querySelectorAll('[data-action="add-section"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>addSection(st,user,exam.id,{name:'Phần mới',timeMinutes:30})),'Đã thêm phần.'));
+  app.querySelectorAll('[data-action="move-section"]').forEach(b=>b.onclick=e=>{e.stopPropagation();act(()=>repo.transaction(st=>moveSection(st,user,exam.id,b.dataset.id,b.dataset.dir)));});
+  app.querySelectorAll('[data-action="remove-section"]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(confirm('Bỏ phần này khỏi bài thi?'))act(()=>repo.transaction(st=>removeSection(st,user,exam.id,b.dataset.id)),'Đã bỏ phần.');});
+  app.querySelectorAll('[data-action="move-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>moveQuestion(st,user,exam.id,ui.builderSectionId,b.dataset.id,b.dataset.dir))));
+  app.querySelectorAll('[data-action="remove-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã bỏ câu khỏi phần.'));
   app.querySelectorAll('[data-action="open-bank-picker"]').forEach(b=>b.onclick=bankPicker);
-  const title=document.getElementById('examTitle');if(title)title.onchange=()=>act(()=>repo.transaction(st=>updateExam(st,user,ex.id,{title:title.value})),'Đã đổi tên bài thi.');
-  app.querySelectorAll('[data-action="save-section"]').forEach(b=>b.onclick=()=>{const patch={name:document.getElementById('sectionName').value,timeMinutes:Number(document.getElementById('sectionTime').value)||1,maxScore:Number(document.getElementById('sectionMax').value)||0,showTimer:document.getElementById('showTimer').checked,autoSubmit:document.getElementById('autoSubmit').checked,shuffle:document.getElementById('shuffle').checked};act(()=>repo.transaction(st=>updateSection(st,user,ex.id,ui.builderSectionId,patch)),'Đã lưu cài đặt phần.');});
+  const title=document.getElementById('examTitle');
+  if(title)title.onchange=()=>act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{title:title.value})),'Đã đổi tên bài thi.');
+  app.querySelectorAll('[data-action="save-section"]').forEach(b=>b.onclick=()=>{
+    const patch={
+      name:document.getElementById('sectionName').value,
+      timeMinutes:Number(document.getElementById('sectionTime').value)||1,
+      maxScore:Number(document.getElementById('sectionMax').value)||0,
+      showTimer:document.getElementById('showTimer').checked,
+      autoSubmit:document.getElementById('autoSubmit').checked,
+      shuffle:document.getElementById('shuffle').checked
+    };
+    act(()=>repo.transaction(st=>updateSection(st,user,exam.id,ui.builderSectionId,patch)),'Đã lưu cài đặt phần.');
+  });
 }
-function bindGrading(){app.querySelectorAll('[data-action="back-grading"]').forEach(b=>b.onclick=()=>{ui.view='admin';ui.adminTab='grading';render();});app.querySelectorAll('[data-action="save-grade"]').forEach(b=>b.onclick=()=>saveGrade(false));app.querySelectorAll('[data-action="publish-result"]').forEach(b=>b.onclick=()=>saveGrade(true));}
-async function saveGrade(andPublish){const a=byId(data.attempts,ui.gradeAttemptId);if(!a)return;const scores={};app.querySelectorAll('.manual-score').forEach(i=>{if(i.value!=='')scores[i.dataset.skill]=Number(i.value);});const feedback=document.getElementById('gradeFeedback')?.value||'';const saved=await act(()=>repo.transaction(st=>saveManualScore(st,user,a.id,{scores,feedback})),andPublish?null:'Đã lưu điểm tạm.',{rerender:false});if(!saved)return;data=await repo.getState();const fresh=byId(data.attempts,a.id);if(andPublish){if(fresh.status!==ATTEMPT_STATUS.READY){notify('Cần chấm đủ các phần trước khi công bố.');render();return;}const published=await act(()=>repo.transaction(st=>publishAttempt(st,user,a.id)),'Đã công bố kết quả và xếp email thông báo.',{rerender:false});if(published){data=await repo.getState();ui.view='admin';ui.adminTab='grading';render();}}else render();}
-function bindFilters(){const s=document.getElementById('bankSearch'),l=document.getElementById('bankLevel'),k=document.getElementById('bankSkill');if(!s||!l||!k)return;const f=()=>app.querySelectorAll('#bankRows tr[data-search]').forEach(r=>{r.style.display=(!s.value||r.dataset.search.includes(s.value.toLowerCase()))&&(!l.value||r.dataset.level===l.value)&&(!k.value||r.dataset.skill===k.value)?'':'none';});s.oninput=f;l.onchange=f;k.onchange=f;}
-async function toggleTeacher(id){if(!isMaster(user))return;const u=byId(data.users,id);if(!u)return;const role=u.role==='teacher'?'student':'teacher';if(repo.mode==='firebase'&&repo.setUserRoleSecure){await act(()=>repo.setUserRoleSecure(id,role),'Đã cập nhật vai trò tài khoản.');}else await act(()=>repo.transaction(st=>{const x=byId(st.users,id);if(!x)throw new Error('Không tìm thấy tài khoản.');if(x.role==='master')throw new Error('Không thể thay đổi tài khoản quản trị cấp cao.');x.role=role;x.updatedAt=new Date().toISOString();}),'Đã cập nhật vai trò tài khoản.');}
+
+function bindGrading(){
+  app.querySelectorAll('[data-action="back-grading"]').forEach(b=>b.onclick=()=>{ui.view='admin';ui.adminTab='grading';render();});
+  app.querySelectorAll('[data-action="save-grade"]').forEach(b=>b.onclick=()=>saveGrade(false));
+  app.querySelectorAll('[data-action="publish-result"]').forEach(b=>b.onclick=()=>saveGrade(true));
+}
+
+async function saveGrade(andPublish){
+  const attempt=byId(data.attempts,ui.gradeAttemptId);
+  if(!attempt)return;
+  const scores={};
+  app.querySelectorAll('.manual-score').forEach(i=>{if(i.value!=='')scores[i.dataset.skill]=Number(i.value);});
+  const feedback=document.getElementById('gradeFeedback')?.value||'';
+  const saved=await act(()=>repo.transaction(st=>saveManualScore(st,user,attempt.id,{scores,feedback})),andPublish?null:'Đã lưu điểm tạm.',{rerender:false});
+  if(!saved)return;
+  data=await repo.getState();
+  const fresh=byId(data.attempts,attempt.id);
+  if(andPublish){
+    if(fresh.status!==ATTEMPT_STATUS.READY){notify('Cần chấm đủ các phần trước khi công bố.');render();return;}
+    const published=await act(()=>repo.transaction(st=>publishAttempt(st,user,attempt.id)),'Đã công bố kết quả và xếp email thông báo.',{rerender:false});
+    if(published){data=await repo.getState();ui.view='admin';ui.adminTab='grading';render();}
+  }else render();
+}
+
+function bindFilters(){
+  const search=document.getElementById('bankSearch'),level=document.getElementById('bankLevel'),skill=document.getElementById('bankSkill');
+  if(!search||!level||!skill)return;
+  const filter=()=>app.querySelectorAll('#bankRows tr[data-search]').forEach(row=>{
+    row.style.display=(!search.value||row.dataset.search.includes(search.value.toLowerCase()))&&(!level.value||row.dataset.level===level.value)&&(!skill.value||row.dataset.skill===skill.value)?'':'none';
+  });
+  search.oninput=filter;level.onchange=filter;skill.onchange=filter;
+}
+
+async function toggleTeacher(id){
+  if(!isMaster(user))return;
+  const account=byId(data.users,id);
+  if(!account)return;
+  const role=account.role==='teacher'?'student':'teacher';
+  if(typeof repo.setUserRoleSecure==='function'){
+    await act(()=>repo.setUserRoleSecure(id,role),'Đã cập nhật vai trò tài khoản.');
+    return;
+  }
+  await act(()=>repo.transaction(st=>{
+    const target=byId(st.users,id);
+    if(!target)throw new Error('Không tìm thấy tài khoản.');
+    if(target.role==='master')throw new Error('Không thể thay đổi tài khoản quản trị cấp cao.');
+    target.role=role;
+    target.updatedAt=new Date().toISOString();
+  }),'Đã cập nhật vai trò tài khoản.');
+}
 
 render();
