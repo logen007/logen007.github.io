@@ -35,7 +35,24 @@ app.get('/api/state',async request=>loadState(await requireUser(request)));
 app.post('/api/commit',async request=>commitOperations(await requireUser(request),request.body?.operations||[]));
 app.post('/api/actions/:name',async request=>handleAction(await requireUser(request),request.params.name,request.body||{}));
 
-app.post('/api/media/audio',async(request)=>{const user=await requireRole(request,'teacher','master');const part=await request.file();if(!part)throw appError(400,'Chưa chọn tệp âm thanh.');if(part.mimetype&&!part.mimetype.startsWith('audio/'))throw appError(400,'Tệp tải lên không phải âm thanh.');const ext=path.extname(part.filename||'').replace(/[^.a-zA-Z0-9]/g,'').slice(0,10),name=`${Date.now()}-${randomUUID()}${ext||'.audio'}`,dest=path.join(uploadDir,name);await pipeline(part.file,createWriteStream(dest,{flags:'wx'}));if(part.file.truncated){await fs.rm(dest,{force:true});throw appError(413,'Tệp âm thanh vượt quá 25 MB.');}app.log.info({user:user.id,file:name},'audio uploaded');return {url:`/uploads/${name}`};});
+async function saveUpload(request,{kind,maxBytes,mimePrefix,defaultExt}){
+  const user=await requireRole(request,'teacher','master');
+  const part=await request.file();
+  if(!part)throw appError(400,`Chưa chọn tệp ${kind}.`);
+  if(part.mimetype&&!part.mimetype.startsWith(mimePrefix))throw appError(400,`Tệp tải lên không phải ${kind}.`);
+  const ext=path.extname(part.filename||'').replace(/[^.a-zA-Z0-9]/g,'').slice(0,10);
+  const name=`${Date.now()}-${randomUUID()}${ext||defaultExt}`;
+  const dest=path.join(uploadDir,name);
+  let size=0;
+  part.file.on('data',chunk=>{size+=chunk.length;if(size>maxBytes)part.file.destroy(appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`));});
+  try{await pipeline(part.file,createWriteStream(dest,{flags:'wx'}));}catch(error){await fs.rm(dest,{force:true});throw error;}
+  if(part.file.truncated||size>maxBytes){await fs.rm(dest,{force:true});throw appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`);}
+  app.log.info({user:user.id,file:name,kind},'media uploaded');
+  return {url:`/uploads/${name}`};
+}
+
+app.post('/api/media/audio',async request=>saveUpload(request,{kind:'âm thanh',maxBytes:25*1024*1024,mimePrefix:'audio/',defaultExt:'.audio'}));
+app.post('/api/media/image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:8*1024*1024,mimePrefix:'image/',defaultExt:'.img'}));
 app.get('/uploads/:name',async(request,reply)=>{await requireUser(request);const name=path.basename(request.params.name);return reply.sendFile(name,uploadDir);});
 app.get('/api/whoami',async request=>({user:await currentUser(request)}));
 
