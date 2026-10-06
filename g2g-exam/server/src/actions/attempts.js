@@ -29,7 +29,7 @@ export async function startAttempt(user,{examId,restart=false}){
       examId,examTitle:exam.title,examVersion:Number(exam.version||1),
       studentId:user.id,studentName:user.name||'',studentEmail:user.email||'',attemptNo,
       status:'in_progress',startedAt,updatedAt:startedAt,currentSectionIndex:0,
-      ...meta,answers:{},publishedAt:null,
+      ...meta,answers:{},audioSessions:{},publishedAt:null,
     };
     await client.query(`INSERT INTO attempts(id,student_id,exam_id,status,attempt_no,public_data) VALUES($1,$2,$3,'in_progress',$4,$5::jsonb)`,[id,user.id,examId,attemptNo,JSON.stringify(data)]);
 
@@ -58,6 +58,58 @@ export async function saveAnswers(user,{attemptId,answers={}}){
     const out={...publicData,answers:next,updatedAt:now()};
     await client.query(`UPDATE attempts SET public_data=$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify(out)]);
     return {ok:true};
+  });
+}
+
+async function audioGroupContext(client,attempt,groupId){
+  const groupResult=await client.query(`SELECT id,status,data FROM question_groups WHERE id=$1`,[groupId]);
+  if(!groupResult.rowCount||groupResult.rows[0].status!=='active')throw appError(404,'Không tìm thấy cụm audio.');
+  const group={id:groupResult.rows[0].id,...(groupResult.rows[0].data||{})};
+  if(group.structureType!=='A1_LISTENING_PART_1')throw appError(409,'Cụm này không dùng chế độ audio một lần.');
+  const policy=group.audioPolicy||{};
+  if(Number(policy.maxSessions)!==1||Number(policy.segmentRepeat)!==2||policy.replayAllowed!==false||policy.pauseAllowed!==false)throw appError(409,'Chính sách audio của cụm không hợp lệ.');
+  const allowed=new Set(attempt.public_data.currentQuestionIds||[]);
+  const ids=(group.questionIds||[]).filter(id=>allowed.has(id));
+  if(!ids.length)throw appError(409,'Cụm audio không thuộc phần thi hiện tại.');
+  return {group,ids};
+}
+
+export async function startAudioGroup(user,{attemptId,groupId}){
+  if(!attemptId||!groupId)throw appError(400,'Thiếu thông tin phiên audio.');
+  return withTx(async client=>{
+    const result=await client.query(`SELECT * FROM attempts WHERE id=$1 FOR UPDATE`,[attemptId]);
+    if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
+    const attempt=result.rows[0];
+    if(attempt.student_id!==user.id||attempt.status!=='in_progress')throw appError(403,'Không có quyền phát audio của lượt thi này.');
+    await audioGroupContext(client,attempt,groupId);
+    const publicData=attempt.public_data||{},sessions={...(publicData.audioSessions||{})};
+    if(sessions[groupId]?.startedAt)throw appError(409,'Audio của phần này đã được bắt đầu và không thể phát lại.');
+    const startedAt=now();
+    sessions[groupId]={startedAt,completedAt:null};
+    const out={...publicData,audioSessions:sessions,updatedAt:startedAt};
+    await client.query(`UPDATE attempts SET public_data=$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify(out)]);
+    await audit(user,'start_audio_group','attempt',attemptId,{groupId},client);
+    return {ok:true,startedAt};
+  });
+}
+
+export async function completeAudioGroup(user,{attemptId,groupId}){
+  if(!attemptId||!groupId)throw appError(400,'Thiếu thông tin phiên audio.');
+  return withTx(async client=>{
+    const result=await client.query(`SELECT * FROM attempts WHERE id=$1 FOR UPDATE`,[attemptId]);
+    if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
+    const attempt=result.rows[0];
+    if(attempt.student_id!==user.id||attempt.status!=='in_progress')throw appError(403,'Không có quyền cập nhật audio của lượt thi này.');
+    await audioGroupContext(client,attempt,groupId);
+    const publicData=attempt.public_data||{},sessions={...(publicData.audioSessions||{})},session=sessions[groupId];
+    if(!session?.startedAt)throw appError(409,'Phiên audio chưa được bắt đầu.');
+    if(session.completedAt)return {ok:true,completedAt:session.completedAt};
+    const completedAt=now();
+    sessions[groupId]={...session,completedAt};
+    const out={...publicData,audioSessions:sessions,updatedAt:completedAt};
+    await client.query(`UPDATE attempts SET public_data=$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify(out)]);
+    await audit(user,'complete_audio_group','attempt',attemptId,{groupId},client);
+    return {ok:true,completedAt};
   });
 }
 
