@@ -10,7 +10,7 @@ let passed=0;
 const test=(name,fn)=>{fn();console.log(`✓ ${name}`);passed++;};
 
 test('Có backend VPS, schema PostgreSQL và Docker deployment',()=>{
-  for(const p of ['server/src/index.js','server/src/auth.js','server/src/actions.js','server/src/state.js','server/src/mail.js','server/schema.sql','server/Dockerfile','docker-compose.vps.yml','DEPLOY-VPS.md']){
+  for(const p of ['server/src/index.js','server/src/auth.js','server/src/actions.js','server/src/actions/attempts.js','server/src/actions/grading.js','server/src/actions/settings.js','server/src/state.js','server/src/mail.js','server/schema.sql','server/Dockerfile','docker-compose.vps.yml','DEPLOY-VPS.md']){
     assert.ok(exists(p),`Thiếu ${p}`);
   }
 });
@@ -51,7 +51,7 @@ test('Runtime VPS dùng REST API cùng origin',()=>{
 });
 
 test('Server kiểm tra deadline khi autosave',()=>{
-  const actions=read('server/src/actions.js');
+  const actions=read('server/src/actions/attempts.js');
   assert.ok(actions.includes('currentDeadlineMs'));
   assert.ok(actions.includes('Phần thi đã hết thời gian'));
   assert.ok(actions.includes('currentQuestionIds'));
