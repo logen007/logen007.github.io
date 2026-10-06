@@ -13,7 +13,6 @@ short(){ printf '%s' "$1" | cut -c1-12; }
 command -v git >/dev/null 2>&1 || { log "git not found"; exit 1; }
 command -v docker >/dev/null 2>&1 || { log "docker not found"; exit 1; }
 command -v flock >/dev/null 2>&1 || { log "flock not found"; exit 1; }
-command -v node >/dev/null 2>&1 || { log "node not found"; exit 1; }
 [ -d "$REPO_ROOT/.git" ] || { log "repo missing: $REPO_ROOT"; exit 1; }
 [ -f "$APP_DIR/server/.env" ] || { log "server/.env missing; refusing deploy"; exit 1; }
 [ -f "$APP_DIR/.env" ] || { log ".env missing; refusing deploy"; exit 1; }
