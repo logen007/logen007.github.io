@@ -431,12 +431,20 @@ async function moveAttemptSection(delta){
 }
 
 async function createNewExam(){
-  const level=prompt('Trình độ (A1, A2, B1, B2):','A1')?.trim().toUpperCase();
-  if(!level)return;
-  const provider=prompt('Chọn loại đề: Goethe hoặc TELC','TELC')?.trim();
-  if(!provider)return;
-  const title=prompt('Tên đề thi:',`${provider.toUpperCase()} ${level} – Bản nháp`)?.trim();
-  if(!title)return;
+  const setup=await new Promise(resolve=>{
+    const modal=document.createElement('div');
+    modal.className='hop-chon';
+    modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><div><div class="nhan-muc">TẠO BÀI THI</div><h2>Thông tin đề thi</h2></div><button class="nut nho" data-close>×</button></div><div class="exam-setup-grid"><label>Trình độ<select id="newExamLevel"><option>A1</option><option>A2</option><option>B1</option><option>B2</option></select></label><label>Loại đề<select id="newExamProvider"><option>TELC</option><option>Goethe</option></select></label><label class="exam-setup-name">Tên đề thi<input id="newExamTitle" placeholder="Ví dụ: TELC A1 – Đề thi thử 01"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="confirmNewExam">Tạo đề</button></div></div></div>`;
+    document.body.append(modal);
+    const level=modal.querySelector('#newExamLevel'),provider=modal.querySelector('#newExamProvider'),title=modal.querySelector('#newExamTitle');
+    const suggest=()=>{if(!title.value)title.placeholder=`Ví dụ: ${provider.value} ${level.value} – Đề thi thử 01`;};
+    level.onchange=suggest;provider.onchange=suggest;suggest();
+    modal.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{modal.remove();resolve(null);});
+    modal.querySelector('#confirmNewExam').onclick=()=>{const value=title.value.trim()||`${provider.value} ${level.value} – Bản nháp`;modal.remove();resolve({level:level.value,provider:provider.value,title:value});};
+    title.focus();
+  });
+  if(!setup)return;
+  const {level,provider,title}=setup;
   const stamp=Date.now();
   const exam=await act(()=>repo.transaction(st=>createExam(st,user,{
     title,level,provider:provider.toUpperCase(),sections:[

@@ -24,3 +24,6 @@ label:has(+ #qType){display:none}
 .question-profile-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .question-profile-field{display:grid;gap:6px;font-size:13px;font-weight:700}
 .question-profile-field select,.question-profile-field input{width:100%;min-width:0}
+.exam-setup{width:min(620px,100%)}
+.exam-setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}.exam-setup-grid label{display:grid;gap:6px;font-weight:700}.exam-setup-name{grid-column:1/-1}.exam-setup-grid input,.exam-setup-grid select{width:100%;min-width:0}
+@media(max-width:620px){.exam-setup-grid{grid-template-columns:1fr}.exam-setup-name{grid-column:auto}}
