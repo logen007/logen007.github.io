@@ -20,14 +20,16 @@ async function request(path,{method='GET',body}={}){
 
 function mount(){
   const tab=document.querySelector('[data-action="admin-tab"][data-tab="teachers"]');
-  if(tab)tab.textContent='Người dùng';
+  if(tab&&tab.textContent.trim()!=='Người dùng')tab.textContent='Người dùng';
 
   const main=document.querySelector('.noi-dung-quan-tri');
   const heading=main?.querySelector('.tieu-de-trang h1');
   if(!main||!heading||!['Giáo viên & tài khoản','Danh sách người dùng'].includes(heading.textContent.trim()))return;
-  heading.textContent='Danh sách người dùng';
+
+  if(heading.textContent.trim()!=='Danh sách người dùng')heading.textContent='Danh sách người dùng';
   const description=main.querySelector('.tieu-de-trang p');
-  if(description)description.textContent='Master Admin xem toàn bộ tài khoản đã đăng nhập và cấp hoặc thu hồi quyền Giáo viên theo email.';
+  const descriptionText='Master Admin xem toàn bộ tài khoản đã đăng nhập và cấp hoặc thu hồi quyền Giáo viên theo email.';
+  if(description&&description.textContent.trim()!==descriptionText)description.textContent=descriptionText;
   if(main.querySelector('#userRolePanel'))return;
 
   const panel=document.createElement('section');
@@ -71,9 +73,11 @@ let scheduled=false;
 function scheduleMount(){
   if(scheduled)return;
   scheduled=true;
-  queueMicrotask(()=>{scheduled=false;mount();});
+  setTimeout(()=>{scheduled=false;mount();},0);
 }
 
 scheduleMount();
 const app=document.getElementById('app');
-if(app)new MutationObserver(scheduleMount).observe(app,{childList:true,subtree:true});
+// Only watch top-level app rerenders. Watching the full subtree made this module
+// observe its own text changes and could starve the browser in a render loop.
+if(app)new MutationObserver(scheduleMount).observe(app,{childList:true});
