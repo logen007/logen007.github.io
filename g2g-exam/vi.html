@@ -6,26 +6,27 @@
   <meta name="theme-color" content="#ffffff">
   <title>G2G Thi thử tiếng Đức</title>
   <meta name="description" content="Hệ thống thi thử tiếng Đức G2G, mô phỏng trải nghiệm thi trên máy tính.">
-  <link rel="stylesheet" href="./styles.css?v=20261006-4">
-  <link rel="stylesheet" href="./enhancements.css?v=20261006-4">
+  <link rel="stylesheet" href="./styles.css?v=20261006-5">
+  <link rel="stylesheet" href="./enhancements.css?v=20261006-5">
   <script>
     function showBootError(){
       var app=document.getElementById('app');
       if(!app||app.textContent.indexOf('Đang tải hệ thống')<0)return;
-      app.innerHTML='<div style="max-width:720px;margin:60px auto;padding:24px;font-family:Arial,sans-serif;border:1px solid #e0e0e8;border-radius:10px;background:#fff"><h2>Hệ thống chưa tải được</h2><p>Vui lòng tải lại trang. Nếu lỗi vẫn còn, hệ thống sẽ được kiểm tra lại bản triển khai.</p><button onclick="location.reload()" style="padding:10px 14px">Tải lại</button></div>';
+      app.innerHTML='<div style="max-width:720px;margin:60px auto;padding:24px;font-family:Arial,sans-serif;border:1px solid #e0e0e8;border-radius:10px;background:#fff"><h2>Hệ thống chưa kết nối được</h2><p>Ứng dụng hoặc máy chủ phản hồi quá chậm. Anh/chị hãy tải lại trang; nếu vẫn lỗi, hệ thống sẽ hiển thị lỗi thay vì treo vô thời hạn.</p><button onclick="location.reload()" style="padding:10px 14px">Tải lại</button></div>';
     }
     window.addEventListener('error',showBootError);
     window.addEventListener('unhandledrejection',showBootError);
+    window.setTimeout(showBootError,9000);
   </script>
 </head>
 <body>
   <div id="app"><div class="loading">Đang tải hệ thống...</div></div>
   <div id="toast" class="thong-bao an"></div>
-  <script src="./runtime-config.js?v=20261006-4"></script>
-  <script type="module" src="./src/app.js?v=20261006-4"></script>
-  <script type="module" src="./src/settings.js?v=20261006-4"></script>
-  <script type="module" src="./src/question-groups/bootstrap.js?v=20261006-4"></script>
-  <script type="module" src="./src/question-groups/picker.js?v=20261006-4"></script>
-  <script type="module" src="./src/users/bootstrap.js?v=20261006-4"></script>
+  <script src="./runtime-config.js?v=20261006-5"></script>
+  <script type="module" src="./src/app.js?v=20261006-5"></script>
+  <script type="module" src="./src/settings.js?v=20261006-5"></script>
+  <script type="module" src="./src/question-groups/bootstrap.js?v=20261006-5"></script>
+  <script type="module" src="./src/question-groups/picker.js?v=20261006-5"></script>
+  <script type="module" src="./src/users/bootstrap.js?v=20261006-5"></script>
 </body>
 </html>
