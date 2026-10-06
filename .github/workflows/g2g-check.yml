@@ -1,10 +1,12 @@
 name: G2G Exam Check
+
 on:
   push:
     paths:
       - 'g2g-exam/**'
       - '.github/workflows/g2g-check.yml'
   workflow_dispatch:
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -14,28 +16,7 @@ jobs:
         with:
           node-version: 22
       - name: Check JavaScript syntax
-        run: |
-          node --check g2g-exam/src/app.js
-          node --check g2g-exam/src/core.js
-          node --check g2g-exam/src/repository.js
-          node --check g2g-exam/src/media.js
-          node --check g2g-exam/src/settings.js
-          node --check g2g-exam/functions/index.js
-          node --check g2g-exam/functions/attempts.js
-          node --check g2g-exam/functions/secure-grading.js
-          node --check g2g-exam/functions/concurrency.js
-          node --check g2g-exam/functions/settings.js
-          node --check g2g-exam/functions/mailer.js
-          node --check g2g-exam/functions/bootstrap.js
-          node --check g2g-exam/server/src/index.js
-          node --check g2g-exam/server/src/db.js
-          node --check g2g-exam/server/src/auth.js
-          node --check g2g-exam/server/src/mail.js
-          node --check g2g-exam/server/src/state.js
-          node --check g2g-exam/server/src/actions.js
-          node --check g2g-exam/server/runtime/repository.js
-          node --check g2g-exam/server/runtime/media.js
-          node --check g2g-exam/server/runtime/settings.js
+        run: sh g2g-exam/server/check-code.sh
       - name: Run tests
         working-directory: g2g-exam
         run: npm test
