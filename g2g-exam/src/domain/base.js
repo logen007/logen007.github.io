@@ -14,7 +14,7 @@ export function normalizeState(input){
   const state=clone(input||{});
   state.schemaVersion||=2;
   state.revision||=1;
-  for(const key of ['users','questions','exams','attempts','gradingRequests','notifications','auditLog'])state[key]||=[];
+  for(const key of ['users','questionGroups','questions','exams','attempts','gradingRequests','notifications','auditLog'])state[key]||=[];
   return state;
 }
 
