@@ -1,47 +1,56 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import {fileURLToPath} from 'node:url';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 let passed=0;
-function test(name,fn){ try{fn();console.log(`✓ ${name}`);passed++;}catch(error){console.error(`✗ ${name}`);throw error;} }
+function test(name,fn){try{fn();console.log(`✓ ${name}`);passed++;}catch(error){console.error(`✗ ${name}`);throw error;}}
 
-test('Storage chỉ cho giáo viên hoặc quản trị tải audio',()=>{
-  const rules=read('storage.rules');
-  assert.ok(rules.includes("role == 'teacher'"));
-  assert.ok(rules.includes("role == 'master'"));
-  assert.ok(rules.includes('request.auth.uid == ownerId'));
+test('Upload audio chỉ dành cho giáo viên/quản trị và giới hạn 25 MB',()=>{
+  const source=read('server/src/index.js');
+  assert.ok(source.includes("requireRole(request,'teacher','master')"));
+  assert.ok(source.includes('25*1024*1024'));
 });
 
-test('Autosave chỉ cho câu thuộc phần hiện tại và trước deadline',()=>{
-  const rules=read('firestore.rules');
-  assert.ok(rules.includes('currentQuestionIds'));
-  assert.ok(rules.includes('currentDeadlineMs'));
-  assert.ok(rules.includes('onlyCurrentSectionAnswersChanged'));
-  assert.ok(rules.includes('answerWindowOpen'));
-  assert.ok(rules.includes('request.time.toMillis()'));
+test('Autosave server chỉ nhận câu thuộc phần hiện tại và trước deadline',()=>{
+  const source=read('server/src/actions.js');
+  for(const text of ['currentQuestionIds','currentDeadlineMs','Phần thi đã hết thời gian']){
+    assert.ok(source.includes(text),`Thiếu ${text}`);
+  }
+  assert.ok(source.includes('allowed.has(k)'));
 });
 
-test('Cloud Function tạo attempt có metadata bảo vệ thời gian và phạm vi câu hỏi',()=>{
-  const source=read('functions/attempts.js');
-  for(const text of ['currentSectionId','currentQuestionIds','currentDeadlineMs','sectionRuntime']) assert.ok(source.includes(text),`Thiếu ${text}`);
+test('Tạo attempt server có metadata bảo vệ thời gian và phạm vi câu hỏi',()=>{
+  const source=read('server/src/actions.js');
+  for(const text of ['currentSectionId','currentQuestionIds','currentDeadlineMs','sectionStates']){
+    assert.ok(source.includes(text),`Thiếu ${text}`);
+  }
 });
 
-test('Bản production không tự bật SMTP/email khi chưa cấu hình',()=>{
-  const source=read('functions/settings.js');
-  assert.match(source,/smtp:\{[\s\S]*?enabled:false/);
-  assert.match(source,/email:\{[\s\S]*?enabled:false/);
-  assert.match(source,/results:\{notifyResultEmail:false/);
+test('Bản production không tự bật SMTP/email',()=>{
+  const source=read('server/src/defaults.js');
+  assert.match(source,/smtp:\{enabled:false/);
+  assert.match(source,/email:\{enabled:false/);
 });
 
-test('Bootstrap ưu tiên attempt lifecycle đã harden',()=>{
-  const source=read('functions/bootstrap.js');
-  const concurrencyIndex=source.indexOf('...concurrency');
-  const attemptsIndex=source.indexOf('...attempts');
-  assert.ok(concurrencyIndex>=0&&attemptsIndex>concurrencyIndex);
+test('Học viên không nhận đáp án đúng hoặc điểm riêng tư chưa công bố',()=>{
+  const source=read('server/src/state.js');
+  assert.ok(source.includes('delete q.correctAnswer'));
+  assert.ok(source.includes("user.role==='student'"));
+  assert.ok(source.includes('public_data'));
+  assert.equal(/student[\s\S]{0,800}private_data/.test(source),false);
+});
+
+test('Role và thay đổi dữ liệu quan trọng được kiểm tra lại phía server',()=>{
+  const state=read('server/src/state.js');
+  const actions=read('server/src/actions.js');
+  assert.ok(state.includes("user.role!=='master'"));
+  assert.ok(state.includes('Không có quyền sửa bài thi này'));
+  assert.ok(actions.includes("user.role==='master'"));
+  assert.ok(actions.includes('canGrade'));
 });
 
 console.log(`\n${passed} kiểm thử go-live đã đạt.`);
