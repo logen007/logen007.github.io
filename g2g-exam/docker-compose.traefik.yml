@@ -35,11 +35,11 @@ services:
       - traefik
     labels:
       - traefik.enable=true
-      - traefik.docker.network=${TRAEFIK_NETWORK:?TRAEFIK_NETWORK is required}
+      - traefik.docker.network=${TRAEFIK_NETWORK:-root_default}
       - traefik.http.routers.g2g-exam.rule=Host(`${G2G_HOST:-exam.g2gcareer.com}`)
       - traefik.http.routers.g2g-exam.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
       - traefik.http.routers.g2g-exam.tls=true
-      - traefik.http.routers.g2g-exam.tls.certresolver=${TRAEFIK_CERTRESOLVER:?TRAEFIK_CERTRESOLVER is required}
+      - traefik.http.routers.g2g-exam.tls.certresolver=${TRAEFIK_CERTRESOLVER:-mytlschallenge}
       - traefik.http.services.g2g-exam.loadbalancer.server.port=8080
 
 networks:
@@ -47,7 +47,7 @@ networks:
     internal: true
   traefik:
     external: true
-    name: ${TRAEFIK_NETWORK:?TRAEFIK_NETWORK is required}
+    name: ${TRAEFIK_NETWORK:-root_default}
 
 volumes:
   g2g_pgdata:
