@@ -51,9 +51,15 @@ async function mountBankPanel(){
 function normalizeChoice(choice,key){return choice&&typeof choice==='object'?{key,text:String(choice.text||''),imageUrl:String(choice.imageUrl||'')}:{key,text:String(choice||''),imageUrl:''};}
 function questionDraft(index,score=1){return {id:id('q'),groupOrder:index+1,prompt:'',audioUrl:'',choices:['A','B','C'].map(k=>({key:k,text:'',imageUrl:''})),correctAnswer:0,maxScore:score,locked:false};}
 
-async function openEditor(groupId=null){
-  let state,me;try{[state,me]=await Promise.all([request('/state'),request('/auth/me')]);}catch(error){alert(error.message);return;}
-  const user=me.user;if(!user||!['teacher','master'].includes(user.role)){alert('Chỉ giáo viên hoặc quản trị viên được sửa cụm câu hỏi.');return;}
+export async function openA1ListeningPart1Editor({groupId=null,onSaved,state:initialState,user:initialUser,commit}={}){
+  injectStyles();
+  return openEditor(groupId,onSaved,initialState,initialUser,commit);
+}
+
+async function openEditor(groupId=null,onSaved=null,initialState=null,initialUser=null,commit=null){
+  let state=initialState,user=initialUser;
+  if(!state||!user){try{const me=await request('/auth/me');state=await request('/state');user=me.user;}catch(error){alert(error.message);return;}}
+  if(!user||!['teacher','master'].includes(user.role)){alert('Chỉ giáo viên hoặc quản trị viên được sửa cụm câu hỏi.');return;}
   const existing=groupId?(state.questionGroups||[]).find(g=>g.id===groupId):null;
   const originalQuestions=existing?(state.questions||[]).filter(q=>(existing.questionIds||[]).includes(q.id)).sort((a,b)=>(a.groupOrder||0)-(b.groupOrder||0)):[];
   if(existing&&(existing.locked||originalQuestions.some(q=>q.locked))&&user.role!=='master'){alert('Cụm đã được dùng trong đề và đang khóa.');return;}
@@ -111,8 +117,10 @@ async function openEditor(groupId=null){
       questions.forEach((q,i)=>ops.push({collection:'questions',id:q.id,kind:'upsert',item:{...q,code:`A1-LIS-01-${String(i+1).padStart(3,'0')}`,level:'A1',skill:'Nghe',part:'Phần 1',partOrder:1,type:'single',title:`A1 Nghe 1 · Câu ${i+1}`,instruction:'',autoGrade:true,pairs:[],rubric:[],groupId:group.id,groupType:TYPE,groupOrder:i+1,groupInstruction:group.instruction,groupAudioPolicy:{...POLICY},ownerId:q.ownerId||group.ownerId,ownerName:q.ownerName||group.ownerName,status:q.status==='trash'?'active':(q.status||'active'),locked:Boolean(q.locked),usedCount:Number(q.usedCount||0),correctRate:q.correctRate??null,createdAt:q.createdAt||now,updatedAt:now}}));
       const kept=new Set(questionIds);
       for(const old of originalQuestions)if(!kept.has(old.id))ops.push({collection:'questions',id:old.id,kind:'upsert',item:{...old,status:'trash',deletedAt:now,updatedAt:now}});
-      await request('/commit',{method:'POST',body:{operations:ops}});
-      modal.remove();location.reload();
+      if(commit)await commit(ops);else await request('/commit',{method:'POST',body:{operations:ops}});
+      modal.remove();
+      if(onSaved)await onSaved(groupItem);
+      else location.reload();
     }catch(error){alert(error.message);}finally{if(document.body.contains(button)){button.disabled=false;button.textContent='Lưu cụm';}}
   }
   render();

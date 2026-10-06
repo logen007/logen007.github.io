@@ -383,6 +383,16 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="submit-exam"]').forEach(b=>b.onclick=()=>submitCurrentExam(true));
   app.querySelectorAll('[data-action="admin-tab"]').forEach(b=>b.onclick=()=>{ui.adminTab=b.dataset.tab;ui.view='admin';render();});
   app.querySelectorAll('[data-action="new-question"]').forEach(b=>b.onclick=()=>questionModal(null,ui.view==='builder'?async q=>{const ex=byId(data.exams,ui.builderExamId),sec=ex?.sections.find(s=>s.id===ui.builderSectionId);if(ex&&sec)await act(()=>repo.transaction(st=>addQuestionsToSection(st,user,ex.id,sec.id,[q.id])),'Đã thêm câu vào phần.');}:null));
+  app.querySelectorAll('[data-action="edit-a1-group"]').forEach(b=>b.onclick=async()=>{
+    const exam=byId(data.exams,ui.builderExamId),section=exam?.sections.find(s=>s.id===ui.builderSectionId);
+    if(!exam||!section)return;
+    const existingId=section.questionIds.map(id=>byId(data.questions,id)?.groupId).find(Boolean)||null;
+    const {openA1ListeningPart1Editor}=await import('./question-groups/bootstrap.js');
+    const commit=ops=>repo.transaction(st=>{for(const op of ops){st[op.collection]||=[];const i=st[op.collection].findIndex(x=>x.id===op.id);if(i>=0)st[op.collection][i]=op.item;else st[op.collection].push(op.item);}});
+    await openA1ListeningPart1Editor({groupId:existingId,state:data,user,commit,onSaved:async group=>{
+      await act(()=>repo.transaction(st=>updateSection(st,user,exam.id,section.id,{questionIds:group.questionIds||[]})),'Đã lưu cụm A1 Nghe Phần 1.');
+    }});
+  });
   app.querySelectorAll('[data-action="edit-question"]').forEach(b=>b.onclick=()=>questionModal(byId(data.questions,b.dataset.id)));
   app.querySelectorAll('[data-action="preview-question"]').forEach(b=>b.onclick=()=>previewQuestionModal(byId(data.questions,b.dataset.id)));
   app.querySelectorAll('[data-action="delete-question"]').forEach(b=>b.onclick=()=>{if(confirm('Đưa câu hỏi này vào Thùng rác?'))act(()=>repo.transaction(st=>softDeleteQuestion(st,user,b.dataset.id)),'Đã chuyển câu hỏi vào Thùng rác.');});
