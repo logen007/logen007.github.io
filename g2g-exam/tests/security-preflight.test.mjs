@@ -15,6 +15,12 @@ test('Upload audio chỉ dành cho giáo viên/quản trị và giới hạn 25 
   assert.ok(source.includes('25*1024*1024'));
 });
 
+test('Upload hình đáp án chỉ dành cho giáo viên/quản trị',()=>{
+  const source=read('server/src/index.js');
+  assert.ok(source.includes("'/api/media/image'"));
+  assert.ok(source.includes("mimePrefix:'image/'"));
+});
+
 test('Autosave server chỉ nhận câu thuộc phần hiện tại và trước deadline',()=>{
   const source=read('server/src/actions/attempts.js');
   for(const text of ['currentQuestionIds','currentDeadlineMs','Phần thi đã hết thời gian']){
@@ -28,6 +34,11 @@ test('Tạo attempt server có metadata bảo vệ thời gian và phạm vi câ
   for(const text of ['currentSectionId','currentQuestionIds','currentDeadlineMs','sectionStates']){
     assert.ok(source.includes(text),`Thiếu ${text}`);
   }
+});
+
+test('Audio cụm A1 được khóa một phiên ở server',()=>{
+  const source=read('server/src/actions/attempts.js');
+  for(const text of ['startAudioGroup','completeAudioGroup','audioSessions','không thể phát lại','segmentRepeat'])assert.ok(source.includes(text),`Thiếu ${text}`);
 });
 
 test('Bản production không tự bật SMTP/email',()=>{
