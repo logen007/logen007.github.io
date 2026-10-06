@@ -23,8 +23,8 @@ export async function registerAuthRoutes(fastify){
     if(!process.env.GOOGLE_CLIENT_ID||!process.env.GOOGLE_CLIENT_SECRET)throw appError(503,'Google Login chưa được cấu hình trên máy chủ.');
     const state=crypto.randomBytes(24).toString('hex');
     reply.setCookie('g2g_oauth_state',state,{...cookieOpts(600),maxAge:600});
-    const requestedReturn=String(request.query?.return||'/vi.html');
-    const returnTo=requestedReturn.startsWith('/')?requestedReturn:'/vi.html';
+    const requestedReturn=String(request.query?.return||'/');
+    const returnTo=requestedReturn.startsWith('/')?requestedReturn:'/';
     reply.setCookie('g2g_return_to',returnTo,{...cookieOpts(600),maxAge:600});
     const url=oauth().generateAuthUrl({access_type:'online',scope:['openid','email','profile'],prompt:'select_account',state});
     return reply.redirect(url);
@@ -57,7 +57,7 @@ export async function registerAuthRoutes(fastify){
     reply.clearCookie('g2g_oauth_state',{path:'/'});
     const ret=request.unsignCookie(request.cookies.g2g_return_to||'');
     reply.clearCookie('g2g_return_to',{path:'/'});
-    return reply.redirect(ret.valid&&String(ret.value).startsWith('/')?ret.value:'/vi.html');
+    return reply.redirect(ret.valid&&String(ret.value).startsWith('/')?ret.value:'/');
   });
   fastify.post('/api/auth/logout',async(_request,reply)=>{reply.clearCookie('g2g_session',{path:'/',domain:COOKIE_DOMAIN});return {ok:true};});
 }
