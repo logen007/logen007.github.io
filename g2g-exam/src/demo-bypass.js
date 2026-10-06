@@ -10,17 +10,26 @@ else if(path==='/')sessionStorage.removeItem('g2g.demo.user');
 
 function tuneLogin(){
   const button=document.getElementById('googleLogin');
-  if(button){
-    button.textContent='Đăng nhập';
-    button.onclick=null;
-  }
+  if(button&&button.textContent!=='Đăng nhập')button.textContent='Đăng nhập';
   const box=document.querySelector('.hop-dang-nhap');
   const paragraph=box?.querySelector('p');
-  if(paragraph)paragraph.textContent='Nhấn Đăng nhập để vào trang học viên.';
-  document.querySelector('.che-do-demo')?.remove();
+  const text='Nhấn Đăng nhập để vào trang học viên.';
+  if(paragraph&&paragraph.textContent!==text)paragraph.textContent=text;
+  const demo=document.querySelector('.che-do-demo');
+  if(demo)demo.remove();
 }
 
-new MutationObserver(tuneLogin).observe(document.documentElement,{childList:true,subtree:true});
+let scheduled=false;
+const observer=new MutationObserver(()=>{
+  if(scheduled)return;
+  scheduled=true;
+  requestAnimationFrame(()=>{
+    scheduled=false;
+    tuneLogin();
+  });
+});
+observer.observe(document.documentElement,{childList:true,subtree:true});
+
 document.addEventListener('click',event=>{
   const button=event.target.closest?.('#googleLogin');
   if(!button)return;
