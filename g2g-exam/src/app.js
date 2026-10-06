@@ -386,7 +386,7 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="edit-a1-group"]').forEach(b=>b.onclick=async()=>{
     const exam=byId(data.exams,ui.builderExamId),section=exam?.sections.find(s=>s.id===ui.builderSectionId);
     if(!exam||!section)return;
-    if(exam.provider!=='GOETHE'||exam.level!=='A1'){
+    if((exam.provider&&exam.provider!=='GOETHE')||exam.level!=='A1'){
       notify('Template cụm này hiện chỉ áp dụng cho Goethe A1 · Nghe · Phần 1.');
       return;
     }
@@ -471,7 +471,7 @@ function bindBuilder(){
   const exam=byId(data.exams,ui.builderExamId);
   if(!exam)return;
   app.querySelectorAll('[data-action="edit-a1-group"]').forEach(button=>{
-    if(exam.provider!=='GOETHE'||exam.level!=='A1'){
+    if((exam.provider&&exam.provider!=='GOETHE')||exam.level!=='A1'){
       button.disabled=true;
       button.textContent='Template phần này sẽ cấu hình riêng';
     }

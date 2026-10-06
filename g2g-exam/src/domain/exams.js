@@ -33,6 +33,7 @@ export function createExam(state,user,input={}){
     id:uid('exam'),
     title:String(input.title||'Bài thi thử mới').trim(),
     level:input.level||'B1',
+    provider:['GOETHE','TELC'].includes(String(input.provider||'').toUpperCase())?String(input.provider).toUpperCase():null,
     ownerId:user.id,
     ownerName:user.name,
     status:'draft',
@@ -52,10 +53,11 @@ export function updateExam(state,user,id,patch){
   const exam=byId(state.exams,id);
   if(!exam)throw new Error('Không tìm thấy bài thi.');
   if(!canEditExam(user,exam))throw new Error('Bạn không có quyền chỉnh sửa bài thi này.');
-  const structural=['level','passScore','sections','status'].some(key=>key in patch&&patch[key]!==exam[key]);
+  const structural=['level','provider','passScore','sections','status'].some(key=>key in patch&&patch[key]!==exam[key]);
   if(structural)assertExamStructureEditable(state,user,exam);
   if('title' in patch)exam.title=String(patch.title||'').trim();
   if('level' in patch)exam.level=patch.level;
+  if('provider' in patch)exam.provider=['GOETHE','TELC'].includes(String(patch.provider||'').toUpperCase())?String(patch.provider).toUpperCase():null;
   if('passScore' in patch)exam.passScore=Number(patch.passScore||0);
   if('sections' in patch)exam.sections=(patch.sections||[]).map(normalizeSection);
   if('status' in patch)exam.status=patch.status;
