@@ -95,14 +95,17 @@ test('Cấu hình production chỉ ghi qua REST backend của Master',()=>{
   assert.ok(backend.includes('update_system_settings'));
 });
 
-test('Runtime production chỉ chọn API repository khi có G2G_API_BASE',()=>{
+test('Runtime có API repository và hỗ trợ demo bypass tạm thời',()=>{
   const repository=read('src/repository.js');
   const api=read('src/repositories/api.js');
   const runtime=read('server/runtime/runtime-config.js');
-  assert.ok(repository.includes('hasApiBackend()?new ApiRepository():new LocalRepository()'));
+  const demo=read('src/demo-bypass.js');
+  assert.ok(repository.includes('new ApiRepository()'));
+  assert.ok(repository.includes('G2G_DEMO_BYPASS'));
   assert.ok(api.includes("this.mode='api'"));
   assert.ok(api.includes("this.call('startAttemptSecure'"));
   assert.ok(runtime.includes("G2G_API_BASE='/api'"));
+  assert.ok(demo.includes('G2G_DEMO_BYPASS=true'));
 });
 
 test('Secret SMTP không được đưa xuống frontend',()=>{
