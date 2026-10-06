@@ -1,199 +1,74 @@
 # G2G Thi thử — Sổ tay vận hành
 
-Tài liệu này dùng khi đưa hệ thống từ bản thử nghiệm sang vận hành thật và khi bảo trì sau này.
+## 1. Nguyên tắc
 
-## 1. Nguyên tắc triển khai
+Production chạy trên VPS với Node.js + PostgreSQL. Không sửa trực tiếp điểm, lượt thi hoặc dữ liệu quyền trong database trừ khi đang xử lý sự cố có ghi nhận rõ ràng.
 
-Không sửa trực tiếp dữ liệu điểm hoặc lượt thi trong Firestore trừ khi đang xử lý sự cố có ghi nhận audit.
+Code production lấy từ branch `main`. Mọi thay đổi trong `g2g-exam/` phải qua `G2G Exam Check` và được auto-deploy kiểm tra cú pháp trước khi build.
 
-Mỗi thay đổi code phải đi qua workflow `G2G Exam Check`. Chỉ triển khai production khi workflow xanh.
-
-Luồng an toàn:
-
-1. Sửa code theo từng nhóm nhỏ.
-2. Chạy kiểm tra cú pháp + core tests + edge tests + static frontend tests.
-3. Xác nhận GitHub Pages build thành công đối với frontend.
-4. Với thay đổi backend: deploy Functions/Rules vào Firebase test trước.
-5. Test tài khoản Học viên, Giáo viên và Quản trị cấp cao.
-6. Sau đó mới deploy production.
-
-## 2. Kiến trúc vận hành
-
-Frontend tĩnh:
-- `vi.html`
-- `styles.css`
-- `enhancements.css`
-- `src/app.js`
-
-Logic nghiệp vụ dùng chung:
-- `src/core.js`
-
-Lớp dữ liệu:
-- `src/repository.js`
-- localStorage khi chưa cấu hình Firebase
-- Firebase Auth + Firestore khi đã cấu hình Firebase
-
-Media:
-- `src/media.js`
-- Firebase Storage ở production
-
-Backend bảo mật:
-- `functions/attempts.js`: thao tác lượt thi
-- `functions/secure-grading.js`: dữ liệu điểm riêng tư
-- `functions/concurrency.js`: chống thao tác trùng/race condition
-- `functions/integrity.js`: khóa câu hỏi của đề đã xuất bản
-- `functions/bootstrap.js`: export Functions production
-
-Bảo mật:
-- `firestore.rules`
-- `storage.rules`
-
-## 3. Dữ liệu quan trọng
-
-Các collection production:
-
-- `users`: tài khoản và vai trò
-- `questions`: ngân hàng câu hỏi đầy đủ, giáo viên truy cập
-- `questionPublic`: bản câu hỏi không chứa đáp án đúng cho học viên
-- `exams`: bài thi
-- `attempts`: lượt thi và dữ liệu học viên được phép đọc
-- `attemptPrivate`: điểm chưa công bố và dữ liệu chấm riêng tư
-- `attemptLocks`: khóa chống tạo trùng lượt thi khi bấm/nạp lại đồng thời
-- `gradingRequests`: yêu cầu xin chấm
-- `notifications`: thông báo kết quả
-- `mail`: hàng đợi gửi email
-- `auditLog`: nhật ký thao tác quan trọng
-
-Không cấp client quyền ghi trực tiếp vào `attemptPrivate`, `attemptLocks`, `mail`, `auditLog`.
-
-## 4. Trạng thái lượt thi
+## 2. Trạng thái lượt thi
 
 Luồng chuẩn:
 
 `in_progress → grading → ready → published`
 
-Với bài không có câu chấm tay:
+Bài chỉ có câu tự chấm:
 
 `in_progress → ready → published`
 
-Nếu học viên bỏ lượt:
+Học viên bỏ lượt:
 
 `in_progress → abandoned`
 
-Học viên chỉ nhìn thấy điểm khi trạng thái là `published`.
+Học viên chỉ thấy điểm khi kết quả đã `published`.
 
-## 5. Xử lý chấm bài đồng thời
+## 3. Quyền
 
-Production Functions dùng transaction cho lưu điểm.
+- **Student**: làm bài, xem lịch sử của chính mình.
+- **Teacher**: tạo câu hỏi/bài thi; sửa nội dung mình sở hữu; chấm bài mình sở hữu hoặc được duyệt quyền chấm.
+- **Master**: quản trị toàn hệ thống, tài khoản, thùng rác, cài đặt và công bố khi được phép theo nghiệp vụ.
 
-Nếu hai giáo viên được cấp quyền chấm và lưu gần nhau:
-- hệ thống đọc phiên bản điểm mới nhất;
-- merge điểm theo kỹ năng;
-- Firestore tự retry transaction nếu dữ liệu thay đổi trong lúc lưu;
-- tránh ghi đè toàn bộ object điểm bằng bản cũ.
+Backend luôn kiểm tra lại quyền; không dựa vào việc ẩn/hiện nút ở frontend.
 
-Chủ đề hoặc Quản trị cấp cao mới được công bố kết quả.
+## 4. Dữ liệu nhạy cảm
 
-## 6. Chống công bố/gửi email trùng
+- Google Client Secret, cookie secret, encryption key: chỉ trong `server/.env` trên VPS.
+- PostgreSQL password: chỉ trong `.env` trên VPS.
+- SMTP password/API key: được mã hóa trong PostgreSQL; frontend không đọc lại được plaintext.
+- Đáp án đúng và điểm riêng tư chưa công bố không được gửi xuống state của học viên.
 
-`publishAttemptResult` là idempotent.
+## 5. Deploy
 
-Mỗi attempt dùng ID cố định:
-- notification: `result-{attemptId}`
-- email: `result-{attemptId}`
-- audit publish: `publish-{attemptId}`
+Timer production: `g2g-auto-deploy.timer`.
 
-Nếu người dùng double-click hoặc request được retry do mạng:
-- lần đầu chuyển `ready → published`;
-- lần sau nhận trạng thái `published` và không tạo thêm email.
+Luồng:
 
-## 7. Chống tạo trùng lượt thi
+`GitHub main → syntax check → Docker build/recreate G2G app → health check`
 
-Backend dùng `attemptLocks/{studentId}__{examId}`.
+Không restart Traefik, n8n, Hermes hoặc các dịch vụ OtherBrick khi deploy G2G.
 
-Lock lưu:
-- attempt hiện tại;
-- số lần thi cuối;
-- thời điểm cập nhật.
+Health endpoint:
 
-Hai request `Bắt đầu thi` đồng thời sẽ cùng quy về một attempt đang làm thay vì tạo hai bản ghi.
+```text
+https://exam.g2gcareer.com/api/health
+```
 
-## 8. Quy tắc sửa đề và câu hỏi
+## 6. Kiểm tra sau thay đổi lớn
 
-Khi đề đã có học viên bắt đầu:
-- không đổi cấu trúc đề cũ;
-- giữ lịch sử điểm nguyên vẹn;
-- muốn thay đổi lớn phải tạo đề/phiên bản mới.
+1. Health API trả `ok:true` và `database:true`.
+2. Google Login hoạt động.
+3. Master vào được Cài đặt.
+4. Tạo/sửa câu hỏi, upload audio.
+5. Tạo/publish bài thi.
+6. Student làm bài, reload giữa chừng, nộp bài.
+7. Teacher chấm; kết quả chỉ hiện sau khi publish.
+8. SMTP test và email kết quả hoạt động nếu đã bật.
+9. Kiểm tra mobile và desktop.
 
-Khi câu hỏi đã nằm trong đề xuất bản:
-- câu được khóa;
-- giáo viên không sửa trực tiếp;
-- tạo câu hỏi mới hoặc bản sao để thay thế trong phiên bản đề mới.
+## 7. Backup
 
-## 9. Sao lưu
+Backup cả PostgreSQL và volume `g2g_uploads` trước migration hoặc thay đổi schema lớn.
 
-Tối thiểu mỗi ngày sao lưu:
-- `users`
-- `questions`
-- `exams`
-- `attempts`
-- `attemptPrivate`
-- `gradingRequests`
-- `auditLog`
+## 8. Khi sửa code
 
-Khuyến nghị lưu bản backup ngoài Firebase project chính.
-
-Trước migration lớn phải tạo một backup thủ công và ghi lại commit code tương ứng.
-
-## 10. Khôi phục khi deploy lỗi
-
-Frontend:
-1. Xác định commit cuối cùng có `G2G Exam Check` xanh.
-2. Revert commit gây lỗi.
-3. Chờ GitHub Pages build thành công.
-4. Refresh bằng cache-busting version nếu cần.
-
-Firebase Functions:
-1. Không thay đổi Rules/Functions tiếp trong lúc sự cố chưa xác định.
-2. Deploy lại commit Functions ổn định gần nhất.
-3. Kiểm tra `auditLog`, `attempts`, `attemptPrivate` trước khi cho học viên thi tiếp.
-
-Không xóa attempt để “sửa nhanh”.
-
-## 11. Checklist trước ngày có lớp thi
-
-- Google Login hoạt động.
-- Học viên mới đăng nhập được và có role student.
-- Danh sách đề chỉ có đề `published`.
-- Bắt đầu/tiếp tục/làm lại hoạt động.
-- Reload giữa bài không reset timer.
-- Autosave câu trả lời hoạt động.
-- Audio đúng giới hạn số lượt nghe.
-- Hết giờ xử lý đúng cấu hình từng phần.
-- Nộp bài không lộ điểm chưa công bố.
-- Giáo viên được phép mới nhìn thấy bài cần chấm.
-- Giáo viên khác phải xin chấm và được duyệt.
-- Lưu tạm điểm không gửi mail.
-- Công bố điểm gửi đúng một email.
-- Học viên xem được kết quả sau publish.
-- Bảng điểm Best/Latest/All Attempts đúng.
-- Mobile/tablet/desktop không tràn nút hoặc bảng.
-
-## 12. Khi có lỗi từ người dùng
-
-Cần ghi lại:
-- email/tài khoản (không ghi token/password);
-- mã bài thi;
-- attempt ID;
-- thời gian xảy ra;
-- thiết bị/trình duyệt;
-- ảnh lỗi nếu có.
-
-Sau đó kiểm tra theo thứ tự:
-1. trạng thái attempt;
-2. `auditLog`;
-3. Functions logs;
-4. Firestore document;
-5. frontend console/network nếu cần.
-
-Không sửa dữ liệu trước khi xác định nguyên nhân.
+Không dồn tính năng vào một file lớn. Chọn đúng module theo `ARCHITECTURE.md`; UI, domain, data access và backend action phải tách nhau. Nếu thêm một nhóm nghiệp vụ mới, tạo module mới thay vì mở rộng `app.js` hoặc `server/src/actions.js` thành monolith.
