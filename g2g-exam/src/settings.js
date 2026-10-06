@@ -27,27 +27,31 @@ function queue(){
 function applyBrand(){
   const name=pub.general?.systemName||'Thi thử tiếng Đức';
   const title=document.querySelector('.ten-he-thong strong');
-  if(title)title.textContent=name;
-  document.title=`${name} · G2G`;
+  if(title&&title.textContent!==name)title.textContent=name;
+  const pageTitle=`${name} · G2G`;
+  if(document.title!==pageTitle)document.title=pageTitle;
 }
 
 function applyLogin(){
   const button=document.getElementById('googleLogin');
   if(!button)return;
   const enabled=pub.auth?.googleLoginEnabled!==false;
-  button.disabled=!enabled;
-  button.textContent=enabled?'Đăng nhập bằng Google':'Đăng nhập Google đang tạm tắt';
+  if('disabled' in button&&button.disabled===enabled)button.disabled=!enabled;
+  const label=enabled?'Đăng nhập bằng Google':'Đăng nhập Google đang tạm tắt';
+  if(button.textContent!==label)button.textContent=label;
 }
 
 function applyMaintenance(){
-  document.querySelector('[data-g2g-maintenance]')?.remove();
-  if(!student()||!pub.operations?.maintenanceMode)return;
+  const existing=document.querySelector('[data-g2g-maintenance]');
+  if(!student()||!pub.operations?.maintenanceMode){existing?.remove();return;}
   const header=document.querySelector('.thanh-dau');
   if(!header)return;
+  const message=pub.operations.maintenanceMessage||'Hệ thống đang bảo trì.';
+  if(existing){if(existing.textContent!==message)existing.textContent=message;return;}
   const banner=document.createElement('div');
   banner.dataset.g2gMaintenance='1';
   banner.className='canh-bao-bao-tri';
-  banner.textContent=pub.operations.maintenanceMessage||'Hệ thống đang bảo trì.';
+  banner.textContent=message;
   header.insertAdjacentElement('afterend',banner);
 }
 
@@ -167,7 +171,8 @@ if(hasApiBackend()){
     if(event.target.closest?.('[data-action="admin-tab"]'))open=false;
   },true);
 
-  new MutationObserver(queue).observe(document.getElementById('app'),{childList:true,subtree:true});
+  const app=document.getElementById('app');
+  if(app)new MutationObserver(queue).observe(app,{childList:true});
   (async()=>{
     try{pub=await loadPublicSettings();}catch{}
     queue();
