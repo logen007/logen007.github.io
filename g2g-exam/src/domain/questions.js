@@ -2,6 +2,11 @@ import {
   clone,uid,nowIso,byId,isTeacher,isMaster,audit,canEditQuestion,canDeleteQuestion
 } from './base.js';
 
+function choiceText(choice){
+  if(choice&&typeof choice==='object')return String(choice.text||'').trim();
+  return String(choice||'').trim();
+}
+
 function validateQuestionInput(input,existing=null){
   const type=input.type??existing?.type??'single';
   const title=String(input.title??existing?.title??'').trim();
@@ -10,7 +15,7 @@ function validateQuestionInput(input,existing=null){
   if(!Number.isFinite(maxScore)||maxScore<0)throw new Error('Điểm tối đa không hợp lệ.');
   if(['single','truefalse','cloze'].includes(type)){
     const choices=clone(input.choices??existing?.choices??[]);
-    if(choices.length<2)throw new Error('Câu tự chấm cần ít nhất 2 lựa chọn.');
+    if(choices.length<2||choices.some(x=>!choiceText(x)))throw new Error('Câu tự chấm cần ít nhất 2 lựa chọn hợp lệ.');
     const correct=Number(input.correctAnswer??existing?.correctAnswer);
     if(!Number.isInteger(correct)||correct<0||correct>=choices.length)throw new Error('Đáp án đúng không hợp lệ.');
   }
@@ -32,6 +37,8 @@ export function createQuestion(state,user,input={}){
     choices:clone(input.choices||[]),correctAnswer:input.correctAnswer??null,pairs:clone(input.pairs||[]),
     maxScore:Number(input.maxScore??1),autoGrade:input.autoGrade??!['writing','speaking'].includes(type),
     rubric:clone(input.rubric||[]),audioUrl:input.audioUrl||'',ownerId:user.id,ownerName:user.name,
+    groupId:input.groupId||null,groupType:input.groupType||null,groupOrder:Number(input.groupOrder||0)||null,
+    groupInstruction:input.groupInstruction||'',groupAudioPolicy:clone(input.groupAudioPolicy||null),
     status:'active',locked:false,usedCount:0,correctRate:null,createdAt:nowIso(),updatedAt:nowIso(),
   };
   state.questions.push(question);
@@ -44,7 +51,7 @@ export function updateQuestion(state,user,id,patch){
   if(!question)throw new Error('Không tìm thấy câu hỏi.');
   if(!canEditQuestion(user,question))throw new Error(question.locked?'Câu hỏi đã được dùng trong đề đã xuất bản nên không thể chỉnh sửa. Hãy tạo câu hỏi mới.':'Bạn không có quyền sửa câu hỏi này.');
   validateQuestionInput(patch,question);
-  const allowed=['code','level','skill','part','type','title','instruction','prompt','choices','correctAnswer','pairs','maxScore','autoGrade','rubric','audioUrl'];
+  const allowed=['code','level','skill','part','type','title','instruction','prompt','choices','correctAnswer','pairs','maxScore','autoGrade','rubric','audioUrl','groupId','groupType','groupOrder','groupInstruction','groupAudioPolicy'];
   for(const key of allowed)if(key in patch)question[key]=clone(patch[key]);
   question.updatedAt=nowIso();
   audit(state,user,'update','question',question.id);
