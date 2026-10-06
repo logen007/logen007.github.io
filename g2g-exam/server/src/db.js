@@ -6,7 +6,13 @@ import pg from 'pg';
 import { DEFAULT_SETTINGS,mergeSettings } from './defaults.js';
 
 const {Pool}=pg;
-export const pool=new Pool({connectionString:process.env.DATABASE_URL,max:Number(process.env.PG_POOL_MAX||10),idleTimeoutMillis:30000});
+export const pool=new Pool({
+  connectionString:process.env.DATABASE_URL,
+  max:Number(process.env.PG_POOL_MAX||10),
+  idleTimeoutMillis:30000,
+  connectionTimeoutMillis:Number(process.env.PG_CONNECT_TIMEOUT_MS||5000),
+  query_timeout:Number(process.env.PG_QUERY_TIMEOUT_MS||10000),
+});
 export const uid=(prefix='id')=>`${prefix}-${crypto.randomUUID()}`;
 export const now=()=>new Date().toISOString();
 
