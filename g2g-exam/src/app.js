@@ -431,9 +431,15 @@ async function moveAttemptSection(delta){
 }
 
 async function createNewExam(){
+  const level=prompt('Trình độ (A1, A2, B1, B2):','A1')?.trim().toUpperCase();
+  if(!level)return;
+  const provider=prompt('Chọn loại đề: Goethe hoặc TELC','TELC')?.trim();
+  if(!provider)return;
+  const title=prompt('Tên đề thi:',`${provider.toUpperCase()} ${level} – Bản nháp`)?.trim();
+  if(!title)return;
   const stamp=Date.now();
   const exam=await act(()=>repo.transaction(st=>createExam(st,user,{
-    title:'TELC A1 – Bản nháp',level:'A1',sections:[
+    title,level,provider:provider.toUpperCase(),sections:[
       {id:`sec-${stamp}-1`,name:'Nghe · Phần 1',timeMinutes:20,maxScore:10,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]}
     ]
   })),null,{rerender:false});
