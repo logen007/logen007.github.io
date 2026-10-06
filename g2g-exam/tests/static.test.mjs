@@ -84,7 +84,7 @@ test('Trang Quản trị có module Cài đặt Google, SMTP, email và vận h�
 
 test('Cấu hình production chỉ ghi qua REST backend của Master',()=>{
   const frontend=read('src/settings/api.js');
-  const backend=read('server/src/actions.js');
+  const backend=read('server/src/actions/settings.js');
   assert.ok(frontend.includes('/actions/updateSystemSettings'));
   assert.ok(frontend.includes('/actions/updateSmtpSecret'));
   assert.ok(backend.includes("user.role!=='master'"));
