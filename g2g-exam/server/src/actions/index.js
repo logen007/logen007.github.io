@@ -2,7 +2,7 @@ import {appError} from '../db.js';
 import {isTeacher} from './shared.js';
 import {startAttempt,saveAnswers,startAudioGroup,completeAudioGroup,setAttemptSection,abandonAttempt,submitAttempt} from './attempts.js';
 import {saveManualGrade,publishAttemptResult,deliverResultEmail} from './grading.js';
-import {updateSystemSettings,updateSmtpSecret,testSmtp,getInfrastructureStatus,setUserRole} from './settings.js';
+import {updateSystemSettings,updateSmtpSecret,testSmtp,getInfrastructureStatus,setUserRole,setTeacherByEmail} from './settings.js';
 
 export async function handleAction(user,name,data={}){
   switch(name){
@@ -23,6 +23,7 @@ export async function handleAction(user,name,data={}){
     case 'testSmtp': return testSmtp(user,data);
     case 'getInfrastructureStatus': return getInfrastructureStatus(user);
     case 'setUserRole': return setUserRole(user,data);
+    case 'setTeacherByEmail': return setTeacherByEmail(user,data);
     default: throw appError(404,'Thao tác máy chủ không tồn tại.');
   }
 }
