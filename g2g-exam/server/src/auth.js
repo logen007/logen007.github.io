@@ -23,7 +23,8 @@ export async function registerAuthRoutes(fastify){
     if(!process.env.GOOGLE_CLIENT_ID||!process.env.GOOGLE_CLIENT_SECRET)throw appError(503,'Google Login chưa được cấu hình trên máy chủ.');
     const state=crypto.randomBytes(24).toString('hex');
     reply.setCookie('g2g_oauth_state',state,{...cookieOpts(600),maxAge:600});
-    const returnTo=String(request.query?.return||'/vi.html').startsWith('/')?String(request.query.return):'/vi.html';
+    const requestedReturn=String(request.query?.return||'/vi.html');
+    const returnTo=requestedReturn.startsWith('/')?requestedReturn:'/vi.html';
     reply.setCookie('g2g_return_to',returnTo,{...cookieOpts(600),maxAge:600});
     const url=oauth().generateAuthUrl({access_type:'online',scope:['openid','email','profile'],prompt:'select_account',state});
     return reply.redirect(url);
