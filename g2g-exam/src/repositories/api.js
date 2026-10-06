@@ -15,6 +15,7 @@ async function request(path,{method='GET',body,form}={}){
 
 function same(a,b){return JSON.stringify(a)===JSON.stringify(b);}
 function mapById(list=[]){return new Map(list.map(x=>[x.id,x]));}
+const MUTABLE_COLLECTIONS=['users','questionGroups','questions','exams','gradingRequests'];
 
 export class ApiRepository{
   constructor(){this.mode='api';this.state=normalizeState({});this.user=null;this.listeners=new Set();this.poll=null;}
@@ -82,7 +83,7 @@ export class ApiRepository{
     const ops=[];
 
     if(this.user?.role!=='student'){
-      for(const collection of ['users','questions','exams','gradingRequests']){
+      for(const collection of MUTABLE_COLLECTIONS){
         const a=mapById(before[collection]||[]),b=mapById(next[collection]||[]);
         for(const [id,item] of b){if(!a.has(id)||!same(a.get(id),item))ops.push({collection,id,kind:'upsert',item});}
         for(const id of a.keys())if(!b.has(id))ops.push({collection,id,kind:'delete'});
@@ -139,7 +140,7 @@ export class ApiRepository{
 
   async replaceState(next){
     const before=clone(this.state),after=clone(next),ops=[];
-    for(const collection of ['users','questions','exams','gradingRequests']){
+    for(const collection of MUTABLE_COLLECTIONS){
       const a=mapById(before[collection]||[]),b=mapById(after[collection]||[]);
       for(const[id,item]of b)if(!a.has(id)||!same(a.get(id),item))ops.push({collection,id,kind:'upsert',item});
       for(const id of a.keys())if(!b.has(id))ops.push({collection,id,kind:'delete'});
