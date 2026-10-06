@@ -1,0 +1,62 @@
+import {
+  ATTEMPT_STATUS,byId,getPublishedExams,getStudentResults,getLatestPublishedAttempt,
+  getBestPublishedAttempt,summarizeExam
+} from '../core.js';
+import {esc,fmtDate,statusClass,statusText,countWords} from '../ui/format.js';
+
+export function loginHtml({mode}){
+  const demo=mode==='local'?`<div class="che-do-demo"><div class="phu-de">Tài khoản thử nghiệm</div><div class="chon-demo"><button class="nut full demo-login" data-id="student-a">Vào vai Học viên</button><button class="nut full demo-login" data-id="teacher-lan">Vào vai Cô Lan</button><button class="nut full demo-login" data-id="master-1">Vào vai Quản trị cấp cao</button></div></div>`:'';
+  return `<main class="dang-nhap"><section class="gioi-thieu"><div class="nhan-muc">G2G CAREER · THI THỬ</div><h1>Luyện đến khi bước vào phòng thi thật không còn bỡ ngỡ.</h1><p>Hệ thống giúp học viên quen giao diện, cách chuyển phần, đồng hồ, nghe âm thanh, viết bài và nộp bài trên máy tính.</p><div class="phu-de">Đọc hiểu · Ngữ pháp · Nghe hiểu · Viết · Nói</div></section><section class="hop-dang-nhap"><h2>Đăng nhập</h2><p>Học viên dùng tài khoản Google. Kết quả và toàn bộ lịch sử các lần thi được lưu theo tài khoản.</p><button class="dang-nhap-google" id="googleLogin">Đăng nhập bằng Google</button>${demo}</section></main>`;
+}
+
+export function studentHomeHtml({data,user}){
+  const exams=getPublishedExams(data);
+  const attempts=getStudentResults(data,user.id);
+  const latest=getLatestPublishedAttempt(data,user.id);
+  const best=getBestPublishedAttempt(data,user.id);
+  const latestExam=latest&&byId(data.exams,latest.examId);
+  return `<main class="khung"><div class="tieu-de-trang"><div><h1>Xin chào, ${esc(user.name)}</h1><p>Chọn bài thi để bắt đầu.</p></div><button class="nut" data-action="student-results">Xem toàn bộ kết quả</button></div>${latest?`<section class="the tong-quan-hv"><div class="o"><span>Bài thi gần nhất</span><b>${esc(latestExam?.title||latest.examTitle)}</b><small class="phu-de">${fmtDate(latest.submittedAt)} · Lần #${latest.attemptNo}</small></div><div class="o"><span>Điểm gần nhất</span><b>${latest.totalScore??'—'}</b></div><div class="o"><span>Điểm cao nhất</span><b>${best?.totalScore??'—'}</b></div><div class="o"><span>Số lần thi</span><b>${attempts.length}</b></div><div class="o"><span>Kết quả</span><b class="dat">${esc(latest.result||'—')}</b></div></section>`:''}<div class="tieu-de-trang" style="margin-top:26px"><div><h1 style="font-size:20px">Chọn bài thi</h1><p>${exams.length} bài đang mở</p></div></div><section class="danh-sach-de">${exams.map(ex=>studentExamCardHtml(ex,attempts,data)).join('')}</section></main>`;
+}
+
+export function studentExamCardHtml(ex,attempts,data){
+  const mine=attempts.filter(a=>a.examId===ex.id);
+  const current=mine.find(a=>a.status===ATTEMPT_STATUS.IN_PROGRESS);
+  const waiting=mine.find(a=>a.status===ATTEMPT_STATUS.GRADING||a.status===ATTEMPT_STATUS.READY);
+  const published=mine.filter(a=>a.status===ATTEMPT_STATUS.PUBLISHED);
+  const best=[...published].sort((a,b)=>(b.totalScore||0)-(a.totalScore||0))[0];
+  const sum=summarizeExam(ex,data);
+  const mins=(ex.sections||[]).reduce((n,s)=>n+(Number(s.timeMinutes)||0),0);
+  return `<article class="the the-de"><span class="nhan">${esc(ex.level)} · THI THỬ</span><h3>${esc(ex.title)}</h3><div class="meta">${sum.sections} phần · ${sum.questions} câu · khoảng ${mins} phút</div><div class="day"></div><div class="chan"><span>${current?'Đang làm dở':waiting?'Có bài đang chờ chấm':mine.length?`Đã thi ${mine.length} lần`:'Chưa từng thi'}</span><b>${best?`Cao nhất ${best.totalScore}`:'Mới'}</b></div><div class="hanh-dong">${current?`<button class="nut chinh" data-action="resume" data-exam="${ex.id}" data-attempt="${current.id}">Tiếp tục</button><button class="nut" data-action="restart" data-exam="${ex.id}">Làm lại từ đầu</button>`:`<button class="nut chinh" data-action="start" data-exam="${ex.id}">${mine.length?'Thi lại':'Bắt đầu thi'}</button>`}</div></article>`;
+}
+
+export function studentResultsHtml({data,user}){
+  const attempts=getStudentResults(data,user.id);
+  return `<main class="khung"><div class="tieu-de-trang"><div><h1>Toàn bộ kết quả</h1><p>Bài chưa được giáo viên công bố sẽ không hiển thị điểm.</p></div><button class="nut" data-action="student-home">Quay lại</button></div><div class="table-wrap"><table class="bang"><thead><tr><th>Bài thi</th><th>Lần thi</th><th>Ngày</th><th>Tổng điểm</th><th>Kết quả</th><th>Trạng thái</th></tr></thead><tbody>${attempts.map(a=>`<tr><td><b>${esc(a.examTitle)}</b></td><td>#${a.attemptNo}</td><td>${fmtDate(a.submittedAt||a.startedAt)}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?(a.totalScore??'—'):'—'}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?esc(a.result||'—'):'—'}</td><td><span class="nhan ${statusClass(a.status)}">${statusText(a.status)}</span></td></tr>`).join('')||'<tr><td colspan="6" class="rong">Chưa có lần thi nào.</td></tr>'}</tbody></table></div></main>`;
+}
+
+export function examHtml({attempt,exam,sectionIndex,questions,online}){
+  const sec=exam.sections[sectionIndex];
+  const answered=questions.filter(q=>answerPresent(attempt.answers?.[q.id],q)).length;
+  return `<div class="thi"><header class="thanh-thi"><strong>G2G Thi thử</strong><div class="thong-tin-thi"><span>Phần ${sectionIndex+1}/${exam.sections.length}</span><b id="examTimer">--:--</b></div></header>${!online?'<div class="offline">Đang ngoại tuyến. Hãy giữ trang mở; câu trả lời sẽ tiếp tục được lưu trên thiết bị.</div>':''}<main class="noi-dung-thi"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(sec.name)}</h1><div class="phu-de">${sec.showTimer!==false?'Có giới hạn thời gian · ':''}${answered}/${questions.length} câu đã trả lời</div><section class="to-thi">${questions.map(q=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt)).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section><div class="dieu-huong-thi"><button class="nut" data-action="prev-section" ${sectionIndex===0?'disabled':''}>Quay lại</button><span class="tien-do" id="saveState">Đã lưu</span><button class="nut chinh" data-action="${sectionIndex===exam.sections.length-1?'submit-exam':'next-section'}">${sectionIndex===exam.sections.length-1?'Nộp bài':'Tiếp theo'}</button></div></main></div>`;
+}
+
+export function answerPresent(answer,q){
+  if(q.type==='writing')return Boolean(String(answer||'').trim());
+  if(q.type==='matching')return Array.isArray(answer)&&answer.some(Boolean);
+  return answer!==undefined&&answer!==null&&answer!=='';
+}
+
+export function renderQuestionHtml(q,answer,attempt){
+  const played=sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`);
+  const audio=q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" ${played?'disabled':''}>${played?'Đã phát audio':'Phát audio'}</button><span class="phu-de">Audio chỉ phát theo quy định của đề thi.</span></div>`:'';
+  const head=`<div class="ma">${esc(q.code||'')}</div>${q.instruction?`<div class="phu-de">${esc(q.instruction)}</div>`:''}<div class="noi">${esc(q.prompt||q.title)}</div>${audio}`;
+  if(['single','cloze','truefalse'].includes(q.type))return `<div class="cau-thi" data-q="${q.id}">${head}<select class="dap-an answer-one" data-q="${q.id}"><option value="">Chọn đáp án</option>${(q.choices||[]).map((c,i)=>`<option value="${i}" ${String(answer)===String(i)?'selected':''}>${esc(c)}</option>`).join('')}</select></div>`;
+  if(q.type==='matching')return `<div class="cau-thi" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div style="margin:12px 0"><b>${esc(p[0])}</b><select class="dap-an answer-match" data-q="${q.id}" data-i="${i}"><option value="">Chọn đáp án</option>${[...new Set((q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;
+  if(q.type==='writing')return `<div class="cau-thi" data-q="${q.id}">${head}<textarea class="viet answer-text" data-q="${q.id}" placeholder="Viết bài tại đây...">${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> từ</div></div>`;
+  if(q.type==='speaking')return `<div class="cau-thi" data-q="${q.id}">${head}<div class="goi-y">Phần Nói được thực hiện theo hướng dẫn của giáo viên/phòng thi thử và được chấm thủ công.</div></div>`;
+  return `<div class="cau-thi">${head}</div>`;
+}
+
+export function submittedHtml(){
+  return `<main class="khung"><section class="the ket-qua-cho"><div class="vong">✓</div><div class="nhan-muc">ĐÃ NỘP BÀI THÀNH CÔNG</div><h1>Đang chờ kết quả</h1><span class="nhan vang">ĐANG CHỜ CHẤM</span><p>Bài thi đã được ghi nhận. Một số phần cần giáo viên chấm thủ công nên hệ thống chưa hiển thị điểm ngay.</p><div class="goi-y"><b>Khi có kết quả</b><br>Hệ thống sẽ gửi email đến địa chỉ bạn dùng để đăng nhập. Bạn cũng có thể quay lại trang kết quả để xem.</div><button class="nut" data-action="student-home" style="margin-top:18px">Về danh sách bài thi</button></section></main>`;
+}
