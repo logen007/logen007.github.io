@@ -245,6 +245,22 @@ function bindGradeCalculator(attempt){
 function questionModal(q=null,onCreated=null){
   const edit=Boolean(q);
   app.insertAdjacentHTML('beforeend',questionModalHtml(q));
+  const profileFields=['qLevel','qSkill','qPart'].map(id=>document.getElementById(id));
+  const firstLabel=profileFields[0]?.previousElementSibling;
+  if(firstLabel&&profileFields.every(Boolean)){
+    const row=document.createElement('div');
+    row.className='question-profile-row';
+    firstLabel.before(row);
+    profileFields.forEach(field=>{
+      const label=field.previousElementSibling;
+      const cell=document.createElement('label');
+      cell.className='question-profile-field';
+      cell.textContent=label.textContent;
+      cell.append(field);
+      label.remove();
+      row.append(cell);
+    });
+  }
   const sync=()=>{
     const type=document.getElementById('qType').value;
     document.getElementById('choiceFields').style.display=type==='matching'||type==='writing'||type==='speaking'?'none':'';
@@ -407,12 +423,8 @@ async function moveAttemptSection(delta){
 async function createNewExam(){
   const stamp=Date.now();
   const exam=await act(()=>repo.transaction(st=>createExam(st,user,{
-    title:'Bài thi thử mới',level:'B1',sections:[
-      {id:`sec-${stamp}-1`,name:'Đọc hiểu',timeMinutes:35,maxScore:75,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]},
-      {id:`sec-${stamp}-2`,name:'Ngữ pháp',timeMinutes:20,maxScore:30,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]},
-      {id:`sec-${stamp}-3`,name:'Nghe hiểu',timeMinutes:30,maxScore:75,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]},
-      {id:`sec-${stamp}-4`,name:'Viết',timeMinutes:30,maxScore:45,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]},
-      {id:`sec-${stamp}-5`,name:'Nói',timeMinutes:15,maxScore:75,showTimer:true,autoSubmit:false,shuffle:false,questionIds:[]}
+    title:'TELC A1 – Bản nháp',level:'A1',sections:[
+      {id:`sec-${stamp}-1`,name:'Nghe · Phần 1',timeMinutes:20,maxScore:10,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]}
     ]
   })),null,{rerender:false});
   if(exam){data=await repo.getState();openBuilder(exam.id);}

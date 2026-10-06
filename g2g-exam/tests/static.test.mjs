@@ -59,9 +59,16 @@ test('Chuỗi import tương đối của frontend không trỏ tới file thi�
 
 test('Giao diện modular vẫn có đủ nhãn tiếng Việt quan trọng',()=>{
   const source=jsTree('src');
-  for(const text of ['Ngân hàng câu hỏi','Tạo câu hỏi','Bài thi','Chấm bài','Bảng điểm','Xem toàn bộ kết quả','Đang chờ kết quả']){
+  for(const text of ['Tạo câu hỏi trực tiếp trong phần này.','Bài thi','Chấm bài','Bảng điểm','Xem toàn bộ kết quả','Đang chờ kết quả']){
     assert.ok(source.includes(text),`Thiếu nhãn tiếng Việt: ${text}`);
   }
+});
+
+test('Tạo câu hỏi trong phần không hiển thị bộ chọn loại câu',()=>{
+  const styles=read('styles.css');
+  const app=read('src/app.js');
+  assert.ok(styles.includes('#qType'));
+  assert.ok(app.includes('question-profile-row'));
 });
 
 test('Không còn thông báo Firebase cũ trong giao diện production',()=>{

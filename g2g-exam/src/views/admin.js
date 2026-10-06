@@ -5,7 +5,7 @@ import {
 import {esc,fmtDate,statusClass,statusText,typeLabel} from '../ui/format.js';
 
 export function adminShellHtml({content,user,ui}){
-  const tabs=[['exams','Bài thi'],['bank','Ngân hàng câu hỏi'],['grading','Chấm bài'],['grades','Bảng điểm'],...(isMaster(user)?[['teachers','Giáo viên'],['trash','Thùng rác']]:[])];
+  const tabs=[['exams','Bài thi'],['grading','Chấm bài'],['grades','Bảng điểm'],...(isMaster(user)?[['teachers','Giáo viên'],['trash','Thùng rác']]:[])];
   return `<div class="khung-quan-tri"><aside class="thanh-ben">${tabs.map(([k,l])=>`<button class="muc-ben ${ui.adminTab===k?'active':''}" data-action="admin-tab" data-tab="${k}">${l}</button>`).join('')}</aside><main class="noi-dung-quan-tri">${content}</main></div>`;
 }
 
