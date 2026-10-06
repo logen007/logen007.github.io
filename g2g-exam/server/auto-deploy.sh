@@ -48,10 +48,16 @@ fi
 
 docker compose -f "$COMPOSE_FILE" up -d --build app
 
-sleep 4
-if docker compose -f "$COMPOSE_FILE" exec -T app node -e "fetch('http://127.0.0.1:8080/api/health').then(async r=>{const t=await r.text();if(!r.ok)throw new Error(t);console.log(t)}).catch(e=>{console.error(e);process.exit(1)})"; then
-  log "deploy healthy at $(short "$target")"
-else
-  log "deploy health check FAILED at $(short "$target")"
-  exit 1
-fi
+# Do not wait a fixed 4 seconds. Return as soon as the new container is healthy.
+i=0
+while [ "$i" -lt 12 ]; do
+  if docker compose -f "$COMPOSE_FILE" exec -T app node -e "fetch('http://127.0.0.1:8080/api/health').then(async r=>{const t=await r.text();if(!r.ok)throw new Error(t);process.exit(0)}).catch(()=>process.exit(1))" >/dev/null 2>&1; then
+    log "deploy healthy at $(short "$target")"
+    exit 0
+  fi
+  i=$((i+1))
+  sleep 1
+done
+
+log "deploy health check FAILED at $(short "$target")"
+exit 1
