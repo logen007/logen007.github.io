@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#ffffff">
   <title>G2G Thi thử tiếng Đức</title>
   <meta name="description" content="Hệ thống thi thử tiếng Đức G2G, mô phỏng trải nghiệm thi trên máy tính.">
-  <link rel="stylesheet" href="./styles.css?v=20261006-8">
-  <link rel="stylesheet" href="./enhancements.css?v=20261006-8">
+  <link rel="stylesheet" href="./styles.css?v=20261006-9">
+  <link rel="stylesheet" href="./enhancements.css?v=20261006-9">
   <script>
     function showBootError(){
       var status=document.getElementById('bootStatus');
       if(!status)return;
-      status.innerHTML='<strong>Hệ thống chưa tải được đầy đủ.</strong><br>Vẫn có thể dùng nút Đăng nhập bằng Google bên dưới. Nếu đã đăng nhập mà còn thấy màn này, hãy <button type="button" onclick="location.reload()" style="border:0;background:none;padding:0;text-decoration:underline;cursor:pointer">Tải lại</button>.';
+      status.innerHTML='<strong>Hệ thống chưa tải được đầy đủ.</strong><br>Nút Đăng nhập bằng Google vẫn hoạt động độc lập. Nếu đã đăng nhập mà còn thấy màn này, hãy <button type="button" onclick="location.reload()" style="border:0;background:none;padding:0;text-decoration:underline;cursor:pointer">Tải lại</button>.';
       status.style.color='#8a3b12';
     }
     window.addEventListener('error',showBootError);
@@ -31,18 +31,15 @@
       </section>
       <section class="hop-dang-nhap">
         <h2>Đăng nhập</h2>
-        <p id="bootStatus">Đang kết nối hệ thống...</p>
+        <p id="bootStatus">Dùng tài khoản Google để tiếp tục.</p>
         <a class="dang-nhap-google" href="/api/auth/google?return=%2F" style="display:block;text-align:center;text-decoration:none">Đăng nhập bằng Google</a>
         <div class="phu-de" style="margin-top:10px">Hệ thống tự nhận quyền Học viên, Giáo viên hoặc Master Admin theo tài khoản.</div>
       </section>
     </main>
   </div>
   <div id="toast" class="thong-bao an"></div>
-  <script src="./runtime-config.js?v=20261006-8"></script>
-  <script type="module" src="./src/app.js?v=20261006-8"></script>
-  <script type="module" src="./src/settings.js?v=20261006-8"></script>
-  <script type="module" src="./src/question-groups/bootstrap.js?v=20261006-8"></script>
-  <script type="module" src="./src/question-groups/picker.js?v=20261006-8"></script>
-  <script type="module" src="./src/users/bootstrap.js?v=20261006-8"></script>
+  <script src="./runtime-config.js?v=20261006-9"></script>
+  <script type="module" src="./src/app.js?v=20261006-9"></script>
+  <script type="module" src="./src/feature-loader.js?v=20261006-9"></script>
 </body>
 </html>
