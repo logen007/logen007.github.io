@@ -2,15 +2,24 @@ import {clone,normalizeState} from '../core.js';
 
 const API=String(globalThis.G2G_API_BASE||'/api').replace(/\/$/,'');
 
-async function request(path,{method='GET',body,form}={}){
-  const options={method,credentials:'include',headers:{}};
+async function request(path,{method='GET',body,form,timeoutMs=0}={}){
+  const controller=timeoutMs>0?new AbortController():null;
+  const timer=controller?setTimeout(()=>controller.abort(),timeoutMs):null;
+  const options={method,credentials:'include',headers:{},signal:controller?.signal};
   if(body!==undefined){options.headers['content-type']='application/json';options.body=JSON.stringify(body);}
   if(form)options.body=form;
-  const res=await fetch(`${API}${path}`,options);
-  let data={};
-  try{data=await res.json();}catch{}
-  if(!res.ok)throw new Error(data?.error||`Máy chủ trả về lỗi ${res.status}.`);
-  return data;
+  try{
+    const res=await fetch(`${API}${path}`,options);
+    let data={};
+    try{data=await res.json();}catch{}
+    if(!res.ok)throw new Error(data?.error||`Máy chủ trả về lỗi ${res.status}.`);
+    return data;
+  }catch(error){
+    if(error?.name==='AbortError')throw new Error('Máy chủ phản hồi quá chậm. Vui lòng tải lại trang.');
+    throw error;
+  }finally{
+    if(timer)clearTimeout(timer);
+  }
 }
 
 function same(a,b){return JSON.stringify(a)===JSON.stringify(b);}
@@ -21,8 +30,9 @@ export class ApiRepository{
   constructor(){this.mode='api';this.state=normalizeState({});this.user=null;this.listeners=new Set();this.poll=null;}
 
   async init(){
-    await request('/health');
-    const me=await request('/auth/me');
+    // Do not block app startup on /health. The health route checks PostgreSQL and a
+    // degraded DB must never leave the browser on “Đang tải hệ thống...” forever.
+    const me=await request('/auth/me',{timeoutMs:7000});
     this.user=me.user||null;
     if(this.user)await this.reload();
     this.startPolling();
@@ -34,7 +44,7 @@ export class ApiRepository{
     this.poll=setInterval(async()=>{
       if(!this.user||document.hidden)return;
       try{
-        const next=await request('/state');
+        const next=await request('/state',{timeoutMs:10000});
         if(next.revision!==this.state.revision||!same(next,this.state)){
           this.state=normalizeState(next);
           this.emit();
@@ -49,14 +59,14 @@ export class ApiRepository{
 
   async getCurrentUser(){
     if(this.user)return clone(this.user);
-    const me=await request('/auth/me');
+    const me=await request('/auth/me',{timeoutMs:7000});
     this.user=me.user||null;
     return clone(this.user);
   }
 
   async reload(){
     if(!this.user){this.state=normalizeState({});this.emit();return this.state;}
-    this.state=normalizeState(await request('/state'));
+    this.state=normalizeState(await request('/state',{timeoutMs:10000}));
     this.emit();
     return this.state;
   }
@@ -68,7 +78,7 @@ export class ApiRepository{
   }
 
   async signOut(){
-    await request('/auth/logout',{method:'POST'});
+    await request('/auth/logout',{method:'POST',timeoutMs:7000});
     this.user=null;
     this.state=normalizeState({});
     this.emit();
