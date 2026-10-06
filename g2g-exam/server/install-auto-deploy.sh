@@ -1,0 +1,59 @@
+#!/bin/sh
+set -eu
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "Run as root." >&2
+  exit 1
+fi
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+APP_DIR="$(dirname "$SCRIPT_DIR")"
+REPO_ROOT="$(git -C "$APP_DIR" rev-parse --show-toplevel)"
+
+[ -f "$APP_DIR/server/.env" ] || { echo "Missing $APP_DIR/server/.env" >&2; exit 1; }
+[ -f "$APP_DIR/.env" ] || { echo "Missing $APP_DIR/.env" >&2; exit 1; }
+
+install -m 0755 "$SCRIPT_DIR/auto-deploy.sh" /usr/local/sbin/g2g-auto-deploy
+
+cat >/etc/systemd/system/g2g-auto-deploy.service <<EOF
+[Unit]
+Description=G2G Exam auto deploy from GitHub
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+Environment=G2G_REPO=$REPO_ROOT
+Environment=G2G_APP_DIR=$APP_DIR
+Environment=G2G_BRANCH=main
+Environment=G2G_COMPOSE_FILE=docker-compose.traefik.yml
+ExecStart=/usr/local/sbin/g2g-auto-deploy
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+EOF
+
+cat >/etc/systemd/system/g2g-auto-deploy.timer <<'EOF'
+[Unit]
+Description=Check GitHub for G2G Exam updates every minute
+
+[Timer]
+OnBootSec=60s
+OnUnitActiveSec=60s
+RandomizedDelaySec=5s
+Persistent=true
+Unit=g2g-auto-deploy.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now g2g-auto-deploy.timer
+
+echo "Installed G2G auto-deploy."
+echo "Repo: $REPO_ROOT"
+echo "App:  $APP_DIR"
+echo
+systemctl status g2g-auto-deploy.timer --no-pager -l || true
