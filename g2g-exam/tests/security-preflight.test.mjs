@@ -16,15 +16,15 @@ test('Upload audio chỉ dành cho giáo viên/quản trị và giới hạn 25 
 });
 
 test('Autosave server chỉ nhận câu thuộc phần hiện tại và trước deadline',()=>{
-  const source=read('server/src/actions.js');
+  const source=read('server/src/actions/attempts.js');
   for(const text of ['currentQuestionIds','currentDeadlineMs','Phần thi đã hết thời gian']){
     assert.ok(source.includes(text),`Thiếu ${text}`);
   }
-  assert.ok(source.includes('allowed.has(k)'));
+  assert.ok(source.includes('allowed.has(key)'));
 });
 
 test('Tạo attempt server có metadata bảo vệ thời gian và phạm vi câu hỏi',()=>{
-  const source=read('server/src/actions.js');
+  const source=read('server/src/actions/shared.js')+read('server/src/actions/attempts.js');
   for(const text of ['currentSectionId','currentQuestionIds','currentDeadlineMs','sectionStates']){
     assert.ok(source.includes(text),`Thiếu ${text}`);
   }
@@ -46,7 +46,7 @@ test('Học viên không nhận đáp án đúng hoặc điểm riêng tư chưa
 
 test('Role và thay đổi dữ liệu quan trọng được kiểm tra lại phía server',()=>{
   const state=read('server/src/state.js');
-  const actions=read('server/src/actions.js');
+  const actions=read('server/src/actions/shared.js')+read('server/src/actions/settings.js')+read('server/src/actions/grading.js');
   assert.ok(state.includes("user.role!=='master'"));
   assert.ok(state.includes('Không có quyền sửa bài thi này'));
   assert.ok(actions.includes("user.role==='master'"));
