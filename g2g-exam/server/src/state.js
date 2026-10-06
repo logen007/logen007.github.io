@@ -9,9 +9,10 @@ function rowEntity(r){return {id:r.id,...(r.data||{})};}
 function attemptEntity(r,includePrivate=false){return {id:r.id,...(r.public_data||{}),...(includePrivate?(r.private_data||{}):{})};}
 
 export async function loadState(user){
-  const state={schemaVersion:4,revision:Date.now(),users:[],questions:[],exams:[],attempts:[],gradingRequests:[],notifications:[],auditLog:[]};
+  const state={schemaVersion:5,revision:Date.now(),users:[],questionGroups:[],questions:[],exams:[],attempts:[],gradingRequests:[],notifications:[],auditLog:[]};
   if(user.role==='student'){
     state.users=[user];
+    state.questionGroups=(await rows(`SELECT id,data FROM question_groups WHERE status='active' ORDER BY updated_at DESC`)).map(rowEntity);
     state.exams=(await rows(`SELECT id,data FROM exams WHERE status='published' ORDER BY updated_at DESC`)).map(rowEntity);
     state.questions=(await rows(`SELECT id,data FROM questions WHERE status<>'trash'`)).map(r=>({id:r.id,...publicQuestion(r.data)}));
     state.attempts=(await rows(`SELECT id,public_data FROM attempts WHERE student_id=$1 ORDER BY created_at DESC`,[user.id])).map(r=>({id:r.id,...r.public_data}));
@@ -19,6 +20,7 @@ export async function loadState(user){
     return state;
   }
   state.users=(await rows(`SELECT id,email,role,active,data FROM users ORDER BY created_at DESC`)).map(r=>({id:r.id,email:r.email,role:r.role,active:r.active,...r.data}));
+  state.questionGroups=(await rows(`SELECT id,data FROM question_groups ORDER BY updated_at DESC`)).map(rowEntity);
   state.questions=(await rows(`SELECT id,data FROM questions ORDER BY updated_at DESC`)).map(rowEntity);
   state.exams=(await rows(`SELECT id,data FROM exams ORDER BY updated_at DESC`)).map(rowEntity);
   const allowed=await allowedExamIds(user);
@@ -28,6 +30,33 @@ export async function loadState(user){
   state.gradingRequests=gr.filter(r=>user.role==='master'||r.owner_id===user.id||r.requester_id===user.id).map(r=>({id:r.id,examId:r.exam_id,ownerId:r.owner_id,requesterId:r.requester_id,status:r.status,...r.data}));
   if(user.role==='master')state.auditLog=(await rows(`SELECT id,at,user_id,user_name,action,entity_type,entity_id,detail FROM audit_log ORDER BY at DESC LIMIT 1000`)).map(r=>({id:String(r.id),at:r.at,userId:r.user_id,userName:r.user_name,action:r.action,entityType:r.entity_type,entityId:r.entity_id,detail:r.detail}));
   return state;
+}
+
+async function applyQuestionGroup(c,user,op){
+  const current=await c.query(`SELECT * FROM question_groups WHERE id=$1 FOR UPDATE`,[op.id]);
+  if(op.kind==='delete'){
+    if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được xóa vĩnh viễn cụm câu hỏi.');
+    await c.query(`DELETE FROM question_groups WHERE id=$1`,[op.id]);
+    return;
+  }
+  const item=op.item||{};
+  const count=[...new Set(item.questionIds||[])].length;
+  if(count<1||count>10)throw appError(400,'Mỗi cụm câu hỏi phải có từ 1 đến 10 câu.');
+  if(item.structureType==='A1_LISTENING_PART_1'){
+    const policy=item.audioPolicy||{};
+    if(String(item.level||'').toUpperCase()!=='A1'||Number(item.partOrder)!==1)throw appError(400,'Template A1 Nghe Phần 1 có cấu hình phân loại không hợp lệ.');
+    if(Number(policy.maxSessions)!==1||Number(policy.segmentRepeat)!==2||policy.pauseAllowed!==false||policy.replayAllowed!==false||policy.controls!==false)throw appError(400,'Chính sách audio A1 Nghe Phần 1 không hợp lệ.');
+  }
+  if(!current.rowCount){
+    if(!isTeacher(user)||item.ownerId!==user.id)throw appError(403,'Không có quyền tạo cụm câu hỏi.');
+    await c.query(`INSERT INTO question_groups(id,owner_id,status,locked,data) VALUES($1,$2,$3,$4,$5::jsonb)`,[op.id,user.id,item.status||'active',Boolean(item.locked),JSON.stringify(stripId(item))]);
+    return;
+  }
+  const old=current.rows[0];
+  if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa cụm câu hỏi này.');
+  if(old.locked&&user.role!=='master')throw appError(409,'Cụm câu hỏi đã khóa vì đang được dùng trong đề.');
+  if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu cụm câu hỏi.');
+  await c.query(`UPDATE question_groups SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,ownerId:old.owner_id}))]);
 }
 
 async function applyQuestion(c,user,op){
@@ -62,4 +91,19 @@ async function applyGrading(c,user,op){
 }
 async function applyUser(c,user,op){if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được quản lý tài khoản.');if(op.kind==='delete')throw appError(409,'Không xóa tài khoản trực tiếp; hãy vô hiệu hóa tài khoản.');const item=op.item||{};const cur=await c.query(`SELECT * FROM users WHERE id=$1 FOR UPDATE`,[op.id]);if(!cur.rowCount)throw appError(404,'Không tìm thấy tài khoản.');if(op.id===user.id&&item.role&&item.role!=='master')throw appError(409,'Không thể tự hạ quyền tài khoản Quản trị cấp cao.');const old=cur.rows[0],role=['student','teacher','master'].includes(item.role)?item.role:old.role;const data=stripId(item);delete data.email;delete data.role;delete data.active;await c.query(`UPDATE users SET role=$2,active=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,role,item.active!==false,JSON.stringify(data)]);}
 
-export async function commitOperations(user,ops=[]){if(!Array.isArray(ops)||ops.length>200)throw appError(400,'Danh sách thay đổi không hợp lệ.');return withTx(async c=>{for(const op of ops){if(!op?.collection||!op.id)throw appError(400,'Thay đổi thiếu dữ liệu.');if(op.collection==='questions')await applyQuestion(c,user,op);else if(op.collection==='exams')await applyExam(c,user,op);else if(op.collection==='gradingRequests')await applyGrading(c,user,op);else if(op.collection==='users')await applyUser(c,user,op);else throw appError(400,`Không hỗ trợ thay đổi ${op.collection}.`);}if(ops.length)await audit(user,'commit_changes','system','batch',{count:ops.length},c);return {ok:true,count:ops.length};});}
+export async function commitOperations(user,ops=[]){
+  if(!Array.isArray(ops)||ops.length>250)throw appError(400,'Danh sách thay đổi không hợp lệ.');
+  return withTx(async c=>{
+    for(const op of ops){
+      if(!op?.collection||!op.id)throw appError(400,'Thay đổi thiếu dữ liệu.');
+      if(op.collection==='questionGroups')await applyQuestionGroup(c,user,op);
+      else if(op.collection==='questions')await applyQuestion(c,user,op);
+      else if(op.collection==='exams')await applyExam(c,user,op);
+      else if(op.collection==='gradingRequests')await applyGrading(c,user,op);
+      else if(op.collection==='users')await applyUser(c,user,op);
+      else throw appError(400,`Không hỗ trợ thay đổi ${op.collection}.`);
+    }
+    if(ops.length)await audit(user,'commit_changes','system','batch',{count:ops.length},c);
+    return {ok:true,count:ops.length};
+  });
+}
