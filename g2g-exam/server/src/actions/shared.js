@@ -1,0 +1,61 @@
+import {query,now,appError} from '../db.js';
+
+export const isTeacher=user=>user?.role==='teacher'||user?.role==='master';
+
+export async function examById(id,client={query}){
+  const result=await client.query(`SELECT id,owner_id,status,locked,data FROM exams WHERE id=$1`,[id]);
+  if(!result.rowCount)throw appError(404,'Không tìm thấy bài thi.');
+  const row=result.rows[0];
+  return {id:row.id,ownerId:row.owner_id,status:row.status,locked:row.locked,...row.data};
+}
+
+export async function canGrade(user,exam){
+  if(user.role==='master'||exam.ownerId===user.id)return true;
+  if(user.role!=='teacher')return false;
+  const result=await query(`SELECT 1 FROM grading_requests WHERE exam_id=$1 AND requester_id=$2 AND status='approved' LIMIT 1`,[exam.id,user.id]);
+  return Boolean(result.rowCount);
+}
+
+export function scoreQuestion(question,answer){
+  if(!question?.autoGrade)return 0;
+  if(['single','truefalse','cloze'].includes(question.type)){
+    return Number(answer)===Number(question.correctAnswer)?Number(question.maxScore||0):0;
+  }
+  if(question.type==='matching'){
+    if(!Array.isArray(answer)||!Array.isArray(question.pairs)||!question.pairs.length)return 0;
+    let correct=0;
+    question.pairs.forEach((pair,index)=>{if(answer[index]===pair[1])correct++;});
+    return Math.round(correct/question.pairs.length*Number(question.maxScore||0)*100)/100;
+  }
+  return 0;
+}
+
+export function resultFor(exam,total){
+  return Number(total)>=Number(exam.passScore||180)?'Đạt':'Chưa đạt';
+}
+
+export async function questionMap(exam){
+  const ids=[...new Set((exam.sections||[]).flatMap(section=>section.questionIds||[]))];
+  if(!ids.length)return new Map();
+  const result=await query(`SELECT id,data FROM questions WHERE id=ANY($1::text[])`,[ids]);
+  return new Map(result.rows.map(row=>[row.id,{id:row.id,...row.data}]));
+}
+
+export function sectionMeta(exam,index,previous={}){
+  const section=exam.sections?.[index];
+  if(!section)return {sectionStates:previous,currentSectionId:null,currentQuestionIds:[],currentDeadlineMs:null};
+  const states={...(previous||{})};
+  let state=states[section.id];
+  if(!state){
+    const startedAt=now();
+    const deadlineMs=Date.now()+Math.max(1,Number(section.timeMinutes||30))*60000;
+    state={startedAt,deadlineAt:new Date(deadlineMs).toISOString()};
+    states[section.id]=state;
+  }
+  return {
+    sectionStates:states,
+    currentSectionId:section.id,
+    currentQuestionIds:[...(section.questionIds||[])],
+    currentDeadlineMs:Date.parse(state.deadlineAt),
+  };
+}
