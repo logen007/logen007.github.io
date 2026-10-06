@@ -30,7 +30,10 @@ Environment=G2G_REPO=$REPO_ROOT
 Environment=G2G_APP_DIR=$APP_DIR
 Environment=G2G_BRANCH=main
 Environment=G2G_COMPOSE_FILE=docker-compose.traefik.yml
-ExecStart=$APP_DIR/server/auto-deploy.sh
+# A deployment checkout is reset to the remote revision before each build.
+# Invoke the interpreter explicitly so deployment never depends on Git
+# preserving this script's executable bit.
+ExecStart=/bin/sh $APP_DIR/server/auto-deploy.sh
 Nice=10
 IOSchedulingClass=best-effort
 IOSchedulingPriority=7

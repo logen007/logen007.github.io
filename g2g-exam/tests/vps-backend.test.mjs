@@ -77,4 +77,9 @@ test('Production Docker dùng source modules trực tiếp, không overlay runti
   assert.equal(dockerfile.includes('sed -i'),false);
 });
 
+test('Auto-deploy gọi shell rõ ràng, không phụ thuộc quyền thực thi của checkout',()=>{
+  const installer=read('server/install-auto-deploy.sh');
+  assert.ok(installer.includes('ExecStart=/bin/sh $APP_DIR/server/auto-deploy.sh'));
+});
+
 console.log(`\n${passed} kiểm thử VPS đã đạt.`);
