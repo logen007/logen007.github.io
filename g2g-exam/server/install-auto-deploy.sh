@@ -13,7 +13,9 @@ REPO_ROOT="$(git -C "$APP_DIR" rev-parse --show-toplevel)"
 [ -f "$APP_DIR/server/.env" ] || { echo "Missing $APP_DIR/server/.env" >&2; exit 1; }
 [ -f "$APP_DIR/.env" ] || { echo "Missing $APP_DIR/.env" >&2; exit 1; }
 
-install -m 0755 "$SCRIPT_DIR/auto-deploy.sh" /usr/local/sbin/g2g-auto-deploy
+# Run the deploy script directly from the checkout so future script improvements
+# are picked up automatically after each git update; no stale /usr/local copy.
+chmod 0755 "$SCRIPT_DIR/auto-deploy.sh"
 
 cat >/etc/systemd/system/g2g-auto-deploy.service <<EOF
 [Unit]
@@ -28,7 +30,7 @@ Environment=G2G_REPO=$REPO_ROOT
 Environment=G2G_APP_DIR=$APP_DIR
 Environment=G2G_BRANCH=main
 Environment=G2G_COMPOSE_FILE=docker-compose.traefik.yml
-ExecStart=/usr/local/sbin/g2g-auto-deploy
+ExecStart=$APP_DIR/server/auto-deploy.sh
 Nice=10
 IOSchedulingClass=best-effort
 IOSchedulingPriority=7
@@ -36,12 +38,12 @@ EOF
 
 cat >/etc/systemd/system/g2g-auto-deploy.timer <<'EOF'
 [Unit]
-Description=Check GitHub for G2G Exam updates every minute
+Description=Check GitHub frequently for G2G Exam updates
 
 [Timer]
-OnBootSec=60s
-OnUnitActiveSec=60s
-RandomizedDelaySec=5s
+OnBootSec=10s
+OnUnitInactiveSec=20s
+AccuracySec=1s
 Persistent=true
 Unit=g2g-auto-deploy.service
 
@@ -51,9 +53,11 @@ EOF
 
 systemctl daemon-reload
 systemctl enable --now g2g-auto-deploy.timer
+systemctl restart g2g-auto-deploy.timer
 
 echo "Installed G2G auto-deploy."
 echo "Repo: $REPO_ROOT"
 echo "App:  $APP_DIR"
+echo "Poll: about every 20 seconds"
 echo
 systemctl status g2g-auto-deploy.timer --no-pager -l || true
