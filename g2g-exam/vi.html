@@ -12,7 +12,7 @@
     function showBootError(){
       var status=document.getElementById('bootStatus');
       if(!status)return;
-      status.innerHTML='<strong>Hệ thống chưa tải được đầy đủ.</strong><br>Vẫn có thể dùng nút Đăng nhập bằng Google bên dưới. Nếu đã đăng nhập mà còn thấy màn này, hãy tải lại trang.';
+      status.innerHTML='<strong>Hệ thống chưa tải được đầy đủ.</strong><br>Vẫn có thể dùng nút Đăng nhập bằng Google bên dưới. Nếu đã đăng nhập mà còn thấy màn này, hãy <button type="button" onclick="location.reload()" style="border:0;background:none;padding:0;text-decoration:underline;cursor:pointer">Tải lại</button>.';
       status.style.color='#8a3b12';
     }
     window.addEventListener('error',showBootError);
