@@ -27,6 +27,7 @@ test('Trang tiếng Việt có vùng ứng dụng và nạp module chính',()=>{
   assert.match(html,/id=["']app["']/);
   assert.match(html,/runtime-config\.js/);
   assert.match(html,/type=["']module["'][^>]+src=["']\.\/src\/app\.js/);
+  assert.match(html,/type=["']module["'][^>]+src=["']\.\/src\/feature-loader\.js/);
 });
 
 test('Các tài nguyên CSS/JS mà vi.html tham chiếu đều tồn tại và không rỗng',()=>{
@@ -53,6 +54,7 @@ test('Chuỗi import tương đối của frontend không trỏ tới file thi�
   };
   visit('src/app.js');
   visit('src/settings.js');
+  visit('src/feature-loader.js');
 });
 
 test('Giao diện modular vẫn có đủ nhãn tiếng Việt quan trọng',()=>{
@@ -71,10 +73,12 @@ test('Không còn thông báo Firebase cũ trong giao diện production',()=>{
 
 test('Trang Quản trị có module Cài đặt Google, SMTP, email và vận hành',()=>{
   const html=read('vi.html');
+  const loader=read('src/feature-loader.js');
   const controller=read('src/settings.js');
   const view=read('src/settings/view.js');
   const api=read('src/settings/api.js');
-  assert.match(html,/src=["']\.\/src\/settings\.js/);
+  assert.match(html,/src=["']\.\/src\/feature-loader\.js/);
+  assert.ok(loader.includes("load('./settings.js')"));
   for(const text of ['Cài đặt hệ thống','Thông tin hệ thống','Đăng nhập Google','Máy chủ SMTP','Email kết quả','Quyền làm bài','Vận hành / bảo trì']){
     assert.ok(view.includes(text),`Thiếu nội dung Cài đặt: ${text}`);
   }
