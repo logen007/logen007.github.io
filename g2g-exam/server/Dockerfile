@@ -5,6 +5,7 @@ RUN npm install --omit=dev
 WORKDIR /app
 RUN mkdir -p /app/public/src /data/uploads
 COPY vi.html index.html app.html styles.css enhancements.css /app/public/
+RUN cp /app/public/vi.html /app/public/index.html
 COPY src /app/public/src
 COPY server/runtime/repository.js /app/public/src/repository.js
 COPY server/runtime/settings.js /app/public/src/settings.js
