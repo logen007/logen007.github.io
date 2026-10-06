@@ -30,12 +30,17 @@ export class ApiRepository{
   constructor(){this.mode='api';this.state=normalizeState({});this.user=null;this.listeners=new Set();this.poll=null;}
 
   async init(){
-    // Do not block app startup on /health. The health route checks PostgreSQL and a
-    // degraded DB must never leave the browser on “Đang tải hệ thống...” forever.
+    // Login must not wait for the full state payload. Master state can include users,
+    // attempts and audit history, so loading it in the critical boot path made the
+    // browser appear frozen after Google redirected back to the app.
     const me=await request('/auth/me',{timeoutMs:7000});
     this.user=me.user||null;
-    if(this.user)await this.reload();
     this.startPolling();
+    if(this.user){
+      setTimeout(()=>{
+        this.reload().catch(error=>console.error('Không tải được dữ liệu ban đầu.',error));
+      },0);
+    }
     return this;
   }
 
@@ -50,7 +55,7 @@ export class ApiRepository{
           this.emit();
         }
       }catch{}
-    },5000);
+    },15000);
   }
 
   emit(){for(const fn of this.listeners)fn(clone(this.state));}
