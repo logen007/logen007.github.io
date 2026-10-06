@@ -11,6 +11,7 @@ const oauth=()=>new OAuth2Client(process.env.GOOGLE_CLIENT_ID,process.env.GOOGLE
 
 function cookieOpts(maxAge=60*60*24*30){return {path:'/',httpOnly:true,sameSite:'lax',secure,signed:true,maxAge,domain:COOKIE_DOMAIN};}
 function teacherEmailSet(settings){return new Set((settings?.auth?.teacherEmails||[]).map(normalizeEmail).filter(Boolean));}
+function homeForRole(role){return role==='master'?'/adm':role==='teacher'?'/teacher':'/';}
 export async function userById(id){const r=await query(`SELECT id,email,role,active,data FROM users WHERE id=$1`,[id]);if(!r.rowCount)return null;const x=r.rows[0];return {id:x.id,email:x.email,role:x.role,active:x.active,...(x.data||{})};}
 export async function currentUser(request){const raw=request.cookies.g2g_session;if(!raw)return null;const u=request.unsignCookie(raw);if(!u.valid||!u.value)return null;return await userById(u.value);}
 export async function requireUser(request){const user=await currentUser(request);if(!user||user.active===false)throw appError(401,'Bạn cần đăng nhập.');return user;}
@@ -42,24 +43,22 @@ export async function registerAuthRoutes(fastify){
     const email=normalizeEmail(p.email),id=`google:${p.sub}`;
     const settings=await getSettings(),teacherEmails=teacherEmailSet(settings);
     const existing=await userById(id),master=isPrimaryMasterEmail(email),preapprovedTeacher=teacherEmails.has(email);
+    const role=master?'master':preapprovedTeacher?'teacher':existing?.role||'student';
     if(!existing){
       if(settings.auth.allowNewStudents===false&&!master&&!preapprovedTeacher)throw appError(403,'Hệ thống hiện không nhận thêm tài khoản học viên mới.');
       const domain=String(settings.auth.allowedDomain||'').toLowerCase();
       if(domain&&!email.endsWith(`@${domain}`)&&!master&&!preapprovedTeacher)throw appError(403,`Chỉ email thuộc ${domain} được đăng ký.`);
-      const role=master?'master':preapprovedTeacher?'teacher':'student';
       const data={name:p.name||email.split('@')[0],picture:p.picture||'',createdAt:now()};
       await query(`INSERT INTO users(id,email,role,active,data) VALUES($1,$2,$3,true,$4::jsonb)`,[id,email,role,JSON.stringify(data)]);
     }else{
       const data={...existing,name:p.name||existing.name||email.split('@')[0],picture:p.picture||existing.picture||''};
       delete data.id;delete data.email;delete data.role;delete data.active;
-      const role=master?'master':preapprovedTeacher?'teacher':existing.role;
       await query(`UPDATE users SET email=$2,role=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[id,email,role,JSON.stringify(data)]);
     }
     reply.setCookie('g2g_session',id,cookieOpts());
     reply.clearCookie('g2g_oauth_state',{path:'/'});
-    const ret=request.unsignCookie(request.cookies.g2g_return_to||'');
     reply.clearCookie('g2g_return_to',{path:'/'});
-    return reply.redirect(ret.valid&&String(ret.value).startsWith('/')?ret.value:'/');
+    return reply.redirect(homeForRole(role));
   });
   fastify.post('/api/auth/logout',async(_request,reply)=>{reply.clearCookie('g2g_session',{path:'/',domain:COOKIE_DOMAIN});return {ok:true};});
 }
