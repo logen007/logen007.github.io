@@ -12,7 +12,7 @@
     function showBootError(){
       var app=document.getElementById('app');
       if(!app||app.textContent.indexOf('Đang tải hệ thống')<0)return;
-      app.innerHTML='<div style="max-width:720px;margin:60px auto;padding:24px;font-family:Arial,sans-serif;border:1px solid #e0e0e8;border-radius:10px;background:#fff"><h2>Hệ thống chưa kết nối được</h2><p>Ứng dụng hoặc máy chủ phản hồi quá chậm. Anh/chị hãy tải lại trang; nếu vẫn lỗi, hệ thống sẽ hiển thị lỗi thay vì treo vô thời hạn.</p><button onclick="location.reload()" style="padding:10px 14px">Tải lại</button></div>';
+      app.innerHTML='<div style="max-width:720px;margin:60px auto;padding:24px;font-family:Arial,sans-serif;border:1px solid #e0e0e8;border-radius:10px;background:#fff"><h2>Hệ thống chưa tải được</h2><p>Ứng dụng hoặc máy chủ phản hồi quá chậm. Anh/chị hãy tải lại trang; nếu vẫn lỗi, hệ thống sẽ hiển thị lỗi thay vì treo vô thời hạn.</p><button onclick="location.reload()" style="padding:10px 14px">Tải lại</button></div>';
     }
     window.addEventListener('error',showBootError);
     window.addEventListener('unhandledrejection',showBootError);
