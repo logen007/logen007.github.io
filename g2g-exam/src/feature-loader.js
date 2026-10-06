@@ -13,8 +13,18 @@ function load(path){
   return task;
 }
 
+function syncRolePath(){
+  const badge=app?.querySelector('.thanh-dau .nhan')?.textContent?.trim()||'';
+  let target='';
+  if(badge==='Quản trị cấp cao')target='/adm';
+  else if(badge==='Giáo viên')target='/teacher';
+  else if(badge==='Học viên'&&['/adm','/teacher'].includes(location.pathname))target='/';
+  if(target&&location.pathname!==target)history.replaceState(null,'',target);
+}
+
 function inspect(){
   if(!app)return;
+  syncRolePath();
 
   const admin=app.querySelector('.khung-quan-tri');
   if(admin){
