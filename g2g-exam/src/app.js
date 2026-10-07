@@ -410,25 +410,37 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="view-exam"]').forEach(b=>b.onclick=()=>previewExamModal(byId(data.exams,b.dataset.id)));
   app.querySelectorAll('[data-action="delete-exam"]').forEach(b=>b.onclick=()=>{if(confirm('Đưa bài thi này vào Thùng rác?'))act(()=>repo.transaction(st=>softDeleteExam(st,user,b.dataset.id)),'Đã chuyển bài thi vào Thùng rác.');});
   app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>publishExam(st,user,b.dataset.id)),'Đã xuất bản bài thi.'));
-  app.querySelectorAll('[data-action="save-exam"]').forEach(b=>b.onclick=()=>{
+  app.querySelectorAll('[data-action="save-exam"]').forEach(b=>b.onclick=async()=>{
     const exam=byId(data.exams,ui.builderExamId),title=document.getElementById('examTitle')?.value.trim();
     const section=exam?.sections.find(item=>item.id===ui.builderSectionId);
     if(!exam||!title)return;
-    act(()=>repo.transaction(st=>{
-      updateExam(st,user,exam.id,{title});
+    b.disabled=true;
+    try{
+      const audioUrls=new Map();
       if(section&&exam.provider==='GOETHE'&&exam.level==='A1'){
-        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||''});
-        app.querySelectorAll('.goethe-question[data-question-id]').forEach(card=>{
-          const id=card.dataset.questionId;
-          const titleField=card.querySelector('[data-field="title"]');
-          const scoreField=card.querySelector('[data-field="maxScore"]');
-          const correct=card.querySelector('[data-field="correct"]:checked');
-          const audio=card.querySelector('[data-field="audio"]');
-          const choices=[0,1,2].map(index=>card.querySelector(`[data-choice="${index}"]`)?.value.trim()||'Nháp');
-          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:audio?.files?.[0]?.name||byId(st.questions,id)?.audioUrl||''});
-        });
+        for(const card of app.querySelectorAll('.goethe-question[data-question-id]')){
+          const file=card.querySelector('[data-field="audio"]')?.files?.[0];
+          if(!file)continue;
+          const label=card.querySelector('.audio-upload span');
+          if(label)label.textContent='Đang tải audio...';
+          audioUrls.set(card.dataset.questionId,await uploadQuestionAudio(file));
+        }
       }
-    }),'Đã lưu bài thi.');
+      await act(()=>repo.transaction(st=>{
+        updateExam(st,user,exam.id,{title});
+        if(section&&exam.provider==='GOETHE'&&exam.level==='A1'){
+          updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||''});
+          app.querySelectorAll('.goethe-question[data-question-id]').forEach(card=>{
+            const id=card.dataset.questionId;
+            const titleField=card.querySelector('[data-field="title"]');
+            const scoreField=card.querySelector('[data-field="maxScore"]');
+            const correct=card.querySelector('[data-field="correct"]:checked');
+            const choices=[0,1,2].map(index=>card.querySelector(`[data-choice="${index}"]`)?.value.trim()||'Nháp');
+            updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??byId(st.questions,id)?.audioUrl)||''});
+          });
+        }
+      }),'Đã lưu bài thi.');
+    }finally{b.disabled=false;}
   });
   app.querySelectorAll('[data-action="open-exam-settings"]').forEach(b=>b.onclick=()=>{
     const exam=byId(data.exams,ui.builderExamId);if(!exam)return;
@@ -437,7 +449,7 @@ function bindViewSpecific(){
     const defaultTimes={Nghe:20,'Đọc':25,'Viết':20};
     const setting=exam.settings?.skillSettings?.[skill]||{};
     const modal=document.createElement('div');modal.className='hop-chon';
-    modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><div><div class="nhan-muc">CÀI ĐẶT PHẦN</div><h2>${skill}</h2></div><button class="nut nho" data-close>×</button></div><div class="exam-setup-grid"><label>Thời gian ${skill} (phút)<input id="skillTimeMinutes" type="number" min="1" value="${Number(setting.timeMinutes??defaultTimes[skill]??20)}"></label><label>Điểm mặc định mỗi câu<input id="defaultQuestionScore" type="number" min="0" value="${Number(setting.defaultQuestionScore??exam.settings?.defaultQuestionScore??1)}"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="saveExamSettings">Lưu</button></div></div></div>`;
+    modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><div class="nhan-muc">CÀI ĐẶT</div><button class="nut nho" data-close aria-label="Đóng">×</button></div><div class="exam-setup-grid"><label>Thời gian (phút)<input id="skillTimeMinutes" type="number" min="1" value="${Number(setting.timeMinutes??defaultTimes[skill]??20)}"></label><label>Điểm mặc định mỗi câu<input id="defaultQuestionScore" type="number" min="0" value="${Number(setting.defaultQuestionScore??exam.settings?.defaultQuestionScore??1)}"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="saveExamSettings">Lưu</button></div></div></div>`;
     document.body.append(modal);modal.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>modal.remove());
     modal.querySelector('#saveExamSettings').onclick=()=>{const time=Math.max(1,Number(modal.querySelector('#skillTimeMinutes').value)||1),score=Math.max(0,Number(modal.querySelector('#defaultQuestionScore').value)||0);act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{settings:{skillSettings:{...(exam.settings?.skillSettings||{}),[skill]:{timeMinutes:time,defaultQuestionScore:score}}}})),'Đã lưu cài đặt phần.');modal.remove();};
   });
@@ -575,6 +587,11 @@ function bindBuilder(){
     }
   }),'Đã thêm câu hỏi.'));
   app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.'));
+  app.querySelectorAll('.audio-upload input[data-field="audio"]').forEach(input=>input.onchange=()=>{
+    const file=input.files?.[0];
+    const label=input.closest('.audio-upload')?.querySelector('span');
+    if(file&&label)label.textContent=file.name;
+  });
   app.querySelectorAll('[data-action="open-bank-picker"]').forEach(b=>b.onclick=bankPicker);
   const title=document.getElementById('examTitle');
   if(title)title.onchange=()=>act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{title:title.value})),'Đã đổi tên bài thi.');
