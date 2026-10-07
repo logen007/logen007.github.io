@@ -39,9 +39,9 @@ test('Tạo attempt server có metadata bảo vệ thời gian và phạm vi câ
   for(const text of ['currentSectionId','currentQuestionIds','currentDeadlineMs','sectionStates'])assert.ok(source.includes(text),`Thiếu ${text}`);
 });
 
-test('Audio cụm A1 được khóa một phiên ở server',()=>{
+test('Audio A1 được khóa theo Part ở server',()=>{
   const source=read('server/src/actions/attempts.js');
-  for(const text of ['startAudioGroup','completeAudioGroup','audioSessions','không thể phát lại','segmentRepeat'])assert.ok(source.includes(text),`Thiếu ${text}`);
+  for(const text of ['startPartAudio','completePartAudio','audioSessions','sessions[section.id]','không thể phát lại','segmentRepeat'])assert.ok(source.includes(text),`Thiếu ${text}`);
 });
 
 test('Bản production không tự bật SMTP/email',()=>{
@@ -67,9 +67,14 @@ test('Role và thay đổi dữ liệu quan trọng được kiểm tra lại ph
   assert.ok(actions.includes('canGrade'));
 });
 
-test('Restore trash và xóa vĩnh viễn question group được chặn lại ở server',()=>{
+test('QuestionGroup không còn write path; dữ liệu cũ chỉ được đọc để tương thích',()=>{
   const state=read('server/src/state.js');
-  for(const text of ['Chỉ Quản trị cấp cao được khôi phục cụm câu hỏi','Hãy đưa cụm câu hỏi vào Thùng rác trước khi xóa vĩnh viễn','Cụm vẫn có câu hỏi đang được dùng trong bài thi','Chỉ Quản trị cấp cao được khôi phục câu hỏi','Chỉ Quản trị cấp cao được khôi phục bài thi'])assert.ok(state.includes(text),`Thiếu bảo vệ server: ${text}`);
+  const attempts=read('server/src/actions/attempts.js');
+  assert.equal(state.includes('applyQuestionGroup'),false);
+  assert.equal(state.includes("op.collection==='questionGroups'"),false);
+  assert.equal(state.includes('state.questionGroups='),false);
+  assert.ok(attempts.includes('SELECT data FROM question_groups WHERE id=$1'));
+  for(const text of ['Chỉ Quản trị cấp cao được khôi phục câu hỏi','Chỉ Quản trị cấp cao được khôi phục bài thi'])assert.ok(state.includes(text),`Thiếu bảo vệ server: ${text}`);
 });
 
 console.log(`\n${passed} kiểm thử go-live đã đạt.`);

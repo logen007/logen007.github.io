@@ -2,6 +2,5 @@
 // lives in small focused modules under ./domain/.
 export * from './domain/base.js';
 export * from './domain/questions.js';
-export * from './domain/question-groups.js';
 export * from './domain/exams.js';
 export * from './domain/attempts.js';

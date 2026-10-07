@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {getExamSpec,getProviderLevels,buildSectionsFromSpec,groupSectionsBySkill} from '../src/exam-specs/index.js';
-import {clone,byId,createExam,softDeleteQuestionGroup,restoreQuestionGroup,permanentlyDeleteQuestionGroup} from '../src/core.js';
+import {clone,byId,createExam} from '../src/core.js';
 import {seedState} from '../src/seed.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
@@ -61,17 +61,6 @@ test('A2/B1/B2 chỉ là scaffold cho đến khi có cấu trúc được duyệ
   for(const [provider,level] of [['GOETHE','A2'],['GOETHE','B1'],['GOETHE','B2'],['TELC','B1'],['TELC','B2']])assert.equal(getExamSpec(provider,level).configured,false);
 });
 
-test('Question group có vòng đời trash/restore/permanent delete',()=>{
-  const s=clone(seedState),master=byId(s.users,'master-1'),teacher=byId(s.users,'teacher-lan');
-  s.questionGroups||=[];
-  const group={id:'qg-test',level:'A1',skill:'Nghe',partOrder:1,defaultScore:1,structureType:'A1_LISTENING_PART_1',audioPolicy:{maxSessions:1,segmentRepeat:2,controls:false,pauseAllowed:false,replayAllowed:false},questionIds:[],ownerId:teacher.id,ownerName:teacher.name,status:'active'};
-  const q={id:'qg-q',title:'Q',type:'single',choices:['A','B'],correctAnswer:0,maxScore:1,groupId:group.id,ownerId:teacher.id,status:'active'};
-  group.questionIds=[q.id];s.questionGroups.push(group);s.questions.push(q);
-  softDeleteQuestionGroup(s,teacher,group.id);assert.equal(group.status,'trash');assert.equal(q.deletedByGroupId,group.id);
-  restoreQuestionGroup(s,master,group.id);assert.equal(group.status,'active');assert.equal(q.status,'active');
-  softDeleteQuestionGroup(s,teacher,group.id);permanentlyDeleteQuestionGroup(s,master,group.id);assert.equal(s.questionGroups.some(x=>x.id===group.id),false);assert.equal(s.questions.some(x=>x.id===q.id),false);
-});
-
 test('Part template A1 Nghe 1 đã tách module và bỏ legacy question bank',()=>{
   const registry=read('src/part-templates/index.js'),loader=read('src/feature-loader.js'),admin=read('src/views/admin.js'),modals=read('src/views/modals.js'),server=read('server/src/actions/attempts.js');
   assert.ok(registry.includes("./a1-listening-part-1/index.js"));
@@ -101,7 +90,7 @@ test('Step 9A lưu A1 Nghe 1 theo Part thay vì tạo QuestionGroup mới',()=>{
   const attempts=read('server/src/actions/attempts.js');
   const actions=read('server/src/actions/index.js');
   assert.equal(editor.includes("collection:'questionGroups'"),false);
-  assert.equal(editor.includes('groupAudioPolicy'),true); // only compatibility cleanup list may mention the legacy field
+  assert.equal(editor.includes('groupAudioPolicy'),true); // compatibility cleanup only
   assert.ok(editor.includes('sectionPatch'));
   assert.ok(app.includes('openPartTemplate(section.templateType,{exam,section'));
   assert.ok(student.includes('attempt.currentSectionId'));
@@ -111,6 +100,19 @@ test('Step 9A lưu A1 Nghe 1 theo Part thay vì tạo QuestionGroup mới',()=>{
   assert.ok(attempts.includes('sessions[section.id]'));
   assert.ok(actions.includes("case 'startPartAudio'"));
   assert.ok(attempts.includes('Compatibility only for cached/legacy clients during Step 9A'));
+});
+
+test('Step 9B1 ngắt QuestionGroup khỏi application write path',()=>{
+  const core=read('src/core.js'),base=read('src/domain/base.js'),api=read('src/repositories/api.js'),loader=read('src/feature-loader.js'),server=read('server/src/state.js'),schema=read('server/schema.sql'),attempts=read('server/src/actions/attempts.js');
+  assert.equal(core.includes("export * from './domain/question-groups.js'"),false);
+  assert.equal(base.includes("'questionGroups'"),false);
+  assert.equal(api.includes("'questionGroups'"),false);
+  assert.equal(loader.includes("./question-groups/trash.js"),false);
+  assert.equal(server.includes('state.questionGroups='),false);
+  assert.equal(server.includes("op.collection==='questionGroups'"),false);
+  assert.equal(server.includes('applyQuestionGroup'),false);
+  assert.ok(schema.includes('CREATE TABLE IF NOT EXISTS question_groups'));
+  assert.ok(attempts.includes('SELECT data FROM question_groups WHERE id=$1'));
 });
 
 test('Media garbage collector được khởi động từ server',()=>{
