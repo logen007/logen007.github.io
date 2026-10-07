@@ -24,7 +24,7 @@ async function request(path,{method='GET',body,form,timeoutMs=0}={}){
 
 function same(a,b){return JSON.stringify(a)===JSON.stringify(b);}
 function mapById(list=[]){return new Map(list.map(x=>[x.id,x]));}
-const MUTABLE_COLLECTIONS=['users','questionGroups','questions','exams','gradingRequests'];
+const MUTABLE_COLLECTIONS=['users','questions','exams','gradingRequests'];
 
 export class ApiRepository{
   constructor(){this.mode='api';this.state=normalizeState({});this.user=null;this.listeners=new Set();this.poll=null;}
