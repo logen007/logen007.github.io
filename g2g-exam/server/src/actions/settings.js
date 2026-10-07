@@ -4,6 +4,7 @@ import {mergeSettings} from '../defaults.js';
 import {isPrimaryMasterEmail,normalizeEmail} from '../roles.js';
 
 const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||''));
+const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||''));
 
 function normalizeTeacherEmails(values=[]){
   return [...new Set((Array.isArray(values)?values:[]).map(normalizeEmail).filter(validEmail).filter(email=>!isPrimaryMasterEmail(email)))].sort();
@@ -17,16 +18,18 @@ async function saveTeacherEmails(settings,userId){
 function cleanSettings(input={}){
   const settings=mergeSettings(input);
   const optionalEmail=value=>!value||validEmail(value);
-  settings.version=4;
+  settings.version=5;
   settings.general.systemName=String(settings.general.systemName||'').trim().slice(0,80);
   settings.general.organizationName=String(settings.general.organizationName||'').trim().slice(0,100);
   settings.general.supportEmail=String(settings.general.supportEmail||'').trim().slice(0,160);
   settings.general.publicUrl=String(settings.general.publicUrl||'').trim().slice(0,300);
+  settings.theme.primaryColor=String(settings.theme.primaryColor||'').trim();
   settings.auth.allowedDomain=String(settings.auth.allowedDomain||'').trim().toLowerCase().replace(/^@/,'').slice(0,160);
   settings.auth.teacherEmails=normalizeTeacherEmails(settings.auth.teacherEmails);
   settings.smtp.port=Math.max(1,Math.min(65535,Number(settings.smtp.port||587)));
   settings.smtp.timeoutMs=Math.max(3000,Math.min(120000,Number(settings.smtp.timeoutMs||20000)));
   if(!settings.general.systemName||!/^https?:\/\//.test(settings.general.publicUrl))throw appError(400,'Thông tin hệ thống không hợp lệ.');
+  if(!validColor(settings.theme.primaryColor))throw appError(400,'Màu chủ đạo không hợp lệ.');
   if(!optionalEmail(settings.general.supportEmail)||!optionalEmail(settings.smtp.fromEmail)||!optionalEmail(settings.smtp.replyTo))throw appError(400,'Địa chỉ email không hợp lệ.');
   if(settings.smtp.enabled&&!settings.smtp.host)throw appError(400,'Cần điền SMTP Host trước khi bật SMTP.');
   return settings;

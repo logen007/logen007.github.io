@@ -5,7 +5,7 @@ import {
 } from './settings/api.js';
 import {settingsPageHtml} from './settings/view.js';
 
-let pub={general:{systemName:'Thi thử tiếng Đức'},auth:{googleLoginEnabled:true},operations:{}};
+let pub={general:{systemName:'Thi thử tiếng Đức'},theme:{primaryColor:'#111827'},auth:{googleLoginEnabled:true},operations:{}};
 let settings=null;
 let infra=null;
 let open=false;
@@ -17,6 +17,7 @@ function master(){
 function student(){return document.querySelector('.thanh-dau .nhan')?.textContent?.trim()==='Học viên';}
 function val(id){return document.getElementById(id)?.value?.trim()||'';}
 function chk(id){return Boolean(document.getElementById(id)?.checked);}
+function themeColor(value){return /^#[0-9a-f]{6}$/i.test(String(value||''))?String(value).toUpperCase():'#111827';}
 
 function queue(){
   if(queued)return;
@@ -30,6 +31,9 @@ function applyBrand(){
   if(title&&title.textContent!==name)title.textContent=name;
   const pageTitle=`${name} · G2G`;
   if(document.title!==pageTitle)document.title=pageTitle;
+  const color=themeColor(pub.theme?.primaryColor);
+  document.documentElement.style.setProperty('--brand-primary',color);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',color);
 }
 
 function applyLogin(){
@@ -85,6 +89,7 @@ function collectForm(){
   return {
     ...settings,
     general:{...settings.general,systemName:val('sName'),organizationName:val('sOrg'),supportEmail:val('sSupport'),publicUrl:val('sUrl')},
+    theme:{...settings.theme,primaryColor:themeColor(val('sPrimaryColorText')||document.getElementById('sPrimaryColor')?.value)},
     auth:{...settings.auth,googleLoginEnabled:chk('sGoogle'),allowNewStudents:chk('sSignup'),allowedDomain:val('sDomain').replace(/^@/,'').toLowerCase()},
     exam:{...settings.exam,allowRetake:chk('sRetake'),allowRestart:chk('sRestart')},
     smtp:{...settings.smtp,enabled:chk('sSmtp'),host:val('sHost'),port:Number(val('sPort')||587),security:val('sSecurity'),username:val('sUser'),fromName:val('sFromName'),fromEmail:val('sFrom'),replyTo:val('sReply'),timeoutMs:Number(val('sTimeout')||20000),rejectUnauthorized:chk('sTlsVerify')},
@@ -113,7 +118,7 @@ async function save(){
     setState('Đang lưu...');
     const out=await updateSystemSettings(collectForm());
     settings=out.settings;
-    pub={general:settings.general,auth:settings.auth,operations:settings.operations};
+    pub={general:settings.general,theme:settings.theme,auth:settings.auth,operations:settings.operations};
     setState('Đã lưu cài đặt.');
     applyBrand();
     applyLogin();
@@ -151,6 +156,9 @@ function bindSettingsActions(){
   document.getElementById('sRefresh')?.addEventListener('click',async()=>{
     try{infra=await refreshInfrastructure();renderSettings(true);}catch(error){setState(error.message,true);}
   });
+  const picker=document.getElementById('sPrimaryColor'),text=document.getElementById('sPrimaryColorText');
+  picker?.addEventListener('input',()=>{if(text)text.value=picker.value.toUpperCase();});
+  text?.addEventListener('input',()=>{if(picker&&/^#[0-9a-f]{6}$/i.test(text.value))picker.value=text.value;});
 }
 
 if(hasApiBackend()){

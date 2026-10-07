@@ -52,6 +52,16 @@ test('Bản production không tự bật SMTP/email',()=>{
   assert.match(source,/email:\{enabled:false/);
 });
 
+test('Màu giao diện là cấu hình công khai, có kiểm tra định dạng ở backend',()=>{
+  const defaults=read('server/src/defaults.js');
+  const settings=read('server/src/actions/settings.js');
+  const server=read('server/src/index.js');
+  assert.ok(defaults.includes("theme:{primaryColor:'#111827'}"));
+  assert.ok(settings.includes('validColor'));
+  assert.ok(settings.includes('Màu chủ đạo không hợp lệ'));
+  assert.ok(server.includes('theme:s.theme'));
+});
+
 test('Học viên không nhận đáp án đúng hoặc điểm riêng tư chưa công bố',()=>{
   const source=read('server/src/state.js');
   assert.ok(source.includes('delete q.correctAnswer'));

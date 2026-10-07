@@ -43,7 +43,7 @@ await app.register(fastifyStatic,{root:publicDir,prefix:'/',index:['index.html']
 await registerAuthRoutes(app);
 
 app.get('/api/health',async()=>{let db=true;try{await pool.query('SELECT 1');}catch{db=false;}return {ok:db,backend:'vps',database:db,time:new Date().toISOString()};});
-app.get('/api/public-settings',async()=>{const s=await getSettings();return {general:{systemName:s.general.systemName,organizationName:s.general.organizationName,publicUrl:s.general.publicUrl},auth:s.auth,operations:s.operations};});
+app.get('/api/public-settings',async()=>{const s=await getSettings();return {general:{systemName:s.general.systemName,organizationName:s.general.organizationName,publicUrl:s.general.publicUrl},theme:s.theme,auth:s.auth,operations:s.operations};});
 app.get('/api/settings',async request=>{await requireRole(request,'master');return {settings:await getSettings()};});
 app.get('/api/state',async request=>loadState(await requireUser(request)));
 app.post('/api/commit',async request=>commitOperations(await requireUser(request),request.body?.operations||[]));
