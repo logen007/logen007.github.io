@@ -1,21 +1,24 @@
-# G2G Exam — Approved Decisions
+# G2G Exam — Decisions Pending Review
 
-> Đây là nơi lưu những quyết định đã được chốt để AI/Developer không hỏi lại hoặc tự làm ngược.
+> Đây là bản nháp để người phụ trách dự án đọc và duyệt trước.
 >
-> Chỉ ghi quyết định đã được duyệt. Ý tưởng chưa chốt phải nằm trong specification ở trạng thái DRAFT/TODO.
+> KHÔNG coi nội dung trong file này là quyết định chính thức cho đến khi người phụ trách dự án xác nhận duyệt.
+>
+> Chỉ sau khi được duyệt mới đổi từng mục sang `APPROVED` và cho phép AI/Developer dùng làm Source of Truth.
 
 ## Cách dùng
 
-- Khi một quyết định mới được chốt, thêm một mục mới bên dưới.
-- Không sửa ngược quyết định cũ mà không ghi rõ quyết định thay thế.
-- Nếu code và quyết định đã chốt mâu thuẫn, phải dừng và xử lý mâu thuẫn trước khi build tiếp.
-- `AGENTS.md` quy định cách AI làm việc; `DECISIONS.md` lưu điều đã chốt; `specs/` mô tả chi tiết từng kỳ thi/Part.
+- Mỗi quyết định mới phải được trình người phụ trách dự án đọc trước.
+- Trước khi được duyệt, trạng thái phải là `PENDING REVIEW` hoặc `DRAFT`.
+- Không được tự đổi sang `APPROVED`.
+- Sau khi người phụ trách dự án xác nhận duyệt, mới được commit trạng thái `APPROVED`.
+- `AGENTS.md` quy định cách AI làm việc; `DECISIONS.md` lưu các quyết định đã duyệt; `specs/` mô tả chi tiết từng kỳ thi/Part.
 
 ---
 
 ## DEC-001 — Không có Ngân hàng câu hỏi
 
-**Status:** APPROVED  
+**Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
 G2G Exam **không có Question Bank / Ngân hàng câu hỏi độc lập**.
@@ -35,7 +38,7 @@ Không xây lại màn hình Question Bank, picker chọn câu từ kho, hoặc 
 
 ## DEC-002 — Workflow chính của Giáo viên
 
-**Status:** APPROVED  
+**Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
 Giáo viên có hai nhóm công việc chính:
@@ -63,7 +66,7 @@ Câu hỏi được tạo trực tiếp trong Part của đề thi.
 
 ## DEC-003 — Mỗi Part có thể có template riêng
 
-**Status:** APPROVED  
+**Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
 Không giả định các Part cùng một kỹ năng có cùng cấu trúc.
@@ -86,7 +89,7 @@ Mỗi Part có thể có editor, validation, media policy, scoring và student e
 
 ## DEC-004 — Không tự suy đoán luật thi
 
-**Status:** APPROVED  
+**Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
 Nếu Provider / Level / Skill / Part chưa có specification ở trạng thái `APPROVED` thì không được tự nghĩ ra:
@@ -105,7 +108,7 @@ Phải chờ specification được duyệt.
 
 ## DEC-005 — Specification đã APPROVED là nguồn nghiệp vụ chính thức
 
-**Status:** APPROVED  
+**Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
 Luật nghiệp vụ chi tiết nằm trong `specs/`.
@@ -118,7 +121,7 @@ Specification `DRAFT` hoặc `TODO` không được coi là luật production.
 
 ## DEC-006 — Điểm thuộc từng câu hỏi
 
-**Status:** APPROVED  
+**Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
 Điểm được lưu ở từng Question.
@@ -133,7 +136,7 @@ Tổng điểm được tính từ tổng điểm các câu.
 
 ## DEC-007 — Bảo toàn lịch sử thi
 
-**Status:** APPROVED  
+**Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
 Không được làm hỏng kết quả hoặc lịch sử học viên đã phát sinh.
@@ -148,7 +151,7 @@ Khi dữ liệu đã được dùng trong lượt thi production:
 
 ## DEC-008 — Xóa dữ liệu theo Trash / Soft Delete
 
-**Status:** APPROVED  
+**Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
 Xóa thông thường phải đi qua Trash / soft delete.
@@ -161,7 +164,7 @@ Master Admin chịu trách nhiệm các thao tác quản trị Trash và xóa v�
 
 ## DEC-009 — Media phải có vòng đời dọn rác
 
-**Status:** APPROVED  
+**Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
 Audio và ảnh không được để tích tụ vô hạn trên server.
@@ -174,7 +177,7 @@ Audio và ảnh không được để tích tụ vô hạn trên server.
 
 ## DEC-010 — AI/Developer chỉ sửa phạm vi tối thiểu cần thiết
 
-**Status:** APPROVED  
+**Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
 Khi yêu cầu chỉ liên quan một Part, không tự ý thay đổi các Part/kỳ thi khác nếu không có dependency thực sự.
