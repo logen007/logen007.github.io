@@ -53,19 +53,26 @@ Cấu trúc chuẩn:
 
     Provider
       → Level
-        → Skill
-          → Part
-            → Part Template
-              → Questions
+        → Exam
+          → Skill
+            → Part
+              → Part Template
+                → Questions
 
 Ví dụ:
 
     GOETHE
       → A1
-        → LISTENING
-          → PART 01
+        → Exam
+          → LISTENING
+            → PART 01
+              → Questions
 
 Mỗi Part có thể có cấu trúc hoàn toàn khác nhau.
+
+Không có Question Bank / Ngân hàng câu hỏi.
+
+Question không tồn tại như một luồng nghiệp vụ độc lập với Exam. Giáo viên tạo và quản lý câu hỏi trực tiếp trong Part của đề thi.
 
 
 ## 5. Part Template
@@ -95,6 +102,8 @@ không được mặc định dùng cùng logic với:
 - dùng registry/config thay cho nhiều if/else.
 
 Không thêm logic nghiệp vụ Goethe/TELC trực tiếp vào app.js nếu có thể đặt trong spec hoặc part-template.
+
+Không tạo lại Question Bank, picker câu hỏi dùng chung hoặc luồng tạo câu hỏi độc lập nếu không có yêu cầu mới được APPROVED.
 
 
 ## 7. Dữ liệu lịch sử
@@ -127,7 +136,7 @@ Không xóa media đang được tham chiếu.
 
 Media orphan chỉ được garbage collector xóa sau grace period.
 
-Xóa file liên quan ngay sau khi Permanently Delete
+Xóa file liên quan ngay sau khi Permanently Delete nếu file không còn bất kỳ tham chiếu hợp lệ nào.
 
 
 ## 10. Trước khi code
@@ -136,6 +145,7 @@ AI phải xác định:
 
 - Provider
 - Level
+- Exam
 - Skill
 - Part
 - specification tương ứng
@@ -150,8 +160,8 @@ Phải chạy:
 
 - syntax check;
 - automated tests liên quan;
-- full G2G Exam test nếu thay đổi kiến trúc hoặc nghiệp vụ.
-- Đảm mọi chức năng đều có ý nghĩa và sử dụng được
+- full G2G Exam test nếu thay đổi kiến trúc hoặc nghiệp vụ;
+- đảm bảo mọi chức năng đều có ý nghĩa và sử dụng được.
 
 Không merge vào main khi test fail.
 
