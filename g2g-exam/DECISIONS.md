@@ -66,3 +66,16 @@ Chi tiết nghiệp vụ của từng Provider / Level / Skill / Part nằm tron
 Chỉ specification có trạng thái `APPROVED` mới được dùng làm luật production.
 
 Code và test phải tham chiếu cùng một specification thay vì tự duy trì các bản rule riêng biệt.
+
+---
+
+## DEC-004 — Mô hình lưu Specification
+
+**Status:** APPROVED  
+**Date:** 2026-10-07
+
+Mỗi Part có một specification riêng dưới `specs/<provider>/<level>/<skill>/part-XX.json`.
+
+Specification dùng dữ liệu có cấu trúc để code, test và visual rule map có thể cùng đọc từ một Source of Truth.
+
+Chỉ tạo spec khi thực sự bắt đầu làm Part đó; không tạo hàng loạt file hoặc thư mục rỗng để dự phòng.
