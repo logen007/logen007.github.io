@@ -36,6 +36,16 @@ async function applyQuestionGroup(c,user,op){
   const current=await c.query(`SELECT * FROM question_groups WHERE id=$1 FOR UPDATE`,[op.id]);
   if(op.kind==='delete'){
     if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được xóa vĩnh viễn cụm câu hỏi.');
+    const row=current.rows[0];
+    if(!row)return;
+    if(row.status!=='trash')throw appError(409,'Hãy đưa cụm câu hỏi vào Thùng rác trước khi xóa vĩnh viễn.');
+    const ids=[...new Set(row.data?.questionIds||[])];
+    if(ids.length){
+      const exams=await c.query(`SELECT id,data FROM exams`);
+      const referenced=exams.rows.some(exam=>(exam.data?.sections||[]).some(section=>(section.questionIds||[]).some(id=>ids.includes(id))));
+      if(referenced)throw appError(409,'Cụm vẫn có câu hỏi đang được dùng trong bài thi.');
+      await c.query(`DELETE FROM questions WHERE id = ANY($1::text[])`,[ids]);
+    }
     await c.query(`DELETE FROM question_groups WHERE id=$1`,[op.id]);
     return;
   }
@@ -54,6 +64,7 @@ async function applyQuestionGroup(c,user,op){
   }
   const old=current.rows[0];
   if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa cụm câu hỏi này.');
+  if(old.status==='trash'&&item.status!=='trash'&&user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được khôi phục cụm câu hỏi.');
   if(old.locked&&user.role!=='master')throw appError(409,'Cụm câu hỏi đã khóa vì đang được dùng trong đề.');
   if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu cụm câu hỏi.');
   await c.query(`UPDATE question_groups SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,ownerId:old.owner_id}))]);
@@ -68,7 +79,7 @@ async function applyQuestion(c,user,op){
   }
   const item=op.item||{};
   if(!current.rowCount){if(!isTeacher(user)||item.ownerId!==user.id)throw appError(403,'Không có quyền tạo câu hỏi.');await c.query(`INSERT INTO questions(id,owner_id,status,locked,data) VALUES($1,$2,$3,$4,$5::jsonb)`,[op.id,user.id,item.status||'active',Boolean(item.locked),JSON.stringify(stripId(item))]);return;}
-  const old=current.rows[0];if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa câu hỏi này.');if(old.locked&&user.role!=='master')throw appError(409,'Câu hỏi đã khóa vì đang được dùng trong đề.');if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu câu hỏi.');
+  const old=current.rows[0];if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa câu hỏi này.');if(old.status==='trash'&&item.status!=='trash'&&user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được khôi phục câu hỏi.');if(old.locked&&user.role!=='master')throw appError(409,'Câu hỏi đã khóa vì đang được dùng trong đề.');if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu câu hỏi.');
   await c.query(`UPDATE questions SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,ownerId:old.owner_id}))]);
 }
 async function applyExam(c,user,op){
@@ -78,7 +89,7 @@ async function applyExam(c,user,op){
   }
   const item=op.item||{};
   if(!current.rowCount){if(!isTeacher(user)||item.ownerId!==user.id)throw appError(403,'Không có quyền tạo bài thi.');await c.query(`INSERT INTO exams(id,owner_id,status,locked,data) VALUES($1,$2,$3,$4,$5::jsonb)`,[op.id,user.id,item.status||'draft',Boolean(item.locked),JSON.stringify(stripId(item))]);return;}
-  const old=current.rows[0],oldData=old.data||{};if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa bài thi này.');if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu bài thi.');
+  const old=current.rows[0],oldData=old.data||{};if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa bài thi này.');if(old.status==='trash'&&item.status!=='trash'&&user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được khôi phục bài thi.');if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu bài thi.');
   const structural=JSON.stringify([oldData.level,oldData.passScore,oldData.sections])!==JSON.stringify([item.level,item.passScore,item.sections]);if(old.locked&&structural&&user.role!=='master')throw appError(409,'Bài thi đã có học viên làm nên cấu trúc đã khóa.');
   await c.query(`UPDATE exams SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,ownerId:old.owner_id}))]);
 }
