@@ -1,4 +1,4 @@
-import {query,withTx,audit,appError,now} from './db.js';
+import {query,withTx,audit,appError} from './db.js';
 
 const stripId=x=>{const y=structuredClone(x||{});delete y.id;return y;};
 const isTeacher=u=>u?.role==='teacher'||u?.role==='master';
@@ -9,10 +9,9 @@ function rowEntity(r){return {id:r.id,...(r.data||{})};}
 function attemptEntity(r,includePrivate=false){return {id:r.id,...(r.public_data||{}),...(includePrivate?(r.private_data||{}):{})};}
 
 export async function loadState(user){
-  const state={schemaVersion:5,revision:Date.now(),users:[],questionGroups:[],questions:[],exams:[],attempts:[],gradingRequests:[],notifications:[],auditLog:[]};
+  const state={schemaVersion:6,revision:Date.now(),users:[],questions:[],exams:[],attempts:[],gradingRequests:[],notifications:[],auditLog:[]};
   if(user.role==='student'){
     state.users=[user];
-    state.questionGroups=(await rows(`SELECT id,data FROM question_groups WHERE status='active' ORDER BY updated_at DESC`)).map(rowEntity);
     state.exams=(await rows(`SELECT id,data FROM exams WHERE status='published' ORDER BY updated_at DESC`)).map(rowEntity);
     state.questions=(await rows(`SELECT id,data FROM questions WHERE status<>'trash'`)).map(r=>({id:r.id,...publicQuestion(r.data)}));
     state.attempts=(await rows(`SELECT id,public_data FROM attempts WHERE student_id=$1 ORDER BY created_at DESC`,[user.id])).map(r=>({id:r.id,...r.public_data}));
@@ -20,54 +19,15 @@ export async function loadState(user){
     return state;
   }
   state.users=(await rows(`SELECT id,email,role,active,data FROM users ORDER BY created_at DESC`)).map(r=>({id:r.id,email:r.email,role:r.role,active:r.active,...r.data}));
-  state.questionGroups=(await rows(`SELECT id,data FROM question_groups ORDER BY updated_at DESC`)).map(rowEntity);
   state.questions=(await rows(`SELECT id,data FROM questions ORDER BY updated_at DESC`)).map(rowEntity);
   state.exams=(await rows(`SELECT id,data FROM exams ORDER BY updated_at DESC`)).map(rowEntity);
   const allowed=await allowedExamIds(user);
   const ars=await rows(`SELECT id,exam_id,public_data,private_data FROM attempts ORDER BY created_at DESC`);
   state.attempts=ars.filter(r=>!allowed||allowed.has(r.exam_id)).map(r=>attemptEntity(r,true));
-  const gr=await rows(`SELECT id,exam_id,owner_id,requester_id,status,data FROM grading_requests ORDER BY created_at DESC`);
+  const gr=await rows(`SELECT id,exam_id,owner_id,requester_id,status,data FROM grading_requests ORDER BY updated_at DESC`);
   state.gradingRequests=gr.filter(r=>user.role==='master'||r.owner_id===user.id||r.requester_id===user.id).map(r=>({id:r.id,examId:r.exam_id,ownerId:r.owner_id,requesterId:r.requester_id,status:r.status,...r.data}));
   if(user.role==='master')state.auditLog=(await rows(`SELECT id,at,user_id,user_name,action,entity_type,entity_id,detail FROM audit_log ORDER BY at DESC LIMIT 1000`)).map(r=>({id:String(r.id),at:r.at,userId:r.user_id,userName:r.user_name,action:r.action,entityType:r.entity_type,entityId:r.entity_id,detail:r.detail}));
   return state;
-}
-
-async function applyQuestionGroup(c,user,op){
-  const current=await c.query(`SELECT * FROM question_groups WHERE id=$1 FOR UPDATE`,[op.id]);
-  if(op.kind==='delete'){
-    if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được xóa vĩnh viễn cụm câu hỏi.');
-    const row=current.rows[0];
-    if(!row)return;
-    if(row.status!=='trash')throw appError(409,'Hãy đưa cụm câu hỏi vào Thùng rác trước khi xóa vĩnh viễn.');
-    const ids=[...new Set(row.data?.questionIds||[])];
-    if(ids.length){
-      const exams=await c.query(`SELECT id,data FROM exams`);
-      const referenced=exams.rows.some(exam=>(exam.data?.sections||[]).some(section=>(section.questionIds||[]).some(id=>ids.includes(id))));
-      if(referenced)throw appError(409,'Cụm vẫn có câu hỏi đang được dùng trong bài thi.');
-      await c.query(`DELETE FROM questions WHERE id = ANY($1::text[])`,[ids]);
-    }
-    await c.query(`DELETE FROM question_groups WHERE id=$1`,[op.id]);
-    return;
-  }
-  const item=op.item||{};
-  const count=[...new Set(item.questionIds||[])].length;
-  if(count<1||count>10)throw appError(400,'Mỗi cụm câu hỏi phải có từ 1 đến 10 câu.');
-  if(item.structureType==='A1_LISTENING_PART_1'){
-    const policy=item.audioPolicy||{};
-    if(String(item.level||'').toUpperCase()!=='A1'||Number(item.partOrder)!==1)throw appError(400,'Template A1 Nghe Phần 1 có cấu hình phân loại không hợp lệ.');
-    if(Number(policy.maxSessions)!==1||Number(policy.segmentRepeat)!==2||policy.pauseAllowed!==false||policy.replayAllowed!==false||policy.controls!==false)throw appError(400,'Chính sách audio A1 Nghe Phần 1 không hợp lệ.');
-  }
-  if(!current.rowCount){
-    if(!isTeacher(user)||item.ownerId!==user.id)throw appError(403,'Không có quyền tạo cụm câu hỏi.');
-    await c.query(`INSERT INTO question_groups(id,owner_id,status,locked,data) VALUES($1,$2,$3,$4,$5::jsonb)`,[op.id,user.id,item.status||'active',Boolean(item.locked),JSON.stringify(stripId(item))]);
-    return;
-  }
-  const old=current.rows[0];
-  if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa cụm câu hỏi này.');
-  if(old.status==='trash'&&item.status!=='trash'&&user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được khôi phục cụm câu hỏi.');
-  if(old.locked&&user.role!=='master')throw appError(409,'Cụm câu hỏi đã khóa vì đang được dùng trong đề.');
-  if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu cụm câu hỏi.');
-  await c.query(`UPDATE question_groups SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,ownerId:old.owner_id}))]);
 }
 
 async function applyQuestion(c,user,op){
@@ -107,8 +67,7 @@ export async function commitOperations(user,ops=[]){
   return withTx(async c=>{
     for(const op of ops){
       if(!op?.collection||!op.id)throw appError(400,'Thay đổi thiếu dữ liệu.');
-      if(op.collection==='questionGroups')await applyQuestionGroup(c,user,op);
-      else if(op.collection==='questions')await applyQuestion(c,user,op);
+      if(op.collection==='questions')await applyQuestion(c,user,op);
       else if(op.collection==='exams')await applyExam(c,user,op);
       else if(op.collection==='gradingRequests')await applyGrading(c,user,op);
       else if(op.collection==='users')await applyUser(c,user,op);
