@@ -1,0 +1,42 @@
+name: G2G Step 9A Refactor
+
+on:
+  push:
+    branches:
+      - refactor/g2g-part-data-step9a
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/g2g-part-data-step9a
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply approved Step 9A refactor
+        working-directory: g2g-exam
+        run: node scripts/step9a-part-data-refactor.mjs
+      - name: Check JavaScript syntax
+        working-directory: g2g-exam
+        run: find src server/src -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Run tests
+        working-directory: g2g-exam
+        run: npm test
+      - name: Remove temporary migration helpers
+        run: |
+          rm -f g2g-exam/scripts/step9a-part-data-refactor.mjs
+          rm -f .github/workflows/g2g-step9a.yml
+      - name: Commit refactor result
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'refactor(g2g): store A1 listening by part'
+          git push origin HEAD:refactor/g2g-part-data-step9a
