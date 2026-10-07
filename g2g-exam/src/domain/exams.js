@@ -37,7 +37,7 @@ export function createExam(state,user,input={}){
     title:String(input.title||'Bài thi thử mới').trim(),
     level:input.level||'B1',
     provider:['GOETHE','TELC'].includes(String(input.provider||'').toUpperCase())?String(input.provider).toUpperCase():null,
-    settings:{defaultQuestionScore:Math.max(0,Number(input.settings?.defaultQuestionScore??1)),skillTimes:{...(input.settings?.skillTimes||{})}},
+    settings:{defaultQuestionScore:Math.max(0,Number(input.settings?.defaultQuestionScore??1)),totalTimeMinutes:Math.max(1,Number(input.settings?.totalTimeMinutes??60)),skillTimes:{...(input.settings?.skillTimes||{})}},
     ownerId:user.id,
     ownerName:user.name,
     status:'draft',

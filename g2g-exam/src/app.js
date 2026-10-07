@@ -433,9 +433,10 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="open-exam-settings"]').forEach(b=>b.onclick=()=>{
     const exam=byId(data.exams,ui.builderExamId);if(!exam)return;
     const modal=document.createElement('div');modal.className='hop-chon';
-    modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><div><div class="nhan-muc">CÀI ĐẶT CHUNG</div><h2>${exam.provider||''} ${exam.level||''}</h2></div><button class="nut nho" data-close>×</button></div><div class="exam-setup-grid"><label>Điểm mặc định mỗi câu<input id="defaultQuestionScore" type="number" min="0" value="${Number(exam.settings?.defaultQuestionScore??1)}"></label><label>Thời gian Nghe (phút)<input id="listeningTime" type="number" min="1" value="${Number(exam.settings?.skillTimes?.listening??20)}"></label><label>Thời gian Đọc (phút)<input id="readingTime" type="number" min="1" value="${Number(exam.settings?.skillTimes?.reading??25)}"></label><label>Thời gian Viết (phút)<input id="writingTime" type="number" min="1" value="${Number(exam.settings?.skillTimes?.writing??20)}"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="saveExamSettings">Lưu</button></div></div></div>`;
+    const totalTime=Number(exam.settings?.totalTimeMinutes??(exam.provider==='GOETHE'&&exam.level==='A1'?65:60));
+    modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><div><div class="nhan-muc">CÀI ĐẶT CHUNG</div><h2>${exam.provider||''} ${exam.level||''}</h2></div><button class="nut nho" data-close>×</button></div><div class="exam-setup-grid"><label>Thời gian làm bài (phút)<input id="totalTimeMinutes" type="number" min="1" value="${totalTime}"></label><label>Điểm mặc định mỗi câu<input id="defaultQuestionScore" type="number" min="0" value="${Number(exam.settings?.defaultQuestionScore??1)}"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="saveExamSettings">Lưu</button></div></div></div>`;
     document.body.append(modal);modal.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>modal.remove());
-    modal.querySelector('#saveExamSettings').onclick=()=>{const n=id=>Math.max(1,Number(modal.querySelector(id).value)||1);act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{settings:{defaultQuestionScore:Math.max(0,Number(modal.querySelector('#defaultQuestionScore').value)||0),skillTimes:{listening:n('#listeningTime'),reading:n('#readingTime'),writing:n('#writingTime')}}})),'Đã lưu cài đặt chung.');modal.remove();};
+    modal.querySelector('#saveExamSettings').onclick=()=>{const total=Math.max(1,Number(modal.querySelector('#totalTimeMinutes').value)||1);act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{settings:{totalTimeMinutes:total,defaultQuestionScore:Math.max(0,Number(modal.querySelector('#defaultQuestionScore').value)||0)}})),'Đã lưu cài đặt chung.');modal.remove();};
   });
   app.querySelectorAll('[data-action="request-grade"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>requestGrading(st,user,b.dataset.id)),'Đã gửi yêu cầu xin chấm.'));
   app.querySelectorAll('[data-action="resolve-request"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>resolveGradingRequest(st,user,b.dataset.id,b.dataset.status)),b.dataset.status==='approved'?'Đã duyệt quyền chấm.':'Đã từ chối yêu cầu.'));
@@ -495,7 +496,7 @@ async function createNewExam(){
   const stamp=Date.now();
   const sections=isGoetheA1?GOETHE_A1_PARTS.map(([name,skill,questionLimit,timeMinutes],index)=>({id:`sec-${stamp}-${index+1}`,name,skill,questionLimit,timeMinutes,maxScore:0,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]})):[{id:`sec-${stamp}-1`,name:'Phần 1',timeMinutes:30,maxScore:0,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]}];
   const exam=await act(()=>repo.transaction(st=>{
-    const created=createExam(st,user,{title,level,provider:provider.toUpperCase(),sections});
+    const created=createExam(st,user,{title,level,provider:provider.toUpperCase(),settings:isGoetheA1?{totalTimeMinutes:65}:undefined,sections});
     if(isGoetheA1){
       for(const section of created.sections){
         const ids=[];
