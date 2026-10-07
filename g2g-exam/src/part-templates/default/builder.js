@@ -90,7 +90,8 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
   const updateSkillTotals=()=>{
     const draftScores=new Map([...root.querySelectorAll('.part-question[data-question-id]')].map(card=>[card.dataset.questionId,Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0)]));
     root.querySelectorAll('[data-skill-total]').forEach(total=>{
-      const sum=(exam.sections||[]).filter(item=>item.skill===total.dataset.skill).reduce((skillScore,item)=>{
+      const skill=total.dataset.skillTotal;
+      const sum=(exam.sections||[]).filter(item=>item.skill===skill).reduce((skillScore,item)=>{
         const fallback=Number(exam.settings?.skillSettings?.[item.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
         return skillScore+(item.questionIds||[]).reduce((partScore,id)=>partScore+(draftScores.has(id)?draftScores.get(id):getQuestionMaxScore(byId(data.questions,id),fallback)),0);
       },0);

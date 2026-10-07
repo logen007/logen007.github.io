@@ -71,6 +71,12 @@ test('Tạo câu hỏi trong phần không hiển thị bộ chọn loại câu'
   assert.ok(app.includes('question-profile-row'));
 });
 
+test('Tổng điểm kỹ năng đọc đúng thuộc tính data-skill-total',()=>{
+  const builder=read('src/part-templates/default/builder.js');
+  assert.ok(builder.includes('total.dataset.skillTotal'));
+  assert.equal(builder.includes('total.dataset.skill)'),false);
+});
+
 test('Không còn thông báo Firebase cũ trong giao diện production',()=>{
   const source=jsTree('src')+read('vi.html');
   assert.equal(source.includes('Chưa cấu hình Firebase'),false);

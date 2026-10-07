@@ -2,11 +2,11 @@
 // This never creates a server session and uses only the browser's local demo state.
 globalThis.G2G_DEMO_BYPASS=true;
 
-const path=location.pathname.replace(/\/+$/,'')||'/';
-const demoUser=path==='/adm'?'master-1':path==='/teacher'?'teacher-lan':path==='/student'?'student-a':null;
+const demoPath=location.pathname.replace(/\/+$/,'')||'/';
+const demoUser=demoPath==='/adm'?'master-1':demoPath==='/teacher'?'teacher-lan':demoPath==='/student'?'student-a':null;
 
 if(demoUser)sessionStorage.setItem('g2g.demo.user',demoUser);
-else if(path==='/')sessionStorage.removeItem('g2g.demo.user');
+else if(demoPath==='/')sessionStorage.removeItem('g2g.demo.user');
 
 function tuneLogin(){
   const button=document.getElementById('googleLogin');
