@@ -4,5 +4,10 @@
   "key": "writing-2",
   "name": "Viết 2",
   "questionLimit": 1,
+  "questionProfile": {
+    "type": "writing",
+    "layout": "free-response",
+    "instructionImage": true
+  },
   "template": "WRITING"
 }

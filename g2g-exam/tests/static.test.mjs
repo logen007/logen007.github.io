@@ -78,6 +78,11 @@ test('Tổng điểm kỹ năng đọc đúng thuộc tính data-skill-total',()
   assert.equal(builder.includes('total.dataset.skill)'),false);
 });
 
+test('Nghe 2 có ô câu hỏi cao bằng cụm điểm và audio',()=>{
+  const styles=read('styles.css');
+  assert.ok(styles.includes('.goethe-question-row>textarea{height:88px;min-height:88px'));
+});
+
 test('Không còn thông báo Firebase cũ trong giao diện production',()=>{
   const source=jsTree('src')+read('vi.html');
   assert.equal(source.includes('Chưa cấu hình Firebase'),false);

@@ -24,11 +24,11 @@ export async function loadApprovedExamSpec(relativePath){
         name:String(part.name||part.id),
         questionLimit:Math.max(0,Number(part.questionLimit||0)),
         templateType:String(part.template||'GENERIC'),
-        questionProfile:part.questionProfile&&typeof part.questionProfile==='object'?{
-          type:String(part.questionProfile.type||'single'),
-          choices:(part.questionProfile.choices||[]).map(choice=>String(choice)),
-          layout:String(part.questionProfile.layout||''),
-        }:null,
+        // specs/ là nguồn sự thật cho form authoring của từng phần. Giữ nguyên
+        // metadata trình bày ở đây để không phải rải luật Goethe trong UI.
+        questionProfile:part.questionProfile&&typeof part.questionProfile==='object'
+          ?JSON.parse(JSON.stringify(part.questionProfile))
+          :null,
       };
     }));
     return {

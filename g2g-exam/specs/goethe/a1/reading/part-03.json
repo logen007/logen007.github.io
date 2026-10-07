@@ -4,5 +4,13 @@
   "key": "reading-3",
   "name": "Đọc 3",
   "questionLimit": 5,
+  "questionProfile": {
+    "type": "single",
+    "choices": ["Đúng", "Sai"],
+    "layout": "true-false",
+    "choiceImages": true,
+    "instructionImage": true,
+    "audio": true
+  },
   "template": "GENERIC"
 }

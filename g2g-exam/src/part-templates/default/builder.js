@@ -10,107 +10,126 @@ const icons={
   imageUpload:'<img src="src/assets/figma-icon-image-upload.svg" alt="">'
 };
 const blank=value=>value==='Nháp'?'':value;
-const choiceProfileFor=section=>{
-  const profile=section?.questionProfile;
-  if(profile?.layout==='true-false'&&Array.isArray(profile.choices)&&profile.choices.length===2)return {
-    choices:profile.choices,
-    cssClass:'goethe-choices--true-false',
-    compactQuestion:true,
-    showLabels:false,
-    showImages:false,
+const textOf=choice=>typeof choice==='object'?choice.text:choice;
+
+function profileFor(section){
+  const source=section?.questionProfile||{};
+  const isTrueFalse=source.layout==='true-false'&&Array.isArray(source.choices)&&source.choices.length===2;
+  return {
+    type:source.type||'single',
+    choices:Array.isArray(source.choices)&&source.choices.length>=2?source.choices:(isTrueFalse?['Đúng','Sai']:['A','B','C']),
+    cssClass:isTrueFalse?'goethe-choices--true-false':'',
+    showLabels:!isTrueFalse,
+    showChoiceImages:source.choiceImages===true||(!isTrueFalse&&source.choiceImages!==false),
+    showAudio:source.audio!==false,
+    instructionImage:source.instructionImage===true,
+    isWritingForm:source.layout==='form-fields',
+    isFreeResponse:source.layout==='free-response',
+    formFieldCount:Math.max(1,Number(source.formFieldCount)||1),
+    formDefaultScores:Array.isArray(source.formDefaultScores)?source.formDefaultScores:[],
   };
-  return {choices:['A','B','C'],cssClass:'',compactQuestion:false,showLabels:true,showImages:true};
-};
+}
+
 const audioName=q=>{
   if(q.audioName)return q.audioName;
   if(String(q.audioUrl||'').startsWith('data:'))return 'Audio đã tải lên';
   return decodeURIComponent(String(q.audioUrl||'').split('/').pop().split('?')[0]||'Audio đã tải lên');
 };
 
-function questionHtml(q,index,{defaultScore,readOnly,choiceProfile}){
+function audioHtml(q,readOnly,showAudio){
+  if(!showAudio)return '';
+  return `<div class="audio-upload ${q.audioUrl?'has-audio':''}"><label class="audio-file-select" title="${q.audioUrl?'Thay audio':'Tải audio'}"><span>${q.audioUrl?esc(audioName(q)):'Upload audio'}</span><input type="file" data-field="audio" accept="audio/*" ${readOnly?'disabled':''}></label>${q.audioUrl?`<button type="button" class="audio-preview" data-action="preview-inline-audio" title="Nghe thử audio" aria-label="Nghe thử audio">${icons.play}</button><audio class="inline-audio-preview" preload="metadata" src="${esc(q.audioUrl)}"></audio>`:icons.upload}</div>`;
+}
+
+function scoreControls(q,defaultScore,readOnly){
+  return `<div class="goethe-score"><label><input data-field="maxScore" type="number" min="0" value="${Number(q.maxScore??defaultScore)}" ${readOnly?'disabled':''}><span>điểm</span></label><div class="goethe-question-actions"><button type="button" class="icon-btn" data-action="remove-inline-question" data-id="${q.id}" title="Xóa câu" aria-label="Xóa câu" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-inline-question" data-after="${q.id}" title="Thêm câu" aria-label="Thêm câu" ${readOnly?'disabled':''}>${icons.add}</button></div></div>`;
+}
+
+function choicesHtml(q,choiceProfile,readOnly){
   const choices=[...(q.choices||[]),...Array(choiceProfile.choices.length).fill('')].slice(0,choiceProfile.choices.length);
-  const audio=`<div class="audio-upload ${q.audioUrl?'has-audio':''}"><label class="audio-file-select" title="${q.audioUrl?'Thay audio':'Tải audio'}"><span>${q.audioUrl?esc(audioName(q)):'Upload audio'}</span><input type="file" data-field="audio" accept="audio/*" ${readOnly?'disabled':''}></label>${q.audioUrl?`<button type="button" class="audio-preview" data-action="preview-inline-audio" title="Nghe thử audio" aria-label="Nghe thử audio">${icons.play}</button><audio class="inline-audio-preview" preload="metadata" src="${esc(q.audioUrl)}"></audio>`:icons.upload}</div>`;
-  return `<article class="goethe-question part-question ${choiceProfile.compactQuestion?'goethe-question--compact':''}" data-question-id="${q.id}"><div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi ${index+1}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-score"><label><input data-field="maxScore" type="number" min="0" value="${Number(q.maxScore??defaultScore)}" ${readOnly?'disabled':''}><span>điểm</span></label><div class="goethe-question-actions"><button type="button" class="icon-btn" data-action="remove-inline-question" data-id="${q.id}" title="Xóa câu" aria-label="Xóa câu" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-inline-question" data-after="${q.id}" title="Thêm câu" aria-label="Thêm câu" ${readOnly?'disabled':''}>${icons.add}</button></div>${audio}</div></div><div class="goethe-answer-row"><div class="goethe-choices ${choiceProfile.cssClass}">${choiceProfile.choices.map((label,choiceIndex)=>{const choice=choices[choiceIndex],imageUrl=typeof choice==='object'?choice.imageUrl:'',hasImage=Boolean(imageUrl),text=blank(typeof choice==='object'?choice.text:choice)||label;return `<label><input data-field="correct" type="radio" name="answer-${q.id}" value="${choiceIndex}" ${Number(q.correctAnswer)===choiceIndex?'checked':''} ${readOnly?'disabled':''}>${choiceProfile.showLabels?`<b>${esc(label)}</b>`:''}${choiceProfile.showImages?`<span class="choice-image-upload ${hasImage?'has-image':''}" title="${hasImage?'Bấm để thay hình ảnh đáp án':'Tải hình ảnh đáp án'}">${hasImage?`<img class="choice-uploaded-image" src="${esc(imageUrl)}" alt="Ảnh đáp án ${esc(label)}">`:icons.imageUpload}${hasImage?`<span class="choice-image-tooltip"><img src="${esc(imageUrl)}" alt="Ảnh đáp án ${esc(label)}"></span>`:''}<input type="file" data-choice-image="${choiceIndex}" accept="image/*" ${readOnly?'disabled':''}></span>`:''}<input data-choice="${choiceIndex}" placeholder="Nhập đáp án" value="${esc(text)}" ${readOnly?'disabled':''}></label>`;}).join('')}</div></div></article>`;
+  return `<div class="goethe-answer-row"><div class="goethe-choices ${choiceProfile.cssClass}">${choiceProfile.choices.map((label,choiceIndex)=>{
+    const choice=choices[choiceIndex],imageUrl=typeof choice==='object'?choice.imageUrl:'',hasImage=Boolean(imageUrl),text=blank(textOf(choice))||label;
+    return `<label><input data-field="correct" type="radio" name="answer-${q.id}" value="${choiceIndex}" ${Number(q.correctAnswer)===choiceIndex?'checked':''} ${readOnly?'disabled':''}>${choiceProfile.showLabels?`<b>${esc(label)}</b>`:''}${choiceProfile.showChoiceImages?`<span class="choice-image-upload ${hasImage?'has-image':''}" title="${hasImage?'Bấm để thay hình ảnh đáp án':'Tải hình ảnh đáp án'}">${hasImage?`<img class="choice-uploaded-image" src="${esc(imageUrl)}" alt="Ảnh đáp án ${esc(label)}">`:icons.imageUpload}${hasImage?`<span class="choice-image-tooltip"><img src="${esc(imageUrl)}" alt="Ảnh đáp án ${esc(label)}"></span>`:''}<input type="file" data-choice-image="${choiceIndex}" accept="image/*" ${readOnly?'disabled':''}></span>`:''}<input data-choice="${choiceIndex}" placeholder="Nhập đáp án" value="${esc(text)}" ${readOnly?'disabled':''}></label>`;
+  }).join('')}</div></div>`;
+}
+
+function choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile}){
+  return `<article class="goethe-question part-question" data-editor-mode="choices" data-question-id="${q.id}"><div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi ${index+1}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly)}${audioHtml(q,readOnly,choiceProfile.showAudio)}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</article>`;
+}
+
+function writingFormHtml(q,{readOnly,choiceProfile}){
+  const stored=Array.isArray(q.rubric)?q.rubric:[];
+  const count=stored.length||choiceProfile.formFieldCount;
+  const rows=Array.from({length:count},(_,index)=>{
+    const row=stored[index]||{},score=Number(row.maxScore??choiceProfile.formDefaultScores[index]??1);
+    return `<div class="writing-form-row" data-rubric-index="${index}"><input data-rubric-label placeholder="form label" value="${esc(row.label||'')}" ${readOnly?'disabled':''}><input data-rubric-answer placeholder="Đáp án đúng 1, Đáp án đúng 2, đáp án đúng 3" value="${esc(row.answers||'')}" ${readOnly?'disabled':''}><label><input data-rubric-score type="number" min="0" step="0.25" value="${score}" ${readOnly?'disabled':''}><span>điểm</span></label><button type="button" class="icon-btn" data-action="remove-rubric-row" data-id="${q.id}" data-index="${index}" title="Xóa câu" aria-label="Xóa câu" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-rubric-row" data-id="${q.id}" data-index="${index}" title="Thêm câu" aria-label="Thêm câu" ${readOnly?'disabled':''}>${icons.add}</button></div>`;
+  }).join('');
+  return `<article class="writing-form part-question" data-editor-mode="form-fields" data-question-id="${q.id}">${rows}</article>`;
+}
+
+function freeResponseHtml(q,{defaultScore,readOnly}){
+  return `<article class="goethe-free-response part-question" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Câu trả lời textarea" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea>${scoreControls(q,defaultScore,readOnly)}</article>`;
+}
+
+function instructionHtml(section,choiceProfile,readOnly){
+  const instruction=`<textarea id="sectionInstruction" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea>`;
+  if(!choiceProfile.instructionImage)return `<div class="goethe-instruction">${instruction}</div>`;
+  const imageUrl=section.instructionImageUrl||'';
+  return `<div class="goethe-instruction goethe-instruction--media" data-section-image-control data-has-image="${imageUrl?'true':'false'}">${instruction}<div class="goethe-instruction-actions"><div class="goethe-instruction-icons"><button type="button" class="icon-btn" data-action="clear-section-image" title="Xóa hình ảnh đề bài" aria-label="Xóa hình ảnh đề bài" ${readOnly?'disabled':''}>${icons.remove}</button><label class="icon-btn" title="Thay hình ảnh đề bài">${icons.add}<input type="file" data-section-image accept="image/*" ${readOnly?'disabled':''}></label></div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.imageUpload}<span>Thêm hình ảnh</span>`}</span><input type="file" data-section-image accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
 }
 
 export function renderBuilder({data,exam,section,readOnly=false}={}){
   if(!section)return '<div class="rong">Chọn một phần để cấu hình.</div>';
   const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
-  const choiceProfile=choiceProfileFor(section);
-  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}"><div class="goethe-instruction"><textarea id="sectionInstruction" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea></div><div class="goethe-questions">${questions.map((q,index)=>questionHtml(q,index,{defaultScore,readOnly,choiceProfile})).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
+  const choiceProfile=profileFor(section);
+  const renderQuestion=(q,index)=>choiceProfile.isWritingForm
+    ?writingFormHtml(q,{readOnly,choiceProfile})
+    :choiceProfile.isFreeResponse
+      ?freeResponseHtml(q,{defaultScore,readOnly})
+      :choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile});
+  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${instructionHtml(section,choiceProfile,readOnly)}<div class="goethe-questions">${questions.map(renderQuestion).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
 }
 
 export function bindBuilder({root=document,data,exam,section,pendingAudioUploads=new Map(),notify=()=>{}}={}){
   if(!section)return;
-  const resetAudioPreview=button=>{
-    button.innerHTML=icons.play;
-    button.title='Nghe thử audio';
-    button.setAttribute('aria-label','Nghe thử audio');
-  };
+  const resetAudioPreview=button=>{button.innerHTML=icons.play;button.title='Nghe thử audio';button.setAttribute('aria-label','Nghe thử audio');};
   const bindInlineAudioPreview=button=>button.onclick=async()=>{
-    const control=button.closest('.audio-upload'),audio=control?.querySelector('.inline-audio-preview');
-    if(!audio)return;
+    const control=button.closest('.audio-upload'),audio=control?.querySelector('.inline-audio-preview');if(!audio)return;
     if(!audio.paused){audio.pause();audio.currentTime=0;resetAudioPreview(button);return;}
-    root.querySelectorAll('.inline-audio-preview').forEach(item=>{
-      if(item===audio)return;
-      item.pause();item.currentTime=0;
-      const other=item.closest('.audio-upload')?.querySelector('.audio-preview');if(other)resetAudioPreview(other);
-    });
-    try{
-      if(audio.ended)audio.currentTime=0;
-      await audio.play();
-      button.innerHTML='<span class="audio-stop-icon" aria-hidden="true"></span>';
-      button.title='Dừng audio';button.setAttribute('aria-label','Dừng audio');
-      audio.onended=()=>resetAudioPreview(button);
-      audio.onpause=()=>{if(!audio.ended)resetAudioPreview(button);};
-    }catch{notify('Không thể phát audio này. Hãy thử chọn lại tệp.');}
+    root.querySelectorAll('.inline-audio-preview').forEach(item=>{if(item===audio)return;item.pause();item.currentTime=0;const other=item.closest('.audio-upload')?.querySelector('.audio-preview');if(other)resetAudioPreview(other);});
+    try{if(audio.ended)audio.currentTime=0;await audio.play();button.innerHTML='<span class="audio-stop-icon" aria-hidden="true"></span>';button.title='Dừng audio';button.setAttribute('aria-label','Dừng audio');audio.onended=()=>resetAudioPreview(button);audio.onpause=()=>{if(!audio.ended)resetAudioPreview(button);};}catch{notify('Không thể phát audio này. Hãy thử chọn lại tệp.');}
   };
   const showUploadedAudio=(control,{url,name})=>{
-    control.classList.add('has-audio');
-    const label=control.querySelector('.audio-file-select span');if(label)label.textContent=name;
-    control.querySelector(':scope > img')?.remove();
-    let audio=control.querySelector('.inline-audio-preview');
-    if(!audio){audio=document.createElement('audio');audio.className='inline-audio-preview';audio.preload='metadata';control.append(audio);}
-    audio.src=url;
-    let button=control.querySelector('.audio-preview');
-    if(!button){button=document.createElement('button');button.type='button';button.className='audio-preview';control.insertBefore(button,audio);bindInlineAudioPreview(button);}
-    resetAudioPreview(button);
+    control.classList.add('has-audio');const label=control.querySelector('.audio-file-select span');if(label)label.textContent=name;control.querySelector(':scope > img')?.remove();
+    let audio=control.querySelector('.inline-audio-preview');if(!audio){audio=document.createElement('audio');audio.className='inline-audio-preview';audio.preload='metadata';control.append(audio);}audio.src=url;
+    let button=control.querySelector('.audio-preview');if(!button){button=document.createElement('button');button.type='button';button.className='audio-preview';control.insertBefore(button,audio);bindInlineAudioPreview(button);}resetAudioPreview(button);
   };
   root.querySelectorAll('.audio-upload input[data-field="audio"]').forEach(input=>input.onchange=()=>{
-    const file=input.files?.[0],control=input.closest('.audio-upload'),questionId=input.closest('.part-question')?.dataset.questionId,label=control?.querySelector('.audio-file-select span');
-    if(!file||!control||!questionId||!label)return;
-    input.disabled=true;label.textContent='Đang tải audio · 0%';
-    const upload={name:file.name,promise:null};
-    upload.promise=uploadQuestionAudio(file,{onProgress:percent=>{if(pendingAudioUploads.get(questionId)===upload)label.textContent=`Đang tải audio · ${percent}%`;}}).then(url=>{
-      if(pendingAudioUploads.get(questionId)===upload)showUploadedAudio(control,{url,name:file.name});
-      return {url,name:file.name};
-    }).catch(error=>{
-      if(pendingAudioUploads.get(questionId)===upload){pendingAudioUploads.delete(questionId);label.textContent='Tải audio thất bại';notify(error.message);}
-      throw error;
-    }).finally(()=>{if(pendingAudioUploads.get(questionId)===upload)input.disabled=false;});
+    const file=input.files?.[0],control=input.closest('.audio-upload'),questionId=input.closest('.part-question')?.dataset.questionId,label=control?.querySelector('.audio-file-select span');if(!file||!control||!questionId||!label)return;
+    input.disabled=true;label.textContent='Đang tải audio · 0%';const upload={name:file.name,promise:null};
+    upload.promise=uploadQuestionAudio(file,{onProgress:percent=>{if(pendingAudioUploads.get(questionId)===upload)label.textContent=`Đang tải audio · ${percent}%`;}}).then(url=>{if(pendingAudioUploads.get(questionId)===upload)showUploadedAudio(control,{url,name:file.name});return {url,name:file.name};}).catch(error=>{if(pendingAudioUploads.get(questionId)===upload){pendingAudioUploads.delete(questionId);label.textContent='Tải audio thất bại';notify(error.message);}throw error;}).finally(()=>{if(pendingAudioUploads.get(questionId)===upload)input.disabled=false;});
     pendingAudioUploads.set(questionId,upload);upload.promise.catch(()=>{});
   });
   root.querySelectorAll('[data-choice-image]').forEach(input=>input.onchange=()=>{
-    const file=input.files?.[0],control=input.closest('.choice-image-upload');if(!file||!control)return;
-    control.classList.add('has-image');control.title='Bấm để thay hình ảnh đáp án';
-    const objectUrl=URL.createObjectURL(file),thumbnail=control.querySelector(':scope > img');
-    if(thumbnail){thumbnail.src=objectUrl;thumbnail.className='choice-uploaded-image';thumbnail.alt='Ảnh đáp án đã chọn';}
-    control.querySelector('.choice-image-tooltip')?.remove();
-    const tooltip=document.createElement('span'),preview=new Image();tooltip.className='choice-image-tooltip';preview.alt='Ảnh đáp án đã chọn';preview.src=objectUrl;tooltip.append(preview);control.append(tooltip);
+    const file=input.files?.[0],control=input.closest('.choice-image-upload');if(!file||!control)return;control.classList.add('has-image');control.title='Bấm để thay hình ảnh đáp án';const objectUrl=URL.createObjectURL(file),thumbnail=control.querySelector(':scope > img');
+    if(thumbnail){thumbnail.src=objectUrl;thumbnail.className='choice-uploaded-image';thumbnail.alt='Ảnh đáp án đã chọn';}control.querySelector('.choice-image-tooltip')?.remove();const tooltip=document.createElement('span'),preview=new Image();tooltip.className='choice-image-tooltip';preview.alt='Ảnh đáp án đã chọn';preview.src=objectUrl;tooltip.append(preview);control.append(tooltip);
+  });
+  root.querySelectorAll('[data-section-image]').forEach(input=>input.onchange=()=>{
+    const file=input.files?.[0],control=input.closest('[data-section-image-control]');if(!file||!control)return;const url=URL.createObjectURL(file),label=control.querySelector('.section-image-label');control.dataset.hasImage='true';control.dataset.removeSectionImage='false';if(label)label.innerHTML=`<img src="${url}" alt="Hình ảnh đề bài">`;
+  });
+  root.querySelector('[data-action="clear-section-image"]')?.addEventListener('click',()=>{
+    const control=root.querySelector('[data-section-image-control]'),label=control?.querySelector('.section-image-label');if(!control||!label)return;control.dataset.hasImage='false';control.dataset.removeSectionImage='true';root.querySelectorAll('[data-section-image]').forEach(input=>{input.value='';});label.innerHTML=`${icons.imageUpload}<span>Thêm hình ảnh</span>`;
   });
   const updateSkillTotals=()=>{
-    const draftScores=new Map([...root.querySelectorAll('.part-question[data-question-id]')].map(card=>[card.dataset.questionId,Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0)]));
-    root.querySelectorAll('[data-skill-total]').forEach(total=>{
-      const skill=total.dataset.skillTotal;
-      const sum=(exam.sections||[]).filter(item=>item.skill===skill).reduce((skillScore,item)=>{
-        const fallback=Number(exam.settings?.skillSettings?.[item.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
-        return skillScore+(item.questionIds||[]).reduce((partScore,id)=>partScore+(draftScores.has(id)?draftScores.get(id):getQuestionMaxScore(byId(data.questions,id),fallback)),0);
-      },0);
-      total.textContent=`${Number.isInteger(sum)?sum:Number(sum.toFixed(2))} điểm`;
-    });
+    const draftScores=new Map([...root.querySelectorAll('.part-question[data-question-id]')].map(card=>{
+      const formScores=[...card.querySelectorAll('[data-rubric-score]')];
+      const score=formScores.length
+        ?formScores.reduce((sum,input)=>sum+Math.max(0,Number(input.value)||0),0)
+        :Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0);
+      return [card.dataset.questionId,score];
+    }));
+    root.querySelectorAll('[data-skill-total]').forEach(total=>{const skill=total.dataset.skillTotal;const sum=(exam.sections||[]).filter(item=>item.skill===skill).reduce((skillScore,item)=>{const fallback=Number(exam.settings?.skillSettings?.[item.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);return skillScore+(item.questionIds||[]).reduce((partScore,id)=>partScore+(draftScores.has(id)?draftScores.get(id):getQuestionMaxScore(byId(data.questions,id),fallback)),0);},0);total.textContent=`${Number.isInteger(sum)?sum:Number(sum.toFixed(2))} điểm`;});
   };
-  root.querySelectorAll('[data-field="maxScore"]').forEach(input=>input.oninput=updateSkillTotals);
-  updateSkillTotals();
-  root.querySelectorAll('[data-action="preview-inline-audio"]').forEach(bindInlineAudioPreview);
+  root.querySelectorAll('[data-field="maxScore"],[data-rubric-score]').forEach(input=>input.oninput=updateSkillTotals);updateSkillTotals();root.querySelectorAll('[data-action="preview-inline-audio"]').forEach(bindInlineAudioPreview);
 }

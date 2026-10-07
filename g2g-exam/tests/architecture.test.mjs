@@ -58,6 +58,23 @@ test('Đề Goethe A1 cũ nhận profile Đúng/Sai của Nghe 2 khi mở lại'
   assert.deepEqual(byId(state.exams,exam.id).sections.find(item=>item.name==='Nghe 2').questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false'});
 });
 
+test('Mỗi form Goethe A1 lấy bố cục authoring từ specs',()=>{
+  const spec=getExamSpec('GOETHE','A1');
+  const parts=Object.fromEntries(buildSectionsFromSpec(spec,{idFactory:i=>`form-${i}`}).map(section=>[section.name,section.questionProfile]));
+  assert.equal(parts['Nghe 1'].choiceImages,true);
+  assert.deepEqual(parts['Nghe 2'].choices,['Đúng','Sai']);
+  assert.equal(parts['Nghe 3'].choiceImages,true);
+  assert.equal(parts['Đọc 1'].instructionImage,true);
+  assert.equal(parts['Đọc 2'].choiceImages,true);
+  assert.equal(parts['Đọc 3'].choiceImages,true);
+  assert.equal(parts['Viết 1'].layout,'form-fields');
+  assert.equal(parts['Viết 2'].layout,'free-response');
+  const state=clone(seedState),teacher=byId(state.users,'teacher-lan');
+  const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'A1',title:'Form data',stamp:789});
+  const writing=exam.sections.find(section=>section.name==='Viết 1');
+  assert.equal(byId(state.questions,writing.questionIds[0]).rubric.length,7);
+});
+
 test('Production image phục vụ specs JSON cùng app',()=>{
   assert.ok(read('server/Dockerfile').includes('COPY specs /app/public/specs'));
   assert.ok(read('server/src/index.js').includes("pathname.startsWith('/specs/')"));

@@ -4,5 +4,12 @@
   "key": "reading-1",
   "name": "Đọc 1",
   "questionLimit": 5,
+  "questionProfile": {
+    "type": "single",
+    "choices": ["Đúng", "Sai"],
+    "layout": "true-false",
+    "instructionImage": true,
+    "audio": true
+  },
   "template": "GENERIC"
 }

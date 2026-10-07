@@ -5,6 +5,13 @@
   "name": "Nghe 1",
   "questionLimit": 6,
   "template": "A1_LISTENING_PART_1",
+  "questionProfile": {
+    "type": "single",
+    "choices": ["A", "B", "C"],
+    "layout": "choices",
+    "choiceImages": true,
+    "audio": true
+  },
   "questions": {
     "min": 1,
     "max": 10

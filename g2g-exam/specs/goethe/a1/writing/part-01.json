@@ -4,5 +4,12 @@
   "key": "writing-1",
   "name": "Viết 1",
   "questionLimit": 1,
+  "questionProfile": {
+    "type": "writing",
+    "layout": "form-fields",
+    "instructionImage": true,
+    "formFieldCount": 7,
+    "formDefaultScores": [1, 1, 0.25, 0.25, 0.25, 0.25, 0.25]
+  },
   "template": "WRITING"
 }

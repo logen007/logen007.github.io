@@ -12,6 +12,7 @@ function normalizeSection(input={},index=0){
     templateType:String(input.templateType||'GENERIC'),
     questionProfile:clone(input.questionProfile||null),
     instruction:String(input.instruction||''),
+    instructionImageUrl:String(input.instructionImageUrl||''),
     questionLimit:Math.max(0,Number(input.questionLimit||0)),
     timeMinutes:Math.max(1,Number(input.timeMinutes||30)),
     maxScore:Math.max(0,Number(input.maxScore||0)),

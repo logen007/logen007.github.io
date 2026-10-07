@@ -388,6 +388,7 @@ function bindViewSpecific(){
     b.disabled=true;
     try{
       const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map();
+      let sectionImageUrl;
       if(section&&app.querySelector('.part-question[data-question-id]')){
         for(const card of app.querySelectorAll('.part-question[data-question-id]')){
           const uploaded=pendingAudioUploads.get(card.dataset.questionId);
@@ -404,13 +405,26 @@ function bindViewSpecific(){
             choiceImageUrls.set(`${questionId}:${input.dataset.choiceImage}`,await uploadQuestionImage(file));
           }
         }
+        const sectionImage=[...app.querySelectorAll('[data-section-image]')].find(input=>input.files?.[0]);
+        if(sectionImage)sectionImageUrl=await uploadQuestionImage(sectionImage.files[0]);
       }
       await act(()=>repo.transaction(st=>{
         updateExam(st,user,exam.id,{title});
         if(section&&app.querySelector('.part-question[data-question-id]')){
-          updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||''});
+          const imageControl=app.querySelector('[data-section-image-control]');
+          updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl:sectionImageUrl??(imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'')});
           app.querySelectorAll('.part-question[data-question-id]').forEach(card=>{
             const id=card.dataset.questionId;
+            const mode=card.dataset.editorMode||'choices';
+            if(mode==='form-fields'){
+              const rubric=[...card.querySelectorAll('[data-rubric-index]')].map(row=>({
+                label:row.querySelector('[data-rubric-label]')?.value.trim()||'',
+                answers:row.querySelector('[data-rubric-answer]')?.value.trim()||'',
+                maxScore:Math.max(0,Number(row.querySelector('[data-rubric-score]')?.value)||0),
+              }));
+              updateQuestion(st,user,id,{rubric,maxScore:rubric.reduce((sum,row)=>sum+row.maxScore,0)});
+              return;
+            }
             const titleField=card.querySelector('[data-field="title"]');
             const scoreField=card.querySelector('[data-field="maxScore"]');
             const correct=card.querySelector('[data-field="correct"]:checked');
@@ -536,6 +550,14 @@ function bindBuilder(){
     }
   }),'Đã thêm câu hỏi.'));
   app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.'));
+  app.querySelectorAll('[data-action="remove-rubric-row"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>{
+    const question=byId(st.questions,b.dataset.id);if(!question)return;
+    const rubric=[...(question.rubric||[])];rubric.splice(Number(b.dataset.index),1);updateQuestion(st,user,question.id,{rubric});
+  }),'Đã xóa dòng.'));
+  app.querySelectorAll('[data-action="add-rubric-row"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>{
+    const question=byId(st.questions,b.dataset.id);if(!question)return;
+    const rubric=[...(question.rubric||[])],index=Math.max(-1,Number(b.dataset.index));rubric.splice(index+1,0,{label:'',answers:'',maxScore:1});updateQuestion(st,user,question.id,{rubric});
+  }),'Đã thêm dòng.'));
   const section=exam.sections.find(item=>item.id===ui.builderSectionId)||exam.sections[0];
   bindPartBuilder(section?.templateType,{root:app,data,exam,section,pendingAudioUploads,notify});
   const title=document.getElementById('examTitle');

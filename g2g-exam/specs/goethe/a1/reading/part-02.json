@@ -4,5 +4,13 @@
   "key": "reading-2",
   "name": "Đọc 2",
   "questionLimit": 5,
+  "questionProfile": {
+    "type": "single",
+    "choices": ["A", "B", "C"],
+    "layout": "choices",
+    "choiceImages": true,
+    "instructionImage": true,
+    "audio": true
+  },
   "template": "GENERIC"
 }
