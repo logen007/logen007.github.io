@@ -36,6 +36,7 @@ export function createExam(state,user,input={}){
     title:String(input.title||'Bài thi thử mới').trim(),
     level:input.level||'B1',
     provider:['GOETHE','TELC'].includes(String(input.provider||'').toUpperCase())?String(input.provider).toUpperCase():null,
+    settings:{defaultQuestionScore:Math.max(0,Number(input.settings?.defaultQuestionScore??1)),skillTimes:{...(input.settings?.skillTimes||{})}},
     ownerId:user.id,
     ownerName:user.name,
     status:'draft',
@@ -60,6 +61,7 @@ export function updateExam(state,user,id,patch){
   if('title' in patch)exam.title=String(patch.title||'').trim();
   if('level' in patch)exam.level=patch.level;
   if('provider' in patch)exam.provider=['GOETHE','TELC'].includes(String(patch.provider||'').toUpperCase())?String(patch.provider).toUpperCase():null;
+  if('settings' in patch)exam.settings={...exam.settings,...clone(patch.settings)};
   if('passScore' in patch)exam.passScore=Number(patch.passScore||0);
   if('sections' in patch)exam.sections=(patch.sections||[]).map(normalizeSection);
   if('status' in patch)exam.status=patch.status;

@@ -409,6 +409,13 @@ function bindViewSpecific(){
     const exam=byId(data.exams,ui.builderExamId),title=document.getElementById('examTitle')?.value.trim();
     if(exam&&title)act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{title})),'Đã lưu bài thi.');
   });
+  app.querySelectorAll('[data-action="open-exam-settings"]').forEach(b=>b.onclick=()=>{
+    const exam=byId(data.exams,ui.builderExamId);if(!exam)return;
+    const modal=document.createElement('div');modal.className='hop-chon';
+    modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><div><div class="nhan-muc">CÀI ĐẶT CHUNG</div><h2>${exam.provider||''} ${exam.level||''}</h2></div><button class="nut nho" data-close>×</button></div><div class="exam-setup-grid"><label>Điểm mặc định mỗi câu<input id="defaultQuestionScore" type="number" min="0" value="${Number(exam.settings?.defaultQuestionScore??1)}"></label><label>Thời gian Nghe (phút)<input id="listeningTime" type="number" min="1" value="${Number(exam.settings?.skillTimes?.listening??20)}"></label><label>Thời gian Đọc (phút)<input id="readingTime" type="number" min="1" value="${Number(exam.settings?.skillTimes?.reading??25)}"></label><label>Thời gian Viết (phút)<input id="writingTime" type="number" min="1" value="${Number(exam.settings?.skillTimes?.writing??20)}"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="saveExamSettings">Lưu</button></div></div></div>`;
+    document.body.append(modal);modal.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>modal.remove());
+    modal.querySelector('#saveExamSettings').onclick=()=>{const n=id=>Math.max(1,Number(modal.querySelector(id).value)||1);act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{settings:{defaultQuestionScore:Math.max(0,Number(modal.querySelector('#defaultQuestionScore').value)||0),skillTimes:{listening:n('#listeningTime'),reading:n('#readingTime'),writing:n('#writingTime')}}})),'Đã lưu cài đặt chung.');modal.remove();};
+  });
   app.querySelectorAll('[data-action="request-grade"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>requestGrading(st,user,b.dataset.id)),'Đã gửi yêu cầu xin chấm.'));
   app.querySelectorAll('[data-action="resolve-request"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>resolveGradingRequest(st,user,b.dataset.id,b.dataset.status)),b.dataset.status==='approved'?'Đã duyệt quyền chấm.':'Đã từ chối yêu cầu.'));
   app.querySelectorAll('[data-action="grade-attempt"]').forEach(b=>b.onclick=()=>{ui.gradeAttemptId=b.dataset.id;ui.view='grading-detail';render();});
@@ -445,8 +452,13 @@ async function createNewExam(){
     modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><div><div class="nhan-muc">TẠO BÀI THI</div><h2>Thông tin đề thi</h2></div><button class="nut nho" data-close>×</button></div><div class="exam-setup-grid"><label>Trình độ<select id="newExamLevel"><option>A1</option><option>A2</option><option>B1</option><option>B2</option></select></label><label>Loại đề<select id="newExamProvider"><option>TELC</option><option>Goethe</option></select></label><label class="exam-setup-name">Tên đề thi<input id="newExamTitle" placeholder="Ví dụ: TELC A1 – Đề thi thử 01"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="confirmNewExam">Tạo đề</button></div></div></div>`;
     document.body.append(modal);
     const level=modal.querySelector('#newExamLevel'),provider=modal.querySelector('#newExamProvider'),title=modal.querySelector('#newExamTitle');
+    const syncLevels=()=>{
+      const values=provider.value==='TELC'?['B1','B2']:['A1','A2','B1','B2'];
+      level.innerHTML=values.map(value=>`<option>${value}</option>`).join('');
+      suggest();
+    };
     const suggest=()=>{if(!title.value)title.placeholder=`Ví dụ: ${provider.value} ${level.value} – Đề thi thử 01`;};
-    level.onchange=suggest;provider.onchange=suggest;suggest();
+    level.onchange=suggest;provider.onchange=syncLevels;syncLevels();
     modal.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{modal.remove();resolve(null);});
     modal.querySelector('#confirmNewExam').onclick=()=>{const value=title.value.trim()||`${provider.value} ${level.value} – Bản nháp`;modal.remove();resolve({level:level.value,provider:provider.value,title:value});};
     title.focus();
