@@ -135,6 +135,17 @@ test('Builder có preview và hỗ trợ link mở lại đề đang sửa',()=>
   assert.ok(app.includes('searchParams.get(\'edit\')'));
 });
 
+test('Preview tách rõ khỏi bài thi thật và cho phép kiểm tra mọi phần',()=>{
+  const app=read('src/app.js'),student=read('src/views/student.js'),css=read('styles.css');
+  assert.ok(student.includes('XEM THỬ'));
+  assert.ok(student.includes('data-action="preview-select-section"'));
+  assert.ok(student.includes('data-action="reset-preview"'));
+  assert.ok(app.includes('previewSummary'));
+  assert.ok(app.includes('ui.previewAnswers={}'));
+  assert.ok(app.includes('findIndex(section=>section.id===ui.builderSectionId)'));
+  assert.ok(css.includes('.preview-outline'));
+});
+
 test('Viết 1 lưu được nhiều khối đề bài và dùng icon Figma khi thêm hình',()=>{
   const partBuilder=read('src/part-templates/default/builder.js');
   assert.ok(partBuilder.includes('instructionBlocks'));
