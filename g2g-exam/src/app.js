@@ -2,7 +2,7 @@ import {createRepository} from './repository.js';
 import {
   ATTEMPT_STATUS,byId,isMaster,isStudent,canEditExam,canGradeExam,
   createQuestion,updateQuestion,softDeleteQuestion,restoreQuestion,permanentlyDeleteQuestion,
-  createExam,updateExam,softDeleteExam,restoreExam,permanentlyDeleteExam,
+  updateExam,softDeleteExam,restoreExam,permanentlyDeleteExam,
   addSection,removeSection,moveSection,updateSection,addQuestionsToSection,
   removeQuestionFromSection,moveQuestion,requestGrading,resolveGradingRequest,
   startAttempt,saveAnswer,setAttemptSection,getSectionRemainingSeconds,submitAttempt,
@@ -23,6 +23,8 @@ import {
   questionModalHtml,bankPickerHtml,previewExamModalHtml,previewQuestionModalHtml,
   studentGradeModalHtml
 } from './views/modals.js';
+import {getProviderLevels} from './exam-specs/index.js';
+import {createExamDraft,ensureExamMatchesConfiguredSpec} from './controllers/exam-factory.js';
 
 const app=document.getElementById('app');
 const toast=document.getElementById('toast');
@@ -34,11 +36,6 @@ let timerBusy=false;
 let realtimeRenderTimer=null;
 const saveTimers=new Map();
 const pendingAudioUploads=new Map();
-const GOETHE_A1_PARTS=[
-  ['Nghe 1','Nghe',6,20],['Nghe 2','Nghe',4,20],['Nghe 3','Nghe',5,20],
-  ['Đọc 1','Đọc',5,25],['Đọc 2','Đọc',5,25],['Đọc 3','Đọc',5,25],
-  ['Viết 1','Viết',1,20],['Viết 2','Viết',1,20]
-];
 
 const ui={
   view:user?(isStudent(user)?'student-home':'admin'):'login',
@@ -507,7 +504,7 @@ async function createNewExam(){
     const title=modal.querySelector('#newExamTitle');
     let provider='TELC',level='B1';
     const syncLevels=()=>{
-      const available=provider==='TELC'?['B1','B2']:['A1','A2','B1','B2'];
+      const available=getProviderLevels(provider);
       if(!available.includes(level))level=available[0];
       modal.querySelectorAll('[data-level]').forEach(button=>{button.classList.toggle('an',!available.includes(button.dataset.level));button.classList.toggle('active',button.dataset.level===level);});
       modal.querySelectorAll('[data-provider]').forEach(button=>button.classList.toggle('active',button.dataset.provider===provider));
@@ -523,51 +520,14 @@ async function createNewExam(){
   });
   if(!setup)return;
   const {level,provider,title}=setup;
-  const isGoetheA1=provider.toUpperCase()==='GOETHE'&&level==='A1';
-  const stamp=Date.now();
-  const sections=isGoetheA1?GOETHE_A1_PARTS.map(([name,skill,questionLimit,timeMinutes],index)=>({id:`sec-${stamp}-${index+1}`,name,skill,questionLimit,timeMinutes,maxScore:0,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]})):[{id:`sec-${stamp}-1`,name:'Phần 1',timeMinutes:30,maxScore:0,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]}];
-  const exam=await act(()=>repo.transaction(st=>{
-    const created=createExam(st,user,{title,level,provider:provider.toUpperCase(),settings:isGoetheA1?{skillSettings:{Nghe:{timeMinutes:20,defaultQuestionScore:1},'Đọc':{timeMinutes:25,defaultQuestionScore:1},'Viết':{timeMinutes:20,defaultQuestionScore:1}}}:undefined,sections});
-    if(isGoetheA1){
-      for(const section of created.sections){
-        const ids=[];
-        for(let index=0;index<Number(section.questionLimit)||0;index++){
-          const question=createQuestion(st,user,{level,skill:section.skill,part:section.name,type:'single',title:'Nháp',choices:['Nháp','Nháp','Nháp'],correctAnswer:0,maxScore:1});
-          ids.push(question.id);
-        }
-        addQuestionsToSection(st,user,created.id,section.id,ids);
-      }
-    }
-    return created;
-  }),null,{rerender:false});
+  const exam=await act(()=>repo.transaction(st=>createExamDraft(st,user,{level,provider,title})),null,{rerender:false});
   if(exam){data=await repo.getState();openBuilder(exam.id);}
 }
 
 async function openBuilder(id){
   let exam=byId(data.exams,id);
-  const needsGoetheA1Migration=exam?.provider==='GOETHE'&&exam.level==='A1'&&GOETHE_A1_PARTS.some(([name])=>!exam.sections.some(section=>section.name===name));
-  if(needsGoetheA1Migration){
-    await repo.transaction(st=>{
-      const stored=byId(st.exams,id);
-      const legacyFirst=stored.sections?.[0];
-      const parts=GOETHE_A1_PARTS.map(([name,skill,questionLimit,timeMinutes],index)=>({
-        id:index===0&&legacyFirst?.id?legacyFirst.id:`sec-${Date.now()}-${index+1}`,
-        name,skill,questionLimit,timeMinutes,maxScore:0,showTimer:true,autoSubmit:true,shuffle:false,
-        instruction:index===0?legacyFirst?.instruction||'':'',questionIds:index===0?legacyFirst?.questionIds||[]:[]
-      }));
-      updateExam(st,user,stored.id,{sections:parts});
-      for(const section of byId(st.exams,id).sections){
-        const required=Number(section.questionLimit)||0;
-        const additions=[];
-        for(let index=section.questionIds.length;index<required;index++){
-          additions.push(createQuestion(st,user,{level:stored.level,skill:section.skill,part:section.name,type:'single',title:'Nháp',choices:['Nháp','Nháp','Nháp'],correctAnswer:0,maxScore:1}).id);
-        }
-        if(additions.length)addQuestionsToSection(st,user,stored.id,section.id,additions);
-      }
-    });
-    data=await repo.getState();
-    exam=byId(data.exams,id);
-  }
+  const migrated=await repo.transaction(st=>ensureExamMatchesConfiguredSpec(st,user,id));
+  if(migrated){data=await repo.getState();exam=byId(data.exams,id);}
   ui.builderExamId=id;
   ui.builderSectionId=exam?.sections?.[0]?.id||null;
   ui.view='builder';
