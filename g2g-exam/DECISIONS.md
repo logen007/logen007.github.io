@@ -1,8 +1,6 @@
-# G2G Exam — Decisions Pending Review
+# G2G Exam — Approved Decisions
 
-> File này chỉ lưu các quyết định quan trọng, không lặp lại rule đã nằm ở `AGENTS.md`, `ARCHITECTURE.md`, `OPERATIONS.md` hoặc `specs/`.
->
-> Nội dung bên dưới vẫn là `PENDING REVIEW` cho đến khi người phụ trách dự án xác nhận duyệt.
+> File này chỉ lưu các quyết định quan trọng đã được duyệt, không lặp lại rule đã nằm ở `AGENTS.md`, `ARCHITECTURE.md`, `OPERATIONS.md` hoặc `specs/`.
 
 ## Nguyên tắc của file này
 
@@ -12,12 +10,13 @@
 - Không chép lại quy tắc làm việc của AI/Developer; phần đó thuộc `AGENTS.md`.
 - Không chép lại hướng dẫn vận hành server/media; phần đó thuộc `OPERATIONS.md`.
 - Một quy tắc chỉ nên có một Source of Truth. Nơi khác chỉ tham chiếu, không copy lại.
+- Quyết định mới phải được người phụ trách dự án đọc và duyệt trước khi chuyển sang `APPROVED`.
 
 ---
 
 ## DEC-001 — Cấu trúc nghiệp vụ của đề thi
 
-**Status:** PENDING REVIEW  
+**Status:** APPROVED  
 **Date:** 2026-10-07
 
 Luồng nghiệp vụ chính của giáo viên khi xây dựng đề:
@@ -38,7 +37,7 @@ Các chức năng tạo/chỉnh câu hỏi phải nằm trong ngữ cảnh của
 
 ## DEC-002 — Kiến trúc module hóa và tái sử dụng
 
-**Status:** PENDING REVIEW  
+**Status:** APPROVED  
 **Date:** 2026-10-07
 
 Hệ thống phải được chia thành các module có trách nhiệm rõ ràng.
@@ -59,7 +58,7 @@ Mục tiêu là thay đổi một chức năng ở đúng một nơi mà không 
 
 ## DEC-003 — Specification đã duyệt là nguồn nghiệp vụ chính thức
 
-**Status:** PENDING REVIEW  
+**Status:** APPROVED  
 **Date:** 2026-10-07
 
 Chi tiết nghiệp vụ của từng Provider / Level / Skill / Part nằm trong `specs/`.
