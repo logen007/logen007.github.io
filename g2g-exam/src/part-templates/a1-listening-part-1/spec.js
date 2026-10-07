@@ -2,7 +2,7 @@ import {loadApprovedPartSpec} from '../../exam-specs/spec-loader.js';
 
 let cached=null;
 export async function getA1ListeningPart1Spec(){
-  cached ||= loadApprovedPartSpec('../../../specs/goethe/a1/listening/part-01.json');
+  cached ||= loadApprovedPartSpec('../../specs/goethe/a1/listening/part-01.json');
   return cached;
 }
 
