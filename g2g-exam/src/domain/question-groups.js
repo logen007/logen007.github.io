@@ -42,24 +42,12 @@ export function validateQuestionGroup(group,state=null){
 export function createQuestionGroup(state,user,input={}){
   if(!isTeacher(user))throw new Error('Chỉ giáo viên hoặc quản trị viên mới được tạo cụm câu hỏi.');
   const group={
-    id:input.id||uid('qg'),
-    level:input.level||'A1',
-    skill:input.skill||'Nghe',
-    skillKey:input.skillKey||'listening',
-    part:input.part||'Phần 1',
-    partOrder:Number(input.partOrder||1),
-    title:String(input.title||'A1 · Nghe · Phần 1').trim(),
-    instruction:String(input.instruction||'').trim(),
-    structureType:input.structureType||QUESTION_GROUP_TYPES.A1_LISTENING_PART_1,
-    audioPolicy:clone(input.audioPolicy||DEFAULT_AUDIO_POLICY),
-    defaultScore:Number(input.defaultScore??1),
-    questionIds:[...new Set(input.questionIds||[])],
-    ownerId:user.id,
-    ownerName:user.name||'',
-    status:input.status||'active',
-    version:Number(input.version||1),
-    createdAt:nowIso(),
-    updatedAt:nowIso(),
+    id:input.id||uid('qg'),level:input.level||'A1',skill:input.skill||'Nghe',skillKey:input.skillKey||'listening',
+    part:input.part||'Phần 1',partOrder:Number(input.partOrder||1),title:String(input.title||'A1 · Nghe · Phần 1').trim(),
+    instruction:String(input.instruction||'').trim(),structureType:input.structureType||QUESTION_GROUP_TYPES.A1_LISTENING_PART_1,
+    audioPolicy:clone(input.audioPolicy||DEFAULT_AUDIO_POLICY),defaultScore:Number(input.defaultScore??1),
+    questionIds:[...new Set(input.questionIds||[])],ownerId:user.id,ownerName:user.name||'',status:input.status||'active',
+    version:Number(input.version||1),createdAt:nowIso(),updatedAt:nowIso(),
   };
   validateQuestionGroup(group,state);
   state.questionGroups||=[];
@@ -86,12 +74,37 @@ export function softDeleteQuestionGroup(state,user,id){
   if(!group)throw new Error('Không tìm thấy cụm câu hỏi.');
   if(!(isMaster(user)||group.ownerId===user.id))throw new Error('Bạn không có quyền xóa cụm câu hỏi này.');
   if(group.locked&&!isMaster(user))throw new Error('Cụm câu hỏi đã khóa nên không thể xóa.');
-  group.status='trash';
-  group.deletedAt=nowIso();
-  group.updatedAt=nowIso();
-  for(const q of state.questions||[])if(group.questionIds.includes(q.id)&&q.status!=='trash'){q.status='trash';q.deletedAt=nowIso();q.updatedAt=nowIso();}
+  group.status='trash';group.deletedAt=nowIso();group.updatedAt=nowIso();
+  for(const q of state.questions||[])if(group.questionIds.includes(q.id)&&q.status!=='trash'){
+    q.status='trash';q.deletedAt=nowIso();q.deletedByGroupId=id;q.updatedAt=nowIso();
+  }
   audit(state,user,'trash','question_group',id);
   return group;
+}
+
+export function restoreQuestionGroup(state,user,id){
+  if(!isMaster(user))throw new Error('Chỉ Quản trị cấp cao được khôi phục cụm câu hỏi.');
+  const group=(state.questionGroups||[]).find(x=>x.id===id);
+  if(!group)throw new Error('Không tìm thấy cụm câu hỏi.');
+  group.status='active';delete group.deletedAt;group.updatedAt=nowIso();
+  for(const q of state.questions||[])if(q.deletedByGroupId===id){
+    q.status='active';delete q.deletedAt;delete q.deletedByGroupId;q.updatedAt=nowIso();
+  }
+  audit(state,user,'restore','question_group',id);
+  return group;
+}
+
+export function permanentlyDeleteQuestionGroup(state,user,id){
+  if(!isMaster(user))throw new Error('Chỉ Quản trị cấp cao được xóa vĩnh viễn cụm câu hỏi.');
+  const group=(state.questionGroups||[]).find(x=>x.id===id);
+  if(!group)throw new Error('Không tìm thấy cụm câu hỏi.');
+  if(group.status!=='trash')throw new Error('Hãy đưa cụm câu hỏi vào Thùng rác trước khi xóa vĩnh viễn.');
+  const ids=new Set(group.questionIds||[]);
+  const refs=(state.exams||[]).filter(exam=>(exam.sections||[]).some(section=>(section.questionIds||[]).some(questionId=>ids.has(questionId))));
+  if(refs.length)throw new Error('Cụm vẫn có câu hỏi đang được dùng trong bài thi. Hãy gỡ khỏi bài thi trước khi xóa vĩnh viễn.');
+  state.questionGroups=(state.questionGroups||[]).filter(x=>x.id!==id);
+  state.questions=(state.questions||[]).filter(q=>!ids.has(q.id));
+  audit(state,user,'delete_forever','question_group',id,{questionCount:ids.size});
 }
 
 export function groupTotalScore(group,state){

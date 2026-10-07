@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/core.test.mjs && node tests/edge.test.mjs && node tests/question-groups.test.mjs && node tests/static.test.mjs && node tests/security-preflight.test.mjs && node tests/vps-backend.test.mjs"
+    "test": "node tests/core.test.mjs && node tests/edge.test.mjs && node tests/question-groups.test.mjs && node tests/architecture.test.mjs && node tests/static.test.mjs && node tests/security-preflight.test.mjs && node tests/vps-backend.test.mjs"
   }
 }

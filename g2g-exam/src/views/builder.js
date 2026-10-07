@@ -1,5 +1,6 @@
 import {byId,isMaster} from '../core.js';
 import {esc,fmtDate} from '../ui/format.js';
+import {getExamSpec,groupSectionsBySkill} from '../exam-specs/index.js';
 
 export function examBuilderHtml({data,user,exam,section,readOnly}){
   const ex=exam,sec=section;
@@ -9,7 +10,8 @@ export function examBuilderHtml({data,user,exam,section,readOnly}){
 
 function goetheA1BuilderHtml({data,exam,section,readOnly}){
   const sections=exam.sections||[];
-  const groups=[['Nghe',sections.slice(0,3)],['Đọc',sections.slice(3,6)],['Viết',sections.slice(6,8)]];
+  const spec=getExamSpec(exam.provider,exam.level);
+  const groups=groupSectionsBySkill(exam,spec);
   const defaultScore=Number(exam.settings?.skillSettings?.[section?.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
   const icons={
     gear:'<img src="src/assets/figma-icon-1.svg" alt="">',
