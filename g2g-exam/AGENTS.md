@@ -127,7 +127,7 @@ Không xóa media đang được tham chiếu.
 
 Media orphan chỉ được garbage collector xóa sau grace period.
 
-Xóa file liên quan ngay sau khi Permantely Delete
+Xóa file liên quan ngay sau khi Permanently Delete
 
 
 ## 10. Trước khi code
