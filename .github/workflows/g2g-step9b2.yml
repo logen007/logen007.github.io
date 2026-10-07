@@ -1,0 +1,31 @@
+name: G2G Step 9B2 Finalize
+
+on:
+  push:
+    branches:
+      - refactor/g2g-questiongroups-9b2
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.event.head_commit.message == 'chore(g2g): run final questiongroup migration'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/g2g-questiongroups-9b2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply Step 9B2
+        run: node g2g-exam/scripts/finalize-questiongroups-9b2.mjs
+      - name: Commit generated changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor(g2g): finalize QuestionGroup migration" || exit 0
+          git push origin HEAD:refactor/g2g-questiongroups-9b2
