@@ -42,6 +42,8 @@ test('Tạo attempt server có metadata bảo vệ thời gian và phạm vi câ
 test('Audio A1 được khóa theo Part ở server',()=>{
   const source=read('server/src/actions/attempts.js');
   for(const text of ['startPartAudio','completePartAudio','audioSessions','sessions[section.id]','không thể phát lại','segmentRepeat'])assert.ok(source.includes(text),`Thiếu ${text}`);
+  assert.equal(source.includes('startAudioGroup'),false);
+  assert.equal(source.includes('question_groups'),false);
 });
 
 test('Bản production không tự bật SMTP/email',()=>{
@@ -67,13 +69,15 @@ test('Role và thay đổi dữ liệu quan trọng được kiểm tra lại ph
   assert.ok(actions.includes('canGrade'));
 });
 
-test('QuestionGroup không còn write path; dữ liệu cũ chỉ được đọc để tương thích',()=>{
+test('Runtime không còn QuestionGroup; migration xử lý dữ liệu cũ trước khi bỏ bảng',()=>{
   const state=read('server/src/state.js');
-  const attempts=read('server/src/actions/attempts.js');
+  const schema=read('server/schema.sql');
+  const migration=read('server/src/migrations.js');
   assert.equal(state.includes('applyQuestionGroup'),false);
   assert.equal(state.includes("op.collection==='questionGroups'"),false);
   assert.equal(state.includes('state.questionGroups='),false);
-  assert.ok(attempts.includes('SELECT data FROM question_groups WHERE id=$1'));
+  assert.equal(schema.includes('question_groups'),false);
+  assert.ok(migration.includes('DROP TABLE question_groups'));
   for(const text of ['Chỉ Quản trị cấp cao được khôi phục câu hỏi','Chỉ Quản trị cấp cao được khôi phục bài thi'])assert.ok(state.includes(text),`Thiếu bảo vệ server: ${text}`);
 });
 

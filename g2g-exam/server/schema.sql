@@ -8,17 +8,6 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS question_groups (
-  id text PRIMARY KEY,
-  owner_id text NOT NULL REFERENCES users(id),
-  status text NOT NULL DEFAULT 'active',
-  locked boolean NOT NULL DEFAULT false,
-  data jsonb NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS question_groups_owner_idx ON question_groups(owner_id);
-CREATE INDEX IF NOT EXISTS question_groups_status_idx ON question_groups(status);
 
 CREATE TABLE IF NOT EXISTS questions (
   id text PRIMARY KEY,

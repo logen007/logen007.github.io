@@ -6,7 +6,6 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt
 const id=prefix=>`${prefix}-${crypto.randomUUID()}`;
 const normalizeChoice=(choice,key)=>choice&&typeof choice==='object'?{key,text:String(choice.text||''),imageUrl:String(choice.imageUrl||'')}:{key,text:String(choice||''),imageUrl:''};
 const questionDraft=score=>({id:id('q'),prompt:'',audioUrl:'',choices:['A','B','C'].map(key=>({key,text:'',imageUrl:''})),correctAnswer:0,maxScore:score,locked:false});
-const stripLegacyGroupFields=item=>{for(const key of ['groupId','groupType','groupOrder','groupInstruction','groupAudioPolicy'])delete item[key];return item;};
 
 function injectStyles(){
   if(document.getElementById('a1ListeningPart1Styles'))return;
@@ -27,15 +26,13 @@ export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved
   const minQuestions=Math.max(1,Number(spec.questions?.min||1)),maxQuestions=Math.max(minQuestions,Number(spec.questions?.max||minQuestions));
   const specDefaultScore=Math.max(0,Number(spec.scoring?.default??1));
   const originalQuestions=(section.questionIds||[]).map(questionId=>(state.questions||[]).find(q=>q.id===questionId)).filter(Boolean);
-  const legacyGroupId=originalQuestions.map(q=>q.groupId).find(Boolean)||null;
-  const legacyGroup=legacyGroupId?(state.questionGroups||[]).find(item=>item.id===legacyGroupId):null;
   if((exam?.locked||originalQuestions.some(q=>q.locked))&&user.role!=='master')throw new Error('Phần này đã được dùng và đang khóa.');
   const uniformScores=[...new Set(originalQuestions.map(q=>Number(q.maxScore)).filter(Number.isFinite))];
-  const defaultScore=Math.max(0,Number(legacyGroup?.defaultScore??(uniformScores.length===1?uniformScores[0]:specDefaultScore))||0);
+  const defaultScore=Math.max(0,Number(uniformScores.length===1?uniformScores[0]:specDefaultScore)||0);
   let questions=(originalQuestions.length?originalQuestions:Array.from({length:Math.min(3,maxQuestions)},()=>questionDraft(defaultScore))).map(q=>({...q,choices:['A','B','C'].map((key,j)=>normalizeChoice(q.choices?.[j],key)),maxScore:Number(q.maxScore??defaultScore)}));
   const part={
     id:section.id,
-    instruction:section.instruction||legacyGroup?.instruction||originalQuestions[0]?.groupInstruction||'',
+    instruction:section.instruction||'',
     defaultScore,
     templateType:section.templateType||spec.template,
   };
@@ -79,7 +76,7 @@ export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved
       if(typeof commit!=='function')throw new Error('Thiếu ngữ cảnh lưu Part.');
       const now=new Date().toISOString(),questionIds=questions.map(q=>q.id),ops=[];
       questions.forEach((q,index)=>{
-        const item=stripLegacyGroupFields({...q,code:`A1-LIS-01-${String(index+1).padStart(3,'0')}`,level:'A1',skill:'Nghe',part:section.name||'Phần 1',partOrder:Number(section.partOrder||1),type:'single',title:`A1 Nghe 1 · Câu ${index+1}`,instruction:'',autoGrade:Boolean(spec.scoring?.autoGrade??true),pairs:[],rubric:[],ownerId:q.ownerId||exam?.ownerId||user.id,ownerName:q.ownerName||exam?.ownerName||user.name||'',status:q.status==='trash'?'active':(q.status||'active'),locked:Boolean(q.locked),usedCount:Number(q.usedCount||0),correctRate:q.correctRate??null,createdAt:q.createdAt||now,updatedAt:now});
+        const item={...q,code:`A1-LIS-01-${String(index+1).padStart(3,'0')}`,level:'A1',skill:'Nghe',part:section.name||'Phần 1',partOrder:Number(section.partOrder||1),type:'single',title:`A1 Nghe 1 · Câu ${index+1}`,instruction:'',autoGrade:Boolean(spec.scoring?.autoGrade??true),pairs:[],rubric:[],ownerId:q.ownerId||exam?.ownerId||user.id,ownerName:q.ownerName||exam?.ownerName||user.name||'',status:q.status==='trash'?'active':(q.status||'active'),locked:Boolean(q.locked),usedCount:Number(q.usedCount||0),correctRate:q.correctRate??null,createdAt:q.createdAt||now,updatedAt:now};
         ops.push({collection:'questions',id:q.id,kind:'upsert',item});
       });
       const kept=new Set(questionIds);for(const old of originalQuestions)if(!kept.has(old.id))ops.push({collection:'questions',id:old.id,kind:'upsert',item:{...old,status:'trash',deletedAt:now,updatedAt:now}});

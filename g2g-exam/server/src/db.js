@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import pg from 'pg';
 import { DEFAULT_SETTINGS,mergeSettings } from './defaults.js';
+import {migrateRetiredQuestionGroups} from './migrations.js';
 
 const {Pool}=pg;
 export const pool=new Pool({
@@ -19,8 +20,14 @@ export const now=()=>new Date().toISOString();
 export async function initDb(){
   const here=path.dirname(fileURLToPath(import.meta.url));
   const sql=await fs.readFile(path.resolve(here,'../schema.sql'),'utf8');
-  await pool.query(sql);
-  await pool.query(`INSERT INTO settings(id,data) VALUES('global',$1::jsonb) ON CONFLICT(id) DO NOTHING`,[JSON.stringify(DEFAULT_SETTINGS)]);
+  const client=await pool.connect();
+  try{
+    await client.query('BEGIN');
+    await client.query(sql);
+    await migrateRetiredQuestionGroups(client);
+    await client.query(`INSERT INTO settings(id,data) VALUES('global',$1::jsonb) ON CONFLICT(id) DO NOTHING`,[JSON.stringify(DEFAULT_SETTINGS)]);
+    await client.query('COMMIT');
+  }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
 }
 export const query=(text,params=[])=>pool.query(text,params);
 export async function withTx(fn){const c=await pool.connect();try{await c.query('BEGIN');const out=await fn(c);await c.query('COMMIT');return out;}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}}
