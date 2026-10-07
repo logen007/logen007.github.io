@@ -15,7 +15,7 @@ function goetheA1BuilderHtml({data,exam,section,readOnly}){
     gear:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8.3 3.5a7.6 7.6 0 0 0-.1-1.1l2-1.5-2-3.5-2.4 1a8 8 0 0 0-1.9-1.1L15.5 3h-4l-.4 2.7a8 8 0 0 0-1.9 1.1l-2.4-1-2 3.5 2 1.5a7.6 7.6 0 0 0-.1 1.1c0 .4 0 .8.1 1.1l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 1.9 1.1l.4 2.7h4l.4-2.7a8 8 0 0 0 1.9-1.1l2.4 1 2-3.5-2-1.5c.1-.3.1-.7.1-1.1Z"/></svg>',
     add:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     remove:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
-    upload:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>'
+    upload:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17V6m0 0L8 10m4-4 4 4"/></svg>'
   };
   const questions=(section?.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
   const sectionScore=item=>(item.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).reduce((sum,q)=>sum+(Number(q.maxScore)||0),0);
