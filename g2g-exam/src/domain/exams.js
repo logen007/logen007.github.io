@@ -8,6 +8,8 @@ function normalizeSection(input={},index=0){
     id:input.id||uid('sec'),
     name:String(input.name||`Phần ${index+1}`).trim(),
     skill:String(input.skill||''),
+    skillKey:String(input.skillKey||''),
+    templateType:String(input.templateType||'GENERIC'),
     instruction:String(input.instruction||''),
     questionLimit:Math.max(0,Number(input.questionLimit||0)),
     timeMinutes:Math.max(1,Number(input.timeMinutes||30)),
