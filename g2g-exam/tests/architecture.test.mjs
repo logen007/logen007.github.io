@@ -28,6 +28,7 @@ test('A2/B1/B2 chỉ là scaffold cho đến khi có cấu trúc được duyệ
 
 test('Question group có vòng đời trash/restore/permanent delete',()=>{
   const s=clone(seedState),master=byId(s.users,'master-1'),teacher=byId(s.users,'teacher-lan');
+  s.questionGroups||=[];
   const group={id:'qg-test',level:'A1',skill:'Nghe',partOrder:1,defaultScore:1,structureType:'A1_LISTENING_PART_1',audioPolicy:{maxSessions:1,segmentRepeat:2,controls:false,pauseAllowed:false,replayAllowed:false},questionIds:[],ownerId:teacher.id,ownerName:teacher.name,status:'active'};
   const q={id:'qg-q',title:'Q',type:'single',choices:['A','B'],correctAnswer:0,maxScore:1,groupId:group.id,ownerId:teacher.id,status:'active'};
   group.questionIds=[q.id];s.questionGroups.push(group);s.questions.push(q);
