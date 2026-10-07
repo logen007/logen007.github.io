@@ -24,8 +24,11 @@ specs/
 Ví dụ:
 
 ```text
+specs/goethe/a1/exam.json
 specs/goethe/a1/listening/part-01.json
 ```
+
+`exam.json` là composition root của một kỳ thi đã cấu hình: nó chỉ giữ metadata dùng chung ở cấp Level/Skill và danh sách đường dẫn tới từng Part spec. Rule riêng của Part vẫn chỉ nằm trong file Part tương ứng, để không lặp lại cùng một rule ở nhiều nơi.
 
 ## ID ổn định
 

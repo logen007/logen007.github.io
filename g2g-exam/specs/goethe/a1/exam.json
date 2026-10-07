@@ -1,0 +1,39 @@
+{
+  "provider": "GOETHE",
+  "level": "A1",
+  "status": "APPROVED",
+  "skills": [
+    {
+      "key": "listening",
+      "label": "Nghe",
+      "defaultTimeMinutes": 20,
+      "defaultQuestionScore": 1,
+      "parts": [
+        "listening/part-01.json",
+        "listening/part-02.json",
+        "listening/part-03.json"
+      ]
+    },
+    {
+      "key": "reading",
+      "label": "Đọc",
+      "defaultTimeMinutes": 25,
+      "defaultQuestionScore": 1,
+      "parts": [
+        "reading/part-01.json",
+        "reading/part-02.json",
+        "reading/part-03.json"
+      ]
+    },
+    {
+      "key": "writing",
+      "label": "Viết",
+      "defaultTimeMinutes": 20,
+      "defaultQuestionScore": 1,
+      "parts": [
+        "writing/part-01.json",
+        "writing/part-02.json"
+      ]
+    }
+  ]
+}

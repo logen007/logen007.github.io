@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {getExamSpec,getProviderLevels,buildSectionsFromSpec,groupSectionsBySkill} from '../src/exam-specs/index.js';
-import {clone,byId,softDeleteQuestionGroup,restoreQuestionGroup,permanentlyDeleteQuestionGroup} from '../src/core.js';
+import {clone,byId,createExam,softDeleteQuestionGroup,restoreQuestionGroup,permanentlyDeleteQuestionGroup} from '../src/core.js';
 import {seedState} from '../src/seed.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
@@ -22,6 +22,31 @@ test('Goethe A1 có cấu trúc từ registry thay vì slice vị trí',()=>{
   const groups=groupSectionsBySkill({sections},spec);assert.deepEqual(groups.map(([name])=>name),['Nghe','Đọc','Viết']);
   assert.equal(sections[0].templateType,'A1_LISTENING_PART_1');
   assert.equal(read('src/views/builder.js').includes('sections.slice('),false);
+});
+
+test('Goethe A1 lấy cấu trúc production từ specs/ thay vì hard-code trong registry',()=>{
+  const source=read('src/exam-specs/goethe.js');
+  assert.ok(source.includes("loadApprovedExamSpec('../../specs/goethe/a1/exam.json')"));
+  assert.equal(source.includes("part('listening-1'"),false);
+  const part=JSON.parse(read('specs/goethe/a1/listening/part-01.json'));
+  assert.equal(part.status,'APPROVED');
+  assert.equal(part.questionLimit,6);
+  assert.equal(part.template,'A1_LISTENING_PART_1');
+});
+
+test('Metadata skillKey/templateType sống sót từ spec qua createExam',()=>{
+  const state=clone(seedState),teacher=byId(state.users,'teacher-lan');
+  const spec=getExamSpec('GOETHE','A1');
+  const sections=buildSectionsFromSpec(spec,{idFactory:i=>`meta-${i}`});
+  const exam=createExam(state,teacher,{title:'Metadata test',provider:'GOETHE',level:'A1',sections});
+  assert.equal(exam.sections[0].skillKey,'listening');
+  assert.equal(exam.sections[0].templateType,'A1_LISTENING_PART_1');
+  assert.equal(exam.sections[1].templateType,'GENERIC');
+});
+
+test('Production image phục vụ specs JSON cùng app',()=>{
+  assert.ok(read('server/Dockerfile').includes('COPY specs /app/public/specs'));
+  assert.ok(read('server/src/index.js').includes("pathname.startsWith('/specs/')"));
 });
 
 test('App tạo/migrate đề qua exam factory, không hard-code GOETHE_A1_PARTS',()=>{

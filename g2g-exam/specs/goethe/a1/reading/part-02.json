@@ -1,0 +1,8 @@
+{
+  "id": "GOETHE.A1.READING.PART_02",
+  "status": "APPROVED",
+  "key": "reading-2",
+  "name": "Đọc 2",
+  "questionLimit": 5,
+  "template": "GENERIC"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "GOETHE.A1.LISTENING.PART_01",
+  "status": "APPROVED",
+  "key": "listening-1",
+  "name": "Nghe 1",
+  "questionLimit": 6,
+  "template": "A1_LISTENING_PART_1"
+}
