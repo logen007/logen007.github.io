@@ -94,6 +94,25 @@ test('Builder định tuyến editor theo templateType thay vì hard-code Goethe
   assert.equal(app.includes("exam.provider==='GOETHE'&&exam.level==='A1'"),false);
 });
 
+test('Step 9A lưu A1 Nghe 1 theo Part thay vì tạo QuestionGroup mới',()=>{
+  const editor=read('src/part-templates/a1-listening-part-1/editor.js');
+  const student=read('src/part-templates/a1-listening-part-1/student.js');
+  const app=read('src/app.js');
+  const attempts=read('server/src/actions/attempts.js');
+  const actions=read('server/src/actions/index.js');
+  assert.equal(editor.includes("collection:'questionGroups'"),false);
+  assert.equal(editor.includes('groupAudioPolicy'),true); // only compatibility cleanup list may mention the legacy field
+  assert.ok(editor.includes('sectionPatch'));
+  assert.ok(app.includes('openPartTemplate(section.templateType,{exam,section'));
+  assert.ok(student.includes('attempt.currentSectionId'));
+  assert.ok(student.includes("/actions/startPartAudio"));
+  assert.ok(student.includes("/actions/completePartAudio"));
+  assert.ok(attempts.includes('partAudioContext'));
+  assert.ok(attempts.includes('sessions[section.id]'));
+  assert.ok(actions.includes("case 'startPartAudio'"));
+  assert.ok(attempts.includes('Compatibility only for cached/legacy clients during Step 9A'));
+});
+
 test('Media garbage collector được khởi động từ server',()=>{
   const index=read('server/src/index.js'),gc=read('server/src/media-gc.js');
   assert.ok(index.includes('startMediaGarbageCollector'));

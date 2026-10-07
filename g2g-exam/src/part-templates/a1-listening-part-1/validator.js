@@ -1,8 +1,9 @@
-export function validateA1ListeningPart1({group,questions,spec}){
+export function validateA1ListeningPart1({part,section,group,questions,spec}){
+  const context=part||section||group;
   const min=Math.max(1,Number(spec?.questions?.min||1));
   const max=Math.max(min,Number(spec?.questions?.max||min));
   const keys=Array.isArray(spec?.answers?.keys)?spec.answers.keys:['A','B','C'];
-  if(!String(group?.instruction||'').trim())throw new Error('Cần nhập đề bài chung.');
+  if(!String(context?.instruction||'').trim())throw new Error('Cần nhập đề bài chung.');
   if(!Array.isArray(questions)||questions.length<min||questions.length>max)throw new Error(`Phần này phải có từ ${min} đến ${max} câu.`);
   for(let index=0;index<questions.length;index++){
     const question=questions[index];

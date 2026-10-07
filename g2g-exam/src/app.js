@@ -360,10 +360,17 @@ function bindViewSpecific(){
     const exam=byId(data.exams,ui.builderExamId),section=exam?.sections.find(s=>s.id===ui.builderSectionId);
     if(!exam||!section)return;
     if(!hasPartTemplate(section.templateType)){notify('Part này chưa có template riêng.');return;}
-    const existingId=section.questionIds.map(id=>byId(data.questions,id)?.groupId).find(Boolean)||null;
-    const commit=ops=>repo.transaction(st=>{for(const op of ops){st[op.collection]||=[];const i=st[op.collection].findIndex(x=>x.id===op.id);if(i>=0)st[op.collection][i]=op.item;else st[op.collection].push(op.item);}});
-    await openPartTemplate(section.templateType,{groupId:existingId,state:data,user,commit,onSaved:async group=>{
-      await act(()=>repo.transaction(st=>updateSection(st,user,exam.id,section.id,{questionIds:group.questionIds||[]})),'Đã lưu cấu hình Part.');
+    const commit=({operations=[],sectionPatch={}}={})=>repo.transaction(st=>{
+      for(const op of operations){
+        st[op.collection]||=[];
+        const index=st[op.collection].findIndex(item=>item.id===op.id);
+        if(op.kind==='delete'){if(index>=0)st[op.collection].splice(index,1);continue;}
+        if(index>=0)st[op.collection][index]=op.item;else st[op.collection].push(op.item);
+      }
+      updateSection(st,user,exam.id,section.id,sectionPatch);
+    });
+    await openPartTemplate(section.templateType,{exam,section,state:data,user,commit,onSaved:async()=>{
+      data=await repo.getState();notify('Đã lưu cấu hình Part.');render();
     }});
   });
   app.querySelectorAll('[data-action="edit-question"]').forEach(b=>b.onclick=()=>questionModal(byId(data.questions,b.dataset.id)));
