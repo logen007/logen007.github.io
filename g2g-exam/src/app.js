@@ -25,6 +25,7 @@ import {
 } from './views/modals.js';
 import {getProviderLevels} from './exam-specs/index.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from './controllers/exam-factory.js';
+import {populateGoetheA1TestFixture} from './controllers/goethe-a1-test-fixture.js';
 import {hasPartTemplate,openPartTemplate,bindPartBuilder} from './part-templates/index.js';
 
 const app=document.getElementById('app');
@@ -44,7 +45,7 @@ const pendingAudioUploads=new Map();
 const ui={
   view:user?(isStudent(user)?'student-home':'admin'):'login',
   adminTab:'exams',examId:null,attemptId:null,builderExamId:null,builderSectionId:null,
-  gradeAttemptId:null,gradeMode:'best',online:navigator.onLine,
+  gradeAttemptId:null,gradeMode:'best',previewExamId:null,previewSectionIndex:0,previewAnswers:{},online:navigator.onLine,
 };
 
 repo.subscribe(next=>{
@@ -128,6 +129,18 @@ function examView(){
   startExamTimer(attempt,exam,sectionIndex);
 }
 
+function previewExamView(){
+  clearTimer();
+  const exam=byId(data.exams,ui.previewExamId);
+  if(!exam||!canEditExam(user,exam)){ui.view='admin';render();return;}
+  const sectionIndex=Math.min(ui.previewSectionIndex||0,Math.max(0,exam.sections.length-1));
+  const section=exam.sections[sectionIndex];
+  const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
+  const attempt={id:`preview-${exam.id}`,answers:ui.previewAnswers};
+  app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,online:ui.online,preview:true});
+  bindPreviewInputs(attempt,questions);
+}
+
 function bindExamInputs(attempt,questions){
   app.querySelectorAll('.answer-one').forEach(el=>el.onchange=()=>queueAnswer(attempt.id,el.dataset.q,el.value===''?null:Number(el.value),0));
   app.querySelectorAll('.answer-match').forEach(el=>el.onchange=()=>{
@@ -159,6 +172,26 @@ function bindExamInputs(attempt,questions){
       btn.textContent='Phát audio';
       notify('Không phát được audio. Hãy kiểm tra kết nối hoặc tệp âm thanh.');
     }
+  });
+}
+
+function bindPreviewInputs(attempt,questions){
+  app.querySelectorAll('.answer-one').forEach(el=>el.onchange=()=>{ui.previewAnswers[el.dataset.q]=el.value===''?null:Number(el.value);});
+  app.querySelectorAll('.answer-match').forEach(el=>el.onchange=()=>{
+    const qid=el.dataset.q,q=questions.find(x=>x.id===qid),values=Array(q?.pairs?.length||0).fill('');
+    app.querySelectorAll(`.answer-match[data-q="${qid}"]`).forEach(x=>values[Number(x.dataset.i)]=x.value);
+    ui.previewAnswers[qid]=values;
+  });
+  app.querySelectorAll('.answer-text').forEach(el=>el.oninput=()=>{
+    const counter=el.parentElement?.querySelector('.word-count');
+    if(counter)counter.textContent=countWords(el.value);
+    ui.previewAnswers[el.dataset.q]=el.value;
+  });
+  app.querySelectorAll('.play-audio').forEach(btn=>btn.onclick=async()=>{
+    const qid=btn.dataset.q,key=`g2g.audio.${attempt.id}.${qid}`,audio=document.getElementById(`audio-${qid}`);
+    if(!audio||sessionStorage.getItem(key))return;
+    try{sessionStorage.setItem(key,'1');btn.disabled=true;btn.textContent='Đang phát...';audio.addEventListener('ended',()=>{btn.textContent='Đã phát audio';},{once:true});await audio.play();}
+    catch{sessionStorage.removeItem(key);btn.disabled=false;btn.textContent='Phát audio';notify('Không phát được audio này.');}
   });
 }
 
@@ -336,6 +369,7 @@ function render(){
   if(ui.view==='student-home')studentHomeView();
   else if(ui.view==='student-results')studentResultsView();
   else if(ui.view==='exam')examView();
+  else if(ui.view==='preview-exam')previewExamView();
   else if(ui.view==='submitted')submittedView();
   else if(ui.view==='builder')examBuilderView();
   else if(ui.view==='grading-detail')gradingDetailView();
@@ -368,10 +402,11 @@ async function saveBuilderDraft({silent=false}={}){
           choiceImageUrls.set(`${questionId}:${input.dataset.choiceImage}`,await uploadQuestionImage(file));
           uploadedInputs.push(input);
         }
-        const instructionImage=[...card.querySelectorAll('[data-question-instruction-image]')].find(input=>input.files?.[0]);
-        if(instructionImage){
-          questionInstructionImageUrls.set(questionId,await uploadQuestionImage(instructionImage.files[0]));
-          uploadedInputs.push(instructionImage);
+        for(const input of card.querySelectorAll('[data-question-instruction-image]')){
+          const file=input.files?.[0];
+          if(!file)continue;
+          questionInstructionImageUrls.set(`${questionId}:${input.dataset.questionInstructionImage}`,await uploadQuestionImage(file));
+          uploadedInputs.push(input);
         }
       }
       const sectionImage=[...app.querySelectorAll('[data-section-image]')].find(input=>input.files?.[0]);
@@ -409,8 +444,15 @@ async function saveBuilderDraft({silent=false}={}){
             const existing=previousChoices[index];
             return {text:card.querySelector(`[data-choice="${index}"]`)?.value.trim()||'Nháp',imageUrl:(choiceImageUrls.get(`${id}:${index}`)??(typeof existing==='object'?existing.imageUrl:''))||''};
           });
-          const questionImageControl=card.querySelector('[data-question-image-control]');
-          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:card.querySelector('[data-field="prompt"]')?.value.trim()||previousQuestion?.prompt||'',choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl:questionInstructionImageUrls.get(id)??(questionImageControl?.dataset.removeQuestionImage==='true'?'':previousQuestion?.instructionImageUrl||'')});
+          const previousInstructionBlocks=Array.isArray(previousQuestion?.instructionBlocks)
+            ?previousQuestion.instructionBlocks
+            :[{text:previousQuestion?.prompt||'',imageUrl:previousQuestion?.instructionImageUrl||''}];
+          const instructionBlocks=[...card.querySelectorAll('[data-question-instruction-block]')].map((control,index)=>{
+            const previousBlock=previousInstructionBlocks[index]||{};
+            return {text:control.querySelector('[data-instruction-prompt]')?.value.trim()||'',imageUrl:questionInstructionImageUrls.get(`${id}:${index}`)??(control.dataset.removeQuestionImage==='true'?'':previousBlock.imageUrl||'')};
+          });
+          const firstInstruction=instructionBlocks[0]||{text:'',imageUrl:''};
+          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:firstInstruction.text,choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl:firstInstruction.imageUrl,instructionBlocks});
         });
       }
     });
@@ -457,6 +499,9 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="prev-section"]').forEach(b=>b.onclick=()=>moveAttemptSection(-1));
   app.querySelectorAll('[data-action="next-section"]').forEach(b=>b.onclick=()=>moveAttemptSection(1));
   app.querySelectorAll('[data-action="submit-exam"]').forEach(b=>b.onclick=()=>submitCurrentExam(true));
+  app.querySelectorAll('[data-action="preview-prev-section"]').forEach(b=>b.onclick=()=>{ui.previewSectionIndex=Math.max(0,ui.previewSectionIndex-1);render();});
+  app.querySelectorAll('[data-action="preview-next-section"]').forEach(b=>b.onclick=()=>{const exam=byId(data.exams,ui.previewExamId);ui.previewSectionIndex=Math.min((exam?.sections.length||1)-1,ui.previewSectionIndex+1);render();});
+  app.querySelectorAll('[data-action="close-preview"]').forEach(b=>b.onclick=()=>{ui.view='builder';render();});
   app.querySelectorAll('[data-action="admin-tab"]').forEach(b=>b.onclick=()=>{ui.adminTab=b.dataset.tab;ui.view='admin';render();});
   app.querySelectorAll('[data-action="new-question"]').forEach(b=>b.onclick=()=>questionModal(null,ui.view==='builder'?async q=>{const ex=byId(data.exams,ui.builderExamId),sec=ex?.sections.find(s=>s.id===ui.builderSectionId);if(ex&&sec)await act(()=>repo.transaction(st=>addQuestionsToSection(st,user,ex.id,sec.id,[q.id])),'Đã thêm câu vào phần.');}:null));
   app.querySelectorAll('[data-action="edit-part-template"]').forEach(b=>b.onclick=async()=>{
@@ -484,6 +529,10 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="view-exam"]').forEach(b=>b.onclick=()=>previewExamModal(byId(data.exams,b.dataset.id)));
   app.querySelectorAll('[data-action="delete-exam"]').forEach(b=>b.onclick=()=>{if(confirm('Đưa bài thi này vào Thùng rác?'))act(()=>repo.transaction(st=>softDeleteExam(st,user,b.dataset.id)),'Đã chuyển bài thi vào Thùng rác.');});
   app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>publishExam(st,user,b.dataset.id)),'Đã xuất bản bài thi.'));
+  app.querySelectorAll('[data-action="preview-exam"]').forEach(b=>b.onclick=async()=>{
+    await saveBuilderDraft({silent:true});
+    ui.previewExamId=b.dataset.id;ui.previewSectionIndex=0;ui.previewAnswers={};ui.view='preview-exam';render();
+  });
   app.querySelectorAll('[data-action="save-exam"]').forEach(b=>b.onclick=async()=>{
     b.disabled=true;
     await saveBuilderDraft();
@@ -554,16 +603,33 @@ async function createNewExam(){
   if(!setup)return;
   const {level,provider,title}=setup;
   const exam=await act(()=>repo.transaction(st=>createExamDraft(st,user,{level,provider,title})),null,{rerender:false});
-  if(exam){data=await repo.getState();openBuilder(exam.id);}
+  if(exam){data=await repo.getState();openBuilder(exam.id);notify('Đã tạo đề. Link chỉnh sửa trực tiếp đã có trên thanh địa chỉ.');}
+}
+
+function builderEditUrl(id){
+  const url=new URL(window.location.href);
+  url.searchParams.set('edit',id);
+  return url.toString();
+}
+
+function clearBuilderEditUrl(){
+  const url=new URL(window.location.href);
+  url.searchParams.delete('edit');
+  history.replaceState(null,'',url);
 }
 
 async function openBuilder(id){
   let exam=byId(data.exams,id);
-  const migrated=await repo.transaction(st=>ensureExamMatchesConfiguredSpec(st,user,id));
-  if(migrated){data=await repo.getState();exam=byId(data.exams,id);}
+  const changed=await repo.transaction(st=>{
+    const migrated=ensureExamMatchesConfiguredSpec(st,user,id);
+    const populated=populateGoetheA1TestFixture(st,user,id);
+    return migrated||populated;
+  });
+  if(changed){data=await repo.getState();exam=byId(data.exams,id);}
   ui.builderExamId=id;
   ui.builderSectionId=exam?.sections?.[0]?.id||null;
   ui.view='builder';
+  history.replaceState(null,'',builderEditUrl(id));
   render();
 }
 
@@ -574,7 +640,7 @@ function bindBuilder(){
     const section=exam.sections.find(item=>item.id===ui.builderSectionId);
     if(!hasPartTemplate(section?.templateType)){button.disabled=true;button.textContent='Template phần này chưa cấu hình';}
   });
-  app.querySelectorAll('[data-action="back-admin"]').forEach(b=>b.onclick=()=>{ui.view='admin';ui.adminTab='exams';render();});
+  app.querySelectorAll('[data-action="back-admin"]').forEach(b=>b.onclick=()=>{clearBuilderEditUrl();ui.view='admin';ui.adminTab='exams';render();});
   app.querySelectorAll('[data-action="select-section"]').forEach(b=>b.onclick=e=>{if(e.target.closest('.phan-tool'))return;ui.builderSectionId=b.dataset.id;render();});
   app.querySelectorAll('[data-action="add-section"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>addSection(st,user,exam.id,{name:'Phần mới',timeMinutes:30})),'Đã thêm phần.'));
   app.querySelectorAll('[data-action="move-section"]').forEach(b=>b.onclick=e=>{e.stopPropagation();act(()=>repo.transaction(st=>moveSection(st,user,exam.id,b.dataset.id,b.dataset.dir)));});
@@ -604,6 +670,25 @@ function bindBuilder(){
     const question=byId(st.questions,b.dataset.id);if(!question)return;
     const rubric=[...(question.rubric||[])],index=Math.max(-1,Number(b.dataset.index));rubric.splice(index+1,0,{label:'',answers:'',maxScore:1});updateQuestion(st,user,question.id,{rubric});
   }),'Đã thêm dòng.'));
+  const instructionBlocksFor=question=>Array.isArray(question?.instructionBlocks)
+    ?question.instructionBlocks
+    :[{text:question?.prompt||'',imageUrl:question?.instructionImageUrl||''}];
+  app.querySelectorAll('[data-action="add-question-instruction"]').forEach(b=>b.onclick=async()=>{
+    await saveBuilderDraft({silent:true});
+    await act(()=>repo.transaction(st=>{
+      const question=byId(st.questions,b.dataset.id);if(!question)return;
+      updateQuestion(st,user,question.id,{instructionBlocks:[...instructionBlocksFor(question),{text:'',imageUrl:''}]});
+    }),'Đã thêm đề bài.');
+  });
+  app.querySelectorAll('[data-action="remove-question-instruction"]').forEach(b=>b.onclick=async()=>{
+    await saveBuilderDraft({silent:true});
+    await act(()=>repo.transaction(st=>{
+      const question=byId(st.questions,b.dataset.id);if(!question)return;
+      const blocks=instructionBlocksFor(question);blocks.splice(Number(b.dataset.index),1);
+      const first=blocks[0]||{text:'',imageUrl:''};
+      updateQuestion(st,user,question.id,{instructionBlocks:blocks,prompt:first.text,instructionImageUrl:first.imageUrl});
+    }),'Đã xóa đề bài.');
+  });
   const section=exam.sections.find(item=>item.id===ui.builderSectionId)||exam.sections[0];
   bindPartBuilder(section?.templateType,{root:app,data,exam,section,pendingAudioUploads,notify});
   app.querySelectorAll('.goethe-builder input,.goethe-builder textarea,.goethe-builder select').forEach(field=>{
@@ -665,4 +750,7 @@ async function toggleTeacher(id){
   }),'Đã cập nhật vai trò tài khoản.');
 }
 
-render();
+const directBuilderId=new URL(window.location.href).searchParams.get('edit');
+const directBuilderExam=directBuilderId&&byId(data.exams,directBuilderId);
+if(directBuilderExam&&user&&!isStudent(user)&&canEditExam(user,directBuilderExam))await openBuilder(directBuilderId);
+else render();

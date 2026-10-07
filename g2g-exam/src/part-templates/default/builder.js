@@ -7,6 +7,7 @@ const icons={
   remove:'<img src="src/assets/figma-icon-2.svg" alt="">',
   upload:'<img src="src/assets/figma-icon-5.svg" alt="">',
   play:'<img src="src/assets/figma-icon-4.svg" alt="">',
+  addImage:'<img src="src/assets/figma-icon-add-image.svg" alt="">',
   imageUpload:'<img src="src/assets/figma-icon-image-upload.svg" alt="">'
 };
 const blank=value=>value==='Nháp'?'':value;
@@ -80,23 +81,29 @@ function mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile}){
   const before=formRowsHtml(q,{readOnly,choiceProfile,start:0,end:Math.max(0,count-1)});
   const last=formRowsHtml(q,{readOnly,choiceProfile,start:Math.max(0,count-1),end:count});
   const middle=`<div class="goethe-question mixed-writing-question"><div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi 1" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly)}${audioHtml(q,readOnly,choiceProfile.showAudio)}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</div>`;
-  return `<article class="writing-form writing-form--mixed part-question" data-editor-mode="mixed-form" data-question-id="${q.id}">${before}${middle}${last}${questionInstructionHtml(q,readOnly)}</article>`;
+  const blocks=instructionBlocksFor(q);
+  return `<article class="writing-form writing-form--mixed part-question" data-editor-mode="mixed-form" data-question-id="${q.id}">${before}${middle}${last}${blocks.length?`<div class="mixed-writing-instructions">${blocks.map((block,index)=>questionInstructionHtml(q,block,index,readOnly)).join('')}</div>`:''}</article>`;
 }
 
 function freeResponseHtml(q,{defaultScore,readOnly}){
   return `<article class="goethe-free-response part-question" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Câu trả lời textarea" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea>${scoreControls(q,defaultScore,readOnly)}</article>`;
 }
 
-function instructionHtml(section,choiceProfile,readOnly){
+function instructionHtml(section,choiceProfile,readOnly,question){
   const instruction=`<textarea id="sectionInstruction" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea>`;
   if(!choiceProfile.instructionImage)return `<div class="goethe-instruction">${instruction}</div>`;
   const imageUrl=section.instructionImageUrl||'';
-  return `<div class="goethe-instruction goethe-instruction--media" data-section-image-control data-has-image="${imageUrl?'true':'false'}">${instruction}<div class="goethe-instruction-actions"><div class="goethe-instruction-icons"><button type="button" class="icon-btn" data-action="clear-section-image" title="Xóa hình ảnh đề bài" aria-label="Xóa hình ảnh đề bài" ${readOnly?'disabled':''}>${icons.remove}</button><label class="icon-btn" title="Thay hình ảnh đề bài">${icons.add}<input type="file" data-section-image accept="image/*" ${readOnly?'disabled':''}></label></div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.imageUpload}<span>Thêm hình ảnh</span>`}</span><input type="file" data-section-image accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
+  const addInstruction=question?`<button type="button" class="icon-btn" data-action="add-question-instruction" data-id="${question.id}" title="Thêm đề bài" aria-label="Thêm đề bài" ${readOnly?'disabled':''}>${icons.add}</button>`:'';
+  return `<div class="goethe-instruction goethe-instruction--media" data-section-image-control data-has-image="${imageUrl?'true':'false'}">${instruction}<div class="goethe-instruction-actions"><div class="goethe-instruction-icons"><button type="button" class="icon-btn" data-action="clear-section-image" title="Xóa hình ảnh đề bài" aria-label="Xóa hình ảnh đề bài" ${readOnly?'disabled':''}>${icons.remove}</button>${addInstruction}</div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.addImage}<span>Thêm hình ảnh</span>`}</span><input type="file" data-section-image accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
 }
 
-function questionInstructionHtml(q,readOnly){
-  const imageUrl=q.instructionImageUrl||'';
-  return `<div class="goethe-instruction goethe-instruction--media mixed-writing-instruction" data-question-image-control data-has-image="${imageUrl?'true':'false'}"><textarea data-field="prompt" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(q.prompt||'')}</textarea><div class="goethe-instruction-actions"><div class="goethe-instruction-icons"><button type="button" class="icon-btn" data-action="clear-question-image" title="Xóa hình ảnh đề bài" aria-label="Xóa hình ảnh đề bài" ${readOnly?'disabled':''}>${icons.remove}</button><label class="icon-btn" title="Thay hình ảnh đề bài">${icons.add}<input type="file" data-question-instruction-image accept="image/*" ${readOnly?'disabled':''}></label></div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.imageUpload}<span>Thêm hình ảnh</span>`}</span><input type="file" data-question-instruction-image accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
+function instructionBlocksFor(q){
+  return Array.isArray(q.instructionBlocks)?q.instructionBlocks:[{text:q.prompt||'',imageUrl:q.instructionImageUrl||''}];
+}
+
+function questionInstructionHtml(q,block,index,readOnly){
+  const imageUrl=block.imageUrl||'';
+  return `<div class="goethe-instruction goethe-instruction--media mixed-writing-instruction" data-question-instruction-block data-question-image-control data-index="${index}" data-has-image="${imageUrl?'true':'false'}"><textarea data-instruction-prompt placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(block.text||'')}</textarea><div class="goethe-instruction-actions"><div class="goethe-instruction-icons"><button type="button" class="icon-btn" data-action="remove-question-instruction" data-id="${q.id}" data-index="${index}" title="Xóa đề bài" aria-label="Xóa đề bài" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-question-instruction" data-id="${q.id}" title="Thêm đề bài" aria-label="Thêm đề bài" ${readOnly?'disabled':''}>${icons.add}</button></div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.addImage}<span>Thêm hình ảnh</span>`}</span><input type="file" data-question-instruction-image="${index}" accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
 }
 
 export function renderBuilder({data,exam,section,readOnly=false}={}){
@@ -111,7 +118,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
     :choiceProfile.isFreeResponse
       ?freeResponseHtml(q,{defaultScore,readOnly})
       :choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile});
-  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${instructionHtml(section,choiceProfile,readOnly)}<div class="goethe-questions">${questions.map(renderQuestion).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
+  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${instructionHtml(section,choiceProfile,readOnly,choiceProfile.isMixedForm?questions[0]:null)}<div class="goethe-questions">${questions.map(renderQuestion).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
 }
 
 export function bindBuilder({root=document,data,exam,section,pendingAudioUploads=new Map(),notify=()=>{}}={}){
@@ -148,7 +155,7 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     const file=input.files?.[0],control=input.closest('[data-question-image-control]');if(!file||!control)return;const url=URL.createObjectURL(file),label=control.querySelector('.section-image-label');control.dataset.hasImage='true';control.dataset.removeQuestionImage='false';if(label)label.innerHTML=`<img src="${url}" alt="Hình ảnh đề bài">`;
   });
   root.querySelectorAll('[data-action="clear-question-image"]').forEach(button=>button.addEventListener('click',()=>{
-    const control=button.closest('[data-question-image-control]'),label=control?.querySelector('.section-image-label');if(!control||!label)return;control.dataset.hasImage='false';control.dataset.removeQuestionImage='true';control.querySelectorAll('[data-question-instruction-image]').forEach(input=>{input.value='';});label.innerHTML=`${icons.imageUpload}<span>Thêm hình ảnh</span>`;
+    const control=button.closest('[data-question-image-control]'),label=control?.querySelector('.section-image-label');if(!control||!label)return;control.dataset.hasImage='false';control.dataset.removeQuestionImage='true';control.querySelectorAll('[data-question-instruction-image]').forEach(input=>{input.value='';});label.innerHTML=`${icons.addImage}<span>Thêm hình ảnh</span>`;
   }));
   const updateSkillTotals=()=>{
     const draftScores=new Map([...root.querySelectorAll('.part-question[data-question-id]')].map(card=>{

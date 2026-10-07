@@ -6,6 +6,7 @@ import {getExamSpec,getProviderLevels,buildSectionsFromSpec,groupSectionsBySkill
 import {clone,byId,createExam} from '../src/core.js';
 import {seedState} from '../src/seed.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
+import {populateGoetheA1TestFixture} from '../src/controllers/goethe-a1-test-fixture.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
@@ -124,6 +125,31 @@ test('Builder tự lưu thay đổi mà không render lại lúc đang nhập',(
   assert.ok(app.includes('function queueBuilderAutosave'));
   assert.ok(app.includes("field.addEventListener('input',()=>queueBuilderAutosave())"));
   assert.ok(app.includes('await saveBuilderDraft({silent:true})'));
+});
+
+test('Builder có preview và hỗ trợ link mở lại đề đang sửa',()=>{
+  const app=read('src/app.js'),builder=read('src/views/builder.js');
+  assert.ok(builder.includes('data-action="preview-exam"'));
+  assert.ok(app.includes('function previewExamView'));
+  assert.ok(app.includes('function builderEditUrl'));
+  assert.ok(app.includes('searchParams.get(\'edit\')'));
+});
+
+test('Viết 1 lưu được nhiều khối đề bài và dùng icon Figma khi thêm hình',()=>{
+  const partBuilder=read('src/part-templates/default/builder.js');
+  assert.ok(partBuilder.includes('instructionBlocks'));
+  assert.ok(partBuilder.includes('figma-icon-add-image.svg'));
+  assert.ok(fs.existsSync(path.join(root,'src/assets/figma-icon-add-image.svg')));
+});
+
+test('Đề GOETHE A1 – Bài test 01 được điền dữ liệu mẫu nhưng không ghi đè nội dung đã có',()=>{
+  const state=clone(seedState),teacher=byId(state.users,'teacher-lan');
+  const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'A1',title:'GOETHE A1 – Bài test 01',stamp:987});
+  assert.equal(populateGoetheA1TestFixture(state,teacher,exam.id),true);
+  const first=byId(state.questions,exam.sections[0].questionIds[0]);
+  assert.equal(first.title,'Câu 1');
+  assert.ok(first.prompt.includes('Nội dung mẫu'));
+  assert.equal(populateGoetheA1TestFixture(state,teacher,exam.id),false);
 });
 
 test('A1 Nghe 1 vận hành trực tiếp bằng Part',()=>{
