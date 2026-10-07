@@ -25,7 +25,7 @@ import {
 } from './views/modals.js';
 import {getProviderLevels} from './exam-specs/index.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from './controllers/exam-factory.js';
-import {hasPartTemplate,openPartTemplate} from './part-templates/index.js';
+import {hasPartTemplate,openPartTemplate,bindPartBuilder} from './part-templates/index.js';
 
 const app=document.getElementById('app');
 const toast=document.getElementById('toast');
@@ -381,15 +381,15 @@ function bindViewSpecific(){
     b.disabled=true;
     try{
       const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map();
-      if(section&&exam.provider==='GOETHE'&&exam.level==='A1'){
-        for(const card of app.querySelectorAll('.goethe-question[data-question-id]')){
+      if(section&&app.querySelector('.part-question[data-question-id]')){
+        for(const card of app.querySelectorAll('.part-question[data-question-id]')){
           const uploaded=pendingAudioUploads.get(card.dataset.questionId);
           if(!uploaded)continue;
           const {url,name}=await uploaded.promise;
           audioUrls.set(card.dataset.questionId,url);
           audioNames.set(card.dataset.questionId,name);
         }
-        for(const card of app.querySelectorAll('.goethe-question[data-question-id]')){
+        for(const card of app.querySelectorAll('.part-question[data-question-id]')){
           const questionId=card.dataset.questionId;
           for(const input of card.querySelectorAll('[data-choice-image]')){
             const file=input.files?.[0];
@@ -400,9 +400,9 @@ function bindViewSpecific(){
       }
       await act(()=>repo.transaction(st=>{
         updateExam(st,user,exam.id,{title});
-        if(section&&exam.provider==='GOETHE'&&exam.level==='A1'){
+        if(section&&app.querySelector('.part-question[data-question-id]')){
           updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||''});
-          app.querySelectorAll('.goethe-question[data-question-id]').forEach(card=>{
+          app.querySelectorAll('.part-question[data-question-id]').forEach(card=>{
             const id=card.dataset.questionId;
             const titleField=card.querySelector('[data-field="title"]');
             const scoreField=card.querySelector('[data-field="maxScore"]');
@@ -425,10 +425,10 @@ function bindViewSpecific(){
     const exam=byId(data.exams,ui.builderExamId);if(!exam)return;
     const skill=b.dataset.skill;
     if(!skill)return;
-    const defaultTimes={Nghe:20,'Đọc':25,'Viết':20};
     const setting=exam.settings?.skillSettings?.[skill]||{};
+    const sectionDefaultTime=(exam.sections||[]).find(item=>item.skill===skill)?.timeMinutes??20;
     const modal=document.createElement('div');modal.className='hop-chon';
-    modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><div class="nhan-muc">CÀI ĐẶT</div><button class="nut nho" data-close aria-label="Đóng">×</button></div><div class="exam-setup-grid"><label>Thời gian (phút)<input id="skillTimeMinutes" type="number" min="1" value="${Number(setting.timeMinutes??defaultTimes[skill]??20)}"></label><label>Điểm mặc định mỗi câu<input id="defaultQuestionScore" type="number" min="0" value="${Number(setting.defaultQuestionScore??exam.settings?.defaultQuestionScore??1)}"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="saveExamSettings">Lưu</button></div></div></div>`;
+    modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><div class="nhan-muc">CÀI ĐẶT</div><button class="nut nho" data-close aria-label="Đóng">×</button></div><div class="exam-setup-grid"><label>Thời gian (phút)<input id="skillTimeMinutes" type="number" min="1" value="${Number(setting.timeMinutes??sectionDefaultTime)}"></label><label>Điểm mặc định mỗi câu<input id="defaultQuestionScore" type="number" min="0" value="${Number(setting.defaultQuestionScore??exam.settings?.defaultQuestionScore??1)}"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="saveExamSettings">Lưu</button></div></div></div>`;
     document.body.append(modal);modal.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>modal.remove());
     modal.querySelector('#saveExamSettings').onclick=()=>{const time=Math.max(1,Number(modal.querySelector('#skillTimeMinutes').value)||1),score=Math.max(0,Number(modal.querySelector('#defaultQuestionScore').value)||0);act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{settings:{skillSettings:{...(exam.settings?.skillSettings||{}),[skill]:{timeMinutes:time,defaultQuestionScore:score}}}})),'Đã lưu cài đặt phần.');modal.remove();};
   });
@@ -444,7 +444,6 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="permanent-question"]').forEach(b=>b.onclick=()=>{if(confirm('Xóa vĩnh viễn câu hỏi? Hành động không thể hoàn tác.'))act(()=>repo.transaction(st=>permanentlyDeleteQuestion(st,user,b.dataset.id)),'Đã xóa vĩnh viễn.');});
   bindBuilder();
   bindGrading();
-  bindFilters();
 }
 
 async function beginAttempt(examId,restart){
@@ -527,112 +526,8 @@ function bindBuilder(){
     }
   }),'Đã thêm câu hỏi.'));
   app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.'));
-  const resetAudioPreview=button=>{
-    button.innerHTML='<img src="src/assets/figma-icon-4.svg" alt="">';
-    button.title='Nghe thử audio';
-    button.setAttribute('aria-label','Nghe thử audio');
-  };
-  const bindInlineAudioPreview=button=>button.onclick=async()=>{
-    const control=button.closest('.audio-upload');
-    const audio=control?.querySelector('.inline-audio-preview');
-    if(!audio)return;
-    if(!audio.paused){
-      audio.pause();
-      audio.currentTime=0;
-      resetAudioPreview(button);
-      return;
-    }
-    app.querySelectorAll('.inline-audio-preview').forEach(item=>{
-      if(item===audio)return;
-      item.pause();
-      item.currentTime=0;
-      const other=item.closest('.audio-upload')?.querySelector('.audio-preview');
-      if(other)resetAudioPreview(other);
-    });
-    try{
-      if(audio.ended)audio.currentTime=0;
-      await audio.play();
-      button.innerHTML='<span class="audio-stop-icon" aria-hidden="true"></span>';
-      button.title='Dừng audio';
-      button.setAttribute('aria-label','Dừng audio');
-      audio.onended=()=>resetAudioPreview(button);
-      audio.onpause=()=>{if(!audio.ended)resetAudioPreview(button);};
-    }catch{notify('Không thể phát audio này. Hãy thử chọn lại tệp.');}
-  };
-  const showUploadedAudio=(control,{url,name})=>{
-    control.classList.add('has-audio');
-    const label=control.querySelector('.audio-file-select span');
-    if(label)label.textContent=name;
-    control.querySelector(':scope > img')?.remove();
-    let audio=control.querySelector('.inline-audio-preview');
-    if(!audio){
-      audio=document.createElement('audio');
-      audio.className='inline-audio-preview';
-      audio.preload='metadata';
-      control.append(audio);
-    }
-    audio.src=url;
-    let button=control.querySelector('.audio-preview');
-    if(!button){
-      button=document.createElement('button');
-      button.type='button';
-      button.className='audio-preview';
-      control.insertBefore(button,audio);
-      bindInlineAudioPreview(button);
-    }
-    resetAudioPreview(button);
-  };
-  app.querySelectorAll('.audio-upload input[data-field="audio"]').forEach(input=>input.onchange=()=>{
-    const file=input.files?.[0],control=input.closest('.audio-upload');
-    const questionId=input.closest('.goethe-question')?.dataset.questionId;
-    const label=control?.querySelector('.audio-file-select span');
-    if(!file||!control||!questionId||!label)return;
-    input.disabled=true;
-    label.textContent='Đang tải audio · 0%';
-    const upload={name:file.name,promise:null};
-    upload.promise=uploadQuestionAudio(file,{onProgress:percent=>{
-      if(pendingAudioUploads.get(questionId)===upload)label.textContent=`Đang tải audio · ${percent}%`;
-    }}).then(url=>{
-      if(pendingAudioUploads.get(questionId)===upload)showUploadedAudio(control,{url,name:file.name});
-      return {url,name:file.name};
-    }).catch(error=>{
-      if(pendingAudioUploads.get(questionId)===upload){
-        pendingAudioUploads.delete(questionId);
-        label.textContent='Tải audio thất bại';
-        notify(error.message);
-      }
-      throw error;
-    }).finally(()=>{if(pendingAudioUploads.get(questionId)===upload)input.disabled=false;});
-    pendingAudioUploads.set(questionId,upload);
-    upload.promise.catch(()=>{});
-  });
-  app.querySelectorAll('[data-choice-image]').forEach(input=>input.onchange=()=>{
-    const file=input.files?.[0],control=input.closest('.choice-image-upload');
-    if(!file||!control)return;
-    control.classList.add('has-image');
-    control.title='Bấm để thay hình ảnh đáp án';
-    const objectUrl=URL.createObjectURL(file),thumbnail=control.querySelector(':scope > img');
-    if(thumbnail){thumbnail.src=objectUrl;thumbnail.className='choice-uploaded-image';thumbnail.alt='Ảnh đáp án đã chọn';}
-    control.querySelector('.choice-image-tooltip')?.remove();
-    const tooltip=document.createElement('span'),preview=new Image();
-    tooltip.className='choice-image-tooltip';
-    preview.alt='Ảnh đáp án đã chọn';
-    preview.src=objectUrl;
-    tooltip.append(preview);control.append(tooltip);
-  });
-  const updateSkillTotals=()=>{
-    const draftScores=new Map([...app.querySelectorAll('.goethe-question[data-question-id]')].map(card=>[
-      card.dataset.questionId,Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0)
-    ]));
-    app.querySelectorAll('[data-skill-total]').forEach(total=>{
-      const sum=(exam.sections||[]).filter(section=>section.skill===total.dataset.skill).flatMap(section=>section.questionIds||[])
-        .reduce((score,id)=>score+((draftScores.get(id)??Number(byId(data.questions,id)?.maxScore))||0),0);
-      total.textContent=`${Number.isInteger(sum)?sum:Number(sum.toFixed(2))} điểm`;
-    });
-  };
-  app.querySelectorAll('[data-field="maxScore"]').forEach(input=>input.oninput=updateSkillTotals);
-  app.querySelectorAll('[data-action="preview-inline-audio"]').forEach(bindInlineAudioPreview);
-  app.querySelectorAll('[data-action="open-bank-picker"]').forEach(b=>b.onclick=bankPicker);
+  const section=exam.sections.find(item=>item.id===ui.builderSectionId)||exam.sections[0];
+  bindPartBuilder(section?.templateType,{root:app,data,exam,section,pendingAudioUploads,notify});
   const title=document.getElementById('examTitle');
   if(title)title.onchange=()=>act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{title:title.value})),'Đã đổi tên bài thi.');
   app.querySelectorAll('[data-action="save-section"]').forEach(b=>b.onclick=()=>{
@@ -669,15 +564,6 @@ async function saveGrade(andPublish){
     const published=await act(()=>repo.transaction(st=>publishAttempt(st,user,attempt.id)),'Đã công bố kết quả và xếp email thông báo.',{rerender:false});
     if(published){data=await repo.getState();ui.view='admin';ui.adminTab='grading';render();}
   }else render();
-}
-
-function bindFilters(){
-  const search=document.getElementById('bankSearch'),level=document.getElementById('bankLevel'),skill=document.getElementById('bankSkill');
-  if(!search||!level||!skill)return;
-  const filter=()=>app.querySelectorAll('#bankRows tr[data-search]').forEach(row=>{
-    row.style.display=(!search.value||row.dataset.search.includes(search.value.toLowerCase()))&&(!level.value||row.dataset.level===level.value)&&(!skill.value||row.dataset.skill===skill.value)?'':'none';
-  });
-  search.oninput=filter;level.onchange=filter;skill.onchange=filter;
 }
 
 async function toggleTeacher(id){
