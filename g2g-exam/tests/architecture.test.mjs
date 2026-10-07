@@ -83,36 +83,32 @@ test('Builder định tuyến editor theo templateType thay vì hard-code Goethe
   assert.equal(app.includes("exam.provider==='GOETHE'&&exam.level==='A1'"),false);
 });
 
-test('Step 9A lưu A1 Nghe 1 theo Part thay vì tạo QuestionGroup mới',()=>{
+test('A1 Nghe 1 vận hành trực tiếp bằng Part',()=>{
   const editor=read('src/part-templates/a1-listening-part-1/editor.js');
   const student=read('src/part-templates/a1-listening-part-1/student.js');
-  const app=read('src/app.js');
   const attempts=read('server/src/actions/attempts.js');
   const actions=read('server/src/actions/index.js');
-  assert.equal(editor.includes("collection:'questionGroups'"),false);
-  assert.equal(editor.includes('groupAudioPolicy'),true); // compatibility cleanup only
   assert.ok(editor.includes('sectionPatch'));
-  assert.ok(app.includes('openPartTemplate(section.templateType,{exam,section'));
+  assert.equal(/questionGroups|groupId|groupInstruction|groupAudioPolicy/.test(editor),false);
   assert.ok(student.includes('attempt.currentSectionId'));
   assert.ok(student.includes("/actions/startPartAudio"));
-  assert.ok(student.includes("/actions/completePartAudio"));
-  assert.ok(attempts.includes('partAudioContext'));
+  assert.equal(/questionGroups|groupId|groupInstruction/.test(student),false);
   assert.ok(attempts.includes('sessions[section.id]'));
-  assert.ok(actions.includes("case 'startPartAudio'"));
-  assert.ok(attempts.includes('Compatibility only for cached/legacy clients during Step 9A'));
+  assert.equal(attempts.includes('startAudioGroup'),false);
+  assert.equal(actions.includes("case 'startAudioGroup'"),false);
 });
 
-test('Step 9B1 ngắt QuestionGroup khỏi application write path',()=>{
-  const core=read('src/core.js'),base=read('src/domain/base.js'),api=read('src/repositories/api.js'),loader=read('src/feature-loader.js'),server=read('server/src/state.js'),schema=read('server/schema.sql'),attempts=read('server/src/actions/attempts.js');
-  assert.equal(core.includes("export * from './domain/question-groups.js'"),false);
-  assert.equal(base.includes("'questionGroups'"),false);
-  assert.equal(api.includes("'questionGroups'"),false);
-  assert.equal(loader.includes("./question-groups/trash.js"),false);
-  assert.equal(server.includes('state.questionGroups='),false);
-  assert.equal(server.includes("op.collection==='questionGroups'"),false);
-  assert.equal(server.includes('applyQuestionGroup'),false);
-  assert.ok(schema.includes('CREATE TABLE IF NOT EXISTS question_groups'));
-  assert.ok(attempts.includes('SELECT data FROM question_groups WHERE id=$1'));
+test('Step 9B2 hoàn tất migration và loại bỏ QuestionGroup khỏi runtime/schema',()=>{
+  const schema=read('server/schema.sql'),db=read('server/src/db.js'),migration=read('server/src/migrations.js'),pkg=read('package.json');
+  assert.equal(fs.existsSync(path.join(root,'src/domain/question-groups.js')),false);
+  assert.equal(schema.includes('question_groups'),false);
+  assert.ok(db.includes('migrateRetiredQuestionGroups'));
+  assert.ok(migration.includes('DROP TABLE question_groups'));
+  assert.equal(read('server/src/actions/attempts.js').includes('question_groups'),false);
+  assert.equal(read('server/src/actions/index.js').includes('AudioGroup'),false);
+  assert.equal(pkg.includes('question-groups.test.mjs'),false);
+  assert.ok(fs.existsSync(path.join(root,'tests/part-template-a1-listening.test.mjs')));
+  assert.ok(fs.existsSync(path.join(root,'tests/migrations.test.mjs')));
 });
 
 test('Media garbage collector được khởi động từ server',()=>{

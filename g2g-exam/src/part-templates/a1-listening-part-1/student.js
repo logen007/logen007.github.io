@@ -19,14 +19,11 @@ export async function mountStudentRuntime({state:initialState=null,examRoot:init
   const partQuestions=(section.questionIds||[]).map(id=>(state.questions||[]).find(q=>q.id===id)).filter(q=>q&&visibleIds.includes(q.id));
   if(!partQuestions.length)return;
   examRoot.dataset.a1ListeningPart1Enhanced='1';
-  const legacyGroupId=partQuestions.map(q=>q.groupId).find(Boolean)||null;
-  const legacyGroup=legacyGroupId?(state.questionGroups||[]).find(item=>item.id===legacyGroupId):null;
   const firstNode=examRoot.querySelector(`.cau-thi[data-q="${CSS.escape(partQuestions[0].id)}"]`);if(!firstNode)return;
   const intro=document.createElement('div');intro.className='qg-listen-intro';
   const sectionSession=attempt.audioSessions?.[section.id];
-  const legacySession=legacyGroupId?attempt.audioSessions?.[legacyGroupId]:null;
-  const started=sectionSession?.startedAt||legacySession?.startedAt;
-  const instruction=section.instruction||legacyGroup?.instruction||partQuestions[0].groupInstruction||'';
+  const started=sectionSession?.startedAt;
+  const instruction=section.instruction||'';
   intro.innerHTML=`<h3>Đề bài</h3><div>${esc(instruction)}</div><div style="margin-top:12px"><button class="nut chinh tpl-start-listen" ${started?'disabled':''}>${started?'Audio đã được sử dụng':'Bắt đầu nghe'}</button><div class="qg-listen-status">${started?'Phiên nghe đã bắt đầu trước đó và không thể phát lại.':`Khi bắt đầu, audio chạy liên tục. Mỗi mảnh phát ${policy.segmentRepeat} lần.`}</div></div>`;
   firstNode.insertAdjacentElement('beforebegin',intro);
   const audioElements=[];
