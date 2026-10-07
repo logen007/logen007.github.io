@@ -46,7 +46,7 @@ flowchart TD
 ## 2. Vai trò người dùng
 
 ```mermaid
-flowchart LR
+flowchart TD
 
     USER["Người dùng"]
 
@@ -57,14 +57,27 @@ flowchart LR
     STUDENT --> TAKE["Làm bài thi"]
     STUDENT --> RESULTS["Xem kết quả"]
 
-    TEACHER --> QUESTIONS["Tạo câu hỏi"]
-    TEACHER --> EXAMS["Tạo đề"]
+    TEACHER --> CREATE_EXAM["Tạo & quản lý đề thi"]
     TEACHER --> GRADING["Chấm bài"]
+
+    CREATE_EXAM --> PROVIDER["Chọn hệ thi"]
+    PROVIDER --> LEVEL["Chọn trình độ"]
+    LEVEL --> CONFIG["Cấu hình đề"]
+    CONFIG --> SKILLS["Kỹ năng"]
+    SKILLS --> PARTS["Part / Bài"]
+    PARTS --> QUESTIONS["Câu hỏi"]
+
+    QUESTIONS --> CONTENT["Nội dung"]
+    QUESTIONS --> ANSWERS["Đáp án"]
+    QUESTIONS --> MEDIA["Audio / Hình ảnh"]
+    QUESTIONS --> SCORE["Điểm"]
 
     MASTER --> USERS["Quản lý người dùng"]
     MASTER --> TRASH["Thùng rác"]
     MASTER --> SETTINGS["Cài đặt hệ thống"]
 ```
+
+> Không có Ngân hàng câu hỏi. Câu hỏi được tạo và quản lý trực tiếp trong từng Part của từng đề thi.
 
 ---
 
@@ -76,7 +89,8 @@ flowchart TD
     PROVIDER["Hệ thi"]
     PROVIDER --> LEVEL["Trình độ"]
     LEVEL --> EXAM["Đề thi"]
-    EXAM --> SKILL["Kỹ năng"]
+    EXAM --> CONFIG["Cấu hình đề"]
+    CONFIG --> SKILL["Kỹ năng"]
     SKILL --> PART["Bài / Part"]
     PART --> TEMPLATE["Part Template"]
     TEMPLATE --> QUESTION["Câu hỏi"]
@@ -131,7 +145,7 @@ Không tự suy đoán cấu trúc đề thi.
 
 Mỗi cấu trúc:
 
-    Provider → Level → Skill → Part
+    Provider → Level → Exam → Skill → Part → Question
 
 có thể có template riêng.
 
@@ -142,6 +156,13 @@ Ví dụ:
 không mặc định giống:
 
     GOETHE.A1.LISTENING.PART_02
+
+Quy tắc cố định:
+
+- Không có Question Bank / Ngân hàng câu hỏi.
+- Question không tồn tại như một luồng nghiệp vụ độc lập với Exam.
+- Giáo viên tạo hoặc sửa câu hỏi trực tiếp trong Part của đề thi.
+- Không tách `Tạo câu hỏi` thành chức năng ngang hàng với `Tạo đề`.
 
 ---
 
