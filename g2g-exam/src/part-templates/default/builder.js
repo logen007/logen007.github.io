@@ -26,7 +26,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
   if(!section)return '<div class="rong">Chọn một phần để cấu hình.</div>';
   const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
-  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}"><p class="phu-de">Tạo câu hỏi trực tiếp trong phần này.</p><div class="goethe-instruction"><textarea id="sectionInstruction" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea>${readOnly?'':`<button class="nut nho" type="button" data-action="add-inline-question">+ Thêm câu</button>`}</div><div class="goethe-questions">${questions.map((q,index)=>questionHtml(q,index,{defaultScore,readOnly})).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
+  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}"><p class="phu-de">Tạo câu hỏi trực tiếp trong phần này.</p><div class="goethe-instruction"><textarea id="sectionInstruction" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea></div><div class="goethe-questions">${questions.map((q,index)=>questionHtml(q,index,{defaultScore,readOnly})).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
 }
 
 export function bindBuilder({root=document,data,exam,section,pendingAudioUploads=new Map(),notify=()=>{}}={}){
