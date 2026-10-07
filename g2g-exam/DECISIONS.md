@@ -1,185 +1,80 @@
 # G2G Exam — Decisions Pending Review
 
-> Đây là bản nháp để người phụ trách dự án đọc và duyệt trước.
+> File này chỉ lưu các quyết định quan trọng, không lặp lại rule đã nằm ở `AGENTS.md`, `ARCHITECTURE.md`, `OPERATIONS.md` hoặc `specs/`.
 >
-> KHÔNG coi nội dung trong file này là quyết định chính thức cho đến khi người phụ trách dự án xác nhận duyệt.
->
-> Chỉ sau khi được duyệt mới đổi từng mục sang `APPROVED` và cho phép AI/Developer dùng làm Source of Truth.
+> Nội dung bên dưới vẫn là `PENDING REVIEW` cho đến khi người phụ trách dự án xác nhận duyệt.
 
-## Cách dùng
+## Nguyên tắc của file này
 
-- Mỗi quyết định mới phải được trình người phụ trách dự án đọc trước.
-- Trước khi được duyệt, trạng thái phải là `PENDING REVIEW` hoặc `DRAFT`.
-- Không được tự đổi sang `APPROVED`.
-- Sau khi người phụ trách dự án xác nhận duyệt, mới được commit trạng thái `APPROVED`.
-- `AGENTS.md` quy định cách AI làm việc; `DECISIONS.md` lưu các quyết định đã duyệt; `specs/` mô tả chi tiết từng kỳ thi/Part.
+- Chỉ ghi quyết định có ảnh hưởng lớn đến cấu trúc hoặc cách vận hành hệ thống.
+- Không ghi những thứ hệ thống không có, trừ khi đó là một quyết định loại bỏ cần lưu lịch sử.
+- Không chép lại chi tiết nghiệp vụ của từng kỳ thi/Part; phần đó thuộc `specs/`.
+- Không chép lại quy tắc làm việc của AI/Developer; phần đó thuộc `AGENTS.md`.
+- Không chép lại hướng dẫn vận hành server/media; phần đó thuộc `OPERATIONS.md`.
+- Một quy tắc chỉ nên có một Source of Truth. Nơi khác chỉ tham chiếu, không copy lại.
 
 ---
 
-## DEC-001 — Không có Ngân hàng câu hỏi
+## DEC-001 — Cấu trúc nghiệp vụ của đề thi
 
 **Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
-G2G Exam **không có Question Bank / Ngân hàng câu hỏi độc lập**.
-
-Câu hỏi chỉ được tạo và quản lý trong ngữ cảnh của một đề thi:
-
-```text
-Exam
-  → Skill
-    → Part
-      → Question
-```
-
-Không xây lại màn hình Question Bank, picker chọn câu từ kho, hoặc workflow tạo câu hỏi độc lập ngoài đề thi.
-
----
-
-## DEC-002 — Workflow chính của Giáo viên
-
-**Status:** PENDING REVIEW  
-**Date:** 2026-10-07
-
-Giáo viên có hai nhóm công việc chính:
+Luồng nghiệp vụ chính của giáo viên khi xây dựng đề:
 
 ```text
 Teacher
-  → Tạo & quản lý đề thi
-  → Chấm bài
+  → Exam
+    → Skill
+      → Part
+        → Question
 ```
 
-Trong luồng tạo đề:
+Provider và Level là metadata/cấu hình xác định loại đề trước khi đi vào cấu trúc Exam.
 
-```text
-Provider
-  → Level
-    → Exam / Config
-      → Skill
-        → Part
-          → Questions
-```
-
-Câu hỏi được tạo trực tiếp trong Part của đề thi.
+Các chức năng tạo/chỉnh câu hỏi phải nằm trong ngữ cảnh của Part tương ứng.
 
 ---
 
-## DEC-003 — Mỗi Part có thể có template riêng
+## DEC-002 — Kiến trúc module hóa và tái sử dụng
 
 **Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
-Không giả định các Part cùng một kỹ năng có cùng cấu trúc.
+Hệ thống phải được chia thành các module có trách nhiệm rõ ràng.
 
-Ví dụ:
+Nguyên tắc:
 
-```text
-GOETHE.A1.LISTENING.PART_01
-```
+- Một module chỉ nên chịu trách nhiệm cho một nhóm chức năng rõ ràng.
+- Logic dùng chung phải tách thành shared module/helper/config để tái sử dụng.
+- Không copy cùng một rule hoặc cùng một đoạn logic sang nhiều nơi.
+- Không để nhiều module cùng sở hữu một loại dữ liệu hoặc một rule nghiệp vụ.
+- Các Part chỉ tách module riêng khi chúng thực sự có hành vi khác nhau.
+- Những phần giống nhau giữa các Part phải dùng chung component/service/validator thay vì nhân bản code.
+- Ưu tiên registry/config/composition hơn chuỗi `if/else` lớn và file monolith.
 
-không mặc định dùng cùng logic với:
-
-```text
-GOETHE.A1.LISTENING.PART_02
-```
-
-Mỗi Part có thể có editor, validation, media policy, scoring và student experience riêng.
+Mục tiêu là thay đổi một chức năng ở đúng một nơi mà không phải sửa cùng một logic tại nhiều file.
 
 ---
 
-## DEC-004 — Không tự suy đoán luật thi
+## DEC-003 — Specification đã duyệt là nguồn nghiệp vụ chính thức
 
 **Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
-Nếu Provider / Level / Skill / Part chưa có specification ở trạng thái `APPROVED` thì không được tự nghĩ ra:
+Chi tiết nghiệp vụ của từng Provider / Level / Skill / Part nằm trong `specs/`.
 
-- số câu;
-- thời gian;
-- điểm;
-- loại đáp án;
-- audio behavior;
-- cách chấm;
-- cấu trúc UI đặc thù.
+Chỉ specification có trạng thái `APPROVED` mới được dùng làm luật production.
 
-Phải chờ specification được duyệt.
+Code và test phải tham chiếu cùng một specification thay vì tự duy trì các bản rule riêng biệt.
 
 ---
 
-## DEC-005 — Specification đã APPROVED là nguồn nghiệp vụ chính thức
+## DEC-004 — Bảo toàn dữ liệu và lịch sử thi
 
 **Status:** PENDING REVIEW  
 **Date:** 2026-10-07
 
-Luật nghiệp vụ chi tiết nằm trong `specs/`.
+Thay đổi kiến trúc hoặc nghiệp vụ không được làm thay đổi ý nghĩa của kết quả thi đã phát sinh.
 
-Khi một specification đã `APPROVED`, code và test phải tuân theo specification đó.
-
-Specification `DRAFT` hoặc `TODO` không được coi là luật production.
-
----
-
-## DEC-006 — Điểm thuộc từng câu hỏi
-
-**Status:** PENDING REVIEW  
-**Date:** 2026-10-07
-
-Điểm được lưu ở từng Question.
-
-`defaultQuestionScore` chỉ là giá trị mặc định khi tạo câu mới hoặc khi giáo viên chủ động áp dụng hàng loạt.
-
-Giáo viên có thể chỉnh điểm riêng từng câu khi template cho phép.
-
-Tổng điểm được tính từ tổng điểm các câu.
-
----
-
-## DEC-007 — Bảo toàn lịch sử thi
-
-**Status:** PENDING REVIEW  
-**Date:** 2026-10-07
-
-Không được làm hỏng kết quả hoặc lịch sử học viên đã phát sinh.
-
-Khi dữ liệu đã được dùng trong lượt thi production:
-
-- không reset database để giải quyết lỗi phát triển;
-- không sửa cấu trúc cũ theo cách làm thay đổi ý nghĩa kết quả đã lưu;
-- ưu tiên versioning/migration an toàn khi cần thay đổi lớn.
-
----
-
-## DEC-008 — Xóa dữ liệu theo Trash / Soft Delete
-
-**Status:** PENDING REVIEW  
-**Date:** 2026-10-07
-
-Xóa thông thường phải đi qua Trash / soft delete.
-
-Không xóa vĩnh viễn dữ liệu còn đang được tham chiếu hoặc cần cho lịch sử thi.
-
-Master Admin chịu trách nhiệm các thao tác quản trị Trash và xóa vĩnh viễn khi an toàn.
-
----
-
-## DEC-009 — Media phải có vòng đời dọn rác
-
-**Status:** PENDING REVIEW  
-**Date:** 2026-10-07
-
-Audio và ảnh không được để tích tụ vô hạn trên server.
-
-- Media đang được tham chiếu không được xóa.
-- Media orphan được garbage collector xử lý sau grace period.
-- Khi một đối tượng được Permanently Delete và file không còn bất kỳ tham chiếu nào, file liên quan có thể được xóa theo policy dọn rác.
-
----
-
-## DEC-010 — AI/Developer chỉ sửa phạm vi tối thiểu cần thiết
-
-**Status:** PENDING REVIEW  
-**Date:** 2026-10-07
-
-Khi yêu cầu chỉ liên quan một Part, không tự ý thay đổi các Part/kỳ thi khác nếu không có dependency thực sự.
-
-Mọi thay đổi nghiệp vụ hoặc kiến trúc phải có test phù hợp trước khi đưa vào `main`.
+Khi cần thay đổi cấu trúc dữ liệu đã dùng trong production, ưu tiên migration/versioning an toàn thay vì sửa phá vỡ dữ liệu cũ.
