@@ -17,6 +17,8 @@ import {handleAction} from './actions.js';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const publicDir=path.resolve(here,'../../public');
 const uploadDir=path.resolve(process.env.UPLOAD_DIR||'/data/uploads');
+const demoMediaUploadsEnabled=process.env.DEMO_MEDIA_UPLOAD_ENABLED==='true';
+const demoUploadWindows=new Map();
 await fs.mkdir(uploadDir,{recursive:true});
 await initDb();
 
@@ -52,8 +54,17 @@ app.get('/api/state',async request=>loadState(await requireUser(request)));
 app.post('/api/commit',async request=>commitOperations(await requireUser(request),request.body?.operations||[]));
 app.post('/api/actions/:name',async request=>handleAction(await requireUser(request),request.params.name,request.body||{}));
 
-async function saveUpload(request,{kind,maxBytes,mimePrefix,defaultExt}){
-  const user=await requireRole(request,'teacher','master');
+function demoUploadUser(request){
+  if(!demoMediaUploadsEnabled)throw appError(404,'Chế độ upload demo chưa được bật.');
+  const now=Date.now(),key=request.ip||'unknown';
+  const recent=(demoUploadWindows.get(key)||[]).filter(time=>now-time<60*60*1000);
+  if(recent.length>=10)throw appError(429,'Chế độ demo chỉ cho phép tối đa 10 audio mỗi giờ.');
+  recent.push(now);demoUploadWindows.set(key,recent);
+  return {id:'demo-teacher',role:'teacher'};
+}
+
+async function saveUpload(request,{kind,maxBytes,mimePrefix,defaultExt},user=null){
+  user=user||await requireRole(request,'teacher','master');
   const part=await request.file();
   if(!part)throw appError(400,`Chưa chọn tệp ${kind}.`);
   if(part.mimetype&&!part.mimetype.startsWith(mimePrefix))throw appError(400,`Tệp tải lên không phải ${kind}.`);
@@ -70,7 +81,8 @@ async function saveUpload(request,{kind,maxBytes,mimePrefix,defaultExt}){
 
 app.post('/api/media/audio',async request=>saveUpload(request,{kind:'âm thanh',maxBytes:25*1024*1024,mimePrefix:'audio/',defaultExt:'.audio'}));
 app.post('/api/media/image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:8*1024*1024,mimePrefix:'image/',defaultExt:'.img'}));
-app.get('/uploads/:name',async(request,reply)=>{await requireUser(request);const name=path.basename(request.params.name);return reply.sendFile(name,uploadDir);});
+app.post('/api/demo/media/audio',async request=>saveUpload(request,{kind:'âm thanh',maxBytes:25*1024*1024,mimePrefix:'audio/',defaultExt:'.audio'},demoUploadUser(request)));
+app.get('/uploads/:name',async(request,reply)=>{if(!demoMediaUploadsEnabled)await requireUser(request);const name=path.basename(request.params.name);return reply.sendFile(name,uploadDir);});
 app.get('/api/whoami',async request=>({user:await currentUser(request)}));
 
 app.setErrorHandler((error,_request,reply)=>{app.log.error(error);const status=Number(error.statusCode)||500;reply.code(status).send({error:status>=500?'Lỗi máy chủ. Vui lòng thử lại.':error.message,code:status});});

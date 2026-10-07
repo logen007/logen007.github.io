@@ -21,6 +21,13 @@ test('Upload hình đáp án chỉ dành cho giáo viên/quản trị',()=>{
   assert.ok(source.includes("mimePrefix:'image/'"));
 });
 
+test('Upload audio ở chế độ demo phải được bật tường minh và có giới hạn',()=>{
+  const source=read('server/src/index.js');
+  assert.ok(source.includes("DEMO_MEDIA_UPLOAD_ENABLED==='true'"));
+  assert.ok(source.includes("'/api/demo/media/audio'"));
+  assert.ok(source.includes('recent.length>=10'));
+});
+
 test('Autosave server chỉ nhận câu thuộc phần hiện tại và trước deadline',()=>{
   const source=read('server/src/actions/attempts.js');
   for(const text of ['currentQuestionIds','currentDeadlineMs','Phần thi đã hết thời gian']){
