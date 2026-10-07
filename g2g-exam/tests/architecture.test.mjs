@@ -119,6 +119,13 @@ test('Builder giới hạn container Goethe ở 1500px',()=>{
   assert.ok(read('styles.css').includes('.goethe-builder{width:min(1500px,100%)'));
 });
 
+test('Builder tự lưu thay đổi mà không render lại lúc đang nhập',()=>{
+  const app=read('src/app.js');
+  assert.ok(app.includes('function queueBuilderAutosave'));
+  assert.ok(app.includes("field.addEventListener('input',()=>queueBuilderAutosave())"));
+  assert.ok(app.includes('await saveBuilderDraft({silent:true})'));
+});
+
 test('A1 Nghe 1 vận hành trực tiếp bằng Part',()=>{
   const editor=read('src/part-templates/a1-listening-part-1/editor.js');
   const student=read('src/part-templates/a1-listening-part-1/student.js');
