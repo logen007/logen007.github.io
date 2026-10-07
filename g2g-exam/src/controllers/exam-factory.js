@@ -6,7 +6,8 @@ function populateConfiguredSections(state,user,exam){
     const required=Math.max(0,Number(section.questionLimit)||0);
     const profile=section.questionProfile||{};
     const choices=Array.isArray(profile.choices)&&profile.choices.length>=2?clone(profile.choices):['Nháp','Nháp','Nháp'];
-    const initialRubric=profile.layout==='form-fields'
+    const hasFormRows=['form-fields','mixed-form'].includes(profile.layout)
+    const initialRubric=hasFormRows
       ?Array.from({length:Math.max(1,Number(profile.formFieldCount)||1)},(_,index)=>({label:'',answers:'',maxScore:Number(profile.formDefaultScores?.[index]??1)}))
       :[];
     for(const questionId of section.questionIds||[]){
@@ -14,7 +15,7 @@ function populateConfiguredSections(state,user,exam){
       if(!question)continue;
       const patch={};
       if(profile.type&&question.type!==profile.type)patch.type=profile.type;
-      if(profile.layout==='form-fields'&&(!Array.isArray(question.rubric)||!question.rubric.length))patch.rubric=clone(initialRubric);
+      if(hasFormRows&&(!Array.isArray(question.rubric)||!question.rubric.length))patch.rubric=clone(initialRubric);
       if(Object.keys(patch).length)updateQuestion(state,user,questionId,patch);
     }
     const additions=[];
@@ -23,7 +24,7 @@ function populateConfiguredSections(state,user,exam){
         level:exam.level,skill:section.skill,part:section.name,type:profile.type||'single',title:'Nháp',
         choices,correctAnswer:0,
         rubric:clone(initialRubric),
-        maxScore:initialRubric.length?initialRubric.reduce((sum,row)=>sum+Number(row.maxScore||0),0):Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1),
+        maxScore:profile.layout==='form-fields'&&initialRubric.length?initialRubric.reduce((sum,row)=>sum+Number(row.maxScore||0),0):Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1),
       }).id);
     }
     if(additions.length)addQuestionsToSection(state,user,exam.id,section.id,additions);

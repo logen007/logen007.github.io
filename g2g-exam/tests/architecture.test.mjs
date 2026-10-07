@@ -67,7 +67,8 @@ test('Mỗi form Goethe A1 lấy bố cục authoring từ specs',()=>{
   assert.equal(parts['Đọc 1'].instructionImage,true);
   assert.equal(parts['Đọc 2'].choiceImages,true);
   assert.equal(parts['Đọc 3'].choiceImages,true);
-  assert.equal(parts['Viết 1'].layout,'form-fields');
+  assert.equal(parts['Viết 1'].layout,'mixed-form');
+  assert.deepEqual(parts['Viết 1'].choices,['A','B']);
   assert.equal(parts['Viết 2'].layout,'free-response');
   const state=clone(seedState),teacher=byId(state.users,'teacher-lan');
   const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'A1',title:'Form data',stamp:789});
@@ -112,6 +113,10 @@ test('Builder định tuyến editor theo templateType thay vì hard-code Goethe
   assert.ok(fs.existsSync(path.join(root,'src/part-templates/a1-listening-part-1/builder.js')));
   assert.ok(app.includes('bindPartBuilder(section?.templateType'));
   assert.equal(app.includes("exam.provider==='GOETHE'&&exam.level==='A1'"),false);
+});
+
+test('Builder giới hạn container Goethe ở 1500px',()=>{
+  assert.ok(read('styles.css').includes('.goethe-builder{width:min(1500px,100%)'));
 });
 
 test('A1 Nghe 1 vận hành trực tiếp bằng Part',()=>{

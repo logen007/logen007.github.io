@@ -387,7 +387,7 @@ function bindViewSpecific(){
     if(!exam||!title)return;
     b.disabled=true;
     try{
-      const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map();
+      const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map(),questionInstructionImageUrls=new Map();
       let sectionImageUrl;
       if(section&&app.querySelector('.part-question[data-question-id]')){
         for(const card of app.querySelectorAll('.part-question[data-question-id]')){
@@ -404,6 +404,8 @@ function bindViewSpecific(){
             if(!file)continue;
             choiceImageUrls.set(`${questionId}:${input.dataset.choiceImage}`,await uploadQuestionImage(file));
           }
+          const instructionImage=[...card.querySelectorAll('[data-question-instruction-image]')].find(input=>input.files?.[0]);
+          if(instructionImage)questionInstructionImageUrls.set(questionId,await uploadQuestionImage(instructionImage.files[0]));
         }
         const sectionImage=[...app.querySelectorAll('[data-section-image]')].find(input=>input.files?.[0]);
         if(sectionImage)sectionImageUrl=await uploadQuestionImage(sectionImage.files[0]);
@@ -416,25 +418,29 @@ function bindViewSpecific(){
           app.querySelectorAll('.part-question[data-question-id]').forEach(card=>{
             const id=card.dataset.questionId;
             const mode=card.dataset.editorMode||'choices';
-            if(mode==='form-fields'){
-              const rubric=[...card.querySelectorAll('[data-rubric-index]')].map(row=>({
+            let rubric;
+            if(mode==='form-fields'||mode==='mixed-form'){
+              rubric=[...card.querySelectorAll('[data-rubric-index]')].map(row=>({
                 label:row.querySelector('[data-rubric-label]')?.value.trim()||'',
                 answers:row.querySelector('[data-rubric-answer]')?.value.trim()||'',
                 maxScore:Math.max(0,Number(row.querySelector('[data-rubric-score]')?.value)||0),
               }));
-              updateQuestion(st,user,id,{rubric,maxScore:rubric.reduce((sum,row)=>sum+row.maxScore,0)});
-              return;
+              if(mode==='form-fields'){
+                updateQuestion(st,user,id,{rubric,maxScore:rubric.reduce((sum,row)=>sum+row.maxScore,0)});
+                return;
+              }
             }
             const titleField=card.querySelector('[data-field="title"]');
             const scoreField=card.querySelector('[data-field="maxScore"]');
             const correct=card.querySelector('[data-field="correct"]:checked');
-            const previousChoices=byId(st.questions,id)?.choices||[];
+            const previousQuestion=byId(st.questions,id),previousChoices=previousQuestion?.choices||[];
             const choices=[...card.querySelectorAll('[data-choice]')].map(input=>{
               const index=Number(input.dataset.choice);
               const existing=previousChoices[index];
               return {text:card.querySelector(`[data-choice="${index}"]`)?.value.trim()||'Nháp',imageUrl:(choiceImageUrls.get(`${id}:${index}`)??(typeof existing==='object'?existing.imageUrl:''))||''};
             });
-            updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??byId(st.questions,id)?.audioUrl)||'',audioName:(audioNames.get(id)??byId(st.questions,id)?.audioName)||''});
+            const questionImageControl=card.querySelector('[data-question-image-control]');
+            updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:card.querySelector('[data-field="prompt"]')?.value.trim()||previousQuestion?.prompt||'',choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl:questionInstructionImageUrls.get(id)??(questionImageControl?.dataset.removeQuestionImage==='true'?'':previousQuestion?.instructionImageUrl||'')});
           });
         }
       }),'Đã lưu bài thi.');

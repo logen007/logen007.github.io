@@ -41,7 +41,7 @@ export function createQuestion(state,user,input={}){
     title:String(input.title||'').trim(),instruction:input.instruction||'',prompt:input.prompt||'',
     choices:clone(input.choices||[]),correctAnswer:input.correctAnswer??null,pairs:clone(input.pairs||[]),
     maxScore:Number(input.maxScore??1),autoGrade:input.autoGrade??!['writing','speaking'].includes(type),
-    rubric:clone(input.rubric||[]),audioUrl:input.audioUrl||'',audioName:input.audioName||'',ownerId:user.id,ownerName:user.name,
+    rubric:clone(input.rubric||[]),audioUrl:input.audioUrl||'',audioName:input.audioName||'',instructionImageUrl:input.instructionImageUrl||'',ownerId:user.id,ownerName:user.name,
     groupId:input.groupId||null,groupType:input.groupType||null,groupOrder:Number(input.groupOrder||0)||null,
     groupInstruction:input.groupInstruction||'',groupAudioPolicy:clone(input.groupAudioPolicy||null),
     status:'active',locked:false,usedCount:0,correctRate:null,createdAt:nowIso(),updatedAt:nowIso(),
@@ -56,7 +56,7 @@ export function updateQuestion(state,user,id,patch){
   if(!question)throw new Error('Không tìm thấy câu hỏi.');
   if(!canEditQuestion(user,question))throw new Error(question.locked?'Câu hỏi đã được dùng trong đề đã xuất bản nên không thể chỉnh sửa. Hãy tạo câu hỏi mới.':'Bạn không có quyền sửa câu hỏi này.');
   validateQuestionInput(patch,question);
-  const allowed=['code','level','skill','part','type','title','instruction','prompt','choices','correctAnswer','pairs','maxScore','autoGrade','rubric','audioUrl','audioName','groupId','groupType','groupOrder','groupInstruction','groupAudioPolicy'];
+  const allowed=['code','level','skill','part','type','title','instruction','prompt','choices','correctAnswer','pairs','maxScore','autoGrade','rubric','audioUrl','audioName','instructionImageUrl','groupId','groupType','groupOrder','groupInstruction','groupAudioPolicy'];
   for(const key of allowed)if(key in patch)question[key]=clone(patch[key]);
   question.updatedAt=nowIso();
   audit(state,user,'update','question',question.id);
