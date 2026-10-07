@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {getExamSpec,getProviderLevels,buildSectionsFromSpec,groupSectionsBySkill} from '../src/exam-specs/index.js';
 import {clone,byId,createExam} from '../src/core.js';
 import {seedState} from '../src/seed.js';
+import {createExamDraft,ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
@@ -21,6 +22,7 @@ test('Goethe A1 có cấu trúc từ registry thay vì slice vị trí',()=>{
   const sections=buildSectionsFromSpec(spec,{idFactory:i=>`s${i}`});assert.equal(sections.length,8);
   const groups=groupSectionsBySkill({sections},spec);assert.deepEqual(groups.map(([name])=>name),['Nghe','Đọc','Viết']);
   assert.equal(sections[0].templateType,'A1_LISTENING_PART_1');
+  assert.deepEqual(sections[1].questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false'});
   assert.equal(read('src/views/builder.js').includes('sections.slice('),false);
 });
 
@@ -32,6 +34,8 @@ test('Goethe A1 lấy cấu trúc production từ specs/ thay vì hard-code tron
   assert.equal(part.status,'APPROVED');
   assert.equal(part.questionLimit,6);
   assert.equal(part.template,'A1_LISTENING_PART_1');
+  const listeningPart2=JSON.parse(read('specs/goethe/a1/listening/part-02.json'));
+  assert.deepEqual(listeningPart2.questionProfile.choices,['Đúng','Sai']);
 });
 
 test('Metadata skillKey/templateType sống sót từ spec qua createExam',()=>{
@@ -41,7 +45,17 @@ test('Metadata skillKey/templateType sống sót từ spec qua createExam',()=>{
   const exam=createExam(state,teacher,{title:'Metadata test',provider:'GOETHE',level:'A1',sections});
   assert.equal(exam.sections[0].skillKey,'listening');
   assert.equal(exam.sections[0].templateType,'A1_LISTENING_PART_1');
+  assert.deepEqual(exam.sections[1].questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false'});
   assert.equal(exam.sections[1].templateType,'GENERIC');
+});
+
+test('Đề Goethe A1 cũ nhận profile Đúng/Sai của Nghe 2 khi mở lại',()=>{
+  const state=clone(seedState),teacher=byId(state.users,'teacher-lan');
+  const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'A1',title:'Profile migration',stamp:123});
+  const section=exam.sections.find(item=>item.name==='Nghe 2');
+  section.questionProfile=null;
+  assert.equal(ensureExamMatchesConfiguredSpec(state,teacher,exam.id,{stamp:456}),true);
+  assert.deepEqual(byId(state.exams,exam.id).sections.find(item=>item.name==='Nghe 2').questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false'});
 });
 
 test('Production image phục vụ specs JSON cùng app',()=>{

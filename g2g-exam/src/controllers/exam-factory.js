@@ -1,14 +1,16 @@
-import {byId,createExam,createQuestion,updateExam,addQuestionsToSection} from '../core.js';
+import {byId,clone,createExam,createQuestion,updateExam,addQuestionsToSection} from '../core.js';
 import {getExamSpec,buildSectionsFromSpec,buildSkillSettings} from '../exam-specs/index.js';
 
 function populateConfiguredSections(state,user,exam){
   for(const section of exam.sections||[]){
     const required=Math.max(0,Number(section.questionLimit)||0);
+    const profile=section.questionProfile||{};
+    const choices=Array.isArray(profile.choices)&&profile.choices.length>=2?clone(profile.choices):['Nháp','Nháp','Nháp'];
     const additions=[];
     for(let index=(section.questionIds||[]).length;index<required;index++){
       additions.push(createQuestion(state,user,{
-        level:exam.level,skill:section.skill,part:section.name,type:'single',title:'Nháp',
-        choices:['Nháp','Nháp','Nháp'],correctAnswer:0,
+        level:exam.level,skill:section.skill,part:section.name,type:profile.type||'single',title:'Nháp',
+        choices,correctAnswer:0,
         maxScore:Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1),
       }).id);
     }
@@ -34,8 +36,22 @@ export function ensureExamMatchesConfiguredSpec(state,user,examId,{stamp=Date.no
   if(!exam)return false;
   const spec=getExamSpec(exam.provider,exam.level);
   if(!spec?.configured)return false;
-  const expected=spec.skills.flatMap(skill=>skill.parts.map(part=>part.name));
-  if(expected.every(name=>(exam.sections||[]).some(section=>section.name===name)))return false;
+  const expectedSections=buildSectionsFromSpec(spec,{idFactory:index=>`spec-${stamp}-${index+1}`});
+  const expected=expectedSections.map(section=>section.name);
+  const hasAllParts=expected.every(name=>(exam.sections||[]).some(section=>section.name===name));
+  const hasStaleProfile=hasAllParts&&expectedSections.some(expectedSection=>{
+    if(!expectedSection.questionProfile)return false;
+    const existing=(exam.sections||[]).find(section=>section.name===expectedSection.name);
+    return JSON.stringify(existing?.questionProfile||null)!==JSON.stringify(expectedSection.questionProfile);
+  });
+  if(hasAllParts&&!hasStaleProfile)return false;
+  if(hasAllParts){
+    const profiles=new Map(expectedSections.filter(section=>section.questionProfile).map(section=>[section.name,section.questionProfile]));
+    const sections=exam.sections.map(section=>profiles.has(section.name)?{...section,questionProfile:profiles.get(section.name)}:section);
+    updateExam(state,user,exam.id,{settings:{skillSettings:{...(exam.settings?.skillSettings||{}),...buildSkillSettings(spec)}},sections});
+    populateConfiguredSections(state,user,byId(state.exams,exam.id));
+    return true;
+  }
   const legacyFirst=exam.sections?.[0];
   const sections=buildSectionsFromSpec(spec,{idFactory:index=>index===0&&legacyFirst?.id?legacyFirst.id:`sec-${stamp}-${index+1}`});
   if(sections[0]&&legacyFirst){

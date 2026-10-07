@@ -10,6 +10,7 @@ function normalizeSection(input={},index=0){
     skill:String(input.skill||''),
     skillKey:String(input.skillKey||''),
     templateType:String(input.templateType||'GENERIC'),
+    questionProfile:clone(input.questionProfile||null),
     instruction:String(input.instruction||''),
     questionLimit:Math.max(0,Number(input.questionLimit||0)),
     timeMinutes:Math.max(1,Number(input.timeMinutes||30)),

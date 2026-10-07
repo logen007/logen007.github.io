@@ -415,7 +415,8 @@ function bindViewSpecific(){
             const scoreField=card.querySelector('[data-field="maxScore"]');
             const correct=card.querySelector('[data-field="correct"]:checked');
             const previousChoices=byId(st.questions,id)?.choices||[];
-            const choices=[0,1,2].map(index=>{
+            const choices=[...card.querySelectorAll('[data-choice]')].map(input=>{
+              const index=Number(input.dataset.choice);
               const existing=previousChoices[index];
               return {text:card.querySelector(`[data-choice="${index}"]`)?.value.trim()||'Nháp',imageUrl:(choiceImageUrls.get(`${id}:${index}`)??(typeof existing==='object'?existing.imageUrl:''))||''};
             });
@@ -524,7 +525,9 @@ function bindBuilder(){
     const section=exam.sections.find(item=>item.id===ui.builderSectionId);
     if(!section)return;
     const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
-    const question=createQuestion(st,user,{level:exam.level,skill:section.skill||section.name,part:section.name,type:'single',title:'Nháp',choices:['Nháp','Nháp','Nháp'],correctAnswer:0,maxScore:defaultScore});
+    const profile=section.questionProfile||{};
+    const choices=Array.isArray(profile.choices)&&profile.choices.length>=2?[...profile.choices]:['Nháp','Nháp','Nháp'];
+    const question=createQuestion(st,user,{level:exam.level,skill:section.skill||section.name,part:section.name,type:profile.type||'single',title:'Nháp',choices,correctAnswer:0,maxScore:defaultScore});
     addQuestionsToSection(st,user,exam.id,section.id,[question.id]);
     if(b.dataset.after){
       const ids=[...section.questionIds];

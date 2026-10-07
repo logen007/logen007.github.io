@@ -10,23 +10,35 @@ const icons={
   imageUpload:'<img src="src/assets/figma-icon-image-upload.svg" alt="">'
 };
 const blank=value=>value==='Nháp'?'':value;
+const choiceProfileFor=section=>{
+  const profile=section?.questionProfile;
+  if(profile?.layout==='true-false'&&Array.isArray(profile.choices)&&profile.choices.length===2)return {
+    choices:profile.choices,
+    cssClass:'goethe-choices--true-false',
+    compactQuestion:true,
+    showLabels:false,
+    showImages:false,
+  };
+  return {choices:['A','B','C'],cssClass:'',compactQuestion:false,showLabels:true,showImages:true};
+};
 const audioName=q=>{
   if(q.audioName)return q.audioName;
   if(String(q.audioUrl||'').startsWith('data:'))return 'Audio đã tải lên';
   return decodeURIComponent(String(q.audioUrl||'').split('/').pop().split('?')[0]||'Audio đã tải lên');
 };
 
-function questionHtml(q,index,{defaultScore,readOnly}){
-  const choices=[...(q.choices||[]),'','',''].slice(0,3);
+function questionHtml(q,index,{defaultScore,readOnly,choiceProfile}){
+  const choices=[...(q.choices||[]),...Array(choiceProfile.choices.length).fill('')].slice(0,choiceProfile.choices.length);
   const audio=`<div class="audio-upload ${q.audioUrl?'has-audio':''}"><label class="audio-file-select" title="${q.audioUrl?'Thay audio':'Tải audio'}"><span>${q.audioUrl?esc(audioName(q)):'Upload audio'}</span><input type="file" data-field="audio" accept="audio/*" ${readOnly?'disabled':''}></label>${q.audioUrl?`<button type="button" class="audio-preview" data-action="preview-inline-audio" title="Nghe thử audio" aria-label="Nghe thử audio">${icons.play}</button><audio class="inline-audio-preview" preload="metadata" src="${esc(q.audioUrl)}"></audio>`:icons.upload}</div>`;
-  return `<article class="goethe-question part-question" data-question-id="${q.id}"><div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi ${index+1}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-score"><label><input data-field="maxScore" type="number" min="0" value="${Number(q.maxScore??defaultScore)}" ${readOnly?'disabled':''}><span>điểm</span></label><div class="goethe-question-actions"><button type="button" class="icon-btn" data-action="remove-inline-question" data-id="${q.id}" title="Xóa câu" aria-label="Xóa câu" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-inline-question" data-after="${q.id}" title="Thêm câu" aria-label="Thêm câu" ${readOnly?'disabled':''}>${icons.add}</button></div>${audio}</div></div><div class="goethe-answer-row"><div class="goethe-choices">${['A','B','C'].map((letter,choiceIndex)=>{const choice=choices[choiceIndex],imageUrl=typeof choice==='object'?choice.imageUrl:'',hasImage=Boolean(imageUrl);return `<label><input data-field="correct" type="radio" name="answer-${q.id}" value="${choiceIndex}" ${Number(q.correctAnswer)===choiceIndex?'checked':''} ${readOnly?'disabled':''}><b>${letter}</b><span class="choice-image-upload ${hasImage?'has-image':''}" title="${hasImage?'Bấm để thay hình ảnh đáp án':'Tải hình ảnh đáp án'}">${hasImage?`<img class="choice-uploaded-image" src="${esc(imageUrl)}" alt="Ảnh đáp án ${letter}">`:icons.imageUpload}${hasImage?`<span class="choice-image-tooltip"><img src="${esc(imageUrl)}" alt="Ảnh đáp án ${letter}"></span>`:''}<input type="file" data-choice-image="${choiceIndex}" accept="image/*" ${readOnly?'disabled':''}></span><input data-choice="${choiceIndex}" placeholder="Nhập đáp án" value="${esc(blank(typeof choice==='object'?choice.text:choice))}" ${readOnly?'disabled':''}></label>`;}).join('')}</div></div></article>`;
+  return `<article class="goethe-question part-question ${choiceProfile.compactQuestion?'goethe-question--compact':''}" data-question-id="${q.id}"><div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi ${index+1}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-score"><label><input data-field="maxScore" type="number" min="0" value="${Number(q.maxScore??defaultScore)}" ${readOnly?'disabled':''}><span>điểm</span></label><div class="goethe-question-actions"><button type="button" class="icon-btn" data-action="remove-inline-question" data-id="${q.id}" title="Xóa câu" aria-label="Xóa câu" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-inline-question" data-after="${q.id}" title="Thêm câu" aria-label="Thêm câu" ${readOnly?'disabled':''}>${icons.add}</button></div>${audio}</div></div><div class="goethe-answer-row"><div class="goethe-choices ${choiceProfile.cssClass}">${choiceProfile.choices.map((label,choiceIndex)=>{const choice=choices[choiceIndex],imageUrl=typeof choice==='object'?choice.imageUrl:'',hasImage=Boolean(imageUrl),text=blank(typeof choice==='object'?choice.text:choice)||label;return `<label><input data-field="correct" type="radio" name="answer-${q.id}" value="${choiceIndex}" ${Number(q.correctAnswer)===choiceIndex?'checked':''} ${readOnly?'disabled':''}>${choiceProfile.showLabels?`<b>${esc(label)}</b>`:''}${choiceProfile.showImages?`<span class="choice-image-upload ${hasImage?'has-image':''}" title="${hasImage?'Bấm để thay hình ảnh đáp án':'Tải hình ảnh đáp án'}">${hasImage?`<img class="choice-uploaded-image" src="${esc(imageUrl)}" alt="Ảnh đáp án ${esc(label)}">`:icons.imageUpload}${hasImage?`<span class="choice-image-tooltip"><img src="${esc(imageUrl)}" alt="Ảnh đáp án ${esc(label)}"></span>`:''}<input type="file" data-choice-image="${choiceIndex}" accept="image/*" ${readOnly?'disabled':''}></span>`:''}<input data-choice="${choiceIndex}" placeholder="Nhập đáp án" value="${esc(text)}" ${readOnly?'disabled':''}></label>`;}).join('')}</div></div></article>`;
 }
 
 export function renderBuilder({data,exam,section,readOnly=false}={}){
   if(!section)return '<div class="rong">Chọn một phần để cấu hình.</div>';
   const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
-  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}"><p class="phu-de">Tạo câu hỏi trực tiếp trong phần này.</p><div class="goethe-instruction"><textarea id="sectionInstruction" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea></div><div class="goethe-questions">${questions.map((q,index)=>questionHtml(q,index,{defaultScore,readOnly})).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
+  const choiceProfile=choiceProfileFor(section);
+  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}"><div class="goethe-instruction"><textarea id="sectionInstruction" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea></div><div class="goethe-questions">${questions.map((q,index)=>questionHtml(q,index,{defaultScore,readOnly,choiceProfile})).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
 }
 
 export function bindBuilder({root=document,data,exam,section,pendingAudioUploads=new Map(),notify=()=>{}}={}){

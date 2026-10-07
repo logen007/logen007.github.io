@@ -24,6 +24,11 @@ export async function loadApprovedExamSpec(relativePath){
         name:String(part.name||part.id),
         questionLimit:Math.max(0,Number(part.questionLimit||0)),
         templateType:String(part.template||'GENERIC'),
+        questionProfile:part.questionProfile&&typeof part.questionProfile==='object'?{
+          type:String(part.questionProfile.type||'single'),
+          choices:(part.questionProfile.choices||[]).map(choice=>String(choice)),
+          layout:String(part.questionProfile.layout||''),
+        }:null,
       };
     }));
     return {

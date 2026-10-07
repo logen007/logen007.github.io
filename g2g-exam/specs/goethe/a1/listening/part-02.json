@@ -4,5 +4,10 @@
   "key": "listening-2",
   "name": "Nghe 2",
   "questionLimit": 4,
+  "questionProfile": {
+    "type": "single",
+    "choices": ["Đúng", "Sai"],
+    "layout": "true-false"
+  },
   "template": "GENERIC"
 }
