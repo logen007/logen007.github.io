@@ -1,4 +1,4 @@
-import {byId,isMaster} from '../core.js';
+import {byId,getQuestionMaxScore,isMaster} from '../core.js';
 import {esc,fmtDate} from '../ui/format.js';
 import {getExamSpec,groupSectionsBySkill} from '../exam-specs/index.js';
 import {renderPartBuilder} from '../part-templates/index.js';
@@ -7,7 +7,8 @@ export function examBuilderHtml({data,user,exam,section,readOnly}){
   const spec=getExamSpec(exam.provider,exam.level);
   const configured=Boolean(spec?.configured);
   const groups=groupSectionsBySkill(exam,spec);
-  const sectionScore=item=>(item.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).reduce((sum,q)=>sum+(Number(q.maxScore)||0),0);
+  const defaultScoreForSection=item=>Number(exam.settings?.skillSettings?.[item.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
+  const sectionScore=item=>(item.questionIds||[]).reduce((sum,id)=>sum+getQuestionMaxScore(byId(data.questions,id),defaultScoreForSection(item)),0);
   const icons={gear:'<img src="src/assets/figma-icon-1.svg" alt="">'};
   const partLabel=(item,skill)=>String(item.name||'').startsWith(skill+' ')?String(item.name).replace(skill+' ','Bài '):item.name;
   const editableStructure=!readOnly&&!configured;

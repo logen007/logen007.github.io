@@ -1,4 +1,4 @@
-import {byId} from '../../core.js';
+import {byId,getQuestionMaxScore} from '../../core.js';
 import {esc} from '../../ui/format.js';
 import {uploadQuestionAudio} from '../../media.js';
 
@@ -90,10 +90,14 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
   const updateSkillTotals=()=>{
     const draftScores=new Map([...root.querySelectorAll('.part-question[data-question-id]')].map(card=>[card.dataset.questionId,Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0)]));
     root.querySelectorAll('[data-skill-total]').forEach(total=>{
-      const sum=(exam.sections||[]).filter(item=>item.skill===total.dataset.skill).flatMap(item=>item.questionIds||[]).reduce((score,id)=>score+((draftScores.get(id)??Number(byId(data.questions,id)?.maxScore))||0),0);
+      const sum=(exam.sections||[]).filter(item=>item.skill===total.dataset.skill).reduce((skillScore,item)=>{
+        const fallback=Number(exam.settings?.skillSettings?.[item.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
+        return skillScore+(item.questionIds||[]).reduce((partScore,id)=>partScore+(draftScores.has(id)?draftScores.get(id):getQuestionMaxScore(byId(data.questions,id),fallback)),0);
+      },0);
       total.textContent=`${Number.isInteger(sum)?sum:Number(sum.toFixed(2))} điểm`;
     });
   };
   root.querySelectorAll('[data-field="maxScore"]').forEach(input=>input.oninput=updateSkillTotals);
+  updateSkillTotals();
   root.querySelectorAll('[data-action="preview-inline-audio"]').forEach(bindInlineAudioPreview);
 }

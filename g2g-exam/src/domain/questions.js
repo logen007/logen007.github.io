@@ -7,6 +7,11 @@ function choiceText(choice){
   return String(choice||'').trim();
 }
 
+export function getQuestionMaxScore(question,defaultScore=0){
+  const score=Number(question?.maxScore);
+  return Number.isFinite(score)&&score>=0?score:Math.max(0,Number(defaultScore)||0);
+}
+
 function validateQuestionInput(input,existing=null){
   const type=input.type??existing?.type??'single';
   const title=String(input.title??existing?.title??'').trim();

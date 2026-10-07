@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { seedState } from '../src/seed.js';
 import {
-  clone, byId, canEditQuestion, canEditExam, canGradeExam, canSeeTrash, canPublishExamResult,
+  clone, byId, canEditQuestion, canEditExam, canGradeExam, canSeeTrash, canPublishExamResult, getQuestionMaxScore,
   createQuestion, updateQuestion, softDeleteQuestion, restoreQuestion, permanentlyDeleteQuestion,
   createExam, addSection, removeSection, moveSection, addQuestionsToSection, removeQuestionFromSection,
   requestGrading, resolveGradingRequest, startAttempt, saveAnswer, setAttemptSection, getSectionRemainingSeconds,
@@ -13,6 +13,12 @@ let passed=0;
 const test=(name,fn)=>{try{fn();console.log(`✓ ${name}`);passed++;}catch(e){console.error(`✗ ${name}`);throw e;}};
 const fresh=()=>clone(seedState);
 const users=s=>({student:byId(s.users,'student-a'),lan:byId(s.users,'teacher-lan'),mai:byId(s.users,'teacher-mai'),master:byId(s.users,'master-1')});
+
+test('Điểm câu hỏi dùng giá trị mặc định khi dữ liệu cũ chưa có maxScore',()=>{
+  assert.equal(getQuestionMaxScore({maxScore:2},1),2);
+  assert.equal(getQuestionMaxScore({maxScore:0},1),0);
+  assert.equal(getQuestionMaxScore({},1),1);
+});
 
 test('Chủ câu hỏi và master được sửa; giáo viên khác không được sửa',()=>{
   const s=fresh(),u=users(s),q=byId(s.questions,'q-read-1');
