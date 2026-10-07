@@ -416,7 +416,7 @@ function bindViewSpecific(){
     if(!exam||!title)return;
     b.disabled=true;
     try{
-      const audioUrls=new Map();
+      const audioUrls=new Map(),audioNames=new Map();
       if(section&&exam.provider==='GOETHE'&&exam.level==='A1'){
         for(const card of app.querySelectorAll('.goethe-question[data-question-id]')){
           const file=card.querySelector('[data-field="audio"]')?.files?.[0];
@@ -424,6 +424,7 @@ function bindViewSpecific(){
           const label=card.querySelector('.audio-upload span');
           if(label)label.textContent='Đang tải audio...';
           audioUrls.set(card.dataset.questionId,await uploadQuestionAudio(file));
+          audioNames.set(card.dataset.questionId,file.name);
         }
       }
       await act(()=>repo.transaction(st=>{
@@ -436,7 +437,7 @@ function bindViewSpecific(){
             const scoreField=card.querySelector('[data-field="maxScore"]');
             const correct=card.querySelector('[data-field="correct"]:checked');
             const choices=[0,1,2].map(index=>card.querySelector(`[data-choice="${index}"]`)?.value.trim()||'Nháp');
-            updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??byId(st.questions,id)?.audioUrl)||''});
+            updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??byId(st.questions,id)?.audioUrl)||'',audioName:(audioNames.get(id)??byId(st.questions,id)?.audioName)||''});
           });
         }
       }),'Đã lưu bài thi.');
@@ -591,6 +592,16 @@ function bindBuilder(){
     const file=input.files?.[0];
     const label=input.closest('.audio-upload')?.querySelector('span');
     if(file&&label)label.textContent=file.name;
+  });
+  app.querySelectorAll('[data-action="preview-inline-audio"]').forEach(button=>button.onclick=async()=>{
+    const audio=button.closest('.audio-upload')?.querySelector('.inline-audio-preview');
+    if(!audio)return;
+    document.querySelectorAll('.inline-audio-preview').forEach(item=>{if(item!==audio)item.pause();});
+    try{
+      if(!audio.paused){audio.pause();return;}
+      if(audio.ended)audio.currentTime=0;
+      await audio.play();
+    }catch{notify('Không thể phát audio này. Hãy thử chọn lại tệp.');}
   });
   app.querySelectorAll('[data-action="open-bank-picker"]').forEach(b=>b.onclick=bankPicker);
   const title=document.getElementById('examTitle');
