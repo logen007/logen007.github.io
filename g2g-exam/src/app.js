@@ -610,14 +610,26 @@ function bindBuilder(){
     if(!file||!control)return;
     control.classList.add('has-image');
     control.title='Bấm để thay hình ảnh đáp án';
+    const objectUrl=URL.createObjectURL(file),thumbnail=control.querySelector(':scope > img');
+    if(thumbnail){thumbnail.src=objectUrl;thumbnail.className='choice-uploaded-image';thumbnail.alt='Ảnh đáp án đã chọn';}
     control.querySelector('.choice-image-tooltip')?.remove();
     const tooltip=document.createElement('span'),preview=new Image();
     tooltip.className='choice-image-tooltip';
     preview.alt='Ảnh đáp án đã chọn';
-    preview.src=URL.createObjectURL(file);
-    preview.onload=()=>URL.revokeObjectURL(preview.src);
+    preview.src=objectUrl;
     tooltip.append(preview);control.append(tooltip);
   });
+  const updateSkillTotals=()=>{
+    const draftScores=new Map([...app.querySelectorAll('.goethe-question[data-question-id]')].map(card=>[
+      card.dataset.questionId,Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0)
+    ]));
+    app.querySelectorAll('[data-skill-total]').forEach(total=>{
+      const sum=(exam.sections||[]).filter(section=>section.skill===total.dataset.skill).flatMap(section=>section.questionIds||[])
+        .reduce((score,id)=>score+((draftScores.get(id)??Number(byId(data.questions,id)?.maxScore))||0),0);
+      total.textContent=`${Number.isInteger(sum)?sum:Number(sum.toFixed(2))} điểm`;
+    });
+  };
+  app.querySelectorAll('[data-field="maxScore"]').forEach(input=>input.oninput=updateSkillTotals);
   app.querySelectorAll('[data-action="preview-inline-audio"]').forEach(button=>button.onclick=async()=>{
     const audio=button.closest('.audio-upload')?.querySelector('.inline-audio-preview');
     if(!audio)return;
