@@ -24,7 +24,7 @@ export async function loadState(user){
   const allowed=await allowedExamIds(user);
   const ars=await rows(`SELECT id,exam_id,public_data,private_data FROM attempts ORDER BY created_at DESC`);
   state.attempts=ars.filter(r=>!allowed||allowed.has(r.exam_id)).map(r=>attemptEntity(r,true));
-  const gr=await rows(`SELECT id,exam_id,owner_id,requester_id,status,data FROM grading_requests ORDER BY updated_at DESC`);
+  const gr=await rows(`SELECT id,exam_id,owner_id,requester_id,status,data FROM grading_requests ORDER BY created_at DESC`);
   state.gradingRequests=gr.filter(r=>user.role==='master'||r.owner_id===user.id||r.requester_id===user.id).map(r=>({id:r.id,examId:r.exam_id,ownerId:r.owner_id,requesterId:r.requester_id,status:r.status,...r.data}));
   if(user.role==='master')state.auditLog=(await rows(`SELECT id,at,user_id,user_name,action,entity_type,entity_id,detail FROM audit_log ORDER BY at DESC LIMIT 1000`)).map(r=>({id:String(r.id),at:r.at,userId:r.user_id,userName:r.user_name,action:r.action,entityType:r.entity_type,entityId:r.entity_id,detail:r.detail}));
   return state;
