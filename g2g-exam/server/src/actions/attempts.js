@@ -1,5 +1,6 @@
 import {query,withTx,getSettings,audit,uid,now,appError} from '../db.js';
 import {examById,questionMap,scoreQuestion,resultFor,sectionMeta} from './shared.js';
+import {getA1ListeningPart1Spec} from '../specs.js';
 
 export async function startAttempt(user,{examId,restart=false}){
   if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
@@ -65,9 +66,10 @@ async function audioGroupContext(client,attempt,groupId){
   const groupResult=await client.query(`SELECT id,status,data FROM question_groups WHERE id=$1`,[groupId]);
   if(!groupResult.rowCount||groupResult.rows[0].status!=='active')throw appError(404,'Không tìm thấy cụm audio.');
   const group={id:groupResult.rows[0].id,...(groupResult.rows[0].data||{})};
-  if(group.structureType!=='A1_LISTENING_PART_1')throw appError(409,'Cụm này không dùng chế độ audio một lần.');
-  const policy=group.audioPolicy||{};
-  if(Number(policy.maxSessions)!==1||Number(policy.segmentRepeat)!==2||policy.replayAllowed!==false||policy.pauseAllowed!==false)throw appError(409,'Chính sách audio của cụm không hợp lệ.');
+  const spec=await getA1ListeningPart1Spec();
+  if(group.structureType!==spec.template)throw appError(409,'Cụm này không dùng template audio hiện tại.');
+  const policy=spec.audio||{};
+  if(Number(policy.maxSessions)<1||Number(policy.segmentRepeat)<1)throw appError(500,'Specification audio không hợp lệ.');
   const allowed=new Set(attempt.public_data.currentQuestionIds||[]);
   const ids=(group.questionIds||[]).filter(id=>allowed.has(id));
   if(!ids.length)throw appError(409,'Cụm audio không thuộc phần thi hiện tại.');

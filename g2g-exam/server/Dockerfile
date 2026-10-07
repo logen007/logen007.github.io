@@ -10,6 +10,7 @@ COPY vi.html styles.css enhancements.css runtime-config.js /app/public/
 RUN cp /app/public/vi.html /app/public/index.html
 COPY src /app/public/src
 COPY specs /app/public/specs
+COPY specs /app/specs
 COPY server/runtime/runtime-config.js /app/public/runtime-config.js
 
 COPY server/schema.sql /app/server/schema.sql

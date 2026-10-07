@@ -36,3 +36,8 @@ export async function loadApprovedExamSpec(relativePath){
   }));
   return {provider:String(source.provider||'').toUpperCase(),level:String(source.level||'').toUpperCase(),configured:true,skills};
 }
+
+export async function loadApprovedPartSpec(relativePath){
+  const url=new URL(relativePath,import.meta.url);
+  return requireApproved(await readJson(url),`Part spec ${url.pathname}`);
+}

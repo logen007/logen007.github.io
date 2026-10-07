@@ -15,16 +15,17 @@ import {
   loginHtml,studentHomeHtml,studentResultsHtml,examHtml,submittedHtml
 } from './views/student.js';
 import {
-  adminShellHtml,examAdminHtml,bankAdminHtml,gradingAdminHtml,gradesAdminHtml,
+  adminShellHtml,examAdminHtml,gradingAdminHtml,gradesAdminHtml,
   teachersAdminHtml,trashAdminHtml
 } from './views/admin.js';
 import {examBuilderHtml,gradingDetailHtml} from './views/builder.js';
 import {
-  questionModalHtml,bankPickerHtml,previewExamModalHtml,previewQuestionModalHtml,
+  questionModalHtml,previewExamModalHtml,previewQuestionModalHtml,
   studentGradeModalHtml
 } from './views/modals.js';
 import {getProviderLevels} from './exam-specs/index.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from './controllers/exam-factory.js';
+import {hasPartTemplate,openPartTemplate} from './part-templates/index.js';
 
 const app=document.getElementById('app');
 const toast=document.getElementById('toast');
@@ -213,7 +214,6 @@ async function submitCurrentExam(confirmFirst=true){
 function adminView(){
   let content='';
   if(ui.adminTab==='exams')content=examAdminHtml({data,user});
-  else if(ui.adminTab==='bank')content=bankAdminHtml({data,user});
   else if(ui.adminTab==='grading')content=gradingAdminHtml({data,user});
   else if(ui.adminTab==='grades')content=gradesAdminHtml({data,ui});
   else if(ui.adminTab==='teachers')content=teachersAdminHtml({data,user});
@@ -321,36 +321,6 @@ function questionModal(q=null,onCreated=null){
   };
 }
 
-function bankPicker(){
-  const exam=byId(data.exams,ui.builderExamId),section=exam?.sections.find(s=>s.id===ui.builderSectionId);
-  if(!section)return;
-  app.insertAdjacentHTML('beforeend',bankPickerHtml({data,user,exam,section}));
-  bindModalClose();
-  const items=[...app.querySelectorAll('.bank-pick')],rows=[...app.querySelectorAll('.dong-chon')];
-  const all=document.getElementById('selectAllBank'),count=document.getElementById('pickCount'),search=document.getElementById('pickerSearch'),level=document.getElementById('pickerLevel'),skill=document.getElementById('pickerSkill');
-  const visibleRows=()=>rows.filter(r=>r.style.display!=='none');
-  const syncCount=()=>{
-    const n=items.filter(x=>x.checked).length,vis=visibleRows(),visInputs=vis.map(r=>r.querySelector('.bank-pick'));
-    count.textContent=`Đã chọn ${n} câu`;
-    all.checked=visInputs.length>0&&visInputs.every(x=>x.checked);
-    all.indeterminate=visInputs.some(x=>x.checked)&&!visInputs.every(x=>x.checked);
-  };
-  const filter=()=>{
-    const q=search.value.toLowerCase().trim();
-    rows.forEach(r=>{r.style.display=(!q||r.dataset.search.includes(q))&&(!level.value||r.dataset.level===level.value)&&(!skill.value||r.dataset.skill===skill.value)?'':'none';});
-    syncCount();
-  };
-  all.onchange=()=>{visibleRows().forEach(r=>r.querySelector('.bank-pick').checked=all.checked);syncCount();};
-  items.forEach(x=>x.onchange=syncCount);
-  search.oninput=filter;level.onchange=filter;skill.onchange=filter;
-  filter();
-  document.getElementById('addPicked').onclick=async()=>{
-    const ids=items.filter(x=>x.checked).map(x=>x.value);
-    const result=await act(()=>repo.transaction(st=>updateSection(st,user,exam.id,section.id,{questionIds:ids})),'Đã cập nhật câu hỏi trong phần.',{rerender:false});
-    if(result!==null){closeModal();data=await repo.getState();render();}
-  };
-}
-
 function previewExamModal(ex){app.insertAdjacentHTML('beforeend',previewExamModalHtml(ex));bindModalClose();}
 function previewQuestionModal(q){app.insertAdjacentHTML('beforeend',previewQuestionModalHtml(q));bindModalClose();}
 function studentGradeModal(studentId){app.insertAdjacentHTML('beforeend',studentGradeModalHtml({data,studentId}));bindModalClose();}
@@ -386,18 +356,14 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="submit-exam"]').forEach(b=>b.onclick=()=>submitCurrentExam(true));
   app.querySelectorAll('[data-action="admin-tab"]').forEach(b=>b.onclick=()=>{ui.adminTab=b.dataset.tab;ui.view='admin';render();});
   app.querySelectorAll('[data-action="new-question"]').forEach(b=>b.onclick=()=>questionModal(null,ui.view==='builder'?async q=>{const ex=byId(data.exams,ui.builderExamId),sec=ex?.sections.find(s=>s.id===ui.builderSectionId);if(ex&&sec)await act(()=>repo.transaction(st=>addQuestionsToSection(st,user,ex.id,sec.id,[q.id])),'Đã thêm câu vào phần.');}:null));
-  app.querySelectorAll('[data-action="edit-a1-group"]').forEach(b=>b.onclick=async()=>{
+  app.querySelectorAll('[data-action="edit-part-template"]').forEach(b=>b.onclick=async()=>{
     const exam=byId(data.exams,ui.builderExamId),section=exam?.sections.find(s=>s.id===ui.builderSectionId);
     if(!exam||!section)return;
-    if((exam.provider&&exam.provider!=='GOETHE')||exam.level!=='A1'){
-      notify('Template cụm này hiện chỉ áp dụng cho Goethe A1 · Nghe · Phần 1.');
-      return;
-    }
+    if(!hasPartTemplate(section.templateType)){notify('Part này chưa có template riêng.');return;}
     const existingId=section.questionIds.map(id=>byId(data.questions,id)?.groupId).find(Boolean)||null;
-    const {openA1ListeningPart1Editor}=await import('./question-groups/bootstrap.js');
     const commit=ops=>repo.transaction(st=>{for(const op of ops){st[op.collection]||=[];const i=st[op.collection].findIndex(x=>x.id===op.id);if(i>=0)st[op.collection][i]=op.item;else st[op.collection].push(op.item);}});
-    await openA1ListeningPart1Editor({groupId:existingId,state:data,user,commit,onSaved:async group=>{
-      await act(()=>repo.transaction(st=>updateSection(st,user,exam.id,section.id,{questionIds:group.questionIds||[]})),'Đã lưu cụm A1 Nghe Phần 1.');
+    await openPartTemplate(section.templateType,{groupId:existingId,state:data,user,commit,onSaved:async group=>{
+      await act(()=>repo.transaction(st=>updateSection(st,user,exam.id,section.id,{questionIds:group.questionIds||[]})),'Đã lưu cấu hình Part.');
     }});
   });
   app.querySelectorAll('[data-action="edit-question"]').forEach(b=>b.onclick=()=>questionModal(byId(data.questions,b.dataset.id)));
@@ -537,11 +503,9 @@ async function openBuilder(id){
 function bindBuilder(){
   const exam=byId(data.exams,ui.builderExamId);
   if(!exam)return;
-  app.querySelectorAll('[data-action="edit-a1-group"]').forEach(button=>{
-    if((exam.provider&&exam.provider!=='GOETHE')||exam.level!=='A1'){
-      button.disabled=true;
-      button.textContent='Template phần này sẽ cấu hình riêng';
-    }
+  app.querySelectorAll('[data-action="edit-part-template"]').forEach(button=>{
+    const section=exam.sections.find(item=>item.id===ui.builderSectionId);
+    if(!hasPartTemplate(section?.templateType)){button.disabled=true;button.textContent='Template phần này chưa cấu hình';}
   });
   app.querySelectorAll('[data-action="back-admin"]').forEach(b=>b.onclick=()=>{ui.view='admin';ui.adminTab='exams';render();});
   app.querySelectorAll('[data-action="select-section"]').forEach(b=>b.onclick=e=>{if(e.target.closest('.phan-tool'))return;ui.builderSectionId=b.dataset.id;render();});

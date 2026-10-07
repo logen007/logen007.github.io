@@ -1,8 +1,8 @@
 import {
-  ATTEMPT_STATUS,byId,isMaster,isTeacher,canEditQuestion,canEditExam,getVisibleQuestions,
+  ATTEMPT_STATUS,byId,isMaster,isTeacher,canEditExam,
   pendingGradingAttempts,gradebookRows,summarizeExam
 } from '../core.js';
-import {esc,fmtDate,statusClass,statusText,typeLabel} from '../ui/format.js';
+import {esc,fmtDate,statusClass,statusText} from '../ui/format.js';
 
 export function adminShellHtml({content,user,ui}){
   const tabs=[['exams','Bài thi'],['grading','Chấm bài'],['grades','Bảng điểm'],...(isMaster(user)?[['teachers','Giáo viên'],['trash','Thùng rác']]:[])];
@@ -12,15 +12,6 @@ export function adminShellHtml({content,user,ui}){
 export function examAdminHtml({data,user}){
   const exams=data.exams.filter(x=>x.status!=='trash');
   return `<div class="tieu-de-trang"><div><h1>Bài thi</h1><p>Giáo viên xem được bài của nhau; chỉ chủ bài hoặc Quản trị cấp cao được thay đổi.</p></div><button class="nut chinh" data-action="new-exam">+ Tạo bài thi</button></div><div class="table-wrap"><table class="bang"><thead><tr><th>Bài thi</th><th>Người tạo</th><th>Cấu trúc</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${exams.map(ex=>{const s=summarizeExam(ex,data),own=canEditExam(user,ex),req=data.gradingRequests.find(r=>r.examId===ex.id&&r.requesterId===user.id&&r.status==='pending');return `<tr><td><b>${esc(ex.title)}</b><span class="phu">${esc(ex.level)} · phiên bản ${ex.version||1}${ex.locked?' · đã khóa cấu trúc':''}</span></td><td>${esc(ex.ownerName)}</td><td>${s.sections} phần · ${s.questions} câu</td><td><span class="nhan ${ex.status==='published'?'xanh':'xam'}">${ex.status==='published'?'Đã xuất bản':'Bản nháp'}</span></td><td><div class="hanh-dong-bang">${own?`<button class="nut nho" data-action="edit-exam" data-id="${ex.id}">${ex.locked&&!isMaster(user)?'Xem cấu trúc':'Chỉnh sửa'}</button>${ex.status!=='published'?`<button class="nut nho chinh" data-action="publish-exam" data-id="${ex.id}">Xuất bản</button>`:''}<button class="nut nho nguy" data-action="delete-exam" data-id="${ex.id}">Xóa</button>`:`<button class="nut nho" data-action="view-exam" data-id="${ex.id}">Xem</button>${isTeacher(user)&&!isMaster(user)?`<button class="nut nho" data-action="request-grade" data-id="${ex.id}" ${req?'disabled':''}>${req?'Đã xin chấm':'Xin chấm'}</button>`:''}`}</div></td></tr>`;}).join('')}</tbody></table></div>`;
-}
-
-export function bankAdminHtml({data,user}){
-  const qs=getVisibleQuestions(data,user),skills=[...new Set(qs.map(q=>q.skill))].sort();
-  return `<div class="tieu-de-trang"><div><h1>Ngân hàng câu hỏi</h1><p>Mọi giáo viên có thể xem và dùng lại. Chỉ chủ câu chưa khóa hoặc Quản trị cấp cao được sửa/xóa.</p></div><button class="nut chinh" data-action="new-question">+ Tạo câu hỏi</button></div><div class="hang-thong-ke"><div class="thong-ke"><span>Tổng câu</span><b>${qs.length}</b></div><div class="thong-ke"><span>Câu của tôi</span><b>${qs.filter(q=>q.ownerId===user.id).length}</b></div><div class="thong-ke"><span>Đã khóa</span><b>${qs.filter(q=>q.locked).length}</b></div><div class="thong-ke"><span>B1 / B2</span><b>${qs.filter(q=>q.level==='B1').length} / ${qs.filter(q=>q.level==='B2').length}</b></div></div><div class="bo-loc"><input class="truong tim" id="bankSearch" placeholder="Tìm mã hoặc tiêu đề..."><select class="truong" id="bankLevel"><option value="">Tất cả trình độ</option><option>B1</option><option>B2</option></select><select class="truong" id="bankSkill"><option value="">Tất cả kỹ năng</option>${skills.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div><div class="table-wrap"><table class="bang"><thead><tr><th>Mã</th><th>Câu hỏi</th><th>Phân loại</th><th>Người tạo</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="bankRows">${questionRowsHtml(qs,user)}</tbody></table></div>`;
-}
-
-export function questionRowsHtml(qs,user){
-  return qs.map(q=>`<tr data-search="${esc((q.code+' '+q.title).toLowerCase())}" data-level="${esc(q.level)}" data-skill="${esc(q.skill)}"><td><b>${esc(q.code)}</b></td><td><b>${esc(q.title)}</b><span class="phu">${typeLabel(q.type)}</span></td><td>${esc(q.level)} · ${esc(q.skill)}<span class="phu">${esc(q.part)}</span></td><td>${esc(q.ownerName)}</td><td><span class="nhan ${q.locked?'vang':'xam'}">${q.locked?'Đã khóa':'Có thể chỉnh sửa'}</span></td><td><div class="hanh-dong-bang">${canEditQuestion(user,q)?`<button class="nut nho" data-action="edit-question" data-id="${q.id}">Sửa</button><button class="nut nho nguy" data-action="delete-question" data-id="${q.id}">Xóa</button>`:`<button class="nut nho" data-action="preview-question" data-id="${q.id}">Xem</button>`}</div></td></tr>`).join('')||'<tr><td colspan="6" class="rong">Chưa có câu hỏi.</td></tr>';
 }
 
 export function gradingAdminHtml({data,user}){

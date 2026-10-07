@@ -4,5 +4,31 @@
   "key": "listening-1",
   "name": "Nghe 1",
   "questionLimit": 6,
-  "template": "A1_LISTENING_PART_1"
+  "template": "A1_LISTENING_PART_1",
+  "questions": {
+    "min": 1,
+    "max": 10
+  },
+  "answers": {
+    "type": "single",
+    "keys": [
+      "A",
+      "B",
+      "C"
+    ],
+    "imageOptional": true
+  },
+  "audio": {
+    "mode": "per_question_segment",
+    "maxSessions": 1,
+    "segmentRepeat": 2,
+    "controls": false,
+    "pauseAllowed": false,
+    "replayAllowed": false
+  },
+  "scoring": {
+    "default": 1,
+    "perQuestionEditable": true,
+    "autoGrade": true
+  }
 }
