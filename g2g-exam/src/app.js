@@ -407,7 +407,23 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>publishExam(st,user,b.dataset.id)),'Đã xuất bản bài thi.'));
   app.querySelectorAll('[data-action="save-exam"]').forEach(b=>b.onclick=()=>{
     const exam=byId(data.exams,ui.builderExamId),title=document.getElementById('examTitle')?.value.trim();
-    if(exam&&title)act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{title})),'Đã lưu bài thi.');
+    const section=exam?.sections.find(item=>item.id===ui.builderSectionId);
+    if(!exam||!title)return;
+    act(()=>repo.transaction(st=>{
+      updateExam(st,user,exam.id,{title});
+      if(section&&exam.provider==='GOETHE'&&exam.level==='A1'){
+        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||''});
+        app.querySelectorAll('.goethe-question[data-question-id]').forEach(card=>{
+          const id=card.dataset.questionId;
+          const titleField=card.querySelector('[data-field="title"]');
+          const scoreField=card.querySelector('[data-field="maxScore"]');
+          const correct=card.querySelector('[data-field="correct"]:checked');
+          const audio=card.querySelector('[data-field="audio"]');
+          const choices=[0,1,2].map(index=>card.querySelector(`[data-choice="${index}"]`)?.value.trim()||'Nháp');
+          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:audio?.files?.[0]?.name||byId(st.questions,id)?.audioUrl||''});
+        });
+      }
+    }),'Đã lưu bài thi.');
   });
   app.querySelectorAll('[data-action="open-exam-settings"]').forEach(b=>b.onclick=()=>{
     const exam=byId(data.exams,ui.builderExamId);if(!exam)return;
@@ -449,18 +465,23 @@ async function createNewExam(){
   const setup=await new Promise(resolve=>{
     const modal=document.createElement('div');
     modal.className='hop-chon';
-    modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><div><div class="nhan-muc">TẠO BÀI THI</div><h2>Thông tin đề thi</h2></div><button class="nut nho" data-close>×</button></div><div class="exam-setup-grid"><label>Trình độ<select id="newExamLevel"><option>A1</option><option>A2</option><option>B1</option><option>B2</option></select></label><label>Loại đề<select id="newExamProvider"><option>TELC</option><option>Goethe</option></select></label><label class="exam-setup-name">Tên đề thi<input id="newExamTitle" placeholder="Ví dụ: TELC A1 – Đề thi thử 01"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="confirmNewExam">Tạo đề</button></div></div></div>`;
+    modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><div><div class="nhan-muc">TẠO BÀI THI</div><h2>Thông tin đề thi</h2></div><button class="nut nho" data-close>×</button></div><div class="exam-setup-grid"><div class="choice-field"><b>Trình độ</b><div class="choice-buttons" id="newExamLevels"><button type="button" data-level="A1">A1</button><button type="button" data-level="A2">A2</button><button type="button" data-level="B1">B1</button><button type="button" data-level="B2">B2</button></div></div><div class="choice-field"><b>Loại đề</b><div class="choice-buttons" id="newExamProviders"><button type="button" data-provider="TELC">TELC</button><button type="button" data-provider="GOETHE">Goethe</button></div></div><label class="exam-setup-name">Tên đề thi<input id="newExamTitle" placeholder="Ví dụ: TELC B1 – Đề thi thử 01"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="confirmNewExam">Tạo đề</button></div></div></div>`;
     document.body.append(modal);
-    const level=modal.querySelector('#newExamLevel'),provider=modal.querySelector('#newExamProvider'),title=modal.querySelector('#newExamTitle');
+    const title=modal.querySelector('#newExamTitle');
+    let provider='TELC',level='B1';
     const syncLevels=()=>{
-      const values=provider.value==='TELC'?['B1','B2']:['A1','A2','B1','B2'];
-      level.innerHTML=values.map(value=>`<option>${value}</option>`).join('');
+      const available=provider==='TELC'?['B1','B2']:['A1','A2','B1','B2'];
+      if(!available.includes(level))level=available[0];
+      modal.querySelectorAll('[data-level]').forEach(button=>{button.classList.toggle('an',!available.includes(button.dataset.level));button.classList.toggle('active',button.dataset.level===level);});
+      modal.querySelectorAll('[data-provider]').forEach(button=>button.classList.toggle('active',button.dataset.provider===provider));
       suggest();
     };
-    const suggest=()=>{if(!title.value)title.placeholder=`Ví dụ: ${provider.value} ${level.value} – Đề thi thử 01`;};
-    level.onchange=suggest;provider.onchange=syncLevels;syncLevels();
+    const suggest=()=>{if(!title.value)title.placeholder=`Ví dụ: ${provider} ${level} – Đề thi thử 01`;};
+    modal.querySelectorAll('[data-level]').forEach(button=>button.onclick=()=>{level=button.dataset.level;syncLevels();});
+    modal.querySelectorAll('[data-provider]').forEach(button=>button.onclick=()=>{provider=button.dataset.provider;syncLevels();});
+    syncLevels();
     modal.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{modal.remove();resolve(null);});
-    modal.querySelector('#confirmNewExam').onclick=()=>{const value=title.value.trim()||`${provider.value} ${level.value} – Bản nháp`;modal.remove();resolve({level:level.value,provider:provider.value,title:value});};
+    modal.querySelector('#confirmNewExam').onclick=()=>{const value=title.value.trim()||`${provider} ${level} – Bản nháp`;modal.remove();resolve({level,provider,title:value});};
     title.focus();
   });
   if(!setup)return;
@@ -472,11 +493,21 @@ async function createNewExam(){
     ['Đọc 1','Đọc',5,25],['Đọc 2','Đọc',5,25],['Đọc 3','Đọc',5,25],
     ['Viết 1','Viết',1,20],['Viết 2','Viết',1,20]
   ];
-  const exam=await act(()=>repo.transaction(st=>createExam(st,user,{
-    title,level,provider:provider.toUpperCase(),sections:[
-      ...(isGoetheA1?goetheA1Sections.map(([name,skill,questionLimit,timeMinutes],index)=>({id:`sec-${stamp}-${index+1}`,name,skill,questionLimit,timeMinutes,maxScore:0,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]})):[{id:`sec-${stamp}-1`,name:'Phần 1',timeMinutes:30,maxScore:0,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]}])
-    ]
-  })),null,{rerender:false});
+  const sections=isGoetheA1?goetheA1Sections.map(([name,skill,questionLimit,timeMinutes],index)=>({id:`sec-${stamp}-${index+1}`,name,skill,questionLimit,timeMinutes,maxScore:0,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]})):[{id:`sec-${stamp}-1`,name:'Phần 1',timeMinutes:30,maxScore:0,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]}];
+  const exam=await act(()=>repo.transaction(st=>{
+    const created=createExam(st,user,{title,level,provider:provider.toUpperCase(),sections});
+    if(isGoetheA1){
+      for(const section of created.sections){
+        const ids=[];
+        for(let index=0;index<Number(section.questionLimit)||0;index++){
+          const question=createQuestion(st,user,{level,skill:section.skill,part:section.name,type:'single',title:'Nháp',choices:['Nháp','Nháp','Nháp'],correctAnswer:0,maxScore:1});
+          ids.push(question.id);
+        }
+        addQuestionsToSection(st,user,created.id,section.id,ids);
+      }
+    }
+    return created;
+  }),null,{rerender:false});
   if(exam){data=await repo.getState();openBuilder(exam.id);}
 }
 
@@ -504,6 +535,20 @@ function bindBuilder(){
   app.querySelectorAll('[data-action="remove-section"]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(confirm('Bỏ phần này khỏi bài thi?'))act(()=>repo.transaction(st=>removeSection(st,user,exam.id,b.dataset.id)),'Đã bỏ phần.');});
   app.querySelectorAll('[data-action="move-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>moveQuestion(st,user,exam.id,ui.builderSectionId,b.dataset.id,b.dataset.dir))));
   app.querySelectorAll('[data-action="remove-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã bỏ câu khỏi phần.'));
+  app.querySelectorAll('[data-action="add-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>{
+    const section=exam.sections.find(item=>item.id===ui.builderSectionId);
+    if(!section)return;
+    const question=createQuestion(st,user,{level:exam.level,skill:section.skill||section.name,part:section.name,type:'single',title:'Nháp',choices:['Nháp','Nháp','Nháp'],correctAnswer:0,maxScore:Number(exam.settings?.defaultQuestionScore??1)});
+    addQuestionsToSection(st,user,exam.id,section.id,[question.id]);
+    if(b.dataset.after){
+      const ids=[...section.questionIds];
+      const from=ids.indexOf(question.id),after=ids.indexOf(b.dataset.after);
+      if(from>=0&&after>=0){ids.splice(from,1);ids.splice(after+1,0,question.id);updateSection(st,user,exam.id,section.id,{questionIds:ids});}
+    }
+  }),'Đã thêm câu hỏi.'));
+  app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=()=>{
+    if(confirm('Xóa câu hỏi này khỏi bài thi?'))act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.');
+  });
   app.querySelectorAll('[data-action="open-bank-picker"]').forEach(b=>b.onclick=bankPicker);
   const title=document.getElementById('examTitle');
   if(title)title.onchange=()=>act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{title:title.value})),'Đã đổi tên bài thi.');
