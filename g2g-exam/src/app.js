@@ -405,6 +405,10 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="view-exam"]').forEach(b=>b.onclick=()=>previewExamModal(byId(data.exams,b.dataset.id)));
   app.querySelectorAll('[data-action="delete-exam"]').forEach(b=>b.onclick=()=>{if(confirm('Đưa bài thi này vào Thùng rác?'))act(()=>repo.transaction(st=>softDeleteExam(st,user,b.dataset.id)),'Đã chuyển bài thi vào Thùng rác.');});
   app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>publishExam(st,user,b.dataset.id)),'Đã xuất bản bài thi.'));
+  app.querySelectorAll('[data-action="save-exam"]').forEach(b=>b.onclick=()=>{
+    const exam=byId(data.exams,ui.builderExamId),title=document.getElementById('examTitle')?.value.trim();
+    if(exam&&title)act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{title})),'Đã lưu bài thi.');
+  });
   app.querySelectorAll('[data-action="request-grade"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>requestGrading(st,user,b.dataset.id)),'Đã gửi yêu cầu xin chấm.'));
   app.querySelectorAll('[data-action="resolve-request"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>resolveGradingRequest(st,user,b.dataset.id,b.dataset.status)),b.dataset.status==='approved'?'Đã duyệt quyền chấm.':'Đã từ chối yêu cầu.'));
   app.querySelectorAll('[data-action="grade-attempt"]').forEach(b=>b.onclick=()=>{ui.gradeAttemptId=b.dataset.id;ui.view='grading-detail';render();});
@@ -451,9 +455,14 @@ async function createNewExam(){
   const {level,provider,title}=setup;
   const isGoetheA1=provider.toUpperCase()==='GOETHE'&&level==='A1';
   const stamp=Date.now();
+  const goetheA1Sections=[
+    ['Nghe 1','Nghe',6,20],['Nghe 2','Nghe',4,20],['Nghe 3','Nghe',5,20],
+    ['Đọc 1','Đọc',5,25],['Đọc 2','Đọc',5,25],['Đọc 3','Đọc',5,25],
+    ['Viết 1','Viết',1,20],['Viết 2','Viết',1,20]
+  ];
   const exam=await act(()=>repo.transaction(st=>createExam(st,user,{
     title,level,provider:provider.toUpperCase(),sections:[
-      {id:`sec-${stamp}-1`,name:isGoetheA1?'Nghe · Phần 1':'Phần 1',timeMinutes:isGoetheA1?20:30,maxScore:isGoetheA1?10:0,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]}
+      ...(isGoetheA1?goetheA1Sections.map(([name,skill,questionLimit,timeMinutes],index)=>({id:`sec-${stamp}-${index+1}`,name,skill,questionLimit,timeMinutes,maxScore:0,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]})):[{id:`sec-${stamp}-1`,name:'Phần 1',timeMinutes:30,maxScore:0,showTimer:true,autoSubmit:true,shuffle:false,questionIds:[]}])
     ]
   })),null,{rerender:false});
   if(exam){data=await repo.getState();openBuilder(exam.id);}
