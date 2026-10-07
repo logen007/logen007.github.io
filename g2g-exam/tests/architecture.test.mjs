@@ -82,6 +82,18 @@ test('Part template A1 Nghe 1 đã tách module và bỏ legacy question bank',(
   assert.ok(server.includes('getA1ListeningPart1Spec'));assert.equal(server.includes('segmentRepeat)!==2'),false);
 });
 
+test('Builder định tuyến editor theo templateType thay vì hard-code Goethe A1',()=>{
+  const builder=read('src/views/builder.js'),registry=read('src/part-templates/index.js'),app=read('src/app.js');
+  assert.ok(builder.includes('renderPartBuilder(section.templateType'));
+  assert.equal(builder.includes("provider==='GOETHE'"),false);
+  assert.equal(builder.includes('goetheA1BuilderHtml'),false);
+  assert.ok(registry.includes('renderPartBuilder'));assert.ok(registry.includes('bindPartBuilder'));
+  assert.ok(fs.existsSync(path.join(root,'src/part-templates/default/builder.js')));
+  assert.ok(fs.existsSync(path.join(root,'src/part-templates/a1-listening-part-1/builder.js')));
+  assert.ok(app.includes('bindPartBuilder(section?.templateType'));
+  assert.equal(app.includes("exam.provider==='GOETHE'&&exam.level==='A1'"),false);
+});
+
 test('Media garbage collector được khởi động từ server',()=>{
   const index=read('server/src/index.js'),gc=read('server/src/media-gc.js');
   assert.ok(index.includes('startMediaGarbageCollector'));
