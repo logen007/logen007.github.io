@@ -76,7 +76,7 @@ async function partAudioContext(client,attempt,sectionId){
   if(!ids.length)throw appError(409,'Part audio không có câu hỏi trong phần thi hiện tại.');
   const questionRows=await client.query(`SELECT id,data FROM questions WHERE id = ANY($1::text[])`,[ids]);
   const legacyGroupIds=[...new Set(questionRows.rows.map(row=>row.data?.groupId).filter(Boolean))];
-  return {section,ids,legacyGroupIds};
+  return {section,legacyGroupIds};
 }
 
 function hasStartedPartSession(sessions,sectionId,legacyGroupIds=[]){
@@ -125,10 +125,12 @@ export async function completePartAudio(user,{attemptId,sectionId}){
   });
 }
 
-async function legacySectionIdForGroup(attemptId,groupId){
+async function legacySectionIdForGroup(user,attemptId,groupId){
+  if(!attemptId||!groupId)throw appError(400,'Thiếu thông tin phiên audio cũ.');
   const attemptResult=await query(`SELECT * FROM attempts WHERE id=$1`,[attemptId]);
   if(!attemptResult.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
   const attempt=attemptResult.rows[0];
+  if(attempt.student_id!==user.id||attempt.status!=='in_progress')throw appError(403,'Không có quyền phát audio của lượt thi này.');
   const groupResult=await query(`SELECT data FROM question_groups WHERE id=$1`,[groupId]);
   if(!groupResult.rowCount)throw appError(404,'Không tìm thấy cụm audio cũ.');
   const ids=new Set(groupResult.rows[0].data?.questionIds||[]);
@@ -140,10 +142,10 @@ async function legacySectionIdForGroup(attemptId,groupId){
 
 // Compatibility only for cached/legacy clients during Step 9A. New runtime uses sectionId.
 export async function startAudioGroup(user,{attemptId,groupId}){
-  return startPartAudio(user,{attemptId,sectionId:await legacySectionIdForGroup(attemptId,groupId)});
+  return startPartAudio(user,{attemptId,sectionId:await legacySectionIdForGroup(user,attemptId,groupId)});
 }
 export async function completeAudioGroup(user,{attemptId,groupId}){
-  return completePartAudio(user,{attemptId,sectionId:await legacySectionIdForGroup(attemptId,groupId)});
+  return completePartAudio(user,{attemptId,sectionId:await legacySectionIdForGroup(user,attemptId,groupId)});
 }
 
 export async function setAttemptSection(user,{attemptId,index}){
