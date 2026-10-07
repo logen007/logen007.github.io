@@ -606,7 +606,17 @@ function bindBuilder(){
     if(file&&label)label.textContent=file.name;
   });
   app.querySelectorAll('[data-choice-image]').forEach(input=>input.onchange=()=>{
-    if(input.files?.[0])input.closest('.choice-image-upload')?.classList.add('has-image');
+    const file=input.files?.[0],control=input.closest('.choice-image-upload');
+    if(!file||!control)return;
+    control.classList.add('has-image');
+    control.title='Bấm để thay hình ảnh đáp án';
+    control.querySelector('.choice-image-tooltip')?.remove();
+    const tooltip=document.createElement('span'),preview=new Image();
+    tooltip.className='choice-image-tooltip';
+    preview.alt='Ảnh đáp án đã chọn';
+    preview.src=URL.createObjectURL(file);
+    preview.onload=()=>URL.revokeObjectURL(preview.src);
+    tooltip.append(preview);control.append(tooltip);
   });
   app.querySelectorAll('[data-action="preview-inline-audio"]').forEach(button=>button.onclick=async()=>{
     const audio=button.closest('.audio-upload')?.querySelector('.inline-audio-preview');
