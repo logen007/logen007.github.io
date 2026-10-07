@@ -22,4 +22,4 @@ assert.throws(()=>validateA1ListeningPart1({part:{...part,questionIds:tooMany.ma
 assert.equal(spec.audio.segmentRepeat,2);
 assert.equal(spec.audio.pauseAllowed,false);
 assert.equal(spec.audio.replayAllowed,false);
-console.log('✓ A1 Nghe Phần 1 dùng Part + spec trực tiếp, dùng Part + spec trực tiếp.');
+console.log('✓ A1 Nghe Phần 1 dùng Part + spec trực tiếp.');
