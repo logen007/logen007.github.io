@@ -67,14 +67,3 @@ Chi tiết nghiệp vụ của từng Provider / Level / Skill / Part nằm tron
 Chỉ specification có trạng thái `APPROVED` mới được dùng làm luật production.
 
 Code và test phải tham chiếu cùng một specification thay vì tự duy trì các bản rule riêng biệt.
-
----
-
-## DEC-004 — Bảo toàn dữ liệu và lịch sử thi
-
-**Status:** PENDING REVIEW  
-**Date:** 2026-10-07
-
-Thay đổi kiến trúc hoặc nghiệp vụ không được làm thay đổi ý nghĩa của kết quả thi đã phát sinh.
-
-Khi cần thay đổi cấu trúc dữ liệu đã dùng trong production, ưu tiên migration/versioning an toàn thay vì sửa phá vỡ dữ liệu cũ.
