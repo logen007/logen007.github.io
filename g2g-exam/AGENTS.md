@@ -113,29 +113,14 @@ Không thêm logic nghiệp vụ Goethe/TELC trực tiếp vào app.js nếu có
 Mục tiêu: một thay đổi nghiệp vụ chỉ cần sửa ở ít nơi nhất có thể, lý tưởng là một Source of Truth + các test liên quan.
 
 
-## 7. Dữ liệu lịch sử
-
-Không được làm hỏng dữ liệu thi cũ.
-
-Nếu bài thi đã có học viên làm:
-
-- không thay đổi cấu trúc làm thay đổi lịch sử;
-- không thay câu hỏi cũ một cách phá vỡ kết quả;
-- ưu tiên version mới hoặc migration an toàn.
-
-Không reset production database nếu không có yêu cầu rõ ràng.
-
-
-## 8. Xóa dữ liệu
+## 7. Xóa dữ liệu
 
 Mặc định sử dụng soft delete / Trash.
 
 Không xóa vĩnh viễn dữ liệu đang được tham chiếu.
 
-Không xóa lịch sử thi hoặc kết quả học viên chỉ để dọn dữ liệu.
 
-
-## 9. Media
+## 8. Media
 
 Audio và ảnh phải được quản lý có kiểm soát.
 
@@ -146,7 +131,7 @@ Media orphan chỉ được garbage collector xóa sau grace period.
 Xóa file liên quan ngay sau khi Permanently Delete nếu file không còn bất kỳ tham chiếu hợp lệ nào.
 
 
-## 10. Trước khi code
+## 9. Trước khi code
 
 AI phải xác định:
 
@@ -163,7 +148,7 @@ AI phải xác định:
 Nếu không xác định được thì không được tự suy đoán.
 
 
-## 11. Sau khi code
+## 10. Sau khi code
 
 Phải chạy:
 
@@ -176,7 +161,7 @@ Phải chạy:
 Không merge vào main khi test fail.
 
 
-## 12. Phạm vi thay đổi
+## 11. Phạm vi thay đổi
 
 Khi người dùng yêu cầu sửa một Part:
 
@@ -196,21 +181,20 @@ không được tự ý sửa:
 trừ khi dependency thực sự yêu cầu.
 
 
-## 13. Quy tắc khi yêu cầu chưa rõ
+## 12. Quy tắc khi yêu cầu chưa rõ
 
 Không đoán.
 
 Hãy chỉ ra chính xác phần còn thiếu và hỏi lại trước khi xây dựng.
 
 
-## 14. Nguyên tắc ưu tiên
+## 13. Nguyên tắc ưu tiên
 
 Thứ tự ưu tiên:
 
-1. Dữ liệu và lịch sử học viên an toàn.
-2. Specification đã APPROVED.
-3. Không trùng lặp/chồng chéo Source of Truth.
-4. Automated tests.
-5. Kiến trúc module hóa.
-6. UI/UX.
-7. Tối ưu thêm.
+1. Specification đã APPROVED.
+2. Không trùng lặp/chồng chéo Source of Truth.
+3. Automated tests.
+4. Kiến trúc module hóa.
+5. UI/UX.
+6. Tối ưu thêm.
