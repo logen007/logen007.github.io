@@ -8,6 +8,7 @@ import {seedState} from '../src/seed.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 let passed=0;const test=(name,fn)=>{try{fn();console.log(`✓ ${name}`);passed++;}catch(error){console.error(`✗ ${name}`);throw error;}};
 
 test('Registry khai báo đúng dải Goethe/TELC',()=>{
@@ -20,6 +21,15 @@ test('Goethe A1 có cấu trúc từ registry thay vì slice vị trí',()=>{
   const sections=buildSectionsFromSpec(spec,{idFactory:i=>`s${i}`});assert.equal(sections.length,8);
   const groups=groupSectionsBySkill({sections},spec);assert.deepEqual(groups.map(([name])=>name),['Nghe','Đọc','Viết']);
   assert.equal(sections[0].templateType,'A1_LISTENING_PART_1');
+  assert.equal(read('src/views/builder.js').includes('sections.slice('),false);
+});
+
+test('App tạo/migrate đề qua exam factory, không hard-code GOETHE_A1_PARTS',()=>{
+  const app=read('src/app.js');
+  assert.ok(app.includes('createExamDraft'));
+  assert.ok(app.includes('ensureExamMatchesConfiguredSpec'));
+  assert.ok(app.includes('getProviderLevels'));
+  assert.equal(app.includes('GOETHE_A1_PARTS'),false);
 });
 
 test('A2/B1/B2 chỉ là scaffold cho đến khi có cấu trúc được duyệt',()=>{
@@ -38,11 +48,14 @@ test('Question group có vòng đời trash/restore/permanent delete',()=>{
 });
 
 test('Media garbage collector được khởi động từ server',()=>{
-  const index=fs.readFileSync(path.join(root,'server/src/index.js'),'utf8');
-  const gc=fs.readFileSync(path.join(root,'server/src/media-gc.js'),'utf8');
+  const index=read('server/src/index.js'),gc=read('server/src/media-gc.js');
   assert.ok(index.includes('startMediaGarbageCollector'));
   assert.ok(gc.includes('MEDIA_GC_GRACE_HOURS'));
   assert.ok(gc.includes('referencedUploadNames'));
+});
+
+test('Legacy Firebase và app root cũ đã được loại khỏi production tree',()=>{
+  for(const rel of ['app.js','firebase-config.js','firebase.json','firestore.rules','functions'])assert.equal(fs.existsSync(path.join(root,rel)),false,`Còn legacy: ${rel}`);
 });
 
 console.log(`\n${passed} kiểm thử kiến trúc đã đạt.`);
