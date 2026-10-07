@@ -72,6 +72,16 @@ test('Question group có vòng đời trash/restore/permanent delete',()=>{
   softDeleteQuestionGroup(s,teacher,group.id);permanentlyDeleteQuestionGroup(s,master,group.id);assert.equal(s.questionGroups.some(x=>x.id===group.id),false);assert.equal(s.questions.some(x=>x.id===q.id),false);
 });
 
+test('Part template A1 Nghe 1 đã tách module và bỏ legacy question bank',()=>{
+  const registry=read('src/part-templates/index.js'),loader=read('src/feature-loader.js'),admin=read('src/views/admin.js'),modals=read('src/views/modals.js'),server=read('server/src/actions/attempts.js');
+  assert.ok(registry.includes("./a1-listening-part-1/index.js"));
+  for(const rel of ['src/part-templates/a1-listening-part-1/editor.js','src/part-templates/a1-listening-part-1/student.js','src/part-templates/a1-listening-part-1/validator.js','src/part-templates/shared/api.js'])assert.ok(fs.existsSync(path.join(root,rel)),`Thiếu module: ${rel}`);
+  assert.equal(fs.existsSync(path.join(root,'src/question-groups/bootstrap.js')),false);
+  assert.equal(fs.existsSync(path.join(root,'src/question-groups/picker.js')),false);
+  assert.equal(admin.includes('bankAdminHtml'),false);assert.equal(modals.includes('bankPickerHtml'),false);assert.equal(loader.includes('Ngân hàng câu hỏi'),false);
+  assert.ok(server.includes('getA1ListeningPart1Spec'));assert.equal(server.includes('segmentRepeat)!==2'),false);
+});
+
 test('Media garbage collector được khởi động từ server',()=>{
   const index=read('server/src/index.js'),gc=read('server/src/media-gc.js');
   assert.ok(index.includes('startMediaGarbageCollector'));
