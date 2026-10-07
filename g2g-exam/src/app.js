@@ -166,16 +166,29 @@ function refreshPreviewProgress(){
 }
 
 function bindExamInputs(attempt,questions){
-  app.querySelectorAll('.answer-one').forEach(el=>el.onchange=()=>queueAnswer(attempt.id,el.dataset.q,el.value===''?null:Number(el.value),0));
+  const setLocalAnswer=(qid,value)=>{
+    attempt.answers={...(attempt.answers||{}),[qid]:value};
+    const answered=questions.filter(question=>answerPresent(attempt.answers[question.id],question)).length;
+    app.querySelectorAll('[data-current-answer-count]').forEach(item=>{item.textContent=`${answered}/${questions.length} câu đã trả lời`;});
+    const question=questions.find(item=>item.id===qid),card=app.querySelector(`.cau-thi[data-q="${qid}"]`);
+    if(card&&question)card.classList.toggle('is-answered',answerPresent(value,question));
+  };
+  app.querySelectorAll('.answer-one').forEach(el=>el.onchange=()=>{
+    const value=el.value===''?null:Number(el.value);
+    setLocalAnswer(el.dataset.q,value);
+    queueAnswer(attempt.id,el.dataset.q,value,0);
+  });
   app.querySelectorAll('.answer-match').forEach(el=>el.onchange=()=>{
     const qid=el.dataset.q,q=questions.find(x=>x.id===qid),values=Array(q?.pairs?.length||0).fill('');
     app.querySelectorAll(`.answer-match[data-q="${qid}"]`).forEach(x=>values[Number(x.dataset.i)]=x.value);
+    setLocalAnswer(qid,values);
     queueAnswer(attempt.id,qid,values,0);
   });
   app.querySelectorAll('.answer-text').forEach(el=>{
     el.oninput=()=>{
       const counter=el.parentElement?.querySelector('.word-count');
       if(counter)counter.textContent=countWords(el.value);
+      setLocalAnswer(el.dataset.q,el.value);
       queueAnswer(attempt.id,el.dataset.q,el.value,700);
     };
     el.onblur=()=>queueAnswer(attempt.id,el.dataset.q,el.value,0);
@@ -222,12 +235,8 @@ function bindPreviewInputs(attempt,questions){
 function queueAnswer(attemptId,qid,value,delay){
   const key=`${attemptId}:${qid}`;
   clearTimeout(saveTimers.get(key));
-  const saveState=document.getElementById('saveState');
-  if(saveState)saveState.textContent='Đang lưu...';
   saveTimers.set(key,setTimeout(async()=>{
     await act(()=>repo.transaction(st=>saveAnswer(st,user,attemptId,qid,value)),null,{rerender:false});
-    const el=document.getElementById('saveState');
-    if(el)el.textContent='Đã lưu';
     saveTimers.delete(key);
   },delay));
 }
@@ -241,11 +250,13 @@ async function flushTextAnswers(){
 }
 
 function startExamTimer(attempt,exam,sectionIndex){
-  const section=exam.sections[sectionIndex],el=document.getElementById('examTimer');
-  if(section.showTimer===false){if(el)el.textContent='—';return;}
+  const section=exam.sections[sectionIndex],el=document.getElementById('examTimer'),summary=document.getElementById('examTimeSummary');
+  if(section.showTimer===false){if(el)el.textContent='—';if(summary)summary.textContent='—';return;}
   const tick=async()=>{
     const left=getSectionRemainingSeconds(attempt,exam,sectionIndex);
-    if(el)el.textContent=`${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`;
+    const display=`${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`;
+    if(el)el.textContent=display;
+    if(summary)summary.textContent=display;
     if(left<=0&&!timerBusy){
       timerBusy=true;
       clearTimer();

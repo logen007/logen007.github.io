@@ -146,6 +146,16 @@ test('Preview tách rõ khỏi bài thi thật và cho phép kiểm tra mọi ph
   assert.ok(css.includes('.preview-outline'));
 });
 
+test('Màn thi hiển thị đề bài, đáp án đã chọn và thời gian một cách nhất quán',()=>{
+  const app=read('src/app.js'),student=read('src/views/student.js'),css=read('styles.css');
+  assert.ok(student.includes('exam-instruction'));
+  assert.ok(student.includes('answer-option'));
+  assert.equal(student.includes('CÂU ${position}'),false);
+  assert.ok(app.includes('examTimeSummary'));
+  assert.ok(css.includes('.answer-option>input:checked+.answer-option-body'));
+  assert.ok(css.includes('.preview-outline{position:static;order:2'));
+});
+
 test('Viết 1 lưu được nhiều khối đề bài và dùng icon Figma khi thêm hình',()=>{
   const partBuilder=read('src/part-templates/default/builder.js');
   assert.ok(partBuilder.includes('instructionBlocks'));
