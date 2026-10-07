@@ -1,0 +1,40 @@
+name: G2G Step 6 Migration
+
+on:
+  push:
+    branches:
+      - refactor/g2g-spec-source-step6
+    paths:
+      - 'g2g-exam/scripts/step6.mjs'
+      - '.github/workflows/g2g-step6.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/g2g-spec-source-step6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply approved step 6 patch
+        run: node g2g-exam/scripts/step6.mjs
+      - name: Check JavaScript syntax
+        run: sh g2g-exam/server/check-code.sh
+      - name: Run tests
+        working-directory: g2g-exam
+        run: npm test
+      - name: Remove temporary migration helpers
+        run: rm -f g2g-exam/scripts/step6.mjs .github/workflows/g2g-step6.yml
+      - name: Commit migration result
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'refactor(g2g): make approved specs the runtime source'
+          git push origin HEAD:refactor/g2g-spec-source-step6
