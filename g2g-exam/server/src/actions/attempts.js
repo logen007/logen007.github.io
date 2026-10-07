@@ -62,57 +62,90 @@ export async function saveAnswers(user,{attemptId,answers={}}){
   });
 }
 
-async function audioGroupContext(client,attempt,groupId){
-  const groupResult=await client.query(`SELECT id,status,data FROM question_groups WHERE id=$1`,[groupId]);
-  if(!groupResult.rowCount||groupResult.rows[0].status!=='active')throw appError(404,'Không tìm thấy cụm audio.');
-  const group={id:groupResult.rows[0].id,...(groupResult.rows[0].data||{})};
+async function partAudioContext(client,attempt,sectionId){
+  const exam=await examById(attempt.exam_id,client);
+  const section=(exam.sections||[]).find(item=>item.id===sectionId);
+  if(!section)throw appError(404,'Không tìm thấy Part audio.');
+  if(attempt.public_data?.currentSectionId!==section.id)throw appError(409,'Part audio không thuộc phần thi hiện tại.');
   const spec=await getA1ListeningPart1Spec();
-  if(group.structureType!==spec.template)throw appError(409,'Cụm này không dùng template audio hiện tại.');
+  if(section.templateType!==spec.template)throw appError(409,'Part này không dùng template audio hiện tại.');
   const policy=spec.audio||{};
   if(Number(policy.maxSessions)<1||Number(policy.segmentRepeat)<1)throw appError(500,'Specification audio không hợp lệ.');
   const allowed=new Set(attempt.public_data.currentQuestionIds||[]);
-  const ids=(group.questionIds||[]).filter(id=>allowed.has(id));
-  if(!ids.length)throw appError(409,'Cụm audio không thuộc phần thi hiện tại.');
-  return {group,ids};
+  const ids=(section.questionIds||[]).filter(id=>allowed.has(id));
+  if(!ids.length)throw appError(409,'Part audio không có câu hỏi trong phần thi hiện tại.');
+  const questionRows=await client.query(`SELECT id,data FROM questions WHERE id = ANY($1::text[])`,[ids]);
+  const legacyGroupIds=[...new Set(questionRows.rows.map(row=>row.data?.groupId).filter(Boolean))];
+  return {section,legacyGroupIds};
 }
 
-export async function startAudioGroup(user,{attemptId,groupId}){
-  if(!attemptId||!groupId)throw appError(400,'Thiếu thông tin phiên audio.');
+function hasStartedPartSession(sessions,sectionId,legacyGroupIds=[]){
+  if(sessions?.[sectionId]?.startedAt)return true;
+  return legacyGroupIds.some(id=>sessions?.[id]?.startedAt);
+}
+
+export async function startPartAudio(user,{attemptId,sectionId}){
+  if(!attemptId||!sectionId)throw appError(400,'Thiếu thông tin phiên audio.');
   return withTx(async client=>{
     const result=await client.query(`SELECT * FROM attempts WHERE id=$1 FOR UPDATE`,[attemptId]);
     if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
     const attempt=result.rows[0];
     if(attempt.student_id!==user.id||attempt.status!=='in_progress')throw appError(403,'Không có quyền phát audio của lượt thi này.');
-    await audioGroupContext(client,attempt,groupId);
+    const {section,legacyGroupIds}=await partAudioContext(client,attempt,sectionId);
     const publicData=attempt.public_data||{},sessions={...(publicData.audioSessions||{})};
-    if(sessions[groupId]?.startedAt)throw appError(409,'Audio của phần này đã được bắt đầu và không thể phát lại.');
+    if(hasStartedPartSession(sessions,section.id,legacyGroupIds))throw appError(409,'Audio của phần này đã được bắt đầu và không thể phát lại.');
     const startedAt=now();
-    sessions[groupId]={startedAt,completedAt:null};
+    sessions[section.id]={startedAt,completedAt:null};
     const out={...publicData,audioSessions:sessions,updatedAt:startedAt};
     await client.query(`UPDATE attempts SET public_data=$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify(out)]);
-    await audit(user,'start_audio_group','attempt',attemptId,{groupId},client);
+    await audit(user,'start_part_audio','attempt',attemptId,{sectionId:section.id},client);
     return {ok:true,startedAt};
   });
 }
 
-export async function completeAudioGroup(user,{attemptId,groupId}){
-  if(!attemptId||!groupId)throw appError(400,'Thiếu thông tin phiên audio.');
+export async function completePartAudio(user,{attemptId,sectionId}){
+  if(!attemptId||!sectionId)throw appError(400,'Thiếu thông tin phiên audio.');
   return withTx(async client=>{
     const result=await client.query(`SELECT * FROM attempts WHERE id=$1 FOR UPDATE`,[attemptId]);
     if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
     const attempt=result.rows[0];
     if(attempt.student_id!==user.id||attempt.status!=='in_progress')throw appError(403,'Không có quyền cập nhật audio của lượt thi này.');
-    await audioGroupContext(client,attempt,groupId);
-    const publicData=attempt.public_data||{},sessions={...(publicData.audioSessions||{})},session=sessions[groupId];
+    const {section,legacyGroupIds}=await partAudioContext(client,attempt,sectionId);
+    const publicData=attempt.public_data||{},sessions={...(publicData.audioSessions||{})};
+    const legacySession=legacyGroupIds.map(id=>sessions[id]).find(item=>item?.startedAt);
+    const session=sessions[section.id]||legacySession;
     if(!session?.startedAt)throw appError(409,'Phiên audio chưa được bắt đầu.');
     if(session.completedAt)return {ok:true,completedAt:session.completedAt};
     const completedAt=now();
-    sessions[groupId]={...session,completedAt};
+    sessions[section.id]={...session,completedAt};
     const out={...publicData,audioSessions:sessions,updatedAt:completedAt};
     await client.query(`UPDATE attempts SET public_data=$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify(out)]);
-    await audit(user,'complete_audio_group','attempt',attemptId,{groupId},client);
+    await audit(user,'complete_part_audio','attempt',attemptId,{sectionId:section.id},client);
     return {ok:true,completedAt};
   });
+}
+
+async function legacySectionIdForGroup(user,attemptId,groupId){
+  if(!attemptId||!groupId)throw appError(400,'Thiếu thông tin phiên audio cũ.');
+  const attemptResult=await query(`SELECT * FROM attempts WHERE id=$1`,[attemptId]);
+  if(!attemptResult.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
+  const attempt=attemptResult.rows[0];
+  if(attempt.student_id!==user.id||attempt.status!=='in_progress')throw appError(403,'Không có quyền phát audio của lượt thi này.');
+  const groupResult=await query(`SELECT data FROM question_groups WHERE id=$1`,[groupId]);
+  if(!groupResult.rowCount)throw appError(404,'Không tìm thấy cụm audio cũ.');
+  const ids=new Set(groupResult.rows[0].data?.questionIds||[]);
+  const exam=await examById(attempt.exam_id);
+  const section=(exam.sections||[]).find(item=>(item.questionIds||[]).some(id=>ids.has(id)));
+  if(!section)throw appError(409,'Cụm audio cũ không còn gắn với Part hiện tại.');
+  return section.id;
+}
+
+// Compatibility only for cached/legacy clients during Step 9A. New runtime uses sectionId.
+export async function startAudioGroup(user,{attemptId,groupId}){
+  return startPartAudio(user,{attemptId,sectionId:await legacySectionIdForGroup(user,attemptId,groupId)});
+}
+export async function completeAudioGroup(user,{attemptId,groupId}){
+  return completePartAudio(user,{attemptId,sectionId:await legacySectionIdForGroup(user,attemptId,groupId)});
 }
 
 export async function setAttemptSection(user,{attemptId,index}){
