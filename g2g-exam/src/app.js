@@ -33,6 +33,7 @@ let timerHandle=null;
 let timerBusy=false;
 let realtimeRenderTimer=null;
 const saveTimers=new Map();
+const pendingAudioUploads=new Map();
 const GOETHE_A1_PARTS=[
   ['Nghe 1','Nghe',6,20],['Nghe 2','Nghe',4,20],['Nghe 3','Nghe',5,20],
   ['Đọc 1','Đọc',5,25],['Đọc 2','Đọc',5,25],['Đọc 3','Đọc',5,25],
@@ -419,12 +420,11 @@ function bindViewSpecific(){
       const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map();
       if(section&&exam.provider==='GOETHE'&&exam.level==='A1'){
         for(const card of app.querySelectorAll('.goethe-question[data-question-id]')){
-          const file=card.querySelector('[data-field="audio"]')?.files?.[0];
-          if(!file)continue;
-          const label=card.querySelector('.audio-upload span');
-          if(label)label.textContent='Đang tải audio...';
-          audioUrls.set(card.dataset.questionId,await uploadQuestionAudio(file));
-          audioNames.set(card.dataset.questionId,file.name);
+          const uploaded=pendingAudioUploads.get(card.dataset.questionId);
+          if(!uploaded)continue;
+          const {url,name}=await uploaded.promise;
+          audioUrls.set(card.dataset.questionId,url);
+          audioNames.set(card.dataset.questionId,name);
         }
         for(const card of app.querySelectorAll('.goethe-question[data-question-id]')){
           const questionId=card.dataset.questionId;
@@ -453,6 +453,9 @@ function bindViewSpecific(){
           });
         }
       }),'Đã lưu bài thi.');
+      audioUrls.forEach((_,questionId)=>pendingAudioUploads.delete(questionId));
+    }catch(error){
+      notify(error?.message||'Không thể lưu bài thi.');
     }finally{b.disabled=false;}
   });
   app.querySelectorAll('[data-action="open-exam-settings"]').forEach(b=>b.onclick=()=>{
@@ -600,10 +603,84 @@ function bindBuilder(){
     }
   }),'Đã thêm câu hỏi.'));
   app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.'));
+  const resetAudioPreview=button=>{
+    button.innerHTML='<img src="src/assets/figma-icon-4.svg" alt="">';
+    button.title='Nghe thử audio';
+    button.setAttribute('aria-label','Nghe thử audio');
+  };
+  const bindInlineAudioPreview=button=>button.onclick=async()=>{
+    const control=button.closest('.audio-upload');
+    const audio=control?.querySelector('.inline-audio-preview');
+    if(!audio)return;
+    if(!audio.paused){
+      audio.pause();
+      audio.currentTime=0;
+      resetAudioPreview(button);
+      return;
+    }
+    app.querySelectorAll('.inline-audio-preview').forEach(item=>{
+      if(item===audio)return;
+      item.pause();
+      item.currentTime=0;
+      const other=item.closest('.audio-upload')?.querySelector('.audio-preview');
+      if(other)resetAudioPreview(other);
+    });
+    try{
+      if(audio.ended)audio.currentTime=0;
+      await audio.play();
+      button.innerHTML='<span class="audio-stop-icon" aria-hidden="true"></span>';
+      button.title='Dừng audio';
+      button.setAttribute('aria-label','Dừng audio');
+      audio.onended=()=>resetAudioPreview(button);
+      audio.onpause=()=>{if(!audio.ended)resetAudioPreview(button);};
+    }catch{notify('Không thể phát audio này. Hãy thử chọn lại tệp.');}
+  };
+  const showUploadedAudio=(control,{url,name})=>{
+    control.classList.add('has-audio');
+    const label=control.querySelector('.audio-file-select span');
+    if(label)label.textContent=name;
+    control.querySelector(':scope > img')?.remove();
+    let audio=control.querySelector('.inline-audio-preview');
+    if(!audio){
+      audio=document.createElement('audio');
+      audio.className='inline-audio-preview';
+      audio.preload='metadata';
+      control.append(audio);
+    }
+    audio.src=url;
+    let button=control.querySelector('.audio-preview');
+    if(!button){
+      button=document.createElement('button');
+      button.type='button';
+      button.className='audio-preview';
+      control.insertBefore(button,audio);
+      bindInlineAudioPreview(button);
+    }
+    resetAudioPreview(button);
+  };
   app.querySelectorAll('.audio-upload input[data-field="audio"]').forEach(input=>input.onchange=()=>{
-    const file=input.files?.[0];
-    const label=input.closest('.audio-upload')?.querySelector('span');
-    if(file&&label)label.textContent=file.name;
+    const file=input.files?.[0],control=input.closest('.audio-upload');
+    const questionId=input.closest('.goethe-question')?.dataset.questionId;
+    const label=control?.querySelector('.audio-file-select span');
+    if(!file||!control||!questionId||!label)return;
+    input.disabled=true;
+    label.textContent='Đang tải audio · 0%';
+    const upload={name:file.name,promise:null};
+    upload.promise=uploadQuestionAudio(file,{onProgress:percent=>{
+      if(pendingAudioUploads.get(questionId)===upload)label.textContent=`Đang tải audio · ${percent}%`;
+    }}).then(url=>{
+      if(pendingAudioUploads.get(questionId)===upload)showUploadedAudio(control,{url,name:file.name});
+      return {url,name:file.name};
+    }).catch(error=>{
+      if(pendingAudioUploads.get(questionId)===upload){
+        pendingAudioUploads.delete(questionId);
+        label.textContent='Tải audio thất bại';
+        notify(error.message);
+      }
+      throw error;
+    }).finally(()=>{if(pendingAudioUploads.get(questionId)===upload)input.disabled=false;});
+    pendingAudioUploads.set(questionId,upload);
+    upload.promise.catch(()=>{});
   });
   app.querySelectorAll('[data-choice-image]').forEach(input=>input.onchange=()=>{
     const file=input.files?.[0],control=input.closest('.choice-image-upload');
@@ -630,16 +707,7 @@ function bindBuilder(){
     });
   };
   app.querySelectorAll('[data-field="maxScore"]').forEach(input=>input.oninput=updateSkillTotals);
-  app.querySelectorAll('[data-action="preview-inline-audio"]').forEach(button=>button.onclick=async()=>{
-    const audio=button.closest('.audio-upload')?.querySelector('.inline-audio-preview');
-    if(!audio)return;
-    document.querySelectorAll('.inline-audio-preview').forEach(item=>{if(item!==audio)item.pause();});
-    try{
-      if(!audio.paused){audio.pause();return;}
-      if(audio.ended)audio.currentTime=0;
-      await audio.play();
-    }catch{notify('Không thể phát audio này. Hãy thử chọn lại tệp.');}
-  });
+  app.querySelectorAll('[data-action="preview-inline-audio"]').forEach(bindInlineAudioPreview);
   app.querySelectorAll('[data-action="open-bank-picker"]').forEach(b=>b.onclick=bankPicker);
   const title=document.getElementById('examTitle');
   if(title)title.onchange=()=>act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{title:title.value})),'Đã đổi tên bài thi.');

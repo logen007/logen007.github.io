@@ -10,11 +10,11 @@ export function validateAudioFile(file){
   return true;
 }
 
-export async function uploadQuestionAudio(file){
+export async function uploadQuestionAudio(file,{onProgress}={}){
   validateAudioFile(file);
-  if(globalThis.G2G_DEMO_BYPASS)return postAudio('/api/demo/media/audio',file);
+  if(globalThis.G2G_DEMO_BYPASS)return postAudio('/api/demo/media/audio',file,{onProgress});
   if(!hasApiBackend())throw new Error('Không thể tải audio khi máy chủ chưa chạy.');
-  return postAudio('/api/media/audio',file);
+  return postAudio('/api/media/audio',file,{onProgress});
 }
 
 export async function uploadQuestionImage(file){
@@ -26,14 +26,22 @@ export async function uploadQuestionImage(file){
   return postMedia('/api/media/image',file);
 }
 
-async function postAudio(url,file){return postMedia(url,file);}
+async function postAudio(url,file,{onProgress}={}){return postMedia(url,file,{onProgress});}
 
-async function postMedia(url,file){
+async function postMedia(url,file,{onProgress}={}){
   const form=new FormData();
   form.append('file',file,file.name||'audio');
-  const res=await fetch(url,{method:'POST',body:form,credentials:'include'});
-  let data={};
-  try{data=await res.json();}catch{}
-  if(!res.ok)throw new Error(data?.error||'Không tải được tệp âm thanh.');
-  return data.url;
+  return new Promise((resolve,reject)=>{
+    const request=new XMLHttpRequest();
+    request.open('POST',url);
+    request.withCredentials=true;
+    request.upload.onprogress=event=>{if(event.lengthComputable)onProgress?.(Math.round(event.loaded/event.total*100));};
+    request.onerror=()=>reject(new Error('Không thể kết nối để tải tệp.'));
+    request.onload=()=>{
+      let data={};try{data=JSON.parse(request.responseText||'{}');}catch{}
+      if(request.status<200||request.status>=300){reject(new Error(data?.error||'Không tải được tệp.'));return;}
+      resolve(data.url);
+    };
+    request.send(form);
+  });
 }
