@@ -1,14 +1,15 @@
 import {byId,getQuestionMaxScore} from '../../core.js';
 import {esc} from '../../ui/format.js';
 import {uploadQuestionAudio} from '../../media.js';
+import {iconHtml} from '../../ui/icons.js';
 
 const icons={
-  add:'<img src="src/assets/figma-icon-3.svg" alt="">',
-  remove:'<img src="src/assets/figma-icon-2.svg" alt="">',
-  upload:'<img src="src/assets/figma-icon-5.svg" alt="">',
-  play:'<img src="src/assets/figma-icon-4.svg" alt="">',
+  add:iconHtml('plus'),
+  remove:iconHtml('close'),
+  upload:iconHtml('upload'),
+  play:iconHtml('play'),
   addImage:'<img src="src/assets/figma-icon-add-image.svg" alt="">',
-  imageUpload:'<img src="src/assets/figma-icon-image-upload.svg" alt="">'
+  imageUpload:iconHtml('image')
 };
 const blank=value=>value==='Nháp'?'':value;
 const textOf=choice=>typeof choice==='object'?choice.text:choice;
@@ -131,7 +132,7 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     try{if(audio.ended)audio.currentTime=0;await audio.play();button.innerHTML='<span class="audio-stop-icon" aria-hidden="true"></span>';button.title='Dừng audio';button.setAttribute('aria-label','Dừng audio');audio.onended=()=>resetAudioPreview(button);audio.onpause=()=>{if(!audio.ended)resetAudioPreview(button);};}catch{notify('Không thể phát audio này. Hãy thử chọn lại tệp.');}
   };
   const showUploadedAudio=(control,{url,name})=>{
-    control.classList.add('has-audio');const label=control.querySelector('.audio-file-select span');if(label)label.textContent=name;control.querySelector(':scope > img')?.remove();
+    control.classList.add('has-audio');const label=control.querySelector('.audio-file-select span');if(label)label.textContent=name;control.querySelector(':scope > img, :scope > svg')?.remove();
     let audio=control.querySelector('.inline-audio-preview');if(!audio){audio=document.createElement('audio');audio.className='inline-audio-preview';audio.preload='metadata';control.append(audio);}audio.src=url;
     let button=control.querySelector('.audio-preview');if(!button){button=document.createElement('button');button.type='button';button.className='audio-preview';control.insertBefore(button,audio);bindInlineAudioPreview(button);}resetAudioPreview(button);
   };
@@ -142,8 +143,8 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     pendingAudioUploads.set(questionId,upload);upload.promise.catch(()=>{});
   });
   root.querySelectorAll('[data-choice-image]').forEach(input=>input.onchange=()=>{
-    const file=input.files?.[0],control=input.closest('.choice-image-upload');if(!file||!control)return;control.classList.add('has-image');control.title='Bấm để thay hình ảnh đáp án';const objectUrl=URL.createObjectURL(file),thumbnail=control.querySelector(':scope > img');
-    if(thumbnail){thumbnail.src=objectUrl;thumbnail.className='choice-uploaded-image';thumbnail.alt='Ảnh đáp án đã chọn';}control.querySelector('.choice-image-tooltip')?.remove();const tooltip=document.createElement('span'),preview=new Image();tooltip.className='choice-image-tooltip';preview.alt='Ảnh đáp án đã chọn';preview.src=objectUrl;tooltip.append(preview);control.append(tooltip);
+    const file=input.files?.[0],control=input.closest('.choice-image-upload');if(!file||!control)return;control.classList.add('has-image');control.title='Bấm để thay hình ảnh đáp án';const objectUrl=URL.createObjectURL(file);let thumbnail=control.querySelector(':scope > img');
+    if(!thumbnail){control.querySelector(':scope > svg')?.remove();thumbnail=document.createElement('img');control.prepend(thumbnail);}thumbnail.src=objectUrl;thumbnail.className='choice-uploaded-image';thumbnail.alt='Ảnh đáp án đã chọn';control.querySelector('.choice-image-tooltip')?.remove();const tooltip=document.createElement('span'),preview=new Image();tooltip.className='choice-image-tooltip';preview.alt='Ảnh đáp án đã chọn';preview.src=objectUrl;tooltip.append(preview);control.append(tooltip);
   });
   root.querySelectorAll('[data-section-image]').forEach(input=>input.onchange=()=>{
     const file=input.files?.[0],control=input.closest('[data-section-image-control]');if(!file||!control)return;const url=URL.createObjectURL(file),label=control.querySelector('.section-image-label');control.dataset.hasImage='true';control.dataset.removeSectionImage='false';if(label)label.innerHTML=`<img src="${url}" alt="Hình ảnh đề bài">`;

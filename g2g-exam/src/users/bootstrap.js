@@ -20,7 +20,8 @@ async function request(path,{method='GET',body}={}){
 
 function mount(){
   const tab=document.querySelector('[data-action="admin-tab"][data-tab="teachers"]');
-  if(tab&&tab.textContent.trim()!=='Người dùng')tab.textContent='Người dùng';
+  const tabLabel=tab?.querySelector('span')||tab;
+  if(tabLabel&&tabLabel.textContent.trim()!=='Người dùng')tabLabel.textContent='Người dùng';
 
   const main=document.querySelector('.noi-dung-quan-tri');
   const heading=main?.querySelector('.tieu-de-trang h1');

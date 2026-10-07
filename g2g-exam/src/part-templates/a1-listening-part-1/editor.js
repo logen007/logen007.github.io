@@ -7,15 +7,8 @@ const id=prefix=>`${prefix}-${crypto.randomUUID()}`;
 const normalizeChoice=(choice,key)=>choice&&typeof choice==='object'?{key,text:String(choice.text||''),imageUrl:String(choice.imageUrl||'')}:{key,text:String(choice||''),imageUrl:''};
 const questionDraft=score=>({id:id('q'),prompt:'',audioUrl:'',choices:['A','B','C'].map(key=>({key,text:'',imageUrl:''})),correctAnswer:0,maxScore:score,locked:false});
 
-function injectStyles(){
-  if(document.getElementById('a1ListeningPart1Styles'))return;
-  const style=document.createElement('style');style.id='a1ListeningPart1Styles';style.textContent=`
-    .tpl-a1-modal .noi-hop{width:min(1120px,100%)}.tpl-a1-grid{display:grid;grid-template-columns:1fr 180px;gap:12px}.tpl-a1-question{border:1px solid var(--vien);border-radius:var(--r);padding:14px;margin-top:12px;background:#fff}.tpl-a1-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.tpl-a1-question-grid{display:grid;grid-template-columns:1fr 130px;gap:10px}.tpl-a1-choice{display:grid;grid-template-columns:42px minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center;margin-top:8px}.tpl-a1-choice input{width:100%;height:38px;border:1px solid var(--vien);border-radius:5px;padding:0 9px}.tpl-a1-total{font-weight:800}@media(max-width:760px){.tpl-a1-grid,.tpl-a1-question-grid{grid-template-columns:1fr}.tpl-a1-choice{grid-template-columns:36px 1fr}.tpl-a1-choice input:nth-of-type(2){grid-column:2}}
-  `;document.head.appendChild(style);
-}
 
 export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved,state:initialState,user:initialUser,commit}={}){
-  injectStyles();
   let state=initialState,user=initialUser;
   if(!state||!user){
     const me=await templateRequest('/auth/me');state=await templateRequest('/state');user=me.user;

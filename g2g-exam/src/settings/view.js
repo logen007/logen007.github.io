@@ -1,4 +1,5 @@
 import {esc} from '../ui/format.js';
+import {DEFAULT_PRIMARY_COLOR,normalizeThemeColor,themePalette} from './theme.js';
 
 function field(id,label,value,type='text',help=''){
   return `<label class="cai-dat-field"><span>${esc(label)}</span><input class="truong" id="${id}" type="${type}" value="${esc(value)}">${help?`<small>${esc(help)}</small>`:''}</label>`;
@@ -21,12 +22,15 @@ function status(ok,a,b){
 }
 
 function themeCard(theme={}){
-  const color=theme.primaryColor||'#111827';
-  return card('Giao diện thương hiệu','Màu này được áp dụng đồng nhất cho nút chính, trạng thái chọn và điểm nhấn toàn hệ thống.',`<label class="cai-dat-field"><span>Màu chủ đạo</span><div class="brand-color-control"><input id="sPrimaryColor" type="color" value="${esc(color)}" aria-label="Chọn màu chủ đạo"><input class="truong" id="sPrimaryColorText" value="${esc(color)}" maxlength="7" spellcheck="false" aria-label="Mã màu chủ đạo"></div><small>Chọn một màu dễ đọc trên nền trắng. Màu cảnh báo, lỗi và thành công luôn được giữ riêng để tránh nhầm lẫn.</small></label>`);
+  const color=normalizeThemeColor(theme.primaryColor)||DEFAULT_PRIMARY_COLOR;
+  const presets=[['#111827','Than đậm'],['#6D3DF5','Tím'],['#175CD3','Xanh dương'],['#087A56','Xanh lá']];
+  const palette=Object.entries(themePalette(color)).map(([key,value])=>`${key}:${value}`).join(';');
+  return card('Giao diện thương hiệu','Màu chủ đạo dùng cho nút chính và trạng thái đang chọn. Các bề mặt giữ nền trung tính để nội dung dễ đọc.',`<div class="cai-dat-field"><label for="sPrimaryColorText">Màu chủ đạo</label><div class="brand-color-control"><input id="sPrimaryColor" type="color" value="${esc(color)}" aria-label="Chọn màu chủ đạo"><input class="truong" id="sPrimaryColorText" value="${esc(color)}" maxlength="7" spellcheck="false" aria-label="Mã màu chủ đạo" aria-describedby="sThemeError" placeholder="#111827"></div><small id="sThemeError" class="theme-validation" aria-live="polite">Chữ và nền được cân chỉnh tương phản tự động.</small><div class="brand-color-presets" aria-label="Màu gợi ý">${presets.map(([value,label])=>`<button class="brand-color-preset" type="button" data-theme-preset="${value}" aria-label="${label}" aria-pressed="${value===color}"><span style="background:${value}" aria-hidden="true"></span>${label}</button>`).join('')}</div></div><div class="brand-theme-preview" id="sThemePreview" style="${palette}"><span class="brand-preview-caption">Xem trước</span><div class="brand-preview-controls"><span class="brand-preview-primary">Nút chính</span><span class="brand-preview-selected">Đang chọn</span><span class="brand-preview-secondary">Nút phụ</span></div><small>Màu lỗi, cảnh báo và thành công giữ ý nghĩa riêng.</small></div>`);
 }
 
-export function settingsPageHtml({settings,infra}){
+export function settingsPageHtml({settings,infra,localOnly=false}){
   const s=settings;
+  if(localOnly)return `<div class="g2g-settings-page"><div class="tieu-de-trang"><div><h1>Cài đặt giao diện</h1><p>Bản demo · Màu được lưu riêng trên trình duyệt này.</p></div><button class="nut chinh" id="sSave">Lưu giao diện</button></div><div class="cai-dat-grid">${themeCard(s.theme)}</div><div class="cai-dat-footer"><span id="sState" class="phu-de" role="status">Áp dụng cho các trang demo trên trình duyệt này.</span></div></div>`;
   return `<div class="g2g-settings-page"><div class="tieu-de-trang"><div><h1>Cài đặt hệ thống</h1><p>Toàn bộ cấu hình vận hành trên VPS. Chỉ Quản trị cấp cao được thay đổi.</p></div><div class="nhom-nut"><button class="nut" id="sRefresh">Kiểm tra kết nối</button><button class="nut chinh" id="sSave">Lưu cài đặt</button></div></div><div class="tich-hop-tong-quan"><div><b>Backend</b>${status(infra?.backend==='VPS','VPS hoạt động','Chưa kết nối')}</div><div><b>PostgreSQL</b>${status(Boolean(infra?.postgresql),'Hoạt động','Lỗi')}</div><div><b>Google Login</b>${status(Boolean(infra?.googleLoginConfigured),'Đã cấu hình','Thiếu Client ID/Secret')}</div><div><b>SMTP</b>${status(Boolean(infra?.smtp?.configured),'Sẵn sàng','Chưa hoàn tất')}</div></div><div class="cai-dat-grid">
 ${card('Thông tin hệ thống','Tên hiển thị và địa chỉ truy cập.',field('sName','Tên hệ thống',s.general.systemName)+field('sOrg','Đơn vị vận hành',s.general.organizationName)+field('sSupport','Email hỗ trợ',s.general.supportEmail,'email')+field('sUrl','Địa chỉ hệ thống',s.general.publicUrl,'url'))}
 ${themeCard(s.theme)}

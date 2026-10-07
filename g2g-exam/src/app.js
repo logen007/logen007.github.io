@@ -27,7 +27,9 @@ import {getProviderLevels} from './exam-specs/index.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from './controllers/exam-factory.js';
 import {populateGoetheA1TestFixture} from './controllers/goethe-a1-test-fixture.js';
 import {hasPartTemplate,openPartTemplate,bindPartBuilder} from './part-templates/index.js';
+import {initializeTheme} from './settings/theme.js';
 
+initializeTheme();
 const app=document.getElementById('app');
 const toast=document.getElementById('toast');
 const repo=await createRepository();
@@ -58,7 +60,7 @@ window.addEventListener('online',()=>{ui.online=true;if(ui.view!=='exam')render(
 window.addEventListener('offline',()=>{ui.online=false;if(ui.view!=='exam')render();});
 
 function layout(content){
-  return topbarHtml({user,mode:repo.mode,online:ui.online})+content;
+  return topbarHtml({user,mode:repo.mode,online:ui.online,ui})+content;
 }
 
 function notify(msg){

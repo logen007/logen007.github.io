@@ -80,7 +80,9 @@ test('Tổng điểm kỹ năng đọc đúng thuộc tính data-skill-total',()
 
 test('Nghe 2 có ô câu hỏi cao bằng cụm điểm và audio',()=>{
   const styles=read('styles.css');
-  assert.ok(styles.includes('.goethe-question-row>textarea{height:88px;min-height:88px'));
+  // Height follows both controls and their gap, rather than an old fixed pixel height.
+  assert.match(styles,/\.goethe-question-row>textarea\s*\{\s*height:100%;\s*min-height:calc\(var\(--editor-control\) \* 2 \+ var\(--editor-gap\)\)/);
+  assert.match(styles,/\.goethe-question-row,[^{]+\{[^}]+align-items:stretch/);
 });
 
 test('Không còn thông báo Firebase cũ trong giao diện production',()=>{
@@ -103,7 +105,7 @@ test('Trang Quản trị có module Cài đặt Google, SMTP, email và vận h�
   }
   for(const text of ['updateSystemSettings','updateSmtpSecret','testSmtp'])assert.ok(api.includes(text),`Thiếu API Cài đặt: ${text}`);
   assert.ok(controller.includes('loadPrivateSettings'));
-  assert.ok(controller.includes('--brand-primary'));
+  assert.ok(read('src/settings/theme.js').includes('--brand-primary'));
   assert.ok(html.includes('Google+Sans+Flex'));
 });
 

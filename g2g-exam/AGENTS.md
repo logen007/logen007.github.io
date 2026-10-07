@@ -1,5 +1,8 @@
 # G2G Exam — AI Working Rules
 
+Giao diện dùng quy chuẩn đã chốt trong `docs/UI_STYLE.md`. Khi sửa UI, đọc tài liệu
+này và dùng token/component chung; không chồng thêm các lớp style toàn site.
+
 ## 1. Mục tiêu
 
 G2G Exam là hệ thống thi thử tiếng Đức.
