@@ -74,9 +74,9 @@
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(51,43,84,.18);outline-offset:2px;border-color:var(--tim)}
 .nut,.icon-btn,.muc-ben,.dang-nhap-google{touch-action:manipulation}
 
-/* Màn hình thi: chiều rộng đọc dễ, nút điều hướng không chạy vị trí. */
-.to-thi{max-width:1120px;margin-inline:auto}
-.dieu-huong-thi{position:sticky;bottom:0;background:rgba(255,255,255,.96);border-top:1px solid var(--vien);padding:12px 0 calc(12px + env(safe-area-inset-bottom));z-index:15}
+/* Màn hình thi: điều hướng nằm sau nội dung, không che câu hỏi. */
+.to-thi{max-width:980px;margin-inline:auto}
+.dieu-huong-thi{position:static;background:transparent;border:0;padding:18px 0 calc(12px + env(safe-area-inset-bottom));z-index:auto}
 .dieu-huong-thi .nut{min-width:112px}
 .answer-text{font-size:15px}
 
@@ -114,11 +114,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .chan-hop .nhom-nut .nut,.chan-hop>.nut{flex:1 1 auto}
   .cham-bai{grid-template-columns:1fr}
   .ds-cham,.phieu-cham{min-height:0}
-  .noi-dung-thi{padding:16px 12px 84px}
+  .noi-dung-thi{padding:16px 12px 28px}
   .thanh-thi{padding:0 12px}
   .thong-tin-thi{gap:10px}
-  .to-thi{padding:14px;min-height:0}
-  .dieu-huong-thi{margin:14px -12px 0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));gap:8px}
+  .to-thi{padding:0;min-height:0}
+  .dieu-huong-thi{margin:14px 0 0;padding:10px 0 calc(10px + env(safe-area-inset-bottom));gap:8px}
   .dieu-huong-thi .nut{min-width:0;flex:1 1 0}
   .dieu-huong-thi .tien-do{flex:0 0 auto;max-width:80px;text-align:center}
   .dap-an{width:100%;max-width:none}

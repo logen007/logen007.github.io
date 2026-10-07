@@ -147,13 +147,15 @@ test('Preview tách rõ khỏi bài thi thật và cho phép kiểm tra mọi ph
 });
 
 test('Màn thi hiển thị đề bài, đáp án đã chọn và thời gian một cách nhất quán',()=>{
-  const app=read('src/app.js'),student=read('src/views/student.js'),css=read('styles.css');
+  const app=read('src/app.js'),student=read('src/views/student.js'),css=read('styles.css'),enhancements=read('enhancements.css');
   assert.ok(student.includes('exam-instruction'));
+  assert.ok(student.includes('isSharedInstruction'));
   assert.ok(student.includes('answer-option'));
   assert.equal(student.includes('CÂU ${position}'),false);
   assert.ok(app.includes('examTimeSummary'));
   assert.ok(css.includes('.answer-option>input:checked+.answer-option-body'));
   assert.ok(css.includes('.preview-outline{position:static;order:2'));
+  assert.ok(enhancements.includes('.dieu-huong-thi{position:static'));
 });
 
 test('Viết 1 lưu được nhiều khối đề bài và dùng icon Figma khi thêm hình',()=>{
