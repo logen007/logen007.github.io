@@ -78,7 +78,7 @@ test('Builder định tuyến editor theo templateType thay vì hard-code Goethe
   assert.equal(builder.includes('goetheA1BuilderHtml'),false);
   assert.ok(registry.includes('renderPartBuilder'));assert.ok(registry.includes('bindPartBuilder'));
   assert.ok(fs.existsSync(path.join(root,'src/part-templates/default/builder.js')));
-  assert.ok(fs.existsSync(path.join(root,'src/part-templates/a1-listening-part-1/builder.js'));
+  assert.ok(fs.existsSync(path.join(root,'src/part-templates/a1-listening-part-1/builder.js')));
   assert.ok(app.includes('bindPartBuilder(section?.templateType'));
   assert.equal(app.includes("exam.provider==='GOETHE'&&exam.level==='A1'"),false);
 });
