@@ -82,6 +82,7 @@ async function saveUpload(request,{kind,maxBytes,mimePrefix,defaultExt},user=nul
 app.post('/api/media/audio',async request=>saveUpload(request,{kind:'âm thanh',maxBytes:25*1024*1024,mimePrefix:'audio/',defaultExt:'.audio'}));
 app.post('/api/media/image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:8*1024*1024,mimePrefix:'image/',defaultExt:'.img'}));
 app.post('/api/demo/media/audio',async request=>saveUpload(request,{kind:'âm thanh',maxBytes:25*1024*1024,mimePrefix:'audio/',defaultExt:'.audio'},demoUploadUser(request)));
+app.post('/api/demo/media/image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:8*1024*1024,mimePrefix:'image/',defaultExt:'.img'},demoUploadUser(request)));
 app.get('/uploads/:name',async(request,reply)=>{if(!demoMediaUploadsEnabled)await requireUser(request);const name=path.basename(request.params.name);return reply.sendFile(name,uploadDir);});
 app.get('/api/whoami',async request=>({user:await currentUser(request)}));
 

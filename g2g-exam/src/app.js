@@ -8,7 +8,7 @@ import {
   startAttempt,saveAnswer,setAttemptSection,getSectionRemainingSeconds,submitAttempt,
   saveManualScore,publishAttempt,publishExam
 } from './core.js';
-import {uploadQuestionAudio} from './media.js';
+import {uploadQuestionAudio,uploadQuestionImage} from './media.js';
 import {countWords} from './ui/format.js';
 import {topbarHtml} from './ui/layout.js';
 import {
@@ -416,7 +416,7 @@ function bindViewSpecific(){
     if(!exam||!title)return;
     b.disabled=true;
     try{
-      const audioUrls=new Map(),audioNames=new Map();
+      const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map();
       if(section&&exam.provider==='GOETHE'&&exam.level==='A1'){
         for(const card of app.querySelectorAll('.goethe-question[data-question-id]')){
           const file=card.querySelector('[data-field="audio"]')?.files?.[0];
@@ -425,6 +425,14 @@ function bindViewSpecific(){
           if(label)label.textContent='Đang tải audio...';
           audioUrls.set(card.dataset.questionId,await uploadQuestionAudio(file));
           audioNames.set(card.dataset.questionId,file.name);
+        }
+        for(const card of app.querySelectorAll('.goethe-question[data-question-id]')){
+          const questionId=card.dataset.questionId;
+          for(const input of card.querySelectorAll('[data-choice-image]')){
+            const file=input.files?.[0];
+            if(!file)continue;
+            choiceImageUrls.set(`${questionId}:${input.dataset.choiceImage}`,await uploadQuestionImage(file));
+          }
         }
       }
       await act(()=>repo.transaction(st=>{
@@ -436,7 +444,11 @@ function bindViewSpecific(){
             const titleField=card.querySelector('[data-field="title"]');
             const scoreField=card.querySelector('[data-field="maxScore"]');
             const correct=card.querySelector('[data-field="correct"]:checked');
-            const choices=[0,1,2].map(index=>card.querySelector(`[data-choice="${index}"]`)?.value.trim()||'Nháp');
+            const previousChoices=byId(st.questions,id)?.choices||[];
+            const choices=[0,1,2].map(index=>{
+              const existing=previousChoices[index];
+              return {text:card.querySelector(`[data-choice="${index}"]`)?.value.trim()||'Nháp',imageUrl:(choiceImageUrls.get(`${id}:${index}`)??(typeof existing==='object'?existing.imageUrl:''))||''};
+            });
             updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??byId(st.questions,id)?.audioUrl)||'',audioName:(audioNames.get(id)??byId(st.questions,id)?.audioName)||''});
           });
         }
@@ -592,6 +604,9 @@ function bindBuilder(){
     const file=input.files?.[0];
     const label=input.closest('.audio-upload')?.querySelector('span');
     if(file&&label)label.textContent=file.name;
+  });
+  app.querySelectorAll('[data-choice-image]').forEach(input=>input.onchange=()=>{
+    if(input.files?.[0])input.closest('.choice-image-upload')?.classList.add('has-image');
   });
   app.querySelectorAll('[data-action="preview-inline-audio"]').forEach(button=>button.onclick=async()=>{
     const audio=button.closest('.audio-upload')?.querySelector('.inline-audio-preview');
