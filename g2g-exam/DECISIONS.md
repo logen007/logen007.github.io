@@ -16,7 +16,7 @@
 
 ## DEC-001 — Cấu trúc nghiệp vụ của đề thi
 
-**Status:** APPROVED  
+**Status:** APPROVED
 **Date:** 2026-10-07
 
 Luồng nghiệp vụ chính của giáo viên khi xây dựng đề:
@@ -37,7 +37,7 @@ Các chức năng tạo/chỉnh câu hỏi phải nằm trong ngữ cảnh của
 
 ## DEC-002 — Kiến trúc module hóa và tái sử dụng
 
-**Status:** APPROVED  
+**Status:** APPROVED
 **Date:** 2026-10-07
 
 Hệ thống phải được chia thành các module có trách nhiệm rõ ràng.
@@ -58,7 +58,7 @@ Mục tiêu là thay đổi một chức năng ở đúng một nơi mà không 
 
 ## DEC-003 — Specification đã duyệt là nguồn nghiệp vụ chính thức
 
-**Status:** APPROVED  
+**Status:** APPROVED
 **Date:** 2026-10-07
 
 Chi tiết nghiệp vụ của từng Provider / Level / Skill / Part nằm trong `specs/`.
@@ -71,7 +71,7 @@ Code và test phải tham chiếu cùng một specification thay vì tự duy tr
 
 ## DEC-004 — Mô hình lưu Specification
 
-**Status:** APPROVED  
+**Status:** APPROVED
 **Date:** 2026-10-07
 
 Mỗi Part có một specification riêng dưới `specs/<provider>/<level>/<skill>/part-XX.json`.
