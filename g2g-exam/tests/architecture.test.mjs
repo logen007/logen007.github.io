@@ -107,6 +107,7 @@ test('Production image phục vụ specs JSON cùng app',()=>{
 test('App tạo/migrate đề qua exam factory, không hard-code GOETHE_A1_PARTS',()=>{
   const app=read('src/app.js');
   assert.ok(app.includes('createExamDraft'));
+  assert.match(app,/questionProfile\?\.instructionImage===false\s*\?''/);
   assert.ok(app.includes('ensureExamMatchesConfiguredSpec'));
   assert.ok(app.includes('getProviderLevels'));
   assert.equal(app.includes('GOETHE_A1_PARTS'),false);

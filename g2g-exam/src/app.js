@@ -607,7 +607,10 @@ async function persistBuilderDraft({silent=false}={}){
       updateExam(st,user,exam.id,{title});
       if(section&&app.querySelector('.part-question[data-question-id]')){
         const imageControl=app.querySelector('[data-section-image-control]');
-        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl:sectionImageUrl??(imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'')});
+        const instructionImageUrl=section.questionProfile?.instructionImage===false
+          ?''
+          :sectionImageUrl??(imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'');
+        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl});
         app.querySelectorAll('.part-question[data-question-id]').forEach(card=>{
           const id=card.dataset.questionId;
           const mode=card.dataset.editorMode||'choices';
