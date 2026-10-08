@@ -7,7 +7,7 @@ const choiceImage=choice=>choice&&typeof choice==='object'?String(choice.imageUr
 
 export async function mountStudentRuntime({state:initialState=null,examRoot:initialRoot=null}={}){
   const examRoot=initialRoot||document.querySelector('.thi');
-  if(!examRoot||examRoot.dataset.a1ListeningPart1Enhanced==='1')return;
+  if(!examRoot||examRoot.classList.contains('thi--preview')||examRoot.dataset.a1ListeningPart1Enhanced==='1')return;
   let state=initialState;if(!state){try{state=await templateRequest('/state');}catch{return;}}
   const spec=await getA1ListeningPart1Spec(),policy=audioPolicyFromSpec(spec);
   const visibleIds=[...examRoot.querySelectorAll('.cau-thi[data-q]')].map(node=>node.dataset.q);

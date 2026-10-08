@@ -41,6 +41,27 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
 - Exam navigation stays after the questions: no sticky surface/background/border.
   Exam structure navigation is preview-only.
 
+## Preview layout
+
+- Keep the preview header and reading content on the same 1040px column.
+  Show exam title, a small preview badge, a short no-results notice and return to
+  editing in one header, not several banners.
+- Place a labeled native dropdown section switcher above the paper, with the
+  current section selected and answer counts in its options. Whole-exam progress
+  and a quiet reset link sit beside it. Do not render this in real exams.
+- Show the current section heading once. Group its instruction and questions
+  in one white paper surface with internal dividers rather than nested cards.
+- Put prompt and audio control together; answer options fill the following row.
+  Image answers get a readable image area, not a tiny thumbnail beside long text.
+- Current-section answered count lives once in the bottom navigation. Previous
+  and next remain in normal flow without background, border or sticky positioning.
+  Section changes return scroll and keyboard focus to the new heading.
+- Scope preview-only presentation under `.thi--preview`. It uses local answers;
+  production part runtimes must never attach a live attempt to preview content.
+- Return navigation is a text link before the exam title (builder and preview).
+  The builder has no draft-save button; display automatic-save status instead.
+  Flush pending edits before returning, switching sections, previewing or publishing.
+
 ## Brand settings
 
 Production master settings save globally through the existing protected API.

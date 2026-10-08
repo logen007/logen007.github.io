@@ -4,7 +4,7 @@ import {hasPartTemplate,mountPartTemplateStudent} from './index.js';
 let busy=false;
 async function mount(){
   if(busy)return;
-  const examRoot=document.querySelector('.thi');if(!examRoot)return;
+  const examRoot=document.querySelector('.thi');if(!examRoot||examRoot.classList.contains('thi--preview'))return;
   busy=true;
   try{
     const state=await templateRequest('/state');

@@ -137,7 +137,7 @@ test('Builder có preview và hỗ trợ link mở lại đề đang sửa',()=>
 
 test('Preview tách rõ khỏi bài thi thật và cho phép kiểm tra mọi phần',()=>{
   const app=read('src/app.js'),student=read('src/views/student.js'),css=read('styles.css');
-  assert.ok(student.includes('XEM THỬ'));
+  assert.ok(student.includes('class="preview-chip"'));
   assert.ok(student.includes('data-action="preview-select-section"'));
   assert.ok(student.includes('data-action="reset-preview"'));
   assert.ok(app.includes('previewSummary'));
@@ -154,7 +154,8 @@ test('Màn thi hiển thị đề bài, đáp án đã chọn và thời gian m�
   assert.equal(student.includes('CÂU ${position}'),false);
   assert.ok(app.includes('examTimeSummary'));
   assert.ok(css.includes('.answer-option>input:checked+.answer-option-body'));
-  assert.ok(css.includes('.preview-outline{position:static;order:2'));
+  assert.match(student,/<select[^>]+data-action="preview-select-section"/);
+  assert.doesNotMatch(css,/\.preview-outline\s*\{[^}]*position\s*:\s*(?:sticky|fixed)/);
   assert.ok(enhancements.includes('.dieu-huong-thi{position:static'));
 });
 

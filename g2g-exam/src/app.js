@@ -41,6 +41,8 @@ let realtimeRenderTimer=null;
 let builderAutosaveTimer=null;
 let builderAutosaveBusy=false;
 let builderAutosaveQueued=false;
+let builderSavePromise=null;
+let builderEditRevision=0;
 const saveTimers=new Map();
 const pendingAudioUploads=new Map();
 
@@ -152,6 +154,15 @@ function previewSummaryFor(exam){
   return {sections,total:sections.reduce((sum,item)=>sum+item.total,0),answered:sections.reduce((sum,item)=>sum+item.answered,0)};
 }
 
+function showPreviewSection(index){
+  const exam=byId(data.exams,ui.previewExamId);
+  if(!exam)return;
+  ui.previewSectionIndex=Math.max(0,Math.min(index,exam.sections.length-1));
+  render();
+  document.getElementById('preview-section-title')?.focus({preventScroll:true});
+  window.scrollTo(0,0);
+}
+
 function refreshPreviewProgress(){
   const exam=byId(data.exams,ui.previewExamId);
   if(!exam)return;
@@ -161,9 +172,11 @@ function refreshPreviewProgress(){
   app.querySelector('[data-preview-progress]')?.style.setProperty('width',`${summary.total?Math.round((summary.answered/summary.total)*100):0}%`);
   summary.sections.forEach((item,index)=>{
     const label=app.querySelector(`[data-preview-section-progress="${index}"]`);
-    if(label)label.textContent=`${item.answered}/${item.total} câu`;
-    const marker=app.querySelector(`[data-preview-section-check="${index}"]`);
-    if(marker)marker.textContent=item.answered===item.total&&item.total?'✓':index===ui.previewSectionIndex?'→':'';
+    if(label)label.textContent=`${item.name} · ${item.answered}/${item.total} câu`;
+  });
+  app.querySelectorAll('.cau-thi[data-q]').forEach(card=>{
+    const question=byId(data.questions,card.dataset.q);
+    if(question)card.classList.toggle('is-answered',answerPresent(ui.previewAnswers[question.id],question));
   });
 }
 
@@ -416,9 +429,34 @@ function render(){
 }
 
 async function saveBuilderDraft({silent=false}={}){
+  clearTimeout(builderAutosaveTimer);
+  while(builderSavePromise)await builderSavePromise;
+  builderSavePromise=persistBuilderDraft({silent});
+  try{return await builderSavePromise;}
+  finally{builderSavePromise=null;}
+}
+
+function setBuilderSaveStatus(state,text){
+  const status=app.querySelector('[data-builder-save-status]');
+  if(status){status.dataset.state=state;status.textContent=text;}
+}
+
+async function flushBuilderDraft(){
+  if(ui.view!=='builder'||document.getElementById('examTitle')?.disabled)return true;
+  let revision;
+  do{
+    revision=builderEditRevision;
+    if(!await saveBuilderDraft({silent:true}))return false;
+  }while(revision!==builderEditRevision);
+  return true;
+}
+
+async function persistBuilderDraft({silent=false}={}){
   const exam=byId(data.exams,ui.builderExamId),title=document.getElementById('examTitle')?.value.trim();
   const section=exam?.sections.find(item=>item.id===ui.builderSectionId);
-  if(!exam||!title)return false;
+  if(!exam||!title){setBuilderSaveStatus('error','Nhập tên đề để lưu');return false;}
+  const revision=builderEditRevision;
+  setBuilderSaveStatus('saving','Đang lưu…');
   const uploadedInputs=[];
   try{
     const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map(),questionInstructionImageUrls=new Map();
@@ -500,9 +538,11 @@ async function saveBuilderDraft({silent=false}={}){
       if(audioInput)audioInput.value='';
     });
     uploadedInputs.forEach(input=>{input.value='';});
+    setBuilderSaveStatus(revision===builderEditRevision?'saved':'pending',revision===builderEditRevision?'Đã tự động lưu':'Chờ lưu thay đổi…');
     if(!silent)notify('Đã lưu bài thi.');
     return true;
   }catch(error){
+    setBuilderSaveStatus('error','Chưa lưu được · Kiểm tra kết nối');
     console.error(error);
     notify(error?.message||'Không thể lưu bài thi.');
     return false;
@@ -511,8 +551,11 @@ async function saveBuilderDraft({silent=false}={}){
 
 function queueBuilderAutosave(delay=450){
   if(ui.view!=='builder')return;
+  builderEditRevision++;
+  setBuilderSaveStatus('pending','Chờ lưu thay đổi…');
   clearTimeout(builderAutosaveTimer);
   builderAutosaveTimer=setTimeout(async()=>{
+    if(ui.view!=='builder')return;
     if(builderAutosaveBusy){builderAutosaveQueued=true;return;}
     builderAutosaveBusy=true;
     try{await saveBuilderDraft({silent:true});}
@@ -536,9 +579,9 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="prev-section"]').forEach(b=>b.onclick=()=>moveAttemptSection(-1));
   app.querySelectorAll('[data-action="next-section"]').forEach(b=>b.onclick=()=>moveAttemptSection(1));
   app.querySelectorAll('[data-action="submit-exam"]').forEach(b=>b.onclick=()=>submitCurrentExam(true));
-  app.querySelectorAll('[data-action="preview-prev-section"]').forEach(b=>b.onclick=()=>{ui.previewSectionIndex=Math.max(0,ui.previewSectionIndex-1);render();});
-  app.querySelectorAll('[data-action="preview-next-section"]').forEach(b=>b.onclick=()=>{const exam=byId(data.exams,ui.previewExamId);ui.previewSectionIndex=Math.min((exam?.sections.length||1)-1,ui.previewSectionIndex+1);render();});
-  app.querySelectorAll('[data-action="preview-select-section"]').forEach(b=>b.onclick=()=>{ui.previewSectionIndex=Number(b.dataset.index)||0;window.scrollTo(0,0);render();});
+  app.querySelectorAll('[data-action="preview-prev-section"]').forEach(b=>b.onclick=()=>showPreviewSection(ui.previewSectionIndex-1));
+  app.querySelectorAll('[data-action="preview-next-section"]').forEach(b=>b.onclick=()=>showPreviewSection(ui.previewSectionIndex+1));
+  app.querySelectorAll('[data-action="preview-select-section"]').forEach(select=>select.onchange=()=>showPreviewSection(Number(select.value)||0));
   app.querySelectorAll('[data-action="reset-preview"]').forEach(b=>b.onclick=()=>{ui.previewAnswers={};ui.previewSectionIndex=0;window.scrollTo(0,0);render();notify('Đã làm lại Preview.');});
   app.querySelectorAll('[data-action="close-preview"]').forEach(b=>b.onclick=()=>{ui.previewAnswers={};ui.view='builder';render();});
   app.querySelectorAll('[data-action="admin-tab"]').forEach(b=>b.onclick=()=>{ui.adminTab=b.dataset.tab;ui.view='admin';render();});
@@ -567,17 +610,12 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="edit-exam"]').forEach(b=>b.onclick=()=>openBuilder(b.dataset.id));
   app.querySelectorAll('[data-action="view-exam"]').forEach(b=>b.onclick=()=>previewExamModal(byId(data.exams,b.dataset.id)));
   app.querySelectorAll('[data-action="delete-exam"]').forEach(b=>b.onclick=()=>{if(confirm('Đưa bài thi này vào Thùng rác?'))act(()=>repo.transaction(st=>softDeleteExam(st,user,b.dataset.id)),'Đã chuyển bài thi vào Thùng rác.');});
-  app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>publishExam(st,user,b.dataset.id)),'Đã xuất bản bài thi.'));
+  app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await act(()=>repo.transaction(st=>publishExam(st,user,b.dataset.id)),'Đã xuất bản bài thi.');});
   app.querySelectorAll('[data-action="preview-exam"]').forEach(b=>b.onclick=async()=>{
-    await saveBuilderDraft({silent:true});
+    if(!await flushBuilderDraft())return;
     const exam=byId(data.exams,b.dataset.id);
     const sectionIndex=Math.max(0,(exam?.sections||[]).findIndex(section=>section.id===ui.builderSectionId));
     ui.previewExamId=b.dataset.id;ui.previewSectionIndex=sectionIndex;ui.previewAnswers={};ui.view='preview-exam';render();
-  });
-  app.querySelectorAll('[data-action="save-exam"]').forEach(b=>b.onclick=async()=>{
-    b.disabled=true;
-    await saveBuilderDraft();
-    b.disabled=false;
   });
   app.querySelectorAll('[data-action="open-exam-settings"]').forEach(b=>b.onclick=()=>{
     const exam=byId(data.exams,ui.builderExamId);if(!exam)return;
@@ -681,8 +719,8 @@ function bindBuilder(){
     const section=exam.sections.find(item=>item.id===ui.builderSectionId);
     if(!hasPartTemplate(section?.templateType)){button.disabled=true;button.textContent='Template phần này chưa cấu hình';}
   });
-  app.querySelectorAll('[data-action="back-admin"]').forEach(b=>b.onclick=()=>{clearBuilderEditUrl();ui.view='admin';ui.adminTab='exams';render();});
-  app.querySelectorAll('[data-action="select-section"]').forEach(b=>b.onclick=e=>{if(e.target.closest('.phan-tool'))return;ui.builderSectionId=b.dataset.id;render();});
+  app.querySelectorAll('[data-action="back-admin"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;clearBuilderEditUrl();ui.view='admin';ui.adminTab='exams';render();});
+  app.querySelectorAll('[data-action="select-section"]').forEach(b=>b.onclick=async e=>{if(e.target.closest('.phan-tool'))return;if(!await flushBuilderDraft())return;ui.builderSectionId=b.dataset.id;render();});
   app.querySelectorAll('[data-action="add-section"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>addSection(st,user,exam.id,{name:'Phần mới',timeMinutes:30})),'Đã thêm phần.'));
   app.querySelectorAll('[data-action="move-section"]').forEach(b=>b.onclick=e=>{e.stopPropagation();act(()=>repo.transaction(st=>moveSection(st,user,exam.id,b.dataset.id,b.dataset.dir)));});
   app.querySelectorAll('[data-action="remove-section"]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(confirm('Bỏ phần này khỏi bài thi?'))act(()=>repo.transaction(st=>removeSection(st,user,exam.id,b.dataset.id)),'Đã bỏ phần.');});
