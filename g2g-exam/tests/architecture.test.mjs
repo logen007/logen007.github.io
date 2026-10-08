@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {getExamSpec,getProviderLevels,buildSectionsFromSpec,groupSectionsBySkill} from '../src/exam-specs/index.js';
 import {clone,byId,createExam} from '../src/core.js';
 import {seedState} from '../src/seed.js';
-import {createExamDraft,ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
+import {createExamDraft,ensureExamMatchesConfiguredSpec,questionDraftChoices} from '../src/controllers/exam-factory.js';
 import {populateGoetheA1TestFixture} from '../src/controllers/goethe-a1-test-fixture.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
 
@@ -85,9 +85,10 @@ test('Mỗi form Goethe A1 lấy bố cục authoring từ specs',()=>{
   const state=clone(seedState),teacher=byId(state.users,'teacher-lan');
   const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'A1',title:'Form data',stamp:789});
   const listening=exam.sections.find(section=>section.name==='Nghe 1');
-  assert.deepEqual(byId(state.questions,listening.questionIds[0]).choices,['A','B','']);
+  assert.deepEqual(byId(state.questions,listening.questionIds[0]).choices,['Nháp','Nháp','']);
   const readingTwo=exam.sections.find(section=>section.name==='Đọc 2');
   assert.equal(byId(state.questions,readingTwo.questionIds[0]).choices.length,2);
+  assert.deepEqual(questionDraftChoices(readingTwo.questionProfile),['Nháp','Nháp']);
   const readingThree=exam.sections.find(section=>section.name==='Đọc 3'),readingThreeQuestion=byId(state.questions,readingThree.questionIds[0]);
   const readingThreeHtml=renderBuilder({data:state,exam,section:readingThree,readOnly:false});
   assert.doesNotMatch(readingThreeHtml,/data-section-image|data-field="audio"/);

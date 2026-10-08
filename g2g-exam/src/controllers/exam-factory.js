@@ -1,12 +1,16 @@
 import {byId,clone,createExam,createQuestion,updateQuestion,updateExam,addQuestionsToSection} from '../core.js';
 import {getExamSpec,buildSectionsFromSpec,buildSkillSettings} from '../exam-specs/index.js';
 
+export function questionDraftChoices(profile={}){
+  const configured=Array.isArray(profile.choices)&&profile.choices.length>=2?clone(profile.choices):['Nháp','Nháp','Nháp'];
+  return profile.layout==='true-false'?configured:configured.map((_,index)=>index<2?'Nháp':'');
+}
+
 function populateConfiguredSections(state,user,exam){
   for(const section of exam.sections||[]){
     const required=Math.max(0,Number(section.questionLimit)||0);
     const profile=section.questionProfile||{};
-    const configuredChoices=Array.isArray(profile.choices)&&profile.choices.length>=2?clone(profile.choices):['Nháp','Nháp','Nháp'];
-    const choices=profile.layout==='true-false'?configuredChoices:configuredChoices.map((choice,index)=>index<2?choice:'');
+    const choices=questionDraftChoices(profile);
     const hasFormRows=['form-fields','mixed-form'].includes(profile.layout)
     const initialRubric=hasFormRows
       ?Array.from({length:Math.max(1,Number(profile.formFieldCount)||1)},(_,index)=>({type:'text',label:'',answers:'',maxScore:Number(profile.formDefaultScores?.[index]??1),hidden:false,imageUrl:''}))

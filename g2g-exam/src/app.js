@@ -24,7 +24,7 @@ import {
   studentGradeModalHtml
 } from './views/modals.js';
 import {getProviderLevels} from './exam-specs/index.js';
-import {createExamDraft,ensureExamMatchesConfiguredSpec} from './controllers/exam-factory.js';
+import {createExamDraft,ensureExamMatchesConfiguredSpec,questionDraftChoices} from './controllers/exam-factory.js';
 import {populateGoetheA1TestFixture} from './controllers/goethe-a1-test-fixture.js';
 import {hasPartTemplate,openPartTemplate,bindPartBuilder} from './part-templates/index.js';
 import {templateRequest} from './part-templates/shared/api.js';
@@ -863,8 +863,7 @@ function bindBuilder(){
     if(!section)return;
     const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
     const profile=section.questionProfile||{};
-    const choiceCount=Array.isArray(profile.choices)&&profile.choices.length>=2?profile.choices.length:3;
-    const choices=profile.layout==='true-false'?[...profile.choices]:Array(choiceCount).fill('');
+    const choices=questionDraftChoices(profile);
     const question=createQuestion(st,user,{level:exam.level,skill:section.skill||section.name,part:section.name,type:profile.type||'single',title:'Nháp',choices,correctAnswer:0,maxScore:defaultScore});
     addQuestionsToSection(st,user,exam.id,section.id,[question.id]);
     if(b.dataset.after){
