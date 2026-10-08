@@ -166,7 +166,7 @@ try{
 
   await test('Rerendered preview retains radio, matching and writing input hooks and selected answers',()=>{
     const input=fixture();
-    input.questions[0].choices=['First','Second',' ',{text:'',imageUrl:''}];
+    input.questions[0].choices=['First','Second','Nháp',{text:'',imageUrl:''}];
     const html=examHtml(input);
     const radios=tags(html,'input').filter(tag=>hasClass(tag,'answer-one'));
     assert.equal(radios.length,2);
@@ -176,6 +176,7 @@ try{
     assert.match(html,/class="answer-letter">A\.<\/strong> First/);
     assert.match(html,/class="answer-letter">B\.<\/strong> Second/);
     assert.doesNotMatch(html,/class="answer-letter">[CD]\.<\/strong>/);
+    assert.doesNotMatch(html,/>Nháp</);
     const matches=tags(html,'select').filter(tag=>hasClass(tag,'answer-match'));
     assert.deepEqual(matches.map(tag=>[attribute(tag,'data-q'),attribute(tag,'data-i')]),[['match','0'],['match','1']]);
     const selected=tags(html,'option').filter(tag=>!tag.includes('data-preview-section-progress')&&/\bselected(?:\s|>)/.test(tag));
