@@ -145,8 +145,9 @@ try{
       assert.ok(questionList>=0&&lastQuestion>questionList&&navigation>lastQuestion);
       assert.ok(navigation>html.lastIndexOf('</textarea>'),'Navigation must follow the final answer field.');
       assert.deepEqual(tags(html,'div').filter(tag=>hasClass(tag,'cau-thi')).map(tag=>attribute(tag,'data-q')),['choice','match','written']);
-      assert.deepEqual([...html.matchAll(/class="question-number">(\d+)\.<\/strong>/g)].map(match=>match[1]),['1','2','3']);
-      assert.match(html,/class="question-number">1\.<\/strong> Choose an answer\./);
+      const firstNumber=sectionIndex===0?1:4;
+      assert.deepEqual([...html.matchAll(/class="question-number">(\d+)\.<\/strong>/g)].map(match=>match[1]),[firstNumber,firstNumber+1,firstNumber+2].map(String));
+      assert.match(html,new RegExp(`class="question-number">${firstNumber}\\.<\\/strong> Choose an answer\\.`));
       const previous=actionButtons(html,preview?'preview-prev-section':'prev-section');
       assert.equal(previous.length,1);
       assert.equal(/\bdisabled(?:\s|>)/.test(previous[0]),sectionIndex===0);
@@ -154,6 +155,13 @@ try{
       assert.ok(actionButtons(html.slice(navigation),nextAction).length===1);
       if(sectionIndex===2)assert.equal(actionButtons(html,preview?'preview-next-section':'next-section').length,0);
     }
+  });
+
+  await test('Question numbering continues across the whole exam',()=>{
+    const input=fixture(),question={id:'later',type:'single',prompt:'Later question.',choices:['Yes','No']};
+    input.exam.sections[1].questionIds=[question.id];
+    const html=examHtml({...input,sectionIndex:1,questions:[question]});
+    assert.match(html,/class="question-number">4\.<\/strong> Later question\./);
   });
 
   await test('Rerendered preview retains radio, matching and writing input hooks and selected answers',()=>{

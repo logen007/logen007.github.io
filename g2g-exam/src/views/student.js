@@ -45,7 +45,8 @@ export function examHtml({attempt,exam,sectionIndex,questions,online,preview=fal
   const sectionAudio=sectionAudioHtml(sec,questions,attempt,{preview});
   const currentCount=`<span data-current-answer-count>${answered}/${questions.length} câu đã trả lời</span>`;
   const stimulusStarts=new Set((sec.questionProfile?.stimulusStarts||[]).map(Number));
-  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${questions.map((q,index)=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(index),questionNumber:index+1})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
+  const questionOffset=exam.sections.slice(0,sectionIndex).reduce((total,item)=>total+(item.questionIds||[]).length,0);
+  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${questions.map((q,index)=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(index),questionNumber:questionOffset+index+1})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(sec.name)}</h1></div></div>`
     :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(sec.name)}</h1><div class="phu-de">${sec.showTimer!==false?'Có giới hạn thời gian · ':''}${currentCount}</div></div></div>`;
