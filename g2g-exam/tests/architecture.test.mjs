@@ -79,7 +79,7 @@ test('Mỗi form Goethe A1 lấy bố cục authoring từ specs',()=>{
   assert.equal(parts['Đọc 3'].questionImage,true);
   assert.equal(parts['Đọc 3'].audio,false);
   assert.deepEqual(parts['Đọc 3'].stimulusStarts,[0,1,2,3,4]);
-  assert.equal(parts['Viết 1'].layout,'mixed-form');
+  assert.equal(parts['Viết 1'].layout,'form-fields');
   assert.equal(parts['Viết 1'].formFrame,true);
   assert.deepEqual(parts['Viết 1'].choices,['A','B']);
   assert.equal(parts['Viết 2'].layout,'free-response');

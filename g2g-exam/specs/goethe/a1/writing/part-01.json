@@ -6,14 +6,14 @@
   "questionLimit": 1,
   "questionProfile": {
     "type": "writing",
-    "layout": "mixed-form",
+    "layout": "form-fields",
     "formFrame": true,
     "instructionImage": true,
     "formFieldCount": 7,
     "formDefaultScores": [1, 1, 0.25, 0.25, 0.25, 0.25, 1],
     "choices": ["A", "B"],
     "choiceImages": true,
-    "audio": true
+    "audio": false
   },
   "template": "WRITING"
 }

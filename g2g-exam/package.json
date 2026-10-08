@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/core.test.mjs && node tests/edge.test.mjs && node tests/part-template-a1-listening.test.mjs && node tests/migrations.test.mjs && node tests/architecture.test.mjs && node tests/static.test.mjs && node tests/theme.test.mjs && node tests/preview.test.mjs && node tests/production-auth.test.mjs && node tests/security-preflight.test.mjs && node tests/vps-backend.test.mjs",
+    "test": "node tests/core.test.mjs && node tests/edge.test.mjs && node tests/part-template-a1-listening.test.mjs && node tests/migrations.test.mjs && node tests/architecture.test.mjs && node tests/static.test.mjs && node tests/theme.test.mjs && node tests/preview.test.mjs && node tests/writing-form.test.mjs && node tests/production-auth.test.mjs && node tests/security-preflight.test.mjs && node tests/vps-backend.test.mjs",
     "test:preview": "node tests/preview.test.mjs"
   }
 }

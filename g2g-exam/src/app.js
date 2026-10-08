@@ -29,7 +29,8 @@ import {populateGoetheA1TestFixture} from './controllers/goethe-a1-test-fixture.
 import {hasPartTemplate,openPartTemplate,bindPartBuilder} from './part-templates/index.js';
 import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
-import {isScoredWritingField,writingFormScore} from './domain/writing-form.js';
+import {isScoredWritingField,writingFormScore,addWritingRow,removeWritingRow} from './domain/writing-form.js';
+import {readWritingRow} from './ui/writing-form.js';
 
 initializeTheme();
 const app=document.getElementById('app');
@@ -619,6 +620,7 @@ async function persistBuilderDraft({silent=false}={}){
           if(mode==='form-fields'||mode==='mixed-form'){
             const previousQuestion=byId(st.questions,id),previousRubric=previousQuestion?.rubric||[];
             rubric=[...card.querySelectorAll('[data-rubric-index]')].map(row=>{
+              if(card.dataset.structuredForm==='true')return {...readWritingRow(row,previousRubric[Number(row.dataset.rubricIndex)]),imageUrl:rubricImageUrls.get(`${id}:${row.dataset.rubricIndex}`)??previousRubric[Number(row.dataset.rubricIndex)]?.imageUrl??''};
               const type=row.querySelector('[data-rubric-type]')?.value||'text',hidden=row.dataset.rubricHidden==='true';
               return {
               type,
@@ -630,7 +632,7 @@ async function persistBuilderDraft({silent=false}={}){
             };});
             if(mode==='form-fields'){
               const maxScore=writingFormScore(rubric);
-              updateQuestion(st,user,id,{rubric,maxScore});
+              updateQuestion(st,user,id,{rubric,maxScore,...(card.dataset.structuredForm==='true'?{writingFormVersion:1}: {})});
               return;
             }
           }
@@ -891,6 +893,10 @@ function bindBuilder(){
     await act(()=>repo.transaction(st=>updateQuestion(st,user,b.dataset.id,{mixedChoiceHidden:false})),'Đã hiện câu hỏi.');
   });
   app.querySelectorAll('[data-action="remove-rubric-row"]').forEach(b=>b.onclick=async()=>{
+    if(b.closest('[data-structured-form]')){
+      if(!await saveBuilderDraft({silent:true}))return;
+      await act(()=>repo.transaction(st=>{const q=byId(st.questions,b.dataset.id);if(q)updateQuestion(st,user,q.id,{rubric:removeWritingRow(q.rubric,Number(b.dataset.index))});}));return;
+    }
     const row=b.closest('[data-rubric-index]'),card=b.closest('[data-question-id]');if(!row||!card)return;
     const type=row.querySelector('[data-rubric-type]')?.value||'text';
     const activeOfType=[...card.querySelectorAll('[data-rubric-index]:not(.is-hidden)')].filter(item=>(item.querySelector('[data-rubric-type]')?.value||'text')===type);
@@ -900,10 +906,15 @@ function bindBuilder(){
     if(await saveBuilderDraft({silent:true}))data=await repo.getState();
     render();
   });
+  app.querySelectorAll('[data-action="add-form-option"]').forEach(b=>b.onclick=async()=>{
+    if(!await saveBuilderDraft({silent:true}))return;
+    await act(()=>repo.transaction(st=>{const q=byId(st.questions,b.dataset.id);if(!q)return;const rubric=structuredClone(q.rubric);const row=rubric[Number(b.dataset.index)];if(row)row.options=[...(row.options||[]),''];updateQuestion(st,user,q.id,{rubric});}));
+  });
   app.querySelectorAll('[data-action="add-rubric-row"]').forEach(b=>b.onclick=async()=>{
-    await saveBuilderDraft({silent:true});
+    if(!await saveBuilderDraft({silent:true}))return;
     await act(()=>repo.transaction(st=>{
       const question=byId(st.questions,b.dataset.id);if(!question)return;
+      if(b.closest('[data-structured-form]')){updateQuestion(st,user,question.id,{rubric:addWritingRow(question.rubric,b.dataset.type,b.dataset.index===undefined?undefined:Number(b.dataset.index))});return;}
       const rubric=[...(question.rubric||[])],index=Number(b.dataset.index),source=rubric[index]||{},type=source.type||'text';
       if(source.hidden)rubric[index]={...source,hidden:false};
       else rubric.push({type,label:source.label||'',answers:source.answers||'',maxScore:Number(source.maxScore??1),hidden:false,imageUrl:''});

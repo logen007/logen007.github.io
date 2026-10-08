@@ -24,6 +24,7 @@ function populateConfiguredSections(state,user,exam){
       if(profile.type&&question.type!==profile.type)patch.type=profile.type;
       if(Array.isArray(profile.choices)&&question.choices?.length>profile.choices.length)patch.choices=question.choices.slice(0,profile.choices.length);
       if(hasFormRows&&(!Array.isArray(question.rubric)||!question.rubric.length))patch.rubric=clone(initialRubric);
+      if(profile.formFrame===true&&question.writingFormVersion!==1)patch.writingFormVersion=1;
       if(profile.layout==='mixed-form'&&!Array.isArray(question.instructionBlocks))patch.instructionBlocks=clone(initialInstructionBlocks);
       if((profile.stimulusStarts||[]).map(Number).includes(questionIndex)&&(!Array.isArray(question.instructionBlocks)||!question.instructionBlocks.length))patch.instructionBlocks=[{text:'',imageUrl:''}];
       if(Object.keys(patch).length)updateQuestion(state,user,questionId,patch);
@@ -35,6 +36,7 @@ function populateConfiguredSections(state,user,exam){
         level:exam.level,skill:section.skill,part:section.name,type:profile.type||'single',title:'Nháp',
         choices,correctAnswer:0,
         rubric:clone(initialRubric),
+        writingFormVersion:profile.formFrame===true?1:null,
         instructionBlocks:isStimulusStart?[{text:'',imageUrl:''}]:clone(initialInstructionBlocks),
         maxScore:hasFormRows&&initialRubric.length?writingFormScore(initialRubric)+(profile.layout==='mixed-form'?Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1):0):Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1),
       }).id);

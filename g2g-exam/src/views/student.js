@@ -5,6 +5,7 @@ import {
 import {esc,fmtDate,statusClass,statusText,countWords} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
 import {isScoredWritingField} from '../domain/writing-form.js';
+import {writingFormDisplay} from '../ui/writing-form.js';
 
 export function loginHtml({mode}){
   const demo=mode==='local'?`<div class="che-do-demo"><div class="phu-de">Tài khoản thử nghiệm</div><div class="chon-demo"><button class="nut full demo-login" data-id="student-a">Vào vai Học viên</button><button class="nut full demo-login" data-id="teacher-lan">Vào vai Cô Lan</button><button class="nut full demo-login" data-id="master-1">Vào vai Quản trị cấp cao</button></div></div>`:'';
@@ -95,6 +96,7 @@ function questionPromptHtml(text,q){
 }
 
 export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null,formFrame=false}={}){
+  if(q.type==='writing'&&(formFrame||q.writingFormVersion===1))return `<div class="cau-thi writing-form-question" data-q="${esc(q.id)}">${writingFormDisplay(q,answer)}</div>`;
   const played=sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`);
   const audio=!hideAudio&&q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" title="Audio chỉ phát theo quy định của đề thi." ${played?'disabled':''}>${played?'Đã phát audio':'Phát audio'}</button>${preview?'':'<span class="phu-de">Audio chỉ phát theo quy định của đề thi.</span>'}</div>`:'';
   const rawPrompt=String(hasStimulus?q.title||'':q.prompt||q.title||'').trim();

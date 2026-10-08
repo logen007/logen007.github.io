@@ -3,6 +3,7 @@ import {esc} from '../../ui/format.js';
 import {uploadQuestionAudio} from '../../media.js';
 import {iconHtml} from '../../ui/icons.js';
 import {WRITING_FORM_TYPES,isScoredWritingField,writingFormScore} from '../../domain/writing-form.js';
+import {writingFormEditor} from '../../ui/writing-form.js';
 
 const icons={
   add:iconHtml('plus'),
@@ -136,7 +137,9 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
   const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
   const choiceProfile=profileFor(section);
-  const renderQuestion=(q,index)=>choiceProfile.isWritingForm
+  const renderQuestion=(q,index)=>choiceProfile.formFrame
+    ?writingFormEditor(q,{readOnly})
+    :choiceProfile.isWritingForm
     ?writingFormHtml(q,{readOnly,choiceProfile})
     :choiceProfile.isMixedForm
       ?mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile})
@@ -171,7 +174,9 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     if(!thumbnail){control.querySelector(':scope > svg')?.remove();thumbnail=document.createElement('img');control.prepend(thumbnail);}thumbnail.src=objectUrl;thumbnail.className='choice-uploaded-image';thumbnail.alt='Ảnh đáp án đã chọn';control.querySelector('.choice-image-tooltip')?.remove();const tooltip=document.createElement('span'),preview=new Image();tooltip.className='choice-image-tooltip';preview.alt='Ảnh đáp án đã chọn';preview.src=objectUrl;tooltip.append(preview);control.append(tooltip);
   });
   root.querySelectorAll('[data-rubric-image]').forEach(input=>input.onchange=()=>{
-    const file=input.files?.[0],label=input.closest('.rubric-image-upload')?.querySelector('span');if(!file||!label)return;
+    const file=input.files?.[0],picker=input.closest('.writing-image-picker');
+    if(file&&picker){let img=picker.querySelector('img');if(!img){img=document.createElement('img');img.alt='Ảnh trong form';picker.prepend(img);}img.src=URL.createObjectURL(file);return;}
+    const label=input.closest('.rubric-image-upload')?.querySelector('span');if(!file||!label)return;
     label.innerHTML=`<img src="${URL.createObjectURL(file)}" alt="Hình trong form">`;
   });
   root.querySelectorAll('[data-section-image]').forEach(input=>input.onchange=()=>{
@@ -197,6 +202,7 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
       const score=normalizedScore(formScores.length
         ?writingFormScore(rows)+(card.dataset.editorMode==='mixed-form'&&card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden!=='true'?Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0):0)
         :Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0));
+      const display=card.querySelector('[data-writing-total]');if(display)display.textContent=`${writingFormScore(rows)} điểm`;
       return [card.dataset.questionId,score];
     }));
     root.querySelectorAll('[data-skill-total]').forEach(total=>{const skill=total.dataset.skillTotal;const sum=(exam.sections||[]).filter(item=>item.skill===skill).reduce((skillScore,item)=>{const fallback=Number(exam.settings?.skillSettings?.[item.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);return skillScore+(item.questionIds||[]).reduce((partScore,id)=>partScore+(draftScores.has(id)?draftScores.get(id):getQuestionMaxScore(byId(data.questions,id),fallback)),0);},0);total.textContent=`${Number.isInteger(sum)?sum:Number(sum.toFixed(2))} điểm`;});

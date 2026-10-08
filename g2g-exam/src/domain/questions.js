@@ -1,6 +1,7 @@
 import {
   clone,uid,nowIso,byId,isTeacher,isMaster,audit,canEditQuestion,canDeleteQuestion
 } from './base.js';
+import {writingFormScore} from './writing-form.js';
 
 function choiceText(choice){
   if(choice&&typeof choice==='object')return String(choice.text||'').trim();
@@ -8,6 +9,7 @@ function choiceText(choice){
 }
 
 export function getQuestionMaxScore(question,defaultScore=0){
+  if(question?.writingFormVersion===1)return writingFormScore(question.rubric);
   const score=Number(question?.maxScore);
   return Number.isFinite(score)&&score>=0?score:Math.max(0,Number(defaultScore)||0);
 }
@@ -47,11 +49,12 @@ export function createQuestion(state,user,input={}){
     title:String(input.title||'').trim(),instruction:input.instruction||'',prompt:input.prompt||'',
     choices:clone(input.choices||[]),correctAnswer:input.correctAnswer??null,pairs:clone(input.pairs||[]),
     maxScore:Number(input.maxScore??1),autoGrade:input.autoGrade??!['writing','speaking'].includes(type),
-    rubric:clone(input.rubric||[]),audioUrl:input.audioUrl||'',audioName:input.audioName||'',instructionImageUrl:input.instructionImageUrl||'',instructionBlocks:clone(input.instructionBlocks||[]),ownerId:user.id,ownerName:user.name,
+    rubric:clone(input.rubric||[]),writingFormVersion:input.writingFormVersion||null,audioUrl:input.audioUrl||'',audioName:input.audioName||'',instructionImageUrl:input.instructionImageUrl||'',instructionBlocks:clone(input.instructionBlocks||[]),ownerId:user.id,ownerName:user.name,
     groupId:input.groupId||null,groupType:input.groupType||null,groupOrder:Number(input.groupOrder||0)||null,
     groupInstruction:input.groupInstruction||'',groupAudioPolicy:clone(input.groupAudioPolicy||null),
     status:'active',locked:false,usedCount:0,correctRate:null,createdAt:nowIso(),updatedAt:nowIso(),
   };
+  if(question.writingFormVersion===1)question.maxScore=writingFormScore(question.rubric);
   state.questions.push(question);
   audit(state,user,'create','question',question.id,{title:question.title});
   return question;
@@ -64,6 +67,8 @@ export function updateQuestion(state,user,id,patch){
   validateQuestionInput(patch,question,{allowIncompleteChoices:true});
   const allowed=['code','level','skill','part','type','title','instruction','prompt','choices','correctAnswer','pairs','maxScore','autoGrade','rubric','audioUrl','audioName','instructionImageUrl','instructionBlocks','mixedChoiceHidden','groupId','groupType','groupOrder','groupInstruction','groupAudioPolicy'];
   for(const key of allowed)if(key in patch)question[key]=clone(patch[key]);
+  if(patch.writingFormVersion===1)question.writingFormVersion=1;
+  if(question.writingFormVersion===1)question.maxScore=writingFormScore(question.rubric);
   question.updatedAt=nowIso();
   audit(state,user,'update','question',question.id);
   return question;

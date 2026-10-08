@@ -337,19 +337,18 @@ try{
     ]};
     input.exam.sections[0].questionIds=[question.id];input.exam.sections[0].questionProfile={formFrame:true};input.questions=[question];input.attempt.answers={[question.id]:{}};
     const html=examHtml(input);
-    assert.match(html,/writing-response-form--framed/);
-    assert.match(html,/writing-form-heading">Patienteninformation/);
-    assert.match(html,/writing-static-value">Serjakov, Vladimir/);
+    assert.match(html,/writing-paper/);
+    assert.match(html,/<h3>Patienteninformation/);
+    assert.match(html,/form-given ">Serjakov, Vladimir/);
     assert.match(html,/src="\/images\/form-logo\.png"/);
     assert.equal(writingFormScore(question.rubric),2);
-    assert.equal((html.match(/class="writing-point">/g)||[]).length,2);
+    assert.equal((html.match(/class="form-point">/g)||[]).length,2);
   });
 
   await test('Writing 1 choice controls hide only the embedded A/B block, never the whole form question',()=>{
     const question={id:'write-one',type:'writing',title:'Choose A or B',choices:['A','B'],correctAnswer:0,maxScore:1,rubric:[{type:'text',label:'Name',maxScore:1}]};
-    const section={id:'writing-1',skill:'Viết',questionIds:[question.id],questionProfile:{layout:'mixed-form',formFrame:true,choices:['A','B'],formFieldCount:1}};
+    const section={id:'writing-1',skill:'Viết',questionIds:[question.id],questionProfile:{layout:'mixed-form',formFrame:false,choices:['A','B'],formFieldCount:1}};
     let html=renderBuilder({data:{questions:[question]},exam:{settings:{},sections:[section]},section});
-    assert.match(html,/writing-form--framed/);
     assert.match(html,/value="heading"/);
     assert.match(html,/value="static"/);
     assert.equal(actionButtons(html,'remove-inline-question').length,0);
