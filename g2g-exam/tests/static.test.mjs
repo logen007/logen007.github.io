@@ -72,6 +72,12 @@ test('Tạo câu hỏi trong phần không hiển thị bộ chọn loại câu'
   assert.ok(app.includes('question-profile-row'));
 });
 
+test('Mọi dropdown dùng chung khoảng cách và biểu tượng mũi tên',()=>{
+  const styles=read('styles.css');
+  assert.match(styles,/select:not\(\[multiple\]\)\s*\{[^}]*appearance:none;[^}]*padding-right:42px;[^}]*background-position:right 14px center;/);
+  assert.equal(styles.includes('.question-profile-field select { padding:8px 4px; }'),false);
+});
+
 test('Tổng điểm kỹ năng đọc đúng thuộc tính data-skill-total',()=>{
   const builder=read('src/part-templates/default/builder.js');
   assert.ok(builder.includes('total.dataset.skillTotal'));
