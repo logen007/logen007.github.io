@@ -39,6 +39,15 @@ const fixture=()=>{
 };
 
 try{
+  await test('Header keeps role-appropriate menus in builder and grading views',()=>{
+    for(const role of ['master','teacher'])for(const view of ['admin','builder','grading-detail']){
+      const html=topbarHtml({user:{id:role,role},mode:'api',online:true,ui:{view}});
+      assert.equal(actionButtons(html,'admin-tab').length,role==='master'?5:3);
+      assert.match(html,/data-tab="exams"/);
+    }
+    const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+    assert.match(source,/\[data-action="admin-tab"\][^\n]+await flushBuilderDraft\(\)[^\n]+clearBuilderEditUrl\(\)/);
+  });
   await test('Users navigation label and icon stay consistent before and after selecting the tab',()=>{
     for(const adminTab of ['exams','teachers','grading']){
       const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin',adminTab}});
@@ -103,13 +112,15 @@ try{
     assert.match(real,/\bid="saveState"/);
   });
 
-  await test('Builder places its return link below provider/level and keeps successful autosave quiet',()=>{
+  await test('Builder places its return link beside provider/level and keeps successful autosave quiet',()=>{
     const input=fixture();
     const html=examBuilderHtml({data:{questions:input.questions},user:{id:'teacher'},exam:input.exam,section:null,readOnly:false});
     const back=actionButtons(html,'back-admin');
     assert.equal(back.length,1);
     assert.ok(hasClass(back[0],'text-link'));
-    assert.ok(html.indexOf(back[0])>html.indexOf('</p>',html.indexOf('id="examTitle"')));
+    const meta=html.match(/<div class="builder-meta">([\s\S]*?)<\/div>/)?.[1]||'';
+    assert.ok(meta.includes(back[0]));
+    assert.ok(meta.indexOf(back[0])<meta.indexOf('<p>'));
     assert.match(html,/data-builder-save-status[^>]+hidden><\/span>/);
     assert.doesNotMatch(html,/Đã tự động lưu|Tự động lưu/);
     assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.builder-back:hover\s*\{\s*text-decoration:none;/);

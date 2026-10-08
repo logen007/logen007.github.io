@@ -4,7 +4,7 @@ import {iconHtml} from './icons.js';
 
 export function topbarHtml({user,mode,online,ui={}}){
   const role=isStudent(user)?'Học viên':isMaster(user)?'Quản trị cấp cao':'Giáo viên';
-  const tabs=ui.view==='admin'
+  const tabs=user&&!isStudent(user)
     ?[['exams','Bài thi','exams'],['grading','Chấm bài','grading'],['grades','Bảng điểm','grades'],...(isMaster(user)?[['teachers','Người dùng','users'],['trash','Thùng rác','trash']]:[])]
     :[];
   const navigation=tabs.length?`<nav class="thanh-ben" aria-label="Điều hướng quản trị">${tabs.map(([key,label,icon])=>`<button class="muc-ben ${ui.adminTab===key?'active':''}" data-action="admin-tab" data-tab="${key}" ${ui.adminTab===key?'aria-current="page"':''}>${iconHtml(icon)}<span>${label}</span></button>`).join('')}</nav>`

@@ -58,7 +58,8 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
   Section changes return scroll and keyboard focus to the new heading.
 - Scope preview-only presentation under `.thi--preview`. It uses local answers;
   production part runtimes must never attach a live attempt to preview content.
-- Builder return navigation is a text link below the provider/level, without a hover underline.
+- Builder return navigation is a text link to the left of provider/level on the same row, without a hover underline.
+  The role-appropriate header menu remains visible when editing exams or grading.
   Preview return navigation remains before the exam title.
   The builder has no draft-save button or successful-save message; retain pending/error feedback.
   Flush pending edits before returning, switching sections, previewing or publishing.
