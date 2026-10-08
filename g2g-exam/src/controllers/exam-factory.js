@@ -5,7 +5,8 @@ function populateConfiguredSections(state,user,exam){
   for(const section of exam.sections||[]){
     const required=Math.max(0,Number(section.questionLimit)||0);
     const profile=section.questionProfile||{};
-    const choices=Array.isArray(profile.choices)&&profile.choices.length>=2?clone(profile.choices):['Nháp','Nháp','Nháp'];
+    const configuredChoices=Array.isArray(profile.choices)&&profile.choices.length>=2?clone(profile.choices):['Nháp','Nháp','Nháp'];
+    const choices=profile.layout==='true-false'?configuredChoices:configuredChoices.map((choice,index)=>index<2?choice:'');
     const hasFormRows=['form-fields','mixed-form'].includes(profile.layout)
     const initialRubric=hasFormRows
       ?Array.from({length:Math.max(1,Number(profile.formFieldCount)||1)},(_,index)=>({type:'text',label:'',answers:'',maxScore:Number(profile.formDefaultScores?.[index]??1),hidden:false,imageUrl:''}))

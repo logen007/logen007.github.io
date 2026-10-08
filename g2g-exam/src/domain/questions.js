@@ -20,9 +20,10 @@ function validateQuestionInput(input,existing=null){
   if(!Number.isFinite(maxScore)||maxScore<0)throw new Error('Điểm tối đa không hợp lệ.');
   if(['single','truefalse','cloze'].includes(type)){
     const choices=clone(input.choices??existing?.choices??[]);
-    if(choices.length<2||choices.some(x=>!choiceText(x)))throw new Error('Câu tự chấm cần ít nhất 2 lựa chọn hợp lệ.');
+    const choiceTexts=choices.map(choiceText);
+    if(choiceTexts.filter(Boolean).length<2)throw new Error('Câu tự chấm cần ít nhất 2 lựa chọn hợp lệ.');
     const correct=Number(input.correctAnswer??existing?.correctAnswer);
-    if(!Number.isInteger(correct)||correct<0||correct>=choices.length)throw new Error('Đáp án đúng không hợp lệ.');
+    if(!Number.isInteger(correct)||correct<0||correct>=choices.length||!choiceTexts[correct])throw new Error('Đáp án đúng không hợp lệ.');
   }
   if(type==='matching'){
     const pairs=clone(input.pairs??existing?.pairs??[]);

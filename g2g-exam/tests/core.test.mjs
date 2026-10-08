@@ -26,6 +26,14 @@ test('Chủ câu hỏi và master được sửa; giáo viên khác không đư�
   assert.throws(()=>updateQuestion(s,u.mai,q.id,{title:'Sai quyền'}));
 });
 
+test('Đáp án tùy chọn để trống vẫn được lưu khi câu còn ít nhất hai lựa chọn',()=>{
+  const s=fresh(),u=users(s);
+  const q=createQuestion(s,u.lan,{title:'Câu ba lựa chọn',type:'single',choices:['A','B','C'],correctAnswer:0,maxScore:1});
+  updateQuestion(s,u.lan,q.id,{choices:[{text:'50 €'},{text:'65 €'},{text:''}]});
+  assert.equal(byId(s.questions,q.id).choices[2].text,'');
+  assert.throws(()=>updateQuestion(s,u.lan,q.id,{choices:[{text:'50 €'},{text:'65 €'},{text:''}],correctAnswer:2}));
+});
+
 test('Câu hỏi chưa dùng có thể soft delete; chỉ master khôi phục/xóa vĩnh viễn',()=>{
   const s=fresh(),u=users(s);
   const q=createQuestion(s,u.lan,{title:'Câu tạm',type:'single',choices:['A','B'],correctAnswer:0,maxScore:1});

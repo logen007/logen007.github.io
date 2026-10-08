@@ -78,6 +78,8 @@ test('Mỗi form Goethe A1 lấy bố cục authoring từ specs',()=>{
   assert.equal(parts['Viết 2'].layout,'free-response');
   const state=clone(seedState),teacher=byId(state.users,'teacher-lan');
   const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'A1',title:'Form data',stamp:789});
+  const listening=exam.sections.find(section=>section.name==='Nghe 1');
+  assert.deepEqual(byId(state.questions,listening.questionIds[0]).choices,['A','B','']);
   const writing=exam.sections.find(section=>section.name==='Viết 1');
   const writingQuestion=byId(state.questions,writing.questionIds[0]);
   assert.equal(writingQuestion.rubric.length,7);
