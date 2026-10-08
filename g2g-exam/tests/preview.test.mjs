@@ -221,6 +221,8 @@ try{
     assert.match(css,/\.question-stimulus\s*\{[^}]*flex-direction:column/);
     assert.match(css,/\.exam-instruction img\s*\{[^}]*max-width:min\(760px,86%\)/);
     assert.match(css,/\.question-stimulus img\s*\{[^}]*max-width:min\(760px,86%\)/);
+    assert.match(css,/\.exam-instruction img\s*\{[^}]*align-self:flex-start/);
+    assert.match(css,/\.question-stimulus img\s*\{[^}]*align-self:flex-start/);
   });
 
   await test('Audio and illustrated answers retain their media and interaction hooks',()=>{
