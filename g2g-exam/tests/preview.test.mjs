@@ -163,6 +163,8 @@ try{
     assert.deepEqual(radios.map(tag=>attribute(tag,'data-q')),['choice','choice']);
     assert.deepEqual(radios.map(tag=>attribute(tag,'name')),['answer-choice','answer-choice']);
     assert.deepEqual(radios.map(tag=>/\bchecked(?:\s|>)/.test(tag)),[true,false]);
+    assert.match(html,/class="answer-letter">A\.<\/strong> First/);
+    assert.match(html,/class="answer-letter">B\.<\/strong> Second/);
     const matches=tags(html,'select').filter(tag=>hasClass(tag,'answer-match'));
     assert.deepEqual(matches.map(tag=>[attribute(tag,'data-q'),attribute(tag,'data-i')]),[['match','0'],['match','1']]);
     const selected=tags(html,'option').filter(tag=>!tag.includes('data-preview-section-progress')&&/\bselected(?:\s|>)/.test(tag));

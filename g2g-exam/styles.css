@@ -194,6 +194,7 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 .answer-options { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-top:16px; }.answer-options:first-child { margin-top:0; }
 .answer-option { position:relative; display:block; cursor:pointer; }.answer-option>input { position:absolute; opacity:0; }
 .answer-option-body { display:flex; align-items:center; gap:10px; min-height:52px; height:100%; padding:12px 14px; border:1px solid var(--vien); border-radius:var(--r-sm); background:var(--mat); font-size:14px; line-height:1.45; }
+.answer-letter { font-weight:700; }
 .answer-option-body::before { content:''; display:block; box-sizing:border-box; width:18px; height:18px; flex:0 0 18px; border:1.5px solid #a4a9b0; border-radius:50%; background:var(--mat); transition:border-color .16s ease,background .16s ease,box-shadow .16s ease; }.answer-option-body>img { width:52px; height:40px; object-fit:contain; border-radius:6px; }
 .answer-option:hover .answer-option-body { border-color:var(--brand-border); }
 .answer-option>input:checked+.answer-option-body { border-color:var(--brand-border); background:var(--brand-soft); color:var(--brand-text); font-weight:500; }
