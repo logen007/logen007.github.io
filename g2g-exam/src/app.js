@@ -211,6 +211,11 @@ function bindExamInputs(attempt,questions){
     };
     el.onblur=()=>queueAnswer(attempt.id,el.dataset.q,el.value,0);
   });
+  app.querySelectorAll('.answer-form-field').forEach(el=>{const save=()=>{
+    const qid=el.dataset.q,values={};
+    app.querySelectorAll(`.answer-form-field[data-q="${qid}"]`).forEach(field=>{if(field.type!=='radio'||field.checked)values[field.dataset.fieldIndex]=field.value;});
+    setLocalAnswer(qid,values);queueAnswer(attempt.id,qid,values,0);
+  };el.onchange=save;if(el.type!=='radio')el.oninput=save;});
   app.querySelectorAll('.play-audio').forEach(btn=>btn.onclick=async()=>{
     const qid=btn.dataset.q,key=`g2g.audio.${attempt.id}.${qid}`,audio=document.getElementById(`audio-${qid}`);
     if(!audio||sessionStorage.getItem(key))return;
@@ -242,6 +247,11 @@ function bindPreviewInputs(attempt,questions){
     if(counter)counter.textContent=countWords(el.value);
     ui.previewAnswers[el.dataset.q]=el.value;refreshPreviewProgress();
   });
+  app.querySelectorAll('.answer-form-field').forEach(el=>{const save=()=>{
+    const qid=el.dataset.q,values={};
+    app.querySelectorAll(`.answer-form-field[data-q="${qid}"]`).forEach(field=>{if(field.type!=='radio'||field.checked)values[field.dataset.fieldIndex]=field.value;});
+    ui.previewAnswers[qid]=values;refreshPreviewProgress();
+  };el.onchange=save;if(el.type!=='radio')el.oninput=save;});
   app.querySelectorAll('.play-audio').forEach(btn=>btn.onclick=async()=>{
     const qid=btn.dataset.q,key=`g2g.audio.${attempt.id}.${qid}`,audio=document.getElementById(`audio-${qid}`);
     if(!audio||sessionStorage.getItem(key))return;
@@ -272,7 +282,8 @@ function bindSectionAudio(attempt,{preview}){
         await templateRequest('/actions/startPartAudio',{method:'POST',body:{attemptId:attempt.id,sectionId:root.dataset.sectionAudio}});
       }
       locked=true;
-      sessionStorage.setItem(root.dataset.storageKey,'1');
+      if(!preview)sessionStorage.setItem(root.dataset.storageKey,'1');
+      progress.hidden=false;root.classList.add('is-playing');
       let completedDuration=0;
       for(let index=0;index<audios.length;index++)for(let turn=0;turn<repeat;turn++){
         status.textContent=`Đang phát câu ${index+1}/${audios.length}${repeat>1?` · lần ${turn+1}/${repeat}`:''}`;
@@ -280,10 +291,14 @@ function bindSectionAudio(attempt,{preview}){
         completedDuration+=durations[index];setProgress(completedDuration/totalDuration*100);
       }
       if(!preview)await templateRequest('/actions/completePartAudio',{method:'POST',body:{attemptId:attempt.id,sectionId:root.dataset.sectionAudio}});
-      setProgress(100);status.textContent='Đã hết lượt nghe';
+      root.classList.remove('is-playing');progress.hidden=true;
+      if(preview){setProgress(0);status.textContent='Chỉ được nghe một lần';button.disabled=false;}
+      else{setProgress(100);status.textContent='Đã hết lượt nghe';}
     }catch(error){
       if(!locked){sessionStorage.removeItem(root.dataset.storageKey);button.disabled=false;}
-      status.textContent=locked?'Đã hết lượt nghe':'Không thể tải audio';
+      root.classList.remove('is-playing');progress.hidden=true;
+      status.textContent=locked&&!preview?'Đã hết lượt nghe':'Không thể tải audio';
+      if(preview)button.disabled=false;
       notify(error?.message||'Không phát được audio.');
     }
   };
@@ -524,7 +539,7 @@ async function persistBuilderDraft({silent=false}={}){
   setBuilderSaveStatus('saving','Đang lưu…');
   const uploadedInputs=[];
   try{
-    const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map(),questionInstructionImageUrls=new Map();
+    const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map(),questionInstructionImageUrls=new Map(),rubricImageUrls=new Map();
     let sectionImageUrl;
     if(section&&app.querySelector('.part-question[data-question-id]')){
       for(const card of app.querySelectorAll('.part-question[data-question-id]')){
@@ -548,6 +563,10 @@ async function persistBuilderDraft({silent=false}={}){
           questionInstructionImageUrls.set(`${questionId}:${input.dataset.questionInstructionImage}`,await uploadQuestionImage(file));
           uploadedInputs.push(input);
         }
+        for(const row of card.querySelectorAll('[data-rubric-index]')){
+          const input=row.querySelector('[data-rubric-image]'),file=input?.files?.[0];if(!file)continue;
+          rubricImageUrls.set(`${questionId}:${row.dataset.rubricIndex}`,await uploadQuestionImage(file));uploadedInputs.push(input);
+        }
       }
       const sectionImage=[...app.querySelectorAll('[data-section-image]')].find(input=>input.files?.[0]);
       if(sectionImage){
@@ -565,13 +584,18 @@ async function persistBuilderDraft({silent=false}={}){
           const mode=card.dataset.editorMode||'choices';
           let rubric;
           if(mode==='form-fields'||mode==='mixed-form'){
+            const previousQuestion=byId(st.questions,id),previousRubric=previousQuestion?.rubric||[];
             rubric=[...card.querySelectorAll('[data-rubric-index]')].map(row=>({
+              type:row.querySelector('[data-rubric-type]')?.value||'text',
               label:row.querySelector('[data-rubric-label]')?.value.trim()||'',
               answers:row.querySelector('[data-rubric-answer]')?.value.trim()||'',
               maxScore:Math.max(0,Number(row.querySelector('[data-rubric-score]')?.value)||0),
+              hidden:row.dataset.rubricHidden==='true',
+              imageUrl:rubricImageUrls.get(`${id}:${row.dataset.rubricIndex}`)??(previousRubric[Number(row.dataset.rubricIndex)]?.imageUrl||''),
             }));
             if(mode==='form-fields'){
-              updateQuestion(st,user,id,{rubric,maxScore:rubric.reduce((sum,row)=>sum+row.maxScore,0)});
+              const rawTotal=rubric.reduce((sum,row)=>sum+(row.hidden?0:row.maxScore),0),maxScore=Math.abs(rawTotal-Math.round(rawTotal))<0.02?Math.round(rawTotal):rawTotal;
+              updateQuestion(st,user,id,{rubric,maxScore});
               return;
             }
           }
@@ -806,14 +830,26 @@ function bindBuilder(){
     }
   }),'Đã thêm câu hỏi.'));
   app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.'));
-  app.querySelectorAll('[data-action="remove-rubric-row"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>{
-    const question=byId(st.questions,b.dataset.id);if(!question)return;
-    const rubric=[...(question.rubric||[])];rubric.splice(Number(b.dataset.index),1);updateQuestion(st,user,question.id,{rubric});
-  }),'Đã xóa dòng.'));
-  app.querySelectorAll('[data-action="add-rubric-row"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>{
-    const question=byId(st.questions,b.dataset.id);if(!question)return;
-    const rubric=[...(question.rubric||[])],index=Math.max(-1,Number(b.dataset.index));rubric.splice(index+1,0,{label:'',answers:'',maxScore:1});updateQuestion(st,user,question.id,{rubric});
-  }),'Đã thêm dòng.'));
+  app.querySelectorAll('[data-action="remove-rubric-row"]').forEach(b=>b.onclick=async()=>{
+    await saveBuilderDraft({silent:true});
+    await act(()=>repo.transaction(st=>{
+      const question=byId(st.questions,b.dataset.id);if(!question)return;
+      const rubric=[...(question.rubric||[])],index=Number(b.dataset.index),type=rubric[index]?.type||'text';
+      const activeOfType=rubric.filter(row=>(row.type||'text')===type&&!row.hidden).length;
+      if(activeOfType<=1)rubric[index]={...rubric[index],hidden:true};else rubric.splice(index,1);
+      updateQuestion(st,user,question.id,{rubric});
+    }),'Đã cập nhật form.');
+  });
+  app.querySelectorAll('[data-action="add-rubric-row"]').forEach(b=>b.onclick=async()=>{
+    await saveBuilderDraft({silent:true});
+    await act(()=>repo.transaction(st=>{
+      const question=byId(st.questions,b.dataset.id);if(!question)return;
+      const rubric=[...(question.rubric||[])],index=Number(b.dataset.index),source=rubric[index]||{},type=source.type||'text';
+      if(source.hidden)rubric[index]={...source,hidden:false};
+      else rubric.push({type,label:source.label||'',answers:source.answers||'',maxScore:Number(source.maxScore??1),hidden:false,imageUrl:''});
+      updateQuestion(st,user,question.id,{rubric});
+    }),'Đã thêm trường vào cuối form.');
+  });
   const instructionBlocksFor=question=>Array.isArray(question?.instructionBlocks)
     ?question.instructionBlocks
     :[{text:question?.prompt||'',imageUrl:question?.instructionImageUrl||''}];
@@ -835,6 +871,7 @@ function bindBuilder(){
   });
   const section=exam.sections.find(item=>item.id===ui.builderSectionId)||exam.sections[0];
   bindPartBuilder(section?.templateType,{root:app,data,exam,section,pendingAudioUploads,notify});
+  app.querySelectorAll('[data-rubric-type]').forEach(field=>field.addEventListener('change',async()=>{await saveBuilderDraft({silent:true});render();}));
   app.querySelectorAll('.goethe-builder input,.goethe-builder textarea,.goethe-builder select').forEach(field=>{
     field.addEventListener('input',()=>queueBuilderAutosave());
     field.addEventListener('change',()=>queueBuilderAutosave(0));

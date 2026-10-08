@@ -8,25 +8,27 @@ function populateConfiguredSections(state,user,exam){
     const choices=Array.isArray(profile.choices)&&profile.choices.length>=2?clone(profile.choices):['Nháp','Nháp','Nháp'];
     const hasFormRows=['form-fields','mixed-form'].includes(profile.layout)
     const initialRubric=hasFormRows
-      ?Array.from({length:Math.max(1,Number(profile.formFieldCount)||1)},(_,index)=>({label:'',answers:'',maxScore:Number(profile.formDefaultScores?.[index]??1)}))
+      ?Array.from({length:Math.max(1,Number(profile.formFieldCount)||1)},(_,index)=>({type:'text',label:'',answers:'',maxScore:Number(profile.formDefaultScores?.[index]??1),hidden:false,imageUrl:''}))
       :[];
     const initialInstructionBlocks=profile.layout==='mixed-form'?[{text:'',imageUrl:''}]:[];
-    for(const questionId of section.questionIds||[]){
+    for(const [questionIndex,questionId] of (section.questionIds||[]).entries()){
       const question=byId(state.questions,questionId);
       if(!question)continue;
       const patch={};
       if(profile.type&&question.type!==profile.type)patch.type=profile.type;
       if(hasFormRows&&(!Array.isArray(question.rubric)||!question.rubric.length))patch.rubric=clone(initialRubric);
       if(profile.layout==='mixed-form'&&!Array.isArray(question.instructionBlocks))patch.instructionBlocks=clone(initialInstructionBlocks);
+      if((profile.stimulusStarts||[]).map(Number).includes(questionIndex)&&(!Array.isArray(question.instructionBlocks)||!question.instructionBlocks.length))patch.instructionBlocks=[{text:'',imageUrl:''}];
       if(Object.keys(patch).length)updateQuestion(state,user,questionId,patch);
     }
     const additions=[];
     for(let index=(section.questionIds||[]).length;index<required;index++){
+      const isStimulusStart=(profile.stimulusStarts||[]).map(Number).includes(index);
       additions.push(createQuestion(state,user,{
         level:exam.level,skill:section.skill,part:section.name,type:profile.type||'single',title:'Nháp',
         choices,correctAnswer:0,
         rubric:clone(initialRubric),
-        instructionBlocks:clone(initialInstructionBlocks),
+        instructionBlocks:isStimulusStart?[{text:'',imageUrl:''}]:clone(initialInstructionBlocks),
         maxScore:profile.layout==='form-fields'&&initialRubric.length?initialRubric.reduce((sum,row)=>sum+Number(row.maxScore||0),0):Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1),
       }).id);
     }

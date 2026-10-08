@@ -9,6 +9,7 @@
     "choices": ["Đúng", "Sai"],
     "layout": "true-false",
     "instructionImage": true,
+    "stimulusStarts": [2],
     "audio": true
   },
   "template": "GENERIC"

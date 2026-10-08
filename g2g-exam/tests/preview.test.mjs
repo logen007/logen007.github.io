@@ -71,7 +71,7 @@ try{
       assert.equal(actionButtons(header(html),'close-preview').length,1);
       assert.equal(actionButtons(header(html),'reset-preview').length,0);
       assert.ok(tags(html,'div').some(tag=>hasClass(tag,'thi--preview')));
-      assert.equal(actionButtons(html,'reset-preview').length,1);
+      assert.equal(actionButtons(html,'reset-preview').length,0);
       assert.ok(actionButtons(html,'close-preview').length>=1);
       for(const action of ['prev-section','next-section','submit-exam'])assert.equal(actionButtons(html,action).length,0);
       assert.doesNotMatch(html,/\bid="(?:examTimer|examTimeSummary)"/);
@@ -87,9 +87,7 @@ try{
     const outlineStart=html.indexOf(outline[0]),mainStart=html.indexOf('<main');
     assert.ok(outlineStart<mainStart,'The section switcher comes before the exam paper.');
     const outlineHtml=html.slice(outlineStart,mainStart);
-    assert.match(outlineHtml,/data-preview-total(?:\s|>)/);
-    assert.match(outlineHtml,/data-preview-progress(?:\s|>)/);
-    assert.equal(actionButtons(outlineHtml,'reset-preview').length,1);
+    assert.doesNotMatch(outlineHtml,/data-preview-total|data-preview-progress|reset-preview/);
     const picker=tags(outlineHtml,'select').filter(tag=>attribute(tag,'data-action')==='preview-select-section');
     assert.equal(picker.length,1);
     assert.match(outlineHtml,/for="previewSectionSelect"/);
@@ -97,12 +95,7 @@ try{
     assert.deepEqual(sections.map(tag=>attribute(tag,'value')),['0','1','2']);
     assert.deepEqual(sections.map(tag=>/\bselected(?:\s|>)/.test(tag)),[false,true,false]);
     assert.equal(actionButtons(html,'preview-select-section').length,0);
-    for(const index of [0,1,2]){
-      assert.match(html,new RegExp(`data-preview-section-progress="${index}"`));
-    }
-    assert.match(html,/data-preview-total(?:\s|>)/);
-    assert.match(html,/data-preview-current(?:\s|>)/);
-    assert.match(html,/data-preview-progress(?:\s|>)/);
+    assert.doesNotMatch(html,/data-preview-total|data-preview-current|data-preview-progress|data-preview-section-progress/);
     const real=examHtml({...input,preview:false});
     assert.equal(tags(real,'div').filter(tag=>hasClass(tag,'preview-outline')).length,0);
     assert.doesNotMatch(real,/\bdata-preview-/);
@@ -163,7 +156,7 @@ try{
     const matches=tags(html,'select').filter(tag=>hasClass(tag,'answer-match'));
     assert.deepEqual(matches.map(tag=>[attribute(tag,'data-q'),attribute(tag,'data-i')]),[['match','0'],['match','1']]);
     const selected=tags(html,'option').filter(tag=>!tag.includes('data-preview-section-progress')&&/\bselected(?:\s|>)/.test(tag));
-    assert.deepEqual(selected.map(tag=>attribute(tag,'value')),['B']);
+    assert.deepEqual(selected.map(tag=>attribute(tag,'value')),['0','B']);
     const written=tags(html,'textarea').find(tag=>hasClass(tag,'answer-text'));
     assert.equal(attribute(written,'data-q'),'written');
     assert.match(html,/<textarea\b[^>]*>Two words<\/textarea>/);
@@ -229,12 +222,44 @@ try{
       assert.equal(tags(html,'button').filter(tag=>hasClass(tag,'play-audio')).length,0);
       assert.match(html,/data-repeat="2"/);
       assert.match(html,/section-audio-progress/);
-      assert.doesNotMatch(html,/Chỉ nghe 1 lần|Nghe audio/);
+      assert.match(html,/section-audio-progress[^>]*hidden/);
+      assert.match(html,/Chỉ được nghe một lần/);
     }
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
     assert.match(source,/Promise\.all\(audios\.map\(readAudioDuration\)\)/);
     assert.match(source,/completedDuration\+currentTime/);
     assert.match(source,/requestAnimationFrame\(tick\)/);
+  });
+
+  await test('Reading part one inserts its second stimulus before question three',()=>{
+    const input=fixture();
+    input.exam.sections[0].questionProfile={stimulusStarts:[2]};
+    input.questions=[
+      {id:'first',type:'single',title:'Question one',choices:['Đúng','Sai']},
+      {id:'second',type:'single',title:'Question two',choices:['Đúng','Sai']},
+      {id:'third',type:'single',title:'Question three',choices:['Đúng','Sai'],instructionBlocks:[{text:'Second stimulus',imageUrl:'/images/read-2.png'}]},
+      {id:'fourth',type:'single',title:'Question four',choices:['Đúng','Sai']},
+      {id:'fifth',type:'single',title:'Question five',choices:['Đúng','Sai']},
+    ];
+    input.exam.sections[0].questionIds=input.questions.map(question=>question.id);
+    const html=examHtml({...input,questions:input.questions});
+    assert.equal((html.match(/class="question-stimulus"/g)||[]).length,1);
+    assert.ok(html.indexOf('Second stimulus')<html.indexOf('Question three'));
+    assert.match(html,/src="\/images\/read-2\.png"/);
+  });
+
+  await test('Writing form groups equal labels and numbers fractional score bundles once',()=>{
+    const input=fixture(),question={id:'writing-form',type:'writing',title:'Form',rubric:[
+      {type:'text',label:'Name',maxScore:.33},{type:'text',label:'Name',maxScore:.33},{type:'text',label:'Name',maxScore:.33},
+      {type:'truefalse',label:'Deutsch gelernt?',maxScore:1},{type:'choice',label:'Kurszeit',answers:'9–12 Uhr|13–16 Uhr',maxScore:1},
+      {type:'image',label:'Formular',imageUrl:'/images/form.png',maxScore:0},
+    ]};
+    input.exam.sections[0].questionIds=[question.id];input.questions=[question];input.attempt.answers={[question.id]:{'0':'Eva','3':'Đúng'}};
+    const html=examHtml(input);
+    assert.equal((html.match(/class="writing-display-group"/g)||[]).length,4);
+    assert.equal((html.match(/class="writing-point">\(0\)/g)||[]).length,1);
+    assert.equal((html.match(/class="writing-point">\(1\)/g)||[]).length,1);
+    assert.match(html,/class="writing-binary"/);assert.match(html,/Chọn phương án/);assert.match(html,/src="\/images\/form\.png"/);
   });
 
   await test('A shared section instruction appears once and an empty question list still has navigation',()=>{
@@ -243,7 +268,7 @@ try{
     let html=examHtml(input);
     assert.equal(html.split(input.exam.sections[0].instruction).length-1,1);
     html=examHtml({...input,questions:[],attempt:{id:'preview-empty',answers:{}},previewSummary:{answered:0,total:0,sections:[]}});
-    assert.match(html,/data-preview-current[^>]*>0\/0/);
+    assert.doesNotMatch(html,/0\/0 câu|data-preview-current/);
     assert.doesNotMatch(html,/NaN|Infinity/);
     assert.equal(actionButtons(html,'preview-next-section').length,1);
   });

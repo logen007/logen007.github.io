@@ -70,6 +70,7 @@ test('Mỗi form Goethe A1 lấy bố cục authoring từ specs',()=>{
   assert.deepEqual(parts['Nghe 2'].choices,['Đúng','Sai']);
   assert.equal(parts['Nghe 3'].choiceImages,true);
   assert.equal(parts['Đọc 1'].instructionImage,true);
+  assert.deepEqual(parts['Đọc 1'].stimulusStarts,[2]);
   assert.equal(parts['Đọc 2'].choiceImages,true);
   assert.equal(parts['Đọc 3'].choiceImages,true);
   assert.equal(parts['Viết 1'].layout,'mixed-form');
@@ -78,7 +79,9 @@ test('Mỗi form Goethe A1 lấy bố cục authoring từ specs',()=>{
   const state=clone(seedState),teacher=byId(state.users,'teacher-lan');
   const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'A1',title:'Form data',stamp:789});
   const writing=exam.sections.find(section=>section.name==='Viết 1');
-  assert.equal(byId(state.questions,writing.questionIds[0]).rubric.length,7);
+  const writingQuestion=byId(state.questions,writing.questionIds[0]);
+  assert.equal(writingQuestion.rubric.length,7);
+  assert.ok(writingQuestion.rubric.every(row=>row.type==='text'&&row.hidden===false));
 });
 
 test('Production image phục vụ specs JSON cùng app',()=>{
@@ -143,7 +146,7 @@ test('Preview tách rõ khỏi bài thi thật và cho phép kiểm tra mọi ph
   const app=read('src/app.js'),student=read('src/views/student.js'),css=read('styles.css');
   assert.ok(student.includes('class="preview-chip"'));
   assert.ok(student.includes('data-action="preview-select-section"'));
-  assert.ok(student.includes('data-action="reset-preview"'));
+  assert.equal(student.includes('data-action="reset-preview"'),false);
   assert.ok(app.includes('previewSummary'));
   assert.ok(app.includes('ui.previewAnswers={}'));
   assert.ok(app.includes('findIndex(section=>section.id===ui.builderSectionId)'));
