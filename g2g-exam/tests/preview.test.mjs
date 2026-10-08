@@ -214,6 +214,14 @@ try{
     }
   });
 
+  await test('Instruction images render below text at the approved width',()=>{
+    const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+    assert.match(css,/\.exam-instruction\s*\{[^}]*flex-direction:column/);
+    assert.match(css,/\.question-stimulus\s*\{[^}]*flex-direction:column/);
+    assert.match(css,/\.exam-instruction img\s*\{[^}]*max-width:min\(760px,86%\)/);
+    assert.match(css,/\.question-stimulus img\s*\{[^}]*max-width:min\(760px,86%\)/);
+  });
+
   await test('Audio and illustrated answers retain their media and interaction hooks',()=>{
     const input=fixture();
     input.questions[0].audioUrl='/audio/choice.mp3?name="clip"';
