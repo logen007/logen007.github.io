@@ -271,6 +271,7 @@ function bindSectionAudio(attempt,{preview}){
       }
       if(!preview)await templateRequest('/actions/completePartAudio',{method:'POST',body:{attemptId:attempt.id,sectionId:root.dataset.sectionAudio}});
       root.querySelector('b').textContent='Đã nghe hết audio';
+      root.querySelector('span').textContent='Đã hết lượt nghe';
       status.textContent='Audio đã phát xong và không thể phát lại.';
     }catch(error){
       if(!locked&& !preview){sessionStorage.removeItem(root.dataset.storageKey);button.disabled=false;}
