@@ -15,7 +15,7 @@ export function writingFormEditor(q,{readOnly=false}={}){
     else {
       content=field('Nhãn hiển thị','data-rubric-label',row.label,disabled);
       if(scored){
-        if(type==='text')content+=field('Đáp án tham khảo (chỉ giáo viên thấy)','data-rubric-answer',row.answers,disabled);
+        if(type==='text')content+=`${field('Đáp án đúng','data-rubric-answer',row.answers,disabled)}<small class="writing-answer-help">Mỗi đáp án được chấp nhận cách nhau bởi dấu |. Ví dụ: đáp án 1|đáp án 2|đáp án 3</small>`;
         else content+=`<div class="writing-option-setup">${writingOptions(row).map((option,i)=>`<label><input type="radio" data-rubric-correct name="form-correct-${esc(q.id)}-${index}" value="${i}" ${row.correctIndex!=null&&Number(row.correctIndex)===i?'checked':''} ${disabled}><input data-rubric-option aria-label="Phương án ${i+1}" value="${esc(option)}" ${disabled}></label>`).join('')}${type==='choice'?`<button type="button" class="text-link" data-action="add-form-option" data-id="${esc(q.id)}" data-index="${index}" ${disabled}>+ Phương án</button>`:''}<small>Chọn đáp án tham khảo; học viên chỉ thấy các phương án có nội dung.</small></div>`;
       }else content+=field(type==='signature'?'Tên ký mẫu':'Nội dung có sẵn','data-rubric-value',row.value??row.answers,disabled);
       if(type==='static')content+=`<label class="writing-example-toggle"><input type="checkbox" data-rubric-example ${row.example?'checked':''} ${disabled}> Đánh dấu ví dụ (0)</label>`;
@@ -33,7 +33,7 @@ export function readWritingRow(element,previous={}){
 export function writingSubmission(q,answer={}){
   return `<dl>${(q.rubric||[]).flatMap((row,index)=>{
     if(!isScoredWritingField(row))return [];
-    const expected=['choice','truefalse'].includes(row.type)?writingOptions(row)[row.correctIndex]||'':row.answers||'';
+    const expected=['choice','truefalse'].includes(row.type)?writingOptions(row)[row.correctIndex]||'':String(row.answers||'').split('|').map(item=>item.trim()).filter(Boolean).join(' · ');
     return [`<dt><strong>${esc(row.label||'Ô điền')} · ${Number(row.maxScore)||0} điểm</strong></dt><dd>${esc(answer?.[index]||'(Chưa trả lời)')}${expected?`<br><small>Tham khảo: ${esc(expected)}</small>`:''}</dd>`];
   }).join('')}</dl>`;
 }

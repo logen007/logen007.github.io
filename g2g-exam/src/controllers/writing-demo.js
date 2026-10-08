@@ -11,8 +11,8 @@ export function patientWritingDemo(){
       {type:'note',value:'Adresse:',maxScore:0},
       given('Straße, Hausnummer:','August-Bebel-Str.'),given('Straße, Hausnummer:','22'),
       given('Postleitzahl, Wohnort:','20969'),blank('Postleitzahl, Wohnort:','Hamburg'),
-      blank('Alter:','30'),given('Krankenkasse:','AOK'),blank('Beruf:','Reiseleiter'),
-      blank('Seit wann sind Sie krank?','seit gestern'),blank('Was fehlt Ihnen?','Fieber / 39 Grad Fieber'),
+      blank('Alter:','30|30 Jahre'),given('Krankenkasse:','AOK'),blank('Beruf:','Reiseleiter'),
+      blank('Seit wann sind Sie krank?','seit gestern|gestern'),blank('Was fehlt Ihnen?','Fieber|39 Grad Fieber'),
       given('Datum:','16.06.'),{type:'signature',label:'Unterschrift:',value:'Wladimir Serjakov',maxScore:0},
     ],mixedChoiceHidden:true},
   };
