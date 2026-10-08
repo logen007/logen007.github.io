@@ -228,8 +228,13 @@ try{
       assert.equal(tags(html,'button').filter(tag=>hasClass(tag,'section-audio-play')).length,1);
       assert.equal(tags(html,'button').filter(tag=>hasClass(tag,'play-audio')).length,0);
       assert.match(html,/data-repeat="2"/);
-      assert.match(html,/Chỉ nghe 1 lần/);
+      assert.match(html,/section-audio-progress/);
+      assert.doesNotMatch(html,/Chỉ nghe 1 lần|Nghe audio/);
     }
+    const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+    assert.match(source,/Promise\.all\(audios\.map\(readAudioDuration\)\)/);
+    assert.match(source,/completedDuration\+currentTime/);
+    assert.match(source,/requestAnimationFrame\(tick\)/);
   });
 
   await test('A shared section instruction appears once and an empty question list still has navigation',()=>{

@@ -253,43 +253,62 @@ function bindPreviewInputs(attempt,questions){
 function bindSectionAudio(attempt,{preview}){
   const root=app.querySelector('[data-section-audio]');if(!root)return;
   const button=root.querySelector('.section-audio-play'),status=root.querySelector('.section-audio-status');
+  const progress=root.querySelector('.section-audio-progress'),progressFill=progress?.querySelector('i');
   const audios=[...root.querySelectorAll('.section-audio-segment')],repeat=Math.max(1,Number(root.dataset.repeat)||1);
   if(!button||!audios.length)return;
+  const setProgress=value=>{
+    const percent=Math.max(0,Math.min(100,Number(value)||0));
+    if(progressFill)progressFill.style.width=`${percent}%`;
+    progress?.setAttribute('aria-valuenow',String(Math.round(percent)));
+  };
   button.onclick=async()=>{
     if(button.disabled)return;
     button.disabled=true;
     let locked=false;
     try{
+      const durations=await Promise.all(audios.map(readAudioDuration));
+      const totalDuration=durations.reduce((sum,duration)=>sum+duration*repeat,0);
       if(!preview){
         await templateRequest('/actions/startPartAudio',{method:'POST',body:{attemptId:attempt.id,sectionId:root.dataset.sectionAudio}});
-        locked=true;
       }
+      locked=true;
       sessionStorage.setItem(root.dataset.storageKey,'1');
+      let completedDuration=0;
       for(let index=0;index<audios.length;index++)for(let turn=0;turn<repeat;turn++){
         status.textContent=`Đang phát câu ${index+1}/${audios.length}${repeat>1?` · lần ${turn+1}/${repeat}`:''}`;
-        await playSectionSegment(audios[index]);
+        await playSectionSegment(audios[index],currentTime=>setProgress((completedDuration+currentTime)/totalDuration*100));
+        completedDuration+=durations[index];setProgress(completedDuration/totalDuration*100);
       }
       if(!preview)await templateRequest('/actions/completePartAudio',{method:'POST',body:{attemptId:attempt.id,sectionId:root.dataset.sectionAudio}});
-      root.querySelector('b').textContent='Đã nghe hết audio';
-      root.querySelector('span').textContent='Đã hết lượt nghe';
-      status.textContent='Audio đã phát xong và không thể phát lại.';
+      setProgress(100);status.textContent='Đã hết lượt nghe';
     }catch(error){
-      if(!locked&& !preview){sessionStorage.removeItem(root.dataset.storageKey);button.disabled=false;}
-      status.textContent=locked||preview?'Không thể tiếp tục phát audio.':'Không thể bắt đầu audio. Hãy kiểm tra kết nối.';
+      if(!locked){sessionStorage.removeItem(root.dataset.storageKey);button.disabled=false;}
+      status.textContent=locked?'Đã hết lượt nghe':'Không thể tải audio';
       notify(error?.message||'Không phát được audio.');
     }
   };
 }
 
-function playSectionSegment(audio){
+function readAudioDuration(audio){
+  if(Number.isFinite(audio.duration)&&audio.duration>0)return Promise.resolve(audio.duration);
   return new Promise((resolve,reject)=>{
-    let active=true;
-    const cleanup=()=>{active=false;audio.onended=null;audio.onerror=null;audio.onpause=null;};
+    const cleanup=()=>{audio.removeEventListener('loadedmetadata',ready);audio.removeEventListener('error',failed);};
+    const ready=()=>{if(!Number.isFinite(audio.duration)||audio.duration<=0)return failed();cleanup();resolve(audio.duration);};
+    const failed=()=>{cleanup();reject(new Error('Không đọc được thời lượng audio.'));};
+    audio.addEventListener('loadedmetadata',ready,{once:true});audio.addEventListener('error',failed,{once:true});audio.load();
+  });
+}
+
+function playSectionSegment(audio,onProgress){
+  return new Promise((resolve,reject)=>{
+    let active=true,frame=0;
+    const tick=()=>{if(!active)return;onProgress(audio.currentTime);frame=requestAnimationFrame(tick);};
+    const cleanup=()=>{active=false;if(frame)cancelAnimationFrame(frame);audio.onended=null;audio.onerror=null;audio.onpause=null;};
     audio.controls=false;audio.currentTime=0;
     audio.onpause=()=>{if(active&&!audio.ended)setTimeout(()=>audio.play().catch(reject),0);};
-    audio.onended=()=>{cleanup();resolve();};
+    audio.onended=()=>{onProgress(audio.duration);cleanup();resolve();};
     audio.onerror=()=>{cleanup();reject(new Error('Không phát được một audio trong phần.'));};
-    audio.play().catch(error=>{cleanup();reject(error);});
+    audio.play().then(tick).catch(error=>{cleanup();reject(error);});
   });
 }
 

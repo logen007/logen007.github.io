@@ -71,9 +71,9 @@ function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
   const policy=section.audioPolicy||{},audioQuestions=questions.filter(question=>String(question.audioUrl||'').trim());
   if(section.skillKey!=='listening'||policy.mode!=='per_question_segment'||!audioQuestions.length)return '';
   const repeat=Math.max(1,Number(policy.segmentRepeat)||1),key=`g2g.section-audio.${attempt.id}.${section.id}`;
-  const used=!preview&&(Boolean(attempt.audioSessions?.[section.id]?.startedAt)||Boolean(sessionStorage.getItem(key)));
+  const used=Boolean(attempt.audioSessions?.[section.id]?.startedAt)||Boolean(sessionStorage.getItem(key));
   const audios=audioQuestions.map((question,index)=>`<audio class="section-audio-segment" data-order="${index}" preload="metadata" src="${esc(question.audioUrl)}"></audio>`).join('');
-  return `<section class="section-audio" data-section-audio="${esc(section.id)}" data-repeat="${repeat}" data-storage-key="${esc(key)}">${audios}<button type="button" class="section-audio-play" aria-label="Phát audio của phần" ${used?'disabled':''}>${iconHtml('play')}</button><div><b>${used?'Audio đã được sử dụng':'Nghe audio'}</b><span>${used?'Đã hết lượt nghe':'Chỉ nghe 1 lần'}</span><small class="section-audio-status" aria-live="polite">${used?'Không thể phát lại.':''}</small></div></section>`;
+  return `<section class="section-audio" data-section-audio="${esc(section.id)}" data-repeat="${repeat}" data-storage-key="${esc(key)}">${audios}<button type="button" class="section-audio-play" aria-label="Phát audio của phần" ${used?'disabled':''}>${iconHtml('play')}</button><div class="section-audio-body"><span class="section-audio-progress" role="progressbar" aria-label="Tiến độ audio" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${used?100:0}"><i style="width:${used?100:0}%"></i></span><span class="section-audio-status" aria-live="polite">${used?'Đã hết lượt nghe':''}</span></div></section>`;
 }
 
 export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false,hideAudio=false}={}){
