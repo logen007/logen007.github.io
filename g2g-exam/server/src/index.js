@@ -18,8 +18,11 @@ import {startMediaGarbageCollector} from './media-gc.js';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const publicDir=path.resolve(here,'../../public');
 const uploadDir=path.resolve(process.env.UPLOAD_DIR||'/data/uploads');
-const demoMediaUploadsEnabled=process.env.DEMO_MEDIA_UPLOAD_ENABLED==='true';
+const demoMediaUploadsEnabled=process.env.NODE_ENV!=='production'&&process.env.DEMO_MEDIA_UPLOAD_ENABLED==='true';
 const demoUploadWindows=new Map();
+if(process.env.NODE_ENV==='production'&&(!process.env.COOKIE_SECRET||/^(development-only-change-me|CHANGE_TO_A_LONG_RANDOM_VALUE)$/.test(process.env.COOKIE_SECRET))){
+  throw new Error('Production requires a private COOKIE_SECRET; refusing insecure sessions.');
+}
 await fs.mkdir(uploadDir,{recursive:true});
 await initDb();
 
@@ -31,7 +34,8 @@ await app.register(multipart,{limits:{fileSize:25*1024*1024,files:1}});
 
 app.addHook('onSend',async(request,reply,payload)=>{
   const pathname=String(request.url||'').split('?')[0];
-  const noCache=['/', '/index.html', '/vi.html', '/runtime-config.js', '/styles.css', '/enhancements.css'].includes(pathname)||pathname.startsWith('/src/')||pathname.startsWith('/specs/');
+  const noCache=['/', '/adm', '/teacher', '/student', '/index.html', '/vi.html', '/runtime-config.js', '/styles.css', '/enhancements.css'].includes(pathname)||pathname.startsWith('/src/')||pathname.startsWith('/specs/');
+  if(pathname.startsWith('/api/'))reply.header('Cache-Control','no-store');
   if(noCache){
     reply.header('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
     reply.header('Pragma','no-cache');reply.header('Expires','0');reply.header('Surrogate-Control','no-store');

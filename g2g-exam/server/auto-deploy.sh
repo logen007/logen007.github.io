@@ -57,6 +57,23 @@ if ! sh server/check-code.sh; then
   exit 1
 fi
 
+# One protected PostgreSQL backup before the demo -> authenticated-server cutover.
+# Never import browser data, reset the database, or remove upload/database volumes.
+cutover_backup="$STATE_DIR/pre-google-db-cutover.sql.gz"
+postgres_id="$(docker compose -f "$COMPOSE_FILE" ps -q postgres)"
+if [ -n "$postgres_id" ] && [ ! -s "$cutover_backup" ]; then
+  umask 077
+  backup_sql="$(mktemp "$STATE_DIR/google-db-cutover-XXXXXX.sql")"
+  if ! docker compose -f "$COMPOSE_FILE" exec -T postgres pg_dump -U g2g g2g_exam >"$backup_sql"; then
+    log "database backup FAILED; refusing cutover"
+    exit 1
+  fi
+  gzip "$backup_sql"
+  gzip -t "$backup_sql.gz"
+  mv "$backup_sql.gz" "$cutover_backup"
+  log "database backup saved before Google/server cutover"
+fi
+
 if ! docker compose -f "$COMPOSE_FILE" up -d --build app; then
   log "docker build/start FAILED at $(short "$target"); will retry next timer run"
   exit 1

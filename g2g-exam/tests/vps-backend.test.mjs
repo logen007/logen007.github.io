@@ -69,9 +69,9 @@ test('Compose chỉ publish app vào loopback khi không dùng Traefik',()=>{
   assert.ok(compose.includes('postgres:16-alpine'));
 });
 
-test('Compose Traefik bật upload media cho chế độ demo',()=>{
-  const compose=read('docker-compose.traefik.yml');
-  assert.ok(compose.includes('DEMO_MEDIA_UPLOAD_ENABLED: "true"'));
+test('Compose production tắt upload media không xác thực',()=>{
+  for(const file of ['docker-compose.traefik.yml','docker-compose.vps.yml'])assert.ok(read(file).includes('DEMO_MEDIA_UPLOAD_ENABLED: "false"'));
+  assert.ok(read('server/src/index.js').includes("process.env.NODE_ENV!=='production'&&process.env.DEMO_MEDIA_UPLOAD_ENABLED==='true'"));
 });
 
 test('Production Docker dùng source modules trực tiếp, không overlay runtime logic',()=>{

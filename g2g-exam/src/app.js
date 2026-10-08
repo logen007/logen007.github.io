@@ -701,7 +701,7 @@ async function openBuilder(id){
   let exam=byId(data.exams,id);
   const changed=await repo.transaction(st=>{
     const migrated=ensureExamMatchesConfiguredSpec(st,user,id);
-    const populated=populateGoetheA1TestFixture(st,user,id);
+    const populated=repo.mode==='local'&&populateGoetheA1TestFixture(st,user,id);
     return migrated||populated;
   });
   if(changed){data=await repo.getState();exam=byId(data.exams,id);}

@@ -25,7 +25,7 @@ services:
       - server/.env
     environment:
       DATABASE_URL: postgresql://g2g:${POSTGRES_PASSWORD}@postgres:5432/g2g_exam
-      DEMO_MEDIA_UPLOAD_ENABLED: "true"
+      DEMO_MEDIA_UPLOAD_ENABLED: "false"
     depends_on:
       postgres:
         condition: service_healthy

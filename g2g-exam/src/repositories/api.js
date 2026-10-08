@@ -2,7 +2,7 @@ import {clone,normalizeState} from '../core.js';
 
 const API=String(globalThis.G2G_API_BASE||'/api').replace(/\/$/,'');
 
-async function request(path,{method='GET',body,form,timeoutMs=0}={}){
+async function request(path,{method='GET',body,form,timeoutMs=15000}={}){
   const controller=timeoutMs>0?new AbortController():null;
   const timer=controller?setTimeout(()=>controller.abort(),timeoutMs):null;
   const options={method,credentials:'include',headers:{},signal:controller?.signal};
@@ -30,17 +30,12 @@ export class ApiRepository{
   constructor(){this.mode='api';this.state=normalizeState({});this.user=null;this.listeners=new Set();this.poll=null;}
 
   async init(){
-    // Login must not wait for the full state payload. Master state can include users,
-    // attempts and audit history, so loading it in the critical boot path made the
-    // browser appear frozen after Google redirected back to the app.
+    // Resolve identity first; authenticated deep links require state before render.
+    // Both requests are bounded. Failure must not fall back to local demo state.
     const me=await request('/auth/me',{timeoutMs:7000});
     this.user=me.user||null;
+    if(this.user)await this.reload();
     this.startPolling();
-    if(this.user){
-      setTimeout(()=>{
-        this.reload().catch(error=>console.error('Không tải được dữ liệu ban đầu.',error));
-      },0);
-    }
     return this;
   }
 

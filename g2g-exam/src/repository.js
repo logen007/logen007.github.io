@@ -3,7 +3,7 @@ import {ApiRepository} from './repositories/api.js';
 import {LocalRepository} from './repositories/local.js';
 
 export async function createRepository(){
-  const demo=Boolean(globalThis.G2G_DEMO_BYPASS);
-  const repo=demo ? new LocalRepository() : (hasApiBackend() ? new ApiRepository() : new LocalRepository());
+  // A configured backend must never silently fall back to browser/demo storage.
+  const repo=hasApiBackend() ? new ApiRepository() : new LocalRepository();
   return repo.init();
 }
