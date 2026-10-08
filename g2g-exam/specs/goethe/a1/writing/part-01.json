@@ -7,6 +7,7 @@
   "questionProfile": {
     "type": "writing",
     "layout": "mixed-form",
+    "formFrame": true,
     "instructionImage": true,
     "formFieldCount": 7,
     "formDefaultScores": [1, 1, 0.25, 0.25, 0.25, 0.25, 1],

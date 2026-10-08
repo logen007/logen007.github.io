@@ -29,6 +29,7 @@ import {populateGoetheA1TestFixture} from './controllers/goethe-a1-test-fixture.
 import {hasPartTemplate,openPartTemplate,bindPartBuilder} from './part-templates/index.js';
 import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
+import {isScoredWritingField,writingFormScore} from './domain/writing-form.js';
 
 initializeTheme();
 const app=document.getElementById('app');
@@ -617,16 +618,18 @@ async function persistBuilderDraft({silent=false}={}){
           let rubric;
           if(mode==='form-fields'||mode==='mixed-form'){
             const previousQuestion=byId(st.questions,id),previousRubric=previousQuestion?.rubric||[];
-            rubric=[...card.querySelectorAll('[data-rubric-index]')].map(row=>({
-              type:row.querySelector('[data-rubric-type]')?.value||'text',
+            rubric=[...card.querySelectorAll('[data-rubric-index]')].map(row=>{
+              const type=row.querySelector('[data-rubric-type]')?.value||'text',hidden=row.dataset.rubricHidden==='true';
+              return {
+              type,
               label:row.querySelector('[data-rubric-label]')?.value.trim()||'',
               answers:row.querySelector('[data-rubric-answer]')?.value.trim()||'',
-              maxScore:Math.max(0,Number(row.querySelector('[data-rubric-score]')?.value)||0),
-              hidden:row.dataset.rubricHidden==='true',
+              maxScore:isScoredWritingField({type,hidden})?Math.max(0,Number(row.querySelector('[data-rubric-score]')?.value)||0):0,
+              hidden,
               imageUrl:rubricImageUrls.get(`${id}:${row.dataset.rubricIndex}`)??(previousRubric[Number(row.dataset.rubricIndex)]?.imageUrl||''),
-            }));
+            };});
             if(mode==='form-fields'){
-              const rawTotal=rubric.reduce((sum,row)=>sum+(row.hidden?0:row.maxScore),0),maxScore=Math.abs(rawTotal-Math.round(rawTotal))<0.02?Math.round(rawTotal):rawTotal;
+              const maxScore=writingFormScore(rubric);
               updateQuestion(st,user,id,{rubric,maxScore});
               return;
             }
@@ -651,7 +654,10 @@ async function persistBuilderDraft({silent=false}={}){
           const instructionImageUrl=section.questionProfile?.questionImage===true
             ?(questionCardImageUrls.get(id)??previousQuestion?.instructionImageUrl??'')
             :firstInstruction.imageUrl;
-          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:firstInstruction.text,choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl,instructionBlocks,mixedChoiceHidden:card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden==='true'});
+          const mixedChoiceHidden=card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden==='true';
+          const choiceScore=mixedChoiceHidden?0:Math.max(0,Number(scoreField?.value)||0);
+          const maxScore=mode==='mixed-form'?writingFormScore(rubric)+choiceScore:choiceScore;
+          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:firstInstruction.text,choices,correctAnswer:Number(correct?.value??0),maxScore,audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl,instructionBlocks,mixedChoiceHidden});
         });
       }
     });

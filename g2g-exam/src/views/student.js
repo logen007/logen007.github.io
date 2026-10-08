@@ -4,6 +4,7 @@ import {
 } from '../core.js';
 import {esc,fmtDate,statusClass,statusText,countWords} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
+import {isScoredWritingField} from '../domain/writing-form.js';
 
 export function loginHtml({mode}){
   const demo=mode==='local'?`<div class="che-do-demo"><div class="phu-de">Tài khoản thử nghiệm</div><div class="chon-demo"><button class="nut full demo-login" data-id="student-a">Vào vai Học viên</button><button class="nut full demo-login" data-id="teacher-lan">Vào vai Cô Lan</button><button class="nut full demo-login" data-id="master-1">Vào vai Quản trị cấp cao</button></div></div>`:'';
@@ -46,7 +47,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,online,preview=fal
   const currentCount=`<span data-current-answer-count>${answered}/${questions.length} câu đã trả lời</span>`;
   const stimulusStarts=new Set((sec.questionProfile?.stimulusStarts||[]).map(Number));
   const questionOffset=exam.sections.slice(0,sectionIndex).reduce((total,item)=>total+(item.questionIds||[]).length,0);
-  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${questions.map((q,index)=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(index),questionNumber:questionOffset+index+1})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
+  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${questions.map((q,index)=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(index),questionNumber:questionOffset+index+1,formFrame:sec.questionProfile?.formFrame===true})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(sec.name)}</h1></div></div>`
     :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(sec.name)}</h1><div class="phu-de">${sec.showTimer!==false?'Có giới hạn thời gian · ':''}${currentCount}</div></div></div>`;
@@ -93,7 +94,7 @@ function questionPromptHtml(text,q){
     :esc(part)).join('');
 }
 
-export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null}={}){
+export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null,formFrame=false}={}){
   const played=sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`);
   const audio=!hideAudio&&q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" title="Audio chỉ phát theo quy định của đề thi." ${played?'disabled':''}>${played?'Đã phát audio':'Phát audio'}</button>${preview?'':'<span class="phu-de">Audio chỉ phát theo quy định của đề thi.</span>'}</div>`:'';
   const rawPrompt=String(hasStimulus?q.title||'':q.prompt||q.title||'').trim();
@@ -110,28 +111,31 @@ export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',previ
     return `<div class="${root}" data-q="${q.id}">${head}<div class="answer-options ${preview&&choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}" role="radiogroup" aria-label="${esc(questionAriaText||'Chọn đáp án')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="answer-one" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(`${letter}. ${text||''}`)}" value="${index}" ${String(answer)===String(index)?'checked':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span><strong class="answer-letter">${letter}.</strong> ${esc(text)}</span></span></label>`;}).join('')}</div></div>`;
   }
   if(q.type==='matching')return `<div class="${root}" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div class="matching-row"><b>${esc(p[0])}</b><select class="dap-an answer-match" data-q="${q.id}" data-i="${i}"><option value="">Chọn đáp án</option>${[...new Set((q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;
-  if(q.type==='writing')return `<div class="${root}" data-q="${q.id}">${head}${Array.isArray(q.rubric)&&q.rubric.length?writingFieldsHtml(q,answer):`<textarea class="viet answer-text" data-q="${q.id}" placeholder="Viết bài tại đây...">${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> từ</div>`}</div>`;
+  if(q.type==='writing')return `<div class="${root}" data-q="${q.id}">${head}${Array.isArray(q.rubric)&&q.rubric.length?writingFieldsHtml(q,answer,{framed:formFrame}):`<textarea class="viet answer-text" data-q="${q.id}" placeholder="Viết bài tại đây...">${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> từ</div>`}</div>`;
   if(q.type==='speaking')return `<div class="cau-thi" data-q="${q.id}">${head}<div class="goi-y">Phần Nói được thực hiện theo hướng dẫn của giáo viên/phòng thi thử và được chấm thủ công.</div></div>`;
   return `<div class="cau-thi">${head}</div>`;
 }
 
-function writingFieldsHtml(q,answer){
+function writingFieldsHtml(q,answer,{framed=false}={}){
   const values=answer&&typeof answer==='object'?answer:{},rows=(q.rubric||[]).map((row,index)=>({...row,index})).filter(row=>!row.hidden);
   let points=0,lastLabel=null,groups=[];
   for(const row of rows){
-    const score=Math.max(0,Number(row.maxScore)||0),atBoundary=Math.abs(points-Math.round(points))<0.02;
+    const score=isScoredWritingField(row)?Math.max(0,Number(row.maxScore)||0):0,atBoundary=Math.abs(points-Math.round(points))<0.02;
     const marker=score>0&&atBoundary?`(${Math.round(points)})`:'';points+=score;
     const type=row.type||'text',value=values[row.index]??'',options=String(row.answers||'').split('|').map(item=>item.trim()).filter(Boolean);
     let control='';
-    if(type==='image')control=row.imageUrl?`<img class="writing-form-image" src="${esc(row.imageUrl)}" alt="${esc(row.label||'Hình minh họa')}">`:'';
+    if(type==='heading')control=`<strong class="writing-form-heading">${esc(row.answers||row.label||'')}</strong>`;
+    else if(type==='static')control=`<span class="writing-static-value">${esc(row.answers||'')}</span>`;
+    else if(type==='image')control=row.imageUrl?`<img class="writing-form-image" src="${esc(row.imageUrl)}" alt="${esc(row.label||'Hình minh họa')}">`:'';
     else if(type==='truefalse')control=`<div class="writing-binary"><label><input class="answer-form-field" type="radio" name="writing-${q.id}-${row.index}" data-q="${q.id}" data-field-index="${row.index}" value="Đúng" ${value==='Đúng'?'checked':''}>Đúng</label><label><input class="answer-form-field" type="radio" name="writing-${q.id}-${row.index}" data-q="${q.id}" data-field-index="${row.index}" value="Sai" ${value==='Sai'?'checked':''}>Sai</label></div>`;
     else if(type==='choice')control=`<select class="answer-form-field truong" data-q="${q.id}" data-field-index="${row.index}"><option value="">Chọn phương án</option>${options.map(option=>`<option value="${esc(option)}" ${String(value)===option?'selected':''}>${esc(option)}</option>`).join('')}</select>`;
     else control=`<input class="answer-form-field truong" data-q="${q.id}" data-field-index="${row.index}" value="${esc(value)}" autocomplete="off">`;
-    const field=`<div class="writing-display-field">${marker?`<span class="writing-point">${marker}</span>`:''}${control}</div>`;
+    const field=`<div class="writing-display-field writing-display-field--${esc(type)}">${marker?`<span class="writing-point">${marker}</span>`:''}${control}</div>`;
+    if(type==='heading'||type==='image'){groups.push({label:'',fields:[field],full:true});lastLabel=null;continue;}
     if(groups.length&&lastLabel===String(row.label||''))groups[groups.length-1].fields.push(field);
     else{groups.push({label:String(row.label||''),fields:[field]});lastLabel=String(row.label||'');}
   }
-  return `<div class="writing-response-form">${groups.map(group=>`<div class="writing-display-group">${group.label?`<span class="writing-display-label">${esc(group.label)}</span>`:''}<div>${group.fields.join('')}</div></div>`).join('')}</div>`;
+  return `<div class="writing-response-form${framed?' writing-response-form--framed':''}">${groups.map(group=>`<div class="writing-display-group${group.full?' is-full':''}">${group.label?`<span class="writing-display-label">${esc(group.label)}</span>`:''}<div>${group.fields.join('')}</div></div>`).join('')}</div>`;
 }
 
 export function submittedHtml(){

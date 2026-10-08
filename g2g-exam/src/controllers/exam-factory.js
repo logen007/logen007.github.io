@@ -1,5 +1,6 @@
 import {byId,clone,createExam,createQuestion,updateQuestion,updateExam,addQuestionsToSection} from '../core.js';
 import {getExamSpec,buildSectionsFromSpec,buildSkillSettings} from '../exam-specs/index.js';
+import {writingFormScore} from '../domain/writing-form.js';
 
 export function questionDraftChoices(profile={}){
   const configured=Array.isArray(profile.choices)&&profile.choices.length>=2?clone(profile.choices):['Nháp','Nháp','Nháp'];
@@ -35,7 +36,7 @@ function populateConfiguredSections(state,user,exam){
         choices,correctAnswer:0,
         rubric:clone(initialRubric),
         instructionBlocks:isStimulusStart?[{text:'',imageUrl:''}]:clone(initialInstructionBlocks),
-        maxScore:profile.layout==='form-fields'&&initialRubric.length?initialRubric.reduce((sum,row)=>sum+Number(row.maxScore||0),0):Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1),
+        maxScore:hasFormRows&&initialRubric.length?writingFormScore(initialRubric)+(profile.layout==='mixed-form'?Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1):0):Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1),
       }).id);
     }
     if(additions.length)addQuestionsToSection(state,user,exam.id,section.id,additions);

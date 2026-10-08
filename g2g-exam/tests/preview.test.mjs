@@ -6,6 +6,7 @@ import {examBuilderHtml} from '../src/views/builder.js';
 import {topbarHtml} from '../src/ui/layout.js';
 import {mountStudentRuntime} from '../src/part-templates/a1-listening-part-1/student.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
+import {writingFormScore} from '../src/domain/writing-form.js';
 
 const originalStorage=globalThis.sessionStorage;
 globalThis.sessionStorage={getItem:()=>null};
@@ -319,16 +320,38 @@ try{
     ]};
     input.exam.sections[0].questionIds=[question.id];input.questions=[question];input.attempt.answers={[question.id]:{'0':'Eva','3':'Đúng'}};
     const html=examHtml(input);
-    assert.equal((html.match(/class="writing-display-group"/g)||[]).length,4);
+    assert.equal((html.match(/class="writing-display-group(?: is-full)?"/g)||[]).length,4);
     assert.equal((html.match(/class="writing-point">\(0\)/g)||[]).length,1);
     assert.equal((html.match(/class="writing-point">\(1\)/g)||[]).length,1);
     assert.match(html,/class="writing-binary"/);assert.match(html,/Chọn phương án/);assert.match(html,/src="\/images\/form\.png"/);
   });
 
+  await test('Writing 1 composes a framed reusable form and scores only answer fields',()=>{
+    const input=fixture(),question={id:'writing-one-form',type:'writing',title:'Form',rubric:[
+      {type:'heading',label:'',answers:'Patienteninformation',maxScore:8},
+      {type:'static',label:'Name, Vorname:',answers:'Serjakov, Vladimir',maxScore:5},
+      {type:'text',label:'Beruf:',answers:'Reiseleiter',maxScore:.5},
+      {type:'text',label:'Seit wann sind Sie krank?',answers:'seit gestern',maxScore:.5},
+      {type:'choice',label:'Was fehlt Ihnen?',answers:'Fieber|Husten',maxScore:1},
+      {type:'image',label:'Logo',imageUrl:'/images/form-logo.png',maxScore:4},
+    ]};
+    input.exam.sections[0].questionIds=[question.id];input.exam.sections[0].questionProfile={formFrame:true};input.questions=[question];input.attempt.answers={[question.id]:{}};
+    const html=examHtml(input);
+    assert.match(html,/writing-response-form--framed/);
+    assert.match(html,/writing-form-heading">Patienteninformation/);
+    assert.match(html,/writing-static-value">Serjakov, Vladimir/);
+    assert.match(html,/src="\/images\/form-logo\.png"/);
+    assert.equal(writingFormScore(question.rubric),2);
+    assert.equal((html.match(/class="writing-point">/g)||[]).length,2);
+  });
+
   await test('Writing 1 choice controls hide only the embedded A/B block, never the whole form question',()=>{
     const question={id:'write-one',type:'writing',title:'Choose A or B',choices:['A','B'],correctAnswer:0,maxScore:1,rubric:[{type:'text',label:'Name',maxScore:1}]};
-    const section={id:'writing-1',skill:'Viết',questionIds:[question.id],questionProfile:{layout:'mixed-form',choices:['A','B'],formFieldCount:1}};
+    const section={id:'writing-1',skill:'Viết',questionIds:[question.id],questionProfile:{layout:'mixed-form',formFrame:true,choices:['A','B'],formFieldCount:1}};
     let html=renderBuilder({data:{questions:[question]},exam:{settings:{},sections:[section]},section});
+    assert.match(html,/writing-form--framed/);
+    assert.match(html,/value="heading"/);
+    assert.match(html,/value="static"/);
     assert.equal(actionButtons(html,'remove-inline-question').length,0);
     assert.equal(actionButtons(html,'hide-mixed-choice').length,1);
     assert.equal(actionButtons(html,'restore-mixed-choice').length,1);

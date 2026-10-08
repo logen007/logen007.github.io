@@ -2,6 +2,7 @@ import {byId,getQuestionMaxScore} from '../../core.js';
 import {esc} from '../../ui/format.js';
 import {uploadQuestionAudio} from '../../media.js';
 import {iconHtml} from '../../ui/icons.js';
+import {WRITING_FORM_TYPES,isScoredWritingField,writingFormScore} from '../../domain/writing-form.js';
 
 const icons={
   add:iconHtml('plus'),
@@ -32,6 +33,7 @@ function profileFor(section){
     isFreeResponse:source.layout==='free-response',
     formFieldCount:Math.max(1,Number(source.formFieldCount)||1),
     formDefaultScores:Array.isArray(source.formDefaultScores)?source.formDefaultScores:[],
+    formFrame:source.formFrame===true,
     stimulusStarts:Array.isArray(source.stimulusStarts)?source.stimulusStarts.map(Number):[],
   };
 }
@@ -86,14 +88,16 @@ function formRowsHtml(q,{readOnly,choiceProfile,start=0,end}){
     const row=stored[index]||{},score=Number(row.maxScore??choiceProfile.formDefaultScores[index]??1),type=row.type||'text',hidden=Boolean(row.hidden);
     const answerControl=type==='image'
       ?`<label class="rubric-image-upload"><span>${row.imageUrl?`<img src="${esc(row.imageUrl)}" alt="Hình trong form">`:'Thêm hình'}</span><input type="file" data-rubric-image accept="image/*" ${readOnly?'disabled':''}></label>`
-      :`<input data-rubric-answer placeholder="${type==='choice'?'Các phương án, cách nhau bằng dấu |':'Nội dung / đáp án'}" value="${esc(row.answers||'')}" ${readOnly?'disabled':''}>`;
-    return `<div class="writing-form-row ${hidden?'is-hidden':''}" data-rubric-index="${index}" data-rubric-hidden="${hidden}"><select data-rubric-type aria-label="Loại trường" ${readOnly?'disabled':''}>${[['text','Nhập text'],['truefalse','Đúng / sai'],['choice','Chọn phương án'],['image','Thêm hình']].map(([value,label])=>`<option value="${value}" ${type===value?'selected':''}>${label}</option>`).join('')}</select><input data-rubric-label placeholder="form label" value="${esc(row.label||'')}" ${readOnly?'disabled':''}>${answerControl}<label><input data-rubric-score type="number" min="0" step="0.01" value="${score}" ${readOnly?'disabled':''}><span>điểm</span></label><button type="button" class="icon-btn" data-action="remove-rubric-row" data-id="${q.id}" data-index="${index}" title="Ẩn trường" aria-label="Ẩn trường" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-rubric-row" data-id="${q.id}" data-index="${index}" title="Thêm trường cùng loại vào cuối" aria-label="Thêm trường cùng loại vào cuối" ${readOnly?'disabled':''}>${icons.add}</button></div>`;
+      :`<input data-rubric-answer placeholder="${type==='heading'?'Tiêu đề trong khung':type==='static'?'Nội dung cố định':type==='choice'?'Các phương án, cách nhau bằng dấu |':'Nội dung / đáp án'}" value="${esc(row.answers||'')}" ${readOnly?'disabled':''}>`;
+    const scored=isScoredWritingField({...row,type,hidden});
+    const typeLabels={heading:'Tiêu đề form',static:'Nội dung cố định',text:'Ô nhập text',truefalse:'Đúng / sai',choice:'Chọn phương án',image:'Thêm hình'};
+    return `<div class="writing-form-row ${hidden?'is-hidden':''}" data-rubric-index="${index}" data-rubric-hidden="${hidden}"><select data-rubric-type aria-label="Loại trường" ${readOnly?'disabled':''}>${WRITING_FORM_TYPES.map(value=>`<option value="${value}" ${type===value?'selected':''}>${typeLabels[value]}</option>`).join('')}</select><input data-rubric-label placeholder="Nhãn trường" value="${esc(row.label||'')}" ${readOnly?'disabled':''}>${answerControl}<label class="${scored?'':'is-disabled'}"><input data-rubric-score type="number" min="0" step="0.01" value="${scored?score:0}" ${readOnly||!scored?'disabled':''}><span>điểm</span></label><button type="button" class="icon-btn" data-action="remove-rubric-row" data-id="${q.id}" data-index="${index}" title="Ẩn trường" aria-label="Ẩn trường" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-rubric-row" data-id="${q.id}" data-index="${index}" title="Thêm trường cùng loại vào cuối" aria-label="Thêm trường cùng loại vào cuối" ${readOnly?'disabled':''}>${icons.add}</button></div>`;
   }).join('');
 }
 
 function writingFormHtml(q,{readOnly,choiceProfile}){
   const rows=formRowsHtml(q,{readOnly,choiceProfile});
-  return `<article class="writing-form part-question" data-editor-mode="form-fields" data-question-id="${q.id}">${rows}</article>`;
+  return `<article class="writing-form ${choiceProfile.formFrame?'writing-form--framed':''} part-question" data-editor-mode="form-fields" data-question-id="${q.id}">${rows}</article>`;
 }
 
 function mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile}){
@@ -103,7 +107,7 @@ function mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile}){
   const last=formRowsHtml(q,{readOnly,choiceProfile,start:Math.max(0,count-1),end:count});
   const middle=`<div class="goethe-question mixed-writing-question ${q.mixedChoiceHidden?'is-hidden':''}" data-mixed-choice-hidden="${Boolean(q.mixedChoiceHidden)}"><div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi 1" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly,{mixed:true})}${audioHtml(q,readOnly,choiceProfile.showAudio)}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</div>`;
   const blocks=instructionBlocksFor(q);
-  return `<article class="writing-form writing-form--mixed part-question" data-editor-mode="mixed-form" data-question-id="${q.id}">${before}${middle}${last}${blocks.length?`<div class="mixed-writing-instructions">${blocks.map((block,index)=>questionInstructionHtml(q,block,index,readOnly)).join('')}</div>`:''}</article>`;
+  return `<article class="writing-form writing-form--mixed ${choiceProfile.formFrame?'writing-form--framed':''} part-question" data-editor-mode="mixed-form" data-question-id="${q.id}">${before}${middle}${last}${blocks.length?`<div class="mixed-writing-instructions">${blocks.map((block,index)=>questionInstructionHtml(q,block,index,readOnly)).join('')}</div>`:''}</article>`;
 }
 
 function freeResponseHtml(q,{defaultScore,readOnly}){
@@ -189,8 +193,9 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
   const updateSkillTotals=()=>{
     const draftScores=new Map([...root.querySelectorAll('.part-question[data-question-id]')].map(card=>{
       const formScores=[...card.querySelectorAll('[data-rubric-index]:not(.is-hidden) [data-rubric-score]')];
+      const rows=[...card.querySelectorAll('[data-rubric-index]:not(.is-hidden)')].map(row=>({type:row.querySelector('[data-rubric-type]')?.value||'text',maxScore:Number(row.querySelector('[data-rubric-score]')?.value)||0}));
       const score=normalizedScore(formScores.length
-        ?formScores.reduce((sum,input)=>sum+Math.max(0,Number(input.value)||0),0)+(card.dataset.editorMode==='mixed-form'&&card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden!=='true'?Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0):0)
+        ?writingFormScore(rows)+(card.dataset.editorMode==='mixed-form'&&card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden!=='true'?Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0):0)
         :Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0));
       return [card.dataset.questionId,score];
     }));
