@@ -41,17 +41,17 @@ export function examHtml({attempt,exam,sectionIndex,questions,online,preview=fal
   const previousAction=preview?'preview-prev-section':'prev-section';
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Về chỉnh sửa':'Nộp bài'):'Tiếp theo';
-  const sectionInstruction=sec.instruction||sec.instructionImageUrl?`<section class="exam-instruction">${sec.instruction?`<div><span>ĐỀ BÀI</span><p>${esc(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl?`<img src="${esc(sec.instructionImageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`:'';
+  const sectionInstruction=sec.instruction||sec.instructionImageUrl?`<section class="exam-instruction">${sec.instruction?`<div><p>${esc(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl?`<img src="${esc(sec.instructionImageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,questions,attempt,{preview});
   const currentCount=`<span data-current-answer-count>${answered}/${questions.length} câu đã trả lời</span>`;
   const stimulusStarts=new Set((sec.questionProfile?.stimulusStarts||[]).map(Number));
   const questionList=`<section class="to-thi" aria-label="Câu hỏi">${questions.map((q,index)=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(index)})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
   const context=preview
-    ?`<div class="exam-context"><div class="exam-title-block"><span class="preview-section-position">Phần ${sectionIndex+1} / ${exam.sections.length}</span><h1 id="preview-section-title" tabindex="-1">${esc(sec.name)}</h1></div></div>`
+    ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(sec.name)}</h1></div></div>`
     :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(sec.name)}</h1><div class="phu-de">${sec.showTimer!==false?'Có giới hạn thời gian · ':''}${currentCount}</div></div></div>`;
   const body=`<main class="noi-dung-thi">${context}${preview?`<div class="exam-paper">${sectionInstruction}${sectionAudio}${questionList}</div>`:sectionInstruction+sectionAudio+questionList}<nav class="dieu-huong-thi" aria-label="Điều hướng bài thi"><button class="nut" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${preview?'Phần trước':'Quay lại'}</button>${preview?'':`<span class="tien-do" id="saveState">Đã trả lời ${currentCount} · Còn lại <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh" data-action="${nextAction}">${nextLabel}</button></nav></main>`;
   const header=preview
-    ?`<header class="thanh-thi"><div class="preview-identity"><button class="text-link" data-action="close-preview"><span aria-hidden="true">←</span> Quay lại</button><div><strong>${esc(exam.title)}</strong><small>Thử trả lời như học viên · Không lưu kết quả</small></div></div><span class="preview-chip">Xem thử</span></header>`
+    ?`<header class="thanh-thi"><div class="preview-identity"><strong>${esc(exam.title)}</strong><button class="text-link" data-action="close-preview"><span aria-hidden="true">←</span> Quay lại</button></div><span class="preview-chip">Xem thử</span></header>`
     :`<header class="thanh-thi"><strong>G2G Thi thử</strong><div class="thong-tin-thi"><span>Phần ${sectionIndex+1}/${exam.sections.length}</span><span class="exam-time-label">Còn lại</span><b id="examTimer">--:--</b></div></header>`;
   const offline=!online?`<div class="offline" role="status">${preview?'Đang ngoại tuyến. Câu trả lời xem thử chỉ giữ trong phiên này; audio và ảnh có thể không tải được.':'Đang ngoại tuyến. Hãy giữ trang mở; câu trả lời sẽ tiếp tục được lưu trên thiết bị.'}</div>`:'';
   return `<div class="thi ${preview?'thi--preview':''}">${header}${offline}${preview?`<div class="preview-shell">${previewOutlineHtml(previewSummary,sectionIndex)}${body}</div>`:body}</div>`;
@@ -59,7 +59,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,online,preview=fal
 
 function previewOutlineHtml(summary,sectionIndex){
   const {sections=[]}=summary||{};
-  return `<div class="preview-outline"><label class="preview-section-picker" for="previewSectionSelect"><span>Chuyển phần</span><select id="previewSectionSelect" class="truong" data-action="preview-select-section" ${sections.length?'':'disabled'}>${sections.map((item,index)=>`<option value="${index}" ${index===sectionIndex?'selected':''}>${esc(item.name)}</option>`).join('')}</select></label></div>`;
+  return `<div class="preview-outline"><label class="preview-section-picker" for="previewSectionSelect"><span class="sr-only">Chọn phần</span><select id="previewSectionSelect" class="truong" aria-label="Chọn phần" data-action="preview-select-section" ${sections.length?'':'disabled'}>${sections.map((item,index)=>`<option value="${index}" ${index===sectionIndex?'selected':''}>${esc(item.name)}</option>`).join('')}</select></label></div>`;
 }
 
 export function answerPresent(answer,q){
@@ -80,7 +80,7 @@ function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
 function questionStimulusHtml(q){
   const block=Array.isArray(q.instructionBlocks)?q.instructionBlocks[0]:null,text=block?.text||q.prompt||'',imageUrl=block?.imageUrl||q.instructionImageUrl||'';
   if(!text&&!imageUrl)return '';
-  return `<section class="question-stimulus">${text?`<div><span>ĐỀ BÀI</span><p>${esc(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`;
+  return `<section class="question-stimulus">${text?`<div><p>${esc(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`;
 }
 
 export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false}={}){

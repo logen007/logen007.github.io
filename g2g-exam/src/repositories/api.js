@@ -84,6 +84,13 @@ export class ApiRepository{
     this.emit();
   }
 
+  async switchTestRole(role){
+    const result=await request('/auth/test-role',{method:'POST',body:{role},timeoutMs:7000});
+    this.user=result.user||null;
+    await this.reload();
+    return clone(this.user);
+  }
+
   async call(name,payload={}){
     return request(`/actions/${encodeURIComponent(name)}`,{method:'POST',body:payload});
   }

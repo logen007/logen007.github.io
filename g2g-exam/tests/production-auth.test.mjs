@@ -134,6 +134,24 @@ await test('Inactive accounts cannot login and JSON profile cannot override auth
   assert.equal(await h.context.currentUser(h.request),null);
 });
 
+await test('Only the database master can switch the signed test role without changing stored permissions',async()=>{
+  const existing={id:'google:master',email:'master@example.test',role:'master',active:true,data:{name:'Admin'}};
+  const h=authHarness({existing});await h.registered;
+  h.request.cookies.g2g_session=existing.id;h.request.body={role:'student'};
+  const result=await h.routes.get('/api/auth/test-role')(h.request,h.reply);
+  assert.equal(result.user.role,'student');assert.equal(result.user.canTestRoles,true);
+  const roleCookie=h.cookies.find(cookie=>cookie.name==='g2g_test_role');
+  assert.equal(roleCookie.value,'student');assert.equal(roleCookie.options.signed,true);
+  h.request.cookies.g2g_test_role='teacher';
+  const effective=await h.context.currentUser(h.request);
+  assert.equal(effective.role,'teacher');assert.equal(effective.canTestRoles,true);
+  assert.equal(h.writes.length,0,'Switching test role must not update the users table.');
+
+  const student=authHarness({existing:{...existing,id:'google:student',role:'student'}});await student.registered;
+  student.request.cookies.g2g_session='google:student';student.request.body={role:'teacher'};
+  await assert.rejects(student.routes.get('/api/auth/test-role')(student.request,student.reply),/Chỉ tài khoản Admin/);
+});
+
 await test('Cutover backs up before app deployment and performs no browser import',()=>{
   const deploy=read('server/auto-deploy.sh');
   assert.ok(deploy.indexOf('pg_dump -U g2g g2g_exam')<deploy.indexOf('up -d --build app'));

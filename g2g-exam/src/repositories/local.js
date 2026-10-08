@@ -50,17 +50,28 @@ export class LocalRepository{
   async signInDemo(userId){
     if(!this.state.users.some(u=>u.id===userId))throw new Error('Tài khoản demo không tồn tại.');
     this.currentUserId=userId;
+    this.testRole=null;
     sessionStorage.setItem('g2g.demo.user',userId);
     return clone(this.state.users.find(u=>u.id===userId));
   }
 
   async signOut(){
     this.currentUserId=null;
+    this.testRole=null;
     sessionStorage.removeItem('g2g.demo.user');
   }
 
   async getCurrentUser(){
-    return this.currentUserId?clone(this.state.users.find(u=>u.id===this.currentUserId)||null):null;
+    const current=this.currentUserId?clone(this.state.users.find(u=>u.id===this.currentUserId)||null):null;
+    return current&&this.testRole?{...current,role:this.testRole,canTestRoles:true}:current;
+  }
+
+  async switchTestRole(role){
+    const current=this.currentUserId?this.state.users.find(u=>u.id===this.currentUserId):null;
+    if(current?.role!=='master')throw new Error('Chỉ tài khoản Admin được đổi vai trò thử nghiệm.');
+    if(!['student','teacher','master'].includes(role))throw new Error('Kiểu tài khoản không hợp lệ.');
+    this.testRole=role;
+    return {...clone(current),role,canTestRoles:true};
   }
 
   async reset(){

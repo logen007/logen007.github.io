@@ -2,7 +2,7 @@ import {isMaster,isStudent} from '../core.js';
 import {esc} from './format.js';
 import {iconHtml} from './icons.js';
 
-export function topbarHtml({user,mode,online,ui={}}){
+export function topbarHtml({user,mode,online,ui={},canSwitchRole=false}){
   const role=isStudent(user)?'Học viên':isMaster(user)?'Quản trị cấp cao':'Giáo viên';
   const tabs=user&&!isStudent(user)
     ?[['exams','Bài thi','exams'],['grading','Chấm bài','grading'],['grades','Bảng điểm','grades'],...(isMaster(user)?[['teachers','Người dùng','users'],['trash','Thùng rác','trash']]:[])]
@@ -16,5 +16,6 @@ export function topbarHtml({user,mode,online,ui={}}){
   const offline=!online
     ? '<div class="offline">Mất kết nối mạng. Hãy giữ trang mở; dữ liệu sẽ tiếp tục đồng bộ khi có mạng.</div>'
     : '';
-  return `<header class="thanh-dau"><div class="thuong-hieu"><div class="logo">G2G</div><div class="ten-he-thong"><strong>Thi thử tiếng Đức</strong><small>G2G Career</small></div></div>${navigation}<div class="header-account"><span class="nhan"${isMaster(user)?' hidden':''}>${role}</span><span class="account-avatar" title="${esc(user?.name||role)}">${esc(initials)}</span><button class="icon-btn header-logout" data-action="logout" title="Đăng xuất" aria-label="Đăng xuất">${iconHtml('logout')}</button></div></header>${demo}${offline}`;
+  const roleMenu=canSwitchRole?`<div class="account-role-menu" data-role-menu hidden><button data-action="test-role" data-role="student">Học sinh</button><button data-action="test-role" data-role="teacher">Giáo viên</button><button data-action="test-role" data-role="master">Admin</button></div>`:'';
+  return `<header class="thanh-dau"><div class="thuong-hieu"><div class="logo">G2G</div><div class="ten-he-thong"><strong>Thi thử tiếng Đức</strong><small>G2G Career</small></div></div>${navigation}<div class="header-account"><span class="nhan"${isMaster(user)?' hidden':''}>${role}</span><div class="account-switch"><button class="account-avatar" data-action="toggle-role-menu" title="${esc(user?.name||role)}" aria-label="Chọn kiểu tài khoản thử nghiệm" aria-expanded="false">${esc(initials)}</button>${roleMenu}</div><button class="icon-btn header-logout" data-action="logout" title="Đăng xuất" aria-label="Đăng xuất">${iconHtml('logout')}</button></div></header>${demo}${offline}`;
 }

@@ -36,6 +36,7 @@ const toast=document.getElementById('toast');
 const repo=await createRepository();
 let data=await repo.getState();
 let user=await repo.getCurrentUser();
+let authenticatedUser=user;
 let timerHandle=null;
 let timerBusy=false;
 let realtimeRenderTimer=null;
@@ -63,7 +64,7 @@ window.addEventListener('online',()=>{ui.online=true;if(ui.view!=='exam')render(
 window.addEventListener('offline',()=>{ui.online=false;if(ui.view!=='exam')render();});
 
 function layout(content){
-  return topbarHtml({user,mode:repo.mode,online:ui.online,ui})+content;
+  return topbarHtml({user,mode:repo.mode,online:ui.online,ui,canSwitchRole:Boolean(authenticatedUser?.canTestRoles||isMaster(authenticatedUser))})+content;
 }
 
 function notify(msg){
@@ -101,6 +102,7 @@ function loginView(){
     }
     try{
       user=await repo.signInGoogle();
+      authenticatedUser=user;
       data=await repo.getState();
       ui.view=isStudent(user)?'student-home':'admin';
       render();
@@ -110,6 +112,7 @@ function loginView(){
   };
   app.querySelectorAll('.demo-login').forEach(button=>button.onclick=async()=>{
     user=await repo.signInDemo(button.dataset.id);
+    authenticatedUser=user;
     data=await repo.getState();
     ui.view=isStudent(user)?'student-home':'admin';
     render();
@@ -656,7 +659,18 @@ function queueBuilderAutosave(delay=450){
 }
 
 function bindGlobal(){
-  app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{await repo.signOut();user=null;ui.view='login';render();});
+  app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{await repo.signOut();user=null;authenticatedUser=null;ui.view='login';render();});
+  app.querySelectorAll('[data-action="toggle-role-menu"]').forEach(button=>button.onclick=event=>{
+    event.stopPropagation();const menu=button.closest('.account-switch')?.querySelector('[data-role-menu]');if(!menu)return;
+    menu.hidden=!menu.hidden;button.setAttribute('aria-expanded',String(!menu.hidden));
+  });
+  app.querySelectorAll('[data-action="test-role"]').forEach(button=>button.onclick=async()=>{
+    if(!authenticatedUser?.canTestRoles&&!isMaster(authenticatedUser))return;
+    try{
+      user=typeof repo.switchTestRole==='function'?await repo.switchTestRole(button.dataset.role):{...authenticatedUser,role:button.dataset.role};
+      authenticatedUser=user;data=await repo.getState();ui.view=isStudent(user)?'student-home':'admin';ui.adminTab='exams';render();
+    }catch(error){notify(error?.message||'Không đổi được kiểu tài khoản thử nghiệm.');}
+  });
   app.querySelectorAll('[data-action="student-home"]').forEach(b=>b.onclick=()=>{ui.view='student-home';render();});
   app.querySelectorAll('[data-action="student-results"]').forEach(b=>b.onclick=()=>{ui.view='student-results';render();});
 }
@@ -831,14 +845,14 @@ function bindBuilder(){
   }),'Đã thêm câu hỏi.'));
   app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.'));
   app.querySelectorAll('[data-action="remove-rubric-row"]').forEach(b=>b.onclick=async()=>{
-    await saveBuilderDraft({silent:true});
-    await act(()=>repo.transaction(st=>{
-      const question=byId(st.questions,b.dataset.id);if(!question)return;
-      const rubric=[...(question.rubric||[])],index=Number(b.dataset.index),type=rubric[index]?.type||'text';
-      const activeOfType=rubric.filter(row=>(row.type||'text')===type&&!row.hidden).length;
-      if(activeOfType<=1)rubric[index]={...rubric[index],hidden:true};else rubric.splice(index,1);
-      updateQuestion(st,user,question.id,{rubric});
-    }),'Đã cập nhật form.');
+    const row=b.closest('[data-rubric-index]'),card=b.closest('[data-question-id]');if(!row||!card)return;
+    const type=row.querySelector('[data-rubric-type]')?.value||'text';
+    const activeOfType=[...card.querySelectorAll('[data-rubric-index]:not(.is-hidden)')].filter(item=>(item.querySelector('[data-rubric-type]')?.value||'text')===type);
+    if(activeOfType.length<=1){row.classList.add('is-hidden');row.dataset.rubricHidden='true';}
+    else row.remove();
+    builderEditRevision++;
+    if(await saveBuilderDraft({silent:true}))data=await repo.getState();
+    render();
   });
   app.querySelectorAll('[data-action="add-rubric-row"]').forEach(b=>b.onclick=async()=>{
     await saveBuilderDraft({silent:true});

@@ -13,12 +13,27 @@ const oauth=()=>new OAuth2Client(process.env.GOOGLE_CLIENT_ID,process.env.GOOGLE
 function cookieOpts(maxAge=60*60*24*30){return {path:'/',httpOnly:true,sameSite:'lax',secure,signed:true,maxAge,domain:COOKIE_DOMAIN};}
 function teacherEmailSet(settings){return new Set((settings?.auth?.teacherEmails||[]).map(normalizeEmail).filter(Boolean));}
 export async function userById(id){const r=await query(`SELECT id,email,role,active,data FROM users WHERE id=$1`,[id]);if(!r.rowCount)return null;const x=r.rows[0];return {...(x.data||{}),id:x.id,email:x.email,role:x.role,active:x.active};}
-export async function currentUser(request){const raw=request.cookies.g2g_session;if(!raw)return null;const u=request.unsignCookie(raw);if(!u.valid||!u.value)return null;const user=await userById(u.value);return user?.active===false?null:user;}
+async function sessionUser(request){const raw=request.cookies.g2g_session;if(!raw)return null;const u=request.unsignCookie(raw);if(!u.valid||!u.value)return null;const user=await userById(u.value);return user?.active===false?null:user;}
+export async function currentUser(request){
+  const user=await sessionUser(request);if(!user)return null;
+  if(user.role!=='master')return user;
+  const selected=request.unsignCookie(request.cookies.g2g_test_role||'');
+  const role=selected.valid&&['student','teacher','master'].includes(selected.value)?selected.value:'master';
+  return {...user,role,canTestRoles:true};
+}
 export async function requireUser(request){const user=await currentUser(request);if(!user||user.active===false)throw appError(401,'Bạn cần đăng nhập.');return user;}
 export async function requireRole(request,...roles){const user=await requireUser(request);if(!roles.includes(user.role))throw appError(403,'Bạn không có quyền thực hiện thao tác này.');return user;}
 
 export async function registerAuthRoutes(fastify){
   fastify.get('/api/auth/me',async request=>({user:await currentUser(request)}));
+  fastify.post('/api/auth/test-role',async(request,reply)=>{
+    const user=await sessionUser(request);if(!user)throw appError(401,'Bạn cần đăng nhập.');
+    if(user.role!=='master')throw appError(403,'Chỉ tài khoản Admin được đổi vai trò thử nghiệm.');
+    const role=String(request.body?.role||'');if(!['student','teacher','master'].includes(role))throw appError(400,'Kiểu tài khoản không hợp lệ.');
+    if(role==='master')reply.clearCookie('g2g_test_role',{path:'/',domain:COOKIE_DOMAIN});
+    else reply.setCookie('g2g_test_role',role,cookieOpts());
+    return {user:{...user,role,canTestRoles:true}};
+  });
   fastify.get('/api/auth/google',async(request,reply)=>{
     const settings=await getSettings();
     if(settings.auth.googleLoginEnabled===false)throw appError(403,'Đăng nhập Google đang tạm tắt.');
@@ -62,5 +77,5 @@ export async function registerAuthRoutes(fastify){
     reply.setCookie('g2g_session',id,cookieOpts());
     return reply.redirect(loginReturnPath(returnCookie.valid?returnCookie.value:'/',role));
   });
-  fastify.post('/api/auth/logout',async(_request,reply)=>{reply.clearCookie('g2g_session',{path:'/',domain:COOKIE_DOMAIN});return {ok:true};});
+  fastify.post('/api/auth/logout',async(_request,reply)=>{reply.clearCookie('g2g_session',{path:'/',domain:COOKIE_DOMAIN});reply.clearCookie('g2g_test_role',{path:'/',domain:COOKIE_DOMAIN});return {ok:true};});
 }

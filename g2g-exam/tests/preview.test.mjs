@@ -59,9 +59,14 @@ try{
     assert.doesNotMatch(readFileSync(new URL('../src/users/bootstrap.js',import.meta.url),'utf8'),/tabLabel/);
   });
   await test('Master badge is hidden without removing existing role hooks',()=>{
-    const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin'}});
+    const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin'},canSwitchRole:true});
     assert.match(html,/<span class="nhan" hidden>Quản trị cấp cao<\/span>/);
     assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.header-account>\.nhan\[hidden\]\s*\{\s*display:none;/);
+    assert.equal(actionButtons(html,'toggle-role-menu').length,1);
+    assert.equal(actionButtons(html,'test-role').length,3);
+    assert.match(html,/data-role="student">Học sinh/);
+    assert.match(html,/data-role="teacher">Giáo viên/);
+    assert.match(html,/data-role="master">Admin/);
   });
   await test('Preview has its own header actions and no real attempt timer or submission controls',()=>{
     for(const sectionIndex of [0,1,2]){
@@ -77,6 +82,7 @@ try{
       assert.doesNotMatch(html,/\bid="(?:examTimer|examTimeSummary)"/);
       assert.doesNotMatch(html,/\bid="saveState"/);
       assert.doesNotMatch(html,/\bdata-current-answer-count(?:\s|>)/);
+      assert.doesNotMatch(html,/Thử trả lời như học viên|Không lưu kết quả|Phần \d+ \/ \d+|>ĐỀ BÀI</);
     }
   });
 
@@ -91,6 +97,7 @@ try{
     const picker=tags(outlineHtml,'select').filter(tag=>attribute(tag,'data-action')==='preview-select-section');
     assert.equal(picker.length,1);
     assert.match(outlineHtml,/for="previewSectionSelect"/);
+    assert.doesNotMatch(outlineHtml,/>Chuyển phần</);
     const sections=tags(outlineHtml,'option');
     assert.deepEqual(sections.map(tag=>attribute(tag,'value')),['0','1','2']);
     assert.deepEqual(sections.map(tag=>/\bselected(?:\s|>)/.test(tag)),[false,true,false]);
@@ -125,7 +132,7 @@ try{
     const previewHeader=header(examHtml(input));
     const previewBack=actionButtons(previewHeader,'close-preview')[0];
     assert.ok(hasClass(previewBack,'text-link'));
-    assert.ok(previewHeader.indexOf(previewBack)<previewHeader.indexOf(input.exam.title));
+    assert.ok(previewHeader.indexOf(previewBack)>previewHeader.indexOf(input.exam.title));
   });
 
   await test('Navigation follows all questions and respects first, middle and last section boundaries',()=>{
