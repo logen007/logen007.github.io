@@ -225,6 +225,18 @@ try{
     assert.match(css,/\.question-stimulus img\s*\{[^}]*align-self:flex-start/);
   });
 
+  await test('A question image replaces the img marker at its exact prompt position',()=>{
+    const input=fixture();
+    input.questions[0].prompt='Before image\n[img]\nAfter image';
+    input.questions[0].instructionImageUrl='/images/question.png';
+    const html=examHtml({...input,preview:true});
+    assert.doesNotMatch(html,/\[img\]/i);
+    assert.match(html,/class="question-inline-image"/);
+    assert.match(html,/src="\/images\/question\.png"/);
+    assert.ok(html.indexOf('Before image')<html.indexOf('question-inline-image'));
+    assert.ok(html.indexOf('question-inline-image')<html.indexOf('After image'));
+  });
+
   await test('Audio and illustrated answers retain their media and interaction hooks',()=>{
     const input=fixture();
     input.questions[0].audioUrl='/audio/choice.mp3?name="clip"';

@@ -192,6 +192,7 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 .question-number { color:inherit; font:700 inherit; }
 .to-thi { display:grid; gap:16px; min-height:0; padding:0; background:transparent; }
 .cau-thi { padding:24px; border:1px solid var(--vien); border-radius:var(--r); background:var(--mat); }.cau-thi .noi { margin:0; white-space:pre-wrap; font-size:15px; line-height:1.65; }.cau-thi .ma { font-size:12px; color:var(--phu); }
+.question-inline-image { display:block; margin:16px 0; }.question-inline-image img { display:block; max-width:min(760px,86%); max-height:520px; object-fit:contain; border-radius:12px; }
 .answer-options { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-top:16px; }.answer-options:first-child { margin-top:0; }
 .answer-option { position:relative; display:block; cursor:pointer; }.answer-option>input { position:absolute; opacity:0; }
 .answer-option-body { display:flex; align-items:center; gap:10px; min-height:52px; height:100%; padding:12px 14px; border:1px solid var(--vien); border-radius:var(--r-sm); background:var(--mat); font-size:14px; line-height:1.45; }

@@ -84,6 +84,13 @@ function questionStimulusHtml(q){
   return `<section class="question-stimulus">${text?`<div><p>${esc(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`;
 }
 
+function questionPromptHtml(text,q){
+  const imageUrl=String(q.instructionImageUrl||'').trim();
+  return String(text||'').split(/(\[img\])/gi).map(part=>/^\[img\]$/i.test(part)
+    ?(imageUrl?`<span class="question-inline-image"><img src="${esc(imageUrl)}" alt="Hình minh họa câu hỏi"></span>`:'')
+    :esc(part)).join('');
+}
+
 export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null}={}){
   const played=sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`);
   const audio=!hideAudio&&q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" title="Audio chỉ phát theo quy định của đề thi." ${played?'disabled':''}>${played?'Đã phát audio':'Phát audio'}</button>${preview?'':'<span class="phu-de">Audio chỉ phát theo quy định của đề thi.</span>'}</div>`:'';
@@ -91,13 +98,14 @@ export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',previ
   const normalizedPrompt=rawPrompt.toLocaleLowerCase(),normalizedSection=String(sectionInstruction||'').toLocaleLowerCase();
   const isSharedInstruction=normalizedPrompt.length>12&&normalizedSection.includes(normalizedPrompt);
   const questionText=rawPrompt==='Nháp'||isSharedInstruction?'':rawPrompt;
-  const prompt=`${q.instruction?`<div class="question-instruction">${esc(q.instruction)}</div>`:''}${questionText||questionNumber?`<div class="noi">${questionNumber?`<strong class="question-number">${questionNumber}.</strong> `:''}${esc(questionText)}</div>`:''}`;
+  const questionAriaText=questionText.replace(/\[img\]/gi,' ').replace(/\s+/g,' ').trim();
+  const prompt=`${q.instruction?`<div class="question-instruction">${esc(q.instruction)}</div>`:''}${questionText||questionNumber?`<div class="noi">${questionNumber?`<strong class="question-number">${questionNumber}.</strong> `:''}${questionPromptHtml(questionText,q)}</div>`:''}`;
   const stimulus=hasStimulus?questionStimulusHtml(q):'';
   const head=stimulus+(preview&&(prompt||audio)?`<div class="preview-question-heading">${prompt?`<div class="preview-question-prompt">${prompt}</div>`:''}${audio}</div>`:prompt+audio);
   const root=`cau-thi ${answerPresent(answer,q)?'is-answered':''}`;
   if(['single','cloze','truefalse'].includes(q.type)){
     const choices=(q.choices||[]).map((choice,index)=>({choice,index})).filter(({choice})=>{const text=String(typeof choice==='object'?choice?.text||'':choice||'').trim();return Boolean((text&&text!=='Nháp')||String(typeof choice==='object'?choice?.imageUrl||'':'').trim());});
-    return `<div class="${root}" data-q="${q.id}">${head}<div class="answer-options ${preview&&choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}" role="radiogroup" aria-label="${esc(questionText||'Chọn đáp án')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="answer-one" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(`${letter}. ${text||''}`)}" value="${index}" ${String(answer)===String(index)?'checked':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span><strong class="answer-letter">${letter}.</strong> ${esc(text)}</span></span></label>`;}).join('')}</div></div>`;
+    return `<div class="${root}" data-q="${q.id}">${head}<div class="answer-options ${preview&&choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}" role="radiogroup" aria-label="${esc(questionAriaText||'Chọn đáp án')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="answer-one" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(`${letter}. ${text||''}`)}" value="${index}" ${String(answer)===String(index)?'checked':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span><strong class="answer-letter">${letter}.</strong> ${esc(text)}</span></span></label>`;}).join('')}</div></div>`;
   }
   if(q.type==='matching')return `<div class="${root}" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div class="matching-row"><b>${esc(p[0])}</b><select class="dap-an answer-match" data-q="${q.id}" data-i="${i}"><option value="">Chọn đáp án</option>${[...new Set((q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;
   if(q.type==='writing')return `<div class="${root}" data-q="${q.id}">${head}${Array.isArray(q.rubric)&&q.rubric.length?writingFieldsHtml(q,answer):`<textarea class="viet answer-text" data-q="${q.id}" placeholder="Viết bài tại đây...">${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> từ</div>`}</div>`;
