@@ -216,6 +216,22 @@ try{
     }
   });
 
+  await test('Listening parts expose one section player and hide every question player',()=>{
+    const input=fixture();
+    input.exam.sections[0].skillKey='listening';
+    input.exam.sections[0].audioPolicy={mode:'per_question_segment',segmentRepeat:2,maxSessions:1};
+    input.questions[0].audioUrl='/audio/one.mp3';
+    input.questions[1].audioUrl='/audio/two.mp3';
+    for(const preview of [true,false]){
+      const html=examHtml({...input,preview});
+      assert.equal(tags(html,'audio').filter(tag=>hasClass(tag,'section-audio-segment')).length,2);
+      assert.equal(tags(html,'button').filter(tag=>hasClass(tag,'section-audio-play')).length,1);
+      assert.equal(tags(html,'button').filter(tag=>hasClass(tag,'play-audio')).length,0);
+      assert.match(html,/data-repeat="2"/);
+      assert.match(html,/Chỉ nghe 1 lần/);
+    }
+  });
+
   await test('A shared section instruction appears once and an empty question list still has navigation',()=>{
     const input=fixture();
     input.questions[0].prompt=input.exam.sections[0].instruction;

@@ -26,6 +26,7 @@ export function buildSectionsFromSpec(spec,{idFactory=(index)=>`sec-${Date.now()
     skillKey:skill.key,
     templateType:item.templateType||'GENERIC',
     questionProfile:item.questionProfile||null,
+    audioPolicy:item.audioPolicy||null,
     questionLimit:Number(item.questionLimit||0),
     timeMinutes:Number(skill.defaultTimeMinutes||30),
     maxScore:0,

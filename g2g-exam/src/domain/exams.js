@@ -11,6 +11,7 @@ function normalizeSection(input={},index=0){
     skillKey:String(input.skillKey||''),
     templateType:String(input.templateType||'GENERIC'),
     questionProfile:clone(input.questionProfile||null),
+    audioPolicy:clone(input.audioPolicy||null),
     instruction:String(input.instruction||''),
     instructionImageUrl:String(input.instructionImageUrl||''),
     questionLimit:Math.max(0,Number(input.questionLimit||0)),

@@ -29,6 +29,9 @@ export async function loadApprovedExamSpec(relativePath){
         questionProfile:part.questionProfile&&typeof part.questionProfile==='object'
           ?JSON.parse(JSON.stringify(part.questionProfile))
           :null,
+        audioPolicy:part.audio&&typeof part.audio==='object'
+          ?JSON.parse(JSON.stringify(part.audio))
+          :null,
       };
     }));
     return {

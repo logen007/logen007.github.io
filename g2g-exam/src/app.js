@@ -27,6 +27,7 @@ import {getProviderLevels} from './exam-specs/index.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from './controllers/exam-factory.js';
 import {populateGoetheA1TestFixture} from './controllers/goethe-a1-test-fixture.js';
 import {hasPartTemplate,openPartTemplate,bindPartBuilder} from './part-templates/index.js';
+import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
 
 initializeTheme();
@@ -130,6 +131,7 @@ function examView(){
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
   app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,online:ui.online});
   bindExamInputs(attempt,questions);
+  bindSectionAudio(attempt,{preview:false});
   startExamTimer(attempt,exam,sectionIndex);
 }
 
@@ -144,6 +146,7 @@ function previewExamView(){
   const previewSummary=previewSummaryFor(exam);
   app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,online:ui.online,preview:true,previewSummary});
   bindPreviewInputs(attempt,questions);
+  bindSectionAudio(attempt,{preview:true});
 }
 
 function previewSummaryFor(exam){
@@ -244,6 +247,48 @@ function bindPreviewInputs(attempt,questions){
     if(!audio||sessionStorage.getItem(key))return;
     try{sessionStorage.setItem(key,'1');btn.disabled=true;btn.textContent='Đang phát...';audio.addEventListener('ended',()=>{btn.textContent='Đã phát audio';},{once:true});await audio.play();}
     catch{sessionStorage.removeItem(key);btn.disabled=false;btn.textContent='Phát audio';notify('Không phát được audio này.');}
+  });
+}
+
+function bindSectionAudio(attempt,{preview}){
+  const root=app.querySelector('[data-section-audio]');if(!root)return;
+  const button=root.querySelector('.section-audio-play'),status=root.querySelector('.section-audio-status');
+  const audios=[...root.querySelectorAll('.section-audio-segment')],repeat=Math.max(1,Number(root.dataset.repeat)||1);
+  if(!button||!audios.length)return;
+  button.onclick=async()=>{
+    if(button.disabled)return;
+    button.disabled=true;
+    let locked=false;
+    try{
+      if(!preview){
+        await templateRequest('/actions/startPartAudio',{method:'POST',body:{attemptId:attempt.id,sectionId:root.dataset.sectionAudio}});
+        locked=true;
+      }
+      sessionStorage.setItem(root.dataset.storageKey,'1');
+      for(let index=0;index<audios.length;index++)for(let turn=0;turn<repeat;turn++){
+        status.textContent=`Đang phát câu ${index+1}/${audios.length}${repeat>1?` · lần ${turn+1}/${repeat}`:''}`;
+        await playSectionSegment(audios[index]);
+      }
+      if(!preview)await templateRequest('/actions/completePartAudio',{method:'POST',body:{attemptId:attempt.id,sectionId:root.dataset.sectionAudio}});
+      root.querySelector('b').textContent='Đã nghe hết audio';
+      status.textContent='Audio đã phát xong và không thể phát lại.';
+    }catch(error){
+      if(!locked&& !preview){sessionStorage.removeItem(root.dataset.storageKey);button.disabled=false;}
+      status.textContent=locked||preview?'Không thể tiếp tục phát audio.':'Không thể bắt đầu audio. Hãy kiểm tra kết nối.';
+      notify(error?.message||'Không phát được audio.');
+    }
+  };
+}
+
+function playSectionSegment(audio){
+  return new Promise((resolve,reject)=>{
+    let active=true;
+    const cleanup=()=>{active=false;audio.onended=null;audio.onerror=null;audio.onpause=null;};
+    audio.controls=false;audio.currentTime=0;
+    audio.onpause=()=>{if(active&&!audio.ended)setTimeout(()=>audio.play().catch(reject),0);};
+    audio.onended=()=>{cleanup();resolve();};
+    audio.onerror=()=>{cleanup();reject(new Error('Không phát được một audio trong phần.'));};
+    audio.play().catch(error=>{cleanup();reject(error);});
   });
 }
 

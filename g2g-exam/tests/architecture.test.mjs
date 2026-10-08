@@ -23,7 +23,9 @@ test('Goethe A1 có cấu trúc từ registry thay vì slice vị trí',()=>{
   const sections=buildSectionsFromSpec(spec,{idFactory:i=>`s${i}`});assert.equal(sections.length,8);
   const groups=groupSectionsBySkill({sections},spec);assert.deepEqual(groups.map(([name])=>name),['Nghe','Đọc','Viết']);
   assert.equal(sections[0].templateType,'A1_LISTENING_PART_1');
-  assert.deepEqual(sections[1].questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false'});
+  assert.deepEqual(sections[1].questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false',audio:true});
+  assert.equal(sections[1].audioPolicy.segmentRepeat,1);
+  assert.equal(sections[2].audioPolicy.segmentRepeat,2);
   assert.equal(read('src/views/builder.js').includes('sections.slice('),false);
 });
 
@@ -37,6 +39,7 @@ test('Goethe A1 lấy cấu trúc production từ specs/ thay vì hard-code tron
   assert.equal(part.template,'A1_LISTENING_PART_1');
   const listeningPart2=JSON.parse(read('specs/goethe/a1/listening/part-02.json'));
   assert.deepEqual(listeningPart2.questionProfile.choices,['Đúng','Sai']);
+  assert.equal(listeningPart2.audio.segmentRepeat,1);
 });
 
 test('Metadata skillKey/templateType sống sót từ spec qua createExam',()=>{
@@ -46,7 +49,8 @@ test('Metadata skillKey/templateType sống sót từ spec qua createExam',()=>{
   const exam=createExam(state,teacher,{title:'Metadata test',provider:'GOETHE',level:'A1',sections});
   assert.equal(exam.sections[0].skillKey,'listening');
   assert.equal(exam.sections[0].templateType,'A1_LISTENING_PART_1');
-  assert.deepEqual(exam.sections[1].questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false'});
+  assert.deepEqual(exam.sections[1].questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false',audio:true});
+  assert.equal(exam.sections[1].audioPolicy.segmentRepeat,1);
   assert.equal(exam.sections[1].templateType,'GENERIC');
 });
 
@@ -56,7 +60,7 @@ test('Đề Goethe A1 cũ nhận profile Đúng/Sai của Nghe 2 khi mở lại'
   const section=exam.sections.find(item=>item.name==='Nghe 2');
   section.questionProfile=null;
   assert.equal(ensureExamMatchesConfiguredSpec(state,teacher,exam.id,{stamp:456}),true);
-  assert.deepEqual(byId(state.exams,exam.id).sections.find(item=>item.name==='Nghe 2').questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false'});
+  assert.deepEqual(byId(state.exams,exam.id).sections.find(item=>item.name==='Nghe 2').questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false',audio:true});
 });
 
 test('Mỗi form Goethe A1 lấy bố cục authoring từ specs',()=>{
@@ -101,7 +105,7 @@ test('Part template A1 Nghe 1 đã tách module và bỏ legacy question bank',(
   assert.equal(fs.existsSync(path.join(root,'src/question-groups/bootstrap.js')),false);
   assert.equal(fs.existsSync(path.join(root,'src/question-groups/picker.js')),false);
   assert.equal(admin.includes('bankAdminHtml'),false);assert.equal(modals.includes('bankPickerHtml'),false);assert.equal(loader.includes('Ngân hàng câu hỏi'),false);
-  assert.ok(server.includes('getA1ListeningPart1Spec'));assert.equal(server.includes('segmentRepeat)!==2'),false);
+  assert.ok(server.includes('section.audioPolicy'));assert.equal(server.includes('segmentRepeat)!==2'),false);
 });
 
 test('Builder định tuyến editor theo templateType thay vì hard-code Goethe A1',()=>{

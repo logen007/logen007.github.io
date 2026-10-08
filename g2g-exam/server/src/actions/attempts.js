@@ -1,6 +1,5 @@
 import {query,withTx,getSettings,audit,uid,now,appError} from '../db.js';
 import {examById,questionMap,scoreQuestion,resultFor,sectionMeta} from './shared.js';
-import {getA1ListeningPart1Spec} from '../specs.js';
 
 export async function startAttempt(user,{examId,restart=false}){
   if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
@@ -67,9 +66,8 @@ async function partAudioContext(client,attempt,sectionId){
   const section=(exam.sections||[]).find(item=>item.id===sectionId);
   if(!section)throw appError(404,'Không tìm thấy Part audio.');
   if(attempt.public_data?.currentSectionId!==section.id)throw appError(409,'Part audio không thuộc phần thi hiện tại.');
-  const spec=await getA1ListeningPart1Spec();
-  if(section.templateType!==spec.template)throw appError(409,'Part này không dùng template audio hiện tại.');
-  const policy=spec.audio||{};
+  const policy=section.audioPolicy||{};
+  if(section.skillKey!=='listening'||policy.mode!=='per_question_segment')throw appError(409,'Part này không dùng chế độ phát audio theo phần.');
   if(Number(policy.maxSessions)<1||Number(policy.segmentRepeat)<1)throw appError(500,'Specification audio không hợp lệ.');
   const allowed=new Set(attempt.public_data.currentQuestionIds||[]);
   const ids=(section.questionIds||[]).filter(id=>allowed.has(id));

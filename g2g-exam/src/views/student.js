@@ -3,6 +3,7 @@ import {
   getBestPublishedAttempt,summarizeExam
 } from '../core.js';
 import {esc,fmtDate,statusClass,statusText,countWords} from '../ui/format.js';
+import {iconHtml} from '../ui/icons.js';
 
 export function loginHtml({mode}){
   const demo=mode==='local'?`<div class="che-do-demo"><div class="phu-de">Tài khoản thử nghiệm</div><div class="chon-demo"><button class="nut full demo-login" data-id="student-a">Vào vai Học viên</button><button class="nut full demo-login" data-id="teacher-lan">Vào vai Cô Lan</button><button class="nut full demo-login" data-id="master-1">Vào vai Quản trị cấp cao</button></div></div>`:'';
@@ -41,12 +42,13 @@ export function examHtml({attempt,exam,sectionIndex,questions,online,preview=fal
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Về chỉnh sửa':'Nộp bài'):'Tiếp theo';
   const sectionInstruction=sec.instruction||sec.instructionImageUrl?`<section class="exam-instruction">${sec.instruction?`<div><span>ĐỀ BÀI</span><p>${esc(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl?`<img src="${esc(sec.instructionImageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`:'';
+  const sectionAudio=sectionAudioHtml(sec,questions,attempt,{preview});
   const currentCount=`<span ${preview?'data-preview-current':'data-current-answer-count'}>${answered}/${questions.length} câu đã trả lời</span>`;
-  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${questions.map(q=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
+  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${questions.map(q=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio)})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><span class="preview-section-position">Phần ${sectionIndex+1} / ${exam.sections.length}</span><h1 id="preview-section-title" tabindex="-1">${esc(sec.name)}</h1></div><span class="preview-question-count">${questions.length} câu hỏi</span></div>`
     :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(sec.name)}</h1><div class="phu-de">${sec.showTimer!==false?'Có giới hạn thời gian · ':''}${currentCount}</div></div></div>`;
-  const body=`<main class="noi-dung-thi">${context}${preview?`<div class="exam-paper">${sectionInstruction}${questionList}</div>`:sectionInstruction+questionList}<nav class="dieu-huong-thi" aria-label="Điều hướng bài thi"><button class="nut" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${preview?'Phần trước':'Quay lại'}</button><span class="tien-do" ${preview?'aria-live="polite" aria-atomic="true"':'id="saveState"'}>${preview?currentCount:`Đã trả lời <span data-current-answer-count>${answered}/${questions.length} câu đã trả lời</span> · Còn lại <b id="examTimeSummary">--:--</b>`}</span><button class="nut chinh" data-action="${nextAction}">${nextLabel}</button></nav></main>`;
+  const body=`<main class="noi-dung-thi">${context}${preview?`<div class="exam-paper">${sectionInstruction}${sectionAudio}${questionList}</div>`:sectionInstruction+sectionAudio+questionList}<nav class="dieu-huong-thi" aria-label="Điều hướng bài thi"><button class="nut" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${preview?'Phần trước':'Quay lại'}</button><span class="tien-do" ${preview?'aria-live="polite" aria-atomic="true"':'id="saveState"'}>${preview?currentCount:`Đã trả lời <span data-current-answer-count>${answered}/${questions.length} câu đã trả lời</span> · Còn lại <b id="examTimeSummary">--:--</b>`}</span><button class="nut chinh" data-action="${nextAction}">${nextLabel}</button></nav></main>`;
   const header=preview
     ?`<header class="thanh-thi"><div class="preview-identity"><button class="text-link" data-action="close-preview"><span aria-hidden="true">←</span> Quay lại</button><div><strong>${esc(exam.title)}</strong><small>Thử trả lời như học viên · Không lưu kết quả</small></div></div><span class="preview-chip">Xem thử</span></header>`
     :`<header class="thanh-thi"><strong>G2G Thi thử</strong><div class="thong-tin-thi"><span>Phần ${sectionIndex+1}/${exam.sections.length}</span><span class="exam-time-label">Còn lại</span><b id="examTimer">--:--</b></div></header>`;
@@ -65,9 +67,18 @@ export function answerPresent(answer,q){
   return answer!==undefined&&answer!==null&&answer!=='';
 }
 
-export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false}={}){
+function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
+  const policy=section.audioPolicy||{},audioQuestions=questions.filter(question=>String(question.audioUrl||'').trim());
+  if(section.skillKey!=='listening'||policy.mode!=='per_question_segment'||!audioQuestions.length)return '';
+  const repeat=Math.max(1,Number(policy.segmentRepeat)||1),key=`g2g.section-audio.${attempt.id}.${section.id}`;
+  const used=!preview&&(Boolean(attempt.audioSessions?.[section.id]?.startedAt)||Boolean(sessionStorage.getItem(key)));
+  const audios=audioQuestions.map((question,index)=>`<audio class="section-audio-segment" data-order="${index}" preload="metadata" src="${esc(question.audioUrl)}"></audio>`).join('');
+  return `<section class="section-audio" data-section-audio="${esc(section.id)}" data-repeat="${repeat}" data-storage-key="${esc(key)}">${audios}<button type="button" class="section-audio-play" aria-label="Phát audio của phần" ${used?'disabled':''}>${iconHtml('play')}</button><div><b>${used?'Audio đã được sử dụng':'Nghe audio'}</b><span>Chỉ nghe 1 lần</span><small class="section-audio-status" aria-live="polite">${used?'Không thể phát lại.':''}</small></div></section>`;
+}
+
+export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false,hideAudio=false}={}){
   const played=sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`);
-  const audio=q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" title="Audio chỉ phát theo quy định của đề thi." ${played?'disabled':''}>${played?'Đã phát audio':'Phát audio'}</button>${preview?'':'<span class="phu-de">Audio chỉ phát theo quy định của đề thi.</span>'}</div>`:'';
+  const audio=!hideAudio&&q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" title="Audio chỉ phát theo quy định của đề thi." ${played?'disabled':''}>${played?'Đã phát audio':'Phát audio'}</button>${preview?'':'<span class="phu-de">Audio chỉ phát theo quy định của đề thi.</span>'}</div>`:'';
   const rawPrompt=String(q.prompt||q.title||'').trim();
   const normalizedPrompt=rawPrompt.toLocaleLowerCase(),normalizedSection=String(sectionInstruction||'').toLocaleLowerCase();
   const isSharedInstruction=normalizedPrompt.length>12&&normalizedSection.includes(normalizedPrompt);

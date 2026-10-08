@@ -7,7 +7,16 @@
   "questionProfile": {
     "type": "single",
     "choices": ["Đúng", "Sai"],
-    "layout": "true-false"
+    "layout": "true-false",
+    "audio": true
+  },
+  "audio": {
+    "mode": "per_question_segment",
+    "maxSessions": 1,
+    "segmentRepeat": 1,
+    "controls": false,
+    "pauseAllowed": false,
+    "replayAllowed": false
   },
   "template": "GENERIC"
 }

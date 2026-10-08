@@ -56,14 +56,17 @@ export function ensureExamMatchesConfiguredSpec(state,user,examId,{stamp=Date.no
   const expected=expectedSections.map(section=>section.name);
   const hasAllParts=expected.every(name=>(exam.sections||[]).some(section=>section.name===name));
   const hasStaleProfile=hasAllParts&&expectedSections.some(expectedSection=>{
-    if(!expectedSection.questionProfile)return false;
     const existing=(exam.sections||[]).find(section=>section.name===expectedSection.name);
-    return JSON.stringify(existing?.questionProfile||null)!==JSON.stringify(expectedSection.questionProfile);
+    return JSON.stringify(existing?.questionProfile||null)!==JSON.stringify(expectedSection.questionProfile||null)
+      ||JSON.stringify(existing?.audioPolicy||null)!==JSON.stringify(expectedSection.audioPolicy||null);
   });
   if(hasAllParts&&!hasStaleProfile)return false;
   if(hasAllParts){
-    const profiles=new Map(expectedSections.filter(section=>section.questionProfile).map(section=>[section.name,section.questionProfile]));
-    const sections=exam.sections.map(section=>profiles.has(section.name)?{...section,questionProfile:profiles.get(section.name)}:section);
+    const expectedByName=new Map(expectedSections.map(section=>[section.name,section]));
+    const sections=exam.sections.map(section=>{
+      const expectedSection=expectedByName.get(section.name);if(!expectedSection)return section;
+      return {...section,questionProfile:expectedSection.questionProfile||null,audioPolicy:expectedSection.audioPolicy||null};
+    });
     updateExam(state,user,exam.id,{settings:{skillSettings:{...(exam.settings?.skillSettings||{}),...buildSkillSettings(spec)}},sections});
     populateConfiguredSections(state,user,byId(state.exams,exam.id));
     return true;

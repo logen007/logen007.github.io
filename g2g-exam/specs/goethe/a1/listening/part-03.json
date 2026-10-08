@@ -11,5 +11,13 @@
     "choiceImages": true,
     "audio": true
   },
+  "audio": {
+    "mode": "per_question_segment",
+    "maxSessions": 1,
+    "segmentRepeat": 2,
+    "controls": false,
+    "pauseAllowed": false,
+    "replayAllowed": false
+  },
   "template": "GENERIC"
 }
