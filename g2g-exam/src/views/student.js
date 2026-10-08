@@ -78,14 +78,16 @@ function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
   return `<section class="section-audio" data-section-audio="${esc(section.id)}" data-repeat="${repeat}" data-storage-key="${esc(key)}">${audios}<button type="button" class="section-audio-play" aria-label="Phát audio của phần" ${used?'disabled':''}>${iconHtml('play')}</button><div class="section-audio-body"><span class="section-audio-progress" role="progressbar" aria-label="Tiến độ audio" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><i></i></span><span class="section-audio-status" aria-live="polite">${used?'Đã hết lượt nghe':'Chỉ được nghe một lần'}</span></div></section>`;
 }
 
-function questionStimulusHtml(q){
-  const block=Array.isArray(q.instructionBlocks)?q.instructionBlocks[0]:null,text=block?.text||q.prompt||'',imageUrl=block?.imageUrl||q.instructionImageUrl||'';
+const questionImageUrl=q=>String((Array.isArray(q.instructionBlocks)?q.instructionBlocks[0]?.imageUrl:'')||q.instructionImageUrl||'').trim();
+
+function questionStimulusHtml(q,{hideImage=false}={}){
+  const block=Array.isArray(q.instructionBlocks)?q.instructionBlocks[0]:null,text=block?.text||q.prompt||'',imageUrl=hideImage?'':questionImageUrl(q);
   if(!text&&!imageUrl)return '';
   return `<section class="question-stimulus">${text?`<div><p>${esc(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`;
 }
 
 function questionPromptHtml(text,q){
-  const imageUrl=String(q.instructionImageUrl||'').trim();
+  const imageUrl=questionImageUrl(q);
   return String(text||'').split(/(\[img\])/gi).map(part=>/^\[img\]$/i.test(part)
     ?(imageUrl?`<span class="question-inline-image"><img src="${esc(imageUrl)}" alt="Hình minh họa câu hỏi"></span>`:'')
     :esc(part)).join('');
@@ -100,7 +102,7 @@ export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',previ
   const questionText=rawPrompt==='Nháp'||isSharedInstruction?'':rawPrompt;
   const questionAriaText=questionText.replace(/\[img\]/gi,' ').replace(/\s+/g,' ').trim();
   const prompt=`${q.instruction?`<div class="question-instruction">${esc(q.instruction)}</div>`:''}${questionText||questionNumber?`<div class="noi">${questionNumber?`<strong class="question-number">${questionNumber}.</strong> `:''}${questionPromptHtml(questionText,q)}</div>`:''}`;
-  const stimulus=hasStimulus?questionStimulusHtml(q):'';
+  const stimulus=hasStimulus?questionStimulusHtml(q,{hideImage:/\[img\]/i.test(questionText)}):'';
   const head=stimulus+(preview&&(prompt||audio)?`<div class="preview-question-heading">${prompt?`<div class="preview-question-prompt">${prompt}</div>`:''}${audio}</div>`:prompt+audio);
   const root=`cau-thi ${answerPresent(answer,q)?'is-answered':''}`;
   if(['single','cloze','truefalse'].includes(q.type)){

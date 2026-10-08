@@ -237,6 +237,16 @@ try{
     assert.ok(html.indexOf('question-inline-image')<html.indexOf('After image'));
   });
 
+  await test('A stimulus question renders its image once when its title contains an img marker',()=>{
+    const input=fixture();
+    input.exam.sections[0].questionProfile={stimulusStarts:[0]};
+    input.questions[0].title='Auf der Straße:\n[img]\nSie dürfen hier nicht parken.';
+    input.questions[0].instructionBlocks=[{text:'',imageUrl:'/images/sign.png'}];
+    const html=examHtml({...input,preview:true});
+    assert.equal((html.match(/src="\/images\/sign\.png"/g)||[]).length,1);
+    assert.doesNotMatch(html,/\[img\]/i);
+  });
+
   await test('Audio and illustrated answers retain their media and interaction hooks',()=>{
     const input=fixture();
     input.questions[0].audioUrl='/audio/choice.mp3?name="clip"';
