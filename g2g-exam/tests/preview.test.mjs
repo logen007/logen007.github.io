@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {examHtml} from '../src/views/student.js';
 import {examBuilderHtml} from '../src/views/builder.js';
+import {topbarHtml} from '../src/ui/layout.js';
 import {mountStudentRuntime} from '../src/part-templates/a1-listening-part-1/student.js';
 
 const originalStorage=globalThis.sessionStorage;
@@ -38,6 +39,11 @@ const fixture=()=>{
 };
 
 try{
+  await test('Master badge is hidden without removing existing role hooks',()=>{
+    const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin'}});
+    assert.match(html,/<span class="nhan" hidden>Quản trị cấp cao<\/span>/);
+    assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.header-account>\.nhan\[hidden\]\s*\{\s*display:none;/);
+  });
   await test('Preview has its own header actions and no real attempt timer or submission controls',()=>{
     for(const sectionIndex of [0,1,2]){
       const html=examHtml({...fixture(),sectionIndex});
@@ -87,13 +93,16 @@ try{
     assert.match(real,/\bid="saveState"/);
   });
 
-  await test('Builder places a text return link before the title and relies on autosave, not a draft button',()=>{
+  await test('Builder places its return link below provider/level and keeps successful autosave quiet',()=>{
     const input=fixture();
     const html=examBuilderHtml({data:{questions:input.questions},user:{id:'teacher'},exam:input.exam,section:null,readOnly:false});
     const back=actionButtons(html,'back-admin');
     assert.equal(back.length,1);
     assert.ok(hasClass(back[0],'text-link'));
-    assert.ok(html.indexOf(back[0])<html.indexOf('id="examTitle"'));
+    assert.ok(html.indexOf(back[0])>html.indexOf('</p>',html.indexOf('id="examTitle"')));
+    assert.match(html,/data-builder-save-status[^>]+hidden><\/span>/);
+    assert.doesNotMatch(html,/Đã tự động lưu|Tự động lưu/);
+    assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.builder-back:hover\s*\{\s*text-decoration:none;/);
     assert.equal(actionButtons(html,'save-exam').length,0);
     assert.doesNotMatch(html,/Lưu nháp/);
     assert.match(html,/data-builder-save-status[^>]+role="status"/);

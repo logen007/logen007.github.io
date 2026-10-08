@@ -58,6 +58,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .muc-ben.active { background:var(--brand-primary); color:var(--brand-on-primary); }
 .header-account { margin-left:auto; display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .header-account>.nhan { background:transparent; color:var(--phu); padding:0; font-size:12px; font-weight:400; }
+.header-account>.nhan[hidden] { display:none; }
 .account-avatar { display:grid; place-items:center; width:40px; height:40px; border-radius:50%; background:var(--brand-soft); color:var(--brand-text); font-size:13px; font-weight:600; }
 .header-logout { border:0!important; background:var(--surface-muted)!important; }
 .khung,.khung-quan-tri { width:min(var(--max),100%); margin:0 auto; padding:36px 0 48px; }
@@ -128,7 +129,7 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 /* Builder keeps the approved two-row question/answers layout. */
 .goethe-builder{width:min(1500px,100%);margin:0 auto;padding:32px 0 48px;}
 .exam-title-input { width:100%; min-width:0; font:450 clamp(26px,2.5vw,36px)/1.25 var(--font-ui); letter-spacing:-.035em; color:var(--chu); border:0; border-radius:8px; background:transparent; padding:4px 0; }
-.builder-heading { display:flex; align-items:flex-start; gap:20px; }.builder-back { flex:none; }.builder-title { min-width:0; flex:1; }.builder-save-status { color:var(--phu); font-size:12px; padding-right:8px; }.builder-save-status[data-state=error] { color:var(--do); }
+.builder-heading { display:flex; align-items:flex-start; gap:20px; }.builder-back { margin-top:8px; }.builder-back:hover { text-decoration:none; }.builder-title { min-width:0; flex:1; }.builder-save-status { color:var(--phu); font-size:12px; padding-right:8px; }.builder-save-status[data-state=error] { color:var(--do); }
 .goethe-layout { display:grid; grid-template-columns:260px minmax(0,1fr); gap:20px; align-items:start; }
 .goethe-outline { display:flex; flex-direction:column; gap:28px; padding:22px; }
 .goethe-skill { margin:0; }.goethe-skill>div { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:8px; margin-bottom:12px; }.goethe-skill>div b { font-size:21px; font-weight:500; }

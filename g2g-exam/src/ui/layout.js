@@ -16,5 +16,5 @@ export function topbarHtml({user,mode,online,ui={}}){
   const offline=!online
     ? '<div class="offline">Mất kết nối mạng. Hãy giữ trang mở; dữ liệu sẽ tiếp tục đồng bộ khi có mạng.</div>'
     : '';
-  return `<header class="thanh-dau"><div class="thuong-hieu"><div class="logo">G2G</div><div class="ten-he-thong"><strong>Thi thử tiếng Đức</strong><small>G2G Career</small></div></div>${navigation}<div class="header-account"><span class="nhan">${role}</span><span class="account-avatar" title="${esc(user?.name||role)}">${esc(initials)}</span><button class="icon-btn header-logout" data-action="logout" title="Đăng xuất" aria-label="Đăng xuất">${iconHtml('logout')}</button></div></header>${demo}${offline}`;
+  return `<header class="thanh-dau"><div class="thuong-hieu"><div class="logo">G2G</div><div class="ten-he-thong"><strong>Thi thử tiếng Đức</strong><small>G2G Career</small></div></div>${navigation}<div class="header-account"><span class="nhan"${isMaster(user)?' hidden':''}>${role}</span><span class="account-avatar" title="${esc(user?.name||role)}">${esc(initials)}</span><button class="icon-btn header-logout" data-action="logout" title="Đăng xuất" aria-label="Đăng xuất">${iconHtml('logout')}</button></div></header>${demo}${offline}`;
 }

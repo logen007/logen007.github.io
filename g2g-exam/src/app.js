@@ -438,7 +438,7 @@ async function saveBuilderDraft({silent=false}={}){
 
 function setBuilderSaveStatus(state,text){
   const status=app.querySelector('[data-builder-save-status]');
-  if(status){status.dataset.state=state;status.textContent=text;}
+  if(status){status.dataset.state=state;status.hidden=state==='saved';status.textContent=state==='saved'?'':text;}
 }
 
 async function flushBuilderDraft(){
