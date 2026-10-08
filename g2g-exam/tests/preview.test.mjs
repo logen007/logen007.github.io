@@ -39,6 +39,16 @@ const fixture=()=>{
 };
 
 try{
+  await test('Users navigation label and icon stay consistent before and after selecting the tab',()=>{
+    for(const adminTab of ['exams','teachers','grading']){
+      const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin',adminTab}});
+      const button=html.match(/<button[^>]*data-tab="teachers"[^>]*>[\s\S]*?<\/button>/)?.[0]||'';
+      assert.match(button,/<span>Người dùng<\/span>/);
+      assert.match(button,/<svg/);
+      assert.doesNotMatch(button,/Giáo viên/);
+    }
+    assert.doesNotMatch(readFileSync(new URL('../src/users/bootstrap.js',import.meta.url),'utf8'),/tabLabel/);
+  });
   await test('Master badge is hidden without removing existing role hooks',()=>{
     const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin'}});
     assert.match(html,/<span class="nhan" hidden>Quản trị cấp cao<\/span>/);
