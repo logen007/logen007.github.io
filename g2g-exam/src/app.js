@@ -619,7 +619,7 @@ async function persistBuilderDraft({silent=false}={}){
             return {text:control.querySelector('[data-instruction-prompt]')?.value.trim()||'',imageUrl:questionInstructionImageUrls.get(`${id}:${index}`)??(control.dataset.removeQuestionImage==='true'?'':previousBlock.imageUrl||'')};
           });
           const firstInstruction=instructionBlocks[0]||{text:'',imageUrl:''};
-          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:firstInstruction.text,choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl:firstInstruction.imageUrl,instructionBlocks});
+          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:firstInstruction.text,choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl:firstInstruction.imageUrl,instructionBlocks,mixedChoiceHidden:card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden==='true'});
         });
       }
     });
@@ -844,6 +844,14 @@ function bindBuilder(){
     }
   }),'Đã thêm câu hỏi.'));
   app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.'));
+  app.querySelectorAll('[data-action="hide-mixed-choice"]').forEach(b=>b.onclick=async()=>{
+    if(!await saveBuilderDraft({silent:true}))return;
+    await act(()=>repo.transaction(st=>updateQuestion(st,user,b.dataset.id,{mixedChoiceHidden:true})),'Đã ẩn câu hỏi.');
+  });
+  app.querySelectorAll('[data-action="restore-mixed-choice"]').forEach(b=>b.onclick=async()=>{
+    if(!await saveBuilderDraft({silent:true}))return;
+    await act(()=>repo.transaction(st=>updateQuestion(st,user,b.dataset.id,{mixedChoiceHidden:false})),'Đã hiện câu hỏi.');
+  });
   app.querySelectorAll('[data-action="remove-rubric-row"]').forEach(b=>b.onclick=async()=>{
     const row=b.closest('[data-rubric-index]'),card=b.closest('[data-question-id]');if(!row||!card)return;
     const type=row.querySelector('[data-rubric-type]')?.value||'text';

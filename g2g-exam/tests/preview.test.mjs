@@ -5,6 +5,7 @@ import {examHtml} from '../src/views/student.js';
 import {examBuilderHtml} from '../src/views/builder.js';
 import {topbarHtml} from '../src/ui/layout.js';
 import {mountStudentRuntime} from '../src/part-templates/a1-listening-part-1/student.js';
+import {renderBuilder} from '../src/part-templates/default/builder.js';
 
 const originalStorage=globalThis.sessionStorage;
 globalThis.sessionStorage={getItem:()=>null};
@@ -267,6 +268,21 @@ try{
     assert.equal((html.match(/class="writing-point">\(0\)/g)||[]).length,1);
     assert.equal((html.match(/class="writing-point">\(1\)/g)||[]).length,1);
     assert.match(html,/class="writing-binary"/);assert.match(html,/Chọn phương án/);assert.match(html,/src="\/images\/form\.png"/);
+  });
+
+  await test('Writing 1 choice controls hide only the embedded A/B block, never the whole form question',()=>{
+    const question={id:'write-one',type:'writing',title:'Choose A or B',choices:['A','B'],correctAnswer:0,maxScore:1,rubric:[{type:'text',label:'Name',maxScore:1}]};
+    const section={id:'writing-1',skill:'Viết',questionIds:[question.id],questionProfile:{layout:'mixed-form',choices:['A','B'],formFieldCount:1}};
+    let html=renderBuilder({data:{questions:[question]},exam:{settings:{},sections:[section]},section});
+    assert.equal(actionButtons(html,'remove-inline-question').length,0);
+    assert.equal(actionButtons(html,'hide-mixed-choice').length,1);
+    assert.equal(actionButtons(html,'restore-mixed-choice').length,1);
+    assert.match(html,/data-mixed-choice-hidden="false"/);
+    question.mixedChoiceHidden=true;
+    html=renderBuilder({data:{questions:[question]},exam:{settings:{},sections:[section]},section});
+    assert.match(html,/mixed-writing-question is-hidden/);
+    assert.match(html,/data-mixed-choice-hidden="true"/);
+    assert.match(html,/class="writing-form-row/);
   });
 
   await test('A shared section instruction appears once and an empty question list still has navigation',()=>{

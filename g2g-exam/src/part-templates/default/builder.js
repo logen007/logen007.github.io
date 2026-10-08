@@ -46,8 +46,9 @@ function audioHtml(q,readOnly,showAudio){
   return `<div class="audio-upload ${q.audioUrl?'has-audio':''}"><label class="audio-file-select" title="${q.audioUrl?'Thay audio':'Tải audio'}"><span>${q.audioUrl?esc(audioName(q)):'Upload audio'}</span><input type="file" data-field="audio" accept="audio/*" ${readOnly?'disabled':''}></label>${q.audioUrl?`<button type="button" class="audio-preview" data-action="preview-inline-audio" title="Nghe thử audio" aria-label="Nghe thử audio">${icons.play}</button><audio class="inline-audio-preview" preload="metadata" src="${esc(q.audioUrl)}"></audio>`:icons.upload}</div>`;
 }
 
-function scoreControls(q,defaultScore,readOnly){
-  return `<div class="goethe-score"><label><input data-field="maxScore" type="number" min="0" value="${Number(q.maxScore??defaultScore)}" ${readOnly?'disabled':''}><span>điểm</span></label><div class="goethe-question-actions"><button type="button" class="icon-btn" data-action="remove-inline-question" data-id="${q.id}" title="Xóa câu" aria-label="Xóa câu" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-inline-question" data-after="${q.id}" title="Thêm câu" aria-label="Thêm câu" ${readOnly?'disabled':''}>${icons.add}</button></div></div>`;
+function scoreControls(q,defaultScore,readOnly,{mixed=false}={}){
+  const removeAction=mixed?'hide-mixed-choice':'remove-inline-question',addAction=mixed?'restore-mixed-choice':'add-inline-question';
+  return `<div class="goethe-score"><label><input data-field="maxScore" type="number" min="0" value="${Number(q.maxScore??defaultScore)}" ${readOnly?'disabled':''}><span>điểm</span></label><div class="goethe-question-actions"><button type="button" class="icon-btn" data-action="${removeAction}" data-id="${q.id}" title="Ẩn câu" aria-label="Ẩn câu" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="${addAction}" ${mixed?'data-id':'data-after'}="${q.id}" title="Hiện câu" aria-label="Hiện câu" ${readOnly?'disabled':''}>${icons.add}</button></div></div>`;
 }
 
 function choicesHtml(q,choiceProfile,readOnly){
@@ -92,7 +93,7 @@ function mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile}){
   const count=stored.length||choiceProfile.formFieldCount;
   const before=formRowsHtml(q,{readOnly,choiceProfile,start:0,end:Math.max(0,count-1)});
   const last=formRowsHtml(q,{readOnly,choiceProfile,start:Math.max(0,count-1),end:count});
-  const middle=`<div class="goethe-question mixed-writing-question"><div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi 1" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly)}${audioHtml(q,readOnly,choiceProfile.showAudio)}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</div>`;
+  const middle=`<div class="goethe-question mixed-writing-question ${q.mixedChoiceHidden?'is-hidden':''}" data-mixed-choice-hidden="${Boolean(q.mixedChoiceHidden)}"><div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi 1" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly,{mixed:true})}${audioHtml(q,readOnly,choiceProfile.showAudio)}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</div>`;
   const blocks=instructionBlocksFor(q);
   return `<article class="writing-form writing-form--mixed part-question" data-editor-mode="mixed-form" data-question-id="${q.id}">${before}${middle}${last}${blocks.length?`<div class="mixed-writing-instructions">${blocks.map((block,index)=>questionInstructionHtml(q,block,index,readOnly)).join('')}</div>`:''}</article>`;
 }
@@ -177,7 +178,7 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     const draftScores=new Map([...root.querySelectorAll('.part-question[data-question-id]')].map(card=>{
       const formScores=[...card.querySelectorAll('[data-rubric-index]:not(.is-hidden) [data-rubric-score]')];
       const score=normalizedScore(formScores.length
-        ?formScores.reduce((sum,input)=>sum+Math.max(0,Number(input.value)||0),0)+(card.dataset.editorMode==='mixed-form'?Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0):0)
+        ?formScores.reduce((sum,input)=>sum+Math.max(0,Number(input.value)||0),0)+(card.dataset.editorMode==='mixed-form'&&card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden!=='true'?Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0):0)
         :Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0));
       return [card.dataset.questionId,score];
     }));
