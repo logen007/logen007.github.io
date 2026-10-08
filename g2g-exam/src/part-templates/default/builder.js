@@ -26,6 +26,7 @@ function profileFor(section){
     showChoiceImages:source.choiceImages===true||(!isTrueFalse&&source.choiceImages!==false),
     showAudio:source.audio!==false,
     instructionImage:source.instructionImage===true,
+    questionImage:source.questionImage===true,
     isWritingForm:source.layout==='form-fields',
     isMixedForm:source.layout==='mixed-form',
     isFreeResponse:source.layout==='free-response',
@@ -46,6 +47,12 @@ function audioHtml(q,readOnly,showAudio){
   return `<div class="audio-upload ${q.audioUrl?'has-audio':''}"><label class="audio-file-select" title="${q.audioUrl?'Thay audio':'Tải audio'}"><span>${q.audioUrl?esc(audioName(q)):'Upload audio'}</span><input type="file" data-field="audio" accept="audio/*" ${readOnly?'disabled':''}></label>${q.audioUrl?`<button type="button" class="audio-preview" data-action="preview-inline-audio" title="Nghe thử audio" aria-label="Nghe thử audio">${icons.play}</button><audio class="inline-audio-preview" preload="metadata" src="${esc(q.audioUrl)}"></audio>`:icons.upload}</div>`;
 }
 
+function questionImageHtml(q,readOnly,showQuestionImage){
+  if(!showQuestionImage)return '';
+  const imageUrl=q.instructionImageUrl||'';
+  return `<label class="section-image-upload question-image-upload" title="${imageUrl?'Bấm để thay hình ảnh câu hỏi':'Upload hình'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh câu hỏi">`:`${icons.imageUpload}<span>Upload hình</span>`}</span><input type="file" data-question-card-image accept="image/*" ${readOnly?'disabled':''}></label>`;
+}
+
 function scoreControls(q,defaultScore,readOnly,{mixed=false}={}){
   const removeAction=mixed?'hide-mixed-choice':'remove-inline-question',addAction=mixed?'restore-mixed-choice':'add-inline-question';
   return `<div class="goethe-score"><label><input data-field="maxScore" type="number" min="0" value="${Number(q.maxScore??defaultScore)}" ${readOnly?'disabled':''}><span>điểm</span></label><div class="goethe-question-actions"><button type="button" class="icon-btn" data-action="${removeAction}" data-id="${q.id}" title="Ẩn câu" aria-label="Ẩn câu" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="${addAction}" ${mixed?'data-id':'data-after'}="${q.id}" title="Hiện câu" aria-label="Hiện câu" ${readOnly?'disabled':''}>${icons.add}</button></div></div>`;
@@ -60,8 +67,9 @@ function choicesHtml(q,choiceProfile,readOnly){
 }
 
 function choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile}){
-  const stimulus=choiceProfile.stimulusStarts.includes(index)?fixedStimulusHtml(q,readOnly):'';
-  return `<article class="goethe-question part-question" data-editor-mode="choices" data-question-id="${q.id}">${stimulus}<div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi ${index+1}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly)}${audioHtml(q,readOnly,choiceProfile.showAudio)}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</article>`;
+  const stimulus=choiceProfile.instructionImage&&choiceProfile.stimulusStarts.includes(index)?fixedStimulusHtml(q,readOnly):'';
+  const media=choiceProfile.questionImage?questionImageHtml(q,readOnly,true):audioHtml(q,readOnly,choiceProfile.showAudio);
+  return `<article class="goethe-question part-question" data-editor-mode="choices" data-question-id="${q.id}">${stimulus}<div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi ${index+1}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly)}${media}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</article>`;
 }
 
 function fixedStimulusHtml(q,readOnly){
@@ -170,6 +178,10 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
   });
   root.querySelectorAll('[data-question-instruction-image]').forEach(input=>input.onchange=()=>{
     const file=input.files?.[0],control=input.closest('[data-question-image-control]');if(!file||!control)return;const url=URL.createObjectURL(file),label=control.querySelector('.section-image-label');control.dataset.hasImage='true';control.dataset.removeQuestionImage='false';if(label)label.innerHTML=`<img src="${url}" alt="Hình ảnh đề bài">`;
+  });
+  root.querySelectorAll('[data-question-card-image]').forEach(input=>input.onchange=()=>{
+    const file=input.files?.[0],label=input.closest('.question-image-upload')?.querySelector('.section-image-label');if(!file||!label)return;
+    label.innerHTML=`<img src="${URL.createObjectURL(file)}" alt="Hình ảnh câu hỏi">`;
   });
   root.querySelectorAll('[data-action="clear-question-image"]').forEach(button=>button.addEventListener('click',()=>{
     const control=button.closest('[data-question-image-control]'),label=control?.querySelector('.section-image-label');if(!control||!label)return;control.dataset.hasImage='false';control.dataset.removeQuestionImage='true';control.querySelectorAll('[data-question-instruction-image]').forEach(input=>{input.value='';});label.innerHTML=`${icons.addImage}<span>Thêm hình ảnh</span>`;

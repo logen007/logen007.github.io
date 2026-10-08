@@ -6,7 +6,7 @@
   "questionLimit": 5,
   "questionProfile": {
     "type": "single",
-    "choices": ["A", "B", "C"],
+    "choices": ["A", "B"],
     "layout": "choices",
     "choiceImages": true,
     "instructionImage": true,

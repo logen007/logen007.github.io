@@ -564,7 +564,7 @@ async function persistBuilderDraft({silent=false}={}){
   setBuilderSaveStatus('saving','Đang lưu…');
   const uploadedInputs=[];
   try{
-    const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map(),questionInstructionImageUrls=new Map(),rubricImageUrls=new Map();
+    const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map(),questionInstructionImageUrls=new Map(),questionCardImageUrls=new Map(),rubricImageUrls=new Map();
     let sectionImageUrl;
     if(section&&app.querySelector('.part-question[data-question-id]')){
       for(const card of app.querySelectorAll('.part-question[data-question-id]')){
@@ -587,6 +587,10 @@ async function persistBuilderDraft({silent=false}={}){
           if(!file)continue;
           questionInstructionImageUrls.set(`${questionId}:${input.dataset.questionInstructionImage}`,await uploadQuestionImage(file));
           uploadedInputs.push(input);
+        }
+        for(const input of card.querySelectorAll('[data-question-card-image]')){
+          const file=input.files?.[0];if(!file)continue;
+          questionCardImageUrls.set(questionId,await uploadQuestionImage(file));uploadedInputs.push(input);
         }
         for(const row of card.querySelectorAll('[data-rubric-index]')){
           const input=row.querySelector('[data-rubric-image]'),file=input?.files?.[0];if(!file)continue;
@@ -641,7 +645,10 @@ async function persistBuilderDraft({silent=false}={}){
             return {text:control.querySelector('[data-instruction-prompt]')?.value.trim()||'',imageUrl:questionInstructionImageUrls.get(`${id}:${index}`)??(control.dataset.removeQuestionImage==='true'?'':previousBlock.imageUrl||'')};
           });
           const firstInstruction=instructionBlocks[0]||{text:'',imageUrl:''};
-          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:firstInstruction.text,choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl:firstInstruction.imageUrl,instructionBlocks,mixedChoiceHidden:card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden==='true'});
+          const instructionImageUrl=section.questionProfile?.questionImage===true
+            ?(questionCardImageUrls.get(id)??previousQuestion?.instructionImageUrl??'')
+            :firstInstruction.imageUrl;
+          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:firstInstruction.text,choices,correctAnswer:Number(correct?.value??0),maxScore:Math.max(0,Number(scoreField?.value)||0),audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl,instructionBlocks,mixedChoiceHidden:card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden==='true'});
         });
       }
     });

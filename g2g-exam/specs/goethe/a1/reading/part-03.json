@@ -8,9 +8,11 @@
     "type": "single",
     "choices": ["Đúng", "Sai"],
     "layout": "true-false",
-    "choiceImages": true,
-    "instructionImage": true,
-    "audio": true
+    "choiceImages": false,
+    "instructionImage": false,
+    "questionImage": true,
+    "stimulusStarts": [0, 1, 2, 3, 4],
+    "audio": false
   },
   "template": "GENERIC"
 }

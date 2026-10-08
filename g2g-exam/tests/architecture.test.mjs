@@ -7,6 +7,7 @@ import {clone,byId,createExam} from '../src/core.js';
 import {seedState} from '../src/seed.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
 import {populateGoetheA1TestFixture} from '../src/controllers/goethe-a1-test-fixture.js';
+import {renderBuilder} from '../src/part-templates/default/builder.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
@@ -72,7 +73,12 @@ test('Mỗi form Goethe A1 lấy bố cục authoring từ specs',()=>{
   assert.equal(parts['Đọc 1'].instructionImage,true);
   assert.deepEqual(parts['Đọc 1'].stimulusStarts,[2]);
   assert.equal(parts['Đọc 2'].choiceImages,true);
-  assert.equal(parts['Đọc 3'].choiceImages,true);
+  assert.deepEqual(parts['Đọc 2'].choices,['A','B']);
+  assert.equal(parts['Đọc 3'].choiceImages,false);
+  assert.equal(parts['Đọc 3'].instructionImage,false);
+  assert.equal(parts['Đọc 3'].questionImage,true);
+  assert.equal(parts['Đọc 3'].audio,false);
+  assert.deepEqual(parts['Đọc 3'].stimulusStarts,[0,1,2,3,4]);
   assert.equal(parts['Viết 1'].layout,'mixed-form');
   assert.deepEqual(parts['Viết 1'].choices,['A','B']);
   assert.equal(parts['Viết 2'].layout,'free-response');
@@ -80,6 +86,12 @@ test('Mỗi form Goethe A1 lấy bố cục authoring từ specs',()=>{
   const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'A1',title:'Form data',stamp:789});
   const listening=exam.sections.find(section=>section.name==='Nghe 1');
   assert.deepEqual(byId(state.questions,listening.questionIds[0]).choices,['A','B','']);
+  const readingTwo=exam.sections.find(section=>section.name==='Đọc 2');
+  assert.equal(byId(state.questions,readingTwo.questionIds[0]).choices.length,2);
+  const readingThree=exam.sections.find(section=>section.name==='Đọc 3'),readingThreeQuestion=byId(state.questions,readingThree.questionIds[0]);
+  const readingThreeHtml=renderBuilder({data:state,exam,section:readingThree,readOnly:false});
+  assert.doesNotMatch(readingThreeHtml,/data-section-image|data-field="audio"/);
+  assert.match(readingThreeHtml,new RegExp(`data-question-id="${readingThreeQuestion.id}"[\\s\\S]*data-question-card-image`));
   const writing=exam.sections.find(section=>section.name==='Viết 1');
   const writingQuestion=byId(state.questions,writing.questionIds[0]);
   assert.equal(writingQuestion.rubric.length,7);
