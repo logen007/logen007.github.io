@@ -38,6 +38,17 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
 - Audio uses one border around file label/play state. Uploaded answer images
   replace the placeholder icon, with hover/focus preview and click-to-replace.
 - Setup/settings dialogs use the same input components as other forms.
+- Controls have only two density levels: 44px for normal screens and 40px inside
+  the exam builder. Both use a 12px radius, 14px horizontal inset, the shared
+  border tokens, and identical hover/focus/disabled states.
+- Native dropdowns always reserve 42px on the right for one 16px chevron placed
+  14px from the edge. Feature modules must not redraw or reposition that icon.
+- Cards use the shared 24px radius and 24px desktop padding. Compact/mobile
+  variants may reduce padding to 18–20px but must not introduce a third radius.
+- Primary, secondary, destructive and icon-only actions reuse `.nut`, `.nguy`
+  and `.icon-btn`; feature modules own labels and behavior, not button geometry.
+- File/audio/image pickers use the same border, radius, hover and focus language
+  as text controls. Shadows remain reserved for overlays and media previews.
 - Exam navigation stays after the questions: no sticky surface/background/border.
   Exam structure navigation is preview-only.
 

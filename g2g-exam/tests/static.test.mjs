@@ -78,6 +78,16 @@ test('Mọi dropdown dùng chung khoảng cách và biểu tượng mũi tên',(
   assert.equal(styles.includes('.question-profile-field select { padding:8px 4px; }'),false);
 });
 
+test('Các cấu trúc giao diện dùng token và trạng thái tương tác chung',()=>{
+  const styles=read('styles.css');
+  const guide=read('docs/UI_STYLE.md');
+  for(const token of ['--control-height-sm','--control-pad-x','--control-border-hover','--card-padding','--motion-fast'])assert.ok(styles.includes(token),`Thiếu token ${token}`);
+  assert.ok(styles.includes('Shared interactive states'));
+  assert.ok(styles.includes('.writing-image-picker):hover'));
+  assert.ok(guide.includes('Controls have only two density levels'));
+  assert.ok(guide.includes('Primary, secondary, destructive and icon-only actions'));
+});
+
 test('Tổng điểm kỹ năng đọc đúng thuộc tính data-skill-total',()=>{
   const builder=read('src/part-templates/default/builder.js');
   assert.ok(builder.includes('total.dataset.skillTotal'));
