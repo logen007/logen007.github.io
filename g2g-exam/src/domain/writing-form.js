@@ -4,10 +4,22 @@ const PRESENTATION_TYPES=new Set(['heading','note','static','image','signature']
 
 export const isScoredWritingField=row=>!row?.hidden&&!PRESENTATION_TYPES.has(String(row?.type||'text'));
 
-export function writingFormScore(rows=[]){
-  const total=(Array.isArray(rows)?rows:[]).reduce((sum,row)=>sum+(isScoredWritingField(row)?Math.max(0,Number(row.maxScore)||0):0),0);
-  return Math.abs(total-Math.round(total))<0.02?Math.round(total):Number(total.toFixed(2));
+// Teacher-entered 0.33 represents one third of a point. Keep exact thirds
+// throughout accumulation so later groups do not inherit rounding drift.
+export function writingPointLayout(rows=[]){
+  const items=Array.isArray(rows)?rows:[],markers=items.map(()=>''),offset=items.some(row=>!row.hidden&&row.example)?1:0;
+  let units=0;
+  items.forEach((row,index)=>{
+    if(row.hidden)return;
+    const score=isScoredWritingField(row)?Math.max(0,Number(row.maxScore)||0):0;
+    if(row.example)markers[index]='(0)';
+    else if(score>0&&Math.abs(units/300-Math.round(units/300))<1e-9)markers[index]=`(${Math.round(units/300)+offset})`;
+    units+=score===0.33?100:score*300;
+  });
+  return {markers,total:Number((units/300).toFixed(2))};
 }
+
+export const writingFormScore=(rows=[])=>writingPointLayout(rows).total;
 
 export function writingOptions(row){
   if(Array.isArray(row.options))return row.options;

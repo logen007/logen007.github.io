@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {patientWritingDemo} from '../src/controllers/writing-demo.js';
-import {writingFormScore,addWritingRow,removeWritingRow,publicWritingRows} from '../src/domain/writing-form.js';
+import {writingFormScore,writingPointLayout,addWritingRow,removeWritingRow,publicWritingRows} from '../src/domain/writing-form.js';
 import {writingFormEditor,writingFormDisplay,writingSubmission} from '../src/ui/writing-form.js';
 import {createQuestion,updateQuestion} from '../src/domain/questions.js';
 import {seedState} from '../src/seed.js';
@@ -36,6 +36,19 @@ rows=removeWritingRow(q.rubric,0);assert.equal(rows[0].hidden,true);assert.equal
 rows=addWritingRow(rows,undefined,0);assert.equal(rows.at(-1).type,'heading');assert.equal(rows.at(-1).hidden,false);
 rows=addWritingRow(q.rubric,'choice');assert.equal(rows.at(-1).type,'choice');assert.equal(rows.length,q.rubric.length+1);
 for(const [n,score] of [[3,.33],[4,.25],[2,.5]])assert.equal(writingFormScore(Array.from({length:n},()=>({type:'text',maxScore:score}))),1);
+for(const [n,score] of [[3,.33],[4,.25],[2,.5]]){
+  const rubric=Array.from({length:n*5},()=>({type:'text',maxScore:score}));
+  assert.equal(writingFormScore(rubric),5);
+  assert.deepEqual(writingPointLayout(rubric).markers,rubric.map((_,i)=>i%n===0?`(${i/n})`:''));
+  const html=writingFormDisplay({id:'fractional',rubric});
+  assert.equal((html.match(/class="form-point"/g)||[]).length,5);
+  assert.ok(html.includes('class="form-point">(4)'));
+}
+const mixed=[.33,.33,.33,.25,.25,.25,.25,.5,.5,1].map(maxScore=>({type:'text',maxScore}));
+mixed.splice(1,0,{type:'text',maxScore:1,hidden:true},{type:'note',maxScore:9});
+assert.equal(writingFormScore(mixed),4);
+assert.deepEqual(writingPointLayout(mixed).markers.filter(Boolean),['(0)','(1)','(2)','(3)']);
+assert.equal(writingFormScore([{type:'text',maxScore:.98}]),.98);
 const state=structuredClone(seedState),teacher=state.users.find(u=>u.role==='teacher');
 const saved=createQuestion(state,teacher,demo.question);
 for(let n=0;n<4;n++){updateQuestion(state,teacher,saved.id,{rubric:saved.rubric,maxScore:100});assert.equal(saved.maxScore,5);}

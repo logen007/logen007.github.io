@@ -1,6 +1,6 @@
 import {esc} from './format.js';
 import {iconHtml} from './icons.js';
-import {WRITING_FORM_TYPES,isScoredWritingField,writingFormScore,writingOptions} from '../domain/writing-form.js';
+import {WRITING_FORM_TYPES,isScoredWritingField,writingFormScore,writingOptions,writingPointLayout} from '../domain/writing-form.js';
 
 const labels={heading:'Tiêu đề',note:'Đoạn hướng dẫn',static:'Thông tin có sẵn',text:'Ô điền',truefalse:'Đúng / sai',choice:'Chọn phương án',image:'Hình ảnh',signature:'Chữ ký mẫu'};
 const field=(label,hook,value,disabled,multi=false)=>`<label class="writing-setup-field"><span>${label}</span>${multi?`<textarea ${hook} ${disabled}>${esc(value||'')}</textarea>`:`<input ${hook} value="${esc(value||'')}" ${disabled}>`}</label>`;
@@ -39,12 +39,10 @@ export function writingSubmission(q,answer={}){
 }
 
 export function writingFormDisplay(q,answer={}){
-  const groups=[];let points=0;const withExample=(q.rubric||[]).some(row=>!row.hidden&&row.example);
+  const groups=[],{markers}=writingPointLayout(q.rubric);
   for(const [index,row] of (q.rubric||[]).entries()){
     if(row.hidden)continue;
-    const type=row.type||'text',scored=isScoredWritingField(row),score=scored?Math.max(0,Number(row.maxScore)||0):0;
-    const marker=row.example?'(0)':score>0&&Math.abs(points-Math.round(points))<0.02?`(${Math.round(points)+(withExample?1:0)})`:'';
-    points+=score;
+    const type=row.type||'text',marker=markers[index];
     const val=answer?.[index]??'',hook=`class="answer-form-field" data-q="${esc(q.id)}" data-field-index="${index}" aria-label="${esc(row.label||labels[type])}"`;
     let html;
     if(type==='heading')html=`<h3>${esc(row.value??row.answers??'')}</h3>`;

@@ -4,7 +4,7 @@ import {
 } from '../core.js';
 import {esc,fmtDate,statusClass,statusText,countWords} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
-import {isScoredWritingField} from '../domain/writing-form.js';
+import {writingPointLayout} from '../domain/writing-form.js';
 import {writingFormDisplay} from '../ui/writing-form.js';
 
 export function loginHtml({mode}){
@@ -120,10 +120,10 @@ export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',previ
 
 function writingFieldsHtml(q,answer,{framed=false}={}){
   const values=answer&&typeof answer==='object'?answer:{},rows=(q.rubric||[]).map((row,index)=>({...row,index})).filter(row=>!row.hidden);
-  let points=0,lastLabel=null,groups=[];
+  const {markers}=writingPointLayout(q.rubric);
+  let lastLabel=null,groups=[];
   for(const row of rows){
-    const score=isScoredWritingField(row)?Math.max(0,Number(row.maxScore)||0):0,atBoundary=Math.abs(points-Math.round(points))<0.02;
-    const marker=score>0&&atBoundary?`(${Math.round(points)})`:'';points+=score;
+    const marker=markers[row.index];
     const type=row.type||'text',value=values[row.index]??'',options=String(row.answers||'').split('|').map(item=>item.trim()).filter(Boolean);
     let control='';
     if(type==='heading')control=`<strong class="writing-form-heading">${esc(row.answers||row.label||'')}</strong>`;
