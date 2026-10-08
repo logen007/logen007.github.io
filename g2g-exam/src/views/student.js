@@ -45,7 +45,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,online,preview=fal
   const sectionAudio=sectionAudioHtml(sec,questions,attempt,{preview});
   const currentCount=`<span data-current-answer-count>${answered}/${questions.length} câu đã trả lời</span>`;
   const stimulusStarts=new Set((sec.questionProfile?.stimulusStarts||[]).map(Number));
-  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${questions.map((q,index)=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(index)})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
+  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${questions.map((q,index)=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(index),questionNumber:index+1})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(sec.name)}</h1></div></div>`
     :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(sec.name)}</h1><div class="phu-de">${sec.showTimer!==false?'Có giới hạn thời gian · ':''}${currentCount}</div></div></div>`;
@@ -83,7 +83,7 @@ function questionStimulusHtml(q){
   return `<section class="question-stimulus">${text?`<div><p>${esc(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`;
 }
 
-export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false}={}){
+export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null}={}){
   const played=sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`);
   const audio=!hideAudio&&q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" title="Audio chỉ phát theo quy định của đề thi." ${played?'disabled':''}>${played?'Đã phát audio':'Phát audio'}</button>${preview?'':'<span class="phu-de">Audio chỉ phát theo quy định của đề thi.</span>'}</div>`:'';
   const rawPrompt=String(hasStimulus?q.title||'':q.prompt||q.title||'').trim();
@@ -92,7 +92,8 @@ export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',previ
   const questionText=rawPrompt==='Nháp'||isSharedInstruction?'':rawPrompt;
   const prompt=`${q.instruction?`<div class="question-instruction">${esc(q.instruction)}</div>`:''}${questionText?`<div class="noi">${esc(questionText)}</div>`:''}`;
   const stimulus=hasStimulus?questionStimulusHtml(q):'';
-  const head=stimulus+(preview&&(prompt||audio)?`<div class="preview-question-heading">${prompt?`<div class="preview-question-prompt">${prompt}</div>`:''}${audio}</div>`:prompt+audio);
+  const number=questionNumber?`<div class="question-number">Câu ${questionNumber}</div>`:'';
+  const head=stimulus+number+(preview&&(prompt||audio)?`<div class="preview-question-heading">${prompt?`<div class="preview-question-prompt">${prompt}</div>`:''}${audio}</div>`:prompt+audio);
   const root=`cau-thi ${answerPresent(answer,q)?'is-answered':''}`;
   if(['single','cloze','truefalse'].includes(q.type))return `<div class="${root}" data-q="${q.id}">${head}<div class="answer-options ${preview&&(q.choices||[]).some(choice=>choice?.imageUrl)?'answer-options--illustrated':''}" role="radiogroup" aria-label="${esc(questionText||'Chọn đáp án')}">${(q.choices||[]).map((choice,index)=>{const text=typeof choice==='object'?choice.text:choice,imageUrl=typeof choice==='object'?choice.imageUrl||'':'';return `<label class="answer-option"><input class="answer-one" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(text||`Đáp án ${index+1}`)}" value="${index}" ${String(answer)===String(index)?'checked':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span>${esc(text)}</span></span></label>`;}).join('')}</div></div>`;
   if(q.type==='matching')return `<div class="${root}" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div class="matching-row"><b>${esc(p[0])}</b><select class="dap-an answer-match" data-q="${q.id}" data-i="${i}"><option value="">Chọn đáp án</option>${[...new Set((q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;

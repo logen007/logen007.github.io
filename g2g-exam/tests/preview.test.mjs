@@ -145,6 +145,7 @@ try{
       assert.ok(questionList>=0&&lastQuestion>questionList&&navigation>lastQuestion);
       assert.ok(navigation>html.lastIndexOf('</textarea>'),'Navigation must follow the final answer field.');
       assert.deepEqual(tags(html,'div').filter(tag=>hasClass(tag,'cau-thi')).map(tag=>attribute(tag,'data-q')),['choice','match','written']);
+      assert.deepEqual([...html.matchAll(/class="question-number">Câu (\d+)</g)].map(match=>match[1]),['1','2','3']);
       const previous=actionButtons(html,preview?'preview-prev-section':'prev-section');
       assert.equal(previous.length,1);
       assert.equal(/\bdisabled(?:\s|>)/.test(previous[0]),sectionIndex===0);
@@ -237,6 +238,13 @@ try{
     assert.match(source,/Promise\.all\(audios\.map\(readAudioDuration\)\)/);
     assert.match(source,/completedDuration\+currentTime/);
     assert.match(source,/requestAnimationFrame\(tick\)/);
+    assert.match(source,/\['exam','preview-exam','builder','grading-detail'\]\.includes\(ui\.view\)/);
+    assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.section-audio-status\s*\{[^}]*color:var\(--chu\)/);
+    assert.match(source,/function stopActiveAudio\(\)[\s\S]*audio\.onpause=null;audio\.onended=null;audio\.onerror=null;[\s\S]*audio\.pause\(\)/);
+    assert.match(source,/function render\(\)[\s\S]*stopActiveAudio\(\)/);
+    assert.match(source,/url\.searchParams\.set\('preview',ui\.previewExamId\)/);
+    assert.match(source,/url\.searchParams\.set\('tab',ui\.adminTab\)/);
+    assert.match(source,/initialUrl\.searchParams\.get\('preview'\)/);
   });
 
   await test('Reading part one inserts its second stimulus before question three',()=>{

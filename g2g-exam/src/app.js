@@ -56,7 +56,7 @@ const ui={
 
 repo.subscribe(next=>{
   data=next;
-  if(['exam','builder','grading-detail'].includes(ui.view)||document.getElementById('modal'))return;
+  if(['exam','preview-exam','builder','grading-detail'].includes(ui.view)||document.getElementById('modal'))return;
   clearTimeout(realtimeRenderTimer);
   realtimeRenderTimer=setTimeout(()=>render(),80);
 });
@@ -77,6 +77,26 @@ function notify(msg){
 function clearTimer(){
   if(timerHandle){clearInterval(timerHandle);timerHandle=null;}
   timerBusy=false;
+}
+
+function stopActiveAudio(){
+  app.querySelectorAll('audio').forEach(audio=>{
+    audio.onpause=null;audio.onended=null;audio.onerror=null;
+    try{audio.pause();audio.currentTime=0;}catch{}
+  });
+}
+
+function syncViewUrl(){
+  if(!user)return;
+  const url=new URL(window.location.href);
+  for(const key of ['edit','preview','section','view','tab','attempt'])url.searchParams.delete(key);
+  if(ui.view==='builder'&&ui.builderExamId)url.searchParams.set('edit',ui.builderExamId);
+  else if(ui.view==='preview-exam'&&ui.previewExamId){url.searchParams.set('preview',ui.previewExamId);url.searchParams.set('section',String(ui.previewSectionIndex||0));}
+  else if(ui.view==='grading-detail'&&ui.gradeAttemptId){url.searchParams.set('view','grading');url.searchParams.set('attempt',ui.gradeAttemptId);}
+  else if(ui.view==='exam'&&ui.attemptId){url.searchParams.set('view','exam');url.searchParams.set('attempt',ui.attemptId);}
+  else if(ui.view==='student-results')url.searchParams.set('view','results');
+  else if(ui.view==='admin'&&ui.adminTab!=='exams')url.searchParams.set('tab',ui.adminTab);
+  history.replaceState(null,'',url.pathname+url.search+url.hash);
 }
 
 async function act(fn,success,{rerender=true}={}){
@@ -498,7 +518,9 @@ function bindModalClose(){app.querySelectorAll('[data-action="close-modal"]').fo
 
 function render(){
   clearTimer();
+  stopActiveAudio();
   if(!user){ui.view='login';loginView();return;}
+  syncViewUrl();
   if(ui.view==='student-home')studentHomeView();
   else if(ui.view==='student-results')studentResultsView();
   else if(ui.view==='exam')examView();
@@ -953,7 +975,16 @@ async function toggleTeacher(id){
   }),'Đã cập nhật vai trò tài khoản.');
 }
 
-const directBuilderId=new URL(window.location.href).searchParams.get('edit');
+const initialUrl=new URL(window.location.href),directBuilderId=initialUrl.searchParams.get('edit');
 const directBuilderExam=directBuilderId&&byId(data.exams,directBuilderId);
 if(directBuilderExam&&user&&!isStudent(user)&&canEditExam(user,directBuilderExam))await openBuilder(directBuilderId);
-else render();
+else{
+  const previewId=initialUrl.searchParams.get('preview'),previewExam=previewId&&byId(data.exams,previewId);
+  const requestedView=initialUrl.searchParams.get('view'),requestedAttempt=initialUrl.searchParams.get('attempt');
+  if(previewExam&&user&&!isStudent(user)&&canEditExam(user,previewExam)){ui.previewExamId=previewId;ui.previewSectionIndex=Math.max(0,Number(initialUrl.searchParams.get('section'))||0);ui.view='preview-exam';}
+  else if(requestedView==='results'&&isStudent(user))ui.view='student-results';
+  else if(requestedView==='exam'&&isStudent(user)&&byId(data.attempts,requestedAttempt)){ui.attemptId=requestedAttempt;ui.view='exam';}
+  else if(requestedView==='grading'&&!isStudent(user)&&byId(data.attempts,requestedAttempt)){ui.gradeAttemptId=requestedAttempt;ui.view='grading-detail';}
+  else if(!isStudent(user)&&initialUrl.searchParams.get('tab')){ui.adminTab=initialUrl.searchParams.get('tab');ui.view='admin';}
+  render();
+}
