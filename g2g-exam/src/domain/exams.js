@@ -2,6 +2,7 @@ import {APP_CONFIG} from '../config.js';
 import {
   clone,uid,nowIso,byId,isTeacher,isMaster,audit,canEditExam
 } from './base.js';
+import {getQuestionChoiceError} from './questions.js';
 
 function normalizeSection(input={},index=0){
   return {
@@ -248,6 +249,10 @@ export function validateExamForPublish(state,exam){
     for(const questionId of section.questionIds||[]){
       const question=byId(state.questions,questionId);
       if(!question||question.status==='trash')errors.push(`Phần ${index+1} chứa câu hỏi không còn hợp lệ.`);
+      else{
+        const choiceError=getQuestionChoiceError(question);
+        if(choiceError)errors.push(`Câu ${question.code||questionId}: ${choiceError}`);
+      }
       if(seen.has(questionId))errors.push(`Câu ${question?.code||questionId} đang bị lặp trong cùng bài thi.`);
       seen.add(questionId);
     }

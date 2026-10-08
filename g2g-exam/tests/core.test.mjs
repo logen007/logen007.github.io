@@ -29,9 +29,15 @@ test('Chủ câu hỏi và master được sửa; giáo viên khác không đư�
 test('Đáp án tùy chọn để trống vẫn được lưu khi câu còn ít nhất hai lựa chọn',()=>{
   const s=fresh(),u=users(s);
   const q=createQuestion(s,u.lan,{title:'Câu ba lựa chọn',type:'single',choices:['A','B','C'],correctAnswer:0,maxScore:1});
+  const ex=createExam(s,u.lan,{title:'Đề đang soạn',sections:[{id:'draft',name:'Đọc 2',questionIds:[q.id]}]});
+  updateQuestion(s,u.lan,q.id,{choices:[{text:'50 €'},{text:''},{text:''}]});
+  assert.equal(byId(s.questions,q.id).choices[0].text,'50 €');
+  assert.ok(validateExamForPublish(s,ex).some(error=>error.includes('ít nhất 2 lựa chọn')));
   updateQuestion(s,u.lan,q.id,{choices:[{text:'50 €'},{text:'65 €'},{text:''}]});
   assert.equal(byId(s.questions,q.id).choices[2].text,'');
-  assert.throws(()=>updateQuestion(s,u.lan,q.id,{choices:[{text:'50 €'},{text:'65 €'},{text:''}],correctAnswer:2}));
+  assert.equal(validateExamForPublish(s,ex).some(error=>error.includes('lựa chọn')),false);
+  updateQuestion(s,u.lan,q.id,{correctAnswer:2});
+  assert.ok(validateExamForPublish(s,ex).some(error=>error.includes('Đáp án đúng không hợp lệ')));
 });
 
 test('Câu hỏi chưa dùng có thể soft delete; chỉ master khôi phục/xóa vĩnh viễn',()=>{

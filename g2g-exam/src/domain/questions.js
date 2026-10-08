@@ -12,19 +12,24 @@ export function getQuestionMaxScore(question,defaultScore=0){
   return Number.isFinite(score)&&score>=0?score:Math.max(0,Number(defaultScore)||0);
 }
 
-function validateQuestionInput(input,existing=null){
+export function getQuestionChoiceError(input,existing=null){
+  const type=input.type??existing?.type??'single';
+  if(!['single','truefalse','cloze'].includes(type))return '';
+  const choices=clone(input.choices??existing?.choices??[]),choiceTexts=choices.map(choiceText);
+  if(choiceTexts.filter(Boolean).length<2)return 'Câu tự chấm cần ít nhất 2 lựa chọn hợp lệ.';
+  const correct=Number(input.correctAnswer??existing?.correctAnswer);
+  if(!Number.isInteger(correct)||correct<0||correct>=choices.length||!choiceTexts[correct])return 'Đáp án đúng không hợp lệ.';
+  return '';
+}
+
+function validateQuestionInput(input,existing=null,{allowIncompleteChoices=false}={}){
   const type=input.type??existing?.type??'single';
   const title=String(input.title??existing?.title??'').trim();
   if(!title)throw new Error('Câu hỏi cần có tiêu đề nội bộ.');
   const maxScore=Number(input.maxScore??existing?.maxScore??1);
   if(!Number.isFinite(maxScore)||maxScore<0)throw new Error('Điểm tối đa không hợp lệ.');
-  if(['single','truefalse','cloze'].includes(type)){
-    const choices=clone(input.choices??existing?.choices??[]);
-    const choiceTexts=choices.map(choiceText);
-    if(choiceTexts.filter(Boolean).length<2)throw new Error('Câu tự chấm cần ít nhất 2 lựa chọn hợp lệ.');
-    const correct=Number(input.correctAnswer??existing?.correctAnswer);
-    if(!Number.isInteger(correct)||correct<0||correct>=choices.length||!choiceTexts[correct])throw new Error('Đáp án đúng không hợp lệ.');
-  }
+  const choiceError=getQuestionChoiceError(input,existing);
+  if(choiceError&&!allowIncompleteChoices)throw new Error(choiceError);
   if(type==='matching'){
     const pairs=clone(input.pairs??existing?.pairs??[]);
     if(!pairs.length||pairs.some(x=>!Array.isArray(x)||x.length<2||!String(x[0]||'').trim()||!String(x[1]||'').trim()))throw new Error('Câu ghép nội dung cần có các cặp hợp lệ.');
@@ -56,7 +61,7 @@ export function updateQuestion(state,user,id,patch){
   const question=byId(state.questions,id);
   if(!question)throw new Error('Không tìm thấy câu hỏi.');
   if(!canEditQuestion(user,question))throw new Error(question.locked?'Câu hỏi đã được dùng trong đề đã xuất bản nên không thể chỉnh sửa. Hãy tạo câu hỏi mới.':'Bạn không có quyền sửa câu hỏi này.');
-  validateQuestionInput(patch,question);
+  validateQuestionInput(patch,question,{allowIncompleteChoices:true});
   const allowed=['code','level','skill','part','type','title','instruction','prompt','choices','correctAnswer','pairs','maxScore','autoGrade','rubric','audioUrl','audioName','instructionImageUrl','instructionBlocks','mixedChoiceHidden','groupId','groupType','groupOrder','groupInstruction','groupAudioPolicy'];
   for(const key of allowed)if(key in patch)question[key]=clone(patch[key]);
   question.updatedAt=nowIso();
