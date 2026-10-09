@@ -106,6 +106,13 @@ try{
     assert.match(css,/\.exam-paper \.answer-options--illustrated \.answer-option-body/);
     assert.match(css,/\.exam-paper \.cau-thi/);
   });
+
+  await test('German exam section names always include Teil',()=>{
+    const sample=fixture();sample.exam.sections[0].name='Nghe 2';
+    const html=examHtml({...sample,preview:false,previewSummary:null});
+    assert.match(html,/<h1>Hören Teil 2<\/h1>/);
+    assert.doesNotMatch(html,/<h1>Hören 2<\/h1>/);
+  });
   await test('Nghe 1 keeps three illustrated choices across mobile preview and exam',()=>{
     const sample=fixture();
     sample.exam.sections[0].templateType='A1_LISTENING_PART_1';

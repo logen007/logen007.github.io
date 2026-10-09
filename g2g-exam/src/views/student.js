@@ -92,7 +92,8 @@ function previewOutlineHtml(summary,sectionIndex){
 
 const germanSectionName=name=>String(name||'')
   .replace(/^Nghe\b/i,'Hören').replace(/^Đọc\b/i,'Lesen')
-  .replace(/^Viết\b/i,'Schreiben').replace(/^Nói\b/i,'Sprechen');
+  .replace(/^Viết\b/i,'Schreiben').replace(/^Nói\b/i,'Sprechen')
+  .replace(/^(Hören|Lesen|Schreiben|Sprechen)\s+(?!Teil\b)(\d+)$/i,'$1 Teil $2');
 
 export function answerPresent(answer,q){
   if(q.type==='writing'){
