@@ -174,4 +174,25 @@ test('Nộp bài trực tiếp; các xác nhận khác không dùng hộp thoạ
   assert.match(read('src/ui/confirm.js'),/role="alertdialog"/);
 });
 
+test('Chuyển vào thùng rác trực tiếp và vẫn xác nhận xóa vĩnh viễn',()=>{
+  const app=read('src/app.js');
+  assert.match(app,/\[data-action="delete-exam"\][^\n]+softDeleteExam/);
+  assert.doesNotMatch(app,/delete-exam[^\n]+confirmAction/);
+  assert.match(app,/\[data-action="permanent-exam"\][^\n]+confirmAction/);
+});
+
+test('Dashboard master đọc tài nguyên VPS và dung lượng từng đề từ backend',()=>{
+  const backend=read('server/src/actions/settings.js'),view=read('src/views/admin.js');
+  for(const token of ['os.loadavg()','os.totalmem()','fs.statfs','pg_database_size','examStorage'])assert.ok(backend.includes(token));
+  assert.ok(view.includes('Tài nguyên hệ thống'));
+  assert.ok(view.includes('Dung lượng từng đề thi'));
+});
+
+test('HTML ban đầu không còn render form đăng nhập cũ trước landing page',()=>{
+  const html=read('vi.html');
+  assert.doesNotMatch(html,/class="dang-nhap"/);
+  assert.doesNotMatch(html,/>Đăng nhập bằng Google</);
+  assert.match(html,/Đang tải Luyện thi tiếng Đức/);
+});
+
 console.log(`\n${passed} kiểm thử tĩnh đã đạt.`);

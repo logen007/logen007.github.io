@@ -2,9 +2,33 @@ import {query,getSettings,audit,appError} from '../db.js';
 import {setSmtpSecret,smtpSecretStatus,sendConfiguredMail} from '../mail.js';
 import {mergeSettings} from '../defaults.js';
 import {isPrimaryMasterEmail,normalizeEmail} from '../roles.js';
+import os from 'node:os';
+import path from 'node:path';
+import fs from 'node:fs/promises';
 
 const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||''));
 const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||''));
+const uploadDir=path.resolve(process.env.UPLOAD_DIR||'/data/uploads');
+const uploadPattern=/\/uploads\/([A-Za-z0-9._-]+)/g;
+
+function uploadNames(value,names=new Set()){
+  if(typeof value==='string')for(const match of value.matchAll(uploadPattern))names.add(path.basename(match[1]));
+  else if(Array.isArray(value))for(const item of value)uploadNames(item,names);
+  else if(value&&typeof value==='object')for(const item of Object.values(value))uploadNames(item,names);
+  return names;
+}
+
+async function fileBytes(file){try{return (await fs.stat(file)).size;}catch{return 0;}}
+async function directoryBytes(root,{skip=new Set()}={}){
+  let total=0,entries=[];
+  try{entries=await fs.readdir(root,{withFileTypes:true});}catch{return 0;}
+  for(const entry of entries){
+    if(skip.has(entry.name))continue;
+    const target=path.join(root,entry.name);
+    total+=entry.isDirectory()?await directoryBytes(target,{skip}):entry.isFile()?await fileBytes(target):0;
+  }
+  return total;
+}
 
 function normalizeTeacherEmails(values=[]){
   return [...new Set((Array.isArray(values)?values:[]).map(normalizeEmail).filter(validEmail).filter(email=>!isPrimaryMasterEmail(email)))].sort();
@@ -74,6 +98,24 @@ export async function getInfrastructureStatus(user){
   const secret=await smtpSecretStatus();
   let database=true;
   try{await query('SELECT 1');}catch{database=false;}
+  const [databaseSize,tableSizes,examRows,questionRows,uploadBytes,applicationBytes,disk]=await Promise.all([
+    query(`SELECT pg_database_size(current_database())::bigint AS bytes`),
+    query(`SELECT relname AS name,pg_total_relation_size(oid)::bigint AS bytes FROM pg_class WHERE relname=ANY($1::text[])`,[['users','exams','questions','attempts','notifications','audit_log','settings']]),
+    query(`SELECT id,data FROM exams WHERE status<>'trash' ORDER BY updated_at DESC`),
+    query(`SELECT id,data FROM questions WHERE status<>'trash'`),
+    directoryBytes(uploadDir),
+    directoryBytes(process.cwd(),{skip:new Set(['node_modules','.git','uploads'])}),
+    fs.statfs(uploadDir).catch(()=>null),
+  ]);
+  const questions=new Map(questionRows.rows.map(row=>[row.id,row.data||{}]));
+  const examStorage=await Promise.all(examRows.rows.map(async row=>{
+    const exam=row.data||{},questionIds=[...new Set((exam.sections||[]).flatMap(section=>section.questionIds||[]))];
+    const questionData=questionIds.map(id=>questions.get(id)).filter(Boolean),media=uploadNames([exam,...questionData]);
+    let mediaBytes=0;for(const name of media)mediaBytes+=await fileBytes(path.join(uploadDir,name));
+    const dataBytes=Buffer.byteLength(JSON.stringify(exam))+questionData.reduce((sum,item)=>sum+Buffer.byteLength(JSON.stringify(item)),0);
+    return {id:row.id,title:exam.title||row.id,provider:exam.provider||'',level:exam.level||'',dataBytes,mediaBytes,totalBytes:dataBytes+mediaBytes,questions:questionData.length,mediaFiles:media.size};
+  }));
+  const memoryTotal=os.totalmem(),memoryFree=os.freemem(),cpuCores=os.cpus().length||1,cpuUsage=process.cpuUsage(),uptimeSeconds=Math.max(1,process.uptime());
   return {
     backend:'VPS',
     postgresql:database,
@@ -85,6 +127,15 @@ export async function getInfrastructureStatus(user){
       secretUpdatedAt:secret.updatedAt,
     },
     storage:true,
+    resources:{
+      cpu:{cores:cpuCores,loadPercent:Math.min(100,Math.round(os.loadavg()[0]/cpuCores*1000)/10),applicationAveragePercent:Math.round((cpuUsage.user+cpuUsage.system)/1e6/uptimeSeconds/cpuCores*1000)/10,loadAverage:os.loadavg().map(value=>Math.round(value*100)/100)},
+      memory:{totalBytes:memoryTotal,usedBytes:memoryTotal-memoryFree,freeBytes:memoryFree,processBytes:process.memoryUsage().rss,heapBytes:process.memoryUsage().heapUsed},
+      disk:disk?{totalBytes:Number(disk.blocks)*Number(disk.bsize),freeBytes:Number(disk.bfree)*Number(disk.bsize),usedBytes:(Number(disk.blocks)-Number(disk.bfree))*Number(disk.bsize)}:null,
+      usage:{databaseBytes:Number(databaseSize.rows[0]?.bytes||0),uploadsBytes:uploadBytes,applicationBytes},
+      databaseTables:Object.fromEntries(tableSizes.rows.map(row=>[row.name,Number(row.bytes||0)])),
+      uptimeSeconds:Math.round(uptimeSeconds),
+    },
+    examStorage,
   };
 }
 

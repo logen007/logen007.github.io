@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {examHtml,studentExamCardHtml,submittedHtml,answerPresent} from '../src/views/student.js';
+import {examHtml,studentExamCardHtml,submittedHtml,expiredHtml,answerPresent} from '../src/views/student.js';
 import {readExamAnswers} from '../src/ui/exam-answers.js';
 import {examBuilderHtml} from '../src/views/builder.js';
 import {topbarHtml} from '../src/ui/layout.js';
@@ -79,6 +79,15 @@ try{
     assert.match(html,/<h1>Đã nộp bài<\/h1>/);
     assert.match(html,/Khi giáo viên chấm xong, điểm số sẽ được thông báo qua email và hiển thị tại trang kết quả\./);
     for(const removed of ['ĐÃ NỘP BÀI THÀNH CÔNG','Đang chờ kết quả','Khi có kết quả','Bài thi đã được ghi nhận'])assert.ok(!html.includes(removed));
+  });
+  await test('Live exam keeps progress only in navigation and timeout has a home action',()=>{
+    const html=examHtml({...fixture(),preview:false,previewSummary:null});
+    assert.doesNotMatch(html,/Có giới hạn thời gian/);
+    assert.doesNotMatch(html,/>Còn lại</);
+    assert.match(html,/class="tien-do"[^>]*><span[^>]*>2\/3<\/span> - <b id="examTimeSummary">/);
+    const expired=expiredHtml();
+    assert.match(expired,/Rất tiếc bạn đã không hoàn thành phần thi vì đã hết thời gian\./);
+    assert.equal(actionButtons(expired,'student-home').length,1);
   });
   await test('Preview and live exam share the paper and illustrated-answer layout',()=>{
     const sample=fixture();
@@ -363,7 +372,7 @@ try{
       const play=tags(html,'button').filter(tag=>hasClass(tag,'play-audio'));
       assert.equal(play.length,1);
       assert.equal(attribute(play[0],'data-q'),'choice');
-      assert.equal(attribute(tags(html,'img')[0],'src'),'/images/answer.png?name=&quot;image&quot;');
+      assert.ok(tags(html,'img').some(tag=>attribute(tag,'src')==='/images/answer.png?name=&quot;image&quot;'));
       assert.equal(tags(html,'input').filter(tag=>hasClass(tag,'answer-one')).length,2);
     }
   });

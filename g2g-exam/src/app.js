@@ -5,7 +5,7 @@ import {
   updateExam,duplicateExam,softDeleteExam,restoreExam,permanentlyDeleteExam,
   addSection,removeSection,moveSection,updateSection,addQuestionsToSection,
   removeQuestionFromSection,moveQuestion,
-  startAttempt,saveAnswer,setAttemptSection,getSectionRemainingSeconds,submitAttempt,
+  startAttempt,saveAnswer,setAttemptSection,getSectionRemainingSeconds,submitAttempt,abandonAttempt,
   saveManualScore,publishAttempt,publishExam
 } from './core.js';
 import {uploadQuestionAudio,uploadQuestionImage} from './media.js';
@@ -13,7 +13,7 @@ import {countWords} from './ui/format.js';
 import {topbarHtml} from './ui/layout.js';
 import {confirmAction} from './ui/confirm.js';
 import {
-  loginHtml,studentHomeHtml,studentResultsHtml,studentAttemptDetailHtml,examHtml,submittedHtml,answerPresent
+  loginHtml,studentHomeHtml,studentResultsHtml,studentAttemptDetailHtml,examHtml,submittedHtml,expiredHtml,answerPresent
 } from './views/student.js';
 import {
   adminShellHtml,dashboardHtml,examAdminHtml,gradingAdminHtml,gradesAdminHtml,
@@ -30,7 +30,7 @@ import {populateGoetheA1TestFixture} from './controllers/goethe-a1-test-fixture.
 import {hasPartTemplate,openPartTemplate,bindPartBuilder} from './part-templates/index.js';
 import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
-import {loadPublicSettings} from './settings/api.js';
+import {loadPublicSettings,refreshInfrastructure} from './settings/api.js';
 import {isScoredWritingField,writingFormScore,addWritingRow,removeWritingRow} from './domain/writing-form.js';
 import {readWritingRow} from './ui/writing-form.js';
 import {readExamAnswers,revealUnansweredQuestion} from './ui/exam-answers.js';
@@ -51,13 +51,14 @@ let builderAutosaveBusy=false;
 let builderAutosaveQueued=false;
 let builderSavePromise=null;
 let builderEditRevision=0;
+let infrastructureLoading=false;
 const saveTimers=new Map();
 const pendingAudioUploads=new Map();
 
 const ui={
   view:user?(isStudent(user)?'student-home':'admin'):'login',
   adminTab:isMaster(user)?'dashboard':'exams',examId:null,attemptId:null,builderExamId:null,builderSectionId:null,
-  gradeAttemptId:null,gradeMode:'best',examFilter:'all',review:null,previewExamId:null,previewSectionIndex:0,previewAnswers:{},online:navigator.onLine,
+  gradeAttemptId:null,gradeMode:'best',examFilter:'all',review:null,previewExamId:null,previewSectionIndex:0,previewAnswers:{},infrastructure:null,online:navigator.onLine,
 };
 
 repo.subscribe(next=>{
@@ -177,6 +178,7 @@ function examView(){
   const section=exam.sections[sectionIndex];
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
   app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,online:ui.online});
+  const examBrandIcon=app.querySelector('.exam-mobile-brand img');if(examBrandIcon)examBrandIcon.onerror=()=>examBrandIcon.remove();
   bindExamInputs(attempt,questions);
   bindSectionAudio(attempt,{preview:false});
   startExamTimer(attempt,exam,sectionIndex);
@@ -407,14 +409,9 @@ function startExamTimer(attempt,exam,sectionIndex){
       timerBusy=true;
       clearTimer();
       document.querySelectorAll('.answer-one,.answer-match,.answer-text,.play-audio').forEach(x=>x.disabled=true);
-      if(section.autoSubmit!==false){
-        await flushTextAnswers();
-        if(sectionIndex<exam.sections.length-1){
-          await act(()=>repo.transaction(st=>setAttemptSection(st,user,attempt.id,sectionIndex+1)),null,{rerender:false});
-          ui.view='exam';
-          render();
-        }else await submitCurrentExam();
-      }else notify('Phần thi đã hết thời gian.');
+      await flushTextAnswers();
+      await act(()=>repo.transaction(st=>abandonAttempt(st,user,attempt.id)),null,{rerender:false});
+      data=await repo.getState();ui.view='expired';render();
     }
   };
   tick();
@@ -434,7 +431,13 @@ async function submitCurrentExam(){
 function adminView(){
   if(isMaster(user)&&['grading','grades'].includes(ui.adminTab))ui.adminTab='dashboard';
   let content='';
-  if(ui.adminTab==='dashboard'&&isMaster(user))content=dashboardHtml({data});
+  if(ui.adminTab==='dashboard'&&isMaster(user)){
+    content=dashboardHtml({data,infrastructure:ui.infrastructure});
+    if(!ui.infrastructure&&!infrastructureLoading){
+      infrastructureLoading=true;
+      refreshInfrastructure().then(result=>{ui.infrastructure=result;if(ui.view==='admin'&&ui.adminTab==='dashboard')render();}).catch(error=>notify(error.message||'Không tải được thông tin hạ tầng.')).finally(()=>{infrastructureLoading=false;});
+    }
+  }
   else if(ui.adminTab==='exams')content=examAdminHtml({data,user});
   else if(ui.adminTab==='grading')content=gradingAdminHtml({data,user});
   else if(ui.adminTab==='grades')content=gradesAdminHtml({data,ui});
@@ -560,6 +563,7 @@ function render(){
   else if(ui.view==='exam')examView();
   else if(ui.view==='preview-exam')previewExamView();
   else if(ui.view==='submitted')submittedView();
+  else if(ui.view==='expired')app.innerHTML=layout(expiredHtml());
   else if(ui.view==='builder')examBuilderView();
   else if(ui.view==='grading-detail')gradingDetailView();
   else adminView();
@@ -792,7 +796,7 @@ function bindViewSpecific(){
   });
   app.querySelectorAll('[data-action="edit-question"]').forEach(b=>b.onclick=()=>questionModal(byId(data.questions,b.dataset.id)));
   app.querySelectorAll('[data-action="preview-question"]').forEach(b=>b.onclick=()=>previewQuestionModal(byId(data.questions,b.dataset.id)));
-  app.querySelectorAll('[data-action="delete-question"]').forEach(b=>b.onclick=()=>confirmAction('Đưa câu hỏi này vào Thùng rác?',()=>act(()=>repo.transaction(st=>softDeleteQuestion(st,user,b.dataset.id)),'Đã chuyển câu hỏi vào Thùng rác.'),{confirmLabel:'Chuyển vào thùng rác'}));
+  app.querySelectorAll('[data-action="delete-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>softDeleteQuestion(st,user,b.dataset.id)),'Đã chuyển câu hỏi vào Thùng rác.'));
   app.querySelectorAll('[data-action="new-exam"]').forEach(b=>b.onclick=()=>createNewExam());
   app.querySelectorAll('[data-action="edit-exam"]').forEach(b=>b.onclick=()=>openBuilder(b.dataset.id));
   app.querySelectorAll('[data-action="duplicate-exam"]').forEach(b=>b.onclick=async()=>{
@@ -800,7 +804,7 @@ function bindViewSpecific(){
     if(copy){data=await repo.getState();ui.adminTab='exams';render();}
   });
   app.querySelectorAll('[data-action="view-exam"]').forEach(b=>b.onclick=()=>previewExamModal(byId(data.exams,b.dataset.id)));
-  app.querySelectorAll('[data-action="delete-exam"]').forEach(b=>b.onclick=()=>confirmAction('Đưa bài thi này vào Thùng rác?',()=>act(()=>repo.transaction(st=>softDeleteExam(st,user,b.dataset.id)),'Đã chuyển bài thi vào Thùng rác.'),{confirmLabel:'Chuyển vào thùng rác'}));
+  app.querySelectorAll('[data-action="delete-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>softDeleteExam(st,user,b.dataset.id)),'Đã chuyển bài thi vào Thùng rác.'));
   app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await act(()=>repo.transaction(st=>publishExam(st,user,b.dataset.id)),'Đã xuất bản bài thi.');});
   app.querySelectorAll('[data-action="preview-exam"]').forEach(b=>b.onclick=async()=>{
     if(!await flushBuilderDraft())return;

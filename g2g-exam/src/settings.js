@@ -47,6 +47,8 @@ function applyBrand(){
     if(!icon){icon=document.createElement('link');icon.rel='icon';document.head.append(icon);}
     const url=`/brand/favicon?v=${encodeURIComponent(pub.general.faviconUrl)}`;
     if(icon.getAttribute('href')!==url)icon.href=url;
+    const examIcon=document.querySelector('.exam-mobile-brand img');
+    if(examIcon&&examIcon.getAttribute('src')!==url)examIcon.src=url;
   }
   const pageTitle=`${name} · G2G`;
   if(document.title!==pageTitle)document.title=pageTitle;

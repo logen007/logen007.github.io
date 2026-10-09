@@ -19,7 +19,8 @@ await test('Production config ignores route/demo identity and never loads the re
   }
   vm.runInNewContext(read('src/demo-bypass.js'),{});
   assert.doesNotMatch(read('vi.html'),/<script[^>]+demo-bypass/);
-  assert.match(read('vi.html'),/href="\/api\/auth\/google"/);
+  assert.doesNotMatch(read('vi.html'),/>Đăng nhập bằng Google</);
+  assert.match(read('src/repositories/api.js'),/\/auth\/google\?return=/);
   assert.match(read('src/app.js'),/repo.mode==='local'&&populateGoetheA1TestFixture/);
 });
 

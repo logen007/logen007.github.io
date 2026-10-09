@@ -69,11 +69,11 @@ export function examHtml({attempt,exam,sectionIndex,questions,online,preview=fal
   const questionList=`<section class="to-thi" aria-label="Câu hỏi">${questions.map((q,index)=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(index),questionNumber:questionOffset+index+1,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(sec.name)}</h1></div></div>`
-    :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(sec.name)}</h1><div class="phu-de">${sec.showTimer!==false?'Có giới hạn thời gian · ':''}${currentCount}</div></div></div>`;
+    :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(sec.name)}</h1></div></div>`;
   const body=`<main class="noi-dung-thi">${context}<div class="exam-paper">${sectionInstruction}${sectionAudio}${questionList}</div><nav class="dieu-huong-thi" aria-label="Điều hướng bài thi"><button class="nut" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${preview?'Phần trước':'Quay lại'}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh" data-action="${nextAction}">${nextLabel}</button></nav></main>`;
   const header=preview
     ?`<header class="thanh-thi thanh-thi--preview"><strong>${esc(exam.title)}</strong><div class="preview-header-row"><button class="text-link" data-action="close-preview"><span aria-hidden="true">←</span> Quay lại</button>${previewOutlineHtml(previewSummary,sectionIndex)}</div></header>`
-    :`<header class="thanh-thi"><strong>G2G Thi thử</strong><div class="thong-tin-thi"><span>Phần ${sectionIndex+1}/${exam.sections.length}</span><span class="exam-time-label">Còn lại</span><b id="examTimer">--:--</b></div></header>`;
+    :`<header class="thanh-thi"><span class="exam-mobile-brand"><img src="/brand/favicon" alt=""><strong>Luyện thi tiếng Đức</strong></span><div class="thong-tin-thi"><span>Phần ${sectionIndex+1}/${exam.sections.length}</span><b id="examTimer">--:--</b></div></header>`;
   const offline=!online?`<div class="offline" role="status">${preview?'Đang ngoại tuyến. Câu trả lời xem thử chỉ giữ trong phiên này; audio và ảnh có thể không tải được.':'Đang ngoại tuyến. Hãy giữ trang mở; câu trả lời sẽ tiếp tục được lưu trên thiết bị.'}</div>`:'';
   return `<div class="thi ${preview?'thi--preview':''}">${header}${offline}${preview?`<div class="preview-shell">${body}</div>`:body}</div>`;
 }
@@ -164,4 +164,8 @@ function writingFieldsHtml(q,answer,{framed=false}={}){
 
 export function submittedHtml(){
   return `<main class="khung"><section class="the ket-qua-cho"><div class="vong">✓</div><h1>Đã nộp bài</h1><span class="nhan vang">ĐANG CHỜ CHẤM</span><p>Khi giáo viên chấm xong, điểm số sẽ được thông báo qua email và hiển thị tại trang kết quả.</p><button class="nut" data-action="student-home" style="margin-top:18px">Về danh sách bài thi</button></section></main>`;
+}
+
+export function expiredHtml(){
+  return `<main class="khung"><section class="the ket-qua-cho"><div class="vong">!</div><h1>Đã hết thời gian</h1><p>Rất tiếc bạn đã không hoàn thành phần thi vì đã hết thời gian.</p><button class="nut chinh" data-action="student-home" style="margin-top:18px">Quay lại trang chính</button></section></main>`;
 }

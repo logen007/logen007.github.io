@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=20261009-69">
+  <link rel="stylesheet" href="./styles.css?v=20261009-71">
   <link rel="stylesheet" href="./enhancements.css?v=20261008-26">
   <script>
     function showBootError(){
@@ -25,23 +25,11 @@
 </head>
 <body>
   <div id="app">
-    <main class="dang-nhap">
-      <section class="gioi-thieu">
-        <div class="nhan-muc">G2G CAREER · THI THỬ</div>
-        <h1>Luyện đến khi bước vào phòng thi thật không còn bỡ ngỡ.</h1>
-        <p>Hệ thống thi thử tiếng Đức G2G.</p>
-        <div class="phu-de">Đọc hiểu · Ngữ pháp · Nghe hiểu · Viết · Nói</div>
-      </section>
-      <section class="hop-dang-nhap">
-        <h2>Đăng nhập</h2>
-        <p id="bootStatus">Đang kết nối hệ thống. Đăng nhập Google để sử dụng dữ liệu đã lưu trên máy chủ.</p>
-        <a class="dang-nhap-google" id="googleLogin" href="/api/auth/google" style="display:block;text-align:center;text-decoration:none">Đăng nhập bằng Google</a>
-      </section>
-    </main>
+    <div class="loading" id="bootStatus" role="status">Đang tải Luyện thi tiếng Đức…</div>
   </div>
   <div id="toast" class="thong-bao an"></div>
   <script src="./runtime-config.js?v=20261008-26"></script>
-  <script type="module" src="./src/app.js?v=20261009-68"></script>
-  <script type="module" src="./src/feature-loader.js?v=20261009-68"></script>
+  <script type="module" src="./src/app.js?v=20261009-71"></script>
+  <script type="module" src="./src/feature-loader.js?v=20261009-71"></script>
 </body>
 </html>
