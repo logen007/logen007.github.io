@@ -5,6 +5,7 @@ import {examHtml,studentExamCardHtml,submittedHtml,expiredHtml,answerPresent} fr
 import {readExamAnswers} from '../src/ui/exam-answers.js';
 import {examBuilderHtml} from '../src/views/builder.js';
 import {topbarHtml} from '../src/ui/layout.js';
+import {dashboardHtml} from '../src/views/admin.js';
 import {mountStudentRuntime} from '../src/part-templates/a1-listening-part-1/student.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {writingFormScore} from '../src/domain/writing-form.js';
@@ -192,6 +193,20 @@ try{
       assert.match(roleHtml,new RegExp(`data-active-role="${role}"`));
       assert.match(roleHtml,new RegExp(`data-current-role="${role}"`));
     }
+  });
+  await test('Top grader uses the teacher Google avatar',()=>{
+    const html=dashboardHtml({data:{users:[{id:'teacher',role:'teacher',name:'Dương Phan',picture:'https://lh3.googleusercontent.com/teacher.jpg'}],exams:[],attempts:[{status:'published',reviewerId:'teacher'}]}});
+    assert.match(html,/class="dashboard-person"/);
+    assert.match(html,/<img src="https:\/\/lh3\.googleusercontent\.com\/teacher\.jpg" alt="" referrerpolicy="no-referrer">/);
+    assert.match(html,/Dương Phan/);
+  });
+  await test('Marking an example moves it first with FLIP animation and persists the new order',()=>{
+    const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+    assert.match(source,/const questionIds=\[\.\.\.app\.querySelectorAll\('\.part-question\[data-question-id\]'\)\]/);
+    assert.match(source,/if\(makeExample\)[\s\S]*?container\.insertBefore\(card,cards\[0\]\|\|null\)[\s\S]*?item\.animate/);
+    const builder=renderBuilder({data:{questions:[{id:'q',type:'single',title:'Mẫu',choices:['A','B'],maxScore:1}]},exam:{settings:{}},section:{questionIds:['q'],questionProfile:{}}});
+    assert.match(builder,/<span>đ<\/span>/);
+    assert.doesNotMatch(builder,/<span>điểm<\/span>/);
   });
   await test('Preview has its own header actions and no real attempt timer or submission controls',()=>{
     for(const sectionIndex of [0,1,2]){

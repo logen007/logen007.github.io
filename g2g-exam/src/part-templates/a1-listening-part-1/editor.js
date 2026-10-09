@@ -37,7 +37,14 @@ export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved
     modal.querySelector('#tplClose').onclick=()=>modal.remove();
     modal.querySelector('#tplAdd').onclick=()=>{sync();if(questions.filter(q=>!q.example).length<maxQuestions){questions.push(questionDraft(Number(modal.querySelector('#tplDefaultScore').value)||specDefaultScore));render();}};
     modal.querySelector('#tplApplyScore').onclick=()=>{const value=Math.max(0,Number(modal.querySelector('#tplDefaultScore').value)||0);modal.querySelectorAll('.tpl-score:not(:disabled)').forEach(input=>input.value=String(value));syncTotal();};
-    modal.querySelectorAll('[data-example]').forEach(button=>button.onclick=()=>{sync();questions[Number(button.dataset.example)].example=!questions[Number(button.dataset.example)].example;render();});
+    modal.querySelectorAll('[data-example]').forEach(button=>button.onclick=()=>{
+      sync();const index=Number(button.dataset.example),question=questions[index],makeExample=!question.example;question.example=makeExample;
+      if(!makeExample){render();return;}
+      const cards=[...modal.querySelectorAll('.tpl-a1-question')],before=new Map(cards.map(card=>[card,card.getBoundingClientRect()])),card=cards[index];
+      questions.splice(index,1);questions.unshift(question);card.parentElement.insertBefore(card,cards[0]);
+      cards.forEach(item=>{const first=before.get(item),last=item.getBoundingClientRect(),dy=first.top-last.top;if(dy)item.animate([{transform:`translateY(${dy}px)`},{transform:'translateY(0)'}],{duration:360,easing:'cubic-bezier(.22,.8,.25,1)'});});
+      setTimeout(render,370);
+    });
     modal.querySelectorAll('[data-remove]').forEach(button=>button.onclick=()=>{sync();const index=Number(button.dataset.remove),selected=questions[index];if(!selected?.example&&questions.filter(q=>!q.example).length<=minQuestions)return;questions.splice(index,1);render();});
     modal.querySelectorAll('.tpl-score').forEach(input=>input.oninput=syncTotal);
     modal.querySelector('#tplSave').onclick=save;

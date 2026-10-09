@@ -648,7 +648,8 @@ async function persistBuilderDraft({silent=false}={}){
         const instructionImageUrl=section.questionProfile?.instructionImage===false
           ?''
           :sectionImageUrl??(imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'');
-        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl});
+        const questionIds=[...app.querySelectorAll('.part-question[data-question-id]')].map(card=>card.dataset.questionId);
+        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl,questionIds});
         app.querySelectorAll('.part-question[data-question-id]').forEach(card=>{
           const id=card.dataset.questionId;
           const example=card.dataset.example==='true';
@@ -945,9 +946,19 @@ function bindBuilder(){
   app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.'));
   app.querySelectorAll('[data-action="toggle-question-example"]').forEach(button=>button.onclick=async()=>{
     const card=button.closest('.part-question');if(!card)return;
-    card.dataset.example=card.dataset.example==='true'?'false':'true';
+    const makeExample=card.dataset.example!=='true';
+    card.dataset.example=makeExample?'true':'false';
     card.classList.toggle('is-example',card.dataset.example==='true');
-    if(await saveBuilderDraft({silent:true})){data=await repo.getState();render();}
+    let motion=Promise.resolve();
+    if(makeExample){
+      const container=card.parentElement,cards=[...container.children].filter(item=>item.matches?.('.part-question'));
+      const before=new Map(cards.map(item=>[item,item.getBoundingClientRect()]));
+      container.insertBefore(card,cards[0]||null);
+      const animations=cards.map(item=>{const first=before.get(item),last=item.getBoundingClientRect(),dx=first.left-last.left,dy=first.top-last.top;if(!dx&&!dy)return null;return item.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0,0)'}],{duration:360,easing:'cubic-bezier(.22,.8,.25,1)'});}).filter(Boolean);
+      motion=Promise.all(animations.map(animation=>animation.finished.catch(()=>{})));
+    }
+    const saved=await saveBuilderDraft({silent:true});await motion;
+    if(saved){data=await repo.getState();render();}
   });
   app.querySelectorAll('[data-action="hide-mixed-choice"]').forEach(b=>b.onclick=async()=>{
     if(!await saveBuilderDraft({silent:true}))return;
