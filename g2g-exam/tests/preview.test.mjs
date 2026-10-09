@@ -489,6 +489,21 @@ try{
     assert.match(html,/src="\/images\/read-2\.png"/);
   });
 
+  await test('Reading one hides instruction audio and keeps secondary prompts movable',()=>{
+    const questions=[
+      {id:'q1',type:'single',title:'Question one',choices:['Richtig','Falsch'],instructionBlocks:[]},
+      {id:'q2',type:'single',title:'Question two',choices:['Richtig','Falsch'],instructionBlocks:[{text:'Flexible prompt',imageUrl:''}]}
+    ];
+    const section={id:'reading-1',skillKey:'reading',questionIds:['q1','q2'],questionProfile:{layout:'true-false',choices:['Richtig','Falsch'],instructionImage:true,audio:true,stimulusStarts:[2]}};
+    const builder=renderBuilder({data:{questions},exam:{settings:{},sections:[section]},section});
+    assert.doesNotMatch(builder,/data-section-audio/);
+    assert.match(builder,/data-action="add-question-instruction"/);
+    assert.match(builder,/data-action="move-question-instruction"/);
+    const input=fixture();input.questions=questions;input.allQuestions=questions;input.exam.sections[0]={...section,name:'Đọc 1'};input.attempt.answers={};
+    const html=examHtml(input);
+    assert.ok(html.indexOf('Flexible prompt')<html.indexOf('Question two'));
+  });
+
   await test('Writing form groups equal labels and numbers fractional score bundles once',()=>{
     const input=fixture(),question={id:'writing-form',type:'writing',title:'Form',rubric:[
       {type:'text',label:'Name',maxScore:.33},{type:'text',label:'Name',maxScore:.33},{type:'text',label:'Name',maxScore:.33},

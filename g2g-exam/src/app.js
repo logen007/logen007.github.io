@@ -1016,6 +1016,21 @@ function bindBuilder(){
       updateQuestion(st,user,question.id,{instructionBlocks:blocks,prompt:first.text,instructionImageUrl:first.imageUrl});
     }),'Đã xóa đề bài.');
   });
+  app.querySelectorAll('[data-action="move-question-instruction"]').forEach(b=>b.onclick=async()=>{
+    if(!await saveBuilderDraft({silent:true}))return;
+    await act(()=>repo.transaction(st=>{
+      const currentExam=byId(st.exams,exam.id),currentSection=currentExam?.sections.find(item=>item.id===ui.builderSectionId);
+      const ids=currentSection?.questionIds||[],sourceIndex=ids.indexOf(b.dataset.id),targetIndex=sourceIndex+(b.dataset.dir==='up'?-1:1);
+      if(sourceIndex<0||targetIndex<0||targetIndex>=ids.length)return;
+      const source=byId(st.questions,b.dataset.id),target=byId(st.questions,ids[targetIndex]);if(!source||!target)return;
+      const sourceBlocks=[...instructionBlocksFor(source)],blockIndex=Number(b.dataset.index),block=sourceBlocks.splice(blockIndex,1)[0];if(!block)return;
+      const targetBlocks=Array.isArray(target.instructionBlocks)?[...target.instructionBlocks]:[];
+      if(b.dataset.dir==='up')targetBlocks.push(block);else targetBlocks.unshift(block);
+      const sourceFirst=sourceBlocks[0]||{text:'',imageUrl:''},targetFirst=targetBlocks[0]||{text:'',imageUrl:''};
+      updateQuestion(st,user,source.id,{instructionBlocks:sourceBlocks,prompt:sourceFirst.text,instructionImageUrl:sourceFirst.imageUrl});
+      updateQuestion(st,user,target.id,{instructionBlocks:targetBlocks,prompt:targetFirst.text,instructionImageUrl:targetFirst.imageUrl});
+    }));
+  });
   const section=exam.sections.find(item=>item.id===ui.builderSectionId)||exam.sections[0];
   bindPartBuilder(section?.templateType,{root:app,data,exam,section,pendingAudioUploads,notify});
   app.querySelectorAll('[data-rubric-type]').forEach(field=>field.addEventListener('change',async()=>{await saveBuilderDraft({silent:true});render();}));

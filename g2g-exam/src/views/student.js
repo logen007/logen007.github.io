@@ -66,13 +66,13 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const sectionInstruction=sec.instruction||sec.instructionImageUrl?`<section class="exam-instruction">${sec.instruction?`<div><p>${esc(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl?`<img src="${esc(sec.instructionImageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
   const currentCount=`<span data-current-answer-count aria-label="Số câu đã trả lời">${answered}/${requiredQuestions.length}</span>`;
-  const stimulusStarts=new Set((sec.questionProfile?.stimulusStarts||[]).map(Number));
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
   let questionNumber=exam.sections.slice(0,sectionIndex).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!knownQuestions.get(id)?.example).length,0);
   let exampleTitleShown=false;
   const questionList=`<section class="to-thi" aria-label="Câu hỏi">${orderedQuestions.map(({q,originalIndex})=>{
     const showExampleTitle=Boolean(q.example&&!exampleTitleShown);if(showExampleTitle)exampleTitleShown=true;
-    return renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(originalIndex),questionNumber:q.example?null:++questionNumber,showExampleTitle,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
+    const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
+    return renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:q.example?null:++questionNumber,showExampleTitle,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
   }).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(sec.name)}</h1></div></div>`
@@ -117,9 +117,8 @@ function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
 const questionImageUrl=q=>String((Array.isArray(q.instructionBlocks)?q.instructionBlocks[0]?.imageUrl:'')||q.instructionImageUrl||'').trim();
 
 function questionStimulusHtml(q,{hideImage=false}={}){
-  const block=Array.isArray(q.instructionBlocks)?q.instructionBlocks[0]:null,text=block?.text||q.prompt||'',imageUrl=hideImage?'':questionImageUrl(q);
-  if(!text&&!imageUrl)return '';
-  return `<section class="question-stimulus">${text?`<div><p>${esc(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`;
+  const blocks=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length?q.instructionBlocks:[{text:q.prompt||'',imageUrl:q.instructionImageUrl||''}];
+  return blocks.map(block=>{const text=block?.text||'',imageUrl=hideImage?'':String(block?.imageUrl||'').trim();return text||imageUrl?`<section class="question-stimulus">${text?`<div><p>${esc(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`:'';}).join('');
 }
 
 function questionPromptHtml(text,q){

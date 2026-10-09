@@ -10,7 +10,8 @@
     "layout": "true-false",
     "instructionImage": true,
     "stimulusStarts": [2],
-    "audio": true
+    "audio": true,
+    "instructionAudio": false
   },
   "template": "GENERIC"
 }
