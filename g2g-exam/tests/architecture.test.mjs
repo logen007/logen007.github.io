@@ -24,7 +24,7 @@ test('Goethe A1 có cấu trúc từ registry thay vì slice vị trí',()=>{
   const sections=buildSectionsFromSpec(spec,{idFactory:i=>`s${i}`});assert.equal(sections.length,8);
   const groups=groupSectionsBySkill({sections},spec);assert.deepEqual(groups.map(([name])=>name),['Nghe','Đọc','Viết']);
   assert.equal(sections[0].templateType,'A1_LISTENING_PART_1');
-  assert.deepEqual(sections[1].questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false',audio:true});
+  assert.deepEqual(sections[1].questionProfile,{type:'single',choices:['Richtig','Falsch'],layout:'true-false',audio:true});
   assert.equal(sections[1].audioPolicy.segmentRepeat,1);
   assert.equal(sections[2].audioPolicy.segmentRepeat,2);
   assert.equal(read('src/views/builder.js').includes('sections.slice('),false);
@@ -39,7 +39,7 @@ test('Goethe A1 lấy cấu trúc production từ specs/ thay vì hard-code tron
   assert.equal(part.questionLimit,6);
   assert.equal(part.template,'A1_LISTENING_PART_1');
   const listeningPart2=JSON.parse(read('specs/goethe/a1/listening/part-02.json'));
-  assert.deepEqual(listeningPart2.questionProfile.choices,['Đúng','Sai']);
+  assert.deepEqual(listeningPart2.questionProfile.choices,['Richtig','Falsch']);
   assert.equal(listeningPart2.audio.segmentRepeat,1);
 });
 
@@ -50,25 +50,27 @@ test('Metadata skillKey/templateType sống sót từ spec qua createExam',()=>{
   const exam=createExam(state,teacher,{title:'Metadata test',provider:'GOETHE',level:'A1',sections});
   assert.equal(exam.sections[0].skillKey,'listening');
   assert.equal(exam.sections[0].templateType,'A1_LISTENING_PART_1');
-  assert.deepEqual(exam.sections[1].questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false',audio:true});
+  assert.deepEqual(exam.sections[1].questionProfile,{type:'single',choices:['Richtig','Falsch'],layout:'true-false',audio:true});
   assert.equal(exam.sections[1].audioPolicy.segmentRepeat,1);
   assert.equal(exam.sections[1].templateType,'GENERIC');
 });
 
-test('Đề Goethe A1 cũ nhận profile Đúng/Sai của Nghe 2 khi mở lại',()=>{
+test('Đề Goethe A1 cũ nhận profile Richtig/Falsch của Nghe 2 khi mở lại',()=>{
   const state=clone(seedState),teacher=byId(state.users,'teacher-lan');
   const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'A1',title:'Profile migration',stamp:123});
   const section=exam.sections.find(item=>item.name==='Nghe 2');
+  byId(state.questions,section.questionIds[0]).choices=['Đúng','Sai'];
   section.questionProfile=null;
   assert.equal(ensureExamMatchesConfiguredSpec(state,teacher,exam.id,{stamp:456}),true);
-  assert.deepEqual(byId(state.exams,exam.id).sections.find(item=>item.name==='Nghe 2').questionProfile,{type:'single',choices:['Đúng','Sai'],layout:'true-false',audio:true});
+  assert.deepEqual(byId(state.exams,exam.id).sections.find(item=>item.name==='Nghe 2').questionProfile,{type:'single',choices:['Richtig','Falsch'],layout:'true-false',audio:true});
+  assert.deepEqual(byId(state.questions,section.questionIds[0]).choices,['Richtig','Falsch']);
 });
 
 test('Mỗi form Goethe A1 lấy bố cục authoring từ specs',()=>{
   const spec=getExamSpec('GOETHE','A1');
   const parts=Object.fromEntries(buildSectionsFromSpec(spec,{idFactory:i=>`form-${i}`}).map(section=>[section.name,section.questionProfile]));
   assert.equal(parts['Nghe 1'].choiceImages,true);
-  assert.deepEqual(parts['Nghe 2'].choices,['Đúng','Sai']);
+  assert.deepEqual(parts['Nghe 2'].choices,['Richtig','Falsch']);
   assert.equal(parts['Nghe 3'].choiceImages,true);
   assert.equal(parts['Đọc 1'].instructionImage,true);
   assert.deepEqual(parts['Đọc 1'].stimulusStarts,[2]);

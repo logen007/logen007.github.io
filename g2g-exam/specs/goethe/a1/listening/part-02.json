@@ -6,7 +6,7 @@
   "questionLimit": 4,
   "questionProfile": {
     "type": "single",
-    "choices": ["Đúng", "Sai"],
+    "choices": ["Richtig", "Falsch"],
     "layout": "true-false",
     "audio": true
   },

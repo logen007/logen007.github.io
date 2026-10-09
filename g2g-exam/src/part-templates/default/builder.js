@@ -23,7 +23,7 @@ function profileFor(section){
   const isTrueFalse=source.layout==='true-false'&&Array.isArray(source.choices)&&source.choices.length===2;
   return {
     type:source.type||'single',
-    choices:Array.isArray(source.choices)&&source.choices.length>=2?source.choices:(isTrueFalse?['Đúng','Sai']:['A','B','C']),
+    choices:Array.isArray(source.choices)&&source.choices.length>=2?source.choices:(isTrueFalse?['Richtig','Falsch']:['A','B','C']),
     cssClass:isTrueFalse?'goethe-choices--true-false':'',
     showLabels:!isTrueFalse,
     showChoiceImages:source.choiceImages===true||(!isTrueFalse&&source.choiceImages!==false),

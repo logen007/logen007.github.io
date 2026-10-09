@@ -6,7 +6,7 @@
   "questionLimit": 5,
   "questionProfile": {
     "type": "single",
-    "choices": ["Đúng", "Sai"],
+    "choices": ["Richtig", "Falsch"],
     "layout": "true-false",
     "instructionImage": true,
     "stimulusStarts": [2],
