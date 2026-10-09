@@ -15,9 +15,9 @@ let open=false;
 let queued=false;
 
 function master(){
-  return document.querySelector('.thanh-dau .nhan')?.textContent?.trim()==='Quản trị cấp cao'&&Boolean(document.querySelector('.thanh-ben'));
+  return document.querySelector('.thanh-dau')?.dataset.currentRole==='master'&&Boolean(document.querySelector('.thanh-ben'));
 }
-function student(){return document.querySelector('.thanh-dau .nhan')?.textContent?.trim()==='Học viên';}
+function student(){return document.querySelector('.thanh-dau')?.dataset.currentRole==='student';}
 function val(id){return document.getElementById(id)?.value?.trim()||'';}
 function chk(id){return Boolean(document.getElementById(id)?.checked);}
 function selectedThemeColor(){

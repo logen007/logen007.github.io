@@ -62,17 +62,23 @@ try{
     }
     assert.doesNotMatch(readFileSync(new URL('../src/users/bootstrap.js',import.meta.url),'utf8'),/tabLabel/);
   });
-  await test('Master badge is hidden without removing existing role hooks',()=>{
+  await test('Header account omits role badge while preserving role switching',()=>{
     const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin'},canSwitchRole:true});
-    assert.match(html,/<span class="nhan" hidden>Quản trị cấp cao<\/span>/);
-    assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.header-account>\.nhan\[hidden\]\s*\{\s*display:none;/);
+    assert.match(html,/<header class="thanh-dau" data-current-role="master">/);
+    assert.doesNotMatch(html,/<span class="nhan"/);
+    assert.match(html,/<button class="account-role-trigger"[^>]*aria-controls="accountRoleMenu"[^>]*>.*<svg/);
+    assert.doesNotMatch(html,/⌄/);
     assert.equal(actionButtons(html,'toggle-role-menu').length,2);
     assert.equal(actionButtons(html,'test-role').length,3);
     assert.match(html,/data-active-role="master"/);
     assert.match(html,/data-role="student"[^>]*>Học viên/);
     assert.match(html,/data-role="teacher"[^>]*>Giáo viên/);
     assert.match(html,/data-role="master"[^>]*>Admin/);
-    for(const role of ['student','teacher'])assert.match(topbarHtml({user:{id:'master',role,name:'Admin',canTestRoles:true},mode:'api',online:true,canSwitchRole:true}),new RegExp(`data-active-role="${role}"`));
+    for(const role of ['student','teacher']){
+      const roleHtml=topbarHtml({user:{id:'master',role,name:'Admin',canTestRoles:true},mode:'api',online:true,canSwitchRole:true});
+      assert.match(roleHtml,new RegExp(`data-active-role="${role}"`));
+      assert.match(roleHtml,new RegExp(`data-current-role="${role}"`));
+    }
   });
   await test('Preview has its own header actions and no real attempt timer or submission controls',()=>{
     for(const sectionIndex of [0,1,2]){

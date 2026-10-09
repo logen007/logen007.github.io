@@ -4,7 +4,7 @@ initializeTheme();
 const app=document.getElementById('app');
 const loaded=new Map();let frame=0;let settingsTimer=null;
 function load(path){if(loaded.has(path))return loaded.get(path);const task=import(path).catch(error=>{console.error(`Không tải được module ${path}`,error);loaded.delete(path);});loaded.set(path,task);return task;}
-function syncRolePath(){if(globalThis.G2G_DEMO_BYPASS)return;const selected=app?.querySelector('[data-active-role]')?.dataset.activeRole||'';const badge=app?.querySelector('.thanh-dau .nhan')?.textContent?.trim()||'';let target=selected==='master'?'/adm':selected==='teacher'?'/teacher':selected==='student'?'/student':'';if(!target){if(badge==='Quản trị cấp cao')target='/adm';else if(badge==='Giáo viên')target='/teacher';else if(badge==='Học viên')target='/student';}if(target&&location.pathname!==target){const url=new URL(location.href);url.pathname=target;history.replaceState(null,'',url.pathname+url.search+url.hash);}}
+function syncRolePath(){if(globalThis.G2G_DEMO_BYPASS)return;const role=app?.querySelector('.thanh-dau')?.dataset.currentRole;const target=role==='master'?'/adm':role==='teacher'?'/teacher':role==='student'?'/student':'';if(target&&location.pathname!==target){const url=new URL(location.href);url.pathname=target;history.replaceState(null,'',url.pathname+url.search+url.hash);}}
 function inspect(){
   if(!app)return;syncRolePath();const admin=app.querySelector('.khung-quan-tri');
   if(!settingsTimer&&!loaded.has('./settings.js'))settingsTimer=setTimeout(()=>{settingsTimer=null;load('./settings.js');},250);

@@ -9,6 +9,7 @@ const paths={
   logout:'<path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5M14 8l4 4-4 4M8 12h12"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   close:'<path d="m6 6 12 12M18 6 6 18"/>',
+  chevronDown:'<path d="m6 9 6 6 6-6"/>',
   upload:'<path d="M12 16V4M7 9l5-5 5 5M4 16v4h16v-4"/>',
   play:'<path d="m8 5 11 7-11 7Z"/>',
   image:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1"/><path d="m3 17 5-5 4 4 4-6 5 7"/>',
