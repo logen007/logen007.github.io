@@ -260,10 +260,16 @@ try{
     const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
     assert.match(css,/\.exam-instruction\s*\{[^}]*flex-direction:column/);
     assert.match(css,/\.question-stimulus\s*\{[^}]*flex-direction:column/);
-    assert.match(css,/\.exam-instruction img\s*\{[^}]*max-width:min\(760px,86%\)/);
+    assert.match(css,/\.exam-instruction img\s*\{[^}]*max-width:min\(760px,100%\)/);
     assert.match(css,/\.question-stimulus img\s*\{[^}]*max-width:min\(760px,86%\)/);
     assert.match(css,/\.exam-instruction img\s*\{[^}]*align-self:flex-start/);
     assert.match(css,/\.question-stimulus img\s*\{[^}]*align-self:flex-start/);
+  });
+
+  await test('Illustrated choices stack a full-width image above the label on mobile',()=>{
+    const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+    assert.match(css,/@media\(max-width:680px\)[\s\S]*?\.exam-paper \.answer-options--illustrated \.answer-option-body>img\s*\{[^}]*grid-row:1;[^}]*width:100%;[^}]*height:auto/);
+    assert.match(css,/@media\(max-width:680px\)[\s\S]*?\.exam-paper \.answer-options--illustrated \.answer-option-body>span\s*\{[^}]*grid-row:2/);
   });
 
   await test('A question image replaces the img marker at its exact prompt position',()=>{

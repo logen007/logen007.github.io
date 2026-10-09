@@ -161,7 +161,7 @@ test('Builder có preview và hỗ trợ link mở lại đề đang sửa',()=>
 
 test('Preview tách rõ khỏi bài thi thật và cho phép kiểm tra mọi phần',()=>{
   const app=read('src/app.js'),student=read('src/views/student.js'),css=read('styles.css');
-  assert.ok(student.includes('class="preview-chip"'));
+  assert.equal(student.includes('class="preview-chip"'),false);
   assert.ok(student.includes('data-action="preview-select-section"'));
   assert.equal(student.includes('data-action="reset-preview"'),false);
   assert.ok(app.includes('previewSummary'));
