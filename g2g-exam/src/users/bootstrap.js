@@ -1,8 +1,8 @@
 const API=String(globalThis.G2G_API_BASE||'/api').replace(/\/$/,'');
 
 function notify(message){
-  const toast=document.getElementById('toast');
-  if(!toast){alert(message);return;}
+  let toast=document.getElementById('toast');
+  if(!toast){toast=document.createElement('div');toast.id='toast';toast.className='thong-bao an';document.body.append(toast);}
   toast.textContent=message;
   toast.classList.remove('an');
   clearTimeout(notify.t);

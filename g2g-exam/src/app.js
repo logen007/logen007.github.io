@@ -11,6 +11,7 @@ import {
 import {uploadQuestionAudio,uploadQuestionImage} from './media.js';
 import {countWords} from './ui/format.js';
 import {topbarHtml} from './ui/layout.js';
+import {confirmAction} from './ui/confirm.js';
 import {
   loginHtml,studentHomeHtml,studentResultsHtml,examHtml,submittedHtml,answerPresent
 } from './views/student.js';
@@ -41,6 +42,7 @@ let user=await repo.getCurrentUser();
 let authenticatedUser=user;
 let timerHandle=null;
 let timerBusy=false;
+let submitBusy=false;
 let realtimeRenderTimer=null;
 let builderAutosaveTimer=null;
 let builderAutosaveBusy=false;
@@ -387,7 +389,7 @@ function startExamTimer(attempt,exam,sectionIndex){
           await act(()=>repo.transaction(st=>setAttemptSection(st,user,attempt.id,sectionIndex+1)),null,{rerender:false});
           ui.view='exam';
           render();
-        }else await submitCurrentExam(false);
+        }else await submitCurrentExam();
       }else notify('Phần thi đã hết thời gian.');
     }
   };
@@ -395,11 +397,14 @@ function startExamTimer(attempt,exam,sectionIndex){
   timerHandle=setInterval(tick,1000);
 }
 
-async function submitCurrentExam(confirmFirst=true){
-  if(confirmFirst&&!confirm('Nộp bài thi? Sau khi nộp bạn sẽ không thể sửa câu trả lời.'))return;
-  await flushTextAnswers();
-  const result=await act(()=>repo.transaction(st=>submitAttempt(st,user,ui.attemptId)),null,{rerender:false});
-  if(result){data=await repo.getState();ui.view='submitted';render();}
+async function submitCurrentExam(){
+  if(submitBusy)return;
+  submitBusy=true;
+  try{
+    await flushTextAnswers();
+    const result=await act(()=>repo.transaction(st=>submitAttempt(st,user,ui.attemptId)),null,{rerender:false});
+    if(result){data=await repo.getState();ui.view='submitted';render();}
+  }finally{submitBusy=false;}
 }
 
 function adminView(){
@@ -718,10 +723,10 @@ function bindGlobal(){
 function bindViewSpecific(){
   app.querySelectorAll('[data-action="start"]').forEach(b=>b.onclick=()=>beginAttempt(b.dataset.exam,false));
   app.querySelectorAll('[data-action="resume"]').forEach(b=>b.onclick=()=>{ui.attemptId=b.dataset.attempt;ui.view='exam';render();});
-  app.querySelectorAll('[data-action="restart"]').forEach(b=>b.onclick=()=>{if(confirm('Bỏ lượt đang làm và bắt đầu lại từ đầu?'))beginAttempt(b.dataset.exam,true);});
+  app.querySelectorAll('[data-action="restart"]').forEach(b=>b.onclick=()=>confirmAction('Bỏ lượt đang làm và bắt đầu lại từ đầu?',()=>beginAttempt(b.dataset.exam,true),{confirmLabel:'Bắt đầu lại'}));
   app.querySelectorAll('[data-action="prev-section"]').forEach(b=>b.onclick=()=>moveAttemptSection(-1));
   app.querySelectorAll('[data-action="next-section"]').forEach(b=>b.onclick=()=>moveAttemptSection(1));
-  app.querySelectorAll('[data-action="submit-exam"]').forEach(b=>b.onclick=()=>submitCurrentExam(true));
+  app.querySelectorAll('[data-action="submit-exam"]').forEach(b=>b.onclick=()=>submitCurrentExam());
   app.querySelectorAll('[data-action="preview-prev-section"]').forEach(b=>b.onclick=()=>showPreviewSection(ui.previewSectionIndex-1));
   app.querySelectorAll('[data-action="preview-next-section"]').forEach(b=>b.onclick=()=>showPreviewSection(ui.previewSectionIndex+1));
   app.querySelectorAll('[data-action="preview-select-section"]').forEach(select=>select.onchange=()=>showPreviewSection(Number(select.value)||0));
@@ -748,11 +753,11 @@ function bindViewSpecific(){
   });
   app.querySelectorAll('[data-action="edit-question"]').forEach(b=>b.onclick=()=>questionModal(byId(data.questions,b.dataset.id)));
   app.querySelectorAll('[data-action="preview-question"]').forEach(b=>b.onclick=()=>previewQuestionModal(byId(data.questions,b.dataset.id)));
-  app.querySelectorAll('[data-action="delete-question"]').forEach(b=>b.onclick=()=>{if(confirm('Đưa câu hỏi này vào Thùng rác?'))act(()=>repo.transaction(st=>softDeleteQuestion(st,user,b.dataset.id)),'Đã chuyển câu hỏi vào Thùng rác.');});
+  app.querySelectorAll('[data-action="delete-question"]').forEach(b=>b.onclick=()=>confirmAction('Đưa câu hỏi này vào Thùng rác?',()=>act(()=>repo.transaction(st=>softDeleteQuestion(st,user,b.dataset.id)),'Đã chuyển câu hỏi vào Thùng rác.'),{confirmLabel:'Chuyển vào thùng rác'}));
   app.querySelectorAll('[data-action="new-exam"]').forEach(b=>b.onclick=()=>createNewExam());
   app.querySelectorAll('[data-action="edit-exam"]').forEach(b=>b.onclick=()=>openBuilder(b.dataset.id));
   app.querySelectorAll('[data-action="view-exam"]').forEach(b=>b.onclick=()=>previewExamModal(byId(data.exams,b.dataset.id)));
-  app.querySelectorAll('[data-action="delete-exam"]').forEach(b=>b.onclick=()=>{if(confirm('Đưa bài thi này vào Thùng rác?'))act(()=>repo.transaction(st=>softDeleteExam(st,user,b.dataset.id)),'Đã chuyển bài thi vào Thùng rác.');});
+  app.querySelectorAll('[data-action="delete-exam"]').forEach(b=>b.onclick=()=>confirmAction('Đưa bài thi này vào Thùng rác?',()=>act(()=>repo.transaction(st=>softDeleteExam(st,user,b.dataset.id)),'Đã chuyển bài thi vào Thùng rác.'),{confirmLabel:'Chuyển vào thùng rác'}));
   app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await act(()=>repo.transaction(st=>publishExam(st,user,b.dataset.id)),'Đã xuất bản bài thi.');});
   app.querySelectorAll('[data-action="preview-exam"]').forEach(b=>b.onclick=async()=>{
     if(!await flushBuilderDraft())return;
@@ -779,8 +784,8 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="toggle-teacher"]').forEach(b=>b.onclick=()=>toggleTeacher(b.dataset.id));
   app.querySelectorAll('[data-action="restore-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>restoreExam(st,user,b.dataset.id)),'Đã khôi phục bài thi.'));
   app.querySelectorAll('[data-action="restore-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>restoreQuestion(st,user,b.dataset.id)),'Đã khôi phục câu hỏi.'));
-  app.querySelectorAll('[data-action="permanent-exam"]').forEach(b=>b.onclick=()=>{if(confirm('Xóa vĩnh viễn bài thi? Hành động không thể hoàn tác.'))act(()=>repo.transaction(st=>permanentlyDeleteExam(st,user,b.dataset.id)),'Đã xóa vĩnh viễn.');});
-  app.querySelectorAll('[data-action="permanent-question"]').forEach(b=>b.onclick=()=>{if(confirm('Xóa vĩnh viễn câu hỏi? Hành động không thể hoàn tác.'))act(()=>repo.transaction(st=>permanentlyDeleteQuestion(st,user,b.dataset.id)),'Đã xóa vĩnh viễn.');});
+  app.querySelectorAll('[data-action="permanent-exam"]').forEach(b=>b.onclick=()=>confirmAction('Xóa vĩnh viễn bài thi? Hành động không thể hoàn tác.',()=>act(()=>repo.transaction(st=>permanentlyDeleteExam(st,user,b.dataset.id)),'Đã xóa vĩnh viễn.'),{confirmLabel:'Xóa vĩnh viễn',danger:true}));
+  app.querySelectorAll('[data-action="permanent-question"]').forEach(b=>b.onclick=()=>confirmAction('Xóa vĩnh viễn câu hỏi? Hành động không thể hoàn tác.',()=>act(()=>repo.transaction(st=>permanentlyDeleteQuestion(st,user,b.dataset.id)),'Đã xóa vĩnh viễn.'),{confirmLabel:'Xóa vĩnh viễn',danger:true}));
   bindBuilder();
   bindGrading();
 }
@@ -866,7 +871,7 @@ function bindBuilder(){
   app.querySelectorAll('[data-action="select-section"]').forEach(b=>b.onclick=async e=>{if(e.target.closest('.phan-tool'))return;if(!await flushBuilderDraft())return;ui.builderSectionId=b.dataset.id;render();});
   app.querySelectorAll('[data-action="add-section"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>addSection(st,user,exam.id,{name:'Phần mới',timeMinutes:30})),'Đã thêm phần.'));
   app.querySelectorAll('[data-action="move-section"]').forEach(b=>b.onclick=e=>{e.stopPropagation();act(()=>repo.transaction(st=>moveSection(st,user,exam.id,b.dataset.id,b.dataset.dir)));});
-  app.querySelectorAll('[data-action="remove-section"]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(confirm('Bỏ phần này khỏi bài thi?'))act(()=>repo.transaction(st=>removeSection(st,user,exam.id,b.dataset.id)),'Đã bỏ phần.');});
+  app.querySelectorAll('[data-action="remove-section"]').forEach(b=>b.onclick=e=>{e.stopPropagation();confirmAction('Bỏ phần này khỏi bài thi?',()=>act(()=>repo.transaction(st=>removeSection(st,user,exam.id,b.dataset.id)),'Đã bỏ phần.'),{confirmLabel:'Bỏ phần'});});
   app.querySelectorAll('[data-action="move-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>moveQuestion(st,user,exam.id,ui.builderSectionId,b.dataset.id,b.dataset.dir))));
   app.querySelectorAll('[data-action="remove-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã bỏ câu khỏi phần.'));
   app.querySelectorAll('[data-action="add-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>{

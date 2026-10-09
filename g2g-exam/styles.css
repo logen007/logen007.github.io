@@ -133,6 +133,11 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 .cai-dat textarea { min-height:96px; resize:vertical; }.check { display:flex!important; align-items:center; gap:8px!important; font-weight:400!important; color:var(--chu)!important; }.check input { width:auto!important; }
 .hop-chon { position:fixed; inset:0; background:rgba(16,20,27,.32); display:grid; place-items:center; padding:24px; z-index:80; }
 .noi-hop { width:min(980px,100%); max-height:92dvh; overflow:auto; background:var(--mat); border-radius:28px; padding:32px; box-shadow:var(--shadow); }
+.site-confirm-backdrop { position:fixed; inset:0; z-index:120; display:grid; place-items:center; padding:20px; background:rgba(16,20,27,.36); }
+.site-confirm { width:min(420px,100%); padding:28px; border:1px solid var(--vien); border-radius:20px; background:var(--mat); box-shadow:var(--shadow); }
+.site-confirm p { margin:0; color:var(--chu); font-size:16px; line-height:1.55; }
+.site-confirm-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:28px; }
+.site-confirm-danger { background:var(--do)!important; color:#fff!important; }
 .dau-hop { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }.dau-hop h2 { margin:8px 0 0; font-size:28px; font-weight:500; }
 .dau-hop>button { width:40px; height:40px; min-height:40px; padding:0; border-radius:50%; font-size:22px; }
 .luoi-chon { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }

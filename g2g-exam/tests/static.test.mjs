@@ -165,4 +165,13 @@ test('Trang có trình xử lý lỗi runtime để tránh màn hình trắng',(
   assert.ok(html.includes('Tải lại'));
 });
 
+test('Nộp bài trực tiếp; các xác nhận khác không dùng hộp thoại trình duyệt',()=>{
+  const app=read('src/app.js');
+  const frontend=jsTree('src');
+  assert.match(app,/\[data-action="submit-exam"\][^\n]*submitCurrentExam\(\)/);
+  assert.doesNotMatch(frontend,/\b(?:window\.)?(?:alert|confirm|prompt)\s*\(/);
+  assert.ok(app.includes("from './ui/confirm.js'"));
+  assert.match(read('src/ui/confirm.js'),/role="alertdialog"/);
+});
+
 console.log(`\n${passed} kiểm thử tĩnh đã đạt.`);
