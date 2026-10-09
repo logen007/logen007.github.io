@@ -67,11 +67,13 @@ async function partAudioContext(client,attempt,sectionId){
   if(!section)throw appError(404,'Không tìm thấy Part audio.');
   if(attempt.public_data?.currentSectionId!==section.id)throw appError(409,'Part audio không thuộc phần thi hiện tại.');
   const policy=section.audioPolicy||{};
-  if(section.skillKey!=='listening'||policy.mode!=='per_question_segment')throw appError(409,'Part này không dùng chế độ phát audio theo phần.');
-  if(Number(policy.maxSessions)<1||Number(policy.segmentRepeat)<1)throw appError(500,'Specification audio không hợp lệ.');
   const allowed=new Set(attempt.public_data.currentQuestionIds||[]);
   const ids=(section.questionIds||[]).filter(id=>allowed.has(id));
-  if(!ids.length)throw appError(409,'Part audio không có câu hỏi trong phần thi hiện tại.');
+  const questionRows=ids.length?(await client.query(`SELECT data FROM questions WHERE id=ANY($1::text[])`,[ids])).rows:[];
+  const hasQuestionAudio=questionRows.some(row=>String(row.data?.audioUrl||'').trim());
+  const hasAudio=Boolean(String(section.instructionAudioUrl||'').trim())||hasQuestionAudio;
+  if(!hasAudio)throw appError(409,'Part audio không có audio trong phần thi hiện tại.');
+  if(policy.mode==='per_question_segment'&&(Number(policy.maxSessions)<1||Number(policy.segmentRepeat)<1))throw appError(500,'Specification audio không hợp lệ.');
   return section;
 }
 

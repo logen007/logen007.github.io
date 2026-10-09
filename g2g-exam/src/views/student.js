@@ -98,11 +98,16 @@ export function answerPresent(answer,q){
 
 function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
   const policy=section.audioPolicy||{},audioQuestions=questions.filter(question=>String(question.audioUrl||'').trim());
-  if(section.skillKey!=='listening'||policy.mode!=='per_question_segment'||!audioQuestions.length)return '';
+  const policyEnabled=section.skillKey==='listening'&&policy.mode==='per_question_segment';
+  const hasSpecialAudio=Boolean(String(section.instructionAudioUrl||'').trim())||audioQuestions.some(question=>question.example);
+  if(!policyEnabled&&!hasSpecialAudio)return '';
   const repeat=Math.max(1,Number(policy.segmentRepeat)||1),key=`g2g.section-audio.${attempt.id}.${section.id}`;
   const used=!preview&&(Boolean(attempt.audioSessions?.[section.id]?.startedAt)||Boolean(sessionStorage.getItem(key)));
-  const audios=audioQuestions.map((question,index)=>`<audio class="section-audio-segment" data-order="${index}" preload="metadata" src="${esc(question.audioUrl)}"></audio>`).join('');
-  return `<section class="section-audio" data-section-audio="${esc(section.id)}" data-repeat="${repeat}" data-storage-key="${esc(key)}">${audios}<button type="button" class="section-audio-play" aria-label="Phát audio của phần" ${used?'disabled':''}>${iconHtml('play')}</button><div class="section-audio-body"><span class="section-audio-progress" role="progressbar" aria-label="Tiến độ audio" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><i></i></span><span class="section-audio-status" aria-live="polite">${used?'Đã hết lượt nghe':'Chỉ có thể bấm nghe một lần'}</span></div></section>`;
+  const segments=[];
+  if(section.instructionAudioUrl)segments.push({url:section.instructionAudioUrl,repeat:1,label:'Đề bài'});
+  audioQuestions.forEach((question,index)=>segments.push({url:question.audioUrl,repeat:question.example?1:repeat,label:question.example?'Ví dụ':`Câu ${index+1}`}));
+  const audios=segments.map((segment,index)=>`<audio class="section-audio-segment" data-order="${index}" data-repeat="${segment.repeat}" data-label="${esc(segment.label)}" preload="metadata" src="${esc(segment.url)}"></audio>`).join('');
+  return `<section class="section-audio" data-section-audio="${esc(section.id)}" data-storage-key="${esc(key)}">${audios}<button type="button" class="section-audio-play" aria-label="Phát audio của phần" ${used?'disabled':''}>${iconHtml('play')}</button><div class="section-audio-body"><span class="section-audio-progress" role="progressbar" aria-label="Tiến độ audio" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><i></i></span><span class="section-audio-status" aria-live="polite">${used?'Đã hết lượt nghe':'Chỉ có thể bấm nghe một lần'}</span></div></section>`;
 }
 
 const questionImageUrl=q=>String((Array.isArray(q.instructionBlocks)?q.instructionBlocks[0]?.imageUrl:'')||q.instructionImageUrl||'').trim();

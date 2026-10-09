@@ -15,6 +15,8 @@ function normalizeSection(input={},index=0){
     audioPolicy:clone(input.audioPolicy||null),
     instruction:String(input.instruction||''),
     instructionImageUrl:String(input.instructionImageUrl||''),
+    instructionAudioUrl:String(input.instructionAudioUrl||''),
+    instructionAudioName:String(input.instructionAudioName||''),
     questionLimit:Math.max(0,Number(input.questionLimit||0)),
     timeMinutes:Math.max(1,Number(input.timeMinutes||30)),
     maxScore:Math.max(0,Number(input.maxScore||0)),

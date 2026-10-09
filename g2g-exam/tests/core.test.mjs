@@ -29,6 +29,13 @@ test('Câu ví dụ không tính điểm và được lưu như một thuộc t�
   assert.equal(getQuestionMaxScore(q,1),5);
 });
 
+test('Đề bài của phần thi lưu được audio phát một lần',()=>{
+  const s=fresh(),u=users(s);
+  const exam=createExam(s,u.lan,{title:'Đề có audio hướng dẫn',sections:[{name:'Nghe 1',instruction:'Nghe kỹ.',instructionAudioUrl:'/uploads/instruction.mp3',instructionAudioName:'instruction.mp3',questionIds:['q-read-1']}]});
+  assert.equal(exam.sections[0].instructionAudioUrl,'/uploads/instruction.mp3');
+  assert.equal(exam.sections[0].instructionAudioName,'instruction.mp3');
+});
+
 test('Chủ câu hỏi và master được sửa; giáo viên khác không được sửa',()=>{
   const s=fresh(),u=users(s),q=byId(s.questions,'q-read-1');
   assert.equal(canEditQuestion(u.lan,q),true);assert.equal(canEditQuestion(u.master,q),true);assert.equal(canEditQuestion(u.mai,q),false);

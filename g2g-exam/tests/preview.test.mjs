@@ -419,20 +419,28 @@ try{
     const input=fixture();
     input.exam.sections[0].skillKey='listening';
     input.exam.sections[0].audioPolicy={mode:'per_question_segment',segmentRepeat:2,maxSessions:1};
+    input.exam.sections[0].instructionAudioUrl='/audio/instruction.mp3';
     input.questions[0].audioUrl='/audio/one.mp3';
+    input.questions[0].example=true;
     input.questions[1].audioUrl='/audio/two.mp3';
     for(const preview of [true,false]){
       const html=examHtml({...input,preview});
-      assert.equal(tags(html,'audio').filter(tag=>hasClass(tag,'section-audio-segment')).length,2);
+      const segments=tags(html,'audio').filter(tag=>hasClass(tag,'section-audio-segment'));
+      assert.equal(segments.length,3);
+      assert.equal(attribute(segments[0],'data-label'),'Đề bài');
+      assert.equal(attribute(segments[0],'data-repeat'),'1');
+      assert.equal(attribute(segments[1],'data-label'),'Ví dụ');
+      assert.equal(attribute(segments[1],'data-repeat'),'1');
+      assert.equal(attribute(segments[2],'data-repeat'),'2');
       assert.equal(tags(html,'button').filter(tag=>hasClass(tag,'section-audio-play')).length,1);
       assert.equal(tags(html,'button').filter(tag=>hasClass(tag,'play-audio')).length,0);
-      assert.match(html,/data-repeat="2"/);
       assert.match(html,/section-audio-progress/);
       assert.match(html,/section-audio-progress[^>]*hidden/);
       assert.match(html,/Chỉ có thể bấm nghe một lần/);
     }
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
     assert.match(source,/Promise\.all\(audios\.map\(readAudioDuration\)\)/);
+    assert.match(source,/audios\.map\(audio=>Math\.max\(1,Number\(audio\.dataset\.repeat\)\|\|1\)\)/);
     assert.match(source,/completedDuration\+currentTime/);
     assert.match(source,/requestAnimationFrame\(tick\)/);
     assert.match(source,/\['exam','preview-exam','builder','grading-detail'\]\.includes\(ui\.view\)/);

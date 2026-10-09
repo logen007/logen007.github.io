@@ -313,7 +313,7 @@ function bindSectionAudio(attempt,{preview}){
   const root=app.querySelector('[data-section-audio]');if(!root)return;
   const button=root.querySelector('.section-audio-play'),status=root.querySelector('.section-audio-status');
   const progress=root.querySelector('.section-audio-progress'),progressFill=progress?.querySelector('i');
-  const audios=[...root.querySelectorAll('.section-audio-segment')],repeat=Math.max(1,Number(root.dataset.repeat)||1);
+  const audios=[...root.querySelectorAll('.section-audio-segment')];
   if(!button||!audios.length)return;
   const setProgress=value=>{
     const percent=Math.max(0,Math.min(100,Number(value)||0));
@@ -326,7 +326,8 @@ function bindSectionAudio(attempt,{preview}){
     let locked=false;
     try{
       const durations=await Promise.all(audios.map(readAudioDuration));
-      const totalDuration=durations.reduce((sum,duration)=>sum+duration*repeat,0);
+      const repeats=audios.map(audio=>Math.max(1,Number(audio.dataset.repeat)||1));
+      const totalDuration=durations.reduce((sum,duration,index)=>sum+duration*repeats[index],0);
       if(!preview){
         await templateRequest('/actions/startPartAudio',{method:'POST',body:{attemptId:attempt.id,sectionId:root.dataset.sectionAudio}});
       }
@@ -334,20 +335,19 @@ function bindSectionAudio(attempt,{preview}){
       if(!preview)sessionStorage.setItem(root.dataset.storageKey,'1');
       progress.hidden=false;root.classList.add('is-playing');
       let completedDuration=0;
-      for(let index=0;index<audios.length;index++)for(let turn=0;turn<repeat;turn++){
-        status.textContent=`Đang phát câu ${index+1}/${audios.length}${repeat>1?` · lần ${turn+1}/${repeat}`:''}`;
+      for(let index=0;index<audios.length;index++)for(let turn=0;turn<repeats[index];turn++){
+        const label=audios[index].dataset.label||`Câu ${index+1}`,segmentRepeat=repeats[index];
+        status.textContent=`Đang phát ${label}${segmentRepeat>1?` · lần ${turn+1}/${segmentRepeat}`:''}`;
         await playSectionSegment(audios[index],currentTime=>setProgress((completedDuration+currentTime)/totalDuration*100));
         completedDuration+=durations[index];setProgress(completedDuration/totalDuration*100);
       }
       if(!preview)await templateRequest('/actions/completePartAudio',{method:'POST',body:{attemptId:attempt.id,sectionId:root.dataset.sectionAudio}});
       root.classList.remove('is-playing');progress.hidden=true;
-      if(preview){setProgress(0);status.textContent='Chỉ có thể bấm nghe một lần';button.disabled=false;}
-      else{setProgress(100);status.textContent='Đã hết lượt nghe';}
+      setProgress(100);status.textContent='Đã hết lượt nghe';
     }catch(error){
       if(!locked){sessionStorage.removeItem(root.dataset.storageKey);button.disabled=false;}
       root.classList.remove('is-playing');progress.hidden=true;
       status.textContent=locked&&!preview?'Đã hết lượt nghe':'Không thể tải audio';
-      if(preview)button.disabled=false;
       notify(error?.message||'Không phát được audio.');
     }
   };
@@ -603,7 +603,7 @@ async function persistBuilderDraft({silent=false}={}){
   const uploadedInputs=[];
   try{
     const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map(),questionInstructionImageUrls=new Map(),questionCardImageUrls=new Map(),rubricImageUrls=new Map();
-    let sectionImageUrl;
+    let sectionImageUrl,sectionAudioUrl,sectionAudioName;
     if(section&&app.querySelector('.part-question[data-question-id]')){
       for(const card of app.querySelectorAll('.part-question[data-question-id]')){
         const uploaded=pendingAudioUploads.get(card.dataset.questionId);
@@ -640,6 +640,8 @@ async function persistBuilderDraft({silent=false}={}){
         sectionImageUrl=await uploadQuestionImage(sectionImage.files[0]);
         uploadedInputs.push(sectionImage);
       }
+      const sectionAudioUpload=pendingAudioUploads.get(`section:${section.id}`);
+      if(sectionAudioUpload){const uploaded=await sectionAudioUpload.promise;sectionAudioUrl=uploaded.url;sectionAudioName=uploaded.name;}
     }
     await repo.transaction(st=>{
       updateExam(st,user,exam.id,{title});
@@ -649,7 +651,7 @@ async function persistBuilderDraft({silent=false}={}){
           ?''
           :sectionImageUrl??(imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'');
         const questionIds=[...app.querySelectorAll('.part-question[data-question-id]')].map(card=>card.dataset.questionId);
-        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl,questionIds});
+        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl,instructionAudioUrl:sectionAudioUrl??(section.instructionAudioUrl||''),instructionAudioName:sectionAudioName??(section.instructionAudioName||''),questionIds});
         app.querySelectorAll('.part-question[data-question-id]').forEach(card=>{
           const id=card.dataset.questionId;
           const example=card.dataset.example==='true';
@@ -707,6 +709,7 @@ async function persistBuilderDraft({silent=false}={}){
       const audioInput=app.querySelector(`[data-question-id="${questionId}"] [data-field="audio"]`);
       if(audioInput)audioInput.value='';
     });
+    if(sectionAudioUrl){pendingAudioUploads.delete(`section:${section.id}`);const input=app.querySelector('[data-section-audio]');if(input)input.value='';}
     uploadedInputs.forEach(input=>{input.value='';});
     setBuilderSaveStatus(revision===builderEditRevision?'saved':'pending',revision===builderEditRevision?'Đã tự động lưu':'Chờ lưu thay đổi…');
     if(!silent)notify('Đã lưu bài thi.');
