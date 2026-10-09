@@ -233,6 +233,9 @@ test('Media garbage collector được khởi động từ server',()=>{
   assert.ok(index.includes('startMediaGarbageCollector'));
   assert.ok(gc.includes('MEDIA_GC_GRACE_HOURS'));
   assert.ok(gc.includes('referencedUploadNames'));
+  assert.equal(gc.includes('SELECT data FROM question_groups'),false);
+  assert.ok(gc.includes('deletedBytes'));
+  assert.ok(gc.includes('lastSuccessAt'));
 });
 
 test('Legacy Firebase và app root cũ đã được loại khỏi production tree',()=>{

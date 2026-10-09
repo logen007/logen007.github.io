@@ -5,6 +5,7 @@ import {isPrimaryMasterEmail,normalizeEmail} from '../roles.js';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import {getMediaGarbageCollectionStatus} from '../media-gc.js';
 
 const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||''));
 const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||''));
@@ -134,6 +135,7 @@ export async function getInfrastructureStatus(user){
       usage:{databaseBytes:Number(databaseSize.rows[0]?.bytes||0),uploadsBytes:uploadBytes,applicationBytes},
       databaseTables:Object.fromEntries(tableSizes.rows.map(row=>[row.name,Number(row.bytes||0)])),
       uptimeSeconds:Math.round(uptimeSeconds),
+      mediaGarbageCollection:getMediaGarbageCollectionStatus(),
     },
     examStorage,
   };
