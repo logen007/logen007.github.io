@@ -61,6 +61,12 @@ const ui={
 
 repo.subscribe(next=>{
   data=next;
+  if(ui.view==='exam'&&byId(next.attempts,ui.attemptId)?.status!==ATTEMPT_STATUS.IN_PROGRESS){
+    ui.view='student-home';
+    clearTimeout(realtimeRenderTimer);
+    realtimeRenderTimer=setTimeout(()=>render(),80);
+    return;
+  }
   if(['exam','preview-exam','builder','grading-detail'].includes(ui.view)||document.getElementById('modal')||document.querySelector('.g2g-settings-page'))return;
   clearTimeout(realtimeRenderTimer);
   realtimeRenderTimer=setTimeout(()=>render(),80);
@@ -821,17 +827,19 @@ function bindViewSpecific(){
 }
 
 async function beginAttempt(examId,restart){
+  if(repo.mode==='api'&&!await act(()=>repo.reload(),null,{rerender:false}))return;
   const attempt=await act(()=>repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});
-  if(attempt){data=await repo.getState();ui.attemptId=attempt.id;ui.view='exam';render();}
+  if(attempt?.status===ATTEMPT_STATUS.IN_PROGRESS){data=await repo.getState();ui.attemptId=attempt.id;ui.view='exam';render();window.scrollTo(0,0);}
 }
 
 async function moveAttemptSection(delta){
   await flushTextAnswers();
   const attempt=byId(data.attempts,ui.attemptId),exam=attempt&&byId(data.exams,attempt.examId);
   if(!attempt||!exam)return;
+  if(attempt.status!==ATTEMPT_STATUS.IN_PROGRESS){ui.view='student-home';render();notify('Lượt thi trước đã kết thúc. Hãy chọn Thi lại để bắt đầu lượt mới.');return;}
   const next=Math.max(0,Math.min(exam.sections.length-1,(attempt.currentSectionIndex||0)+delta));
   const result=await act(()=>repo.transaction(st=>setAttemptSection(st,user,attempt.id,next)),null,{rerender:false});
-  if(result){data=await repo.getState();ui.view='exam';render();}
+  if(result){data=await repo.getState();ui.view='exam';render();window.scrollTo(0,0);}
 }
 
 async function createNewExam(){

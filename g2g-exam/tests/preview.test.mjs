@@ -62,6 +62,29 @@ try{
     assert.match(css,/\.exam-paper \.answer-options--illustrated \.answer-option-body/);
     assert.match(css,/\.exam-paper \.cau-thi/);
   });
+  await test('Nghe 1 keeps three illustrated choices across mobile preview and exam',()=>{
+    const sample=fixture();
+    sample.exam.sections[0].templateType='A1_LISTENING_PART_1';
+    sample.questions[0].choices=[
+      {text:'50 €',imageUrl:'/media/50.png'},
+      {text:'65 €',imageUrl:'/media/65.png'},
+      {text:'60,50 €',imageUrl:'/media/60.png'},
+    ];
+    for(const preview of [true,false]){
+      const html=examHtml({...sample,preview});
+      assert.match(html,/class="answer-options answer-options--illustrated answer-options--mobile-three"/);
+    }
+    sample.exam.sections[0].templateType='OTHER_PART';
+    assert.doesNotMatch(examHtml(sample),/answer-options--mobile-three/);
+    const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+    assert.match(css,/@media\(max-width:680px\)[\s\S]*?\.exam-paper \.answer-options--mobile-three\s*\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  });
+  await test('Starting a retake refreshes state and advancing returns to page top',()=>{
+    const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+    assert.match(source,/async function beginAttempt\(examId,restart\)\{\s*if\(repo\.mode==='api'&&!await act\(\(\)=>repo\.reload\(\)/);
+    assert.match(source,/async function moveAttemptSection\(delta\)[\s\S]*?if\(result\)\{[^}]*render\(\);window\.scrollTo\(0,0\)/);
+    assert.match(source,/function showPreviewSection\(index\)[\s\S]*?window\.scrollTo\(0,0\)/);
+  });
   await test('Student exam card shows provider, exact duration and a corner new badge',()=>{
     const exam={id:'goethe-a1',provider:'GOETHE',level:'A1',title:'Modelltest 1',sections:[{timeMinutes:20,questionIds:[]},{timeMinutes:15,questionIds:[]}]};
     const html=studentExamCardHtml(exam,[],{questions:[]});

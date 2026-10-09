@@ -83,6 +83,18 @@ test('Học viên có thể thi nhiều lần; làm lại sẽ bỏ dở lượt
   const a2=startAttempt(s,u.student,'exam-b1-03',{restart:true});assert.equal(a1.status,ATTEMPT_STATUS.ABANDONED);assert.notEqual(a2.id,a1.id);assert.equal(a2.attemptNo,a1.attemptNo+1);
 });
 
+test('Thi lại sau khi nộp tạo lượt mới và chuyển phần bình thường',()=>{
+  const s=fresh(),u=users(s),exam=byId(s.exams,'exam-b1-03');
+  const first=startAttempt(s,u.student,exam.id);
+  submitAttempt(s,u.student,first.id);
+  const second=startAttempt(s,u.student,exam.id);
+  assert.notEqual(second.id,first.id);
+  assert.equal(second.attemptNo,first.attemptNo+1);
+  setAttemptSection(s,u.student,second.id,1);
+  assert.equal(second.currentSectionIndex,1);
+  assert.notEqual(first.status,ATTEMPT_STATUS.IN_PROGRESS);
+});
+
 test('Mỗi phần có đồng hồ riêng và tiếp tục thi không reset thời gian',()=>{
   const s=fresh(),u=users(s),exam=byId(s.exams,'exam-b1-03');const a=startAttempt(s,u.student,exam.id);
   const first=exam.sections[0];assert.ok(a.sectionStates[first.id]?.deadlineAt);const deadline=a.sectionStates[first.id].deadlineAt;
