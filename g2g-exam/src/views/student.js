@@ -57,18 +57,19 @@ export function studentAttemptDetailHtml({review}){
 
 export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],online,preview=false,previewSummary=null}){
   const sec=exam.sections[sectionIndex];
+  const orderedQuestions=questions.map((q,originalIndex)=>({q,originalIndex})).sort((a,b)=>Number(Boolean(b.q.example))-Number(Boolean(a.q.example)));
   const requiredQuestions=questions.filter(q=>!q.example);
   const answered=requiredQuestions.filter(q=>answerPresent(attempt.answers?.[q.id],q)).length;
   const previousAction=preview?'preview-prev-section':'prev-section';
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Về chỉnh sửa':'Nộp bài'):'Tiếp theo';
   const sectionInstruction=sec.instruction||sec.instructionImageUrl?`<section class="exam-instruction">${sec.instruction?`<div><p>${esc(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl?`<img src="${esc(sec.instructionImageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`:'';
-  const sectionAudio=sectionAudioHtml(sec,questions,attempt,{preview});
+  const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
   const currentCount=`<span data-current-answer-count aria-label="Số câu đã trả lời">${answered}/${requiredQuestions.length}</span>`;
   const stimulusStarts=new Set((sec.questionProfile?.stimulusStarts||[]).map(Number));
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
   let questionNumber=exam.sections.slice(0,sectionIndex).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!knownQuestions.get(id)?.example).length,0);
-  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${questions.map((q,index)=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(index),questionNumber:q.example?null:++questionNumber,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
+  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${orderedQuestions.map(({q,originalIndex})=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(originalIndex),questionNumber:q.example?null:++questionNumber,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(sec.name)}</h1></div></div>`
     :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(sec.name)}</h1></div></div>`;

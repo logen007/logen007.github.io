@@ -136,7 +136,7 @@ function questionInstructionHtml(q,block,index,readOnly){
 export function renderBuilder({data,exam,section,readOnly=false}={}){
   if(!section)return '<div class="rong">Chọn một phần để cấu hình.</div>';
   const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
-  const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
+  const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).sort((a,b)=>Number(Boolean(b.example))-Number(Boolean(a.example)));
   const choiceProfile=profileFor(section);
   const renderQuestion=(q,index)=>choiceProfile.formFrame
     ?writingFormEditor(q,{readOnly})

@@ -125,6 +125,8 @@ try{
   await test('Example questions show the correct answer without numbering, progress or score controls',()=>{
     const sample=fixture();
     sample.questions[0]={...sample.questions[0],example:true,correctAnswer:1,maxScore:4};
+    sample.questions=[sample.questions[1],sample.questions[0],sample.questions[2]];
+    sample.exam.sections[0].questionIds=sample.questions.map(question=>question.id);
     sample.attempt.answers={};
     sample.allQuestions=sample.questions;
     sample.previewSummary={answered:0,total:2,sections:[{name:'First part',answered:0,total:2}]};
@@ -132,10 +134,13 @@ try{
     assert.match(html,/class="cau-thi is-example is-answered"/);
     assert.match(html,/<div class="question-example-title">Beispiel<\/div>/);
     assert.match(html,/value="1" checked disabled/);
+    assert.ok(html.indexOf('Beispiel')<html.indexOf('Match the items.'),'Example must render before regular questions even when stored later.');
     assert.doesNotMatch(html,/class="question-number"[^>]*>1<\/span>[\s\S]*?Beispiel/);
     assert.match(html,/class="question-number"[^>]*>1\.<\/strong> Match the items/);
     const live=examHtml({...sample,preview:false,previewSummary:null});
     assert.match(live,/0\/2/);
+    const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+    assert.match(css,/\.cau-thi\.is-example \.answer-option>input:disabled\s*\{[^}]*appearance:none;[^}]*opacity:0/);
   });
   await test('Starting a retake refreshes state and advancing returns to page top',()=>{
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
