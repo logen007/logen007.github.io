@@ -1,12 +1,12 @@
 import {query,withTx,audit,appError} from './db.js';
-import {publicWritingRows,writingFormScore} from './writing-form.js';
+import {publicWritingRows,writingFormScore,normalizeWritingRows} from './writing-form.js';
 
 const stripId=x=>{const y=structuredClone(x||{});delete y.id;return y;};
 const isTeacher=u=>u?.role==='teacher'||u?.role==='master';
 function publicQuestion(data){const q=structuredClone(data||{});delete q.correctAnswer;if(q.writingFormVersion===1)q.rubric=publicWritingRows(q.rubric);else delete q.rubric;if(Array.isArray(q.pairs)){const rights=q.pairs.map(x=>x[1]).sort(()=>Math.random()-.5);q.pairs=q.pairs.map((x,i)=>[x[0],rights[i]]);}return q;}
 async function rows(sql,args=[]){return (await query(sql,args)).rows;}
 async function allowedExamIds(user){if(user.role==='master')return null;const owned=await rows(`SELECT id FROM exams WHERE owner_id=$1`,[user.id]);const grants=await rows(`SELECT exam_id FROM grading_requests WHERE requester_id=$1 AND status='approved'`,[user.id]);return new Set([...owned.map(x=>x.id),...grants.map(x=>x.exam_id)]);}
-function rowEntity(r){return {id:r.id,...(r.data||{})};}
+function rowEntity(r){const item={id:r.id,...(r.data||{})};if(item.writingFormVersion===1){item.rubric=normalizeWritingRows(item.rubric);item.maxScore=writingFormScore(item.rubric);}return item;}
 function attemptEntity(r,includePrivate=false){return {id:r.id,...(r.public_data||{}),...(includePrivate?(r.private_data||{}):{})};}
 
 export async function loadState(user){
@@ -39,7 +39,7 @@ async function applyQuestion(c,user,op){
     if(ex)throw appError(409,'Câu hỏi vẫn đang được dùng trong bài thi.');await c.query(`DELETE FROM questions WHERE id=$1`,[op.id]);return;
   }
   const item=op.item||{};
-  if(item.writingFormVersion===1)item.maxScore=writingFormScore(item.rubric);
+  if(item.writingFormVersion===1){item.rubric=normalizeWritingRows(item.rubric);item.maxScore=writingFormScore(item.rubric);}
   if(!current.rowCount){if(!isTeacher(user)||item.ownerId!==user.id)throw appError(403,'Không có quyền tạo câu hỏi.');await c.query(`INSERT INTO questions(id,owner_id,status,locked,data) VALUES($1,$2,$3,$4,$5::jsonb)`,[op.id,user.id,item.status||'active',Boolean(item.locked),JSON.stringify(stripId(item))]);return;}
   const old=current.rows[0];if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa câu hỏi này.');if(old.status==='trash'&&item.status!=='trash'&&user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được khôi phục câu hỏi.');if(old.locked&&user.role!=='master')throw appError(409,'Câu hỏi đã khóa vì đang được dùng trong đề.');if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu câu hỏi.');
   await c.query(`UPDATE questions SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,ownerId:old.owner_id}))]);

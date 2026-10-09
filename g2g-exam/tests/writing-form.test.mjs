@@ -6,11 +6,11 @@ import {createQuestion,updateQuestion} from '../src/domain/questions.js';
 import {seedState} from '../src/seed.js';
 
 const demo=patientWritingDemo(),q={id:'patient',...demo.question};
-assert.equal(writingFormScore(q.rubric),5);
+assert.equal(writingFormScore(q.rubric),12);
 const view=writingFormDisplay(q);
-assert.equal((view.match(/type="text"/g)||[]).length,5);
-for(let i=0;i<=5;i++)assert.equal((view.match(new RegExp(`class="form-point">\\(${i}\\)`,'g'))||[]).length,1);
-assert.ok(view.includes('20969'));assert.ok(!view.includes('Reiseleiter'));
+assert.equal((view.match(/type="text"/g)||[]).length,12);
+for(let i=0;i<12;i++)assert.equal((view.match(new RegExp(`class="form-point">\\(${i}\\)`,'g'))||[]).length,1);
+assert.ok(!view.includes('20969'));assert.ok(!view.includes('Reiseleiter'));
 assert.ok(!view.includes('seit gestern'));
 assert.ok(writingFormDisplay(q,{7:'Hamburg'}).includes('value="Hamburg"'));
 const submission=writingSubmission(q,{7:'Hamburg',8:'<script>'});
@@ -22,6 +22,8 @@ const editor=writingFormEditor(q);
 assert.ok(!editor.includes('<select'));assert.ok(!editor.includes('data-field="audio"'));
 assert.ok(editor.includes('<textarea data-rubric-value'));
 assert.ok(editor.includes('Đáp án đúng'));
+assert.ok(!editor.includes('Đánh dấu ví dụ'));
+assert.ok(editor.includes('value="Serjakov, Wladimir"'));
 assert.ok(editor.includes('đáp án 1|đáp án 2|đáp án 3'));
 assert.ok(!view.includes('30 Jahre'));
 const extra={...q,rubric:[{type:'choice',label:'Kurszeit',options:['9–12','13–16','17–20'],correctIndex:1,maxScore:1},{type:'image',imageUrl:'/logo.png',maxScore:0}]};
@@ -29,10 +31,10 @@ assert.equal((writingFormDisplay(extra).match(/type="radio"/g)||[]).length,3);
 assert.ok(writingFormEditor(extra).includes('type="file" data-rubric-image'));
 const pub=publicWritingRows([...q.rubric,...extra.rubric]);
 assert.ok(pub.every(row=>!('answers' in row)&&!('correctIndex' in row)));
-assert.ok(JSON.stringify(pub).includes('Serjakov, Wladimir'));assert.ok(!JSON.stringify(pub).includes('Reiseleiter'));
+assert.ok(!JSON.stringify(pub).includes('Serjakov, Wladimir'));assert.ok(!JSON.stringify(pub).includes('Reiseleiter'));
 assert.equal(writingFormDisplay({...q,rubric:publicWritingRows(q.rubric)}),view);
-let rows=removeWritingRow(q.rubric,7);assert.equal(rows.length,q.rubric.length-1);assert.equal(writingFormScore(rows),4);
-rows=removeWritingRow(q.rubric,0);assert.equal(rows[0].hidden,true);assert.equal(writingFormScore(rows),5);
+let rows=removeWritingRow(q.rubric,7);assert.equal(rows.length,q.rubric.length-1);assert.equal(writingFormScore(rows),11);
+rows=removeWritingRow(q.rubric,0);assert.equal(rows[0].hidden,true);assert.equal(writingFormScore(rows),12);
 rows=addWritingRow(rows,undefined,0);assert.equal(rows.at(-1).type,'heading');assert.equal(rows.at(-1).hidden,false);
 rows=addWritingRow(q.rubric,'choice');assert.equal(rows.at(-1).type,'choice');assert.equal(rows.length,q.rubric.length+1);
 for(const [n,score] of [[3,.33],[4,.25],[2,.5]])assert.equal(writingFormScore(Array.from({length:n},()=>({type:'text',maxScore:score}))),1);
@@ -51,6 +53,6 @@ assert.deepEqual(writingPointLayout(mixed).markers.filter(Boolean),['(0)','(1)',
 assert.equal(writingFormScore([{type:'text',maxScore:.98}]),.98);
 const state=structuredClone(seedState),teacher=state.users.find(u=>u.role==='teacher');
 const saved=createQuestion(state,teacher,demo.question);
-for(let n=0;n<4;n++){updateQuestion(state,teacher,saved.id,{rubric:saved.rubric,maxScore:100});assert.equal(saved.maxScore,5);}
-updateQuestion(state,teacher,saved.id,{rubric:removeWritingRow(saved.rubric,7)});assert.equal(saved.maxScore,4);
+for(let n=0;n<4;n++){updateQuestion(state,teacher,saved.id,{rubric:saved.rubric,maxScore:100});assert.equal(saved.maxScore,12);}
+updateQuestion(state,teacher,saved.id,{rubric:removeWritingRow(saved.rubric,7)});assert.equal(saved.maxScore,11);
 console.log('Writing form: demo, distinct editors, privacy, fractional scores, repeated saves, add/remove passed.');

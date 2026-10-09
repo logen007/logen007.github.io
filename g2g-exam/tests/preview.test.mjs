@@ -339,10 +339,10 @@ try{
     const html=examHtml(input);
     assert.match(html,/writing-paper/);
     assert.match(html,/<h3>Patienteninformation/);
-    assert.match(html,/form-given ">Serjakov, Vladimir/);
+    assert.doesNotMatch(html,/Serjakov, Vladimir/);
     assert.match(html,/src="\/images\/form-logo\.png"/);
-    assert.equal(writingFormScore(question.rubric),2);
-    assert.equal((html.match(/class="form-point">/g)||[]).length,2);
+    assert.equal(writingFormScore(question.rubric),7);
+    assert.equal((html.match(/class="form-point">/g)||[]).length,3);
   });
 
   await test('Writing 1 choice controls hide only the embedded A/B block, never the whole form question',()=>{
@@ -350,7 +350,7 @@ try{
     const section={id:'writing-1',skill:'Viết',questionIds:[question.id],questionProfile:{layout:'mixed-form',formFrame:false,choices:['A','B'],formFieldCount:1}};
     let html=renderBuilder({data:{questions:[question]},exam:{settings:{},sections:[section]},section});
     assert.match(html,/value="heading"/);
-    assert.match(html,/value="static"/);
+    assert.doesNotMatch(html,/value="static"/);
     assert.equal(actionButtons(html,'remove-inline-question').length,0);
     assert.equal(actionButtons(html,'hide-mixed-choice').length,1);
     assert.equal(actionButtons(html,'restore-mixed-choice').length,1);

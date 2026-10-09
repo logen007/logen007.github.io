@@ -1,7 +1,7 @@
 import {
   clone,uid,nowIso,byId,isTeacher,isMaster,audit,canEditQuestion,canDeleteQuestion
 } from './base.js';
-import {writingFormScore} from './writing-form.js';
+import {writingFormScore,normalizeWritingRows} from './writing-form.js';
 
 function choiceText(choice){
   if(choice&&typeof choice==='object')return String(choice.text||'').trim();
@@ -54,7 +54,7 @@ export function createQuestion(state,user,input={}){
     groupInstruction:input.groupInstruction||'',groupAudioPolicy:clone(input.groupAudioPolicy||null),
     status:'active',locked:false,usedCount:0,correctRate:null,createdAt:nowIso(),updatedAt:nowIso(),
   };
-  if(question.writingFormVersion===1)question.maxScore=writingFormScore(question.rubric);
+  if(question.writingFormVersion===1){question.rubric=normalizeWritingRows(question.rubric);question.maxScore=writingFormScore(question.rubric);}
   state.questions.push(question);
   audit(state,user,'create','question',question.id,{title:question.title});
   return question;
@@ -68,7 +68,7 @@ export function updateQuestion(state,user,id,patch){
   const allowed=['code','level','skill','part','type','title','instruction','prompt','choices','correctAnswer','pairs','maxScore','autoGrade','rubric','audioUrl','audioName','instructionImageUrl','instructionBlocks','mixedChoiceHidden','groupId','groupType','groupOrder','groupInstruction','groupAudioPolicy'];
   for(const key of allowed)if(key in patch)question[key]=clone(patch[key]);
   if(patch.writingFormVersion===1)question.writingFormVersion=1;
-  if(question.writingFormVersion===1)question.maxScore=writingFormScore(question.rubric);
+  if(question.writingFormVersion===1){question.rubric=normalizeWritingRows(question.rubric);question.maxScore=writingFormScore(question.rubric);}
   question.updatedAt=nowIso();
   audit(state,user,'update','question',question.id);
   return question;

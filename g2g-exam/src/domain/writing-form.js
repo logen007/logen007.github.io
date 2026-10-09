@@ -1,4 +1,9 @@
-export const WRITING_FORM_TYPES=['heading','note','static','text','truefalse','choice','image','signature'];
+export const WRITING_FORM_TYPES=['heading','note','text','truefalse','choice','image','signature'];
+
+export const normalizeWritingRows=(rows=[])=>rows.map(row=>{
+  const {example,...field}=row;
+  return field.type==='static'?{...field,type:'text',answers:field.answers||field.value||'',value:'',maxScore:Number(field.maxScore)>0?Number(field.maxScore):1}:field;
+});
 
 const PRESENTATION_TYPES=new Set(['heading','note','static','image','signature']);
 
@@ -7,13 +12,12 @@ export const isScoredWritingField=row=>!row?.hidden&&!PRESENTATION_TYPES.has(Str
 // Teacher-entered 0.33 represents one third of a point. Keep exact thirds
 // throughout accumulation so later groups do not inherit rounding drift.
 export function writingPointLayout(rows=[]){
-  const items=Array.isArray(rows)?rows:[],markers=items.map(()=>''),offset=items.some(row=>!row.hidden&&row.example)?1:0;
+  const items=normalizeWritingRows(Array.isArray(rows)?rows:[]),markers=items.map(()=>'');
   let units=0;
   items.forEach((row,index)=>{
     if(row.hidden)return;
     const score=isScoredWritingField(row)?Math.max(0,Number(row.maxScore)||0):0;
-    if(row.example)markers[index]='(0)';
-    else if(score>0&&Math.abs(units/300-Math.round(units/300))<1e-9)markers[index]=`(${Math.round(units/300)+offset})`;
+    if(score>0&&Math.abs(units/300-Math.round(units/300))<1e-9)markers[index]=`(${Math.round(units/300)})`;
     units+=score===0.33?100:score*300;
   });
   return {markers,total:Number((units/300).toFixed(2))};
@@ -43,5 +47,5 @@ export function removeWritingRow(rows,index){
 
 // Explicit allowlist: learners need the form, never the teacher's expected answers.
 export function publicWritingRows(rows=[]){
-  return rows.map(row=>({type:row.type,label:row.label||'',hidden:Boolean(row.hidden),value:isScoredWritingField({...row,hidden:false})?'':String(row.value??row.answers??''),imageUrl:row.imageUrl||'',example:Boolean(row.example),options:['choice','truefalse'].includes(row.type)?writingOptions(row):[],maxScore:row.maxScore||0}));
+  return normalizeWritingRows(rows).map(row=>({type:row.type,label:row.label||'',hidden:Boolean(row.hidden),value:isScoredWritingField({...row,hidden:false})?'':String(row.value??row.answers??''),imageUrl:row.imageUrl||'',options:['choice','truefalse'].includes(row.type)?writingOptions(row):[],maxScore:row.maxScore||0}));
 }
