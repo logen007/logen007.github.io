@@ -41,6 +41,21 @@ const fixture=()=>{
 };
 
 try{
+  await test('Preview and live exam share the paper and illustrated-answer layout',()=>{
+    const sample=fixture();
+    sample.exam.sections[0].instruction='Read the instructions.';
+    sample.questions[0].choices=[{text:'50 €',imageUrl:'/media/50.png'},{text:'65 €',imageUrl:'/media/65.png'}];
+    const preview=examHtml(sample);
+    const live=examHtml({...sample,preview:false,previewSummary:null});
+    for(const html of [preview,live]){
+      assert.match(html,/<div class="exam-paper">/);
+      assert.match(html,/class="answer-options answer-options--illustrated"/);
+      assert.match(html,/class="preview-question-heading"/);
+    }
+    const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+    assert.match(css,/\.exam-paper \.answer-options--illustrated \.answer-option-body/);
+    assert.match(css,/\.exam-paper \.cau-thi/);
+  });
   await test('Student exam card shows provider, exact duration and a corner new badge',()=>{
     const exam={id:'goethe-a1',provider:'GOETHE',level:'A1',title:'Modelltest 1',sections:[{timeMinutes:20,questionIds:[]},{timeMinutes:15,questionIds:[]}]};
     const html=studentExamCardHtml(exam,[],{questions:[]});
