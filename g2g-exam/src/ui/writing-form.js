@@ -17,7 +17,7 @@ export function writingFormEditor(q,{readOnly=false}={}){
     else if(type==='image')content=`<label class="writing-image-picker">${row.imageUrl?`<img src="${esc(row.imageUrl)}" alt="Ảnh trong form">`:`${iconHtml('image')}<span>Chọn hình ảnh</span>`}<input type="file" data-rubric-image accept="image/*" ${disabled}></label>`;
     else if(type==='truefalse')content=`${field('Câu hỏi','data-rubric-label',row.label,disabled,true,true)}<div class="writing-option-setup">${writingOptions(row).slice(0,2).map((option,i)=>`<label><input type="radio" data-rubric-correct name="form-correct-${esc(q.id)}-${index}" value="${i}" ${row.correctIndex!=null&&Number(row.correctIndex)===i?'checked':''} ${disabled}><input data-rubric-option aria-label="Phương án ${i+1}" value="${esc(option)}" ${disabled}></label>`).join('')}</div>`;
     else {
-      content=field('Nhãn hiển thị','data-rubric-label',row.label,disabled,false,type==='text'||type==='signature');
+      content=field('Nhãn hiển thị','data-rubric-label',row.label,disabled,false,true);
       if(scored){
         if(type==='text')content+=field('Đáp án đúng','data-rubric-answer',row.answers,disabled,false,true);
         else content+=`<div class="writing-option-setup">${writingOptions(row).map((option,i)=>`<label><input type="radio" data-rubric-correct name="form-correct-${esc(q.id)}-${index}" value="${i}" ${row.correctIndex!=null&&Number(row.correctIndex)===i?'checked':''} ${disabled}><input data-rubric-option aria-label="Phương án ${i+1}" value="${esc(option)}" ${disabled}></label>`).join('')}${type==='choice'?`<button type="button" class="text-link" data-action="add-form-option" data-id="${esc(q.id)}" data-index="${index}" ${disabled}>+ Phương án</button>`:''}</div>`;
