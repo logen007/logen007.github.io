@@ -59,6 +59,27 @@ export function createExam(state,user,input={}){
   return exam;
 }
 
+export function duplicateExam(state,user,sourceId){
+  if(!isTeacher(user))throw new Error('Chỉ giáo viên hoặc quản trị viên được nhân bản bài thi.');
+  const source=byId(state.exams,sourceId);
+  if(!source||source.status==='trash')throw new Error('Không tìm thấy bài thi để nhân bản.');
+  let copyNo=1;
+  while(state.exams.some(exam=>exam.title===`${source.title} - Copy ${copyNo}`))copyNo++;
+  const questionIds=new Map();
+  for(const section of source.sections||[])for(const id of section.questionIds||[]){
+    if(questionIds.has(id))continue;
+    const original=byId(state.questions,id);
+    if(!original)throw new Error('Bài thi có câu hỏi không còn tồn tại.');
+    const copy={...clone(original),id:uid('q'),code:`${original.code||'Q'}-COPY-${copyNo}`,ownerId:user.id,ownerName:user.name,locked:false,usedCount:0,correctRate:null,status:'active',createdAt:nowIso(),updatedAt:nowIso()};
+    state.questions.push(copy);
+    questionIds.set(id,copy.id);
+  }
+  const sections=(source.sections||[]).map(section=>({...clone(section),id:uid('sec'),questionIds:(section.questionIds||[]).map(id=>questionIds.get(id))}));
+  const exam=createExam(state,user,{title:`${source.title} - Copy ${copyNo}`,provider:source.provider,level:source.level,settings:source.settings,passScore:source.passScore,sections});
+  audit(state,user,'duplicate','exam',exam.id,{sourceId});
+  return exam;
+}
+
 export function updateExam(state,user,id,patch){
   const exam=byId(state.exams,id);
   if(!exam)throw new Error('Không tìm thấy bài thi.');
@@ -203,38 +224,6 @@ export function moveQuestion(state,user,examId,sectionId,questionId,direction){
   [section.questionIds[index],section.questionIds[next]]=[section.questionIds[next],section.questionIds[index]];
   exam.updatedAt=nowIso();
   audit(state,user,'move_question','exam',examId,{sectionId,questionId,direction});
-}
-
-export function requestGrading(state,user,examId){
-  if(!isTeacher(user)||isMaster(user))throw new Error('Chỉ giáo viên mới cần gửi yêu cầu xin chấm.');
-  const exam=byId(state.exams,examId);
-  if(!exam)throw new Error('Không tìm thấy bài thi.');
-  if(exam.ownerId===user.id)throw new Error('Bạn là người tạo bài thi nên đã có quyền chấm.');
-  let request=(state.gradingRequests||[]).find(item=>item.examId===examId&&item.requesterId===user.id&&item.status==='pending');
-  if(request)return request;
-  request={
-    id:uid('gr'),examId,examTitle:exam.title,ownerId:exam.ownerId,
-    requesterId:user.id,requesterName:user.name,status:'pending',
-    createdAt:nowIso(),updatedAt:nowIso(),
-  };
-  state.gradingRequests.push(request);
-  audit(state,user,'request_grading','exam',examId);
-  return request;
-}
-
-export function resolveGradingRequest(state,user,requestId,status){
-  const request=byId(state.gradingRequests,requestId);
-  if(!request)throw new Error('Không tìm thấy yêu cầu.');
-  const exam=byId(state.exams,request.examId);
-  if(!exam)throw new Error('Không tìm thấy bài thi.');
-  if(!(isMaster(user)||exam.ownerId===user.id))throw new Error('Chỉ giáo viên tạo bài hoặc quản trị cấp cao được duyệt.');
-  if(!['approved','rejected'].includes(status))throw new Error('Trạng thái không hợp lệ.');
-  request.status=status;
-  request.resolvedBy=user.id;
-  request.resolvedAt=nowIso();
-  request.updatedAt=nowIso();
-  audit(state,user,'resolve_grading','request',requestId,{status});
-  return request;
 }
 
 export function validateExamForPublish(state,exam){

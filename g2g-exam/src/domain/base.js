@@ -34,12 +34,10 @@ export function canDeleteQuestion(user,question){return canEditQuestion(user,que
 export function canPermanentlyDelete(user){return isMaster(user);}
 export function canEditExam(user,exam){return Boolean(user&&exam&&(isMaster(user)||(isTeacher(user)&&exam.ownerId===user.id)));}
 export function canSeeTrash(user){return isMaster(user);}
-export function canPublishExamResult(user,exam){return Boolean(user&&exam&&(isMaster(user)||(isTeacher(user)&&exam.ownerId===user.id)));}
+export function canPublishExamResult(user,exam){return Boolean(isTeacher(user)&&exam);}
 
 export function canGradeExam(state,user,exam){
-  if(!isTeacher(user)||!exam)return false;
-  if(isMaster(user)||exam.ownerId===user.id)return true;
-  return (state.gradingRequests||[]).some(r=>r.examId===exam.id&&r.requesterId===user.id&&r.status==='approved');
+  return Boolean(isTeacher(user)&&exam);
 }
 
 export function getPublishedExams(state){return (state.exams||[]).filter(x=>x.status==='published');}

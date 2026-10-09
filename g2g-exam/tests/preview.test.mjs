@@ -74,14 +74,14 @@ try{
   await test('Header keeps role-appropriate menus in builder and grading views',()=>{
     for(const role of ['master','teacher'])for(const view of ['admin','builder','grading-detail']){
       const html=topbarHtml({user:{id:role,role},mode:'api',online:true,ui:{view}});
-      assert.equal(actionButtons(html,'admin-tab').length,role==='master'?5:3);
+      assert.equal(actionButtons(html,'admin-tab').length,role==='master'?4:3);
       assert.match(html,/data-tab="exams"/);
     }
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
     assert.match(source,/\[data-action="admin-tab"\][^\n]+await flushBuilderDraft\(\)[^\n]+clearBuilderEditUrl\(\)/);
   });
   await test('Admin utility tabs show accessible icons without visible labels',()=>{
-    for(const adminTab of ['exams','teachers','grading']){
+    for(const adminTab of ['dashboard','exams','teachers']){
       const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin',adminTab}});
       const button=html.match(/<button[^>]*data-tab="teachers"[^>]*>[\s\S]*?<\/button>/)?.[0]||'';
       assert.match(button,/aria-label="Người dùng"/);

@@ -2,6 +2,7 @@ import {
   ATTEMPT_STATUS,clone,uid,nowIso,byId,isStudent,audit,
   canGradeExam,canPublishExamResult
 } from './base.js';
+import {isAutomaticWritingForm,scoreWritingForm} from './writing-form.js';
 
 function questionScore(question,answer){
   if(!question?.autoGrade)return 0;
@@ -102,7 +103,8 @@ export function calculateAutomaticScores(state,attempt){
     let sectionScore=0;
     for(const questionId of section.questionIds||[]){
       const question=byId(state.questions,questionId);
-      if(question?.autoGrade)sectionScore+=questionScore(question,attempt.answers?.[questionId]);
+      if(isAutomaticWritingForm(exam,section,question))sectionScore+=scoreWritingForm(question.rubric,attempt.answers?.[questionId]);
+      else if(question?.autoGrade)sectionScore+=questionScore(question,attempt.answers?.[questionId]);
     }
     sectionScores[section.name]=Math.round(sectionScore*100)/100;
     total+=sectionScore;
@@ -111,7 +113,7 @@ export function calculateAutomaticScores(state,attempt){
 }
 
 export function hasManualQuestions(state,exam){
-  return (exam.sections||[]).some(section=>(section.questionIds||[]).some(questionId=>!byId(state.questions,questionId)?.autoGrade));
+  return (exam.sections||[]).some(section=>(section.questionIds||[]).some(questionId=>{const question=byId(state.questions,questionId);return question&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question);}));
 }
 
 export function submitAttempt(state,user,attemptId){
@@ -123,6 +125,7 @@ export function submitAttempt(state,user,attemptId){
   const score=calculateAutomaticScores(state,attempt);
   attempt.autoScore=score.autoScore;
   attempt.sectionScores=score.sectionScores;
+  attempt.scoringVersion=2;
   attempt.status=hasManualQuestions(state,exam)?ATTEMPT_STATUS.GRADING:ATTEMPT_STATUS.READY;
   attempt.submittedAt=nowIso();
   attempt.updatedAt=nowIso();
@@ -138,7 +141,7 @@ function manualLimits(state,exam){
   const limits={};
   for(const section of exam.sections||[])for(const id of section.questionIds||[]){
     const question=byId(state.questions,id);
-    if(question&&!question.autoGrade)limits[question.skill]=(limits[question.skill]||0)+Number(question.maxScore||0);
+    if(question&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question))limits[question.skill]=(limits[question.skill]||0)+Number(question.maxScore||0);
   }
   return limits;
 }
@@ -149,6 +152,17 @@ export function saveManualScore(state,user,attemptId,payload={}){
   const exam=byId(state.exams,attempt.examId);
   if(!canGradeExam(state,user,exam))throw new Error('Bạn chưa có quyền chấm bài thi này.');
   if(![ATTEMPT_STATUS.GRADING,ATTEMPT_STATUS.READY].includes(attempt.status))throw new Error('Bài này không ở trạng thái chấm.');
+  if(!attempt.scoringVersion){
+    attempt.sectionScores||={};
+    for(const section of exam.sections||[])for(const id of section.questionIds||[]){
+      const question=byId(state.questions,id);
+      if(!isAutomaticWritingForm(exam,section,question))continue;
+      const score=scoreWritingForm(question.rubric,attempt.answers?.[id]);
+      attempt.sectionScores[section.name]=Number((Number(attempt.sectionScores[section.name]||0)+score).toFixed(2));
+      attempt.autoScore=Number((Number(attempt.autoScore||0)+score).toFixed(2));
+    }
+    attempt.scoringVersion=2;
+  }
   const limits=manualLimits(state,exam),next={...attempt.manualScores};
   for(const [skill,value] of Object.entries(payload.scores||{})){
     if(!(skill in limits))continue;
@@ -180,11 +194,13 @@ export function publishAttempt(state,user,attemptId){
   const attempt=byId(state.attempts,attemptId);
   if(!attempt)throw new Error('Không tìm thấy lượt thi.');
   const exam=byId(state.exams,attempt.examId);
-  if(!canPublishExamResult(user,exam))throw new Error('Chỉ giáo viên tạo bài hoặc quản trị cấp cao được công bố kết quả.');
+  if(!canPublishExamResult(user,exam))throw new Error('Bạn không có quyền công bố kết quả.');
   if(attempt.status!==ATTEMPT_STATUS.READY)throw new Error('Bài thi chưa được chấm đủ để công bố.');
   attempt.status=ATTEMPT_STATUS.PUBLISHED;
   attempt.publishedAt=nowIso();
   attempt.updatedAt=nowIso();
+  attempt.reviewerId=user.id;
+  attempt.reviewerName=user.name;
   const notification={
     id:uid('notify'),type:'result_published',status:'queued',to:attempt.studentEmail,
     studentId:attempt.studentId,attemptId:attempt.id,

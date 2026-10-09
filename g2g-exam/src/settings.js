@@ -8,7 +8,7 @@ import {initializeTheme,acceptPublicSettings,currentTheme,saveLocalTheme,normali
 import {iconHtml} from './ui/icons.js';
 
 const localOnly=Boolean(globalThis.G2G_DEMO_BYPASS)||!hasApiBackend();
-let pub={general:{systemName:'Thi thử tiếng Đức'},auth:{googleLoginEnabled:true},operations:{}};
+let pub={general:{systemName:'Luyện thi tiếng Đức'},auth:{googleLoginEnabled:true},operations:{}};
 let settings=null;
 let infra=null;
 let open=false;
@@ -34,9 +34,20 @@ function queue(){
 }
 
 function applyBrand(){
-  const name=pub.general?.systemName||'Thi thử tiếng Đức';
+  const name=pub.general?.systemName==='Thi thử tiếng Đức'?'Luyện thi tiếng Đức':pub.general?.systemName||'Luyện thi tiếng Đức';
   const title=document.querySelector('.ten-he-thong strong');
   if(title&&title.textContent!==name)title.textContent=name;
+  const logo=document.querySelector('.thuong-hieu .logo');
+  if(logo&&pub.general?.logoUrl){
+    const url=`/brand/logo?v=${encodeURIComponent(pub.general.logoUrl)}`;
+    if(logo.querySelector('img')?.getAttribute('src')!==url)logo.innerHTML=`<img src="${url}" alt="G2G Career">`;
+  }
+  if(pub.general?.faviconUrl){
+    let icon=document.querySelector('link[rel="icon"]');
+    if(!icon){icon=document.createElement('link');icon.rel='icon';document.head.append(icon);}
+    const url=`/brand/favicon?v=${encodeURIComponent(pub.general.faviconUrl)}`;
+    if(icon.getAttribute('href')!==url)icon.href=url;
+  }
   const pageTitle=`${name} · G2G`;
   if(document.title!==pageTitle)document.title=pageTitle;
 }
@@ -47,7 +58,7 @@ function applyLogin(){
   if(!button)return;
   const enabled=pub.auth?.googleLoginEnabled!==false;
   if('disabled' in button&&button.disabled===enabled)button.disabled=!enabled;
-  const label=enabled?'Đăng nhập bằng Google':'Đăng nhập Google đang tạm tắt';
+  const label=enabled?'Bắt đầu luyện thi ngay':'Đăng nhập Google đang tạm tắt';
   if(button.textContent!==label)button.textContent=label;
 }
 
@@ -132,7 +143,18 @@ async function save(){
       return;
     }
     setState('Đang lưu...');
-    const out=await updateSystemSettings(collectForm());
+    const next=collectForm();
+    for(const [field,key] of [['sLogo','logoUrl'],['sFavicon','faviconUrl']]){
+      const file=document.getElementById(field)?.files?.[0];
+      if(!file)continue;
+      if(!file.type.startsWith('image/'))throw new Error('Logo và favicon phải là tệp hình ảnh.');
+      const form=new FormData();form.append('file',file);
+      const response=await fetch('/api/media/image',{method:'POST',credentials:'include',body:form});
+      const uploaded=await response.json();
+      if(!response.ok)throw new Error(uploaded.error||'Không tải được hình ảnh.');
+      next.general[key]=uploaded.url;
+    }
+    const out=await updateSystemSettings(next);
     settings=out.settings;
     pub={general:settings.general,theme:settings.theme,auth:settings.auth,operations:settings.operations};
     acceptPublicSettings(pub);
@@ -157,12 +179,15 @@ async function saveSecret(){
 
 async function sendTest(){
   const to=val('sTestTo');
-  if(!to)return setState('Hãy nhập email nhận thử.',true);
+  const status=document.getElementById('sTestState'),button=document.getElementById('sTest');
+  const report=(message,bad=false)=>{if(status){status.textContent=message;status.classList.toggle('loi',bad);}setState(message,bad);};
+  if(!to)return report('Hãy nhập email nhận thử.',true);
   try{
-    setState('Đang gửi email thử...');
+    button.disabled=true;report('Đang gửi email thử...');
     await testSmtp(to);
-    setState('Đã gửi email thử thành công.');
-  }catch(error){setState(error.message,true);}
+    report(`Đã gửi email thử đến ${to}.`);
+  }catch(error){report(error.message||'Gửi email thử thất bại.',true);}
+  finally{button.disabled=false;}
 }
 
 function bindSettingsActions(){

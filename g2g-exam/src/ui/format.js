@@ -19,8 +19,8 @@ export function statusText(s){
   return ({
     in_progress:'Đang làm',
     grading:'Đang chờ chấm',
-    ready:'Sẵn sàng công bố',
-    published:'Đã có điểm',
+    ready:'Đang chờ chấm',
+    published:'Đã chấm',
     abandoned:'Bỏ dở',
     draft:'Bản nháp',
     trash:'Thùng rác',

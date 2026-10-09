@@ -3,8 +3,8 @@ import { seedState } from '../src/seed.js';
 import {
   clone, byId, canEditQuestion, canEditExam, canGradeExam, canSeeTrash, canPublishExamResult, getQuestionMaxScore,
   createQuestion, updateQuestion, softDeleteQuestion, restoreQuestion, permanentlyDeleteQuestion,
-  createExam, addSection, removeSection, moveSection, addQuestionsToSection, removeQuestionFromSection,
-  requestGrading, resolveGradingRequest, startAttempt, saveAnswer, setAttemptSection, getSectionRemainingSeconds,
+  createExam, duplicateExam, addSection, removeSection, moveSection, addQuestionsToSection, removeQuestionFromSection,
+  startAttempt, saveAnswer, setAttemptSection, getSectionRemainingSeconds,
   submitAttempt, saveManualScore, publishAttempt, getStudentResults, validateExamForPublish, publishExam,
   ATTEMPT_STATUS
 } from '../src/core.js';
@@ -56,16 +56,23 @@ test('Giáo viên khác xem được bài nhưng không chỉnh sửa bài của
   const s=fresh(),u=users(s),exam=byId(s.exams,'exam-b1-01');assert.equal(canEditExam(u.lan,exam),true);assert.equal(canEditExam(u.mai,exam),false);
 });
 
-test('Xin chấm phải được chủ bài duyệt trước',()=>{
-  const s=fresh(),u=users(s),exam=byId(s.exams,'exam-b1-01');assert.equal(canGradeExam(s,u.mai,exam),false);
-  const req=requestGrading(s,u.mai,exam.id);assert.equal(req.status,'pending');assert.equal(canGradeExam(s,u.mai,exam),false);
-  resolveGradingRequest(s,u.lan,req.id,'approved');assert.equal(canGradeExam(s,u.mai,exam),true);
+test('Giáo viên nhân bản đề của người khác thành bản nháp do mình sở hữu',()=>{
+  const s=fresh(),u=users(s),source=byId(s.exams,'exam-b1-01');
+  const copy=duplicateExam(s,u.mai,source.id);
+  assert.equal(copy.title,`${source.title} - Copy 1`);
+  assert.equal(copy.ownerId,u.mai.id);
+  assert.equal(copy.status,'draft');
+  assert.notEqual(copy.sections[0].questionIds[0],source.sections[0].questionIds[0]);
+  assert.equal(duplicateExam(s,u.mai,source.id).title,`${source.title} - Copy 2`);
 });
 
-test('Giáo viên được duyệt có thể chấm nhưng không được tự công bố kết quả',()=>{
+test('Giáo viên có thể chấm bài mà không cần xin quyền',()=>{
+  const s=fresh(),u=users(s),exam=byId(s.exams,'exam-b1-01');assert.equal(canGradeExam(s,u.mai,exam),true);
+});
+
+test('Giáo viên có thể công bố bài đã chấm',()=>{
   const s=fresh(),u=users(s),exam=byId(s.exams,'exam-b1-01');
-  const req=requestGrading(s,u.mai,exam.id);resolveGradingRequest(s,u.lan,req.id,'approved');
-  assert.equal(canGradeExam(s,u.mai,exam),true);assert.equal(canPublishExamResult(u.mai,exam),false);assert.equal(canPublishExamResult(u.lan,exam),true);assert.equal(canPublishExamResult(u.master,exam),true);
+  assert.equal(canGradeExam(s,u.mai,exam),true);assert.equal(canPublishExamResult(u.mai,exam),true);assert.equal(canPublishExamResult(u.lan,exam),true);assert.equal(canPublishExamResult(u.master,exam),true);
 });
 
 test('Master nhìn thấy thùng rác, giáo viên không',()=>{const s=fresh(),u=users(s);assert.equal(canSeeTrash(u.master),true);assert.equal(canSeeTrash(u.lan),false);});
@@ -100,9 +107,9 @@ test('Chấm đủ Viết/Nói -> sẵn sàng; chủ bài công bố -> có đi�
   publishAttempt(s,u.lan,a.id);assert.equal(a.status,ATTEMPT_STATUS.PUBLISHED);assert.equal(s.notifications.at(-1).type,'result_published');assert.equal(s.notifications.at(-1).to,u.student.email);
 });
 
-test('Giáo viên được duyệt chấm không thể công bố kết quả thay chủ bài',()=>{
-  const s=fresh(),u=users(s),exam=byId(s.exams,'exam-b1-01');const req=requestGrading(s,u.mai,exam.id);resolveGradingRequest(s,u.lan,req.id,'approved');
-  const a=startAttempt(s,u.student,exam.id);submitAttempt(s,u.student,a.id);saveManualScore(s,u.mai,a.id,{scores:{'Viết':35,'Nói':60}});assert.equal(a.status,ATTEMPT_STATUS.READY);assert.throws(()=>publishAttempt(s,u.mai,a.id));publishAttempt(s,u.lan,a.id);assert.equal(a.status,ATTEMPT_STATUS.PUBLISHED);
+test('Người công bố được ghi là người chấm',()=>{
+  const s=fresh(),u=users(s),exam=byId(s.exams,'exam-b1-01');
+  const a=startAttempt(s,u.student,exam.id);submitAttempt(s,u.student,a.id);saveManualScore(s,u.mai,a.id,{scores:{'Viết':35,'Nói':60}});assert.equal(a.status,ATTEMPT_STATUS.READY);publishAttempt(s,u.mai,a.id);assert.equal(a.status,ATTEMPT_STATUS.PUBLISHED);assert.equal(a.reviewerId,u.mai.id);
 });
 
 test('Bài thi cho phép thêm/bớt/sắp xếp phần trước khi có lượt thi',()=>{

@@ -1,6 +1,6 @@
 export const DEFAULT_SETTINGS={
   version:5,
-  general:{systemName:'Thi thử tiếng Đức',organizationName:'G2G Career',supportEmail:'admin@g2gcareer.com',publicUrl:process.env.PUBLIC_URL||'https://exam.g2gcareer.com'},
+  general:{systemName:'Luyện thi tiếng Đức',organizationName:'G2G Career',supportEmail:'admin@g2gcareer.com',publicUrl:process.env.PUBLIC_URL||'https://exam.g2gcareer.com',logoUrl:'',faviconUrl:''},
   theme:{primaryColor:'#111827'},
   auth:{googleLoginEnabled:true,allowNewStudents:true,allowedDomain:'',teacherEmails:[]},
   exam:{allowRestart:true},
@@ -10,9 +10,11 @@ export const DEFAULT_SETTINGS={
 };
 
 export function mergeSettings(input={}){
+  const general={...DEFAULT_SETTINGS.general,...(input.general||{})};
+  if(general.systemName==='Thi thử tiếng Đức')general.systemName='Luyện thi tiếng Đức';
   return {
     ...structuredClone(DEFAULT_SETTINGS),...input,
-    general:{...DEFAULT_SETTINGS.general,...(input.general||{})},
+    general,
     theme:{...DEFAULT_SETTINGS.theme,...(input.theme||{})},
     auth:{...DEFAULT_SETTINGS.auth,...(input.auth||{})},
     exam:{...DEFAULT_SETTINGS.exam,...(input.exam||{})},

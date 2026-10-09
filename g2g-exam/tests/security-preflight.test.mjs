@@ -78,12 +78,27 @@ test('Học viên không nhận đáp án đúng hoặc điểm riêng tư chưa
   assert.equal(studentBlock.includes('private_data'),false);
 });
 
+test('Xem lại bài làm chỉ mở cho đúng học viên; đáp án chuẩn đợi công bố',()=>{
+  const actions=read('server/src/actions/index.js');
+  assert.ok(actions.includes("case 'getAttemptReview'"));
+  assert.ok(actions.includes('found.rows[0].student_id!==user.id'));
+  assert.ok(actions.includes("const published=row.status==='published'"));
+  assert.ok(actions.includes('correct:published?'));
+});
+
+test('Cấu hình công khai không trả danh sách email giáo viên',()=>{
+  const source=read('server/src/index.js');
+  const route=source.match(/app\.get\('\/api\/public-settings'[\s\S]*?\n\}\);/)?.[0]||'';
+  assert.ok(route.includes('auth:{googleLoginEnabled:'));
+  assert.equal(route.includes('auth:s.auth'),false);
+});
+
 test('Role và thay đổi dữ liệu quan trọng được kiểm tra lại phía server',()=>{
   const state=read('server/src/state.js');
   const actions=read('server/src/actions/shared.js')+read('server/src/actions/settings.js')+read('server/src/actions/grading.js');
   assert.ok(state.includes("user.role!=='master'"));
   assert.ok(state.includes('Không có quyền sửa bài thi này'));
-  assert.ok(actions.includes("user.role==='master'"));
+  assert.ok(actions.includes("user.role!=='master'"));
   assert.ok(actions.includes('canGrade'));
 });
 

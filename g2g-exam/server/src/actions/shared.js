@@ -10,10 +10,7 @@ export async function examById(id,client={query}){
 }
 
 export async function canGrade(user,exam){
-  if(user.role==='master'||exam.ownerId===user.id)return true;
-  if(user.role!=='teacher')return false;
-  const result=await query(`SELECT 1 FROM grading_requests WHERE exam_id=$1 AND requester_id=$2 AND status='approved' LIMIT 1`,[exam.id,user.id]);
-  return Boolean(result.rowCount);
+  return Boolean(isTeacher(user)&&exam);
 }
 
 export function scoreQuestion(question,answer){

@@ -47,7 +47,16 @@ await app.register(fastifyStatic,{root:publicDir,prefix:'/',index:['index.html']
 await registerAuthRoutes(app);
 
 app.get('/api/health',async()=>{let db=true;try{await pool.query('SELECT 1');}catch{db=false;}return {ok:db,backend:'vps',database:db,time:new Date().toISOString()};});
-app.get('/api/public-settings',async()=>{const s=await getSettings();return {general:{systemName:s.general.systemName,organizationName:s.general.organizationName,publicUrl:s.general.publicUrl},theme:s.theme,auth:s.auth,operations:s.operations};});
+app.get('/api/public-settings',async()=>{
+  const s=await getSettings();
+  const [students,graded,exams]=await Promise.all([
+    pool.query(`SELECT count(*)::int AS count FROM users WHERE role='student'`),
+    pool.query(`SELECT count(*)::int AS count FROM attempts WHERE status='published'`),
+    pool.query(`SELECT data FROM exams WHERE status='published'`),
+  ]);
+  const examTypes=[...new Set(exams.rows.map(row=>[row.data.provider,row.data.level].filter(Boolean).join(' ')).filter(Boolean))].sort();
+  return {general:{systemName:s.general.systemName,organizationName:s.general.organizationName,publicUrl:s.general.publicUrl,logoUrl:s.general.logoUrl,faviconUrl:s.general.faviconUrl},theme:s.theme,auth:{googleLoginEnabled:s.auth.googleLoginEnabled,allowNewStudents:s.auth.allowNewStudents},operations:{maintenanceMode:s.operations.maintenanceMode,maintenanceMessage:s.operations.maintenanceMessage},stats:{students:students.rows[0].count,graded:graded.rows[0].count,exams:exams.rowCount,examTypes}};
+});
 app.get('/api/settings',async request=>{await requireRole(request,'master');return {settings:await getSettings()};});
 app.get('/api/state',async request=>loadState(await requireUser(request)));
 app.post('/api/commit',async request=>commitOperations(await requireUser(request),request.body?.operations||[]));
@@ -80,6 +89,14 @@ app.post('/api/media/image',async request=>saveUpload(request,{kind:'hình ảnh
 app.post('/api/demo/media/audio',async request=>saveUpload(request,{kind:'âm thanh',maxBytes:25*1024*1024,mimePrefix:'audio/',defaultExt:'.audio'},demoUploadUser(request)));
 app.post('/api/demo/media/image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:8*1024*1024,mimePrefix:'image/',defaultExt:'.img'},demoUploadUser(request)));
 app.get('/uploads/:name',async(request,reply)=>{if(!demoMediaUploadsEnabled)await requireUser(request);const name=path.basename(request.params.name);return reply.sendFile(name,uploadDir);});
+app.get('/brand/:kind',async(request,reply)=>{
+  const key=request.params.kind==='logo'?'logoUrl':request.params.kind==='favicon'?'faviconUrl':null;
+  if(!key)throw appError(404,'Ảnh không tồn tại.');
+  const settings=await getSettings(),name=path.basename(settings.general[key]||'');
+  if(!name)throw appError(404,'Ảnh không tồn tại.');
+  reply.header('Cache-Control','public, max-age=300');
+  return reply.sendFile(name,uploadDir);
+});
 app.get('/api/whoami',async request=>({user:await currentUser(request)}));
 
 app.setErrorHandler((error,_request,reply)=>{app.log.error(error);const status=Number(error.statusCode)||500;reply.code(status).send({error:status>=500?'Lỗi máy chủ. Vui lòng thử lại.':error.message,code:status});});

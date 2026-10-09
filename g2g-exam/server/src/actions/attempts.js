@@ -1,5 +1,6 @@
 import {query,withTx,getSettings,audit,uid,now,appError} from '../db.js';
 import {examById,questionMap,scoreQuestion,resultFor,sectionMeta} from './shared.js';
+import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
 
 export async function startAttempt(user,{examId,restart=false}){
   if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
@@ -158,7 +159,8 @@ export async function submitAttempt(user,{attemptId}){
     for(const id of section.questionIds||[]){
       const question=questions.get(id);
       if(!question)continue;
-      if(question.autoGrade)subtotal+=scoreQuestion(question,attempt.public_data.answers?.[id]);
+      if(isAutomaticWritingForm(exam,section,question))subtotal+=scoreWritingForm(question.rubric,attempt.public_data.answers?.[id]);
+      else if(question.autoGrade)subtotal+=scoreQuestion(question,attempt.public_data.answers?.[id]);
       else hasManual=true;
     }
     subtotal=Math.round(subtotal*100)/100;
@@ -171,7 +173,7 @@ export async function submitAttempt(user,{attemptId}){
   const resultText=hasManual?null:resultFor(exam,totalScore);
   const at=now();
   const publicData={...attempt.public_data,status,submittedAt:at,updatedAt:at};
-  const privateData={autoScore,sectionScores,manualScores:{},totalScore,result:resultText,feedback:'',updatedAt:at};
+  const privateData={autoScore,sectionScores,scoringVersion:2,manualScores:{},totalScore,result:resultText,feedback:'',updatedAt:at};
   await query(`UPDATE attempts SET status=$2,public_data=$3::jsonb,private_data=$4::jsonb,updated_at=now() WHERE id=$1`,[attemptId,status,JSON.stringify(publicData),JSON.stringify(privateData)]);
   await audit(user,'submit_attempt','attempt',attemptId,{status});
   return {status};

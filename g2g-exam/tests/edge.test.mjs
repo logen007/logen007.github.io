@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { seedState } from '../src/seed.js';
 import {
   clone, byId, createQuestion, createExam, addSection, removeSection,
-  addQuestionsToSection, requestGrading, resolveGradingRequest,
+  addQuestionsToSection, canGradeExam,
   startAttempt, saveAnswer, submitAttempt, saveManualScore, publishAttempt,
   permanentlyDeleteExam, permanentlyDeleteQuestion, validateExamForPublish,
   ATTEMPT_STATUS
@@ -67,19 +67,10 @@ test('Không thể xóa phần cuối cùng của bài thi', () => {
   assert.throws(() => removeSection(s, u.lan, ex.id, 'only'));
 });
 
-test('Yêu cầu xin chấm đang chờ không bị tạo trùng', () => {
+test('Giáo viên không sở hữu đề vẫn được chấm bài', () => {
   const s = fresh(), u = users(s);
-  const r1 = requestGrading(s, u.mai, 'exam-b1-01');
-  const r2 = requestGrading(s, u.mai, 'exam-b1-01');
-  assert.equal(r1.id, r2.id);
-  assert.equal(s.gradingRequests.filter(r => r.status === 'pending').length, 1);
-});
-
-test('Giáo viên không sở hữu đề không thể duyệt yêu cầu xin chấm', () => {
-  const s = fresh(), u = users(s);
-  const req = requestGrading(s, u.mai, 'exam-b1-01');
   const huong = byId(s.users, 'teacher-huong');
-  assert.throws(() => resolveGradingRequest(s, huong, req.id, 'approved'));
+  assert.equal(canGradeExam(s, huong, byId(s.exams,'exam-b1-01')), true);
 });
 
 test('Câu tự chấm phải có đáp án hợp lệ', () => {

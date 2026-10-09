@@ -25,6 +25,26 @@ export function writingPointLayout(rows=[]){
 
 export const writingFormScore=(rows=[])=>writingPointLayout(rows).total;
 
+export function isAutomaticWritingForm(exam,section,question){
+  return exam?.provider==='GOETHE'&&exam?.level==='A1'&&(section?.questionProfile?.layout==='form-fields'||section?.key==='writing-1')&&question?.writingFormVersion===1;
+}
+
+export function scoreWritingForm(rows=[],answer={}){
+  const values=answer&&typeof answer==='object'?answer:{};
+  const normalize=value=>String(value??'').trim().replace(/\s+/g,' ').toLocaleLowerCase();
+  let units=0;
+  normalizeWritingRows(rows).forEach((row,index)=>{
+    if(!isScoredWritingField(row))return;
+    const given=normalize(values[index]);
+    if(!given)return;
+    const accepted=['choice','truefalse'].includes(row.type)
+      ?[row.correctIndex!=null?writingOptions(row)[Number(row.correctIndex)]:null]
+      :String(row.answers||'').split('|');
+    if(accepted.some(value=>value&&normalize(value)===given))units+=Number(row.maxScore)===0.33?100:Number(row.maxScore||0)*300;
+  });
+  return Number((units/300).toFixed(2));
+}
+
 export function writingOptions(row){
   if(Array.isArray(row.options))return row.options;
   return row.type==='truefalse'?['Richtig','Falsch']:String(row.answers||'').split('|').map(x=>x.trim()).filter(Boolean);

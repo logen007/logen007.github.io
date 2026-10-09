@@ -23,6 +23,11 @@ function cleanSettings(input={}){
   settings.general.organizationName=String(settings.general.organizationName||'').trim().slice(0,100);
   settings.general.supportEmail=String(settings.general.supportEmail||'').trim().slice(0,160);
   settings.general.publicUrl=String(settings.general.publicUrl||'').trim().slice(0,300);
+  for(const key of ['logoUrl','faviconUrl']){
+    const url=String(settings.general[key]||'').trim();
+    if(url&&!/^\/uploads\/[a-zA-Z0-9._-]+$/.test(url))throw appError(400,'Đường dẫn ảnh thương hiệu không hợp lệ.');
+    settings.general[key]=url;
+  }
   settings.theme.primaryColor=String(settings.theme.primaryColor||'').trim();
   settings.auth.allowedDomain=String(settings.auth.allowedDomain||'').trim().toLowerCase().replace(/^@/,'').slice(0,160);
   settings.auth.teacherEmails=normalizeTeacherEmails(settings.auth.teacherEmails);

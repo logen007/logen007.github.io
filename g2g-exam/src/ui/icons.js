@@ -10,6 +10,7 @@ const paths={
   plus:'<path d="M12 5v14M5 12h14"/>',
   close:'<path d="m6 6 12 12M18 6 6 18"/>',
   chevronDown:'<path d="m6 9 6 6 6-6"/>',
+  copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   upload:'<path d="M12 16V4M7 9l5-5 5 5M4 16v4h16v-4"/>',
   play:'<path d="m8 5 11 7-11 7Z"/>',
   image:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1"/><path d="m3 17 5-5 4 4 4-6 5 7"/>',

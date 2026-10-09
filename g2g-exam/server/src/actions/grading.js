@@ -1,6 +1,7 @@
 import {query,withTx,getSettings,audit,now,appError} from '../db.js';
 import {sendConfiguredMail,renderTemplate} from '../mail.js';
 import {isTeacher,examById,canGrade,questionMap,resultFor} from './shared.js';
+import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
 
 export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
   if(!isTeacher(user))throw appError(403,'Chỉ giáo viên được chấm bài.');
@@ -13,10 +14,22 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
     if(!['grading','ready'].includes(attempt.status))throw appError(409,'Bài không ở trạng thái chấm.');
 
     const questions=await questionMap(exam),limits={};
-    for(const question of questions.values()){
-      if(!question.autoGrade)limits[question.skill]=(limits[question.skill]||0)+Number(question.maxScore||0);
+    for(const section of exam.sections||[])for(const id of section.questionIds||[]){
+      const question=questions.get(id);
+      if(question&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question))limits[question.skill]=(limits[question.skill]||0)+Number(question.maxScore||0);
     }
     const previous=attempt.private_data||{},clean={...(previous.manualScores||{})};
+    const sectionScores={...(previous.sectionScores||{})};
+    let autoScore=Number(previous.autoScore||0);
+    if(!previous.scoringVersion){
+      for(const section of exam.sections||[])for(const id of section.questionIds||[]){
+        const question=questions.get(id);
+        if(!isAutomaticWritingForm(exam,section,question))continue;
+        const score=scoreWritingForm(question.rubric,attempt.public_data.answers?.[id]);
+        sectionScores[section.name]=Number((Number(sectionScores[section.name]||0)+score).toFixed(2));
+        autoScore=Number((autoScore+score).toFixed(2));
+      }
+    }
     for(const [skill,value] of Object.entries(scores||{})){
       if(!(skill in limits))continue;
       const score=Number(value);
@@ -26,13 +39,12 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
 
     const complete=Object.keys(limits).every(skill=>Number.isFinite(Number(clean[skill])));
     const manualTotal=Object.values(clean).reduce((sum,n)=>sum+(Number(n)||0),0);
-    const autoScore=Number(previous.autoScore||0);
     const totalScore=complete?autoScore+manualTotal:null;
     const resultText=complete?resultFor(exam,totalScore):null;
     const status=complete?'ready':'grading';
     const at=now();
     const privateData={
-      ...previous,manualScores:clean,feedback:String(feedback||''),
+      ...previous,autoScore,sectionScores,scoringVersion:2,manualScores:clean,feedback:String(feedback||''),
       reviewerId:user.id,reviewerName:user.name||'',totalScore,result:resultText,updatedAt:at,
     };
     const publicData={...attempt.public_data,status,updatedAt:at};
@@ -73,7 +85,7 @@ export async function publishAttemptResult(user,{attemptId}){
     if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
     const attempt=result.rows[0];
     const exam=await examById(attempt.exam_id,client);
-    if(!(user.role==='master'||exam.ownerId===user.id))throw appError(403,'Chỉ chủ bài hoặc Quản trị cấp cao được công bố kết quả.');
+    if(!(await canGrade(user,exam)))throw appError(403,'Không có quyền công bố kết quả.');
     if(attempt.status==='published')return {alreadyPublished:true};
     if(attempt.status!=='ready')throw appError(409,'Bài chưa được chấm đủ.');
 
@@ -91,8 +103,8 @@ export async function publishAttemptResult(user,{attemptId}){
       ...attempt.public_data,status:'published',publishedAt:at,updatedAt:at,
       autoScore:Number(privateData.autoScore||0),manualScores:privateData.manualScores||{},
       sectionScores:privateData.sectionScores||{},totalScore:Number(privateData.totalScore),
-      result:privateData.result||'',reviewerId:privateData.reviewerId||null,
-      reviewerName:privateData.reviewerName||null,feedback:privateData.feedback||'',
+      result:privateData.result||'',reviewerId:user.id,
+      reviewerName:user.name||'',feedback:privateData.feedback||'',
     };
     const emailOn=Boolean(settings.email.enabled&&settings.smtp.enabled);
     const to=attempt.public_data.studentEmail||'';
