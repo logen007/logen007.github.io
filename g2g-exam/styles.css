@@ -68,12 +68,16 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .thanh-ben,.site-nav { display:flex; align-items:center; justify-content:center; flex:1; gap:6px; min-width:0; }
 .muc-ben { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:44px; padding:10px 16px; white-space:nowrap; border:1px solid transparent; border-radius:var(--pill); background:var(--surface-muted); font-size:14px; font-weight:500; }
 .muc-ben .ui-icon { width:17px; height:17px; }
+.muc-ben--icon { width:44px; padding:10px; flex:none; }
 .muc-ben:hover { background:var(--brand-soft); }
 .muc-ben.active { background:var(--brand-primary); color:var(--brand-on-primary); }
 .header-account { margin-left:auto; display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .header-account>.nhan { background:transparent; color:var(--phu); padding:0; font-size:12px; font-weight:400; }
 .header-account>.nhan[hidden] { display:none; }
 .account-switch { position:relative; }.account-avatar { display:grid; place-items:center; width:40px; height:40px; padding:0; border:0; border-radius:50%; background:var(--brand-soft); color:var(--brand-text); font-size:13px; font-weight:600; cursor:pointer; }.account-role-menu { position:absolute; z-index:30; top:calc(100% + 10px); right:0; display:grid; width:150px; padding:6px; border:1px solid var(--vien); border-radius:16px; background:var(--mat); box-shadow:var(--shadow); }.account-role-menu[hidden] { display:none; }.account-role-menu button { padding:10px 12px; border:0; border-radius:10px; background:transparent; text-align:left; cursor:pointer; }.account-role-menu button:hover { background:var(--surface-muted); }
+.account-role-trigger { display:inline-flex; align-items:center; gap:10px; min-height:40px; padding:0 14px; border:1px solid var(--vien); border-radius:var(--pill); background:var(--surface-muted); color:var(--chu); font:500 13px/1 var(--font-ui); cursor:pointer; white-space:nowrap; }
+.account-role-trigger:hover,.account-role-trigger[aria-expanded="true"] { background:var(--brand-soft); }
+.account-role-menu button[aria-current="true"] { background:var(--brand-soft); color:var(--brand-text); font-weight:600; }
 .header-logout { border:0!important; background:var(--surface-muted)!important; }
 .khung,.khung-quan-tri { width:min(var(--max),100%); margin:0 auto; padding:36px 0 48px; }
 .noi-dung-quan-tri { min-width:0; }
@@ -301,7 +305,7 @@ select:not([multiple]) { appearance:none; padding-right:42px; background-image:u
   .hang-thong-ke { grid-template-columns:repeat(2,minmax(0,1fr)); }.ds-cham { min-height:0; }.chi-tiet-kq { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 @media(max-width:680px) {
-  #app { padding:12px 12px 0; }.thanh-dau { padding:10px; border-radius:18px; }.thanh-dau .logo { width:40px; height:40px; }.header-account { gap:6px; }.header-account>.nhan { display:none; }.ten-he-thong strong { font-size:14px; }.ten-he-thong small { font-size:11px; }.muc-ben { padding:10px 14px; }.muc-ben .ui-icon { display:none; }
+  #app { padding:12px 12px 0; }.thanh-dau { padding:10px; border-radius:18px; }.thanh-dau .logo { width:40px; height:40px; }.header-account { gap:6px; }.header-account>.nhan { display:none; }.ten-he-thong strong { font-size:14px; }.ten-he-thong small { font-size:11px; }.muc-ben { padding:10px 14px; }.muc-ben:not(.muc-ben--icon) .ui-icon { display:none; }.muc-ben--icon { width:44px; padding:10px; }
   .khung,.khung-quan-tri,.goethe-builder { padding:24px 0 32px; }.tieu-de-trang { align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:24px; }.tieu-de-trang>div:first-child { flex-basis:100%; }.tieu-de-trang h1 { font-size:30px; }.tieu-de-trang>.nhom-nut { width:100%; }.tieu-de-trang>.nhom-nut .nut { flex:1; }
   .table-wrap { border-radius:18px; }.bang th,.bang td { padding:14px 16px; }.the,.thong-ke,.goethe-outline,.goethe-editor,.ds-cham,.phieu-cham { padding:18px; border-radius:20px; }.thong-ke b { font-size:30px; }.danh-sach-de { grid-template-columns:1fr; }.the-de { min-height:240px; }.tong-quan-hv { grid-template-columns:1fr 1fr; }.tong-quan-hv .o b { font-size:24px; }.bo-loc { display:grid; grid-template-columns:1fr; }.truong,.truong.tim { min-width:0; width:100%; }
   .goethe-outline { grid-template-columns:1fr; gap:24px; }.goethe-skill { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); column-gap:8px; }.goethe-skill>div { grid-column:1/-1; }.goethe-part { display:grid; gap:2px; justify-content:start; border-radius:14px; padding:10px 12px; margin:0; }.goethe-part small { font-size:11px; }

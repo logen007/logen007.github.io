@@ -701,8 +701,8 @@ function queueBuilderAutosave(delay=450){
 function bindGlobal(){
   app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{await repo.signOut();user=null;authenticatedUser=null;ui.view='login';render();});
   app.querySelectorAll('[data-action="toggle-role-menu"]').forEach(button=>button.onclick=event=>{
-    event.stopPropagation();const menu=button.closest('.account-switch')?.querySelector('[data-role-menu]');if(!menu)return;
-    menu.hidden=!menu.hidden;button.setAttribute('aria-expanded',String(!menu.hidden));
+    event.stopPropagation();const account=button.closest('.header-account'),menu=account?.querySelector('[data-role-menu]');if(!menu)return;
+    menu.hidden=!menu.hidden;account.querySelectorAll('[data-action="toggle-role-menu"]').forEach(trigger=>trigger.setAttribute('aria-expanded',String(!menu.hidden)));
   });
   app.querySelectorAll('[data-action="test-role"]').forEach(button=>button.onclick=async()=>{
     if(!authenticatedUser?.canTestRoles&&!isMaster(authenticatedUser))return;

@@ -50,13 +50,15 @@ try{
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
     assert.match(source,/\[data-action="admin-tab"\][^\n]+await flushBuilderDraft\(\)[^\n]+clearBuilderEditUrl\(\)/);
   });
-  await test('Users navigation label and icon stay consistent before and after selecting the tab',()=>{
+  await test('Admin utility tabs show accessible icons without visible labels',()=>{
     for(const adminTab of ['exams','teachers','grading']){
       const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin',adminTab}});
       const button=html.match(/<button[^>]*data-tab="teachers"[^>]*>[\s\S]*?<\/button>/)?.[0]||'';
-      assert.match(button,/<span>Người dùng<\/span>/);
+      assert.match(button,/aria-label="Người dùng"/);
       assert.match(button,/<svg/);
+      assert.doesNotMatch(button,/<span>Người dùng<\/span>/);
       assert.doesNotMatch(button,/Giáo viên/);
+      for(const utility of ['teachers','trash'])assert.match(html.match(new RegExp(`<button[^>]*data-tab="${utility}"[^>]*>`))?.[0]||'',/muc-ben--icon/);
     }
     assert.doesNotMatch(readFileSync(new URL('../src/users/bootstrap.js',import.meta.url),'utf8'),/tabLabel/);
   });
@@ -64,11 +66,13 @@ try{
     const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin'},canSwitchRole:true});
     assert.match(html,/<span class="nhan" hidden>Quản trị cấp cao<\/span>/);
     assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.header-account>\.nhan\[hidden\]\s*\{\s*display:none;/);
-    assert.equal(actionButtons(html,'toggle-role-menu').length,1);
+    assert.equal(actionButtons(html,'toggle-role-menu').length,2);
     assert.equal(actionButtons(html,'test-role').length,3);
-    assert.match(html,/data-role="student">Học sinh/);
-    assert.match(html,/data-role="teacher">Giáo viên/);
-    assert.match(html,/data-role="master">Admin/);
+    assert.match(html,/data-active-role="master"/);
+    assert.match(html,/data-role="student"[^>]*>Học viên/);
+    assert.match(html,/data-role="teacher"[^>]*>Giáo viên/);
+    assert.match(html,/data-role="master"[^>]*>Admin/);
+    for(const role of ['student','teacher'])assert.match(topbarHtml({user:{id:'master',role,name:'Admin',canTestRoles:true},mode:'api',online:true,canSwitchRole:true}),new RegExp(`data-active-role="${role}"`));
   });
   await test('Preview has its own header actions and no real attempt timer or submission controls',()=>{
     for(const sectionIndex of [0,1,2]){

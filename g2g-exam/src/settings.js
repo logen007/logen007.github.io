@@ -72,9 +72,11 @@ function injectSettingsButton(){
   let button=side.querySelector('[data-action="g2g-settings"]');
   if(!button){
     button=document.createElement('button');
-    button.className='muc-ben';
+    button.className='muc-ben muc-ben--icon';
     button.dataset.action='g2g-settings';
-    button.innerHTML=`${iconHtml('settings')}<span>Cài đặt</span>`;
+    button.title='Cài đặt';
+    button.setAttribute('aria-label','Cài đặt');
+    button.innerHTML=iconHtml('settings');
     side.appendChild(button);
   }
   if(open){
