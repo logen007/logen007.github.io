@@ -269,10 +269,10 @@ export function publishExam(state,user,examId){
 export function summarizeExam(exam,state){
   let questions=0,manual=0,max=0;
   for(const section of exam?.sections||[]){
-    questions+=section.questionIds?.length||0;
     for(const id of section.questionIds||[]){
       const question=byId(state.questions,id);
-      if(question){
+      if(question&&!question.example){
+        questions++;
         max+=Number(question.maxScore||0);
         if(!question.autoGrade)manual++;
       }

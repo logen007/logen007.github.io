@@ -5,7 +5,7 @@ import {
 import {isAutomaticWritingForm,scoreWritingForm} from './writing-form.js';
 
 function questionScore(question,answer){
-  if(!question?.autoGrade)return 0;
+  if(!question?.autoGrade||question.example)return 0;
   if(['single','truefalse','cloze'].includes(question.type)){
     return Number(answer)===Number(question.correctAnswer)?Number(question.maxScore||0):0;
   }
@@ -115,6 +115,7 @@ export function calculateAutomaticScores(state,attempt){
     let sectionScore=0;
     for(const questionId of section.questionIds||[]){
       const question=byId(state.questions,questionId);
+      if(question?.example)continue;
       if(isAutomaticWritingForm(exam,section,question))sectionScore+=scoreWritingForm(question.rubric,attempt.answers?.[questionId]);
       else if(question?.autoGrade)sectionScore+=questionScore(question,attempt.answers?.[questionId]);
     }
@@ -125,7 +126,7 @@ export function calculateAutomaticScores(state,attempt){
 }
 
 export function hasManualQuestions(state,exam){
-  return (exam.sections||[]).some(section=>(section.questionIds||[]).some(questionId=>{const question=byId(state.questions,questionId);return question&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question);}));
+  return (exam.sections||[]).some(section=>(section.questionIds||[]).some(questionId=>{const question=byId(state.questions,questionId);return question&&!question.example&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question);}));
 }
 
 export function submitAttempt(state,user,attemptId){
@@ -153,7 +154,7 @@ function manualLimits(state,exam){
   const limits={};
   for(const section of exam.sections||[])for(const id of section.questionIds||[]){
     const question=byId(state.questions,id);
-    if(question&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question))limits[question.skill]=(limits[question.skill]||0)+Number(question.maxScore||0);
+    if(question&&!question.example&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question))limits[question.skill]=(limits[question.skill]||0)+Number(question.maxScore||0);
   }
   return limits;
 }

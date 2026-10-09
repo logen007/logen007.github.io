@@ -121,6 +121,21 @@ try{
     const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
     assert.match(css,/@media\(max-width:680px\)[\s\S]*?\.exam-paper \.answer-options--mobile-three\s*\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   });
+  await test('Example questions show the correct answer without numbering, progress or score controls',()=>{
+    const sample=fixture();
+    sample.questions[0]={...sample.questions[0],example:true,correctAnswer:1,maxScore:4};
+    sample.attempt.answers={};
+    sample.allQuestions=sample.questions;
+    sample.previewSummary={answered:0,total:2,sections:[{name:'First part',answered:0,total:2}]};
+    const html=examHtml(sample);
+    assert.match(html,/class="cau-thi is-example is-answered"/);
+    assert.match(html,/<div class="question-example-title">Beispiel<\/div>/);
+    assert.match(html,/value="1" checked disabled/);
+    assert.doesNotMatch(html,/class="question-number"[^>]*>1<\/span>[\s\S]*?Beispiel/);
+    assert.match(html,/class="question-number"[^>]*>1\.<\/strong> Match the items/);
+    const live=examHtml({...sample,preview:false,previewSummary:null});
+    assert.match(live,/0\/2/);
+  });
   await test('Starting a retake refreshes state and advancing returns to page top',()=>{
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
     assert.match(source,/async function beginAttempt\(examId,restart\)\{\s*if\(repo\.mode==='api'&&!await act\(\(\)=>repo\.reload\(\)/);
@@ -166,9 +181,12 @@ try{
     assert.equal(actionButtons(html,'toggle-role-menu').length,2);
     assert.equal(actionButtons(html,'test-role').length,3);
     assert.match(html,/data-active-role="master"/);
-    assert.match(html,/data-role="student"[^>]*>Học viên/);
-    assert.match(html,/data-role="teacher"[^>]*>Giáo viên/);
-    assert.match(html,/data-role="master"[^>]*>Admin/);
+    assert.match(html,/data-role="student"[^>]*aria-label="Học viên"[^>]*>S<\/button>/);
+    assert.match(html,/data-role="teacher"[^>]*aria-label="Giáo viên"[^>]*>T<\/button>/);
+    assert.match(html,/data-role="master"[^>]*aria-label="Admin"[^>]*>A<\/button>/);
+    assert.match(html,/data-active-role="master"[^>]*>[\s\S]*?<span>A<\/span>/);
+    const withPicture=topbarHtml({user:{id:'master',role:'master',name:'Admin',picture:'https://lh3.googleusercontent.com/avatar.jpg'},mode:'api',online:true,canSwitchRole:true});
+    assert.match(withPicture,/<img src="https:\/\/lh3\.googleusercontent\.com\/avatar\.jpg" alt="" referrerpolicy="no-referrer">/);
     for(const role of ['student','teacher']){
       const roleHtml=topbarHtml({user:{id:'master',role,name:'Admin',canTestRoles:true},mode:'api',online:true,canSwitchRole:true});
       assert.match(roleHtml,new RegExp(`data-active-role="${role}"`));

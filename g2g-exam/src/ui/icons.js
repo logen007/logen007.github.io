@@ -14,6 +14,7 @@ const paths={
   upload:'<path d="M12 16V4M7 9l5-5 5 5M4 16v4h16v-4"/>',
   play:'<path d="m8 5 11 7-11 7Z"/>',
   image:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1"/><path d="m3 17 5-5 4 4 4-6 5 7"/>',
+  example:'<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>',
 };
 
 export function iconHtml(name){

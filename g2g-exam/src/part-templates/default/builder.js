@@ -11,7 +11,8 @@ const icons={
   upload:iconHtml('upload'),
   play:iconHtml('play'),
   addImage:'<img src="src/assets/figma-icon-add-image.svg" alt="">',
-  imageUpload:iconHtml('image')
+  imageUpload:iconHtml('image'),
+  example:iconHtml('example')
 };
 const blank=value=>value==='Nháp'?'':value;
 const textOf=choice=>typeof choice==='object'?choice.text:choice;
@@ -58,7 +59,7 @@ function questionImageHtml(q,readOnly,showQuestionImage){
 
 function scoreControls(q,defaultScore,readOnly,{mixed=false}={}){
   const removeAction=mixed?'hide-mixed-choice':'remove-inline-question',addAction=mixed?'restore-mixed-choice':'add-inline-question';
-  return `<div class="goethe-score"><label><input data-field="maxScore" type="number" min="0" value="${Number(q.maxScore??defaultScore)}" ${readOnly?'disabled':''}><span>điểm</span></label><div class="goethe-question-actions"><button type="button" class="icon-btn" data-action="${removeAction}" data-id="${q.id}" title="Ẩn câu" aria-label="Ẩn câu" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="${addAction}" ${mixed?'data-id':'data-after'}="${q.id}" title="Hiện câu" aria-label="Hiện câu" ${readOnly?'disabled':''}>${icons.add}</button></div></div>`;
+  return `<div class="goethe-score"><label class="${q.example?'is-disabled':''}"><input data-field="maxScore" type="number" min="0" value="${Number(q.maxScore??defaultScore)}" ${readOnly||q.example?'disabled':''}><span>điểm</span></label><div class="goethe-question-actions"><button type="button" class="icon-btn question-example-toggle ${q.example?'active':''}" data-action="toggle-question-example" data-id="${q.id}" title="${q.example?'Chuyển thành câu tính điểm':'Đặt làm câu ví dụ'}" aria-label="${q.example?'Chuyển thành câu tính điểm':'Đặt làm câu ví dụ'}" aria-pressed="${Boolean(q.example)}" ${readOnly?'disabled':''}>${icons.example}</button><button type="button" class="icon-btn" data-action="${removeAction}" data-id="${q.id}" title="Ẩn câu" aria-label="Ẩn câu" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="${addAction}" ${mixed?'data-id':'data-after'}="${q.id}" title="Hiện câu" aria-label="Hiện câu" ${readOnly?'disabled':''}>${icons.add}</button></div></div>`;
 }
 
 function choicesHtml(q,choiceProfile,readOnly){
@@ -72,7 +73,7 @@ function choicesHtml(q,choiceProfile,readOnly){
 function choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile}){
   const stimulus=choiceProfile.instructionImage&&choiceProfile.stimulusStarts.includes(index)?fixedStimulusHtml(q,readOnly):'';
   const media=choiceProfile.questionImage?questionImageHtml(q,readOnly,true):audioHtml(q,readOnly,choiceProfile.showAudio);
-  return `<article class="goethe-question part-question" data-editor-mode="choices" data-question-id="${q.id}">${stimulus}<div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi ${index+1}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly)}${media}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</article>`;
+  return `<article class="goethe-question ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="choices" data-question-id="${q.id}">${stimulus}<div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi ${index+1}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly)}${media}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</article>`;
 }
 
 function fixedStimulusHtml(q,readOnly){
@@ -92,13 +93,13 @@ function formRowsHtml(q,{readOnly,choiceProfile,start=0,end}){
       :`<input data-rubric-answer placeholder="${type==='heading'?'Tiêu đề trong khung':type==='static'?'Nội dung cố định':type==='choice'?'Các phương án, cách nhau bằng dấu |':'Nội dung / đáp án'}" value="${esc(row.answers||'')}" ${readOnly?'disabled':''}>`;
     const scored=isScoredWritingField({...row,type,hidden});
     const typeLabels={heading:'Tiêu đề form',static:'Nội dung cố định',text:'Ô nhập text',truefalse:'Đúng / sai',choice:'Chọn phương án',image:'Thêm hình'};
-    return `<div class="writing-form-row ${hidden?'is-hidden':''}" data-rubric-index="${index}" data-rubric-hidden="${hidden}"><select data-rubric-type aria-label="Loại trường" ${readOnly?'disabled':''}>${WRITING_FORM_TYPES.map(value=>`<option value="${value}" ${type===value?'selected':''}>${typeLabels[value]}</option>`).join('')}</select><input data-rubric-label placeholder="Nhãn trường" value="${esc(row.label||'')}" ${readOnly?'disabled':''}>${answerControl}<label class="${scored?'':'is-disabled'}"><input data-rubric-score type="number" min="0" step="0.01" value="${scored?score:0}" ${readOnly||!scored?'disabled':''}><span>điểm</span></label><button type="button" class="icon-btn" data-action="remove-rubric-row" data-id="${q.id}" data-index="${index}" title="Xóa trường" aria-label="Xóa trường" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-rubric-row" data-id="${q.id}" data-index="${index}" title="Thêm trường cùng loại vào cuối" aria-label="Thêm trường cùng loại vào cuối" ${readOnly?'disabled':''}>${icons.add}</button></div>`;
+    return `<div class="writing-form-row ${hidden?'is-hidden':''}" data-rubric-index="${index}" data-rubric-hidden="${hidden}"><select data-rubric-type aria-label="Loại trường" ${readOnly?'disabled':''}>${WRITING_FORM_TYPES.map(value=>`<option value="${value}" ${type===value?'selected':''}>${typeLabels[value]}</option>`).join('')}</select><input data-rubric-label placeholder="Nhãn trường" value="${esc(row.label||'')}" ${readOnly?'disabled':''}>${answerControl}<label class="${scored&&!q.example?'':'is-disabled'}"><input data-rubric-score type="number" min="0" step="0.01" value="${scored?score:0}" ${readOnly||!scored||q.example?'disabled':''}><span>điểm</span></label><button type="button" class="icon-btn" data-action="remove-rubric-row" data-id="${q.id}" data-index="${index}" title="Xóa trường" aria-label="Xóa trường" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-rubric-row" data-id="${q.id}" data-index="${index}" title="Thêm trường cùng loại vào cuối" aria-label="Thêm trường cùng loại vào cuối" ${readOnly?'disabled':''}>${icons.add}</button></div>`;
   }).join('');
 }
 
 function writingFormHtml(q,{readOnly,choiceProfile}){
   const rows=formRowsHtml(q,{readOnly,choiceProfile});
-  return `<article class="writing-form ${choiceProfile.formFrame?'writing-form--framed':''} part-question" data-editor-mode="form-fields" data-question-id="${q.id}">${rows}</article>`;
+  return `<article class="writing-form ${choiceProfile.formFrame?'writing-form--framed ':''}${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="form-fields" data-question-id="${q.id}">${rows}</article>`;
 }
 
 function mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile}){
@@ -108,11 +109,11 @@ function mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile}){
   const last=formRowsHtml(q,{readOnly,choiceProfile,start:Math.max(0,count-1),end:count});
   const middle=`<div class="goethe-question mixed-writing-question ${q.mixedChoiceHidden?'is-hidden':''}" data-mixed-choice-hidden="${Boolean(q.mixedChoiceHidden)}"><div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi 1" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly,{mixed:true})}${audioHtml(q,readOnly,choiceProfile.showAudio)}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</div>`;
   const blocks=instructionBlocksFor(q);
-  return `<article class="writing-form writing-form--mixed ${choiceProfile.formFrame?'writing-form--framed':''} part-question" data-editor-mode="mixed-form" data-question-id="${q.id}">${before}${middle}${last}${blocks.length?`<div class="mixed-writing-instructions">${blocks.map((block,index)=>questionInstructionHtml(q,block,index,readOnly)).join('')}</div>`:''}</article>`;
+  return `<article class="writing-form writing-form--mixed ${choiceProfile.formFrame?'writing-form--framed ':''}${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="mixed-form" data-question-id="${q.id}">${before}${middle}${last}${blocks.length?`<div class="mixed-writing-instructions">${blocks.map((block,index)=>questionInstructionHtml(q,block,index,readOnly)).join('')}</div>`:''}</article>`;
 }
 
 function freeResponseHtml(q,{defaultScore,readOnly}){
-  return `<article class="goethe-free-response part-question" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Câu trả lời textarea" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea>${scoreControls(q,defaultScore,readOnly)}</article>`;
+  return `<article class="goethe-free-response ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Câu trả lời textarea" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea>${scoreControls(q,defaultScore,readOnly)}</article>`;
 }
 
 function instructionHtml(section,choiceProfile,readOnly,question){
@@ -199,7 +200,7 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     const draftScores=new Map([...root.querySelectorAll('.part-question[data-question-id]')].map(card=>{
       const formScores=[...card.querySelectorAll('[data-rubric-index]:not(.is-hidden) [data-rubric-score]')];
       const rows=[...card.querySelectorAll('[data-rubric-index]:not(.is-hidden)')].map(row=>({type:row.querySelector('[data-rubric-type]')?.value||'text',maxScore:Number(row.querySelector('[data-rubric-score]')?.value)||0}));
-      const score=normalizedScore(formScores.length
+      const score=card.dataset.example==='true'?0:normalizedScore(formScores.length
         ?writingFormScore(rows)+(card.dataset.editorMode==='mixed-form'&&card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden!=='true'?Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0):0)
         :Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0));
       const display=card.querySelector('[data-writing-total]');if(display)display.textContent=`${writingFormScore(rows)} điểm`;

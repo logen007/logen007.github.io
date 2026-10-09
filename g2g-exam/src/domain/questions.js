@@ -9,6 +9,7 @@ function choiceText(choice){
 }
 
 export function getQuestionMaxScore(question,defaultScore=0){
+  if(question?.example)return 0;
   if(question?.writingFormVersion===1)return writingFormScore(question.rubric);
   const score=Number(question?.maxScore);
   return Number.isFinite(score)&&score>=0?score:Math.max(0,Number(defaultScore)||0);
@@ -50,6 +51,7 @@ export function createQuestion(state,user,input={}){
     choices:clone(input.choices||[]),correctAnswer:input.correctAnswer??null,pairs:clone(input.pairs||[]),
     maxScore:Number(input.maxScore??1),autoGrade:input.autoGrade??!['writing','speaking'].includes(type),
     rubric:clone(input.rubric||[]),writingFormVersion:input.writingFormVersion||null,audioUrl:input.audioUrl||'',audioName:input.audioName||'',instructionImageUrl:input.instructionImageUrl||'',instructionBlocks:clone(input.instructionBlocks||[]),ownerId:user.id,ownerName:user.name,
+    example:Boolean(input.example),
     groupId:input.groupId||null,groupType:input.groupType||null,groupOrder:Number(input.groupOrder||0)||null,
     groupInstruction:input.groupInstruction||'',groupAudioPolicy:clone(input.groupAudioPolicy||null),
     status:'active',locked:false,usedCount:0,correctRate:null,createdAt:nowIso(),updatedAt:nowIso(),
@@ -65,7 +67,7 @@ export function updateQuestion(state,user,id,patch){
   if(!question)throw new Error('Không tìm thấy câu hỏi.');
   if(!canEditQuestion(user,question))throw new Error(question.locked?'Câu hỏi đã được dùng trong đề đã xuất bản nên không thể chỉnh sửa. Hãy tạo câu hỏi mới.':'Bạn không có quyền sửa câu hỏi này.');
   validateQuestionInput(patch,question,{allowIncompleteChoices:true});
-  const allowed=['code','level','skill','part','type','title','instruction','prompt','choices','correctAnswer','pairs','maxScore','autoGrade','rubric','audioUrl','audioName','instructionImageUrl','instructionBlocks','mixedChoiceHidden','groupId','groupType','groupOrder','groupInstruction','groupAudioPolicy'];
+  const allowed=['code','level','skill','part','type','title','instruction','prompt','choices','correctAnswer','pairs','maxScore','autoGrade','rubric','audioUrl','audioName','instructionImageUrl','instructionBlocks','mixedChoiceHidden','example','groupId','groupType','groupOrder','groupInstruction','groupAudioPolicy'];
   for(const key of allowed)if(key in patch)question[key]=clone(patch[key]);
   if(patch.writingFormVersion===1)question.writingFormVersion=1;
   if(question.writingFormVersion===1){question.rubric=normalizeWritingRows(question.rubric);question.maxScore=writingFormScore(question.rubric);}

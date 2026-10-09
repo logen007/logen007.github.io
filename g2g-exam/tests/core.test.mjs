@@ -20,6 +20,15 @@ test('Điểm câu hỏi dùng giá trị mặc định khi dữ liệu cũ chư
   assert.equal(getQuestionMaxScore({},1),1);
 });
 
+test('Câu ví dụ không tính điểm và được lưu như một thuộc tính câu hỏi',()=>{
+  const s=fresh(),u=users(s);
+  const q=createQuestion(s,u.lan,{title:'Câu mẫu',type:'single',choices:['A','B'],correctAnswer:0,maxScore:5,example:true});
+  assert.equal(q.example,true);
+  assert.equal(getQuestionMaxScore(q,1),0);
+  updateQuestion(s,u.lan,q.id,{example:false});
+  assert.equal(getQuestionMaxScore(q,1),5);
+});
+
 test('Chủ câu hỏi và master được sửa; giáo viên khác không được sửa',()=>{
   const s=fresh(),u=users(s),q=byId(s.questions,'q-read-1');
   assert.equal(canEditQuestion(u.lan,q),true);assert.equal(canEditQuestion(u.master,q),true);assert.equal(canEditQuestion(u.mai,q),false);

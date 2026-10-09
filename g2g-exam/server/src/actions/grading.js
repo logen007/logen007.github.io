@@ -16,7 +16,7 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
     const questions=await questionMap(exam),limits={};
     for(const section of exam.sections||[])for(const id of section.questionIds||[]){
       const question=questions.get(id);
-      if(question&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question))limits[question.skill]=(limits[question.skill]||0)+Number(question.maxScore||0);
+      if(question&&!question.example&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question))limits[question.skill]=(limits[question.skill]||0)+Number(question.maxScore||0);
     }
     const previous=attempt.private_data||{},clean={...(previous.manualScores||{})};
     const sectionScores={...(previous.sectionScores||{})};
@@ -24,6 +24,7 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
     if(!previous.scoringVersion){
       for(const section of exam.sections||[])for(const id of section.questionIds||[]){
         const question=questions.get(id);
+        if(question?.example)continue;
         if(!isAutomaticWritingForm(exam,section,question))continue;
         const score=scoreWritingForm(question.rubric,attempt.public_data.answers?.[id]);
         sectionScores[section.name]=Number((Number(sectionScores[section.name]||0)+score).toFixed(2));

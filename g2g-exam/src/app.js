@@ -177,7 +177,7 @@ function examView(){
   const sectionIndex=Math.min(attempt.currentSectionIndex||0,Math.max(0,exam.sections.length-1));
   const section=exam.sections[sectionIndex];
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
-  app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,online:ui.online});
+  app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,allQuestions:data.questions,online:ui.online});
   const examBrandIcon=app.querySelector('.exam-mobile-brand img');if(examBrandIcon)examBrandIcon.onerror=()=>examBrandIcon.remove();
   bindExamInputs(attempt,questions);
   bindSectionAudio(attempt,{preview:false});
@@ -193,14 +193,14 @@ function previewExamView(){
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
   const attempt={id:`preview-${exam.id}`,answers:ui.previewAnswers};
   const previewSummary=previewSummaryFor(exam);
-  app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,online:ui.online,preview:true,previewSummary});
+  app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,allQuestions:data.questions,online:ui.online,preview:true,previewSummary});
   bindPreviewInputs(attempt,questions);
   bindSectionAudio(attempt,{preview:true});
 }
 
 function previewSummaryFor(exam){
   const sections=(exam.sections||[]).map(item=>{
-    const items=(item.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
+    const items=(item.questionIds||[]).map(id=>byId(data.questions,id)).filter(question=>question&&!question.example);
     return {name:item.name,total:items.length,answered:items.filter(question=>answerPresent(ui.previewAnswers[question.id],question)).length};
   });
   return {sections,total:sections.reduce((sum,item)=>sum+item.total,0),answered:sections.reduce((sum,item)=>sum+item.answered,0)};
@@ -235,8 +235,8 @@ function refreshPreviewProgress(){
 function bindExamInputs(attempt,questions){
   const setLocalAnswer=(qid,value)=>{
     attempt.answers={...(attempt.answers||{}),[qid]:value};
-    const answered=questions.filter(question=>answerPresent(attempt.answers[question.id],question)).length;
-    app.querySelectorAll('[data-current-answer-count]').forEach(item=>{item.textContent=`${answered}/${questions.length}`;});
+    const required=questions.filter(question=>!question.example),answered=required.filter(question=>answerPresent(attempt.answers[question.id],question)).length;
+    app.querySelectorAll('[data-current-answer-count]').forEach(item=>{item.textContent=`${answered}/${required.length}`;});
     const question=questions.find(item=>item.id===qid),card=app.querySelector(`.cau-thi[data-q="${qid}"]`);
     if(card&&question)card.classList.toggle('is-answered',answerPresent(value,question));
   };
@@ -651,6 +651,7 @@ async function persistBuilderDraft({silent=false}={}){
         updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl});
         app.querySelectorAll('.part-question[data-question-id]').forEach(card=>{
           const id=card.dataset.questionId;
+          const example=card.dataset.example==='true';
           const mode=card.dataset.editorMode||'choices';
           let rubric;
           if(mode==='form-fields'||mode==='mixed-form'){
@@ -668,7 +669,7 @@ async function persistBuilderDraft({silent=false}={}){
             };});
             if(mode==='form-fields'){
               const maxScore=writingFormScore(rubric);
-              updateQuestion(st,user,id,{rubric,maxScore,...(card.dataset.structuredForm==='true'?{writingFormVersion:1}: {})});
+              updateQuestion(st,user,id,{rubric,maxScore,example,...(card.dataset.structuredForm==='true'?{writingFormVersion:1}: {})});
               return;
             }
           }
@@ -695,7 +696,7 @@ async function persistBuilderDraft({silent=false}={}){
           const mixedChoiceHidden=card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden==='true';
           const choiceScore=mixedChoiceHidden?0:Math.max(0,Number(scoreField?.value)||0);
           const maxScore=mode==='mixed-form'?writingFormScore(rubric)+choiceScore:choiceScore;
-          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:firstInstruction.text,choices,correctAnswer:Number(correct?.value??0),maxScore,audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl,instructionBlocks,mixedChoiceHidden});
+          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:firstInstruction.text,choices,correctAnswer:Number(correct?.value??0),maxScore,example,audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl,instructionBlocks,mixedChoiceHidden});
         });
       }
     });
@@ -847,7 +848,7 @@ async function moveAttemptSection(delta){
   if(attempt.status!==ATTEMPT_STATUS.IN_PROGRESS){ui.view='student-home';render();notify('Lượt thi trước đã kết thúc. Hãy chọn Thi lại để bắt đầu lượt mới.');return;}
   if(delta>0){
     const answers=readExamAnswers(app),section=exam.sections[attempt.currentSectionIndex||0];
-    const missing=(section.questionIds||[]).map(id=>byId(data.questions,id)).find(q=>q&&q.type!=='speaking'&&!answerPresent(answers[q.id],q));
+    const missing=(section.questionIds||[]).map(id=>byId(data.questions,id)).find(q=>q&&!q.example&&q.type!=='speaking'&&!answerPresent(answers[q.id],q));
     if(missing){revealUnansweredQuestion(app,missing.id);return;}
   }
   if(!await flushTextAnswers())return;
@@ -942,6 +943,12 @@ function bindBuilder(){
     }
   }),'Đã thêm câu hỏi.'));
   app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.'));
+  app.querySelectorAll('[data-action="toggle-question-example"]').forEach(button=>button.onclick=async()=>{
+    const card=button.closest('.part-question');if(!card)return;
+    card.dataset.example=card.dataset.example==='true'?'false':'true';
+    card.classList.toggle('is-example',card.dataset.example==='true');
+    if(await saveBuilderDraft({silent:true})){data=await repo.getState();render();}
+  });
   app.querySelectorAll('[data-action="hide-mixed-choice"]').forEach(b=>b.onclick=async()=>{
     if(!await saveBuilderDraft({silent:true}))return;
     await act(()=>repo.transaction(st=>updateQuestion(st,user,b.dataset.id,{mixedChoiceHidden:true})),'Đã ẩn câu hỏi.');

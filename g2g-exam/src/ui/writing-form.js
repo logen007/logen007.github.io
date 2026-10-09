@@ -23,11 +23,11 @@ export function writingFormEditor(q,{readOnly=false}={}){
         else content+=`<div class="writing-option-setup">${writingOptions(row).map((option,i)=>`<label><input type="radio" data-rubric-correct name="form-correct-${esc(q.id)}-${index}" value="${i}" ${row.correctIndex!=null&&Number(row.correctIndex)===i?'checked':''} ${disabled}><input data-rubric-option aria-label="Phương án ${i+1}" value="${esc(option)}" ${disabled}></label>`).join('')}${type==='choice'?`<button type="button" class="text-link" data-action="add-form-option" data-id="${esc(q.id)}" data-index="${index}" ${disabled}>+ Phương án</button>`:''}</div>`;
       }else content+=field(type==='signature'?'Tên ký mẫu':'Nội dung có sẵn','data-rubric-value',row.value??row.answers,disabled,false,type==='signature');
     }
-    const actions=`<div class="writing-block-actions">${scored?`<label class="writing-score"><input data-rubric-score type="number" min="0" step="0.01" aria-label="Điểm của trường" value="${row.maxScore??1}" ${disabled}> điểm</label>`:''}<button class="icon-btn" type="button" data-action="remove-rubric-row" data-id="${esc(q.id)}" data-index="${index}" aria-label="Xóa khối này" ${disabled}>${iconHtml('close')}</button><button class="icon-btn" type="button" data-action="add-rubric-row" data-id="${esc(q.id)}" data-index="${index}" aria-label="${esc(addLabels[type]||'Thêm khối cùng loại')} ở cuối" ${disabled}>${iconHtml('plus')}</button></div>`;
+    const actions=`<div class="writing-block-actions">${scored?`<label class="writing-score ${q.example?'is-disabled':''}"><input data-rubric-score type="number" min="0" step="0.01" aria-label="Điểm của trường" value="${row.maxScore??1}" ${readOnly||q.example?'disabled':''}> điểm</label>`:''}<button class="icon-btn" type="button" data-action="remove-rubric-row" data-id="${esc(q.id)}" data-index="${index}" aria-label="Xóa khối này" ${disabled}>${iconHtml('close')}</button><button class="icon-btn" type="button" data-action="add-rubric-row" data-id="${esc(q.id)}" data-index="${index}" aria-label="${esc(addLabels[type]||'Thêm khối cùng loại')} ở cuối" ${disabled}>${iconHtml('plus')}</button></div>`;
     const inline=['text','note','truefalse'].includes(type);
     return `<section class="writing-setup-block writing-setup-block--${esc(type)} ${row.hidden?'is-hidden':''}" data-rubric-index="${index}" data-rubric-hidden="${Boolean(row.hidden)}"><input type="hidden" data-rubric-type value="${esc(type)}">${inline?'':`<header><strong>${labels[type]||labels.text}${row.hidden?' · Đang ẩn':''}</strong>${actions}</header>`}<div class="writing-block-content writing-block-content--${esc(type)}">${content}${inline?actions:''}</div></section>`;
   }).join('');
-  return `<article class="writing-form part-question" data-editor-mode="form-fields" data-structured-form="true" data-question-id="${esc(q.id)}"><div class="writing-form-intro"><strong>Khung biểu mẫu</strong><span data-writing-total>${writingFormScore(q.rubric)} điểm</span></div>${blocks}<div class="writing-add-blocks" aria-label="Thêm thành phần vào cuối biểu mẫu">${WRITING_FORM_TYPES.map(type=>`<button type="button" class="nut nho" data-action="add-rubric-row" data-id="${esc(q.id)}" data-type="${type}" ${disabled}>${addLabels[type]}</button>`).join('')}</div></article>`;
+  return `<article class="writing-form ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="form-fields" data-structured-form="true" data-question-id="${esc(q.id)}"><div class="writing-form-intro"><strong>Khung biểu mẫu</strong><span data-writing-total>${q.example?'0':writingFormScore(q.rubric)} điểm</span><button type="button" class="icon-btn question-example-toggle ${q.example?'active':''}" data-action="toggle-question-example" data-id="${esc(q.id)}" aria-label="${q.example?'Chuyển thành câu tính điểm':'Đặt làm câu ví dụ'}" title="${q.example?'Chuyển thành câu tính điểm':'Đặt làm câu ví dụ'}" aria-pressed="${Boolean(q.example)}" ${disabled}>${iconHtml('example')}</button></div>${blocks}<div class="writing-add-blocks" aria-label="Thêm thành phần vào cuối biểu mẫu">${WRITING_FORM_TYPES.map(type=>`<button type="button" class="nut nho" data-action="add-rubric-row" data-id="${esc(q.id)}" data-type="${type}" ${disabled}>${addLabels[type]}</button>`).join('')}</div></article>`;
 }
 
 export function readWritingRow(element,previous={}){
@@ -44,13 +44,13 @@ export function writingSubmission(q,answer={}){
   }).join('')}</dl>`;
 }
 
-export function writingFormDisplay(q,answer={}){
+export function writingFormDisplay(q,answer={}, {readOnly=false}={}){
   q={...q,rubric:normalizeWritingRows(q.rubric)};
   const groups=[],{markers}=writingPointLayout(q.rubric);
   for(const [index,row] of (q.rubric||[]).entries()){
     if(row.hidden)continue;
     const type=row.type||'text',marker=markers[index];
-    const val=answer?.[index]??'',hook=`class="answer-form-field" data-q="${esc(q.id)}" data-field-index="${index}" aria-label="${esc(row.label||labels[type])}"`;
+    const val=answer?.[index]??'',hook=`class="${readOnly?'':'answer-form-field'}" data-q="${esc(q.id)}" data-field-index="${index}" aria-label="${esc(row.label||labels[type])}" ${readOnly?'disabled':''}`;
     let html;
     if(type==='heading')html=`<h3>${esc(row.value??row.answers??'')}</h3>`;
     else if(type==='note')html=`<p>${esc(row.value??row.answers??'')}</p>`;
