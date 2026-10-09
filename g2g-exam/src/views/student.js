@@ -69,7 +69,11 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const stimulusStarts=new Set((sec.questionProfile?.stimulusStarts||[]).map(Number));
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
   let questionNumber=exam.sections.slice(0,sectionIndex).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!knownQuestions.get(id)?.example).length,0);
-  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${orderedQuestions.map(({q,originalIndex})=>renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(originalIndex),questionNumber:q.example?null:++questionNumber,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'})).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
+  let exampleTitleShown=false;
+  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${orderedQuestions.map(({q,originalIndex})=>{
+    const showExampleTitle=Boolean(q.example&&!exampleTitleShown);if(showExampleTitle)exampleTitleShown=true;
+    return renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus:stimulusStarts.has(originalIndex),questionNumber:q.example?null:++questionNumber,showExampleTitle,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
+  }).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(sec.name)}</h1></div></div>`
     :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(sec.name)}</h1></div></div>`;
@@ -136,8 +140,8 @@ function exampleAnswer(q){
   return '';
 }
 
-export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null,formFrame=false,mobileThreeChoices=false}={}){
-  const isExample=Boolean(q.example),exampleTitle=isExample?'<div class="question-example-title">Beispiel</div>':'';
+export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null,showExampleTitle=true,formFrame=false,mobileThreeChoices=false}={}){
+  const isExample=Boolean(q.example),exampleTitle=isExample&&showExampleTitle?'<div class="question-example-title">Beispiel</div>':'';
   if(isExample)answer=exampleAnswer(q);
   if(q.type==='writing'&&(formFrame||q.writingFormVersion===1))return `<div class="cau-thi writing-form-question ${isExample?'is-example':''}" data-q="${esc(q.id)}">${exampleTitle}${writingFormDisplay(q,answer,{readOnly:isExample})}</div>`;
   const played=sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`);

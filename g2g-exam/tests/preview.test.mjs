@@ -151,6 +151,17 @@ try{
     assert.match(html,/1 câu · 10 phút/);
     assert.doesNotMatch(html,/2 câu/);
   });
+
+  await test('Adjacent example questions show the Beispiel heading only once',()=>{
+    const input=fixture();
+    input.questions[0]={...input.questions[0],example:true,correctAnswer:0};
+    input.questions[1]={...input.questions[1],example:true,correctAnswer:0};
+    input.exam.sections[0].questionIds=input.questions.map(question=>question.id);
+    input.allQuestions=input.questions;
+    const html=examHtml(input);
+    assert.equal((html.match(/question-example-title/g)||[]).length,1);
+    assert.equal((html.match(/Beispiel/g)||[]).length,1);
+  });
   await test('Starting a retake refreshes state and advancing returns to page top',()=>{
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
     assert.match(source,/async function beginAttempt\(examId,restart\)\{\s*if\(repo\.mode==='api'&&!await act\(\(\)=>repo\.reload\(\)/);
