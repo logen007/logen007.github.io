@@ -101,7 +101,7 @@ function collectForm(){
     general:{...settings.general,systemName:val('sName'),organizationName:val('sOrg'),supportEmail:val('sSupport'),publicUrl:val('sUrl')},
     theme:{...settings.theme,primaryColor:selectedThemeColor()},
     auth:{...settings.auth,googleLoginEnabled:chk('sGoogle'),allowNewStudents:chk('sSignup'),allowedDomain:val('sDomain').replace(/^@/,'').toLowerCase()},
-    exam:{...settings.exam,allowRetake:chk('sRetake'),allowRestart:chk('sRestart')},
+    exam:{...settings.exam,allowRestart:chk('sRestart')},
     smtp:{...settings.smtp,enabled:chk('sSmtp'),host:val('sHost'),port:Number(val('sPort')||587),security:val('sSecurity'),username:val('sUser'),fromName:val('sFromName'),fromEmail:val('sFrom'),replyTo:val('sReply'),timeoutMs:Number(val('sTimeout')||20000),rejectUnauthorized:chk('sTlsVerify')},
     email:{...settings.email,enabled:chk('sEmail'),resultSubject:val('sSubject'),resultText:document.getElementById('sText')?.value||'',resultHtml:document.getElementById('sHtml')?.value||''},
     operations:{...settings.operations,maintenanceMode:chk('sMaintenance'),maintenanceMessage:val('sMaintenanceText')},

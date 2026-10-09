@@ -15,6 +15,14 @@ test('Upload audio chỉ dành cho giáo viên/quản trị và giới hạn 25 
   assert.ok(source.includes('25*1024*1024'));
 });
 
+test('Thí sinh luôn có thể tạo lượt thi mới sau khi nộp',()=>{
+  const actions=read('server/src/actions/attempts.js');
+  const settingsView=read('src/settings/view.js');
+  assert.ok(actions.includes('Math.max(0,...rows.map(row=>Number(row.attempt_no||0)))+1'));
+  assert.equal(actions.includes('settings.exam.allowRetake'),false);
+  assert.equal(settingsView.includes('sRetake'),false);
+});
+
 test('Upload hình đáp án chỉ dành cho giáo viên/quản trị',()=>{
   const source=read('server/src/index.js');
   assert.ok(source.includes("'/api/media/image'"));

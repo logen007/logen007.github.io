@@ -14,7 +14,6 @@ export async function startAttempt(user,{examId,restart=false}){
     if(current&&!restart)return {attemptId:current.id,resumed:true};
     if(settings.operations.maintenanceMode)throw appError(409,settings.operations.maintenanceMessage);
     if(restart&&!settings.exam.allowRestart)throw appError(409,'Hệ thống hiện không cho phép làm lại lượt đang dở.');
-    if(rows.length&&!current&&!settings.exam.allowRetake)throw appError(409,'Bài thi này hiện không cho phép thi lại.');
 
     if(current&&restart){
       const publicData={...current.public_data,status:'abandoned',abandonedAt:now(),updatedAt:now()};
