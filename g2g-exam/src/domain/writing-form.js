@@ -27,13 +27,13 @@ export const writingFormScore=(rows=[])=>writingPointLayout(rows).total;
 
 export function writingOptions(row){
   if(Array.isArray(row.options))return row.options;
-  return row.type==='truefalse'?['Ja','Nein']:String(row.answers||'').split('|').map(x=>x.trim()).filter(Boolean);
+  return row.type==='truefalse'?['Richtig','Falsch']:String(row.answers||'').split('|').map(x=>x.trim()).filter(Boolean);
 }
 
 export function addWritingRow(rows,type,index){
   const result=structuredClone(rows||[]),source=result[index];
   if(source?.hidden){result.splice(index,1);result.push({...source,hidden:false});}
-  else result.push({type:type||source?.type||'text',label:'',value:'',answers:'',options:['truefalse','choice'].includes(type||source?.type)?['Ja','Nein']:[],maxScore:isScoredWritingField({type:type||source?.type})?1:0,hidden:false,imageUrl:''});
+  else result.push({type:type||source?.type||'text',label:'',value:'',answers:'',options:['truefalse','choice'].includes(type||source?.type)?['Richtig','Falsch']:[],maxScore:isScoredWritingField({type:type||source?.type})?1:0,hidden:false,imageUrl:''});
   return result;
 }
 
