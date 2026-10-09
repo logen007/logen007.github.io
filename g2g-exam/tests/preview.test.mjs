@@ -78,8 +78,9 @@ try{
   });
   await test('Submission screen uses the concise approved message',()=>{
     const html=submittedHtml();
-    assert.match(html,/<h1>Prüfung abgegeben<\/h1>/);
-    assert.match(html,/Sobald die Lehrkraft die Bewertung abgeschlossen hat/);
+    assert.match(html,/<h1>Đã nộp bài<\/h1>/);
+    assert.match(html,/Khi giáo viên chấm xong, điểm số sẽ được thông báo qua email và hiển thị tại trang kết quả\./);
+    assert.match(html,/class="vong thanh-cong"/);
     for(const removed of ['ĐÃ NỘP BÀI THÀNH CÔNG','Đang chờ kết quả','Khi có kết quả','Bài thi đã được ghi nhận'])assert.ok(!html.includes(removed));
   });
   await test('Live exam keeps progress only in navigation and timeout has a home action',()=>{

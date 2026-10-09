@@ -192,7 +192,7 @@ function writingFieldsHtml(q,answer,{framed=false}={}){
 }
 
 export function submittedHtml(){
-  return `<main class="khung"><section class="the ket-qua-cho"><div class="vong">✓</div><h1>Prüfung abgegeben</h1><span class="nhan vang">WIRD BEWERTET</span><p>Sobald die Lehrkraft die Bewertung abgeschlossen hat, werden die Ergebnisse per E-Mail mitgeteilt und auf der Ergebnisseite angezeigt.</p><button class="nut" data-action="student-home" style="margin-top:18px">Zur Prüfungsübersicht</button></section></main>`;
+  return `<main class="khung"><section class="the ket-qua-cho"><div class="vong thanh-cong">✓</div><h1>Đã nộp bài</h1><span class="nhan vang">ĐANG CHỜ CHẤM</span><p>Khi giáo viên chấm xong, điểm số sẽ được thông báo qua email và hiển thị tại trang kết quả.</p><button class="nut" data-action="student-home" style="margin-top:18px">Về danh sách bài thi</button></section></main>`;
 }
 
 export function expiredHtml(){
