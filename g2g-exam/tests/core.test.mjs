@@ -4,7 +4,7 @@ import {
   clone, byId, canEditQuestion, canEditExam, canGradeExam, canSeeTrash, canPublishExamResult, getQuestionMaxScore,
   createQuestion, updateQuestion, softDeleteQuestion, restoreQuestion, permanentlyDeleteQuestion,
   createExam, duplicateExam, addSection, removeSection, moveSection, addQuestionsToSection, removeQuestionFromSection,
-  startAttempt, saveAnswer, setAttemptSection, getSectionRemainingSeconds,
+  startAttempt, saveAnswer, setAttemptSection, getSectionRemainingSeconds, abandonAttempt,
   submitAttempt, saveManualScore, publishAttempt, getStudentResults, validateExamForPublish, publishExam,
   ATTEMPT_STATUS
 } from '../src/core.js';
@@ -81,6 +81,13 @@ test('Học viên có thể thi nhiều lần; làm lại sẽ bỏ dở lượt
   const s=fresh(),u=users(s);const a1=startAttempt(s,u.student,'exam-b1-03');assert.equal(a1.status,ATTEMPT_STATUS.IN_PROGRESS);
   const same=startAttempt(s,u.student,'exam-b1-03');assert.equal(same.id,a1.id);
   const a2=startAttempt(s,u.student,'exam-b1-03',{restart:true});assert.equal(a1.status,ATTEMPT_STATUS.ABANDONED);assert.notEqual(a2.id,a1.id);assert.equal(a2.attemptNo,a1.attemptNo+1);
+});
+
+test('Hết giờ có thể kết thúc lượt thi qua core barrel',()=>{
+  const s=fresh(),u=users(s),attempt=startAttempt(s,u.student,'exam-b1-03');
+  abandonAttempt(s,u.student,attempt.id);
+  assert.equal(attempt.status,ATTEMPT_STATUS.ABANDONED);
+  assert.ok(attempt.abandonedAt);
 });
 
 test('Thi lại sau khi nộp tạo lượt mới và chuyển phần bình thường',()=>{

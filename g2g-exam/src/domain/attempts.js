@@ -94,6 +94,18 @@ export function setAttemptSection(state,user,attemptId,index){
   return attempt;
 }
 
+export function abandonAttempt(state,user,attemptId){
+  const attempt=byId(state.attempts,attemptId);
+  if(!attempt)throw new Error('Không tìm thấy lượt thi.');
+  if(!isStudent(user)||attempt.studentId!==user.id)throw new Error('Bạn không có quyền kết thúc lượt thi này.');
+  if(attempt.status!==ATTEMPT_STATUS.IN_PROGRESS)return attempt;
+  attempt.status=ATTEMPT_STATUS.ABANDONED;
+  attempt.abandonedAt=nowIso();
+  attempt.updatedAt=nowIso();
+  audit(state,user,'abandon_attempt','attempt',attempt.id);
+  return attempt;
+}
+
 export function calculateAutomaticScores(state,attempt){
   const exam=byId(state.exams,attempt.examId);
   if(!exam)throw new Error('Không tìm thấy bài thi.');
