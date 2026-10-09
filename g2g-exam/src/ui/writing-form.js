@@ -38,7 +38,7 @@ export function readWritingRow(element,previous={}){
 export function writingSubmission(q,answer={}){
   q={...q,rubric:normalizeWritingRows(q.rubric)};
   return `<dl>${(q.rubric||[]).flatMap((row,index)=>{
-    if(!isScoredWritingField(row))return [];
+    if(!isScoredWritingField(row)||Number(row.maxScore)<=0)return [];
     const expected=['choice','truefalse'].includes(row.type)?writingOptions(row)[row.correctIndex]||'':String(row.answers||'').split('|').map(item=>item.trim()).filter(Boolean).join(' · ');
     return [`<dt><strong>${esc(row.label||'Ô điền')} · ${Number(row.maxScore)||0} điểm</strong></dt><dd>${esc(answer?.[index]||'(Chưa trả lời)')}${expected?`<br><small>Tham khảo: ${esc(expected)}</small>`:''}</dd>`];
   }).join('')}</dl>`;
@@ -49,8 +49,12 @@ export function writingFormDisplay(q,answer={}, {readOnly=false}={}){
   const groups=[],{markers}=writingPointLayout(q.rubric);
   for(const [index,row] of (q.rubric||[]).entries()){
     if(row.hidden)continue;
-    const type=row.type||'text',marker=markers[index];
-    const val=answer?.[index]??'',hook=`class="${readOnly?'':'answer-form-field'}" data-q="${esc(q.id)}" data-field-index="${index}" aria-label="${esc(row.label||labels[type])}" ${readOnly?'disabled':''}`;
+    const type=row.type||'text',marker=markers[index],prefilled=isScoredWritingField(row)&&Number(row.maxScore)<=0;
+    const preset=['choice','truefalse'].includes(type)
+      ?String(row.value||writingOptions(row)[Number(row.correctIndex)||0]||'')
+      :String(row.value||String(row.answers||'').split('|').map(item=>item.trim()).find(Boolean)||'');
+    const val=prefilled?preset:answer?.[index]??'',locked=readOnly||prefilled;
+    const hook=`class="${locked?'':'answer-form-field'}${prefilled?' form-prefilled':''}" data-q="${esc(q.id)}" data-field-index="${index}" aria-label="${esc(row.label||labels[type])}" ${locked?'disabled':''}`;
     let html;
     if(type==='heading')html=`<h3>${esc(row.value??row.answers??'')}</h3>`;
     else if(type==='note')html=`<p>${esc(row.value??row.answers??'')}</p>`;

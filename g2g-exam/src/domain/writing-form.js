@@ -8,6 +8,7 @@ export const normalizeWritingRows=(rows=[])=>rows.map(row=>{
 const PRESENTATION_TYPES=new Set(['heading','note','static','image','signature']);
 
 export const isScoredWritingField=row=>!row?.hidden&&!PRESENTATION_TYPES.has(String(row?.type||'text'));
+export const isRequiredWritingField=row=>isScoredWritingField(row)&&(row?.maxScore==null||Number(row.maxScore)>0);
 
 // Teacher-entered 0.33 represents one third of a point. Keep exact thirds
 // throughout accumulation so later groups do not inherit rounding drift.
@@ -64,5 +65,11 @@ export function removeWritingRow(rows,index){
 
 // Explicit allowlist: learners need the form, never the teacher's expected answers.
 export function publicWritingRows(rows=[]){
-  return normalizeWritingRows(rows).map(row=>({type:row.type,label:row.label||'',hidden:Boolean(row.hidden),value:isScoredWritingField({...row,hidden:false})?'':String(row.value??row.answers??''),imageUrl:row.imageUrl||'',options:['choice','truefalse'].includes(row.type)?writingOptions(row):[],maxScore:row.maxScore||0}));
+  return normalizeWritingRows(rows).map(row=>{
+    const answerField=isScoredWritingField({...row,hidden:false}),prefilled=answerField&&Number(row.maxScore)<=0;
+    const preset=['choice','truefalse'].includes(row.type)
+      ?writingOptions(row)[Number(row.correctIndex)||0]||''
+      :String(row.answers||'').split('|').map(item=>item.trim()).find(Boolean)||'';
+    return {type:row.type,label:row.label||'',hidden:Boolean(row.hidden),value:prefilled?preset:(answerField?'':String(row.value??row.answers??'')),imageUrl:row.imageUrl||'',options:['choice','truefalse'].includes(row.type)?writingOptions(row):[],maxScore:row.maxScore||0};
+  });
 }

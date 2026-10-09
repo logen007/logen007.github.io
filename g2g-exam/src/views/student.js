@@ -4,7 +4,7 @@ import {
 } from '../core.js';
 import {esc,fmtDate,statusClass,statusText,countWords} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
-import {writingPointLayout,isScoredWritingField} from '../domain/writing-form.js';
+import {writingPointLayout,isScoredWritingField,isRequiredWritingField} from '../domain/writing-form.js';
 import {writingFormDisplay} from '../ui/writing-form.js';
 
 export function loginHtml({mode}){
@@ -97,7 +97,7 @@ const germanSectionName=name=>String(name||'')
 
 export function answerPresent(answer,q){
   if(q.type==='writing'){
-    if(Array.isArray(q.rubric)&&q.rubric.length)return q.rubric.every((row,index)=>!isScoredWritingField(row)||Boolean(String(answer?.[index]??'').trim()));
+    if(Array.isArray(q.rubric)&&q.rubric.length)return q.rubric.every((row,index)=>!isRequiredWritingField(row)||Boolean(String(answer?.[index]??'').trim()));
     return Boolean(String(answer??'').trim());
   }
   if(q.type==='matching')return Array.isArray(answer)&&(q.pairs||[]).every((_,index)=>Boolean(String(answer[index]??'').trim()));

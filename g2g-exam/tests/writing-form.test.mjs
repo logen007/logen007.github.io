@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {patientWritingDemo} from '../src/controllers/writing-demo.js';
-import {writingFormScore,writingPointLayout,scoreWritingForm,isAutomaticWritingForm,addWritingRow,removeWritingRow,publicWritingRows} from '../src/domain/writing-form.js';
+import {writingFormScore,writingPointLayout,scoreWritingForm,isAutomaticWritingForm,isRequiredWritingField,addWritingRow,removeWritingRow,publicWritingRows} from '../src/domain/writing-form.js';
 import {writingFormEditor,writingFormDisplay,writingSubmission} from '../src/ui/writing-form.js';
 import {createQuestion,updateQuestion} from '../src/domain/questions.js';
 import {seedState} from '../src/seed.js';
@@ -10,6 +10,12 @@ assert.equal(isAutomaticWritingForm({provider:'GOETHE',level:'A1'},{questionProf
 assert.equal(isAutomaticWritingForm({provider:'GOETHE',level:'A1'},{questionProfile:{layout:'free-response'}},{writingFormVersion:1}),false);
 assert.equal(scoreWritingForm([{type:'text',answers:'Ja|Jawohl',maxScore:.33},{type:'text',answers:'Berlin',maxScore:.33},{type:'text',answers:'Morgen',maxScore:.33}],{0:' jawohl ',1:'BERLIN',2:'morgen'}),1);
 assert.equal(scoreWritingForm([{type:'choice',options:['Ja','Nein'],correctIndex:1,maxScore:1},{type:'choice',options:['Ja','Nein'],correctIndex:null,maxScore:1}],{0:'Nein',1:'Ja'}),1);
+assert.equal(isRequiredWritingField({type:'text',maxScore:0}),false);
+assert.equal(isRequiredWritingField({type:'text',maxScore:.5}),true);
+const zeroPointRows=publicWritingRows([{type:'text',label:'Familienname',answers:'Rodriguez',maxScore:0},{type:'choice',label:'Anrede',options:['Herr','Frau'],correctIndex:1,maxScore:0}]);
+assert.deepEqual(zeroPointRows.map(row=>row.value),['Rodriguez','Frau']);
+const zeroPointView=writingFormDisplay({id:'prefilled',rubric:[{type:'text',label:'Familienname',answers:'Rodriguez',maxScore:0}]});
+assert.match(zeroPointView,/value="Rodriguez"/);assert.match(zeroPointView,/form-prefilled/);assert.match(zeroPointView,/disabled/);
 assert.equal(writingFormScore(q.rubric),12);
 const view=writingFormDisplay(q);
 assert.equal((view.match(/type="text"/g)||[]).length,12);
