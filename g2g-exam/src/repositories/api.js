@@ -117,8 +117,12 @@ export class ApiRepository{
       if(beforeAttempts.has(fresh.id))continue;
       const previous=(before.attempts||[]).find(a=>a.studentId===fresh.studentId&&a.examId===fresh.examId&&a.status==='in_progress');
       const afterPrev=previous&&(next.attempts||[]).find(a=>a.id===previous.id);
-      secure.push({type:'start',examId:fresh.examId,restart:Boolean(previous&&afterPrev?.status==='abandoned'),localId:fresh.id});
+      secure.push({type:'start',examId:fresh.examId,restart:Boolean(previous),localId:fresh.id});
       if(previous)handled.add(previous.id);
+    }
+
+    for(const previous of before.attempts||[]){
+      if(previous.status==='in_progress'&&!handled.has(previous.id)&&!(next.attempts||[]).some(attempt=>attempt.id===previous.id))secure.push({type:'abandon',id:previous.id});
     }
 
     for(const changed of next.attempts||[]){

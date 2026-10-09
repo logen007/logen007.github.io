@@ -101,17 +101,16 @@ test('Giáo viên có thể công bố bài đã chấm',()=>{
 
 test('Master nhìn thấy thùng rác, giáo viên không',()=>{const s=fresh(),u=users(s);assert.equal(canSeeTrash(u.master),true);assert.equal(canSeeTrash(u.lan),false);});
 
-test('Học viên có thể thi nhiều lần; làm lại sẽ bỏ dở lượt cũ',()=>{
+test('Bắt đầu thi luôn xóa lượt đang dở và tạo lượt mới từ đầu',()=>{
   const s=fresh(),u=users(s);const a1=startAttempt(s,u.student,'exam-b1-03');assert.equal(a1.status,ATTEMPT_STATUS.IN_PROGRESS);
-  const same=startAttempt(s,u.student,'exam-b1-03');assert.equal(same.id,a1.id);
-  const a2=startAttempt(s,u.student,'exam-b1-03',{restart:true});assert.equal(a1.status,ATTEMPT_STATUS.ABANDONED);assert.notEqual(a2.id,a1.id);assert.equal(a2.attemptNo,a1.attemptNo+1);
+  const a2=startAttempt(s,u.student,'exam-b1-03');assert.notEqual(a2.id,a1.id);assert.equal(a2.attemptNo,a1.attemptNo);assert.equal(s.attempts.some(item=>item.id===a1.id),false);
 });
 
-test('Hết giờ có thể kết thúc lượt thi qua core barrel',()=>{
+test('Hết giờ xóa hẳn lượt thi qua core barrel',()=>{
   const s=fresh(),u=users(s),attempt=startAttempt(s,u.student,'exam-b1-03');
-  abandonAttempt(s,u.student,attempt.id);
-  assert.equal(attempt.status,ATTEMPT_STATUS.ABANDONED);
-  assert.ok(attempt.abandonedAt);
+  const result=abandonAttempt(s,u.student,attempt.id);
+  assert.equal(result.deleted,true);
+  assert.equal(s.attempts.some(item=>item.id===attempt.id),false);
 });
 
 test('Thi lại sau khi nộp tạo lượt mới và chuyển phần bình thường',()=>{
@@ -126,11 +125,11 @@ test('Thi lại sau khi nộp tạo lượt mới và chuyển phần bình thư
   assert.notEqual(first.status,ATTEMPT_STATUS.IN_PROGRESS);
 });
 
-test('Mỗi phần có đồng hồ riêng và tiếp tục thi không reset thời gian',()=>{
+test('Mỗi lần bắt đầu thi có đồng hồ mới',()=>{
   const s=fresh(),u=users(s),exam=byId(s.exams,'exam-b1-03');const a=startAttempt(s,u.student,exam.id);
   const first=exam.sections[0];assert.ok(a.sectionStates[first.id]?.deadlineAt);const deadline=a.sectionStates[first.id].deadlineAt;
-  startAttempt(s,u.student,exam.id);assert.equal(a.sectionStates[first.id].deadlineAt,deadline);
-  setAttemptSection(s,u.student,a.id,1);const second=exam.sections[1];assert.ok(a.sectionStates[second.id]?.deadlineAt);assert.ok(getSectionRemainingSeconds(a,exam,1)>0);
+  const freshAttempt=startAttempt(s,u.student,exam.id);assert.notEqual(freshAttempt.id,a.id);assert.ok(freshAttempt.sectionStates[first.id]?.deadlineAt);assert.equal(s.attempts.some(item=>item.id===a.id),false);
+  setAttemptSection(s,u.student,freshAttempt.id,1);const second=exam.sections[1];assert.ok(freshAttempt.sectionStates[second.id]?.deadlineAt);assert.ok(getSectionRemainingSeconds(freshAttempt,exam,1)>0);
 });
 
 test('Nộp bài có phần Viết/Nói chuyển sang chờ chấm và học viên chưa thấy điểm',()=>{

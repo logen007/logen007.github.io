@@ -97,3 +97,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
   detail jsonb NOT NULL DEFAULT '{}'::jsonb
 );
 CREATE INDEX IF NOT EXISTS audit_at_idx ON audit_log(at DESC);
+
+-- Lượt thi bỏ dở không phải là lịch sử làm bài và không được lưu lâu dài.
+DELETE FROM notifications WHERE attempt_id IN (SELECT id FROM attempts WHERE status='abandoned');
+DELETE FROM attempts WHERE status='abandoned';

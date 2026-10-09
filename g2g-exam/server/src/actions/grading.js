@@ -41,7 +41,7 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
     const complete=Object.keys(limits).every(skill=>Number.isFinite(Number(clean[skill])));
     const manualTotal=Object.values(clean).reduce((sum,n)=>sum+(Number(n)||0),0);
     const totalScore=complete?autoScore+manualTotal:null;
-    const resultText=complete?resultFor(exam,totalScore):null;
+    const resultText=complete?resultFor(exam,questions,sectionScores,clean):null;
     const status=complete?'ready':'grading';
     const at=now();
     const privateData={

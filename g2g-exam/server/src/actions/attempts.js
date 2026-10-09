@@ -12,16 +12,10 @@ export async function startAttempt(user,{examId,restart=false}){
     await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`,[`${user.id}:${examId}`]);
     const rows=(await client.query(`SELECT * FROM attempts WHERE student_id=$1 AND exam_id=$2 ORDER BY attempt_no DESC FOR UPDATE`,[user.id,examId])).rows;
     const current=rows.find(row=>row.status==='in_progress');
-    if(current&&!restart)return {attemptId:current.id,resumed:true};
     if(settings.operations.maintenanceMode)throw appError(409,settings.operations.maintenanceMessage);
-    if(restart&&!settings.exam.allowRestart)throw appError(409,'Hệ thống hiện không cho phép làm lại lượt đang dở.');
+    if(current)await client.query(`DELETE FROM attempts WHERE id=$1`,[current.id]);
 
-    if(current&&restart){
-      const publicData={...current.public_data,status:'abandoned',abandonedAt:now(),updatedAt:now()};
-      await client.query(`UPDATE attempts SET status='abandoned',public_data=$2::jsonb,updated_at=now() WHERE id=$1`,[current.id,JSON.stringify(publicData)]);
-    }
-
-    const attemptNo=Math.max(0,...rows.map(row=>Number(row.attempt_no||0)))+1;
+    const attemptNo=Math.max(0,...rows.filter(row=>row.id!==current?.id&&!['in_progress','abandoned'].includes(row.status)).map(row=>Number(row.attempt_no||0)))+1;
     const id=uid('attempt');
     const startedAt=now();
     const meta=sectionMeta(exam,0,{});
@@ -139,9 +133,9 @@ export async function abandonAttempt(user,{attemptId}){
     const attempt=result.rows[0];
     if(attempt.student_id!==user.id)throw appError(403,'Không có quyền bỏ lượt thi này.');
     if(attempt.status!=='in_progress')return {status:attempt.status};
-    const publicData={...attempt.public_data,status:'abandoned',abandonedAt:now(),updatedAt:now()};
-    await client.query(`UPDATE attempts SET status='abandoned',public_data=$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify(publicData)]);
-    return {status:'abandoned'};
+    await audit(user,'abandon_attempt','attempt',attemptId,{deleted:true},client);
+    await client.query(`DELETE FROM attempts WHERE id=$1`,[attemptId]);
+    return {status:'deleted'};
   });
 }
 
@@ -173,7 +167,7 @@ export async function submitAttempt(user,{attemptId}){
   autoScore=Math.round(autoScore*100)/100;
   const status=hasManual?'grading':'ready';
   const totalScore=hasManual?null:autoScore;
-  const resultText=hasManual?null:resultFor(exam,totalScore);
+  const resultText=hasManual?null:resultFor(exam,questions,sectionScores,{});
   const at=now();
   const publicData={...attempt.public_data,status,submittedAt:at,updatedAt:at};
   const privateData={autoScore,sectionScores,scoringVersion:2,manualScores:{},totalScore,result:resultText,feedback:'',updatedAt:at};

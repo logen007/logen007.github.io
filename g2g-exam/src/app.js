@@ -769,9 +769,7 @@ function bindGlobal(){
 }
 
 function bindViewSpecific(){
-  app.querySelectorAll('[data-action="start"]').forEach(b=>b.onclick=()=>beginAttempt(b.dataset.exam,false));
-  app.querySelectorAll('[data-action="resume"]').forEach(b=>b.onclick=()=>{ui.attemptId=b.dataset.attempt;ui.view='exam';render();});
-  app.querySelectorAll('[data-action="restart"]').forEach(b=>b.onclick=()=>confirmAction('Bỏ lượt đang làm và bắt đầu lại từ đầu?',()=>beginAttempt(b.dataset.exam,true),{confirmLabel:'Bắt đầu lại'}));
+  app.querySelectorAll('[data-action="start"]').forEach(b=>b.onclick=()=>beginAttempt(b.dataset.exam,true));
   app.querySelectorAll('[data-action="prev-section"]').forEach(b=>b.onclick=()=>moveAttemptSection(-1));
   app.querySelectorAll('[data-action="next-section"]').forEach(b=>b.onclick=()=>moveAttemptSection(1));
   app.querySelectorAll('[data-action="submit-exam"]').forEach(b=>b.onclick=()=>submitCurrentExam());

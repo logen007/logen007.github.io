@@ -41,16 +41,8 @@ export function startAttempt(state,user,examId,{restart=false}={}){
   const exam=byId(state.exams,examId);
   if(!exam||exam.status!=='published')throw new Error('Bài thi chưa mở cho học viên.');
   const current=(state.attempts||[]).find(attempt=>attempt.examId===examId&&attempt.studentId===user.id&&attempt.status===ATTEMPT_STATUS.IN_PROGRESS);
-  if(current&&!restart){
-    startSectionClock(current,exam,current.currentSectionIndex||0);
-    return current;
-  }
-  if(current&&restart){
-    current.status=ATTEMPT_STATUS.ABANDONED;
-    current.abandonedAt=nowIso();
-    current.updatedAt=nowIso();
-  }
-  const attemptNo=1+Math.max(0,...(state.attempts||[]).filter(attempt=>attempt.examId===examId&&attempt.studentId===user.id).map(attempt=>Number(attempt.attemptNo||0)));
+  if(current)state.attempts.splice(state.attempts.indexOf(current),1);
+  const attemptNo=1+Math.max(0,...(state.attempts||[]).filter(attempt=>attempt.examId===examId&&attempt.studentId===user.id&&!([ATTEMPT_STATUS.IN_PROGRESS,ATTEMPT_STATUS.ABANDONED].includes(attempt.status))).map(attempt=>Number(attempt.attemptNo||0)));
   exam.locked=true;
   exam.lockedAt||=nowIso();
   const attempt={
@@ -98,12 +90,36 @@ export function abandonAttempt(state,user,attemptId){
   const attempt=byId(state.attempts,attemptId);
   if(!attempt)throw new Error('Không tìm thấy lượt thi.');
   if(!isStudent(user)||attempt.studentId!==user.id)throw new Error('Bạn không có quyền kết thúc lượt thi này.');
-  if(attempt.status!==ATTEMPT_STATUS.IN_PROGRESS)return attempt;
-  attempt.status=ATTEMPT_STATUS.ABANDONED;
-  attempt.abandonedAt=nowIso();
-  attempt.updatedAt=nowIso();
   audit(state,user,'abandon_attempt','attempt',attempt.id);
-  return attempt;
+  if(attempt.status===ATTEMPT_STATUS.IN_PROGRESS)state.attempts.splice(state.attempts.indexOf(attempt),1);
+  return {id:attempt.id,status:ATTEMPT_STATUS.ABANDONED,deleted:true};
+}
+
+function canonicalSkill(value=''){
+  const text=String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  if(/horen|nghe|listening/.test(text))return 'listening';
+  if(/lesen|doc|reading/.test(text))return 'reading';
+  if(/schreiben|viet|writing/.test(text))return 'writing';
+  if(/sprechen|noi|speaking/.test(text))return 'speaking';
+  return text.replace(/\b(teil|part|phan|bai)\s*\d+\b/g,'').trim()||'other';
+}
+
+export function resultBySkill(state,exam,sectionScores={},manualScores={}){
+  const earned={},maximum={};
+  for(const section of exam.sections||[]){
+    const skill=canonicalSkill(section.skillKey||section.skill||section.name);
+    earned[skill]=(earned[skill]||0)+Number(sectionScores[section.name]||0);
+    for(const id of section.questionIds||[]){
+      const question=byId(state.questions,id);
+      if(question&&!question.example)maximum[skill]=(maximum[skill]||0)+Number(question.maxScore||0);
+    }
+  }
+  for(const [label,score] of Object.entries(manualScores||{})){
+    const skill=canonicalSkill(label);
+    earned[skill]=(earned[skill]||0)+Number(score||0);
+  }
+  const skills=Object.keys(maximum).filter(skill=>maximum[skill]>0);
+  return skills.length&&skills.every(skill=>earned[skill]>=maximum[skill]*0.6)?'Đạt':'Chưa đạt';
 }
 
 export function calculateAutomaticScores(state,attempt){
@@ -144,7 +160,7 @@ export function submitAttempt(state,user,attemptId){
   attempt.updatedAt=nowIso();
   if(attempt.status===ATTEMPT_STATUS.READY){
     attempt.totalScore=attempt.autoScore;
-    attempt.result=attempt.totalScore>=exam.passScore?'Đạt':'Chưa đạt';
+    attempt.result=resultBySkill(state,exam,attempt.sectionScores,attempt.manualScores);
   }
   audit(state,user,'submit_attempt','attempt',attempt.id);
   return attempt;
@@ -192,7 +208,7 @@ export function saveManualScore(state,user,attemptId,payload={}){
   const complete=Object.keys(limits).every(skill=>Number.isFinite(Number(attempt.manualScores[skill])));
   if(complete){
     attempt.totalScore=Number(attempt.autoScore||0)+Object.values(attempt.manualScores).reduce((sum,n)=>sum+(Number(n)||0),0);
-    attempt.result=attempt.totalScore>=exam.passScore?'Đạt':'Chưa đạt';
+    attempt.result=resultBySkill(state,exam,attempt.sectionScores,attempt.manualScores);
     attempt.status=ATTEMPT_STATUS.READY;
   }else{
     attempt.totalScore=null;
@@ -227,7 +243,7 @@ export function publishAttempt(state,user,attemptId){
 }
 
 export function getStudentAttempts(state,studentId){
-  return (state.attempts||[]).filter(attempt=>attempt.studentId===studentId).sort((a,b)=>String(b.startedAt).localeCompare(String(a.startedAt)));
+  return (state.attempts||[]).filter(attempt=>attempt.studentId===studentId&&attempt.status!==ATTEMPT_STATUS.ABANDONED).sort((a,b)=>String(b.startedAt).localeCompare(String(a.startedAt)));
 }
 
 export function visibleStudentAttempt(attempt){
@@ -237,7 +253,7 @@ export function visibleStudentAttempt(attempt){
 }
 
 export function getStudentResults(state,studentId){
-  return getStudentAttempts(state,studentId).map(visibleStudentAttempt);
+  return getStudentAttempts(state,studentId).filter(attempt=>attempt.status!==ATTEMPT_STATUS.IN_PROGRESS).map(visibleStudentAttempt);
 }
 
 export function getLatestPublishedAttempt(state,studentId){

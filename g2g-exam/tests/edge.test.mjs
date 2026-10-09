@@ -113,8 +113,29 @@ test('Bài chỉ có câu tự chấm chuyển sang sẵn sàng công bố', () 
   submitAttempt(s, u.student, a.id);
   assert.equal(a.status, ATTEMPT_STATUS.READY);
   assert.equal(a.totalScore, 5);
+  assert.equal(a.result, 'Đạt');
   publishAttempt(s, u.lan, a.id);
   assert.equal(a.status, ATTEMPT_STATUS.PUBLISHED);
+});
+
+test('Kết quả chỉ đạt khi từng kỹ năng đạt ít nhất 60 phần trăm', () => {
+  const s=fresh(),u=users(s);
+  const ex=createExam(s,u.lan,{title:'Ngưỡng từng kỹ năng',sections:[
+    {id:'listen',name:'Hören Teil 1',skill:'Nghe',timeMinutes:10,questionIds:['q-listen-1']},
+    {id:'read',name:'Lesen Teil 1',skill:'Đọc',timeMinutes:10,questionIds:['q-read-1']},
+  ]});
+  ex.status='published';
+  const failed=startAttempt(s,u.student,ex.id);
+  saveAnswer(s,u.student,failed.id,'q-listen-1',0);
+  saveAnswer(s,u.student,failed.id,'q-read-1',0);
+  submitAttempt(s,u.student,failed.id);
+  assert.equal(failed.totalScore,5);
+  assert.equal(failed.result,'Chưa đạt');
+  const passed=startAttempt(s,u.student,ex.id);
+  saveAnswer(s,u.student,passed.id,'q-listen-1',0);
+  saveAnswer(s,u.student,passed.id,'q-read-1',1);
+  submitAttempt(s,u.student,passed.id);
+  assert.equal(passed.result,'Đạt');
 });
 
 console.log(`\n${passed} kiểm thử biên đã đạt.`);

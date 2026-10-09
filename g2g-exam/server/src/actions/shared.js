@@ -27,8 +27,31 @@ export function scoreQuestion(question,answer){
   return 0;
 }
 
-export function resultFor(exam,total){
-  return Number(total)>=Number(exam.passScore||180)?'Đạt':'Chưa đạt';
+function canonicalSkill(value=''){
+  const text=String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  if(/horen|nghe|listening/.test(text))return 'listening';
+  if(/lesen|doc|reading/.test(text))return 'reading';
+  if(/schreiben|viet|writing/.test(text))return 'writing';
+  if(/sprechen|noi|speaking/.test(text))return 'speaking';
+  return text.replace(/\b(teil|part|phan|bai)\s*\d+\b/g,'').trim()||'other';
+}
+
+export function resultFor(exam,questions,sectionScores={},manualScores={}){
+  const earned={},maximum={};
+  for(const section of exam.sections||[]){
+    const skill=canonicalSkill(section.skillKey||section.skill||section.name);
+    earned[skill]=(earned[skill]||0)+Number(sectionScores[section.name]||0);
+    for(const id of section.questionIds||[]){
+      const question=questions.get(id);
+      if(question&&!question.example)maximum[skill]=(maximum[skill]||0)+Number(question.maxScore||0);
+    }
+  }
+  for(const [label,score] of Object.entries(manualScores||{})){
+    const skill=canonicalSkill(label);
+    earned[skill]=(earned[skill]||0)+Number(score||0);
+  }
+  const skills=Object.keys(maximum).filter(skill=>maximum[skill]>0);
+  return skills.length&&skills.every(skill=>earned[skill]>=maximum[skill]*0.6)?'Đạt':'Chưa đạt';
 }
 
 export async function questionMap(exam){

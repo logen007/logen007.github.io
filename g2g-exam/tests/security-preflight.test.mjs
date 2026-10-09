@@ -15,10 +15,11 @@ test('Upload audio chỉ dành cho giáo viên/quản trị và giới hạn 25 
   assert.ok(source.includes('25*1024*1024'));
 });
 
-test('Thí sinh luôn có thể tạo lượt thi mới sau khi nộp',()=>{
+test('Thí sinh luôn bắt đầu lượt mới và lượt đang dở bị xóa',()=>{
   const actions=read('server/src/actions/attempts.js');
   const settingsView=read('src/settings/view.js');
-  assert.ok(actions.includes('Math.max(0,...rows.map(row=>Number(row.attempt_no||0)))+1'));
+  assert.ok(actions.includes("DELETE FROM attempts WHERE id=$1"));
+  assert.ok(actions.includes("!['in_progress','abandoned'].includes(row.status)"));
   assert.equal(actions.includes('settings.exam.allowRetake'),false);
   assert.equal(settingsView.includes('sRetake'),false);
 });
