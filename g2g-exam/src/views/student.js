@@ -62,34 +62,38 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const answered=requiredQuestions.filter(q=>answerPresent(attempt.answers?.[q.id],q)).length;
   const previousAction=preview?'preview-prev-section':'prev-section';
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
-  const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Về chỉnh sửa':'Nộp bài'):'Tiếp theo';
-  const sectionInstruction=sec.instruction||sec.instructionImageUrl?`<section class="exam-instruction">${sec.instruction?`<div><p>${esc(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl?`<img src="${esc(sec.instructionImageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`:'';
+  const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Zur Bearbeitung':'Abgeben'):'Weiter';
+  const sectionInstruction=sec.instruction||sec.instructionImageUrl?`<section class="exam-instruction">${sec.instruction?`<div><p>${esc(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl?`<img src="${esc(sec.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
-  const currentCount=`<span data-current-answer-count aria-label="Số câu đã trả lời">${answered}/${requiredQuestions.length}</span>`;
+  const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
   let questionNumber=exam.sections.slice(0,sectionIndex).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!knownQuestions.get(id)?.example).length,0);
   let exampleTitleShown=false;
-  const questionList=`<section class="to-thi" aria-label="Câu hỏi">${orderedQuestions.map(({q,originalIndex})=>{
+  const questionList=`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex})=>{
     const showExampleTitle=Boolean(q.example&&!exampleTitleShown);if(showExampleTitle)exampleTitleShown=true;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
     return renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:q.example?null:++questionNumber,showExampleTitle,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
-  }).join('')||'<div class="rong">Phần này chưa có câu hỏi.</div>'}</section>`;
+  }).join('')||'<div class="rong">Dieser Teil enthält noch keine Aufgaben.</div>'}</section>`;
   const context=preview
-    ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(sec.name)}</h1></div></div>`
-    :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(sec.name)}</h1></div></div>`;
-  const body=`<main class="noi-dung-thi">${context}<div class="exam-paper">${sectionInstruction}${sectionAudio}${questionList}</div><nav class="dieu-huong-thi" aria-label="Điều hướng bài thi"><button class="nut" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${preview?'Phần trước':'Quay lại'}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh" data-action="${nextAction}">${nextLabel}</button></nav></main>`;
+    ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sec.name))}</h1></div></div>`
+    :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(germanSectionName(sec.name))}</h1></div></div>`;
+  const body=`<main class="noi-dung-thi">${context}<div class="exam-paper">${sectionInstruction}${sectionAudio}${questionList}</div><nav class="dieu-huong-thi" aria-label="Prüfungsnavigation"><button class="nut" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${preview?'Vorheriger Teil':'Zurück'}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh" data-action="${nextAction}">${nextLabel}</button></nav></main>`;
   const header=preview
-    ?`<header class="thanh-thi thanh-thi--preview"><strong>${esc(exam.title)}</strong><div class="preview-header-row"><button class="text-link" data-action="close-preview"><span aria-hidden="true">←</span> Quay lại</button>${previewOutlineHtml(previewSummary,sectionIndex)}</div></header>`
-    :`<header class="thanh-thi"><span class="exam-mobile-brand"><img src="/brand/favicon" alt=""><strong>Luyện thi tiếng Đức</strong></span><div class="thong-tin-thi"><span>Phần ${sectionIndex+1}/${exam.sections.length}</span><b id="examTimer">--:--</b></div></header>`;
-  const offline=!online?`<div class="offline" role="status">${preview?'Đang ngoại tuyến. Câu trả lời xem thử chỉ giữ trong phiên này; audio và ảnh có thể không tải được.':'Đang ngoại tuyến. Hãy giữ trang mở; câu trả lời sẽ tiếp tục được lưu trên thiết bị.'}</div>`:'';
+    ?`<header class="thanh-thi thanh-thi--preview"><strong>${esc(exam.title)}</strong><div class="preview-header-row"><button class="text-link" data-action="close-preview"><span aria-hidden="true">←</span> Zurück</button>${previewOutlineHtml(previewSummary,sectionIndex)}</div></header>`
+    :`<header class="thanh-thi"><span class="exam-mobile-brand"><img src="/brand/favicon" alt=""><strong>Deutschprüfung</strong></span><div class="thong-tin-thi"><span>Teil ${sectionIndex+1}/${exam.sections.length}</span><b id="examTimer">--:--</b></div></header>`;
+  const offline=!online?`<div class="offline" role="status">${preview?'Sie sind offline. Vorschauantworten werden nur in dieser Sitzung gespeichert; Audio und Bilder sind möglicherweise nicht verfügbar.':'Sie sind offline. Lassen Sie diese Seite geöffnet; Ihre Antworten werden weiterhin auf diesem Gerät gespeichert.'}</div>`:'';
   return `<div class="thi ${preview?'thi--preview':''}">${header}${offline}${preview?`<div class="preview-shell">${body}</div>`:body}</div>`;
 }
 
 function previewOutlineHtml(summary,sectionIndex){
   const {sections=[]}=summary||{};
   const width=Math.max(12,...sections.map(item=>String(item.name||'').length+6));
-  return `<div class="preview-outline"><label class="preview-section-picker" for="previewSectionSelect"><span class="sr-only">Chọn phần</span><select id="previewSectionSelect" class="truong" style="--picker-width:${width}ch" aria-label="Chọn phần" data-action="preview-select-section" ${sections.length?'':'disabled'}>${sections.map((item,index)=>`<option value="${index}" ${index===sectionIndex?'selected':''}>${esc(item.name)}</option>`).join('')}</select></label></div>`;
+  return `<div class="preview-outline"><label class="preview-section-picker" for="previewSectionSelect"><span class="sr-only">Teil auswählen</span><select id="previewSectionSelect" class="truong" style="--picker-width:${width}ch" aria-label="Teil auswählen" data-action="preview-select-section" ${sections.length?'':'disabled'}>${sections.map((item,index)=>`<option value="${index}" ${index===sectionIndex?'selected':''}>${esc(germanSectionName(item.name))}</option>`).join('')}</select></label></div>`;
 }
+
+const germanSectionName=name=>String(name||'')
+  .replace(/^Nghe\b/i,'Hören').replace(/^Đọc\b/i,'Lesen')
+  .replace(/^Viết\b/i,'Schreiben').replace(/^Nói\b/i,'Sprechen');
 
 export function answerPresent(answer,q){
   if(q.type==='writing'){
@@ -108,23 +112,24 @@ function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
   const repeat=Math.max(1,Number(policy.segmentRepeat)||1),key=`g2g.section-audio.${attempt.id}.${section.id}`;
   const used=!preview&&(Boolean(attempt.audioSessions?.[section.id]?.startedAt)||Boolean(sessionStorage.getItem(key)));
   const segments=[];
-  if(section.instructionAudioUrl)segments.push({url:section.instructionAudioUrl,repeat:1,label:'Đề bài'});
-  audioQuestions.forEach((question,index)=>segments.push({url:question.audioUrl,repeat:question.example?1:repeat,label:question.example?'Ví dụ':`Câu ${index+1}`}));
+  if(section.instructionAudioUrl)segments.push({url:section.instructionAudioUrl,repeat:1,label:'Beispiel'});
+  let taskNumber=0;
+  audioQuestions.forEach(question=>segments.push({url:question.audioUrl,repeat:question.example?1:repeat,label:question.example?'Beispiel':`Aufgabe ${++taskNumber}`}));
   const audios=segments.map((segment,index)=>`<audio class="section-audio-segment" data-order="${index}" data-repeat="${segment.repeat}" data-label="${esc(segment.label)}" preload="metadata" src="${esc(segment.url)}"></audio>`).join('');
-  return `<section class="section-audio" data-section-audio="${esc(section.id)}" data-storage-key="${esc(key)}">${audios}<button type="button" class="section-audio-play" aria-label="Phát audio của phần" ${used?'disabled':''}>${iconHtml('play')}</button><div class="section-audio-body"><span class="section-audio-progress" role="progressbar" aria-label="Tiến độ audio" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><i></i></span><span class="section-audio-status" aria-live="polite">${used?'Đã hết lượt nghe':'Chỉ có thể bấm nghe một lần'}</span></div></section>`;
+  return `<section class="section-audio" data-section-audio="${esc(section.id)}" data-storage-key="${esc(key)}">${audios}<button type="button" class="section-audio-play" aria-label="Audio abspielen" ${used?'disabled':''}>${iconHtml('play')}</button><div class="section-audio-body"><span class="section-audio-progress" role="progressbar" aria-label="Audiofortschritt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><i></i></span><span class="section-audio-status" aria-live="polite">${used?'Audio wurde bereits abgespielt':'Audio kann nur einmal abgespielt werden'}</span></div></section>`;
 }
 
 const questionImageUrl=q=>String((Array.isArray(q.instructionBlocks)?q.instructionBlocks[0]?.imageUrl:'')||q.instructionImageUrl||'').trim();
 
 function questionStimulusHtml(q,{hideImage=false}={}){
   const blocks=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length?q.instructionBlocks:[{text:q.prompt||'',imageUrl:q.instructionImageUrl||''}];
-  return blocks.map(block=>{const text=block?.text||'',imageUrl=hideImage?'':String(block?.imageUrl||'').trim();return text||imageUrl?`<section class="question-stimulus">${text?`<div><p>${esc(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình minh họa đề bài">`:''}</section>`:'';}).join('');
+  return blocks.map(block=>{const text=block?.text||'',imageUrl=hideImage?'':String(block?.imageUrl||'').trim();return text||imageUrl?`<section class="question-stimulus">${text?`<div><p>${esc(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';}).join('');
 }
 
 function questionPromptHtml(text,q){
   const imageUrl=questionImageUrl(q);
   return String(text||'').split(/(\[img\])/gi).map(part=>/^\[img\]$/i.test(part)
-    ?(imageUrl?`<span class="question-inline-image"><img src="${esc(imageUrl)}" alt="Hình minh họa câu hỏi"></span>`:'')
+    ?(imageUrl?`<span class="question-inline-image"><img src="${esc(imageUrl)}" alt="Abbildung zur Aufgabe"></span>`:'')
     :esc(part)).join('');
 }
 
@@ -144,7 +149,7 @@ export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',previ
   if(isExample)answer=exampleAnswer(q);
   if(q.type==='writing'&&(formFrame||q.writingFormVersion===1))return `<div class="cau-thi writing-form-question ${isExample?'is-example':''}" data-q="${esc(q.id)}">${exampleTitle}${writingFormDisplay(q,answer,{readOnly:isExample})}</div>`;
   const played=sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`);
-  const audio=!hideAudio&&q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" title="Audio chỉ phát theo quy định của đề thi." ${played?'disabled':''}>${played?'Đã phát audio':'Phát audio'}</button>${preview?'':'<span class="phu-de">Audio chỉ phát theo quy định của đề thi.</span>'}</div>`:'';
+  const audio=!hideAudio&&q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" title="Das Audio wird gemäß den Prüfungsregeln abgespielt." ${played?'disabled':''}>${played?'Audio abgespielt':'Audio abspielen'}</button>${preview?'':'<span class="phu-de">Das Audio wird gemäß den Prüfungsregeln abgespielt.</span>'}</div>`:'';
   const rawPrompt=String(hasStimulus?q.title||'':q.prompt||q.title||'').trim();
   const normalizedPrompt=rawPrompt.toLocaleLowerCase(),normalizedSection=String(sectionInstruction||'').toLocaleLowerCase();
   const isSharedInstruction=normalizedPrompt.length>12&&normalizedSection.includes(normalizedPrompt);
@@ -156,11 +161,11 @@ export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',previ
   const root=`cau-thi ${isExample?'is-example ':''}${answerPresent(answer,q)?'is-answered':''}`;
   if(['single','cloze','truefalse'].includes(q.type)){
     const choices=(q.choices||[]).map((choice,index)=>({choice,index})).filter(({choice})=>{const text=String(typeof choice==='object'?choice?.text||'':choice||'').trim();return Boolean((text&&text!=='Nháp')||String(typeof choice==='object'?choice?.imageUrl||'':'').trim());});
-    return `<div class="${root}" data-q="${q.id}">${head}<div class="answer-options ${choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}${mobileThreeChoices?' answer-options--mobile-three':''}" role="radiogroup" aria-label="${esc(questionAriaText||'Chọn đáp án')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="${isExample?'':'answer-one'}" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(`${letter}. ${text||''}`)}" value="${index}" ${String(answer)===String(index)?'checked':''} ${isExample?'disabled':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span><strong class="answer-letter">${letter}.</strong> ${esc(text)}</span></span></label>`;}).join('')}</div></div>`;
+    return `<div class="${root}" data-q="${q.id}">${head}<div class="answer-options ${choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}${mobileThreeChoices?' answer-options--mobile-three':''}" role="radiogroup" aria-label="${esc(questionAriaText||'Antwort auswählen')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="${isExample?'':'answer-one'}" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(`${letter}. ${text||''}`)}" value="${index}" ${String(answer)===String(index)?'checked':''} ${isExample?'disabled':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span><strong class="answer-letter">${letter}.</strong> ${esc(text)}</span></span></label>`;}).join('')}</div></div>`;
   }
-  if(q.type==='matching')return `<div class="${root}" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div class="matching-row"><b>${esc(p[0])}</b><select class="dap-an ${isExample?'':'answer-match'}" data-q="${q.id}" data-i="${i}" ${isExample?'disabled':''}><option value="">Chọn đáp án</option>${[...new Set((q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;
-  if(q.type==='writing')return `<div class="${root}" data-q="${q.id}">${head}${Array.isArray(q.rubric)&&q.rubric.length?writingFieldsHtml(q,answer,{framed:formFrame}):`<textarea class="viet ${isExample?'':'answer-text'}" data-q="${q.id}" placeholder="Viết bài tại đây..." ${isExample?'disabled':''}>${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> từ</div>`}</div>`;
-  if(q.type==='speaking')return `<div class="cau-thi" data-q="${q.id}">${head}<div class="goi-y">Phần Nói được thực hiện theo hướng dẫn của giáo viên/phòng thi thử và được chấm thủ công.</div></div>`;
+  if(q.type==='matching')return `<div class="${root}" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div class="matching-row"><b>${esc(p[0])}</b><select class="dap-an ${isExample?'':'answer-match'}" data-q="${q.id}" data-i="${i}" ${isExample?'disabled':''}><option value="">Antwort auswählen</option>${[...new Set((q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;
+  if(q.type==='writing')return `<div class="${root}" data-q="${q.id}">${head}${Array.isArray(q.rubric)&&q.rubric.length?writingFieldsHtml(q,answer,{framed:formFrame}):`<textarea class="viet ${isExample?'':'answer-text'}" data-q="${q.id}" placeholder="Schreiben Sie hier..." ${isExample?'disabled':''}>${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> Wörter</div>`}</div>`;
+  if(q.type==='speaking')return `<div class="cau-thi" data-q="${q.id}">${head}<div class="goi-y">Der mündliche Teil wird nach den Anweisungen der Lehrkraft oder des Prüfungsraums durchgeführt und manuell bewertet.</div></div>`;
   return `<div class="cau-thi">${head}</div>`;
 }
 
@@ -174,9 +179,9 @@ function writingFieldsHtml(q,answer,{framed=false}={}){
     let control='';
     if(type==='heading')control=`<strong class="writing-form-heading">${esc(row.answers||row.label||'')}</strong>`;
     else if(type==='static')control=`<span class="writing-static-value">${esc(row.answers||'')}</span>`;
-    else if(type==='image')control=row.imageUrl?`<img class="writing-form-image" src="${esc(row.imageUrl)}" alt="${esc(row.label||'Hình minh họa')}">`:'';
+    else if(type==='image')control=row.imageUrl?`<img class="writing-form-image" src="${esc(row.imageUrl)}" alt="${esc(row.label||'Abbildung')}">`:'';
     else if(type==='truefalse')control=`<div class="writing-binary"><label><input class="${readOnly?'':'answer-form-field'}" type="radio" name="writing-${q.id}-${row.index}" data-q="${q.id}" data-field-index="${row.index}" value="Richtig" ${value==='Richtig'?'checked':''} ${readOnly?'disabled':''}>Richtig</label><label><input class="${readOnly?'':'answer-form-field'}" type="radio" name="writing-${q.id}-${row.index}" data-q="${q.id}" data-field-index="${row.index}" value="Falsch" ${value==='Falsch'?'checked':''} ${readOnly?'disabled':''}>Falsch</label></div>`;
-    else if(type==='choice')control=`<select class="${readOnly?'':'answer-form-field '}truong" data-q="${q.id}" data-field-index="${row.index}" ${readOnly?'disabled':''}><option value="">Chọn phương án</option>${options.map(option=>`<option value="${esc(option)}" ${String(value)===option?'selected':''}>${esc(option)}</option>`).join('')}</select>`;
+    else if(type==='choice')control=`<select class="${readOnly?'':'answer-form-field '}truong" data-q="${q.id}" data-field-index="${row.index}" ${readOnly?'disabled':''}><option value="">Antwort auswählen</option>${options.map(option=>`<option value="${esc(option)}" ${String(value)===option?'selected':''}>${esc(option)}</option>`).join('')}</select>`;
     else control=`<input class="${readOnly?'':'answer-form-field '}truong" data-q="${q.id}" data-field-index="${row.index}" value="${esc(value)}" autocomplete="off" ${readOnly?'disabled':''}>`;
     const field=`<div class="writing-display-field writing-display-field--${esc(type)}">${marker?`<span class="writing-point">${marker}</span>`:''}${control}</div>`;
     if(type==='heading'||type==='image'){groups.push({label:'',fields:[field],full:true});lastLabel=null;continue;}
@@ -187,9 +192,9 @@ function writingFieldsHtml(q,answer,{framed=false}={}){
 }
 
 export function submittedHtml(){
-  return `<main class="khung"><section class="the ket-qua-cho"><div class="vong">✓</div><h1>Đã nộp bài</h1><span class="nhan vang">ĐANG CHỜ CHẤM</span><p>Khi giáo viên chấm xong, điểm số sẽ được thông báo qua email và hiển thị tại trang kết quả.</p><button class="nut" data-action="student-home" style="margin-top:18px">Về danh sách bài thi</button></section></main>`;
+  return `<main class="khung"><section class="the ket-qua-cho"><div class="vong">✓</div><h1>Prüfung abgegeben</h1><span class="nhan vang">WIRD BEWERTET</span><p>Sobald die Lehrkraft die Bewertung abgeschlossen hat, werden die Ergebnisse per E-Mail mitgeteilt und auf der Ergebnisseite angezeigt.</p><button class="nut" data-action="student-home" style="margin-top:18px">Zur Prüfungsübersicht</button></section></main>`;
 }
 
 export function expiredHtml(){
-  return `<main class="khung"><section class="the ket-qua-cho"><div class="vong">!</div><h1>Đã hết thời gian</h1><p>Rất tiếc bạn đã không hoàn thành phần thi vì đã hết thời gian.</p><button class="nut chinh" data-action="student-home" style="margin-top:18px">Quay lại trang chính</button></section></main>`;
+  return `<main class="khung"><section class="the ket-qua-cho"><div class="vong">!</div><h1>Zeit abgelaufen</h1><p>Leider konnten Sie diesen Prüfungsteil nicht rechtzeitig abschließen.</p><button class="nut chinh" data-action="student-home" style="margin-top:18px">Zur Startseite</button></section></main>`;
 }

@@ -78,8 +78,8 @@ try{
   });
   await test('Submission screen uses the concise approved message',()=>{
     const html=submittedHtml();
-    assert.match(html,/<h1>Đã nộp bài<\/h1>/);
-    assert.match(html,/Khi giáo viên chấm xong, điểm số sẽ được thông báo qua email và hiển thị tại trang kết quả\./);
+    assert.match(html,/<h1>Prüfung abgegeben<\/h1>/);
+    assert.match(html,/Sobald die Lehrkraft die Bewertung abgeschlossen hat/);
     for(const removed of ['ĐÃ NỘP BÀI THÀNH CÔNG','Đang chờ kết quả','Khi có kết quả','Bài thi đã được ghi nhận'])assert.ok(!html.includes(removed));
   });
   await test('Live exam keeps progress only in navigation and timeout has a home action',()=>{
@@ -88,7 +88,7 @@ try{
     assert.doesNotMatch(html,/>Còn lại</);
     assert.match(html,/class="tien-do"[^>]*><span[^>]*>2\/3<\/span> - <b id="examTimeSummary">/);
     const expired=expiredHtml();
-    assert.match(expired,/Rất tiếc bạn đã không hoàn thành phần thi vì đã hết thời gian\./);
+    assert.match(expired,/Leider konnten Sie diesen Prüfungsteil nicht rechtzeitig abschließen\./);
     assert.equal(actionButtons(expired,'student-home').length,1);
   });
   await test('Preview and live exam share the paper and illustrated-answer layout',()=>{
@@ -447,16 +447,16 @@ try{
       const html=examHtml({...input,preview});
       const segments=tags(html,'audio').filter(tag=>hasClass(tag,'section-audio-segment'));
       assert.equal(segments.length,3);
-      assert.equal(attribute(segments[0],'data-label'),'Đề bài');
+      assert.equal(attribute(segments[0],'data-label'),'Beispiel');
       assert.equal(attribute(segments[0],'data-repeat'),'1');
-      assert.equal(attribute(segments[1],'data-label'),'Ví dụ');
+      assert.equal(attribute(segments[1],'data-label'),'Beispiel');
       assert.equal(attribute(segments[1],'data-repeat'),'1');
       assert.equal(attribute(segments[2],'data-repeat'),'2');
       assert.equal(tags(html,'button').filter(tag=>hasClass(tag,'section-audio-play')).length,1);
       assert.equal(tags(html,'button').filter(tag=>hasClass(tag,'play-audio')).length,0);
       assert.match(html,/section-audio-progress/);
       assert.match(html,/section-audio-progress[^>]*hidden/);
-      assert.match(html,/Chỉ có thể bấm nghe một lần/);
+      assert.match(html,/Audio kann nur einmal abgespielt werden/);
     }
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
     assert.match(source,/Promise\.all\(audios\.map\(readAudioDuration\)\)/);
@@ -515,7 +515,7 @@ try{
     assert.equal((html.match(/class="writing-display-group(?: is-full)?"/g)||[]).length,4);
     assert.equal((html.match(/class="writing-point">\(0\)/g)||[]).length,1);
     assert.equal((html.match(/class="writing-point">\(1\)/g)||[]).length,1);
-    assert.match(html,/class="writing-binary"/);assert.match(html,/Chọn phương án/);assert.match(html,/src="\/images\/form\.png"/);
+    assert.match(html,/class="writing-binary"/);assert.match(html,/Antwort auswählen/);assert.match(html,/src="\/images\/form\.png"/);
   });
 
   await test('Writing 1 composes a framed reusable form and scores only answer fields',()=>{

@@ -271,15 +271,15 @@ function bindExamInputs(attempt,questions){
     try{
       sessionStorage.setItem(key,'1');
       btn.disabled=true;
-      btn.textContent='Đang phát...';
-      audio.addEventListener('ended',()=>{btn.textContent='Đã phát audio';},{once:true});
+      btn.textContent='Audio';
+      audio.addEventListener('ended',()=>{btn.textContent='Audio abgespielt';},{once:true});
       audio.addEventListener('seeking',()=>{if(audio.currentTime>0.5)audio.currentTime=Math.max(0,audio.currentTime-0.25);});
       await audio.play();
     }catch(error){
       sessionStorage.removeItem(key);
       btn.disabled=false;
-      btn.textContent='Phát audio';
-      notify('Không phát được audio. Hãy kiểm tra kết nối hoặc tệp âm thanh.');
+      btn.textContent='Audio abspielen';
+      notify('Das Audio konnte nicht abgespielt werden. Bitte prüfen Sie Ihre Verbindung oder die Audiodatei.');
     }
   });
 }
@@ -304,8 +304,8 @@ function bindPreviewInputs(attempt,questions){
   app.querySelectorAll('.play-audio').forEach(btn=>btn.onclick=async()=>{
     const qid=btn.dataset.q,key=`g2g.audio.${attempt.id}.${qid}`,audio=document.getElementById(`audio-${qid}`);
     if(!audio||sessionStorage.getItem(key))return;
-    try{sessionStorage.setItem(key,'1');btn.disabled=true;btn.textContent='Đang phát...';audio.addEventListener('ended',()=>{btn.textContent='Đã phát audio';},{once:true});await audio.play();}
-    catch{sessionStorage.removeItem(key);btn.disabled=false;btn.textContent='Phát audio';notify('Không phát được audio này.');}
+    try{sessionStorage.setItem(key,'1');btn.disabled=true;btn.textContent='Audio';audio.addEventListener('ended',()=>{btn.textContent='Audio abgespielt';},{once:true});await audio.play();}
+    catch{sessionStorage.removeItem(key);btn.disabled=false;btn.textContent='Audio abspielen';notify('Dieses Audio konnte nicht abgespielt werden.');}
   });
 }
 
@@ -336,19 +336,19 @@ function bindSectionAudio(attempt,{preview}){
       progress.hidden=false;root.classList.add('is-playing');
       let completedDuration=0;
       for(let index=0;index<audios.length;index++)for(let turn=0;turn<repeats[index];turn++){
-        const label=audios[index].dataset.label||`Câu ${index+1}`,segmentRepeat=repeats[index];
-        status.textContent=`Đang phát ${label}${segmentRepeat>1?` · lần ${turn+1}/${segmentRepeat}`:''}`;
+        const label=audios[index].dataset.label||`Aufgabe ${index+1}`,segmentRepeat=repeats[index];
+        status.textContent=`${label}${segmentRepeat>1?` · ${turn+1}/${segmentRepeat}`:''}`;
         await playSectionSegment(audios[index],currentTime=>setProgress((completedDuration+currentTime)/totalDuration*100));
         completedDuration+=durations[index];setProgress(completedDuration/totalDuration*100);
       }
       if(!preview)await templateRequest('/actions/completePartAudio',{method:'POST',body:{attemptId:attempt.id,sectionId:root.dataset.sectionAudio}});
       root.classList.remove('is-playing');progress.hidden=true;
-      setProgress(100);status.textContent='Đã hết lượt nghe';
+      setProgress(100);status.textContent='Audio wurde bereits abgespielt';
     }catch(error){
       if(!locked){sessionStorage.removeItem(root.dataset.storageKey);button.disabled=false;}
       root.classList.remove('is-playing');progress.hidden=true;
-      status.textContent=locked&&!preview?'Đã hết lượt nghe':'Không thể tải audio';
-      notify(error?.message||'Không phát được audio.');
+      status.textContent=locked&&!preview?'Audio wurde bereits abgespielt':'Audio konnte nicht geladen werden';
+      notify(error?.message||'Das Audio konnte nicht abgespielt werden.');
     }
   };
 }
@@ -358,7 +358,7 @@ function readAudioDuration(audio){
   return new Promise((resolve,reject)=>{
     const cleanup=()=>{audio.removeEventListener('loadedmetadata',ready);audio.removeEventListener('error',failed);};
     const ready=()=>{if(!Number.isFinite(audio.duration)||audio.duration<=0)return failed();cleanup();resolve(audio.duration);};
-    const failed=()=>{cleanup();reject(new Error('Không đọc được thời lượng audio.'));};
+    const failed=()=>{cleanup();reject(new Error('Die Audiodauer konnte nicht ermittelt werden.'));};
     audio.addEventListener('loadedmetadata',ready,{once:true});audio.addEventListener('error',failed,{once:true});audio.load();
   });
 }
@@ -849,7 +849,7 @@ async function beginAttempt(examId,restart){
 async function moveAttemptSection(delta){
   const attempt=byId(data.attempts,ui.attemptId),exam=attempt&&byId(data.exams,attempt.examId);
   if(!attempt||!exam)return;
-  if(attempt.status!==ATTEMPT_STATUS.IN_PROGRESS){ui.view='student-home';render();notify('Lượt thi trước đã kết thúc. Hãy chọn Thi lại để bắt đầu lượt mới.');return;}
+  if(attempt.status!==ATTEMPT_STATUS.IN_PROGRESS){ui.view='student-home';render();notify('Dieser Prüfungsversuch ist bereits beendet. Starten Sie einen neuen Versuch.');return;}
   if(delta>0){
     const answers=readExamAnswers(app),section=exam.sections[attempt.currentSectionIndex||0];
     const missing=(section.questionIds||[]).map(id=>byId(data.questions,id)).find(q=>q&&!q.example&&q.type!=='speaking'&&!answerPresent(answers[q.id],q));
