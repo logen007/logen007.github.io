@@ -114,7 +114,7 @@ export async function getInfrastructureStatus(user){
     const questionData=questionIds.map(id=>questions.get(id)).filter(Boolean),media=uploadNames([exam,...questionData]);
     let mediaBytes=0;for(const name of media)mediaBytes+=await fileBytes(path.join(uploadDir,name));
     const dataBytes=Buffer.byteLength(JSON.stringify(exam))+questionData.reduce((sum,item)=>sum+Buffer.byteLength(JSON.stringify(item)),0);
-    return {id:row.id,title:exam.title||row.id,provider:exam.provider||'',level:exam.level||'',dataBytes,mediaBytes,totalBytes:dataBytes+mediaBytes,questions:questionData.length,mediaFiles:media.size};
+    return {id:row.id,title:exam.title||row.id,provider:exam.provider||'',level:exam.level||'',dataBytes,mediaBytes,totalBytes:dataBytes+mediaBytes,questions:questionData.filter(item=>!item.example).length,mediaFiles:media.size};
   }));
   const memoryTotal=os.totalmem(),memoryFree=os.freemem(),cpuCores=os.cpus().length||1,cpuUsage=process.cpuUsage(),uptimeSeconds=Math.max(1,process.uptime());
   return {

@@ -6,6 +6,7 @@ import {readExamAnswers} from '../src/ui/exam-answers.js';
 import {examBuilderHtml} from '../src/views/builder.js';
 import {topbarHtml} from '../src/ui/layout.js';
 import {dashboardHtml} from '../src/views/admin.js';
+import {previewExamModalHtml} from '../src/views/modals.js';
 import {mountStudentRuntime} from '../src/part-templates/a1-listening-part-1/student.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {writingFormScore} from '../src/domain/writing-form.js';
@@ -141,6 +142,14 @@ try{
     assert.match(live,/0\/2/);
     const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
     assert.match(css,/\.cau-thi\.is-example \.answer-option>input:disabled\s*\{[^}]*appearance:none;[^}]*opacity:0/);
+  });
+
+  await test('Example questions are excluded from exam modal counts',()=>{
+    const html=previewExamModalHtml({title:'Đề mẫu',sections:[{name:'Nghe 1',timeMinutes:10,questionIds:['example','real']}]},[
+      {id:'example',example:true},{id:'real',example:false}
+    ]);
+    assert.match(html,/1 câu · 10 phút/);
+    assert.doesNotMatch(html,/2 câu/);
   });
   await test('Starting a retake refreshes state and advancing returns to page top',()=>{
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');

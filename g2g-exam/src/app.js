@@ -546,7 +546,7 @@ function questionModal(q=null,onCreated=null){
   };
 }
 
-function previewExamModal(ex){app.insertAdjacentHTML('beforeend',previewExamModalHtml(ex));bindModalClose();}
+function previewExamModal(ex){app.insertAdjacentHTML('beforeend',previewExamModalHtml(ex,data.questions));bindModalClose();}
 function previewQuestionModal(q){app.insertAdjacentHTML('beforeend',previewQuestionModalHtml(q));bindModalClose();}
 function studentGradeModal(studentId){app.insertAdjacentHTML('beforeend',studentGradeModalHtml({data,studentId}));bindModalClose();}
 function closeModal(){document.getElementById('modal')?.remove();}

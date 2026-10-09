@@ -6,7 +6,7 @@ import {
   createExam, duplicateExam, addSection, removeSection, moveSection, addQuestionsToSection, removeQuestionFromSection,
   startAttempt, saveAnswer, setAttemptSection, getSectionRemainingSeconds, abandonAttempt,
   submitAttempt, saveManualScore, publishAttempt, getStudentResults, validateExamForPublish, publishExam,
-  ATTEMPT_STATUS
+  ATTEMPT_STATUS,summarizeExam
 } from '../src/core.js';
 
 let passed=0;
@@ -27,6 +27,14 @@ test('Câu ví dụ không tính điểm và được lưu như một thuộc t�
   assert.equal(getQuestionMaxScore(q,1),0);
   updateQuestion(s,u.lan,q.id,{example:false});
   assert.equal(getQuestionMaxScore(q,1),5);
+});
+
+test('Câu ví dụ không được tính vào tổng số câu của đề',()=>{
+  const s=fresh(),u=users(s);
+  const example=createQuestion(s,u.lan,{title:'Beispiel',type:'single',choices:['A','B'],correctAnswer:0,maxScore:3,example:true});
+  const real=createQuestion(s,u.lan,{title:'Câu thật',type:'single',choices:['A','B'],correctAnswer:0,maxScore:2});
+  const exam=createExam(s,u.lan,{title:'Đề có ví dụ',sections:[{name:'Nghe 1',questionIds:[example.id,real.id]}]});
+  assert.deepEqual(summarizeExam(exam,s),{questions:1,manual:0,maxScore:2,sections:1});
 });
 
 test('Đề bài của phần thi lưu được audio phát một lần',()=>{

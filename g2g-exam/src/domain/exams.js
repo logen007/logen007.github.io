@@ -235,7 +235,8 @@ export function validateExamForPublish(state,exam){
   const seen=new Set();
   for(const [index,section] of (exam?.sections||[]).entries()){
     if(!section.name?.trim())errors.push(`Phần ${index+1} chưa có tên.`);
-    if(!section.questionIds?.length)errors.push(`Phần ${index+1} chưa có câu hỏi.`);
+    const realQuestionIds=(section.questionIds||[]).filter(questionId=>!byId(state.questions,questionId)?.example);
+    if(!realQuestionIds.length)errors.push(`Phần ${index+1} chưa có câu hỏi tính điểm.`);
     if(!Number.isFinite(Number(section.timeMinutes))||Number(section.timeMinutes)<=0)errors.push(`Phần ${index+1} có thời gian không hợp lệ.`);
     for(const questionId of section.questionIds||[]){
       const question=byId(state.questions,questionId);

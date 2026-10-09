@@ -30,7 +30,8 @@ function populateConfiguredSections(state,user,exam){
       if(Object.keys(patch).length)updateQuestion(state,user,questionId,patch);
     }
     const additions=[];
-    for(let index=(section.questionIds||[]).length;index<required;index++){
+    const realQuestionCount=(section.questionIds||[]).filter(questionId=>!byId(state.questions,questionId)?.example).length;
+    for(let index=realQuestionCount;index<required;index++){
       const isStimulusStart=(profile.stimulusStarts||[]).map(Number).includes(index);
       additions.push(createQuestion(state,user,{
         level:exam.level,skill:section.skill,part:section.name,type:profile.type||'single',title:'Nháp',
