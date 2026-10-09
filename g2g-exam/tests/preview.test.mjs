@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {examHtml} from '../src/views/student.js';
+import {examHtml,studentExamCardHtml} from '../src/views/student.js';
 import {examBuilderHtml} from '../src/views/builder.js';
 import {topbarHtml} from '../src/ui/layout.js';
 import {mountStudentRuntime} from '../src/part-templates/a1-listening-part-1/student.js';
@@ -41,6 +41,15 @@ const fixture=()=>{
 };
 
 try{
+  await test('Student exam card shows provider, exact duration and a corner new badge',()=>{
+    const exam={id:'goethe-a1',provider:'GOETHE',level:'A1',title:'Modelltest 1',sections:[{timeMinutes:20,questionIds:[]},{timeMinutes:15,questionIds:[]}]};
+    const html=studentExamCardHtml(exam,[],{questions:[]});
+    assert.match(html,/>Goethe A1<\/span>/);
+    assert.match(html,/35 phút/);
+    assert.doesNotMatch(html,/THI THỬ|khoảng/);
+    assert.match(html,/<span class="the-de-new">Mới<\/span>/);
+    assert.doesNotMatch(html,/<div class="chan">[\s\S]*<b>Mới<\/b>/);
+  });
   await test('Header keeps role-appropriate menus in builder and grading views',()=>{
     for(const role of ['master','teacher'])for(const view of ['admin','builder','grading-detail']){
       const html=topbarHtml({user:{id:role,role},mode:'api',online:true,ui:{view}});
