@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {examHtml,studentExamCardHtml} from '../src/views/student.js';
+import {examHtml,studentExamCardHtml,submittedHtml} from '../src/views/student.js';
 import {examBuilderHtml} from '../src/views/builder.js';
 import {topbarHtml} from '../src/ui/layout.js';
 import {mountStudentRuntime} from '../src/part-templates/a1-listening-part-1/student.js';
@@ -41,6 +41,12 @@ const fixture=()=>{
 };
 
 try{
+  await test('Submission screen uses the concise approved message',()=>{
+    const html=submittedHtml();
+    assert.match(html,/<h1>Đã nộp bài<\/h1>/);
+    assert.match(html,/Khi giáo viên chấm xong, điểm số sẽ được thông báo qua email và hiển thị tại trang kết quả\./);
+    for(const removed of ['ĐÃ NỘP BÀI THÀNH CÔNG','Đang chờ kết quả','Khi có kết quả','Bài thi đã được ghi nhận'])assert.ok(!html.includes(removed));
+  });
   await test('Preview and live exam share the paper and illustrated-answer layout',()=>{
     const sample=fixture();
     sample.exam.sections[0].instruction='Read the instructions.';

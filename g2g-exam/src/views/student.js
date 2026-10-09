@@ -142,5 +142,5 @@ function writingFieldsHtml(q,answer,{framed=false}={}){
 }
 
 export function submittedHtml(){
-  return `<main class="khung"><section class="the ket-qua-cho"><div class="vong">✓</div><div class="nhan-muc">ĐÃ NỘP BÀI THÀNH CÔNG</div><h1>Đang chờ kết quả</h1><span class="nhan vang">ĐANG CHỜ CHẤM</span><p>Bài thi đã được ghi nhận. Một số phần cần giáo viên chấm thủ công nên hệ thống chưa hiển thị điểm ngay.</p><div class="goi-y"><b>Khi có kết quả</b><br>Hệ thống sẽ gửi email đến địa chỉ bạn dùng để đăng nhập. Bạn cũng có thể quay lại trang kết quả để xem.</div><button class="nut" data-action="student-home" style="margin-top:18px">Về danh sách bài thi</button></section></main>`;
+  return `<main class="khung"><section class="the ket-qua-cho"><div class="vong">✓</div><h1>Đã nộp bài</h1><span class="nhan vang">ĐANG CHỜ CHẤM</span><p>Khi giáo viên chấm xong, điểm số sẽ được thông báo qua email và hiển thị tại trang kết quả.</p><button class="nut" data-action="student-home" style="margin-top:18px">Về danh sách bài thi</button></section></main>`;
 }
