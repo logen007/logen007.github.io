@@ -53,9 +53,9 @@ export function writingFormDisplay(q,answer={}){
     else if(type==='static'||type==='signature')html=`<span class="form-given ${type==='signature'?'form-signature':''}">${esc(row.value??row.answers??'')}</span>`;
     else if(type==='choice'||type==='truefalse')html=`<div class="form-options">${writingOptions(row).filter(option=>String(option).trim()).map(option=>`<label><input ${hook} type="radio" name="writing-${esc(q.id)}-${index}" value="${esc(option)}" ${val===option?'checked':''}><span>${esc(option)}</span></label>`).join('')}</div>`;
     else html=`<input ${hook} type="text" value="${esc(val)}" autocomplete="off">`;
-    const full=['heading','note','image'].includes(type),last=groups.at(-1),cell=`<div class="form-cell">${html}${marker?`<span class="form-point">${marker}</span>`:''}</div>`;
-    if(!full&&row.label&&last&&!last.full&&last.label===row.label)last.cells.push(cell);
-    else groups.push({full,type,label:row.label||'',cells:[cell]});
+    const full=['heading','note','image'].includes(type),last=groups.at(-1),cell=`<div class="form-cell">${html}</div>`;
+    if(!full&&row.label&&last&&!last.full&&last.label===row.label){last.cells.push(cell);if(marker)last.markers.push(marker);}
+    else groups.push({full,type,label:row.label||'',cells:[cell],markers:marker?[marker]:[]});
   }
-  return `<div class="writing-paper" aria-label="Biểu mẫu">${groups.map(group=>`<div class="form-line ${group.full?'form-line--full':''} form-line--${esc(group.type)}">${group.full?'':`<span class="form-label">${esc(group.label)}</span>`}<div class="form-cells">${group.cells.join('')}</div></div>`).join('')}</div>`;
+  return `<div class="writing-paper" aria-label="Biểu mẫu">${groups.map(group=>`<div class="form-line ${group.full?'form-line--full':''} form-line--${esc(group.type)}">${group.full?'':`<span class="form-label">${esc(group.label)}</span>`}<div class="form-answer-line"><div class="form-cells">${group.cells.join('')}</div>${group.full?'':`<div class="form-point-column">${group.markers.map(marker=>`<span class="form-point">${marker}</span>`).join('')}</div>`}</div></div>`).join('')}</div>`;
 }
