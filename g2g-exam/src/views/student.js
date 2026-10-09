@@ -87,7 +87,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
 
 function previewOutlineHtml(summary,sectionIndex){
   const {sections=[]}=summary||{};
-  return `<div class="preview-outline"><label class="preview-section-picker" for="previewSectionSelect"><span class="sr-only">Teil auswählen</span><select id="previewSectionSelect" class="truong" style="--picker-width:15ch" aria-label="Teil auswählen" data-action="preview-select-section" ${sections.length?'':'disabled'}>${sections.map((item,index)=>`<option value="${index}" ${index===sectionIndex?'selected':''}>${esc(germanSectionName(item.name))}</option>`).join('')}</select></label></div>`;
+  return `<div class="preview-outline"><label class="preview-section-picker" for="previewSectionSelect"><span class="sr-only">Teil auswählen</span><select id="previewSectionSelect" class="truong" style="--picker-width:18ch" aria-label="Teil auswählen" data-action="preview-select-section" ${sections.length?'':'disabled'}>${sections.map((item,index)=>`<option value="${index}" ${index===sectionIndex?'selected':''}>${esc(germanSectionName(item.name))}</option>`).join('')}</select></label></div>`;
 }
 
 const germanSectionName=name=>String(name||'')
