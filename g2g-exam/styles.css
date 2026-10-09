@@ -211,6 +211,15 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 .writing-block-actions { justify-content:flex-end; }.writing-score { display:flex; align-items:center; gap:8px; color:var(--phu); }.writing-score input { width:80px; }
 .writing-block-content { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:16px; }.writing-block-content--heading,.writing-block-content--note,.writing-block-content--image { grid-template-columns:1fr; }
 .writing-setup-field { display:grid; gap:8px; min-width:0; }.writing-setup-field>span,.writing-option-setup small { color:var(--phu); font-size:13px; }
+.writing-setup-block--text { padding:12px; border-radius:var(--r-sm); }
+.writing-block-content--text { grid-template-columns:minmax(140px,1fr) minmax(220px,2fr) auto; gap:12px; align-items:center; }
+.writing-block-content--text .writing-block-actions { gap:8px; white-space:nowrap; }
+.writing-block-content--text .writing-setup-field { gap:0; }
+.writing-setup-block:not(.writing-setup-block--text) { padding:16px; }
+.writing-setup-block:not(.writing-setup-block--text)>header { margin-bottom:10px; }
+.writing-setup-block--heading .writing-setup-field textarea,.writing-setup-block--note .writing-setup-field textarea { min-height:68px; }
+@media(max-width:850px){.writing-block-content--text { grid-template-columns:minmax(0,1fr) minmax(0,1.5fr); }.writing-block-content--text .writing-block-actions { grid-column:1/-1; justify-content:flex-end; }}
+@media(max-width:520px){.writing-block-content--text { grid-template-columns:1fr; }.writing-block-content--text .writing-block-actions { grid-column:auto; }}
 .writing-answer-help { display:block; margin-top:-8px; color:var(--phu); font-size:12px; line-height:1.5; }
 .writing-setup-field input,.writing-setup-field textarea,.writing-option-setup input:not([type=radio]),.writing-score input { min-width:0; width:100%; min-height:var(--control-height); padding:10px var(--control-pad-x); background:var(--mat); border:1px solid var(--control-border); border-radius:var(--r-sm); font:400 14px/1.5 var(--font-ui); }.writing-score input { width:80px; min-height:var(--editor-control); }.writing-setup-field textarea { min-height:96px; resize:vertical; }
 .writing-example-toggle { grid-column:1/-1; display:flex; align-items:center; gap:8px; font-size:13px; }.writing-option-setup { display:grid; gap:12px; }.writing-option-setup>label { display:flex; align-items:center; gap:12px; }

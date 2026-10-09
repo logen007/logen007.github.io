@@ -21,7 +21,9 @@ assert.equal((view.match(/class="form-label">Straße, Hausnummer:/g)||[]).length
 const editor=writingFormEditor(q);
 assert.ok(!editor.includes('<select'));assert.ok(!editor.includes('data-field="audio"'));
 assert.ok(editor.includes('<textarea data-rubric-value'));
-assert.ok(editor.includes('Đáp án đúng'));
+assert.ok(editor.includes('aria-label="Đáp án đúng"'));
+assert.ok(!editor.includes('class="writing-answer-help"'));
+assert.ok(!editor.includes('<strong>Ô điền</strong>'));
 assert.ok(!editor.includes('Đánh dấu ví dụ'));
 assert.ok(editor.includes('value="Serjakov, Wladimir"'));
 assert.ok(editor.includes('đáp án 1|đáp án 2|đáp án 3'));
