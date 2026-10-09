@@ -5,6 +5,11 @@ import {WRITING_FORM_TYPES,isScoredWritingField,writingFormScore,writingOptions,
 const labels={heading:'Tiêu đề',note:'Đoạn hướng dẫn',static:'Thông tin có sẵn',text:'Ô điền',truefalse:'Đúng / sai',choice:'Chọn phương án',image:'Hình ảnh',signature:'Chữ ký'};
 const addLabels={heading:'Thêm tiêu đề',note:'Thêm văn bản',text:'Thêm ô trả lời',truefalse:'Thêm đúng / sai',choice:'Thêm lựa chọn',image:'Thêm ảnh',signature:'Thêm chữ ký'};
 const field=(label,hook,value,disabled,multi=false,compact=false)=>`<label class="writing-setup-field"><span class="${compact?'sr-only':''}">${label}</span>${multi?`<textarea ${hook} placeholder="${esc(label)}" ${disabled}>${esc(value||'')}</textarea>`:`<input ${hook} aria-label="${esc(label)}" placeholder="${esc(compact&&label==='Đáp án đúng'?'đáp án 1|đáp án 2|đáp án 3':label)}" value="${esc(value||'')}" ${disabled}>`}</label>`;
+const paperAngle=value=>{
+  let hash=2166136261;
+  for(const char of String(value||'form'))hash=Math.imul(hash^char.charCodeAt(0),16777619);
+  return (-1.8+(Math.abs(hash)%361)/100).toFixed(2);
+};
 
 export function writingFormEditor(q,{readOnly=false}={}){
   q={...q,rubric:normalizeWritingRows(q.rubric)};
@@ -66,5 +71,5 @@ export function writingFormDisplay(q,answer={}, {readOnly=false}={}){
     if(!full&&row.label&&last&&!last.full&&last.label===row.label){last.cells.push(cell);if(marker)last.markers.push(marker);}
     else groups.push({full,type,label:row.label||'',cells:[cell],markers:marker?[marker]:[]});
   }
-  return `<div class="writing-paper" aria-label="Formular">${groups.map(group=>`<div class="form-line ${group.full?'form-line--full':''} form-line--${esc(group.type)}">${group.full?'':`<span class="form-label">${esc(group.label)}</span>`}<div class="form-answer-line"><div class="form-cells">${group.cells.join('')}</div>${group.full?'':`<div class="form-point-column">${group.markers.map(marker=>`<span class="form-point">${marker}</span>`).join('')}</div>`}</div></div>`).join('')}</div>`;
+  return `<div class="writing-paper" style="--paper-rotate:${paperAngle(q.id)}deg" aria-label="Formular">${groups.map(group=>`<div class="form-line ${group.full?'form-line--full':''} form-line--${esc(group.type)}">${group.full?'':`<span class="form-label">${esc(group.label)}</span>`}<div class="form-answer-line"><div class="form-cells">${group.cells.join('')}</div>${group.full?'':`<div class="form-point-column">${group.markers.map(marker=>`<span class="form-point">${marker}</span>`).join('')}</div>`}</div></div>`).join('')}</div>`;
 }
