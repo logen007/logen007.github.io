@@ -29,7 +29,9 @@ export function studentExamCardHtml(ex,attempts,data){
   const sum=summarizeExam(ex,data);
   const mins=(ex.sections||[]).reduce((n,s)=>n+(Number(s.timeMinutes)||0),0);
   const provider=String(ex.provider||'').trim();
-  return `<article class="the the-de"><span class="nhan">${esc(provider?`${provider.charAt(0).toUpperCase()}${provider.slice(1).toLowerCase()} ${ex.level}`:ex.level)}</span>${published.length?'':'<span class="the-de-new">Mới</span>'}<h3>${esc(ex.title)}</h3><div class="meta">${sum.sections} phần · ${sum.questions} câu · ${mins} phút</div><div class="day"></div><div class="chan"><span>${published.length?`Đã thi ${published.length} lần`:'Chưa từng thi'}</span>${latest?`<b>Lần thi gần nhất ${latest.totalScore} điểm - ${esc(latest.result||'Chưa đạt')}</b>`:''}</div><div class="hanh-dong"><button class="nut chinh" data-action="start" data-exam="${ex.id}">Bắt đầu thi</button></div></article>`;
+  const latestResult=latest?.result||'Chưa đạt';
+  const latestLine=latest?`Lần thi gần nhất <strong>${esc(latest.totalScore??'—')}</strong> điểm - <span class="exam-latest-result ${latestResult==='Đạt'?'passed':'failed'}">${esc(latestResult)}</span>`:'Chưa từng thi';
+  return `<article class="the the-de"><span class="nhan">${esc(provider?`${provider.charAt(0).toUpperCase()}${provider.slice(1).toLowerCase()} ${ex.level}`:ex.level)}</span>${published.length?'':'<span class="the-de-new">Mới</span>'}<h3>${esc(ex.title)}</h3><div class="meta">${sum.sections} phần · ${sum.questions} câu · ${mins} phút</div><div class="day"></div><div class="chan"><span>${latestLine}</span></div><div class="hanh-dong"><button class="nut chinh" data-action="start" data-exam="${ex.id}">Bắt đầu thi</button></div></article>`;
 }
 
 export function studentResultsHtml({data,user}){

@@ -116,6 +116,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .the-de-new { position:absolute; top:var(--card-padding); right:var(--card-padding); display:inline-flex; align-items:center; min-height:26px; padding:4px 10px; border-radius:var(--pill); background:var(--brand-soft); color:var(--brand-text); font-size:12px; font-weight:600; line-height:1; }
 .the-de h3 { font-size:22px; margin:20px 0 10px; font-weight:500; }.the-de .meta { font-size:14px; color:var(--phu); line-height:1.65; }.the-de .day { flex:1; }
 .the-de .chan { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:24px; font-size:12px; color:var(--phu); }.the-de .hanh-dong { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+.the-de .chan strong { color:var(--chu); font-weight:700; }.exam-latest-result { font-weight:600; }.exam-latest-result.failed { color:#c83b3b; }.exam-latest-result.passed { color:#218a58; }
 .table-wrap { overflow:auto; background:var(--mat); border:1px solid var(--vien); border-radius:var(--r); }
 .bang { width:100%; border-collapse:collapse; min-width:760px; }
 .bang th,.bang td { text-align:left; padding:18px 20px; border-bottom:1px solid var(--vien); font-size:14px; vertical-align:middle; }

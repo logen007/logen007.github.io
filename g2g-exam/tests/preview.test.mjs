@@ -185,6 +185,14 @@ try{
     assert.match(html,/<span class="the-de-new">Mới<\/span>/);
     assert.doesNotMatch(html,/<div class="chan">[\s\S]*<b>Mới<\/b>/);
   });
+  await test('Student exam card puts the latest result on the left and bolds only its score',()=>{
+    const exam={id:'exam-1',provider:'GOETHE',level:'A1',title:'Modelltest',sections:[]};
+    const failed=studentExamCardHtml(exam,[{examId:'exam-1',status:'published',totalScore:14,result:'Chưa đạt',publishedAt:'2026-10-09'}],{questions:[]});
+    assert.doesNotMatch(failed,/Đã thi 1 lần/);
+    assert.match(failed,/Lần thi gần nhất <strong>14<\/strong> điểm - <span class="exam-latest-result failed">Chưa đạt<\/span>/);
+    const passed=studentExamCardHtml(exam,[{examId:'exam-1',status:'published',totalScore:20,result:'Đạt',publishedAt:'2026-10-10'}],{questions:[]});
+    assert.match(passed,/class="exam-latest-result passed">Đạt<\/span>/);
+  });
   await test('Header keeps role-appropriate menus in builder and grading views',()=>{
     for(const role of ['master','teacher'])for(const view of ['admin','builder','grading-detail']){
       const html=topbarHtml({user:{id:role,role},mode:'api',online:true,ui:{view}});
