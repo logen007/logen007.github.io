@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {loadApprovedPartSpec} from '../src/exam-specs/spec-loader.js';
 import {getA1ListeningPart1Spec} from '../src/part-templates/a1-listening-part-1/spec.js';
 import {validateA1ListeningPart1} from '../src/part-templates/a1-listening-part-1/validator.js';
@@ -22,4 +23,8 @@ assert.throws(()=>validateA1ListeningPart1({part:{...part,questionIds:tooMany.ma
 assert.equal(spec.audio.segmentRepeat,2);
 assert.equal(spec.audio.pauseAllowed,false);
 assert.equal(spec.audio.replayAllowed,false);
+const editorSource=fs.readFileSync(new URL('../src/part-templates/a1-listening-part-1/editor.js',import.meta.url),'utf8');
+assert.match(editorSource,/id="tplInstructionAudio"/);
+assert.match(editorSource,/instructionAudioUrl:part\.instructionAudioUrl/);
+assert.match(editorSource,/instructionAudioName:part\.instructionAudioName/);
 console.log('✓ A1 Nghe Phần 1 dùng Part + spec trực tiếp.');

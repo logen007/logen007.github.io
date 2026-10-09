@@ -26,6 +26,8 @@ export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved
   const part={
     id:section.id,
     instruction:section.instruction||'',
+    instructionAudioUrl:section.instructionAudioUrl||'',
+    instructionAudioName:section.instructionAudioName||'',
     defaultScore,
     templateType:section.templateType||spec.template,
   };
@@ -33,7 +35,7 @@ export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved
 
   const render=()=>{
     const realCount=questions.filter(q=>!q.example).length;
-    modal.innerHTML=`<div class="noi-hop"><div class="dau-hop"><div><div class="nhan-muc">CẤU HÌNH PART</div><h2>A1 · Nghe · Phần 1</h2></div><button class="nut nho" id="tplClose">×</button></div><div class="tpl-a1-grid" style="margin-top:14px"><label class="cai-dat">Đề bài chung<textarea id="tplInstruction" style="width:100%;min-height:90px">${esc(part.instruction)}</textarea></label><label class="cai-dat">Điểm mặc định<input id="tplDefaultScore" type="number" min="0" step="0.25" value="${part.defaultScore}"><button class="nut nho" id="tplApplyScore" type="button" style="margin-top:8px">Áp dụng toàn bộ</button></label></div><div class="goi-y">Mỗi câu tương ứng một mảnh audio. Hệ thống phát mỗi mảnh ${policy.segmentRepeat} lần và không cho học viên pause hoặc nghe lại.</div><div id="tplQuestions">${questions.map(questionCard).join('')}</div><div class="chan-hop"><div><span class="phu-de">${realCount}/${maxQuestions} câu · </span><span class="tpl-a1-total">Tổng điểm: <span id="tplTotal">${questions.reduce((n,q)=>n+(q.example?0:Number(q.maxScore||0)),0)}</span></span></div><div class="nhom-nut"><button class="nut" id="tplAdd" ${realCount>=maxQuestions?'disabled':''}>+ Thêm câu</button><button class="nut chinh" id="tplSave">Lưu</button></div></div></div>`;
+    modal.innerHTML=`<div class="noi-hop"><div class="dau-hop"><div><div class="nhan-muc">CẤU HÌNH PART</div><h2>A1 · Nghe · Phần 1</h2></div><button class="nut nho" id="tplClose">×</button></div><div class="tpl-a1-grid" style="margin-top:14px"><label class="cai-dat">Đề bài chung<textarea id="tplInstruction" style="width:100%;min-height:90px">${esc(part.instruction)}</textarea><span>Audio đề bài (chỉ phát một lần)</span><input id="tplInstructionAudio" type="file" accept="audio/*"><small class="phu-de">${esc(part.instructionAudioName||'Chưa có audio')}</small></label><label class="cai-dat">Điểm mặc định<input id="tplDefaultScore" type="number" min="0" step="0.25" value="${part.defaultScore}"><button class="nut nho" id="tplApplyScore" type="button" style="margin-top:8px">Áp dụng toàn bộ</button></label></div><div class="goi-y">Audio đề bài và câu ví dụ phát một lần. Audio các câu còn lại phát ${policy.segmentRepeat} lần và học viên không thể pause hoặc nghe lại.</div><div id="tplQuestions">${questions.map(questionCard).join('')}</div><div class="chan-hop"><div><span class="phu-de">${realCount}/${maxQuestions} câu · </span><span class="tpl-a1-total">Tổng điểm: <span id="tplTotal">${questions.reduce((n,q)=>n+(q.example?0:Number(q.maxScore||0)),0)}</span></span></div><div class="nhom-nut"><button class="nut" id="tplAdd" ${realCount>=maxQuestions?'disabled':''}>+ Thêm câu</button><button class="nut chinh" id="tplSave">Lưu</button></div></div></div>`;
     modal.querySelector('#tplClose').onclick=()=>modal.remove();
     modal.querySelector('#tplAdd').onclick=()=>{sync();if(questions.filter(q=>!q.example).length<maxQuestions){questions.push(questionDraft(Number(modal.querySelector('#tplDefaultScore').value)||specDefaultScore));render();}};
     modal.querySelector('#tplApplyScore').onclick=()=>{const value=Math.max(0,Number(modal.querySelector('#tplDefaultScore').value)||0);modal.querySelectorAll('.tpl-score:not(:disabled)').forEach(input=>input.value=String(value));syncTotal();};
@@ -67,6 +69,8 @@ export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved
     const button=modal.querySelector('#tplSave');button.disabled=true;button.textContent='Đang lưu...';
     try{
       sync();
+      const instructionAudioFile=modal.querySelector('#tplInstructionAudio')?.files?.[0];
+      if(instructionAudioFile){part.instructionAudioUrl=await uploadTemplateMedia('audio',instructionAudioFile);part.instructionAudioName=instructionAudioFile.name||'Audio đề bài';}
       for(let index=0;index<questions.length;index++){
         const question=questions[index];
         const audioFile=modal.querySelector(`.tpl-audio[data-i="${index}"]`)?.files?.[0];
@@ -84,8 +88,9 @@ export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved
         ops.push({collection:'questions',id:q.id,kind:'upsert',item});
       });
       const kept=new Set(questionIds);for(const old of originalQuestions)if(!kept.has(old.id))ops.push({collection:'questions',id:old.id,kind:'upsert',item:{...old,status:'trash',deletedAt:now,updatedAt:now}});
-      await commit({operations:ops,sectionPatch:{instruction:part.instruction,questionIds}});
-      modal.remove();if(onSaved)await onSaved({sectionId:section.id,instruction:part.instruction,questionIds});
+      const sectionPatch={instruction:part.instruction,instructionAudioUrl:part.instructionAudioUrl,instructionAudioName:part.instructionAudioName,questionIds};
+      await commit({operations:ops,sectionPatch});
+      modal.remove();if(onSaved)await onSaved({sectionId:section.id,...sectionPatch});
     }finally{if(document.body.contains(button)){button.disabled=false;button.textContent='Lưu';}}
   }
   render();
