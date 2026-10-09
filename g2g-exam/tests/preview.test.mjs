@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {examHtml,studentExamCardHtml,submittedHtml} from '../src/views/student.js';
+import {examHtml,studentExamCardHtml,submittedHtml,answerPresent} from '../src/views/student.js';
+import {readExamAnswers} from '../src/ui/exam-answers.js';
 import {examBuilderHtml} from '../src/views/builder.js';
 import {topbarHtml} from '../src/ui/layout.js';
 import {mountStudentRuntime} from '../src/part-templates/a1-listening-part-1/student.js';
@@ -41,6 +42,38 @@ const fixture=()=>{
 };
 
 try{
+  await test('Section completion requires every matching item and form field, with zero accepted',()=>{
+    assert.equal(answerPresent(0,{type:'single'}),true);
+    assert.equal(answerPresent('   ',{type:'writing'}),false);
+    const matching={type:'matching',pairs:[['One','A'],['Two','B']]};
+    assert.equal(answerPresent(['A',''],matching),false);
+    assert.equal(answerPresent(['A','B'],matching),true);
+    const form={type:'writing',rubric:[{type:'heading'},{type:'text'},{type:'choice'},{type:'signature'},{type:'text',hidden:true}]};
+    assert.equal(answerPresent({1:'Name'},form),false);
+    assert.equal(answerPresent({1:'Name',2:'Option'},form),true);
+  });
+  await test('Navigation reads all current controls before a pending autosave fires',()=>{
+    const controls={
+      '.answer-one':[{dataset:{q:'choice'},checked:true,value:'0'},{dataset:{q:'choice'},checked:false,value:'1'}],
+      '.answer-match':[{dataset:{q:'match',i:'0'},value:'A'},{dataset:{q:'match',i:'1'},value:''}],
+      '.answer-text':[{dataset:{q:'essay'},value:'Latest edit'}],
+      '.answer-form-field':[{dataset:{q:'form',fieldIndex:'1'},type:'text',value:'Name'},{dataset:{q:'form',fieldIndex:'2'},type:'radio',checked:true,value:'Yes'},{dataset:{q:'form',fieldIndex:'2'},type:'radio',checked:false,value:'No'}],
+    };
+    assert.deepEqual(readExamAnswers({querySelectorAll:selector=>controls[selector]}),{choice:0,match:['A',''],essay:'Latest edit',form:{1:'Name',2:'Yes'}});
+  });
+  await test('Next stays on the first unanswered question, then saves and advances once complete',async()=>{
+    const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+    const functionSource=source.slice(source.indexOf('async function moveAttemptSection(delta){'),source.indexOf('async function createNewExam()'));
+    const calls=[],answers={first:0};
+    const state={attempts:[{id:'attempt',examId:'exam',status:'in_progress',currentSectionIndex:0}],exams:[{id:'exam',sections:[{questionIds:['first','second']},{}]}],questions:[{id:'first',type:'single'},{id:'second',type:'single'}]};
+    const context=vm.createContext({data:state,ui:{attemptId:'attempt'},app:{},user:{},ATTEMPT_STATUS:{IN_PROGRESS:'in_progress'},byId:(items,id)=>items.find(item=>item.id===id),readExamAnswers:()=>answers,answerPresent,revealUnansweredQuestion:(_,id)=>calls.push(id),flushTextAnswers:async()=>{calls.push('save');return true;},repo:{transaction:fn=>fn(state),getState:async()=>state},setAttemptSection:()=>{calls.push('advance');return true;},act:fn=>fn(),render:()=>calls.push('render'),window:{scrollTo:()=>calls.push('top')},notify:()=>{}});
+    vm.runInContext(functionSource,context);
+    await context.moveAttemptSection(1);
+    assert.deepEqual(calls,['second']);
+    answers.second=1;calls.length=0;
+    await context.moveAttemptSection(1);
+    assert.deepEqual(calls,['save','advance','render','top']);
+  });
   await test('Submission screen uses the concise approved message',()=>{
     const html=submittedHtml();
     assert.match(html,/<h1>Đã nộp bài<\/h1>/);
@@ -250,7 +283,7 @@ try{
     assert.match(html,/<textarea\b[^>]*>Two words<\/textarea>/);
     assert.match(html,/class="word-count">2<\/span>/);
     const answered=tags(html,'div').filter(tag=>hasClass(tag,'cau-thi')&&hasClass(tag,'is-answered'));
-    assert.deepEqual(answered.map(tag=>attribute(tag,'data-q')),['choice','match','written']);
+    assert.deepEqual(answered.map(tag=>attribute(tag,'data-q')),['choice','written']);
   });
 
   await test('Question and instruction text remain escaped in both preview and real exam layouts',()=>{
@@ -349,7 +382,7 @@ try{
       assert.match(html,/data-repeat="2"/);
       assert.match(html,/section-audio-progress/);
       assert.match(html,/section-audio-progress[^>]*hidden/);
-      assert.match(html,/Chỉ được nghe một lần/);
+      assert.match(html,/Chỉ có thể bấm nghe một lần/);
     }
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
     assert.match(source,/Promise\.all\(audios\.map\(readAudioDuration\)\)/);

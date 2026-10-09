@@ -33,6 +33,7 @@ import {initializeTheme} from './settings/theme.js';
 import {loadPublicSettings} from './settings/api.js';
 import {isScoredWritingField,writingFormScore,addWritingRow,removeWritingRow} from './domain/writing-form.js';
 import {readWritingRow} from './ui/writing-form.js';
+import {readExamAnswers,revealUnansweredQuestion} from './ui/exam-answers.js';
 
 initializeTheme();
 const app=document.getElementById('app');
@@ -233,7 +234,7 @@ function bindExamInputs(attempt,questions){
   const setLocalAnswer=(qid,value)=>{
     attempt.answers={...(attempt.answers||{}),[qid]:value};
     const answered=questions.filter(question=>answerPresent(attempt.answers[question.id],question)).length;
-    app.querySelectorAll('[data-current-answer-count]').forEach(item=>{item.textContent=`${answered}/${questions.length} câu đã trả lời`;});
+    app.querySelectorAll('[data-current-answer-count]').forEach(item=>{item.textContent=`${answered}/${questions.length}`;});
     const question=questions.find(item=>item.id===qid),card=app.querySelector(`.cau-thi[data-q="${qid}"]`);
     if(card&&question)card.classList.toggle('is-answered',answerPresent(value,question));
   };
@@ -338,7 +339,7 @@ function bindSectionAudio(attempt,{preview}){
       }
       if(!preview)await templateRequest('/actions/completePartAudio',{method:'POST',body:{attemptId:attempt.id,sectionId:root.dataset.sectionAudio}});
       root.classList.remove('is-playing');progress.hidden=true;
-      if(preview){setProgress(0);status.textContent='Chỉ được nghe một lần';button.disabled=false;}
+      if(preview){setProgress(0);status.textContent='Chỉ có thể bấm nghe một lần';button.disabled=false;}
       else{setProgress(100);status.textContent='Đã hết lượt nghe';}
     }catch(error){
       if(!locked){sessionStorage.removeItem(root.dataset.storageKey);button.disabled=false;}
@@ -386,8 +387,12 @@ async function flushTextAnswers(){
   const pending=[...saveTimers.values()];
   for(const timer of pending)clearTimeout(timer);
   saveTimers.clear();
-  const text=app.querySelector('.answer-text');
-  if(text&&ui.attemptId)await act(()=>repo.transaction(st=>saveAnswer(st,user,ui.attemptId,text.dataset.q,text.value)),null,{rerender:false});
+  const answers=readExamAnswers(app),attemptId=ui.attemptId;
+  if(!attemptId||!Object.keys(answers).length)return true;
+  return Boolean(await act(()=>repo.transaction(st=>{
+    for(const [qid,value] of Object.entries(answers))saveAnswer(st,user,attemptId,qid,value);
+    return true;
+  }),null,{rerender:false}));
 }
 
 function startExamTimer(attempt,exam,sectionIndex){
@@ -833,10 +838,15 @@ async function beginAttempt(examId,restart){
 }
 
 async function moveAttemptSection(delta){
-  await flushTextAnswers();
   const attempt=byId(data.attempts,ui.attemptId),exam=attempt&&byId(data.exams,attempt.examId);
   if(!attempt||!exam)return;
   if(attempt.status!==ATTEMPT_STATUS.IN_PROGRESS){ui.view='student-home';render();notify('Lượt thi trước đã kết thúc. Hãy chọn Thi lại để bắt đầu lượt mới.');return;}
+  if(delta>0){
+    const answers=readExamAnswers(app),section=exam.sections[attempt.currentSectionIndex||0];
+    const missing=(section.questionIds||[]).map(id=>byId(data.questions,id)).find(q=>q&&q.type!=='speaking'&&!answerPresent(answers[q.id],q));
+    if(missing){revealUnansweredQuestion(app,missing.id);return;}
+  }
+  if(!await flushTextAnswers())return;
   const next=Math.max(0,Math.min(exam.sections.length-1,(attempt.currentSectionIndex||0)+delta));
   const result=await act(()=>repo.transaction(st=>setAttemptSection(st,user,attempt.id,next)),null,{rerender:false});
   if(result){data=await repo.getState();ui.view='exam';render();window.scrollTo(0,0);}

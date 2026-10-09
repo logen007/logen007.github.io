@@ -265,6 +265,8 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 .answer-option { position:relative; display:block; cursor:pointer; }.answer-option>input { position:absolute; opacity:0; }
 .answer-option-body { display:flex; align-items:center; gap:10px; min-height:52px; height:100%; padding:12px 14px; border:1px solid var(--vien); border-radius:var(--r-sm); background:var(--mat); font-size:14px; line-height:1.45; }
 .answer-letter { font-weight:700; }
+.cau-thi.is-unanswered { outline:2px solid transparent; outline-offset:6px; animation:unanswered-pulse .65s ease-in-out .3s 2; }
+@keyframes unanswered-pulse { 0%,100% { outline-color:transparent; } 40%,65% { outline-color:var(--do); } }
 .answer-option-body::before { content:''; display:block; box-sizing:border-box; width:18px; height:18px; flex:0 0 18px; border:1.5px solid #a4a9b0; border-radius:50%; background:var(--mat); transition:border-color .16s ease,background .16s ease,box-shadow .16s ease; }.answer-option-body>img { width:52px; height:40px; object-fit:contain; border-radius:6px; }
 .answer-option:hover .answer-option-body { border-color:var(--brand-border); }
 .answer-option>input:checked+.answer-option-body { border-color:var(--brand-border); background:var(--brand-soft); color:var(--brand-text); font-weight:500; }
@@ -332,7 +334,7 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
   .exam-paper .answer-options--mobile-three .answer-option-body { padding:8px 6px; font-size:12px; }
   .builder-heading { gap:12px; }.builder-back { font-size:12px; }.builder-save-status { flex-basis:100%; padding:0; }
   .thi--preview .thanh-thi { display:block; }.preview-header-row { flex-wrap:wrap; }.preview-shell { gap:24px; }.preview-section-picker .truong { max-width:100%; }.preview-outline>.preview-progress { margin-left:0; margin-right:auto; }.preview-progress-track { width:48px; }.exam-paper { padding:20px; border-radius:20px; }.preview-question-heading { flex-direction:column; gap:12px; }.exam-paper .answer-options--illustrated .answer-option-body { grid-template-columns:18px minmax(0,1fr); grid-template-rows:auto auto; align-items:center; }.exam-paper .answer-options--illustrated .answer-option-body::before { grid-column:1; grid-row:2; }.exam-paper .answer-options--illustrated .answer-option-body>img { grid-column:1/-1; grid-row:1; width:100%; height:auto; max-height:none; }.exam-paper .answer-options--illustrated .answer-option-body>span { grid-column:2; grid-row:2; }
-  .dieu-huong-thi { flex-wrap:wrap; gap:12px; }.dieu-huong-thi .tien-do { order:3; width:100%; }.dieu-huong-thi .nut { min-width:0; }.audio-thi { align-items:flex-start; flex-direction:column; }.dang-nhap { display:block; margin:32px auto; }.dang-nhap .gioi-thieu { display:none; }.dang-nhap .hop-dang-nhap { padding:28px 24px; }
+  .dieu-huong-thi { flex-wrap:nowrap; gap:8px; }.dieu-huong-thi .tien-do { white-space:nowrap; font-size:12px; }.dieu-huong-thi .nut { min-width:0; padding:10px 12px; font-size:13px; }.audio-thi { align-items:flex-start; flex-direction:column; }.dang-nhap { display:block; margin:32px auto; }.dang-nhap .gioi-thieu { display:none; }.dang-nhap .hop-dang-nhap { padding:28px 24px; }
 }
 @media(max-width:420px) {
   .goethe-question-side { grid-template-columns:1fr; }.thanh-dau .thuong-hieu { gap:8px; }.goethe-choices--true-false { grid-template-columns:1fr; }.question-profile-row { gap:6px; }.question-profile-field { font-size:12px; }
