@@ -898,10 +898,7 @@ function bindBuilder(){
       await act(()=>repo.transaction(st=>{const q=byId(st.questions,b.dataset.id);if(q)updateQuestion(st,user,q.id,{rubric:removeWritingRow(q.rubric,Number(b.dataset.index))});}));return;
     }
     const row=b.closest('[data-rubric-index]'),card=b.closest('[data-question-id]');if(!row||!card)return;
-    const type=row.querySelector('[data-rubric-type]')?.value||'text';
-    const activeOfType=[...card.querySelectorAll('[data-rubric-index]:not(.is-hidden)')].filter(item=>(item.querySelector('[data-rubric-type]')?.value||'text')===type);
-    if(activeOfType.length<=1){row.classList.add('is-hidden');row.dataset.rubricHidden='true';}
-    else row.remove();
+    row.remove();
     builderEditRevision++;
     if(await saveBuilderDraft({silent:true}))data=await repo.getState();
     render();

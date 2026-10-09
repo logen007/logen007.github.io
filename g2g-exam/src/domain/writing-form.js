@@ -32,16 +32,13 @@ export function writingOptions(row){
 
 export function addWritingRow(rows,type,index){
   const result=structuredClone(rows||[]),source=result[index];
-  if(source?.hidden){result.splice(index,1);result.push({...source,hidden:false});}
-  else result.push({type:type||source?.type||'text',label:'',value:'',answers:'',options:['truefalse','choice'].includes(type||source?.type)?['Richtig','Falsch']:[],maxScore:isScoredWritingField({type:type||source?.type})?1:0,hidden:false,imageUrl:''});
+  result.push({type:type||source?.type||'text',label:'',value:'',answers:'',options:['truefalse','choice'].includes(type||source?.type)?['Richtig','Falsch']:[],maxScore:isScoredWritingField({type:type||source?.type})?1:0,hidden:false,imageUrl:''});
   return result;
 }
 
 export function removeWritingRow(rows,index){
-  const result=structuredClone(rows||[]),source=result[index];
-  if(!source)return result;
-  if(result.filter(row=>!row.hidden&&row.type===source.type).length<=1)result[index]={...source,hidden:true};
-  else result.splice(index,1);
+  const result=structuredClone(rows||[]);
+  if(index>=0&&index<result.length)result.splice(index,1);
   return result;
 }
 
