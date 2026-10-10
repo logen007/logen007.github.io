@@ -13,6 +13,7 @@ import {uploadQuestionAudio,uploadQuestionImage} from './media.js';
 import {countWords} from './ui/format.js';
 import {topbarHtml} from './ui/layout.js';
 import {classesHtml,bindClasses,openStudentProfile} from './views/classes.js';
+import {openClassEnrollment} from './views/class-enrollment.js';
 import {openExamAccess,openCodeEntry,showPromotion} from './views/exam-access.js';
 import {gradebookHtml,bindGradebook} from './views/gradebook.js';
 import {confirmAction} from './ui/confirm.js';
@@ -459,7 +460,7 @@ function adminView(){
   else if(ui.adminTab==='grading')content=gradingAdminHtml({data,user});
   else if(ui.adminTab==='grades')content=gradebookHtml({data,ui});
   else if(ui.adminTab==='teachers')content=teachersAdminHtml({data,user});
-  else if(ui.adminTab==='classes')content=classesHtml({data});
+  else if(ui.adminTab==='classes')content=classesHtml({data,classId:ui.classId});
   else if(ui.adminTab==='trash')content=trashAdminHtml({data});
   app.innerHTML=layout(adminShellHtml({content,user,ui}));
 }
@@ -590,9 +591,10 @@ function render(){
   bindViewSpecific();
   const profileSaved=async()=>{data=await repo.getState();const fresh=data.users.find(item=>item.id===user.id);if(fresh)user={...user,...fresh,role:user.role};render();};
   if(!isStudent(user)){
-    bindClasses(app,{data,repo,onSaved:profileSaved});
+    bindClasses(app,{data,repo,onSaved:profileSaved,onClassOpen:id=>{ui.classId=id;render();window.scrollTo(0,0);}});
     bindGradebook(app,{data,repo,ui,onSaved:profileSaved,render});
   }
+  app.querySelector('[data-action="class-enrollment"]')?.addEventListener('click',()=>openClassEnrollment({repo,user,onSaved:profileSaved}));
   if(isStudent(user)&&!user.canTestRoles&&!user.profileCompletedAt&&!document.getElementById('modal'))openStudentProfile({data,repo,student:user,onSaved:profileSaved,required:true});
   else if(isStudent(user)&&['student-home','student-results','student-attempt-detail','submitted'].includes(ui.view)&&data.promotions?.length&&!document.getElementById('modal'))showPromotion({repo,promotion:data.promotions[0],onSaved:profileSaved});
 }

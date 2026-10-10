@@ -81,7 +81,7 @@ export function filteredGradebook(data,filters={}){
   const exams=new Map(data.exams.map(exam=>[exam.id,exam]));
   const rows=[];
   for(const student of data.users.filter(user=>user.role==='student')){
-    if(filters.level&&(student.level||'A1.1')!==filters.level)continue;
+    if(filters.level&&(student.level||'A1')!==filters.level)continue;
     if(filters.classId&&student.classId!==filters.classId)continue;
     if(filters.studentId&&student.id!==filters.studentId)continue;
     const attempts=data.attempts.filter(attempt=>attempt.studentId===student.id&&attempt.status==='published'&&String(exams.get(attempt.examId)?.provider||'').toUpperCase()===provider&&(!filters.reviewerId||attempt.reviewerId===filters.reviewerId));

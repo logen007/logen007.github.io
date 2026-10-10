@@ -41,7 +41,7 @@ export function createExam(state,user,input={}){
     id:uid('exam'),
     title:String(input.title||'Bài thi thử mới').trim(),
     level:input.level||'B1',
-    learningLevel:input.learningLevel||null,
+    learningLevel:input.learningLevel||input.level||'B1',
     hidden:Boolean(input.hidden),
     provider:['GOETHE','TELC'].includes(String(input.provider||'').toUpperCase())?String(input.provider).toUpperCase():null,
     settings:{defaultQuestionScore:Math.max(0,Number(input.settings?.defaultQuestionScore??1)),totalTimeMinutes:Math.max(1,Number(input.settings?.totalTimeMinutes??60)),skillTimes:{...(input.settings?.skillTimes||{})},skillSettings:clone(input.settings?.skillSettings||{})},

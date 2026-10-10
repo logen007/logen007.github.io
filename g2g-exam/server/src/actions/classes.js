@@ -1,6 +1,7 @@
 import {withTx,appError,audit,uid,now} from '../db.js';
 import {isTeacher} from './shared.js';
 import {validateStudentProfile} from '../../../src/domain/student-profile.js';
+import {externalClassId} from './class-enrollment.js';
 
 export async function saveClass(user,{id,code,description,teacherIds}){
   if(!isTeacher(user))throw appError(403,'Chỉ giáo viên được quản lý lớp.');
@@ -14,6 +15,7 @@ export async function saveClass(user,{id,code,description,teacherIds}){
       const found=await client.query('SELECT * FROM classes WHERE id=$1 FOR UPDATE',[id]);
       if(!found.rowCount)throw appError(404,'Không tìm thấy lớp.');
       previous=found.rows[0];
+      if(previous.code.toLowerCase()==='extend'&&code!=='Extend')throw appError(400,'Không thể đổi mã lớp mặc định Extend.');
     }else id=uid('class');
     description=description===undefined?previous.description||'':description.trim();
     teacherIds=[...new Set(teacherIds===undefined?previous.teacher_ids||[]:teacherIds)];
@@ -41,7 +43,7 @@ export async function saveStudentProfile(user,payload){
     if(own&&row.data?.profileCompletedAt)throw appError(403,'Vui lòng nhờ giáo viên cập nhật hồ sơ.');
     const classes=(await client.query('SELECT id,active FROM classes WHERE active=true FOR SHARE')).rows;
     let profile;
-    try{profile=validateStudentProfile({...payload,level:own?(row.data?.level||'A1.1'):payload.level},classes);}
+    try{profile=validateStudentProfile({...payload,classId:own?await externalClassId(client):payload.classId,level:row.data?.level||'A1'},classes);}
     catch(error){throw appError(400,error.message);}
     const data={...row.data,...profile,profileCompletedAt:row.data?.profileCompletedAt||now()};
     await client.query('UPDATE users SET data=$2::jsonb,updated_at=now() WHERE id=$1',[studentId,JSON.stringify(data)]);

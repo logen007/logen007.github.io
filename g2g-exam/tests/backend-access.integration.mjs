@@ -22,9 +22,9 @@ try{
   const {publishAttemptResult}=await import('../server/src/actions/grading.js');
   const {saveOralScore}=await import('../server/src/actions/oral.js');
   const {loadState}=await import('../server/src/state.js');
-  const teacher={id:'t',role:'teacher',name:'Teacher'},student={id:'s',role:'student',name:'Student',level:'A1.1',profileCompletedAt:'2026-01-01'};
+  const teacher={id:'t',role:'teacher',name:'Teacher'},student={id:'s',role:'student',name:'Student',level:'A1',profileCompletedAt:'2026-01-01'};
   for(const user of [teacher,student])await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4)',[user.id,`${user.id}@example.test`,user.role,JSON.stringify(user)]);
-  const {saveClass}=await import('../server/src/actions/classes.js');
+  const {saveClass,saveStudentProfile}=await import('../server/src/actions/classes.js');
   await assert.rejects(()=>saveClass(student,{code:'Forbidden'}));
   const classroom=await saveClass(teacher,{code:'A1-01',description:'Evening class',teacherIds:['t','t']});
   assert.deepEqual(classroom.teacherIds,['t']);
@@ -34,14 +34,57 @@ try{
   assert.deepEqual((await loadState(teacher)).classes.find(c=>c.id===classroom.id).teacherIds,['t']);
   await saveClass(teacher,{id:classroom.id,code:'A1-02',description:'Updated',teacherIds:[]});
   assert.deepEqual((await loadState(teacher)).classes.find(c=>c.id===classroom.id).teacherIds,[]);
+  const {verifyClassCode,enrollInClass}=await import('../server/src/actions/class-enrollment.js');
+  const external=(await query("SELECT id FROM classes WHERE code='Extend'")).rows[0].id;
+  await assert.rejects(()=>saveClass(teacher,{id:external,code:'Other'}),/Extend/);
+  const newcomer={id:'new',email:'new@example.test',role:'student',level:'A1',classId:external};
+  const another={...newcomer,id:'new2',email:'new2@example.test'};
+  for(const u of [newcomer,another])await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4)',[u.id,u.email,u.role,JSON.stringify(u)]);
+  await assert.rejects(()=>saveStudentProfile(newcomer,{name:'Only',classId:classroom.id}),/họ và tên/);
+  await saveStudentProfile(newcomer,{name:'Nguyen New',classId:classroom.id,level:'C2'});
+  await saveStudentProfile(another,{name:'Nguyen Other',classId:classroom.id,level:'C2'});
+  let saved=(await query("SELECT data FROM users WHERE id='new'")).rows[0].data;
+  assert.equal(saved.classId,external);assert.equal(saved.level,'A1');
+  await assert.rejects(()=>saveStudentProfile(newcomer,{name:'Changed Name',classId:classroom.id}),/giáo viên/);
+  let staffState=await loadState(teacher);
+  const ownCode=staffState.users.find(u=>u.id==='new').confirmationCode;
+  const otherCode=staffState.users.find(u=>u.id==='new2').confirmationCode;
+  assert.match(ownCode,/^[A-Z0-9]{5}$/);assert.notEqual(ownCode,otherCode);
+  assert.equal((await loadState(teacher)).users.find(u=>u.id==='new').confirmationCode,ownCode);
+  assert.ok(!JSON.stringify(await loadState({...newcomer,...saved})).includes(ownCode));
+  await assert.rejects(()=>verifyClassCode(teacher,{code:ownCode}),/học viên/);
+  await assert.rejects(()=>verifyClassCode(newcomer,{code:otherCode}),/email/);
+  await query("UPDATE users SET email='changed@example.test' WHERE id='new'");
+  await assert.rejects(()=>verifyClassCode(newcomer,{code:ownCode}),/email/);
+  await query("UPDATE users SET email='new@example.test' WHERE id='new'");
+  const choices=await verifyClassCode(newcomer,{code:ownCode.toLowerCase()});
+  assert.ok(choices.classes.some(c=>c.id===classroom.id));
+  assert.ok(!choices.classes.some(c=>c.id===external));
+  await assert.rejects(()=>enrollInClass(newcomer,{code:ownCode,classId:external}),/chọn một lớp/);
+  await assert.rejects(()=>enrollInClass(newcomer,{code:otherCode,classId:classroom.id}),/email/);
+  await enrollInClass(newcomer,{code:ownCode,classId:classroom.id});
+  assert.equal((await query("SELECT data FROM users WHERE id='new'")).rows[0].data.classId,classroom.id);
+  await assert.rejects(()=>enrollInClass(newcomer,{code:ownCode,classId:classroom.id}),/đã được xếp lớp/);
+  assert.equal((await loadState(teacher)).users.find(u=>u.id==='new').confirmationCode,null);
+  await saveStudentProfile(teacher,{studentId:'new',name:'Nguyen New',classId:classroom.id,level:'C2'});
+  assert.equal((await query("SELECT data FROM users WHERE id='new'")).rows[0].data.level,'A1');
+  for(let i=0;i<11;i++)try{await verifyClassCode(another,{code:'!!!!!'});}catch{}
+  await assert.rejects(()=>verifyClassCode(another,{code:otherCode}),/quá nhiều/);
+  // Re-running the migration normalizes legacy levels without moving assigned students.
+  await query("UPDATE users SET data=data||'{\"level\":\"B2.2\"}'::jsonb WHERE id='new'");
+  await db.exec(await fs.readFile(new URL('../server/schema.sql',import.meta.url),'utf8'));
+  saved=(await query("SELECT data FROM users WHERE id='new'")).rows[0].data;
+  assert.equal(saved.level,'B2');assert.equal(saved.classId,classroom.id);
+  assert.equal((await query("SELECT data FROM users WHERE id='s'")).rows[0].data.classId,external);
+  console.log('Registration, Extend defaults, email-bound one-time enrollment, privacy, rate limiting and migration passed.');
   const sections=[];
   for(const [skill,max] of Object.entries({reading:75,grammar:30,listening:75,writing:45})){
     sections.push({id:skill,name:skill,skillKey:skill,questionIds:[skill],timeMinutes:10});
     await query('INSERT INTO questions(id,owner_id,data) VALUES($1,$2,$3)',[skill,'t',JSON.stringify({id:skill,title:skill,skill,type:'single',correctAnswer:0,choices:['a','b'],maxScore:max,autoGrade:true})]);
   }
-  const exam={id:'e',ownerId:'t',title:'Protected',provider:'TELC',level:'B1',learningLevel:'B1.1',hidden:true,sections};
+  const exam={id:'e',ownerId:'t',title:'Protected',provider:'TELC',level:'B1',learningLevel:'B1',hidden:true,sections};
   await query("INSERT INTO exams(id,owner_id,status,data) VALUES('e','t','published',$1)",[JSON.stringify(exam)]);
-  await assert.rejects(()=>saveExamAccess(student,{examId:'e',hidden:false,learningLevel:'B1.1'}));
+  await assert.rejects(()=>saveExamAccess(student,{examId:'e',hidden:false,learningLevel:'B1'}));
   await assert.rejects(()=>startAttempt(student,{examId:'e'}),/nhập mã/);
   const before=await loadState(student);assert.equal(before.questions.length,0);assert.equal(before.exams[0].hasActiveCodes,false);
   const code=await createExamCode(teacher,{examId:'e',expiresAt:new Date(Date.now()+60000).toISOString()});
@@ -68,13 +111,13 @@ try{
   // Marks must remain private until published.
   assert.equal((await loadState(student)).attempts[0].oralScore,undefined);
   await publishAttemptResult(teacher,{attemptId:attempt.attemptId});
-  assert.equal((await query("SELECT data FROM users WHERE id='s'")).rows[0].data.level,'B1.2');
+  assert.equal((await query("SELECT data FROM users WHERE id='s'")).rows[0].data.level,'B1');
   assert.equal((await query('SELECT count(*)::int AS n FROM level_promotions')).rows[0].n,1);
   await publishAttemptResult(teacher,{attemptId:attempt.attemptId});
   assert.equal((await query('SELECT count(*)::int AS n FROM level_promotions')).rows[0].n,1);
   const notification=(await query('SELECT data FROM notifications')).rows[0].data;
-  assert.ok(notification.text.includes('B1.2'));assert.ok(notification.text.includes('135/225'));
-  assert.equal((await loadState(student)).promotions[0].toLevel,'B1.2');
+  assert.ok(notification.text.includes('B1'));assert.ok(notification.text.includes('135/225'));
+  assert.equal((await loadState(student)).promotions[0].toLevel,'B1');
   const other={...student,id:'s2'};
   await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4)',['s2','s2@example.test','student',JSON.stringify(other)]);
   for(const [skill,max] of Object.entries({reading:75,grammar:30,listening:75,writing:45}))await query("UPDATE questions SET data=jsonb_set(data,'{maxScore}',$2::jsonb) WHERE id=$1",[skill,JSON.stringify(max)]);
@@ -84,15 +127,15 @@ try{
   await submitAttempt(other,{attemptId:late.attemptId});
   await query("UPDATE attempts SET status='ready',private_data=private_data||$2::jsonb WHERE id=$1",[late.attemptId,JSON.stringify(marks)]);
   await publishAttemptResult(teacher,{attemptId:late.attemptId});
-  assert.equal((await query("SELECT data FROM users WHERE id='s2'")).rows[0].data.level,'A1.1');
+  assert.equal((await query("SELECT data FROM users WHERE id='s2'")).rows[0].data.level,'A1');
   await saveOralScore(teacher,{attemptId:late.attemptId,score:45});
-  assert.equal((await query("SELECT data FROM users WHERE id='s2'")).rows[0].data.level,'B1.2');
+  assert.equal((await query("SELECT data FROM users WHERE id='s2'")).rows[0].data.level,'B1');
   await saveOralScore(teacher,{attemptId:late.attemptId,score:45});
   assert.equal((await query("SELECT count(*)::int AS n FROM level_promotions WHERE student_id='s2'")).rows[0].n,1);
   for(let i=0;i<11;i++)try{await startAttempt(student,{code:'ZZZZZ'});}catch{}
   await assert.rejects(()=>startAttempt(student,{code:'ZZZZZ'}),/quá nhiều/);
   const {setAttemptSection,submitExpiredAttempts,saveAnswers}=await import('../server/src/actions/attempts.js');
-  await saveExamAccess(teacher,{examId:'e',hidden:false,learningLevel:'B1.1'});
+  await saveExamAccess(teacher,{examId:'e',hidden:false,learningLevel:'B1'});
   const timed=await startAttempt(other,{examId:'e'});
   const initial=(await query('SELECT public_data FROM attempts WHERE id=$1',[timed.attemptId])).rows[0].public_data;
   assert.equal(initial.examDeadlineMs-Date.parse(initial.startedAt),40*60000);
@@ -111,6 +154,11 @@ try{
   assert.equal((await query('SELECT count(*)::int AS n FROM attempts WHERE id=$1',[timed.attemptId])).rows[0].n,1);
   console.log('SQL integration passed: access, promotion, whole-exam deadline, expired autosubmit and repeat safety.');
   const {commitOperations}=await import('../server/src/state.js');
+  await query("INSERT INTO users(id,email,role,data) VALUES('admin','admin@example.test','master','{}')");
+  await commitOperations({id:'admin',role:'master'},[{collection:'users',id:'new',item:{id:'new',name:'Nguyen New',role:'student',active:true,level:'C2',classId:external,confirmationCode:'LEAK1'}}]);
+  const protectedProfile=(await query("SELECT data FROM users WHERE id='new'")).rows[0].data;
+  assert.equal(protectedProfile.confirmationCode,undefined);
+  assert.equal(protectedProfile.level,'B2');assert.equal(protectedProfile.classId,classroom.id);
   const {duplicateExam,detachLockedDraftQuestions}=await import('../src/domain/exams.js');
   const copier={id:'t2',role:'teacher',name:'Copier'};
   await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4)',['t2','t2@example.test','teacher',JSON.stringify(copier)]);
@@ -143,7 +191,7 @@ try{
   console.log('Server-authenticated copy ownership and stale metadata regression passed.');
   // Publish -> attempt -> edit persists, without changing the in-progress version.
   await commitOperations(copier,[{collection:'exams',id:serverExam.id,item:{...serverExam,hidden:false,status:'published'}}]);
-  await saveExamAccess(copier,{examId:serverExam.id,hidden:false,learningLevel:'B1.1'});
+  await saveExamAccess(copier,{examId:serverExam.id,hidden:false,learningLevel:'B1'});
   const activeCopy=await startAttempt(other,{examId:serverExam.id});
   const beforeEdit=(await query('SELECT private_data FROM attempts WHERE id=$1',[activeCopy.attemptId])).rows[0].private_data.examSnapshot;
   const currentExam=(await loadState(copier)).exams.find(e=>e.id===serverExam.id);

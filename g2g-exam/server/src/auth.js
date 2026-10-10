@@ -3,6 +3,7 @@ import {OAuth2Client} from 'google-auth-library';
 import {query,getSettings,appError,now} from './db.js';
 import {isPrimaryMasterEmail,normalizeEmail} from './roles.js';
 import {loginReturnPath} from './auth-routing.js';
+import {externalClassId} from './actions/class-enrollment.js';
 
 const PUBLIC_URL=String(process.env.PUBLIC_URL||'http://localhost:8080').replace(/\/$/,'');
 const REDIRECT_URI=process.env.GOOGLE_REDIRECT_URI||`${PUBLIC_URL}/api/auth/google/callback`;
@@ -67,7 +68,7 @@ export async function registerAuthRoutes(fastify){
       if(settings.auth.allowNewStudents===false&&!master&&!preapprovedTeacher)throw appError(403,'Hệ thống hiện không nhận thêm tài khoản học viên mới.');
       const domain=String(settings.auth.allowedDomain||'').toLowerCase();
       if(domain&&!email.endsWith(`@${domain}`)&&!master&&!preapprovedTeacher)throw appError(403,`Chỉ email thuộc ${domain} được đăng ký.`);
-      const data={name:p.name||email.split('@')[0],picture:p.picture||'',createdAt:now(),...(role==='student'?{level:'A1.1'}:{})};
+      const data={name:p.name||email.split('@')[0],picture:p.picture||'',createdAt:now(),...(role==='student'?{level:'A1',classId:await externalClassId()}:{})};
       await query(`INSERT INTO users(id,email,role,active,data) VALUES($1,$2,$3,true,$4::jsonb)`,[id,email,role,JSON.stringify(data)]);
     }else{
       const data={name:existing.profileCompletedAt?existing.name:p.name||existing.name||email.split('@')[0],picture:p.picture||existing.picture||''};

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {promotionTarget,STUDENT_LEVELS} from '../src/domain/student-profile.js';
+import {promotionTarget,STUDENT_LEVELS,normalizeStudentLevel} from '../src/domain/student-profile.js';
 import {resultSummary} from '../src/domain/result-summary.js';
 import {studentExamCardHtml,studentHomeHtml} from '../src/views/student.js';
 import {resultSummaryHtml} from '../src/views/result-summary.js';
@@ -8,7 +8,11 @@ import {studentProfileCardHtml,studentShareText} from '../src/views/student-prof
 import {examAccessFormHtml} from '../src/views/exam-access.js';
 import {classFormHtml,classesHtml} from '../src/views/classes.js';
 
-assert.equal(STUDENT_LEVELS.length,12);
+assert.equal(STUDENT_LEVELS.length,6);
+assert.equal(normalizeStudentLevel('A1.2'),'A1');
+assert.equal(normalizeStudentLevel('A1x2'),null);
+assert.equal(promotionTarget('A1','A1',true),'A1');
+assert.equal(promotionTarget('B2','A1',true),'A1');
 const classTeachers=[{id:'t1',name:'Cô Lan',role:'teacher',picture:'https://example.com/lan.jpg'},{id:'t2',name:'Cô Mai',role:'teacher'},{id:'s',name:'Student',role:'student'}];
 const classItem={id:'c',code:'A1-01',description:'Lớp <mới>',teacherIds:['t1','t2']};
 const classForm=classFormHtml(classItem,classTeachers);
@@ -30,11 +34,11 @@ for(const file of ['builder','admin']){
   assert.match(source,/class="icon-btn" title="Cài đặt đề" aria-label="Cài đặt đề" data-action="exam-access-settings"/);
   assert.ok(!source.includes('>Cài đặt đề</button>'));
 }
-assert.equal(promotionTarget('A1.1','B1.1',true),'B1.2');
+assert.equal(promotionTarget('A1.1','B1.1',true),'B1');
 assert.equal(promotionTarget('A1.1','B1.1',false),null);
-assert.equal(promotionTarget('B2.1','A1.1',true),null);
-assert.equal(promotionTarget('C2.2','C2.2',true),null);
-assert.equal(promotionTarget('C2.1','C2.2',true),'C2.2');
+assert.equal(promotionTarget('B2.1','A1.1',true),'A1');
+assert.equal(promotionTarget('C2.2','C2.2',true),'C2');
+assert.equal(promotionTarget('C2.1','C2.2',true),'C2');
 assert.equal(promotionTarget('A1.1',null,true),null);
 const exam={id:'e',provider:'TELC',level:'B1',learningLevel:'B1.1',status:'published',title:'Exam',sections:[]};
 const questions=[];
@@ -52,13 +56,13 @@ assert.ok(studentExamCardHtml({...exam,hidden:true,hasActiveCodes:true},[],data)
 assert.ok(studentExamCardHtml({...exam,hidden:true,hasActiveCodes:false},[],data).includes('Không có mã thi'));
 assert.ok(!studentExamCardHtml({...exam,hidden:true},[],data).includes('data-action="start"'));
 assert.ok(studentHomeHtml({data,user:{id:'s',name:'Student'},levelFilter:'B1.1'}).includes('Nhập mã đề'));
-console.log('Access UI, TELC gates, cross-level advancement and no downgrade passed.');
-const student={id:'s',name:'Lan <script>',level:'B1.2',classId:'c',picture:'https://example.com/avatar.jpg'};
+console.log('Access UI, TELC gates, exact exam-level assignment passed.');
+const student={id:'s',name:'Lan <script>',level:'B1',classId:'c',picture:'https://example.com/avatar.jpg'};
 const profileData={...data,classes:[{id:'c',code:'PRIVATE-CLASS'}]};
 const profile=studentProfileCardHtml(profileData,student);
 assert.ok(profile.includes('Lan &lt;script&gt;'));
 assert.ok(profile.includes('PRIVATE-CLASS'));
-assert.ok(profile.includes('B1.2'));
+assert.ok(profile.includes('B1'));
 assert.ok(profile.includes('data-action="share-profile"'));
 assert.ok(!studentShareText(profileData,student).includes('PRIVATE-CLASS'));
 const home=studentHomeHtml({data:profileData,user:student});
@@ -67,4 +71,21 @@ assert.ok(!home.includes('Xem toàn bộ kết quả'));
 assert.ok(!home.includes('Chọn bài thi để bắt đầu.'));
 assert.ok(home.includes('data-exam-provider-filter'));
 assert.ok(home.includes('data-exam-level-filter'));
+const rosterData={classes:[classItem,{id:'ext',code:'Extend'}],users:[
+  {id:'outside',name:'Nguyen & Lan',email:'lan@example.test',role:'student',classId:'ext',level:'A1',confirmationCode:'ABCDE'},
+  {id:'inside',name:'Class Student',email:'in@example.test',role:'student',classId:'c',level:'B1'}
+]};
+const classList=classesHtml({data:rosterData});
+assert.ok(classList.includes('data-open-class="c"'));
+assert.ok(classList.includes('data-student-search'));
+assert.ok(classList.includes('Mã xác nhận'));
+assert.ok(classList.includes('ABCDE'));
+assert.ok(classList.includes('Nguyen &amp; Lan'));
+assert.ok(!classList.includes('Class Student'));
+const roster=classesHtml({data:rosterData,classId:'c'});
+assert.ok(roster.includes('Class Student'));
+assert.ok(!roster.includes('lan@example.test'));
+assert.ok(roster.includes('data-class-back'));
+assert.ok(studentProfileCardHtml(rosterData,rosterData.users[0]).includes('data-action="class-enrollment"'));
+assert.ok(!studentProfileCardHtml(rosterData,rosterData.users[1]).includes('data-action="class-enrollment"'));
 console.log('Student profile: real level, class, safe sharing and removed legacy overview passed.');

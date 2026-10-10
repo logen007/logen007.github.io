@@ -15,7 +15,7 @@ export async function saveExamAccess(user,{examId,hidden,learningLevel}){
   return withTx(async client=>{
     await client.query('SELECT id FROM exams WHERE id=$1 FOR UPDATE',[examId]);
     const exam=await examById(examId,client);assertOwner(user,exam);
-    await client.query('UPDATE exams SET data=data||$2::jsonb,updated_at=now() WHERE id=$1',[examId,JSON.stringify({hidden,learningLevel:learningLevel||null})]);
+    await client.query('UPDATE exams SET data=data||$2::jsonb,updated_at=now() WHERE id=$1',[examId,JSON.stringify({hidden,learningLevel:learningLevel||exam.level})]);
     await audit(user,'exam_access_settings','exam',examId,{hidden,learningLevel},client);
     return {ok:true};
   });

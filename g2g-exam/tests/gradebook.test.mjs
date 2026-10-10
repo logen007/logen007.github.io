@@ -34,7 +34,7 @@ assert.equal(filteredGradebook(data,{provider:'TELC'})[0].attempt.id,'telc');
 assert.equal(filteredGradebook(data,{level:'A1.1'}).length,0);
 assert.equal(filteredGradebook(data,{classId:'missing'}).length,0);
 assert.equal(filteredGradebook(data,{studentId:'missing'}).length,0);
-assert.equal(validateStudentProfile({name:'  Nguyen   A  ',classId:'class'},data.classes).level,'A1.1');
+assert.equal(validateStudentProfile({name:'  Nguyen   A  ',classId:'class'},data.classes).level,'A1');
 assert.throws(()=>validateStudentProfile({name:'Nguyen A',classId:'unknown'},data.classes));
 assert.throws(()=>validateStudentProfile({name:'Nguyen A',classId:'class',level:'admin'},data.classes));
 console.log('Gradebook: skill aggregation, boundary grades, filters, profile validation passed.');

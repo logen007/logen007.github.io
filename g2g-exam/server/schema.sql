@@ -142,6 +142,32 @@ CREATE UNIQUE INDEX IF NOT EXISTS classes_code_idx ON classes(lower(code));
 ALTER TABLE classes ADD COLUMN IF NOT EXISTS description text NOT NULL DEFAULT '';
 ALTER TABLE classes ADD COLUMN IF NOT EXISTS teacher_ids text[] NOT NULL DEFAULT '{}';
 
+-- Extend is a system-owned default class, not owned by a teacher account.
+ALTER TABLE classes ALTER COLUMN created_by DROP NOT NULL;
+INSERT INTO classes(id,code,description) VALUES('class-extend','Extend','Học viên ngoài')
+  ON CONFLICT DO NOTHING;
+UPDATE classes SET active=true,code='Extend' WHERE lower(code)='extend';
+UPDATE users SET data=data||jsonb_build_object('classId',(SELECT id FROM classes WHERE lower(code)='extend'))
+  WHERE role='student' AND NOT EXISTS(SELECT 1 FROM classes WHERE id=users.data->>'classId');
+UPDATE users SET data=data||jsonb_build_object('level',CASE WHEN data->>'level' ~ '^[ABC][12](\.[12])?$' THEN split_part(data->>'level','.',1) ELSE 'A1' END)
+  WHERE role='student' AND coalesce(data->>'level','') NOT IN ('A1','A2','B1','B2','C1','C2');
+UPDATE exams SET data=data||jsonb_build_object('learningLevel',split_part(coalesce(nullif(data->>'learningLevel',''),data->>'level'),'.',1))
+  WHERE coalesce(data->>'learningLevel','') NOT IN ('A1','A2','B1','B2','C1','C2')
+  AND coalesce(nullif(data->>'learningLevel',''),data->>'level') ~ '^[ABC][12](\.[12])?$';
+
+CREATE TABLE IF NOT EXISTS class_confirmation_codes (
+  student_id text PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  email text NOT NULL,
+  code text UNIQUE NOT NULL CHECK (code ~ '^[A-Z0-9]{5}$'),
+  used_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS class_code_checks (
+  student_id text PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  checks integer NOT NULL DEFAULT 1,
+  window_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- Lượt thi bỏ dở không phải là lịch sử làm bài và không được lưu lâu dài.
 DELETE FROM notifications WHERE attempt_id IN (SELECT id FROM attempts WHERE status='abandoned');
 DELETE FROM attempts WHERE status='abandoned';

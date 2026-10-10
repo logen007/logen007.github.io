@@ -2,6 +2,7 @@ import {query,withTx,audit,appError} from './db.js';
 import {publicWritingRows,writingFormScore,normalizeWritingRows} from './writing-form.js';
 import {expireCodes} from './actions/exam-access.js';
 import {preserveAttemptSnapshots} from './exam-snapshots.js';
+import {ensureClassCodes} from './actions/class-enrollment.js';
 
 const stripId=x=>{const y=structuredClone(x||{});delete y.id;return y;};
 const isTeacher=u=>u?.role==='teacher'||u?.role==='master';
@@ -44,7 +45,12 @@ export async function loadState(user){
     state.notifications=(await rows(`SELECT id,data,status FROM notifications WHERE student_id=$1 ORDER BY created_at DESC LIMIT 200`,[user.id])).map(r=>({id:r.id,status:r.status,...r.data}));
     return state;
   }
-  state.users=(await rows(`SELECT id,email,role,active,data FROM users ORDER BY created_at DESC`)).map(r=>({id:r.id,email:r.email,role:r.role,active:r.active,...r.data}));
+  await ensureClassCodes();
+  state.users=(await rows(`SELECT u.id,u.email,u.role,u.active,u.data,k.code AS confirmation_code FROM users u
+    LEFT JOIN class_confirmation_codes k ON k.student_id=u.id AND k.used_at IS NULL AND k.email=lower(u.email)
+      AND u.role='student' AND u.data->>'classId'=(SELECT id FROM classes WHERE lower(code)='extend')
+    LEFT JOIN classes c ON c.id=u.data->>'classId'
+    ORDER BY u.created_at DESC`)).map(r=>({...r.data,id:r.id,email:r.email,role:r.role,active:r.active,confirmationCode:r.role==='student'?r.confirmation_code:null}));
   state.questions=(await rows(`SELECT id,owner_id,status,locked,data FROM questions ORDER BY updated_at DESC`)).map(rowEntity);
   state.exams=(await rows(`SELECT id,owner_id,status,locked,data FROM exams ORDER BY updated_at DESC`)).map(rowEntity);
   const allowed=await allowedExamIds(user);
@@ -77,7 +83,7 @@ async function applyExam(c,user,op){
   const old=current.rows[0],oldData=old.data||{};if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa bài thi này.');if(old.status==='trash'&&item.status!=='trash'&&user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được khôi phục bài thi.');if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu bài thi.');
   await c.query(`UPDATE exams SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,hidden:Boolean(oldData.hidden),learningLevel:oldData.learningLevel||null,ownerId:old.owner_id}))]);
 }
-async function applyUser(c,user,op){if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được quản lý tài khoản.');if(op.kind==='delete')throw appError(409,'Không xóa tài khoản trực tiếp; hãy vô hiệu hóa tài khoản.');const item=op.item||{};const cur=await c.query(`SELECT * FROM users WHERE id=$1 FOR UPDATE`,[op.id]);if(!cur.rowCount)throw appError(404,'Không tìm thấy tài khoản.');if(op.id===user.id&&item.role&&item.role!=='master')throw appError(409,'Không thể tự hạ quyền tài khoản Quản trị cấp cao.');const old=cur.rows[0],role=['student','teacher','master'].includes(item.role)?item.role:old.role;const data=stripId(item);delete data.email;delete data.role;delete data.active;await c.query(`UPDATE users SET role=$2,active=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,role,item.active!==false,JSON.stringify(data)]);}
+async function applyUser(c,user,op){if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được quản lý tài khoản.');if(op.kind==='delete')throw appError(409,'Không xóa tài khoản trực tiếp; hãy vô hiệu hóa tài khoản.');const item=op.item||{};const cur=await c.query(`SELECT * FROM users WHERE id=$1 FOR UPDATE`,[op.id]);if(!cur.rowCount)throw appError(404,'Không tìm thấy tài khoản.');if(op.id===user.id&&item.role&&item.role!=='master')throw appError(409,'Không thể tự hạ quyền tài khoản Quản trị cấp cao.');const old=cur.rows[0],role=['student','teacher','master'].includes(item.role)?item.role:old.role;const data=stripId(item);delete data.email;delete data.role;delete data.active;delete data.confirmationCode;for(const key of ['level','classId','profileCompletedAt']){delete data[key];if(old.data[key]!==undefined)data[key]=old.data[key];}await c.query(`UPDATE users SET role=$2,active=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,role,item.active!==false,JSON.stringify(data)]);}
 
 export async function commitOperations(user,ops=[]){
   if(!Array.isArray(ops)||ops.length>250)throw appError(400,'Danh sách thay đổi không hợp lệ.');

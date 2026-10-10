@@ -7,7 +7,7 @@ import {iconHtml} from '../ui/icons.js';
 import {writingPointLayout,isScoredWritingField,isRequiredWritingField} from '../domain/writing-form.js';
 import {writingFormDisplay} from '../ui/writing-form.js';
 import {resultClass} from '../domain/gradebook.js';
-import {STUDENT_LEVELS} from '../domain/student-profile.js';
+import {STUDENT_LEVELS,examLearningLevel,normalizeStudentLevel} from '../domain/student-profile.js';
 import {resultSummaryHtml} from './result-summary.js';
 import {studentProfileCardHtml} from './student-profile-card.js';
 
@@ -22,7 +22,7 @@ export function studentHomeHtml({data,user,filter='all',levelFilter=''}){
   const latest=getLatestPublishedAttempt(data,user.id),best=getBestPublishedAttempt(data,user.id);
   const latestExam=latest&&byId(data.exams,latest.examId);
   const types=['GOETHE','TELC'];
-  const visible=exams.filter(ex=>(filter==='all'||ex.provider===filter)&&(!levelFilter||ex.learningLevel===levelFilter));
+  const visible=exams.filter(ex=>(filter==='all'||ex.provider===filter)&&(!levelFilter||examLearningLevel(ex)===levelFilter));
   return `<main class="khung">${studentProfileCardHtml(data,user)}<div class="exam-filter" aria-label="Lọc đề thi"><label class="filter-field">Loại đề<select data-exam-provider-filter><option value="all">Tất cả</option>${types.map(type=>`<option value="${esc(type)}" ${filter===type?'selected':''}>${esc(type)}</option>`).join('')}</select></label><label class="filter-field">Trình độ<select data-exam-level-filter><option value="">Tất cả</option>${STUDENT_LEVELS.map(level=>`<option ${levelFilter===level?'selected':''}>${level}</option>`).join('')}</select></label><button class="nut" data-action="enter-code">Nhập mã đề</button></div><section class="danh-sach-de">${visible.map(ex=>studentExamCardHtml(ex,attempts,data)).join('')||'<p>Chưa có đề luyện thuộc loại này.</p>'}</section></main>`;
 }
 
@@ -56,7 +56,7 @@ export function studentAttemptDetailHtml({review}){
     const verdict=expected!=null&&q.answer!=null?(String(q.answer)===String(q.correct)?'Đúng':'Sai'):null;
     return `<span>Bạn trả lời: ${esc(given)} ${verdict?`· ${verdict}`:''}</span>${expected!=null?`<span>Đáp án đúng: ${esc(expected)}</span>`:''}`;
   };
-  return `<main class="khung grading-detail"><div class="tieu-de-trang"><div><h1>${esc(attempt.examTitle||'Bài làm')}</h1><p>Lần #${attempt.attemptNo} · ${fmtDate(attempt.submittedAt||attempt.startedAt)}</p></div><button class="nut" data-action="student-results">Quay lại</button></div>${resultSummaryHtml(score?.summary)}${score?.promotion?`<section class="the"><h2>Chúc mừng bạn đã lên trình độ ${esc(score.promotion.toLevel)}!</h2><p>${esc(score.promotion.fromLevel)} → ${esc(score.promotion.toLevel)}</p></section>`:''}${score?`<section class="the review-summary"><b>Điểm: ${esc(score.total??'—')}</b><span>${esc(score.result==='Chưa đạt'?'Trượt':score.result||'—')}</span><span>Người chấm: ${esc(score.reviewerName||'—')}</span>${score.feedback?`<p>Nhận xét: ${esc(score.feedback)}</p>`:''}</section>`:'<div class="the">Bài đã lưu. Điểm và nhận xét sẽ hiển thị sau khi giáo viên chấm xong.</div>'}${(review.sections||[]).map(section=>`<section class="the review-section"><h2>${esc(section.name)}</h2>${score&&score.sections?.[section.name]!=null?`<p>${esc(score.sections[section.name])} điểm</p>`:''}${section.questions.map(q=>`<div class="grading-answer"><b>${esc(q.title)}</b>${answer(q)}</div>`).join('')}</section>`).join('')}</main>`;
+  return `<main class="khung grading-detail"><div class="tieu-de-trang"><div><h1>${esc(attempt.examTitle||'Bài làm')}</h1><p>Lần #${attempt.attemptNo} · ${fmtDate(attempt.submittedAt||attempt.startedAt)}</p></div><button class="nut" data-action="student-results">Quay lại</button></div>${resultSummaryHtml(score?.summary)}${score?.promotion?`<section class="the"><h2>Chúc mừng bạn đã đạt trình độ ${esc(normalizeStudentLevel(score.promotion.toLevel))}!</h2><p>${esc(normalizeStudentLevel(score.promotion.fromLevel))} → ${esc(normalizeStudentLevel(score.promotion.toLevel))}</p></section>`:''}${score?`<section class="the review-summary"><b>Điểm: ${esc(score.total??'—')}</b><span>${esc(score.result==='Chưa đạt'?'Trượt':score.result||'—')}</span><span>Người chấm: ${esc(score.reviewerName||'—')}</span>${score.feedback?`<p>Nhận xét: ${esc(score.feedback)}</p>`:''}</section>`:'<div class="the">Bài đã lưu. Điểm và nhận xét sẽ hiển thị sau khi giáo viên chấm xong.</div>'}${(review.sections||[]).map(section=>`<section class="the review-section"><h2>${esc(section.name)}</h2>${score&&score.sections?.[section.name]!=null?`<p>${esc(score.sections[section.name])} điểm</p>`:''}${section.questions.map(q=>`<div class="grading-answer"><b>${esc(q.title)}</b>${answer(q)}</div>`).join('')}</section>`).join('')}</main>`;
 }
 
 export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],online,preview=false,previewSummary=null}){

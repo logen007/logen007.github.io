@@ -1,5 +1,5 @@
 import {mountDialog} from './classes.js';
-import {STUDENT_LEVELS} from '../domain/student-profile.js';
+import {STUDENT_LEVELS,examLearningLevel,normalizeStudentLevel} from '../domain/student-profile.js';
 import {esc,fmtDate} from '../ui/format.js';
 
 export function openCodeEntry({repo,examId,onStarted}){
@@ -18,7 +18,7 @@ export function examAccessFormHtml(exam){
   return `<p class="access-exam-title">${esc(exam.title)}</p>
     <form class="profile-form access-settings-form">
       <section class="access-section"><h3>Quyền truy cập</h3><label class="access-toggle"><span><strong>Ẩn đề</strong><small>Học viên cần nhập mã để bắt đầu thi.</small></span><input name="hidden" type="checkbox" ${exam.hidden?'checked':''}></label></section>
-      <section class="access-section"><div class="access-level-row"><h3>Trình độ</h3><label class="sr-only" for="accessLevel">Trình độ của đề</label><select id="accessLevel" name="learningLevel"><option value="">Không tự động nâng trình độ</option>${STUDENT_LEVELS.map(level=>`<option ${exam.learningLevel===level?'selected':''}>${level}</option>`).join('')}</select></div><p class="phu-de">Đạt → lên bậc kế tiếp. Định dạng ${esc(exam.provider)} ${esc(exam.level)} không thay đổi.</p></section>
+      <section class="access-section"><div class="access-level-row"><h3>Trình độ</h3><label class="sr-only" for="accessLevel">Trình độ của đề</label><select id="accessLevel" name="learningLevel">${STUDENT_LEVELS.map(level=>`<option ${examLearningLevel(exam)===level?'selected':''}>${level}</option>`).join('')}</select></div><p class="phu-de">Đỗ đề này → ghi nhận đúng trình độ của đề. Định dạng ${esc(exam.provider)} ${esc(exam.level)} không thay đổi.</p></section>
       <div class="access-save"><span data-settings-status role="status"></span><button class="nut chinh" type="submit">Lưu thay đổi</button></div>
     </form>
     <section class="access-section access-codes"><div class="access-section-heading"><h3>Mã thi</h3><button class="text-link" type="button" data-refresh-codes>Làm mới</button></div><p class="phu-de">Mỗi học viên dùng mỗi mã một lần. Mã hết hạn không ngắt lượt đang thi.</p>
@@ -61,7 +61,7 @@ export async function openExamAccess({repo,exam,onSaved}){
 }
 
 export function showPromotion({repo,promotion,onSaved}){
-  const modal=mountDialog('Chúc mừng bạn!',`<div class="promotion-celebration"><span aria-hidden="true">✦</span><h2>Bạn đã lên trình độ ${esc(promotion.toLevel)}</h2><p>Thành quả xứng đáng cho sự cố gắng của bạn.</p><p>${esc(promotion.fromLevel)} → <strong>${esc(promotion.toLevel)}</strong></p><button class="nut chinh" data-ack>Tiếp tục luyện tập</button><p data-error role="alert"></p></div>`,{required:true});
+  const modal=mountDialog('Chúc mừng bạn!',`<div class="promotion-celebration"><span aria-hidden="true">✦</span><h2>Bạn đã đạt trình độ ${esc(normalizeStudentLevel(promotion.toLevel))}</h2><p>Thành quả xứng đáng cho sự cố gắng của bạn.</p><p>${esc(normalizeStudentLevel(promotion.fromLevel))} → <strong>${esc(normalizeStudentLevel(promotion.toLevel))}</strong></p><button class="nut chinh" data-ack>Tiếp tục luyện tập</button><p data-error role="alert"></p></div>`,{required:true});
   modal.querySelector('[data-ack]').onclick=async event=>{
     const button=event.currentTarget;button.disabled=true;
     try{await repo.call('acknowledgePromotion',{attemptId:promotion.attemptId});await repo.reload();modal.remove();await onSaved();}

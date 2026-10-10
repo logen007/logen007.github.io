@@ -1,17 +1,17 @@
 import {getSettings,now,audit} from './db.js';
 import {renderTemplate} from './mail.js';
 import {resultSummary,scoreDetails} from '../../src/domain/result-summary.js';
-import {promotionTarget} from '../../src/domain/student-profile.js';
+import {promotionTarget,examLearningLevel} from '../../src/domain/student-profile.js';
 import {questionMap} from './actions/shared.js';
 
 export async function finalizeOutcome(client,row,exam,marks,actor,{notificationId=`result-${row.id}`}={}){
   const summary=resultSummary(exam,await questionMap(exam),marks);
   const found=await client.query('SELECT role,data FROM users WHERE id=$1 FOR UPDATE',[row.student_id]);
   const profile=found.rows[0]?.data||{};
-  const target=found.rows[0]?.role==='student'?promotionTarget(profile.level||'A1.1',exam.learningLevel,summary.passed&&summary.complete):null;
+  const target=found.rows[0]?.role==='student'?promotionTarget(profile.level||'A1',examLearningLevel(exam),summary.passed&&summary.complete):null;
   let promotion=(await client.query('SELECT from_level AS "fromLevel",to_level AS "toLevel" FROM level_promotions WHERE attempt_id=$1',[row.id])).rows[0]||null;
   if(target&&!promotion){
-    promotion={fromLevel:profile.level||'A1.1',toLevel:target};
+    promotion={fromLevel:profile.level||'A1',toLevel:target};
     await client.query('INSERT INTO level_promotions(attempt_id,student_id,from_level,to_level) VALUES($1,$2,$3,$4)',[row.id,row.student_id,promotion.fromLevel,target]);
     await client.query('UPDATE users SET data=data||$2::jsonb,updated_at=now() WHERE id=$1',[row.student_id,JSON.stringify({level:target})]);
     await audit(actor,'promote_student','user',row.student_id,{attemptId:row.id,...promotion},client);
@@ -21,7 +21,7 @@ export async function finalizeOutcome(client,row,exam,marks,actor,{notificationI
   const vars={exam:row.public_data.examTitle||exam.title,student:profile.name||row.public_data.studentName||'học viên',score:String(summary.total),result:summary.result,url:settings.general.publicUrl,
     scoreDetails:scoreDetails(summary),passCondition:summary.condition,
     previousLevel:promotion?.fromLevel||'',newLevel:promotion?.toLevel||'',
-    promotion:promotion&&summary.passed?`Chúc mừng bạn đã lên trình độ ${promotion.toLevel}! (${promotion.fromLevel} → ${promotion.toLevel})`:''};
+    promotion:promotion&&summary.passed?`Chúc mừng bạn đã đạt trình độ ${promotion.toLevel}! (${promotion.fromLevel} → ${promotion.toLevel})`:''};
   let html=settings.email.resultHtml||'',text=settings.email.resultText||'';
   for(const [key,label] of [['scoreDetails','Điểm từng kỹ năng'],['passCondition','Điều kiện đạt'],['promotion','']]){
     if(!html.includes(`{${key}}`))html+=`<div style="margin-top:20px;padding:16px;background:#f3f7f5;border-radius:12px;white-space:pre-line"><strong>${label}</strong><br>{${key}}</div>`;

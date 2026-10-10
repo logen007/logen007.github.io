@@ -83,7 +83,7 @@ function authHarness({existing=null,payload={sub:'new',email:'student@example.te
   const routes=new Map(),writes=[],cookies=[];let exchanges=0;
   const appError=(code,text)=>Object.assign(new Error(text),{statusCode:code});
   const context={crypto,process:{env:{NODE_ENV:'production',PUBLIC_URL:'https://exam.g2gcareer.com',GOOGLE_CLIENT_ID:'test-id',GOOGLE_CLIENT_SECRET:'test-secret'}},
-    loginReturnPath,appError,now:()=>new Date().toISOString(),normalizeEmail:x=>x.trim().toLowerCase(),isPrimaryMasterEmail:()=>master,
+    loginReturnPath,appError,externalClassId:async()=>'class-extend',now:()=>new Date().toISOString(),normalizeEmail:x=>x.trim().toLowerCase(),isPrimaryMasterEmail:()=>master,
     getSettings:async()=>({auth:{googleLoginEnabled:true,allowNewStudents:true,teacherEmails:[]}}),
     query:async(sql,args)=>{if(sql.startsWith('SELECT'))return {rowCount:existing?1:0,rows:existing?[existing]:[]};writes.push({sql,args});return {rowCount:1};},
     OAuth2Client:class{
@@ -118,6 +118,11 @@ await test('New Google accounts are students; primary master uses server authori
     const redirect=await h.routes.get('/api/auth/google/callback')(h.request,h.reply);
     assert.equal(redirect,master?'/adm?edit=server-draft':'/student');
     assert.equal(h.writes[0].args[2],master?'master':'student');
+    if(!master){
+      const profile=JSON.parse(h.writes[0].args[3]);
+      assert.equal(profile.level,'A1');assert.equal(profile.classId,'class-extend');
+      assert.equal(profile.profileCompletedAt,undefined);
+    }
     const session=h.cookies.find(c=>c.name==='g2g_session');
     assert.equal(session.value,'google:new');
     assert.equal(session.options.httpOnly,true);assert.equal(session.options.signed,true);assert.equal(session.options.secure,true);
