@@ -56,6 +56,10 @@ for(const [written,oral,label] of [[225,45,'sehr gut'],[195,45,'gut'],[165,45,'b
 console.log('TELC B1/B2: independent 135/225 and 45/75 gates, grades, missing oral and format scope passed.');
 
 const html=gradebookHtml({data,ui:{}});
+const visitorHtml=gradebookHtml({data:{...data,classes:[{id:'class',code:'Extend'}]},ui:{}});
+assert.match(visitorHtml,/<\/button><\/td><td><\/td><td>/);
+assert.doesNotMatch(visitorHtml,/Học viên Vãng lai/);
+assert.ok(html.includes('<td>i1026</td>'));
 assert.ok(html.includes('<th>Bài thi</th><th>Lần thi</th>'));
 assert.match(html,/<\/button><\/td><td class="attempt-meta">/);
 for(const [provider,count] of [['GOETHE',9],['TELC',12]]){
