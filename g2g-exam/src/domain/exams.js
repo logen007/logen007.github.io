@@ -255,21 +255,25 @@ export function moveQuestion(state,user,examId,sectionId,questionId,direction){
 
 export function validateExamForPublish(state,exam){
   const errors=[];
-  if(!exam?.title?.trim())errors.push('Bài thi chưa có tên.');
-  if(!exam?.sections?.length)errors.push('Bài thi chưa có phần nào.');
+  if(!exam?.title?.trim())errors.push('Bài thi chưa có tên. Nhập tên đề ở đầu trang.');
+  if(!exam?.sections?.length)errors.push('Bài thi chưa có phần nào. Thêm phần thi trước khi xuất bản.');
   const seen=new Set();
   for(const [index,section] of (exam?.sections||[]).entries()){
     errors.push(...configuredPartErrors(section,state.questions));
     if(!section.name?.trim())errors.push(`Phần ${index+1} chưa có tên.`);
     const realQuestionIds=(section.questionIds||[]).filter(questionId=>!isPrefilledQuestion(byId(state.questions,questionId)));
-    if(!realQuestionIds.length)errors.push(`Phần ${index+1} chưa có câu hỏi tính điểm.`);
-    if(!Number.isFinite(Number(section.timeMinutes))||Number(section.timeMinutes)<=0)errors.push(`Phần ${index+1} có thời gian không hợp lệ.`);
+    if(!realQuestionIds.length)errors.push(`${section.name||'Phần '+(index+1)} chưa có câu hỏi tính điểm. Thêm câu có điểm lớn hơn 0 và không bật Ví dụ.`);
+    if(!Number.isFinite(Number(section.timeMinutes))||Number(section.timeMinutes)<=0)errors.push(`${section.name||'Phần '+(index+1)} có thời gian không hợp lệ. Mở cài đặt kỹ năng và nhập số phút lớn hơn 0.`);
     for(const questionId of section.questionIds||[]){
       const question=byId(state.questions,questionId);
       if(!question||question.status==='trash')errors.push(`Phần ${index+1} chứa câu hỏi không còn hợp lệ.`);
       else{
         const choiceError=getQuestionChoiceError(question);
-        if(choiceError)errors.push(`Câu ${question.code||questionId}: ${choiceError}`);
+        if(choiceError){
+          const position=(section.questionIds||[]).slice(0,(section.questionIds||[]).indexOf(questionId)+1).filter(id=>!isPrefilledQuestion(byId(state.questions,id))).length;
+          const location=`${section.name||'Phần '+(index+1)} · ${isPrefilledQuestion(question)?'Câu ví dụ':'Câu '+position} (${question.code||questionId})`;
+          errors.push(`${location}: ${choiceError}`);
+        }
       }
       if(seen.has(questionId))errors.push(`Câu ${question?.code||questionId} đang bị lặp trong cùng bài thi.`);
       seen.add(questionId);
@@ -284,7 +288,7 @@ export function publishExam(state,user,examId){
   if(!canEditExam(user,exam))throw new Error('Bạn không có quyền xuất bản bài thi này.');
   assertExamStructureEditable(state,user,exam);
   const errors=validateExamForPublish(state,exam);
-  if(errors.length)throw new Error(errors.join(' '));
+  if(errors.length){const error=new Error(errors.join('\n'));error.validationErrors=errors;throw error;}
   exam.status='published';
   exam.updatedAt=nowIso();
   // Publishing does not remove the owner's edit rights. Attempts use snapshots.

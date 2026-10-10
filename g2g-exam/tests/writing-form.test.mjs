@@ -5,6 +5,14 @@ import {writingFormEditor,writingFormDisplay,writingSubmission} from '../src/ui/
 import {createQuestion,updateQuestion,getQuestionChoiceError} from '../src/domain/questions.js';
 import {validateExamForPublish} from '../src/domain/exams.js';
 import {seedState} from '../src/seed.js';
+import {publishErrorsHtml} from '../src/ui/publish-errors.js';
+const missingExample={id:'empty-example',code:'Q-0580',type:'single',example:true,choices:[]};
+const locationErrors=validateExamForPublish({questions:[missingExample]},{title:'A1',sections:[{name:'Nghe 3',timeMinutes:20,questionIds:[missingExample.id]}]});
+assert.ok(locationErrors.some(message=>message.includes('Nghe 3 · Câu ví dụ (Q-0580)')&&message.includes('Nhập ít nhất 2')));
+const errorDialog=publishErrorsHtml({validationErrors:['Nghe 3: <trống>','Chọn đáp án đúng']});
+assert.match(errorDialog,/&lt;trống&gt;/);
+assert.equal((errorDialog.match(/<li>/g)||[]).length,2);
+assert.match(errorDialog,/Quay lại sửa/);
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
 
 const repairState=structuredClone(seedState),repairTeacher=repairState.users.find(u=>u.role==='teacher');

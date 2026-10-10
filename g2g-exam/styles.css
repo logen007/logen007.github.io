@@ -425,6 +425,7 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 
 /* Matching tables are edited as one group, not a stack of question cards. */
 .student-result-list { display:grid; gap:16px; }
+.publish-error-list { display:grid; gap:16px; margin:20px 0; padding-left:24px; max-height:55vh; overflow:auto; overflow-wrap:anywhere; }
 .student-result-row { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:24px; padding:24px; border:1px solid var(--vien); border-radius:24px; background:#fff; }
 .student-result-info h2 { margin:0; font-size:18px; font-weight:550; line-height:1.4; overflow-wrap:anywhere; }
 .student-result-info p { margin:8px 0 0; color:var(--phu); font-size:13px; }

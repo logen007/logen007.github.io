@@ -29,9 +29,9 @@ export function getQuestionChoiceError(input,existing=null){
   const type=input.type??existing?.type??'single';
   if(!['single','truefalse','cloze'].includes(type))return '';
   const choices=clone(input.choices??existing?.choices??[]),choiceTexts=choices.map(choice=>choiceText(choice)||(typeof choice==='object'&&String(choice.imageUrl||'').trim()));
-  if(choiceTexts.filter(Boolean).length<2)return 'Câu tự chấm cần ít nhất 2 lựa chọn hợp lệ.';
+  if(choiceTexts.filter(Boolean).length<2)return 'Chưa đủ đáp án lựa chọn. Nhập ít nhất 2 lựa chọn có chữ hoặc hình, rồi chọn đáp án đúng.';
   const correct=Number(input.correctAnswer??existing?.correctAnswer);
-  if(!Number.isInteger(correct)||correct<0||correct>=choices.length||!choiceTexts[correct])return 'Đáp án đúng không hợp lệ.';
+  if(!Number.isInteger(correct)||correct<0||correct>=choices.length||!choiceTexts[correct])return 'Đáp án đúng không hợp lệ. Chọn một lựa chọn đã có chữ hoặc hình làm đáp án đúng.';
   return '';
 }
 

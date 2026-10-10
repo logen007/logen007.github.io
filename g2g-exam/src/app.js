@@ -1,6 +1,7 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
 import {bindLetterAnswers} from './ui/letter-answers.js';
 import {createGradeAutosave} from './ui/grade-autosave.js';
+import {showPublishErrors} from './ui/publish-errors.js';
 import {bindImageRemoval,imageValue} from './ui/image-remove.js';
 let gradeAutosave=null,gradePublishing=false;
 window.addEventListener('beforeunload',event=>{if(gradeAutosave?.pending||gradePublishing){event.preventDefault();event.returnValue='';}});
@@ -888,11 +889,13 @@ function bindViewSpecific(){
     b.disabled=true;
     try{
       if(!await flushBuilderDraft())return;
-      await act(()=>repo.transaction(st=>{
+      await repo.transaction(st=>{
         ensureExamMatchesConfiguredSpec(st,user,b.dataset.id);
         return publishExam(st,user,b.dataset.id);
-      }),'Đã xuất bản bài thi.');
-    }finally{if(b.isConnected)b.disabled=false;}
+      });
+      data=await repo.getState();notify('Đã xuất bản bài thi.');render();
+    }catch(error){showPublishErrors(error);}
+    finally{if(b.isConnected)b.disabled=false;}
   });
   app.querySelectorAll('[data-action="preview-exam"]').forEach(b=>b.onclick=async()=>{
     if(!await flushBuilderDraft())return;
