@@ -24,7 +24,12 @@ try{
   const {loadState}=await import('../server/src/state.js');
   const teacher={id:'t',role:'teacher',name:'Teacher'},student={id:'s',role:'student',name:'Student',level:'A1',profileCompletedAt:'2026-01-01'};
   for(const user of [teacher,student])await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4)',[user.id,`${user.id}@example.test`,user.role,JSON.stringify(user)]);
-  const {saveClass,saveStudentProfile,saveStudentName}=await import('../server/src/actions/classes.js');
+  const {saveClass,saveStudentProfile,saveStudentName,saveAccountName}=await import('../server/src/actions/classes.js');
+  await saveAccountName(teacher,{name:'Teacher Updated',id:'s',role:'master'});
+  assert.equal((await query("SELECT data FROM users WHERE id='t'")).rows[0].data.name,'Teacher Updated');
+  assert.equal((await query("SELECT data FROM users WHERE id='s'")).rows[0].data.name,'Student');
+  assert.equal((await query("SELECT role FROM users WHERE id='t'")).rows[0].role,'teacher');
+  await assert.rejects(()=>saveAccountName({id:'missing'},{name:'Valid Name'}),/không hoạt động/);
   await assert.rejects(()=>saveClass(student,{code:'Forbidden'}));
   const classroom=await saveClass(teacher,{code:'A1-01',description:'Evening class',teacherIds:['t','t']});
   assert.deepEqual(classroom.teacherIds,['t']);

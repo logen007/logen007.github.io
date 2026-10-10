@@ -63,3 +63,14 @@ export async function saveStudentName(user,{name}){
     return {name};
   });
 }
+
+export async function saveAccountName(user,{name}){
+  try{name=validateStudentName(name);}catch(error){throw appError(400,error.message);}
+  return withTx(async client=>{
+    const row=(await client.query('SELECT active FROM users WHERE id=$1 FOR UPDATE',[user.id])).rows[0];
+    if(!row?.active)throw appError(403,'Tài khoản không hoạt động.');
+    await client.query("UPDATE users SET data=data||jsonb_build_object('name',$2::text),updated_at=now() WHERE id=$1",[user.id,name]);
+    await audit(user,'update_own_name','user',user.id,{},client);
+    return {name};
+  });
+}

@@ -21,6 +21,7 @@ import {countWords} from './ui/format.js';
 import {topbarHtml} from './ui/layout.js';
 import {classesHtml,bindClasses,openStudentProfile} from './views/classes.js';
 import {openClassEnrollment} from './views/class-enrollment.js';
+import {openAccountProfile} from './views/account-profile.js';
 import {openExamAccess,openCodeEntry,showPromotion} from './views/exam-access.js';
 import {gradebookHtml,bindGradebook} from './views/gradebook.js';
 import {confirmAction} from './ui/confirm.js';
@@ -616,6 +617,10 @@ function render(){
   bindGlobal();
   bindViewSpecific();
   const profileSaved=async()=>{data=await repo.getState();const fresh=data.users.find(item=>item.id===user.id);if(fresh)user={...user,...fresh,role:user.role};render();};
+  app.querySelector('[data-action="account-profile"]')?.addEventListener('click',async()=>{
+    if(!await flushBuilderDraft())return;
+    openAccountProfile({repo,user,onSaved:profileSaved});
+  });
   if(!isStudent(user)){
     bindClasses(app,{data,repo,onSaved:profileSaved,onClassOpen:id=>{ui.classId=id;render();window.scrollTo(0,0);}});
     bindGradebook(app,{data,repo,ui,onSaved:profileSaved,render});
@@ -804,7 +809,15 @@ function bindGlobal(){
   app.querySelectorAll('[data-action="toggle-role-menu"]').forEach(button=>button.onclick=event=>{
     event.stopPropagation();const account=button.closest('.header-account'),menu=account?.querySelector('[data-role-menu]');if(!menu)return;
     menu.hidden=!menu.hidden;account.querySelectorAll('[data-action="toggle-role-menu"]').forEach(trigger=>trigger.setAttribute('aria-expanded',String(!menu.hidden)));
+    if(!menu.hidden)menu.querySelector('button')?.focus();
   });
+  const account=app.querySelector('.header-account');
+  if(account){
+    const close=()=>{account.querySelector('[data-role-menu]').hidden=true;account.querySelector('.account-avatar').setAttribute('aria-expanded','false');};
+    account.onkeydown=event=>{if(event.key==='Escape'){close();account.querySelector('.account-avatar').focus();}};
+    account.onfocusout=event=>{if(!account.contains(event.relatedTarget))close();};
+    account.addEventListener('click',event=>{if(event.target.closest('[data-role-menu] button'))close();});
+  }
   app.querySelectorAll('[data-action="test-role"]').forEach(button=>button.onclick=async()=>{
     if(!await flushBuilderDraft())return;
     if(!authenticatedUser?.canTestRoles&&!isMaster(authenticatedUser))return;

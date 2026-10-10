@@ -52,6 +52,11 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Header account controls use one avatar opening a menu: Profile, other role
+  options for authorized admins (Student, Teacher, Admin; omit current role),
+  then Log out. No separate role selector or logout icon. Profile edits the
+  current user's name; students also have a class confirmation-code field.
+
 - The exam-list title and “Tạo đề thi” action always share one row, including
   mobile: title left, action right, vertically centered. Never apply the generic
   mobile full-width title wrapping rule to this heading.

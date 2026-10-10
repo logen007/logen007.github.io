@@ -81,6 +81,10 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .account-role-trigger[aria-expanded="true"] .ui-icon { transform:rotate(180deg); }
 .account-role-trigger:hover,.account-role-trigger[aria-expanded="true"] { background:var(--brand-soft); }
 .account-role-menu button[aria-current="true"] { background:var(--brand-soft); color:var(--brand-text); font-weight:600; }
+.header-account { position:relative; }
+.header-account .account-role-menu { width:180px; max-width:calc(100vw - 32px); }
+.header-account .account-role-menu button { display:block; text-align:left; padding:10px 14px; font-weight:500; min-height:44px; }
+.header-account .account-role-menu button:last-child { border-top:1px solid var(--vien); border-radius:0 0 10px 10px; }
 .header-logout { border:0!important; background:var(--surface-muted)!important; }
 .khung,.khung-quan-tri { width:min(var(--max),100%); margin:0 auto; padding:36px 0 48px; }
 .noi-dung-quan-tri { min-width:0; }

@@ -2,7 +2,7 @@ import {appError,query} from '../db.js';
 import {copyExam,prepareExamForEditing} from './exam-copy.js';
 import {emptyTrash} from '../trash-gc.js';
 import {isTeacher} from './shared.js';
-import {saveClass,saveStudentProfile,saveStudentName} from './classes.js';
+import {saveClass,saveStudentProfile,saveStudentName,saveAccountName} from './classes.js';
 import {verifyClassCode,enrollInClass} from './class-enrollment.js';
 import {saveOralScore} from './oral.js';
 import {saveExamAccess,listExamCodes,createExamCode,acknowledgePromotion} from './exam-access.js';
@@ -22,6 +22,7 @@ export async function handleAction(user,name,data={}){
     case 'saveClass': return saveClass(user,data);
     case 'saveStudentProfile': return saveStudentProfile(user,data);
     case 'saveStudentName': return saveStudentName(user,data);
+    case 'saveAccountName': return saveAccountName(user,data);
     case 'verifyClassCode': return verifyClassCode(user,data);
     case 'enrollInClass': return enrollInClass(user,data);
     case 'saveOralScore': return saveOralScore(user,data);
