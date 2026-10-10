@@ -469,7 +469,7 @@ function examBuilderView(){
   if(!exam||isStudent(user)){ui.view='admin';render();return;}
   const section=exam.sections.find(s=>s.id===ui.builderSectionId)||exam.sections[0];
   if(section)ui.builderSectionId=section.id;
-  const readOnly=!canEditExam(user,exam)||Boolean(exam.locked&&!isMaster(user));
+  const readOnly=!canEditExam(user,exam);
   app.innerHTML=layout(examBuilderHtml({data,user,exam,section,readOnly}));
 }
 
@@ -741,7 +741,7 @@ async function persistBuilderDraft({silent=false}={}){
     if(!silent)notify('Đã lưu bài thi.');
     return true;
   }catch(error){
-    setBuilderSaveStatus('error','Chưa lưu được · Kiểm tra kết nối');
+    setBuilderSaveStatus('error',error?.message||'Chưa lưu được · Kiểm tra kết nối');
     console.error(error);
     notify(error?.message||'Không thể lưu bài thi.');
     return false;

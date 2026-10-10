@@ -32,10 +32,7 @@ function structuralAttemptExists(state,examId){
 }
 
 function assertExamStructureEditable(state,user,exam){
-  if(isMaster(user))return;
-  if(exam.locked||structuralAttemptExists(state,exam.id)){
-    throw new Error('Bài thi đã có học viên bắt đầu làm nên cấu trúc đã được khóa. Hãy tạo bài/phiên bản mới để thay đổi.');
-  }
+  if(!canEditExam(user,exam))throw new Error('Bạn không có quyền chỉnh sửa bài thi này.');
 }
 
 export function createExam(state,user,input={}){
@@ -90,8 +87,7 @@ export function duplicateExam(state,user,sourceId){
 // never unlock or mutate the original used by an exam or an attempt.
 export function detachLockedDraftQuestions(state,user,examId){
   const exam=byId(state.exams,examId);
-  if(!exam||exam.locked||!canEditExam(user,exam)||structuralAttemptExists(state,examId))return false;
-  if(exam.status!=='draft'&&!(exam.copiedFrom||/ - Copy \d+$/.test(exam.title)))return false;
+  if(!exam||exam.status==='trash'||!canEditExam(user,exam))return false;
   const copies=new Map();
   for(const section of exam.sections||[])for(const id of section.questionIds||[]){
     const original=byId(state.questions,id);
@@ -286,10 +282,7 @@ export function publishExam(state,user,examId){
   if(errors.length)throw new Error(errors.join(' '));
   exam.status='published';
   exam.updatedAt=nowIso();
-  for(const section of exam.sections||[])for(const questionId of section.questionIds||[]){
-    const question=byId(state.questions,questionId);
-    if(question){question.locked=true;question.lockedAt||=nowIso();}
-  }
+  // Publishing does not remove the owner's edit rights. Attempts use snapshots.
   audit(state,user,'publish','exam',examId);
   return exam;
 }

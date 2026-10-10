@@ -19,7 +19,7 @@ export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved
   const minQuestions=Math.max(1,Number(spec.questions?.min||1)),maxQuestions=Math.max(minQuestions,Number(spec.questions?.max||minQuestions));
   const specDefaultScore=Math.max(0,Number(spec.scoring?.default??1));
   const originalQuestions=(section.questionIds||[]).map(questionId=>(state.questions||[]).find(q=>q.id===questionId)).filter(Boolean);
-  if((exam?.locked||originalQuestions.some(q=>q.locked))&&user.role!=='master')throw new Error('Phần này đã được dùng và đang khóa.');
+  if(exam?.ownerId!==user.id&&user.role!=='master')throw new Error('Bạn không có quyền sửa đề này.');
   const uniformScores=[...new Set(originalQuestions.map(q=>Number(q.maxScore)).filter(Number.isFinite))];
   const defaultScore=Math.max(0,Number(uniformScores.length===1?uniformScores[0]:specDefaultScore)||0);
   let questions=(originalQuestions.length?originalQuestions:Array.from({length:Math.min(3,maxQuestions)},()=>questionDraft(defaultScore))).map(q=>({...q,choices:['A','B','C'].map((key,j)=>normalizeChoice(q.choices?.[j],key)),maxScore:Number(q.maxScore??defaultScore)}));

@@ -4,8 +4,14 @@ import {resultSummary} from '../src/domain/result-summary.js';
 import {studentExamCardHtml,studentHomeHtml} from '../src/views/student.js';
 import {resultSummaryHtml} from '../src/views/result-summary.js';
 import {studentProfileCardHtml,studentShareText} from '../src/views/student-profile-card.js';
+import {examAccessFormHtml} from '../src/views/exam-access.js';
 
 assert.equal(STUDENT_LEVELS.length,12);
+const settingsHtml=examAccessFormHtml({title:'<Exam>',provider:'GOETHE',level:'A1',hidden:true,learningLevel:'A1.2'});
+assert.ok(settingsHtml.includes('&lt;Exam&gt;'));
+for(const label of ['Quyền truy cập','Trình độ','Mã thi','Lưu thay đổi','Tạo mã'])assert.ok(settingsHtml.includes(label));
+assert.ok(settingsHtml.includes('data-settings-status'));
+assert.ok(settingsHtml.includes('data-code-status'));
 assert.equal(promotionTarget('A1.1','B1.1',true),'B1.2');
 assert.equal(promotionTarget('A1.1','B1.1',false),null);
 assert.equal(promotionTarget('B2.1','A1.1',true),null);

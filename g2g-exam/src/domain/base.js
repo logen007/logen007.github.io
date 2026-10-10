@@ -28,9 +28,9 @@ export function audit(state,user,action,entityType,entityId,detail={}){
 }
 
 export function canEditQuestion(user,question){
-  return Boolean(user&&question&&(isMaster(user)||(isTeacher(user)&&question.ownerId===user.id&&question.locked!==true)));
+  return Boolean(user&&question&&(isMaster(user)||(isTeacher(user)&&question.ownerId===user.id)));
 }
-export function canDeleteQuestion(user,question){return canEditQuestion(user,question);}
+export function canDeleteQuestion(user,question){return canEditQuestion(user,question)&&(isMaster(user)||question.locked!==true);}
 export function canPermanentlyDelete(user){return isMaster(user);}
 export function canEditExam(user,exam){return Boolean(user&&exam&&(isMaster(user)||(isTeacher(user)&&exam.ownerId===user.id)));}
 export function canSeeTrash(user){return isMaster(user);}

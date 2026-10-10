@@ -14,34 +14,50 @@ export function openCodeEntry({repo,examId,onStarted}){
   };
 }
 
+export function examAccessFormHtml(exam){
+  return `<p class="access-exam-title">${esc(exam.title)}</p>
+    <form class="profile-form access-settings-form">
+      <section class="access-section"><h3>Quyền truy cập</h3><label class="access-toggle"><span><strong>Ẩn đề</strong><small>Học viên cần nhập mã để bắt đầu thi.</small></span><input name="hidden" type="checkbox" ${exam.hidden?'checked':''}></label></section>
+      <section class="access-section"><h3>Trình độ</h3><label class="sr-only" for="accessLevel">Trình độ của đề</label><select id="accessLevel" name="learningLevel"><option value="">Không tự động nâng trình độ</option>${STUDENT_LEVELS.map(level=>`<option ${exam.learningLevel===level?'selected':''}>${level}</option>`).join('')}</select><p class="phu-de">Đạt bài thi sẽ lên bậc kế tiếp. Cấu trúc đề ${esc(exam.provider)} ${esc(exam.level)} không thay đổi.</p></section>
+      <div class="access-save"><span data-settings-status role="status"></span><button class="nut chinh" type="submit">Lưu thay đổi</button></div>
+    </form>
+    <section class="access-section access-codes"><div class="access-section-heading"><h3>Mã thi</h3><button class="text-link" type="button" data-refresh-codes>Làm mới</button></div><p class="phu-de">Mỗi học viên dùng mỗi mã một lần. Mã hết hạn không ngắt lượt đang thi.</p>
+      <form class="access-code-create" data-code-form><label>Hết hạn lúc<input name="expiresAt" type="datetime-local" required></label><button class="nut" type="submit">Tạo mã</button></form><small class="phu-de">Theo giờ trên thiết bị của bạn.</small><p data-code-status role="status"></p><div data-codes aria-live="polite"></div>
+    </section>`;
+}
 export async function openExamAccess({repo,exam,onSaved}){
-  const modal=mountDialog('Cài đặt đề thi',`<form class="profile-form"><label class="access-toggle"><input name="hidden" type="checkbox" ${exam.hidden?'checked':''}>Ẩn đề — yêu cầu mã để bắt đầu</label><label>Trình độ của đề<select name="learningLevel"><option value="">Không tự động lên trình độ</option>${STUDENT_LEVELS.map(level=>`<option ${exam.learningLevel===level?'selected':''}>${level}</option>`).join('')}</select></label><p class="phu-de">Đỗ đề sẽ lên bậc kế tiếp của trình độ này. Không thay đổi cấu trúc ${esc(exam.provider)} ${esc(exam.level)}.</p><button class="nut chinh" type="submit">Lưu cài đặt</button></form><hr><form class="profile-form" data-code-form><label>Ngày giờ hết hạn mã<input name="expiresAt" type="datetime-local" required></label><small>Giờ trên thiết bị của bạn. Mã hết hạn không ngắt lượt đang thi.</small><button class="nut" type="submit">Tạo mã</button></form><p data-error role="alert"></p><div data-codes aria-live="polite"></div>`);
-  const error=message=>{modal.querySelector('[data-error]').textContent=message;};
+  const modal=mountDialog('Cài đặt đề',examAccessFormHtml(exam));
+  modal.classList.add('exam-access-dialog');
+  const status=(selector,message,error=false)=>{const node=modal.querySelector(selector);node.textContent=message;node.classList.toggle('access-error',error);};
   const load=async()=>{
-    if(repo.mode!=='api'){error('Quản lý mã thi cần kết nối máy chủ.');return;}
+    if(repo.mode!=='api')throw new Error('Mã thi cần kết nối máy chủ.');
     const codes=await repo.call('listExamCodes',{examId:exam.id});
-    modal.querySelector('[data-codes]').innerHTML=codes.map(item=>`<div class="exam-code-row"><strong>${esc(item.code)}</strong><span>${esc(fmtDate(item.expiresAt))}</span><button type="button" class="nut nho" data-copy="${esc(item.code)}">Copy</button></div>`).join('')||'<p>Không có mã thi còn hiệu lực.</p>';
-    modal.querySelectorAll('[data-copy]').forEach(button=>button.onclick=async()=>{try{await navigator.clipboard.writeText(button.dataset.copy);button.textContent='Đã copy';}catch{error('Không copy được tự động. Anh chọn mã rồi sao chép giúp em.');}});
+    if(!modal.isConnected)return;
+    modal.querySelector('[data-codes]').innerHTML=codes.map(item=>`<div class="exam-code-row"><div><strong>${esc(item.code)}</strong><small>Hết hạn ${esc(fmtDate(item.expiresAt))}</small></div><button type="button" class="nut nho" data-copy="${esc(item.code)}" aria-label="Sao chép mã ${esc(item.code)}">Copy</button></div>`).join('')||'<div class="access-empty">Chưa có mã còn hiệu lực.<br><small>Chọn ngày giờ và nhấn Tạo mã.</small></div>';
+    modal.querySelectorAll('[data-copy]').forEach(button=>button.onclick=async()=>{try{await navigator.clipboard.writeText(button.dataset.copy);button.textContent='Đã copy';}catch{status('[data-code-status]','Không thể sao chép tự động. Bạn có thể chọn mã để copy.',true);}});
   };
   const settingsForm=modal.querySelector('form');
   settingsForm.onsubmit=async event=>{
-    event.preventDefault();const button=settingsForm.querySelector('button');button.disabled=true;
+    event.preventDefault();const button=settingsForm.querySelector('button');button.disabled=true;status('[data-settings-status]','Đang lưu…');
     try{
       if(repo.mode!=='api')throw new Error('Cài đặt này cần kết nối máy chủ.');
       await repo.call('saveExamAccess',{examId:exam.id,hidden:settingsForm.elements.hidden.checked,learningLevel:settingsForm.elements.learningLevel.value});
-      await repo.reload();await onSaved();error('Đã lưu cài đặt.');
-    }catch(e){error(e.message);}finally{button.disabled=false;}
+      await repo.reload();await onSaved();status('[data-settings-status]','Đã lưu');
+    }catch(error){status('[data-settings-status]',error.message,true);}finally{button.disabled=false;}
   };
   modal.querySelector('[data-code-form]').onsubmit=async event=>{
     event.preventDefault();const form=event.currentTarget,button=form.querySelector('button');button.disabled=true;
     try{
       if(repo.mode!=='api')throw new Error('Tạo mã cần kết nối máy chủ.');
-      await repo.call('createExamCode',{examId:exam.id,expiresAt:new Date(form.elements.expiresAt.value).toISOString()});
-      await load();error('');
-    }catch(e){error(e.message);}finally{button.disabled=false;}
+      const expiresAt=new Date(form.elements.expiresAt.value);
+      if(!Number.isFinite(expiresAt.getTime())||expiresAt.getTime()<=Date.now())throw new Error('Chọn thời gian hết hạn trong tương lai.');
+      await repo.call('createExamCode',{examId:exam.id,expiresAt:expiresAt.toISOString()});
+      await load();await repo.reload();await onSaved();status('[data-code-status]','Đã tạo mã. Nhấn Copy để gửi cho học viên.');
+    }catch(error){status('[data-code-status]',error.message,true);}finally{button.disabled=false;}
   };
-  try{await load();}catch(e){error(e.message);}
-  const timer=setInterval(()=>{if(!modal.isConnected){clearInterval(timer);return;}load().catch(e=>error(e.message));},30000);
+  modal.querySelector('[data-refresh-codes]').onclick=()=>load().catch(error=>status('[data-code-status]',error.message,true));
+  try{await load();}catch(error){status('[data-code-status]',error.message,true);}
+  const timer=setInterval(()=>{if(!modal.isConnected){clearInterval(timer);return;}load().catch(error=>status('[data-code-status]',error.message,true));},30000);
 }
 
 export function showPromotion({repo,promotion,onSaved}){

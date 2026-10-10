@@ -127,4 +127,24 @@ try{
   await query("UPDATE exams SET data=data||$2::jsonb WHERE id=$1",[serverCopy.id,JSON.stringify({ownerId:'t'})]);
   assert.equal((await loadState(copier)).exams.find(e=>e.id===serverCopy.id).ownerId,copier.id);
   console.log('Server-authenticated copy ownership and stale metadata regression passed.');
+  // Publish -> attempt -> edit persists, without changing the in-progress version.
+  await commitOperations(copier,[{collection:'exams',id:serverExam.id,item:{...serverExam,hidden:false,status:'published'}}]);
+  await saveExamAccess(copier,{examId:serverExam.id,hidden:false,learningLevel:'B1.1'});
+  const activeCopy=await startAttempt(other,{examId:serverExam.id});
+  const beforeEdit=(await query('SELECT private_data FROM attempts WHERE id=$1',[activeCopy.attemptId])).rows[0].private_data.examSnapshot;
+  const currentExam=(await loadState(copier)).exams.find(e=>e.id===serverExam.id);
+  const changedSections=currentExam.sections.map((s,i)=>i===0?{...s,instruction:'Edited after publication',timeMinutes:12}:s);
+  await commitOperations(copier,[{collection:'questions',id:serverQuestion.id,item:{...serverQuestion,title:'Changed after students started'}},{collection:'exams',id:serverExam.id,item:{...currentExam,sections:changedSections}}]);
+  assert.deepEqual((await query('SELECT private_data FROM attempts WHERE id=$1',[activeCopy.attemptId])).rows[0].private_data.examSnapshot,beforeEdit);
+  assert.equal((await loadState(copier)).exams.find(e=>e.id===serverExam.id).sections[0].instruction,'Edited after publication');
+  // Legacy rows get frozen before their first post-upgrade edit.
+  await query("UPDATE attempts SET private_data=private_data-'examSnapshot' WHERE id=$1",[activeCopy.attemptId]);
+  await commitOperations(copier,[{collection:'questions',id:serverQuestion.id,item:{...serverQuestion,title:'Second edit'}}]);
+  const legacySnapshot=(await query('SELECT private_data FROM attempts WHERE id=$1',[activeCopy.attemptId])).rows[0].private_data.examSnapshot;
+  assert.equal(legacySnapshot.questionSnapshot.find(q=>q.id===serverQuestion.id).title,'Changed after students started');
+  await assert.rejects(()=>commitOperations(teacher,[{collection:'exams',id:serverExam.id,item:{...currentExam,title:'Wrong owner'}}]),/quyền/);
+  console.log('Published edits, ongoing snapshots, legacy snapshots and owner protection passed.');
+  await query("UPDATE questions SET locked=true,data=data||'{\"locked\":true}'::jsonb WHERE id=$1",[serverQuestion.id]);
+  await commitOperations(copier,[{collection:'questions',id:serverQuestion.id,item:{...serverQuestion,locked:true,title:'Legacy lock no longer blocks owner'}}]);
+  assert.equal((await query('SELECT data FROM questions WHERE id=$1',[serverQuestion.id])).rows[0].data.title,'Legacy lock no longer blocks owner');
 }finally{hook.deregister();await db.close();delete globalThis.__testDb;}

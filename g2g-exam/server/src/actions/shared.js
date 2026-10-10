@@ -7,7 +7,7 @@ export async function examById(id,client={query}){
   const result=await client.query(`SELECT id,owner_id,status,locked,data FROM exams WHERE id=$1`,[id]);
   if(!result.rowCount)throw appError(404,'Không tìm thấy bài thi.');
   const row=result.rows[0];
-  return {id:row.id,ownerId:row.owner_id,status:row.status,locked:row.locked,...row.data};
+  return {...row.data,id:row.id,ownerId:row.owner_id,status:row.status,locked:row.locked};
 }
 
 export async function canGrade(user,exam){
