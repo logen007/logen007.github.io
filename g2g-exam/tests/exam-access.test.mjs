@@ -7,6 +7,68 @@ import {resultSummaryHtml} from '../src/views/result-summary.js';
 import {studentProfileCardHtml,studentShareText,profileStats,bindStudentName} from '../src/views/student-profile-card.js';
 import {examAccessFormHtml} from '../src/views/exam-access.js';
 import {classFormHtml,classesHtml} from '../src/views/classes.js';
+import {openStudentProfile} from '../src/views/classes.js';
+import {openClassEnrollment} from '../src/views/class-enrollment.js';
+
+// Minimal dialog adapter: exercise submit handlers without opening a browser.
+{
+  const previousDocument=globalThis.document;
+  let active;
+  const element=()=>({value:'',disabled:false,focus(){},addEventListener(){}});
+  globalThis.document={
+    getElementById:()=>active,
+    body:{append(modal){active=modal;}},
+    createElement(){
+      const button=element(),error={textContent:''},choice={hidden:true,innerHTML:'',querySelector:()=>element()};
+      const form={elements:{name:element(),confirmationCode:element(),code:element(),classId:{value:'class1'}},
+        querySelector:selector=>selector==='[data-error]'?error:selector==='[data-class-choice]'?choice:button,
+        requestSubmit(){this.pending=this.onsubmit({preventDefault(){},currentTarget:this});}};
+      return {form,button,error,choice,addEventListener(){},remove(){if(active===this)active=null;},
+        set innerHTML(value){this.html=value;form.elements.code.value=value.match(/value="([^"]*)" name="code"/)?.[1]||'';},
+        querySelector:selector=>selector==='form'?form:selector==='[data-dismiss]'?null:element()};
+    }
+  };
+  try{
+    const student={id:'student',name:'Name',level:'A1'},data={classes:[{id:'external',code:'Extend'}]};
+    const calls=[];
+    const repo={mode:'api',reload:async()=>{},call:async(action,payload)=>{
+      calls.push({action,payload});
+      if(action==='verifyClassCode'){
+        if(payload.code==='WRONG')throw new Error('Mã không hợp lệ');
+        return {classes:[{id:'class1',code:'A1-01'}]};
+      }
+    }};
+    for(const code of ['', 'ABCDE']){
+      calls.length=0;
+      openStudentProfile({data,student,repo,onSaved:async()=>{},required:true});
+      const modal=active;
+      assert.ok(modal.html.includes('Hoàn tất thông tin</h2>'));
+      assert.ok(modal.html.includes('noi-hop--compact'));
+      assert.ok(!modal.html.includes('Trình độ ban đầu'));
+      assert.ok(!modal.html.includes('data-sign-out'));
+      assert.ok(!modal.html.includes('<label>Họ và tên đầy đủ'));
+      assert.ok(!modal.html.match(/name="confirmationCode"[^>]*\brequired\b/));
+      modal.form.elements.name.value='Nguyen Van A';
+      modal.form.elements.confirmationCode.value=code;
+      await modal.form.onsubmit({preventDefault(){},currentTarget:modal.form});
+      assert.equal(calls[0].action,'saveStudentProfile');
+      if(code){
+        await active.form.pending;
+        assert.equal(calls[1].action,'verifyClassCode');
+        assert.equal(active.choice.hidden,false);
+        assert.ok(active.html.includes('Nhập mã đã được giáo viên cung cấp'));
+        await active.form.onsubmit({preventDefault(){},currentTarget:active.form});
+        assert.equal(calls[2].action,'enrollInClass');
+        assert.equal(calls[2].payload.classId,'class1');
+      }
+      assert.equal(active,null);
+    }
+    openClassEnrollment({repo,user:student,onSaved:async()=>{},initialCode:'WRONG'});
+    await active.form.pending;
+    assert.equal(active.error.textContent,'Mã không hợp lệ');
+    assert.equal(active.choice.hidden,true);
+  }finally{globalThis.document=previousDocument;}
+}
 
 assert.equal(STUDENT_LEVELS.length,6);
 assert.equal(normalizeStudentLevel('A1.2'),'A1');

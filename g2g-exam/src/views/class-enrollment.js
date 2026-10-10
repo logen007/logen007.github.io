@@ -1,12 +1,12 @@
 import {mountDialog} from './classes.js';
 import {esc} from '../ui/format.js';
 
-export function openClassEnrollment({repo,user,onSaved}){
-  const modal=mountDialog('Chọn lớp học',`<form class="profile-form">
-    <p>Nhập mã 5 ký tự giáo viên đã gửi cho email <strong>${esc(user.email)}</strong>.</p>
-    <label>Mã xác nhận lớp<input name="code" required minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters" placeholder="ABCDE"></label>
+export function openClassEnrollment({repo,user,onSaved,initialCode=''}){
+  const modal=mountDialog('Xác nhận lớp',`<form class="profile-form">
+    <p>Nhập mã đã được giáo viên cung cấp</p>
+    <label><input aria-label="Mã xác nhận" value="${esc(initialCode)}" name="code" required minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters" placeholder="ABCDE"></label>
     <div data-class-choice hidden></div><p data-error role="alert"></p>
-    <button class="nut chinh" type="submit">Xác nhận mã</button></form>`);
+    <button class="nut chinh" type="submit">Xác nhận mã</button></form>`,{compact:true});
   const form=modal.querySelector('form'),choice=form.querySelector('[data-class-choice]'),button=form.querySelector('button');
   let verifiedCode=null;
   form.elements.code.addEventListener('input',()=>{verifiedCode=null;choice.hidden=true;choice.innerHTML='';button.textContent='Xác nhận mã';});
@@ -28,4 +28,5 @@ export function openClassEnrollment({repo,user,onSaved}){
     }catch(error){form.querySelector('[data-error]').textContent=error.message;}
     finally{button.disabled=false;}
   };
+  if(initialCode)form.requestSubmit();
 }

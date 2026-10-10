@@ -146,6 +146,7 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 .cai-dat textarea { min-height:96px; resize:vertical; }.check { display:flex!important; align-items:center; gap:8px!important; font-weight:400!important; color:var(--chu)!important; }.check input { width:auto!important; }
 .hop-chon { position:fixed; inset:0; background:rgba(16,20,27,.32); display:grid; place-items:center; padding:24px; z-index:80; }
 .noi-hop { width:min(980px,100%); max-height:92dvh; overflow:auto; background:var(--mat); border-radius:28px; padding:32px; box-shadow:var(--shadow); }
+.noi-hop.noi-hop--compact { width:min(500px,100%); }
 .site-confirm-backdrop { position:fixed; inset:0; z-index:120; display:grid; place-items:center; padding:20px; background:rgba(16,20,27,.36); }
 .site-confirm { width:min(420px,100%); padding:28px; border:1px solid var(--vien); border-radius:20px; background:var(--mat); box-shadow:var(--shadow); }
 .site-confirm p { margin:0; color:var(--chu); font-size:16px; line-height:1.55; }

@@ -27,10 +27,10 @@ export function classesHtml({data,classId=null}){
     <h2>Học viên Extend</h2><p class="phu-de">Học viên ngoài · Gửi mã xác nhận cho đúng email để học viên chọn lớp.</p>${studentRosterHtml(data,students.filter(student=>student.classId===external?.id),{external:true})}`;
 }
 
-export function mountDialog(title,body,{required=false}={}){
+export function mountDialog(title,body,{required=false,compact=false}={}){
   document.getElementById('modal')?.remove();
   const modal=document.createElement('div');modal.id='modal';modal.className='hop-chon';
-  modal.innerHTML=`<section class="noi-hop" role="dialog" aria-modal="true" aria-labelledby="profileDialogTitle"><div class="dau-hop"><h2 id="profileDialogTitle">${esc(title)}</h2>${required?'':'<button class="nut nho" type="button" data-dismiss aria-label="Đóng">×</button>'}</div>${body}</section>`;
+  modal.innerHTML=`<section class="noi-hop ${compact?'noi-hop--compact':''}" role="dialog" aria-modal="true" aria-labelledby="profileDialogTitle"><div class="dau-hop"><h2 id="profileDialogTitle">${esc(title)}</h2>${required?'':'<button class="nut nho" type="button" data-dismiss aria-label="Đóng">×</button>'}</div>${body}</section>`;
   document.body.append(modal);
   modal.querySelector('[data-dismiss]')?.addEventListener('click',()=>modal.remove());
   modal.addEventListener('keydown',event=>{
@@ -46,28 +46,21 @@ export function mountDialog(title,body,{required=false}={}){
 
 export function openStudentProfile({data,student,repo,onSaved,required=false}){
   const classes=data.classes||[],current=classes.find(item=>item.id===student.classId);
-  const modal=mountDialog(required?'Hoàn tất thông tin học viên':'Thông tin học viên',`<form class="profile-form"><label>Họ và tên đầy đủ<input name="name" required maxlength="120" value="${required?'':esc(student.name||'')}" autocomplete="name" placeholder="Nhập họ và tên đầy đủ"></label>${required?'<p class="phu-de">Trình độ ban đầu: A1 · Mã lớp: Extend (học viên ngoài).<br>Sau khi nhận mã xác nhận từ giáo viên, bạn có thể chọn lớp.</p>':`<label>Mã lớp<select name="classCode">${classes.map(item=>`<option value="${esc(item.code)}" ${current?.id===item.id?'selected':''}>${esc(item.code)}</option>`).join('')}</select></label><p class="phu-de">Trình độ: ${esc(normalizeStudentLevel(student.level)||'A1')} · Cập nhật khi đỗ đề thi.</p>`}<p data-error role="alert"></p><button class="nut chinh" type="submit">Lưu thông tin</button></form>`,{required});
+  const modal=mountDialog(required?'Hoàn tất thông tin':'Thông tin học viên',`<form class="profile-form"><label>${required?'':'Họ và tên đầy đủ'}<input aria-label="Họ và tên" name="name" required maxlength="120" value="${required?'':esc(student.name||'')}" autocomplete="name" placeholder="Nhập họ và tên đầy đủ"></label>${required?'<input name="confirmationCode" aria-label="Mã xác nhận (không bắt buộc)" placeholder="Mã xác nhận (không bắt buộc)" minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters">':`<label>Mã lớp<select name="classCode">${classes.map(item=>`<option value="${esc(item.code)}" ${current?.id===item.id?'selected':''}>${esc(item.code)}</option>`).join('')}</select></label><p class="phu-de">Trình độ: ${esc(normalizeStudentLevel(student.level)||'A1')} · Cập nhật khi đỗ đề thi.</p>`}<p data-error role="alert"></p><button class="nut chinh" type="submit">Lưu thông tin</button></form>`,{required,compact:true});
   modal.querySelector('form').onsubmit=async event=>{
     event.preventDefault();const form=event.currentTarget,button=form.querySelector('[type="submit"]');
     try{
       button.disabled=true;
+      const code=required?form.elements.confirmationCode.value.trim().toUpperCase():'';
+      const enrollment=code?await import('./class-enrollment.js'):null;
       const selected=classes.find(item=>required?item.code===EXTERNAL_CLASS:item.code===form.elements.classCode.value);
       const payload=validateStudentProfile({name:form.elements.name.value,classId:selected?.id,level:normalizeStudentLevel(student.level)||'A1'},classes);
       if(repo.mode==='api'){await repo.call('saveStudentProfile',{studentId:student.id,...payload});await repo.reload();}
       else await repo.transaction(state=>Object.assign(state.users.find(item=>item.id===student.id),payload,{profileCompletedAt:new Date().toISOString()}));
       modal.remove();await onSaved();
+      if(code)enrollment.openClassEnrollment({repo,user:student,onSaved,initialCode:code});
     }catch(error){form.querySelector('[data-error]').textContent=error.message;button.disabled=false;}
   };
-  if(required){
-    const actions=document.createElement('div');actions.className='nhom-nut';
-    actions.innerHTML='<button class="nut" type="button" data-refresh-classes>Cập nhật danh sách lớp</button><button class="nut" type="button" data-sign-out>Đăng xuất</button>';
-    modal.querySelector('.noi-hop').append(actions);
-    actions.querySelector('[data-refresh-classes]').onclick=async()=>{
-      try{if(repo.mode==='api')await repo.reload();modal.remove();await onSaved();}
-      catch(error){modal.querySelector('[data-error]').textContent=error.message;}
-    };
-    actions.querySelector('[data-sign-out]').onclick=async()=>{await repo.signOut();location.reload();};
-  }
 }
 
 export function bindClasses(root,{data,repo,onSaved,onClassOpen=()=>{}}){
