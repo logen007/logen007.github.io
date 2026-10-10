@@ -443,6 +443,13 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 .instruction-content > textarea { width:100%; }
 .instruction-audio { display:grid; gap:8px; max-width:420px; }
 .instruction-audio > span { font-size:13px; color:var(--phu); }
+.goethe-instruction--with-audio { grid-template-columns:minmax(0,1fr) minmax(120px,224px); align-items:start; }
+.goethe-instruction--with-audio .instruction-audio { min-width:0; width:100%; align-content:start; }
+@media(max-width:700px) {
+  .goethe-instruction--with-audio { grid-template-columns:minmax(0,1fr) 120px; gap:12px; }
+  .goethe-instruction--with-audio .goethe-instruction-icons { flex-wrap:wrap; height:auto; }
+  .goethe-instruction--with-audio .instruction-image-width { flex-basis:100%; }
+}
 .publish-error-list { display:grid; gap:16px; margin:20px 0; padding-left:24px; max-height:55vh; overflow:auto; overflow-wrap:anywhere; }
 .student-result-row { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:24px; padding:24px; border:1px solid var(--vien); border-radius:24px; background:#fff; }
 .student-result-info h2 { margin:0; font-size:18px; font-weight:550; line-height:1.4; overflow-wrap:anywhere; }
