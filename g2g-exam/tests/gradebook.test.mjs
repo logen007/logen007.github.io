@@ -139,3 +139,14 @@ const usersHtml=teachersAdminHtml({user:{id:'admin',role:'master'},data:{classes
 for(const group of ['teacher','student','external'])assert.equal((usersHtml.match(new RegExp('data-user-group="'+group+'"','g'))||[]).length,1);
 assert.ok(usersHtml.includes('data-user-search="an nguyen an@example.com"'));
 assert.ok(!usersHtml.includes('Học viên cần đăng nhập'));
+const {examAdminHtml}=await import('../src/views/admin.js');
+const filteredExams=examAdminHtml({user:{role:'master'},filters:{provider:'TELC',level:'B1'},data:{attempts:[],exams:[
+  {id:'g',title:'Goethe Only',provider:'GOETHE',level:'A1'},
+  {id:'t',title:'Telc Match',provider:'TELC',level:'B1'},
+  {id:'t2',title:'Other Level',provider:'TELC',level:'B2'}
+]}});
+assert.ok(filteredExams.includes('Telc Match'));
+assert.ok(!filteredExams.includes('Goethe Only'));
+assert.ok(!filteredExams.includes('Other Level'));
+assert.ok(filteredExams.includes('data-admin-exam-filter="provider"'));
+assert.ok(filteredExams.includes('data-admin-exam-filter="level"'));

@@ -476,7 +476,7 @@ function adminView(){
       refreshInfrastructure().then(result=>{ui.infrastructure=result;if(ui.view==='admin'&&ui.adminTab==='dashboard')render();}).catch(error=>notify(error.message||'Không tải được thông tin hạ tầng.')).finally(()=>{infrastructureLoading=false;});
     }
   }
-  else if(ui.adminTab==='exams')content=examAdminHtml({data,user});
+  else if(ui.adminTab==='exams')content=examAdminHtml({data,user,filters:ui.adminExamFilters});
   else if(ui.adminTab==='grades')content=gradebookHtml({data,ui});
   else if(ui.adminTab==='teachers')content=teachersAdminHtml({data,user});
   else if(ui.adminTab==='classes')content=classesHtml({data,classId:ui.classId});
@@ -817,6 +817,7 @@ function bindGlobal(){
 }
 
 function bindViewSpecific(){
+  app.querySelectorAll('[data-admin-exam-filter]').forEach(select=>select.onchange=()=>{ui.adminExamFilters={...ui.adminExamFilters,[select.dataset.adminExamFilter]:select.value};render();});
   app.querySelectorAll('[data-exam-provider-filter]').forEach(select=>select.onchange=()=>{ui.examFilter=select.value;render();});
   app.querySelectorAll('[data-action="exam-select-section"]').forEach(select=>select.onchange=()=>{
     const attempt=byId(data.attempts,ui.attemptId);
