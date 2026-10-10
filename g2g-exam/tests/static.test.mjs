@@ -1,4 +1,19 @@
 import assert from 'node:assert/strict';
+import {studentResultsHtml} from '../src/views/student.js';
+
+const resultView=attempts=>studentResultsHtml({data:{attempts},user:{id:'student-test'}});
+const resultAttempt={id:'result-1',studentId:'student-test',examTitle:'A2 <test>',attemptNo:2,startedAt:'2026-10-10T10:00:00Z',status:'published',totalScore:0,result:'Chưa đạt',reviewerName:'Private reviewer'};
+const publishedResult=resultView([resultAttempt]);
+assert.match(publishedResult,/student-result-score"><strong>0<\/strong>/);
+assert.match(publishedResult,/student-result-badge failed/);
+assert.match(publishedResult,/A2 &lt;test&gt;/);
+assert.match(publishedResult,/data-action="student-attempt-detail" data-id="result-1"/);
+assert.doesNotMatch(publishedResult,/<table|Private reviewer|Trạng thái|Người chấm/);
+const pendingResult=resultView([{...resultAttempt,status:'ready',totalScore:999}]);
+assert.match(pendingResult,/Chờ chấm/);
+assert.doesNotMatch(pendingResult,/999|student-result-score|Chưa đạt/);
+assert.match(resultView([]),/Chưa có kết quả/);
+assert.doesNotMatch(resultView([{...resultAttempt,studentId:'another'}]),/result-1/);
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';

@@ -422,6 +422,26 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 @media (hover:none) { .image-remove-control:has(img)>.image-remove-button { display:grid; place-items:center; } }
 
 /* Matching tables are edited as one group, not a stack of question cards. */
+.student-result-list { display:grid; gap:16px; }
+.student-result-row { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:24px; padding:24px; border:1px solid var(--vien); border-radius:24px; background:#fff; }
+.student-result-info h2 { margin:0; font-size:18px; font-weight:550; line-height:1.4; overflow-wrap:anywhere; }
+.student-result-info p { margin:8px 0 0; color:var(--phu); font-size:13px; }
+.student-result-outcome { display:flex; align-items:center; gap:20px; }
+.student-result-score { display:flex; align-items:baseline; gap:6px; white-space:nowrap; }
+.student-result-score strong { font-size:32px; font-weight:600; line-height:1.2; font-variant-numeric:tabular-nums; }
+.student-result-score span { color:var(--phu); font-size:13px; }
+.student-result-badge { padding:6px 12px; border-radius:999px; background:#eef1f3; color:#43515a; font-size:14px; font-weight:500; }
+.student-result-badge.passed { background:#e5f4ec; color:#145c37; }
+.student-result-badge.failed { background:#fbe9e6; color:#9b2720; }
+.student-results-empty { text-align:center; padding:40px 24px; }
+.student-results-empty p { margin:12px 0 24px; color:var(--phu); }
+@media(max-width:700px) {
+  .student-result-row { grid-template-columns:minmax(0,1fr) auto; gap:20px 12px; padding:20px; border-radius:20px; }
+  .student-result-info { grid-column:1/-1; }
+  .student-result-outcome { flex-wrap:wrap; gap:12px; }
+  .student-result-score strong { font-size:28px; }
+}
+
 .letter-group-editor { display:grid; gap:20px; margin-top:20px; }
 .letter-group-toolbar { display:flex; flex-wrap:wrap; gap:16px; align-items:end; }
 .letter-group-toolbar label { display:grid; gap:8px; color:var(--phu); font-size:13px; }

@@ -42,10 +42,7 @@ export function studentExamCardHtml(ex,attempts,data){
   return `<article class="the the-de"><span class="nhan">${esc(provider?`${provider.charAt(0).toUpperCase()}${provider.slice(1).toLowerCase()} ${ex.level}`:ex.level)}</span>${published.length?'':'<span class="the-de-new">Mới</span>'}<h3>${esc(ex.title)}</h3><div class="meta">${sum.sections} phần · ${ex.questionCount??sum.questions} câu · ${mins} phút</div><div class="day"></div><div class="chan"><span>${latestLine}</span></div><div class="hanh-dong">${ex.hidden?`<button class="nut chinh" data-action="enter-code" data-exam="${esc(ex.id)}" ${ex.hasActiveCodes&&!ex.allCodesUsed?'':'disabled'}>${ex.allCodesUsed?'Đã sử dụng lượt thi':ex.hasActiveCodes?'Nhập mã':'Không có mã thi'}</button>`:`<button class="nut chinh" data-action="start" data-exam="${ex.id}">Bắt đầu thi</button>`}</div></article>`;
 }
 
-export function studentResultsHtml({data,user}){
-  const attempts=getStudentResults(data,user.id);
-  return `<main class="khung"><div class="tieu-de-trang"><div><h1>Toàn bộ kết quả</h1><p>Bài chưa được giáo viên công bố sẽ không hiển thị điểm.</p></div><button class="nut" data-action="student-home">Quay lại</button></div><div class="table-wrap"><table class="bang"><thead><tr><th>Bài thi</th><th>Lần thi</th><th>Ngày</th><th>Điểm</th><th>Kết quả</th><th>Người chấm</th><th>Trạng thái</th></tr></thead><tbody>${attempts.map(a=>`<tr><td><button class="table-link" data-action="student-attempt-detail" data-id="${esc(a.id)}">${esc(a.examTitle)}</button></td><td>#${a.attemptNo}</td><td>${fmtDate(a.submittedAt||a.startedAt)}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?(a.totalScore??'—'):'—'}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?esc(a.result==='Chưa đạt'?'Trượt':a.result||'—'):'—'}</td><td>${esc(a.status===ATTEMPT_STATUS.PUBLISHED?a.reviewerName||'—':'—')}</td><td><span class="nhan ${statusClass(a.status)}">${statusText(a.status)}</span></td></tr>`).join('')||'<tr><td colspan="7" class="rong">Chưa có lần thi nào.</td></tr>'}</tbody></table></div></main>`;
-}
+export {studentResultsHtml} from './student-results.js';
 
 export function studentAttemptDetailHtml({review}){
   const attempt=review.attempt||{},score=review.score;
