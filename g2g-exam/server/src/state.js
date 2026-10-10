@@ -82,10 +82,6 @@ async function applyExam(c,user,op){
     await deleteTrashedExam(c,op.id);return;
   }
   const item=op.item||{};
-  // Instruction audio was retired; question/example audio remains unchanged.
-  if(Array.isArray(item.sections))item.sections=item.sections.map(section=>{
-    const {instructionAudioUrl,instructionAudioName,...rest}=section;return rest;
-  });
   if(!current.rowCount){if(!isTeacher(user)||item.ownerId!==user.id)throw appError(403,'Không có quyền tạo bài thi.');await c.query(`INSERT INTO exams(id,owner_id,status,locked,data) VALUES($1,$2,$3,$4,$5::jsonb)`,[op.id,user.id,item.status||'draft',Boolean(item.locked),JSON.stringify(stripId(item))]);return;}
   const old=current.rows[0],oldData=old.data||{};if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa bài thi này.');if(old.status==='trash'&&item.status!=='trash'&&user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được khôi phục bài thi.');if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu bài thi.');
   await c.query(`UPDATE exams SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,hidden:Boolean(oldData.hidden),learningLevel:oldData.learningLevel||null,ownerId:old.owner_id}))]);

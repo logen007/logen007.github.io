@@ -662,6 +662,8 @@ async function persistBuilderDraft({silent=false}={}){
   try{
     const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map(),questionInstructionImageUrls=new Map(),questionCardImageUrls=new Map(),rubricImageUrls=new Map();
     let sectionImageUrl;
+    const sectionAudioUpload=section&&pendingAudioUploads.get('section:'+section.id);
+    const sectionAudio=sectionAudioUpload?await sectionAudioUpload.promise:null;
     if(section&&app.querySelector('.part-question[data-question-id]')){
       for(const card of app.querySelectorAll('.part-question[data-question-id]')){
         const uploaded=pendingAudioUploads.get(card.dataset.questionId);
@@ -701,6 +703,7 @@ async function persistBuilderDraft({silent=false}={}){
     }
     await repo.transaction(st=>{
       updateExam(st,user,exam.id,{title});
+      if(sectionAudio)updateSection(st,user,exam.id,section.id,{instructionAudioUrl:sectionAudio.url,instructionAudioName:sectionAudio.name});
       if(section&&app.querySelector('.part-question[data-question-id]')){
         const imageControl=app.querySelector('[data-section-image-control]');
         const instructionImageUrl=section.questionProfile?.instructionImage===false
@@ -760,6 +763,7 @@ async function persistBuilderDraft({silent=false}={}){
       }
     });
     data=await repo.getState();
+    if(sectionAudioUpload&&pendingAudioUploads.get('section:'+section.id)===sectionAudioUpload)pendingAudioUploads.delete('section:'+section.id);
     audioUrls.forEach((_,questionId)=>{
       pendingAudioUploads.delete(questionId);
       const audioInput=app.querySelector(`[data-question-id="${questionId}"] [data-field="audio"]`);

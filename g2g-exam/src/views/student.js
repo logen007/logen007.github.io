@@ -124,7 +124,7 @@ function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
   const policy=section.audioPolicy||{},audioQuestions=questions.filter(question=>String(question.audioUrl||'').trim());
   const policyEnabled=section.skillKey==='listening'&&policy.mode==='per_question_segment';
   const hasSpecialAudio=audioQuestions.some(question=>question.example);
-  if(!audioQuestions.length||(!policyEnabled&&!hasSpecialAudio))return '';
+  if(!section.instructionAudioUrl&&(!audioQuestions.length||(!policyEnabled&&!hasSpecialAudio)))return '';
   const repeat=Math.max(1,Number(policy.segmentRepeat)||1),key=`g2g.section-audio.${attempt.id}.${section.id}`;
   const used=!preview&&(Boolean(attempt.audioSessions?.[section.id]?.startedAt)||Boolean(sessionStorage.getItem(key)));
   const segments=partAudioSegments(section,questions);

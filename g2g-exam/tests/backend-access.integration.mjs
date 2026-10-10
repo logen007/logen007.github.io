@@ -255,14 +255,15 @@ try{
   assert.deepEqual(await emptyTrash({id:'m',role:'master'}),{exams:0,questions:0});
   await query("UPDATE questions SET status='active' WHERE id='trash-snapshot'");
   assert.equal((await query("SELECT trashed_at FROM questions WHERE id='trash-snapshot'")).rows[0].trashed_at,null);
-  // Retired audio is stripped on writes and on deployment migration, not question media.
+  // Instruction audio survives both writes and repeated schema initialization.
   const mediaExam=(await loadState(copier)).exams.find(e=>e.id===serverExam.id);
   await commitOperations(copier,[{collection:'exams',id:mediaExam.id,item:{...mediaExam,sections:mediaExam.sections.map(s=>({...s,instructionAudioUrl:'/uploads/retired.mp3'}))}}]);
-  assert.ok(!(await query('SELECT data FROM exams WHERE id=$1',[mediaExam.id])).rows[0].data.sections[0].instructionAudioUrl);
+  assert.equal((await query('SELECT data FROM exams WHERE id=$1',[mediaExam.id])).rows[0].data.sections[0].instructionAudioUrl,'/uploads/retired.mp3');
   await query("UPDATE exams SET data=jsonb_set(data,'{sections,0,instructionAudioUrl}','\"/uploads/retired.mp3\"') WHERE id=$1",[mediaExam.id]);
   await db.exec(await fs.readFile(new URL('../server/schema.sql',import.meta.url),'utf8'));
-  assert.ok(!(await query('SELECT data FROM exams WHERE id=$1',[mediaExam.id])).rows[0].data.sections[0].instructionAudioUrl);
-  console.log('Thirty-day trash retention, history deletion, repeat safety, references, restore timestamps and retired audio migration passed.');
+  assert.equal((await query('SELECT data FROM exams WHERE id=$1',[mediaExam.id])).rows[0].data.sections[0].instructionAudioUrl,'/uploads/retired.mp3');
+  await commitOperations(copier,[{collection:'exams',id:mediaExam.id,item:mediaExam}]);
+  console.log('Trash retention, references, restore timestamps and instruction audio persistence passed.');
   const {prepareExamForEditing}=await import('../server/src/actions/exam-copy.js');
   await query("UPDATE questions SET owner_id='t' WHERE id=$1",[serverQuestion.id]);
   const beforeIsolation=(await query('SELECT data FROM exams WHERE id=$1',[serverExam.id])).rows[0].data;

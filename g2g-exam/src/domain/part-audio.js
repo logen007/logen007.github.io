@@ -8,8 +8,8 @@ export function partAudioQuestions(section,questions){
 
 export function partAudioSegments(section,questions){
   let taskNumber=0;
-  return partAudioQuestions(section,questions).filter(q=>q.audioUrl).map(q=>({
+  return [...(section.instructionAudioUrl?[{url:section.instructionAudioUrl,repeat:1,label:'Aufgabenstellung'}]:[]),...partAudioQuestions(section,questions).filter(q=>q.audioUrl).map(q=>({
     url:q.audioUrl,repeat:isPrefilledQuestion(q)?1:Math.max(1,Number(section.audioPolicy?.segmentRepeat)||1),
     label:isPrefilledQuestion(q)?'Beispiel':section.audioPolicy?.sharedPart?'Hörtext':`Aufgabe ${++taskNumber}`,
-  }));
+  }))];
 }

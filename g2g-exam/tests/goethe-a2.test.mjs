@@ -32,7 +32,7 @@ for(const section of exam.sections){
     assert.deepEqual(repeats,expected[section.name]);
     const builder=renderBuilder({data:state,exam,section});
     assert.doesNotMatch(builder,/Tải audio một lượt nghe|Hệ thống tự phát|part-audio-guide/);
-    assert.equal((builder.match(/data-field="audio"/g)||[]).length,selected.length);
+    assert.equal((builder.match(/data-field="audio"/g)||[]).length,selected.length+1);
   }
   if(section.questionProfile.uniqueLetters){
     const answers=Object.fromEntries(questions.filter(q=>!q.example).map(q=>[q.id,q.correctAnswer]));
@@ -103,7 +103,7 @@ assert.equal((settingsEditor.match(/data-letter-group-score/g)||[]).length,1);
 assert.equal((settingsEditor.match(/<tr class="part-question"/g)||[]).length,6);
 assert.equal((settingsEditor.match(/<input class="truong" data-field="title"/g)||[]).length,6);
 assert.doesNotMatch(settingsEditor,/<textarea data-field="title"|goethe-question-row/);
-assert.equal((settingsEditor.match(/data-audio-question-id=/g)||[]).length,2);
+assert.equal((settingsEditor.match(/data-audio-question-id=/g)||[]).length,3);
 assert.match(settingsEditor,/>_ <small>Ví dụ<\/small>/);
 assert.equal((settingsEditor.match(/type="hidden" data-field="maxScore"/g)||[]).length,6);
 const groupFields=[{value:'1'},{value:'1'}];let onGroupScore,totalUpdates=0;

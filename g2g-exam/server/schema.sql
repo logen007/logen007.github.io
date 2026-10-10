@@ -50,13 +50,6 @@ CREATE TRIGGER exams_trash_time BEFORE INSERT OR UPDATE ON exams FOR EACH ROW EX
 DROP TRIGGER IF EXISTS questions_trash_time ON questions;
 CREATE TRIGGER questions_trash_time BEFORE INSERT OR UPDATE ON questions FOR EACH ROW EXECUTE FUNCTION track_trash_time();
 
--- Remove retired instruction audio links; historical attempt snapshots are retained.
-UPDATE exams SET data=jsonb_set(data,'{sections}',(
-  SELECT jsonb_agg(section-'instructionAudioUrl'-'instructionAudioName' ORDER BY position)
-  FROM jsonb_array_elements(data->'sections') WITH ORDINALITY AS s(section,position)
-)) WHERE jsonb_typeof(data->'sections')='array' AND EXISTS (
-  SELECT 1 FROM jsonb_array_elements(data->'sections') AS section WHERE section ? 'instructionAudioUrl' OR section ? 'instructionAudioName'
-);
 
 CREATE TABLE IF NOT EXISTS attempts (
   id text PRIMARY KEY,

@@ -122,7 +122,8 @@ function freeResponseHtml(q,{defaultScore,readOnly}){
 }
 
 function instructionHtml(section,choiceProfile,readOnly,question){
-  const instruction=`<textarea id="sectionInstruction" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea>`;
+  const listening=section.skillKey==='listening'||/nghe|hören|listening/i.test(section.skill||'');
+  const instruction=`<div class="instruction-content"><textarea id="sectionInstruction" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea>${listening?`<div class="instruction-audio" data-audio-question-id="section:${esc(section.id)}"><span>Audio đề bài</span>${audioHtml({audioUrl:section.instructionAudioUrl,audioName:section.instructionAudioName},readOnly,true)}</div>`:''}</div>`;
   if(!choiceProfile.instructionImage)return `<div class="goethe-instruction">${instruction}</div>`;
   const imageUrl=section.instructionImageUrl||'';
   const addInstruction=question?`<button type="button" class="icon-btn" data-action="add-question-instruction" data-id="${question.id}" title="Thêm đề bài" aria-label="Thêm đề bài" ${readOnly?'disabled':''}>${icons.add}</button>`:'';
