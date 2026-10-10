@@ -638,13 +638,15 @@ try{
     const functions=source.slice(source.indexOf('async function saveBuilderDraft('),source.indexOf('async function persistBuilderDraft('));
     let active=0,maxActive=0,calls=0,changeDuringSave=false,fail=false,readOnly=false;
     const context=vm.createContext({
-      builderSavePromise:null,builderAutosaveTimer:null,builderEditRevision:0,gradePublishing:false,gradeAutosave:null,
+      builderSavePromise:null,builderAutosaveTimer:null,builderEditRevision:0,builderSavedRevision:0,gradePublishing:false,gradeAutosave:null,
       clearTimeout:()=>{},ui:{view:'builder'},document:{getElementById:()=>({disabled:readOnly})},
       app:{querySelector:()=>null},
       persistBuilderDraft:async()=>{
+        const revision=context.builderEditRevision;
         calls++;active++;maxActive=Math.max(active,maxActive);
         await new Promise(resolve=>setImmediate(resolve));
         if(changeDuringSave){context.builderEditRevision++;changeDuringSave=false;}
+        if(!fail)context.builderSavedRevision=revision;
         active--;return !fail;
       }
     });
@@ -652,10 +654,13 @@ try{
     const saves=await Promise.all([context.saveBuilderDraft(),context.saveBuilderDraft(),context.saveBuilderDraft()]);
     assert.deepEqual(saves,[true,true,true]);
     assert.equal(maxActive,1,'Concurrent save requests must never overlap.');
-    let before=calls;changeDuringSave=true;
+    let before=calls;
+    assert.equal(await context.flushBuilderDraft(),true);
+    assert.equal(calls,before,'Clean navigation must not write again.');
+    context.builderEditRevision++;changeDuringSave=true;
     assert.equal(await context.flushBuilderDraft(),true);
     assert.equal(calls-before,2,'Edits entered during a save must also be persisted before leaving.');
-    fail=true;
+    fail=true;context.builderEditRevision++;
     assert.equal(await context.flushBuilderDraft(),false,'Failed persistence must prevent navigation.');
     before=calls;readOnly=true;
     assert.equal(await context.flushBuilderDraft(),true);

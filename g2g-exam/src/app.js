@@ -62,6 +62,7 @@ let builderAutosaveBusy=false;
 let builderAutosaveQueued=false;
 let builderSavePromise=null;
 let builderEditRevision=0;
+let builderSavedRevision=0;
 let infrastructureLoading=false;
 const saveTimers=new Map();
 const pendingAudioUploads=new Map();
@@ -624,9 +625,10 @@ function render(){
   else if(isStudent(user)&&['student-home','student-results','student-attempt-detail','submitted'].includes(ui.view)&&data.promotions?.length&&!document.getElementById('modal'))showPromotion({repo,promotion:data.promotions[0],onSaved:profileSaved});
 }
 
-async function saveBuilderDraft({silent=false}={}){
+async function saveBuilderDraft({silent=false,onlyIfDirty=false}={}){
   clearTimeout(builderAutosaveTimer);
   while(builderSavePromise)await builderSavePromise;
+  if(onlyIfDirty&&builderSavedRevision===builderEditRevision)return true;
   builderSavePromise=persistBuilderDraft({silent});
   try{return await builderSavePromise;}
   finally{builderSavePromise=null;}
@@ -644,7 +646,7 @@ async function flushBuilderDraft(){
   let revision;
   do{
     revision=builderEditRevision;
-    if(!await saveBuilderDraft({silent:true}))return false;
+    if(!await saveBuilderDraft({silent:true,onlyIfDirty:true}))return false;
   }while(revision!==builderEditRevision);
   return true;
 }
@@ -763,6 +765,7 @@ async function persistBuilderDraft({silent=false}={}){
       if(audioInput)audioInput.value='';
     });
     uploadedInputs.forEach(input=>{input.value='';});
+    builderSavedRevision=revision;
     setBuilderSaveStatus(revision===builderEditRevision?'saved':'pending',revision===builderEditRevision?'Đã tự động lưu':'Chờ lưu thay đổi…');
     if(!silent)notify('Đã lưu bài thi.');
     return true;
@@ -774,19 +777,19 @@ async function persistBuilderDraft({silent=false}={}){
   }
 }
 
-function queueBuilderAutosave(delay=450){
+function queueBuilderAutosave(delay=450,markDirty=true){
   if(ui.view!=='builder')return;
-  builderEditRevision++;
+  if(markDirty)builderEditRevision++;
   setBuilderSaveStatus('pending','Chờ lưu thay đổi…');
   clearTimeout(builderAutosaveTimer);
   builderAutosaveTimer=setTimeout(async()=>{
     if(ui.view!=='builder')return;
     if(builderAutosaveBusy){builderAutosaveQueued=true;return;}
     builderAutosaveBusy=true;
-    try{await saveBuilderDraft({silent:true});}
+    try{await saveBuilderDraft({silent:true,onlyIfDirty:true});}
     finally{
       builderAutosaveBusy=false;
-      if(builderAutosaveQueued){builderAutosaveQueued=false;queueBuilderAutosave(0);}
+      if(builderAutosaveQueued){builderAutosaveQueued=false;queueBuilderAutosave(0,false);}
     }
   },delay);
 }

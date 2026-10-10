@@ -21,6 +21,20 @@ import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const saveSource=read('src/app.js').match(/async function saveBuilderDraft\([\s\S]*?\n\}/)[0];
+const saveHarness=new Function(`let builderAutosaveTimer=null,builderSavePromise=null,builderEditRevision=0,builderSavedRevision=0,calls=0,release,fail=false;
+  async function persistBuilderDraft(){calls++;const revision=builderEditRevision;await new Promise(resolve=>release=resolve);if(fail)return false;builderSavedRevision=revision;return true;}
+  ${saveSource}
+  return {save:()=>saveBuilderDraft({onlyIfDirty:true}),edit:()=>builderEditRevision++,release:()=>release(),calls:()=>calls,fail:()=>fail=true};`)();
+assert.equal(await saveHarness.save(),true);assert.equal(saveHarness.calls(),0);
+saveHarness.edit();const firstSave=saveHarness.save(),sameSave=saveHarness.save();
+assert.equal(saveHarness.calls(),1);saveHarness.release();await Promise.all([firstSave,sameSave]);
+assert.equal(saveHarness.calls(),1);await saveHarness.save();assert.equal(saveHarness.calls(),1);
+saveHarness.edit();const olderSave=saveHarness.save();saveHarness.edit();const newerSave=saveHarness.save();
+saveHarness.release();await olderSave;await Promise.resolve();saveHarness.release();await newerSave;
+assert.equal(saveHarness.calls(),3);
+saveHarness.edit();saveHarness.fail();const failedSave=saveHarness.save();saveHarness.release();assert.equal(await failedSave,false);
+const retrySave=saveHarness.save();assert.equal(saveHarness.calls(),5);saveHarness.release();await retrySave;
 const existsNonEmpty=p=>fs.existsSync(path.join(root,p))&&fs.statSync(path.join(root,p)).size>0;
 const jsTree=dir=>{
   const files=[];
