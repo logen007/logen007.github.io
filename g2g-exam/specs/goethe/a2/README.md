@@ -12,6 +12,7 @@ user-approved practice format, not an independently inferred official format.
 
 Reading 1–3: shared text/image left, ABC questions right; stacked on mobile.
 Reading 4: long prompts, dropdown a–f and x, no repeated letter including example.
+Shared text/image left and questions/dropdowns right, stacked on mobile as in Reading 1–3.
 Updated from the user's reference image: x means no matching text.
 
 Listening 1: ABC text, example once then each question twice.

@@ -7,6 +7,7 @@
   "questionProfile": {
     "type": "single",
     "layout": "letter-select",
+    "splitLayout": true,
     "instructionImage": true,
     "audio": false,
     "choiceImages": false,
