@@ -82,6 +82,12 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .account-role-trigger:hover,.account-role-trigger[aria-expanded="true"] { background:var(--brand-soft); }
 .account-role-menu button[aria-current="true"] { background:var(--brand-soft); color:var(--brand-text); font-weight:600; }
 .header-account { position:relative; }
+.header-account .account-avatar { position:relative; overflow:visible; }
+.header-account .account-avatar img { border-radius:50%; }
+.account-role-dot { position:absolute; right:-1px; bottom:-1px; width:12px; height:12px; border:2px solid var(--mat); border-radius:50%; pointer-events:none; }
+.account-role-dot[data-role="master"] { background:#7c3aed; }
+.account-role-dot[data-role="teacher"] { background:#2563eb; }
+.account-role-dot[data-role="student"] { background:#15803d; }
 .header-account .account-role-menu { width:180px; max-width:calc(100vw - 32px); }
 .header-account .account-role-menu button { display:flex; align-items:center; justify-content:flex-start; gap:12px; text-align:left; padding:10px 14px; font-weight:500; min-height:44px; }
 .header-account .account-role-menu button:last-child { border-top:1px solid var(--vien); border-radius:0 0 10px 10px; }
