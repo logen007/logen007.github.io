@@ -1,7 +1,7 @@
 import {appError,query} from '../db.js';
 import {copyExam} from './exam-copy.js';
 import {isTeacher} from './shared.js';
-import {saveClass,saveStudentProfile} from './classes.js';
+import {saveClass,saveStudentProfile,saveStudentName} from './classes.js';
 import {verifyClassCode,enrollInClass} from './class-enrollment.js';
 import {saveOralScore} from './oral.js';
 import {saveExamAccess,listExamCodes,createExamCode,acknowledgePromotion} from './exam-access.js';
@@ -18,6 +18,7 @@ export async function handleAction(user,name,data={}){
     case 'acknowledgePromotion': return acknowledgePromotion(user,data);
     case 'saveClass': return saveClass(user,data);
     case 'saveStudentProfile': return saveStudentProfile(user,data);
+    case 'saveStudentName': return saveStudentName(user,data);
     case 'verifyClassCode': return verifyClassCode(user,data);
     case 'enrollInClass': return enrollInClass(user,data);
     case 'saveOralScore': return saveOralScore(user,data);

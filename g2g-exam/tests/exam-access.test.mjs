@@ -4,7 +4,7 @@ import {promotionTarget,STUDENT_LEVELS,normalizeStudentLevel} from '../src/domai
 import {resultSummary} from '../src/domain/result-summary.js';
 import {studentExamCardHtml,studentHomeHtml} from '../src/views/student.js';
 import {resultSummaryHtml} from '../src/views/result-summary.js';
-import {studentProfileCardHtml,studentShareText} from '../src/views/student-profile-card.js';
+import {studentProfileCardHtml,studentShareText,profileStats,bindStudentName} from '../src/views/student-profile-card.js';
 import {examAccessFormHtml} from '../src/views/exam-access.js';
 import {classFormHtml,classesHtml} from '../src/views/classes.js';
 
@@ -64,6 +64,17 @@ assert.ok(profile.includes('Lan &lt;script&gt;'));
 assert.ok(profile.includes('PRIVATE-CLASS'));
 assert.ok(profile.includes('B1'));
 assert.ok(profile.includes('data-action="share-profile"'));
+assert.ok(profile.includes('data-edit-student-name'));
+for(const text of ['learner-steps','HỒ SƠ HỌC VIÊN','Mã lớp ·','Hạng theo trình độ','Bài đã chấm'])assert.ok(!profile.includes(text));
+assert.ok(profile.includes('Bài đã thi'));
+const counts=profileStats({...data,attempts:[
+  {id:'done',studentId:'s',status:'published',result:'Đạt'},
+  {id:'pending',studentId:'s',status:'submitted'},
+  {id:'grading',studentId:'s',status:'grading'},
+  {id:'active',studentId:'s',status:'in_progress'},
+  {id:'abandoned',studentId:'s',status:'abandoned'}
+]},student);
+assert.equal(counts.taken,3);assert.equal(counts.published,1);
 assert.ok(!studentShareText(profileData,student).includes('PRIVATE-CLASS'));
 const home=studentHomeHtml({data:profileData,user:student});
 assert.ok(!home.includes('Xin chào'));
@@ -80,6 +91,7 @@ assert.ok(classList.includes('data-open-class="c"'));
 assert.ok(classList.includes('data-student-search'));
 assert.ok(classList.includes('Mã xác nhận'));
 assert.ok(classList.includes('ABCDE'));
+assert.ok(classList.includes('data-copy-confirmation="ABCDE"'));
 assert.ok(classList.includes('Nguyen &amp; Lan'));
 assert.ok(!classList.includes('Class Student'));
 const roster=classesHtml({data:rosterData,classId:'c'});
@@ -88,4 +100,18 @@ assert.ok(!roster.includes('lan@example.test'));
 assert.ok(roster.includes('data-class-back'));
 assert.ok(studentProfileCardHtml(rosterData,rosterData.users[0]).includes('data-action="class-enrollment"'));
 assert.ok(!studentProfileCardHtml(rosterData,rosterData.users[1]).includes('data-action="class-enrollment"'));
+// Inline editing is tested without opening a browser.
+const editButton={focus(){}},nameInput={value:'',focus(){},select(){},disabled:false};
+const nameForm={elements:{name:nameInput},hidden:true},nameTitle={hidden:false},nameStatus={textContent:''};
+const nameNodes={'[data-edit-student-name]':editButton,'[data-name-form]':nameForm,'[data-student-name]':nameTitle,'[data-name-status]':nameStatus};
+const calls=[];let savedCount=0;
+bindStudentName({querySelector:key=>nameNodes[key]},{user:{id:'s',name:'Original Name'},repo:{mode:'api',call:async(...args)=>calls.push(args),reload:async()=>{}},onSaved:async()=>savedCount++});
+editButton.onclick();assert.equal(nameForm.hidden,false);assert.equal(nameTitle.hidden,true);
+nameInput.value='Changed Name';nameInput.onkeydown({key:'Escape',preventDefault(){}});
+assert.equal(nameForm.hidden,true);assert.equal(calls.length,0);
+editButton.onclick();nameInput.value='Only';nameInput.onblur();
+assert.ok(nameStatus.textContent.includes('họ và tên'));assert.equal(calls.length,0);
+nameInput.value='  Changed   Name ';await nameInput.onblur();
+assert.deepEqual(calls,[['saveStudentName',{name:'Changed Name'}]]);
+assert.equal(savedCount,1);assert.equal(nameForm.hidden,true);
 console.log('Student profile: real level, class, safe sharing and removed legacy overview passed.');

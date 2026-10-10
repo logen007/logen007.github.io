@@ -1,6 +1,6 @@
 import {withTx,appError,audit,uid,now} from '../db.js';
 import {isTeacher} from './shared.js';
-import {validateStudentProfile} from '../../../src/domain/student-profile.js';
+import {validateStudentProfile,validateStudentName} from '../../../src/domain/student-profile.js';
 import {externalClassId} from './class-enrollment.js';
 
 export async function saveClass(user,{id,code,description,teacherIds}){
@@ -49,5 +49,17 @@ export async function saveStudentProfile(user,payload){
     await client.query('UPDATE users SET data=$2::jsonb,updated_at=now() WHERE id=$1',[studentId,JSON.stringify(data)]);
     await audit(user,'save_student_profile','user',studentId,profile,client);
     return {id:studentId,...profile};
+  });
+}
+
+export async function saveStudentName(user,{name}){
+  if(user.role!=='student'||user.canTestRoles)throw appError(403,'Chỉ học viên được sửa tên của mình.');
+  try{name=validateStudentName(name);}catch(error){throw appError(400,error.message);}
+  return withTx(async client=>{
+    const row=(await client.query('SELECT role,active,data FROM users WHERE id=$1 FOR UPDATE',[user.id])).rows[0];
+    if(!row||row.role!=='student'||!row.active||!row.data.profileCompletedAt)throw appError(403,'Vui lòng hoàn tất hồ sơ trước.');
+    await client.query("UPDATE users SET data=data||jsonb_build_object('name',$2::text),updated_at=now() WHERE id=$1",[user.id,name]);
+    await audit(user,'update_own_name','user',user.id,{},client);
+    return {name};
   });
 }

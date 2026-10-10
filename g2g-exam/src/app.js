@@ -74,7 +74,7 @@ repo.subscribe(next=>{
     realtimeRenderTimer=setTimeout(()=>render(),80);
     return;
   }
-  if(['exam','preview-exam','builder','grading-detail'].includes(ui.view)||document.getElementById('modal')||document.querySelector('.g2g-settings-page'))return;
+  if(['exam','preview-exam','builder','grading-detail'].includes(ui.view)||document.getElementById('modal')||document.querySelector('.g2g-settings-page')||document.querySelector('[data-name-form]:not([hidden])')||document.activeElement?.matches('[data-student-search]'))return;
   clearTimeout(realtimeRenderTimer);
   realtimeRenderTimer=setTimeout(()=>render(),80);
 });
@@ -595,6 +595,7 @@ function render(){
     bindGradebook(app,{data,repo,ui,onSaved:profileSaved,render});
   }
   app.querySelector('[data-action="class-enrollment"]')?.addEventListener('click',()=>openClassEnrollment({repo,user,onSaved:profileSaved}));
+  bindStudentName(app,{repo,user,onSaved:profileSaved});
   if(isStudent(user)&&!user.canTestRoles&&!user.profileCompletedAt&&!document.getElementById('modal'))openStudentProfile({data,repo,student:user,onSaved:profileSaved,required:true});
   else if(isStudent(user)&&['student-home','student-results','student-attempt-detail','submitted'].includes(ui.view)&&data.promotions?.length&&!document.getElementById('modal'))showPromotion({repo,promotion:data.promotions[0],onSaved:profileSaved});
 }
@@ -631,7 +632,7 @@ async function persistBuilderDraft({silent=false}={}){
   const uploadedInputs=[];
   try{
     const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map(),questionInstructionImageUrls=new Map(),questionCardImageUrls=new Map(),rubricImageUrls=new Map();
-    let sectionImageUrl,sectionAudioUrl,sectionAudioName;
+    let sectionImageUrl;
     if(section&&app.querySelector('.part-question[data-question-id]')){
       for(const card of app.querySelectorAll('.part-question[data-question-id]')){
         const uploaded=pendingAudioUploads.get(card.dataset.questionId);
@@ -668,8 +669,6 @@ async function persistBuilderDraft({silent=false}={}){
         sectionImageUrl=await uploadQuestionImage(sectionImage.files[0]);
         uploadedInputs.push(sectionImage);
       }
-      const sectionAudioUpload=pendingAudioUploads.get(`section:${section.id}`);
-      if(sectionAudioUpload){const uploaded=await sectionAudioUpload.promise;sectionAudioUrl=uploaded.url;sectionAudioName=uploaded.name;}
     }
     await repo.transaction(st=>{
       updateExam(st,user,exam.id,{title});
@@ -679,7 +678,7 @@ async function persistBuilderDraft({silent=false}={}){
           ?''
           :sectionImageUrl??(imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'');
         const questionIds=[...app.querySelectorAll('.part-question[data-question-id]')].map(card=>card.dataset.questionId);
-        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl,instructionAudioUrl:sectionAudioUrl??(section.instructionAudioUrl||''),instructionAudioName:sectionAudioName??(section.instructionAudioName||''),questionIds});
+        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl,questionIds});
         app.querySelectorAll('.part-question[data-question-id]').forEach(card=>{
           const id=card.dataset.questionId;
           const example=card.dataset.example==='true';
@@ -737,7 +736,6 @@ async function persistBuilderDraft({silent=false}={}){
       const audioInput=app.querySelector(`[data-question-id="${questionId}"] [data-field="audio"]`);
       if(audioInput)audioInput.value='';
     });
-    if(sectionAudioUrl){pendingAudioUploads.delete(`section:${section.id}`);const input=app.querySelector('[data-section-audio]');if(input)input.value='';}
     uploadedInputs.forEach(input=>{input.value='';});
     setBuilderSaveStatus(revision===builderEditRevision?'saved':'pending',revision===builderEditRevision?'Đã tự động lưu':'Chờ lưu thay đổi…');
     if(!silent)notify('Đã lưu bài thi.');
@@ -1155,4 +1153,4 @@ else{
   else if(!isStudent(user)&&initialUrl.searchParams.get('tab')){ui.adminTab=initialUrl.searchParams.get('tab');ui.view='admin';}
   render();
 }
-import {shareStudentProfile} from './views/student-profile-card.js';
+import {shareStudentProfile,bindStudentName} from './views/student-profile-card.js';

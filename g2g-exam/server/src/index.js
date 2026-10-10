@@ -14,6 +14,7 @@ import {registerAuthRoutes,currentUser,requireUser,requireRole} from './auth.js'
 import {loadState,commitOperations} from './state.js';
 import {handleAction} from './actions.js';
 import {startMediaGarbageCollector} from './media-gc.js';
+import {startTrashGarbageCollector} from './trash-gc.js';
 import {submitExpiredAttempts} from './actions/attempts.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
@@ -106,8 +107,9 @@ app.setNotFoundHandler((request,reply)=>{if(request.url.startsWith('/api/'))retu
 const port=Number(process.env.PORT||8080);
 await app.listen({host:'0.0.0.0',port});
 const stopMediaGc=startMediaGarbageCollector({uploadDir,logger:app.log});
+const stopTrashGc=startTrashGarbageCollector({uploadDir,logger:app.log});
 let expiryBusy=false;
 const expiryTimer=setInterval(async()=>{if(expiryBusy)return;expiryBusy=true;try{await submitExpiredAttempts();}catch(error){app.log.error(error);}finally{expiryBusy=false;}},1000);
 expiryTimer.unref();
-const stop=async()=>{try{stopMediaGc();await app.close();await pool.end();}finally{process.exit(0);}};
+const stop=async()=>{try{stopMediaGc();stopTrashGc();clearInterval(expiryTimer);await app.close();await pool.end();}finally{process.exit(0);}};
 process.on('SIGTERM',stop);process.on('SIGINT',stop);

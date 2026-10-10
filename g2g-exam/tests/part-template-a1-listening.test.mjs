@@ -24,7 +24,5 @@ assert.equal(spec.audio.segmentRepeat,2);
 assert.equal(spec.audio.pauseAllowed,false);
 assert.equal(spec.audio.replayAllowed,false);
 const editorSource=fs.readFileSync(new URL('../src/part-templates/a1-listening-part-1/editor.js',import.meta.url),'utf8');
-assert.match(editorSource,/id="tplInstructionAudio"/);
-assert.match(editorSource,/instructionAudioUrl:part\.instructionAudioUrl/);
-assert.match(editorSource,/instructionAudioName:part\.instructionAudioName/);
+assert.ok(!editorSource.includes('tplInstructionAudio'));
 console.log('✓ A1 Nghe Phần 1 dùng Part + spec trực tiếp.');

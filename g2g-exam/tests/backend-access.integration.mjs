@@ -24,7 +24,7 @@ try{
   const {loadState}=await import('../server/src/state.js');
   const teacher={id:'t',role:'teacher',name:'Teacher'},student={id:'s',role:'student',name:'Student',level:'A1',profileCompletedAt:'2026-01-01'};
   for(const user of [teacher,student])await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4)',[user.id,`${user.id}@example.test`,user.role,JSON.stringify(user)]);
-  const {saveClass,saveStudentProfile}=await import('../server/src/actions/classes.js');
+  const {saveClass,saveStudentProfile,saveStudentName}=await import('../server/src/actions/classes.js');
   await assert.rejects(()=>saveClass(student,{code:'Forbidden'}));
   const classroom=await saveClass(teacher,{code:'A1-01',description:'Evening class',teacherIds:['t','t']});
   assert.deepEqual(classroom.teacherIds,['t']);
@@ -45,6 +45,12 @@ try{
   await saveStudentProfile(another,{name:'Nguyen Other',classId:classroom.id,level:'C2'});
   let saved=(await query("SELECT data FROM users WHERE id='new'")).rows[0].data;
   assert.equal(saved.classId,external);assert.equal(saved.level,'A1');
+  await assert.rejects(()=>saveStudentName(teacher,{name:'Forged Name'}),/học viên/);
+  await assert.rejects(()=>saveStudentName(newcomer,{name:'Only'}),/họ và tên/);
+  await saveStudentName(newcomer,{name:'Nguyen Renamed',studentId:'s',classId:classroom.id,level:'C2'});
+  const renamed=(await query("SELECT data FROM users WHERE id='new'")).rows[0].data;
+  assert.equal(renamed.name,'Nguyen Renamed');assert.equal(renamed.level,'A1');assert.equal(renamed.classId,external);
+  assert.equal((await query("SELECT data FROM users WHERE id='s'")).rows[0].data.name,'Student');
   await assert.rejects(()=>saveStudentProfile(newcomer,{name:'Changed Name',classId:classroom.id}),/giáo viên/);
   let staffState=await loadState(teacher);
   const ownCode=staffState.users.find(u=>u.id==='new').confirmationCode;
@@ -209,4 +215,36 @@ try{
   await query("UPDATE questions SET locked=true,data=data||'{\"locked\":true}'::jsonb WHERE id=$1",[serverQuestion.id]);
   await commitOperations(copier,[{collection:'questions',id:serverQuestion.id,item:{...serverQuestion,locked:true,title:'Legacy lock no longer blocks owner'}}]);
   assert.equal((await query('SELECT data FROM questions WHERE id=$1',[serverQuestion.id])).rows[0].data.title,'Legacy lock no longer blocks owner');
+  const {runTrashGarbageCollection}=await import('../server/src/trash-gc.js');
+  for(const id of ['trash-free','trash-fresh','trash-used','trash-snapshot']){
+    await query("INSERT INTO questions(id,owner_id,status,data) VALUES($1,'t','trash',$2)",[id,JSON.stringify({id})]);
+  }
+  await query("INSERT INTO exams(id,owner_id,status,data) VALUES('trash-exam','t','trash',$1)",[JSON.stringify({sections:[{questionIds:['trash-free']}]})]);
+  await query("UPDATE exams SET data=data||$2::jsonb WHERE id=$1",['e',JSON.stringify({sections:[...sections,{id:'reference',questionIds:['trash-used']} ]})]);
+  await query("UPDATE attempts SET private_data=jsonb_set(private_data,'{examSnapshot,questionSnapshot}',(private_data#>'{examSnapshot,questionSnapshot}')||$2::jsonb) WHERE id=$1",[activeCopy.attemptId,JSON.stringify([{id:'trash-snapshot'}])]);
+  await query("UPDATE exams SET status='trash' WHERE id='e'");
+  // Server-owned timestamps cannot be changed by editing payload data.
+  const firstTrash=(await query("SELECT trashed_at FROM exams WHERE id='trash-exam'")).rows[0].trashed_at;
+  await query("UPDATE exams SET data=data||'{\"deletedAt\":\"2000-01-01\"}'::jsonb WHERE id='trash-exam'");
+  assert.equal(String((await query("SELECT trashed_at FROM exams WHERE id='trash-exam'")).rows[0].trashed_at),String(firstTrash));
+  await query('ALTER TABLE exams DISABLE TRIGGER exams_trash_time');
+  await query('ALTER TABLE questions DISABLE TRIGGER questions_trash_time');
+  await query("UPDATE exams SET trashed_at=now()-interval '5 days 1 minute' WHERE id IN ('trash-exam','e')");
+  await query("UPDATE questions SET trashed_at=now()-interval '5 days 1 minute' WHERE id IN ('trash-free','trash-used','trash-snapshot')");
+  await query('ALTER TABLE exams ENABLE TRIGGER exams_trash_time');
+  await query('ALTER TABLE questions ENABLE TRIGGER questions_trash_time');
+  assert.deepEqual(await runTrashGarbageCollection(),{exams:1,questions:1});
+  assert.equal((await query("SELECT id FROM exams WHERE id='e'")).rowCount,1);
+  assert.equal((await query("SELECT id FROM questions WHERE id IN ('trash-fresh','trash-used','trash-snapshot')")).rowCount,3);
+  assert.deepEqual(await runTrashGarbageCollection(),{exams:0,questions:0});
+  await query("UPDATE questions SET status='active' WHERE id='trash-used'");
+  assert.equal((await query("SELECT trashed_at FROM questions WHERE id='trash-used'")).rows[0].trashed_at,null);
+  // Retired audio is stripped on writes and on deployment migration, not question media.
+  const mediaExam=(await loadState(copier)).exams.find(e=>e.id===serverExam.id);
+  await commitOperations(copier,[{collection:'exams',id:mediaExam.id,item:{...mediaExam,sections:mediaExam.sections.map(s=>({...s,instructionAudioUrl:'/uploads/retired.mp3'}))}}]);
+  assert.ok(!(await query('SELECT data FROM exams WHERE id=$1',[mediaExam.id])).rows[0].data.sections[0].instructionAudioUrl);
+  await query("UPDATE exams SET data=jsonb_set(data,'{sections,0,instructionAudioUrl}','\"/uploads/retired.mp3\"') WHERE id=$1",[mediaExam.id]);
+  await db.exec(await fs.readFile(new URL('../server/schema.sql',import.meta.url),'utf8'));
+  assert.ok(!(await query('SELECT data FROM exams WHERE id=$1',[mediaExam.id])).rows[0].data.sections[0].instructionAudioUrl);
+  console.log('Five-day trash retention, repeat safety, references, restore timestamps and retired audio migration passed.');
 }finally{hook.deregister();await db.close();delete globalThis.__testDb;}

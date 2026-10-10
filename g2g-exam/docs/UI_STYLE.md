@@ -83,6 +83,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Brand settings
 
+Student identity cards use one compact current-level badge, not a level ladder.
+Keep name editing inline and group class confirmation with Share. Statistics start
+with submitted exam count (“Bài đã thi”), including pending grading.
+
 Production master settings save globally through the existing protected API.
 Demo settings are explicitly local to that browser, never a privileged server write.
 Validate hex input, preview locally before save, then apply to every route. Cached

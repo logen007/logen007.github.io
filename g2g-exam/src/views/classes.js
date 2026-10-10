@@ -1,4 +1,5 @@
 import {esc} from '../ui/format.js';
+import {iconHtml} from '../ui/icons.js';
 import {EXTERNAL_CLASS,normalizeStudentLevel,validateStudentProfile} from '../domain/student-profile.js';
 
 export function teacherChip(teacher){
@@ -13,7 +14,7 @@ export function classFormHtml(current,users){
 export function studentRosterHtml(data,students,{external=false}={}){
   return `<div class="profile-form"><label>Tìm học viên<input type="search" data-student-search placeholder="Tên học viên hoặc email" autocomplete="off"></label></div>
     <div class="table-wrap"><table class="bang"><thead><tr><th>Họ và tên</th><th>Trình độ</th>${external?'<th>Mã xác nhận</th>':''}<th></th></tr></thead><tbody>
-    ${students.map(student=>`<tr data-student-row data-search="${esc((student.name+' '+student.email).toLocaleLowerCase('vi'))}"><td>${esc(student.name)}<span class="phu">${esc(student.email)}</span></td><td>${esc(normalizeStudentLevel(student.level)||'A1')}</td>${external?`<td><strong>${esc(student.confirmationCode||'—')}</strong></td>`:''}<td><button class="nut nho" data-action="student-profile" data-id="${esc(student.id)}">Thông tin</button></td></tr>`).join('')}
+    ${students.map(student=>`<tr data-student-row data-search="${esc((student.name+' '+student.email).toLocaleLowerCase('vi'))}"><td>${esc(student.name)}<span class="phu">${esc(student.email)}</span></td><td>${esc(normalizeStudentLevel(student.level)||'A1')}</td>${external?`<td><div class="nhom-nut"><strong>${esc(student.confirmationCode||'—')}</strong>${student.confirmationCode?`<button class="icon-btn" type="button" data-copy-confirmation="${esc(student.confirmationCode)}" title="Copy mã xác nhận" aria-label="Copy mã xác nhận">${iconHtml('copy')}</button><small data-copy-status role="status"></small>`:''}</div></td>`:''}<td><button class="nut nho" data-action="student-profile" data-id="${esc(student.id)}">Thông tin</button></td></tr>`).join('')}
     <tr data-student-empty ${students.length?'hidden':''}><td colspan="${external?4:3}">Không tìm thấy học viên.</td></tr></tbody></table></div>`;
 }
 export function classesHtml({data,classId=null}){
@@ -70,6 +71,11 @@ export function openStudentProfile({data,student,repo,onSaved,required=false}){
 }
 
 export function bindClasses(root,{data,repo,onSaved,onClassOpen=()=>{}}){
+  root.querySelectorAll('[data-copy-confirmation]').forEach(button=>button.onclick=async()=>{
+    const status=button.parentElement.querySelector('[data-copy-status]');
+    try{await navigator.clipboard.writeText(button.dataset.copyConfirmation);status.textContent='Đã copy';}
+    catch{status.textContent='Chưa copy được. Vui lòng chọn mã để sao chép.';}
+  });
   root.querySelectorAll('[data-open-class]').forEach(button=>button.onclick=()=>onClassOpen(button.dataset.openClass));
   root.querySelector('[data-class-back]')?.addEventListener('click',()=>onClassOpen(null));
   root.querySelector('[data-student-search]')?.addEventListener('input',event=>{

@@ -61,7 +61,7 @@ export function teachersAdminHtml({data,user}){
 
 export function trashAdminHtml({data}){
   const exams=data.exams.filter(x=>x.status==='trash'),qs=data.questions.filter(x=>x.status==='trash');
-  return `<div class="tieu-de-trang"><div><h1>Thùng rác</h1><p>Chỉ Quản trị cấp cao nhìn thấy và xóa vĩnh viễn. Dữ liệu đã có lịch sử thi sẽ được bảo vệ.</p></div></div><h3>Bài thi</h3>${trashTableHtml(exams,'exam')}<h3 style="margin-top:20px">Câu hỏi</h3>${trashTableHtml(qs,'question')}`;
+  return `<div class="tieu-de-trang"><div><h1>Thùng rác</h1><p>Tự xóa vĩnh viễn sau 5 ngày. Nội dung còn được đề thi hoặc lịch sử bài làm sử dụng sẽ được giữ lại để bảo vệ dữ liệu.</p></div></div><h3>Bài thi</h3>${trashTableHtml(exams,'exam')}<h3 style="margin-top:20px">Câu hỏi</h3>${trashTableHtml(qs,'question')}`;
 }
 
 export function trashTableHtml(items,type){

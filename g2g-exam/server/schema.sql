@@ -32,6 +32,32 @@ CREATE TABLE IF NOT EXISTS exams (
 CREATE INDEX IF NOT EXISTS exams_owner_idx ON exams(owner_id);
 CREATE INDEX IF NOT EXISTS exams_status_idx ON exams(status);
 
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS trashed_at timestamptz;
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS trashed_at timestamptz;
+UPDATE exams SET trashed_at=updated_at WHERE status='trash' AND trashed_at IS NULL;
+UPDATE questions SET trashed_at=updated_at WHERE status='trash' AND trashed_at IS NULL;
+CREATE OR REPLACE FUNCTION track_trash_time() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.status<>'trash' THEN NEW.trashed_at=NULL;
+  ELSIF TG_OP='INSERT' THEN NEW.trashed_at=now();
+  ELSIF OLD.status<>'trash' THEN NEW.trashed_at=now();
+  ELSE NEW.trashed_at=OLD.trashed_at;
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS exams_trash_time ON exams;
+CREATE TRIGGER exams_trash_time BEFORE INSERT OR UPDATE ON exams FOR EACH ROW EXECUTE FUNCTION track_trash_time();
+DROP TRIGGER IF EXISTS questions_trash_time ON questions;
+CREATE TRIGGER questions_trash_time BEFORE INSERT OR UPDATE ON questions FOR EACH ROW EXECUTE FUNCTION track_trash_time();
+
+-- Remove retired instruction audio links; historical attempt snapshots are retained.
+UPDATE exams SET data=jsonb_set(data,'{sections}',(
+  SELECT jsonb_agg(section-'instructionAudioUrl'-'instructionAudioName' ORDER BY position)
+  FROM jsonb_array_elements(data->'sections') WITH ORDINALITY AS s(section,position)
+)) WHERE jsonb_typeof(data->'sections')='array' AND EXISTS (
+  SELECT 1 FROM jsonb_array_elements(data->'sections') AS section WHERE section ? 'instructionAudioUrl' OR section ? 'instructionAudioName'
+);
+
 CREATE TABLE IF NOT EXISTS attempts (
   id text PRIMARY KEY,
   student_id text NOT NULL REFERENCES users(id),

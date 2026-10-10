@@ -465,12 +465,12 @@ try{
     for(const preview of [true,false]){
       const html=examHtml({...input,preview});
       const segments=tags(html,'audio').filter(tag=>hasClass(tag,'section-audio-segment'));
-      assert.equal(segments.length,3);
+      assert.equal(segments.length,2);
+      assert.ok(!html.includes('/audio/instruction.mp3'));
       assert.equal(attribute(segments[0],'data-label'),'Beispiel');
       assert.equal(attribute(segments[0],'data-repeat'),'1');
-      assert.equal(attribute(segments[1],'data-label'),'Beispiel');
-      assert.equal(attribute(segments[1],'data-repeat'),'1');
-      assert.equal(attribute(segments[2],'data-repeat'),'2');
+      assert.equal(attribute(segments[1],'data-label'),'Aufgabe 1');
+      assert.equal(attribute(segments[1],'data-repeat'),'2');
       assert.equal(tags(html,'button').filter(tag=>hasClass(tag,'section-audio-play')).length,1);
       assert.equal(tags(html,'button').filter(tag=>hasClass(tag,'play-audio')).length,0);
       assert.match(html,/section-audio-progress/);

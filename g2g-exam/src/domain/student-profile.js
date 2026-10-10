@@ -7,9 +7,13 @@ export function promotionTarget(current,examLevel,passed){
   return passed&&target?target:null;
 }
 export function validateStudentProfile({name,classId,level='A1'},classes){
-  name=String(name||'').trim().replace(/\s+/g,' ');
-  if(name.length<2||name.length>120||name.split(' ').length<2)throw new Error('Vui lòng điền đầy đủ họ và tên (tối đa 120 ký tự).');
+  name=validateStudentName(name);
   if(!classes.some(item=>item.id===classId&&item.active!==false))throw new Error('Vui lòng chọn mã lớp trong danh sách.');
   if(!STUDENT_LEVELS.includes(level))throw new Error('Trình độ không hợp lệ.');
   return {name,classId,level};
+}
+export function validateStudentName(value){
+  const name=String(value||'').trim().replace(/\s+/g,' ');
+  if(name.length<2||name.length>120||name.split(' ').length<2)throw new Error('Vui lòng điền đầy đủ họ và tên (tối đa 120 ký tự).');
+  return name;
 }

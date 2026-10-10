@@ -37,11 +37,11 @@ test('Câu ví dụ không được tính vào tổng số câu của đề',()=
   assert.deepEqual(summarizeExam(exam,s),{questions:1,manual:0,maxScore:2,sections:1});
 });
 
-test('Đề bài của phần thi lưu được audio phát một lần',()=>{
+test('Đề bài phần nghe không còn lưu audio',()=>{
   const s=fresh(),u=users(s);
   const exam=createExam(s,u.lan,{title:'Đề có audio hướng dẫn',sections:[{name:'Nghe 1',instruction:'Nghe kỹ.',instructionAudioUrl:'/uploads/instruction.mp3',instructionAudioName:'instruction.mp3',questionIds:['q-read-1']}]});
-  assert.equal(exam.sections[0].instructionAudioUrl,'/uploads/instruction.mp3');
-  assert.equal(exam.sections[0].instructionAudioName,'instruction.mp3');
+  assert.equal(exam.sections[0].instructionAudioUrl,undefined);
+  assert.equal(exam.sections[0].instructionAudioName,undefined);
 });
 
 test('Chủ câu hỏi và master được sửa; giáo viên khác không được sửa',()=>{
