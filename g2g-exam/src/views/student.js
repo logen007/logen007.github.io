@@ -1,3 +1,4 @@
+import {examDurationSeconds} from '../domain/exam-clock.js';
 import {
   ATTEMPT_STATUS,byId,getPublishedExams,getStudentResults,getLatestPublishedAttempt,
   getBestPublishedAttempt,summarizeExam
@@ -31,7 +32,7 @@ export function studentExamCardHtml(ex,attempts,data){
   const published=mine.filter(a=>a.status===ATTEMPT_STATUS.PUBLISHED);
   const latest=[...published].sort((a,b)=>String(b.publishedAt||b.submittedAt||b.startedAt).localeCompare(String(a.publishedAt||a.submittedAt||a.startedAt)))[0];
   const sum=summarizeExam(ex,data);
-  const mins=(ex.sections||[]).reduce((n,s)=>n+(Number(s.timeMinutes)||0),0);
+  const mins=examDurationSeconds(ex)/60;
   const provider=String(ex.provider||'').trim();
   const latestResult=latest?.result||'Chưa đạt';
   const latestLine=latest?`Lần thi gần nhất <strong>${esc(latest.totalScore??'—')}</strong> điểm - <span class="exam-latest-result ${resultClass(latestResult)}">${esc(latestResult)}</span>`:'Chưa từng thi';
@@ -81,7 +82,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sec.name))}</h1></div></div>`
     :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(germanSectionName(sec.name))}</h1></div></div>`;
-  const body=`<main class="noi-dung-thi">${context}${preview?'':`<div class="exam-free-navigation"><label>Teil auswählen<select data-action="exam-select-section" aria-label="Teil auswählen">${exam.sections.map((section,index)=>`<option value="${index}" ${index===sectionIndex?'selected':''}>${esc(germanSectionName(section.name))}</option>`).join('')}</select></label><button class="nut" data-action="submit-exam">Prüfung abgeben</button></div>`}<div class="exam-paper">${sectionInstruction}${sectionAudio}${questionList}</div><nav class="dieu-huong-thi" aria-label="Prüfungsnavigation"><button class="nut" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${preview?'Vorheriger Teil':'Zurück'}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh" data-action="${nextAction}">${nextLabel}</button></nav></main>`;
+  const body=`<main class="noi-dung-thi">${context}${preview?'':`<div class="exam-free-navigation"><span>Prüfungszeit: <strong id="examMainTime">--:--</strong></span><button class="nut" data-action="submit-exam">Prüfung abgeben</button></div>`}<div class="exam-paper">${sectionInstruction}${sectionAudio}${questionList}</div><nav class="dieu-huong-thi" aria-label="Prüfungsnavigation"><button class="nut" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${preview?'Vorheriger Teil':'Zurück'}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh" data-action="${nextAction}">${nextLabel}</button></nav></main>`;
   const header=preview
     ?`<header class="thanh-thi thanh-thi--preview"><strong>${esc(exam.title)}</strong><div class="preview-header-row"><button class="text-link" data-action="close-preview"><span aria-hidden="true">←</span> Zurück</button>${previewOutlineHtml(previewSummary,sectionIndex)}</div></header>`
     :`<header class="thanh-thi"><span class="exam-mobile-brand"><img src="/brand/favicon" alt=""><strong>Deutschprüfung</strong></span><div class="thong-tin-thi"><span>Teil ${sectionIndex+1}/${exam.sections.length}</span><b id="examTimer">--:--</b></div></header>`;

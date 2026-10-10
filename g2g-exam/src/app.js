@@ -241,6 +241,10 @@ function refreshPreviewProgress(){
 }
 
 function bindExamInputs(attempt,questions){
+  app.querySelectorAll('audio').forEach(audio=>{
+    audio.addEventListener('play',()=>{audio.dataset.audioBusy='true';});
+    for(const event of ['ended','error'])audio.addEventListener(event,()=>{delete audio.dataset.audioBusy;});
+  });
   const setLocalAnswer=(qid,value)=>{
     attempt.answers={...(attempt.answers||{}),[qid]:value};
     const required=questions.filter(question=>!question.example),answered=required.filter(question=>answerPresent(attempt.answers[question.id],question)).length;
@@ -317,6 +321,14 @@ function bindPreviewInputs(attempt,questions){
   });
 }
 
+function examAudioPlaying(){
+  return Boolean(app.querySelector('[data-audio-busy="true"]'))||[...app.querySelectorAll('audio')].some(audio=>!audio.paused&&!audio.ended);
+}
+function guardExamAudio(){
+  if(ui.view!=='exam'||!examAudioPlaying())return false;
+  notify('Bitte hören Sie das Audio bis zum Ende an.');
+  return true;
+}
 function bindSectionAudio(attempt,{preview}){
   const root=app.querySelector('[data-section-audio]');if(!root)return;
   const button=root.querySelector('.section-audio-play'),status=root.querySelector('.section-audio-status');
@@ -331,6 +343,7 @@ function bindSectionAudio(attempt,{preview}){
   button.onclick=async()=>{
     if(button.disabled)return;
     button.disabled=true;
+    if(!preview)root.dataset.audioBusy='true';
     let locked=false;
     try{
       const durations=await Promise.all(audios.map(readAudioDuration));
@@ -357,7 +370,7 @@ function bindSectionAudio(attempt,{preview}){
       root.classList.remove('is-playing');progress.hidden=true;
       status.textContent=locked&&!preview?'Audio wurde bereits abgespielt':'Audio konnte nicht geladen werden';
       notify(error?.message||'Das Audio konnte nicht abgespielt werden.');
-    }
+    }finally{delete root.dataset.audioBusy;}
   };
 }
 
@@ -412,6 +425,7 @@ function startExamTimer(attempt,exam,sectionIndex){
     const display=`${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`;
     if(el)el.textContent=display;
     if(summary)summary.textContent=display;
+    const mainTime=document.getElementById('examMainTime');if(mainTime)mainTime.textContent=display;
     if(left<=0&&!timerBusy){
       clearTimer();
       timerBusy=true;
@@ -433,6 +447,7 @@ function startExamTimer(attempt,exam,sectionIndex){
 }
 
 async function submitCurrentExam(confirmed=false){
+  if(guardExamAudio())return;
   if(submitBusy)return;
   if(!confirmed){
     const attempt=byId(data.attempts,ui.attemptId),exam=attempt&&byId(data.exams,attempt.examId);
@@ -895,6 +910,7 @@ async function beginAttempt(examId,restart){
 }
 
 async function moveAttemptSection(delta){
+  if(guardExamAudio())return;
   const attempt=byId(data.attempts,ui.attemptId),exam=attempt&&byId(data.exams,attempt.examId);
   if(!attempt||!exam)return;
   if(attempt.status!==ATTEMPT_STATUS.IN_PROGRESS){ui.view='student-home';render();notify('Dieser Prüfungsversuch ist bereits beendet. Starten Sie einen neuen Versuch.');return;}

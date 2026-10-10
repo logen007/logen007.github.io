@@ -68,10 +68,14 @@ try{
     const functionSource=source.slice(source.indexOf('async function moveAttemptSection(delta){'),source.indexOf('async function createNewExam()'));
     const calls=[],answers={first:0};
     const state={attempts:[{id:'attempt',examId:'exam',status:'in_progress',currentSectionIndex:0}],exams:[{id:'exam',sections:[{questionIds:['first','second']},{}]}],questions:[{id:'first',type:'single'},{id:'second',type:'single'}]};
-    const context=vm.createContext({data:state,ui:{attemptId:'attempt'},app:{},user:{},ATTEMPT_STATUS:{IN_PROGRESS:'in_progress'},byId:(items,id)=>items.find(item=>item.id===id),readExamAnswers:()=>answers,answerPresent,revealUnansweredQuestion:(_,id)=>calls.push(id),flushTextAnswers:async()=>{calls.push('save');return true;},repo:{transaction:fn=>fn(state),getState:async()=>state},setAttemptSection:()=>{calls.push('advance');return true;},act:fn=>fn(),render:()=>calls.push('render'),window:{scrollTo:()=>calls.push('top')},notify:()=>{}});
+    const context=vm.createContext({guardExamAudio:()=>false,data:state,ui:{attemptId:'attempt'},app:{},user:{},ATTEMPT_STATUS:{IN_PROGRESS:'in_progress'},byId:(items,id)=>items.find(item=>item.id===id),readExamAnswers:()=>answers,answerPresent,revealUnansweredQuestion:(_,id)=>calls.push(id),flushTextAnswers:async()=>{calls.push('save');return true;},repo:{transaction:fn=>fn(state),getState:async()=>state},setAttemptSection:()=>{calls.push('advance');return true;},act:fn=>fn(),render:()=>calls.push('render'),window:{scrollTo:()=>calls.push('top')},notify:()=>{}});
     vm.runInContext(functionSource,context);
     await context.moveAttemptSection(1);
     assert.deepEqual(calls,['save','advance','render','top']);
+    calls.length=0;context.guardExamAudio=()=>true;
+    await context.moveAttemptSection(1);
+    assert.deepEqual(calls,[]);
+    context.guardExamAudio=()=>false;
     answers.second=1;calls.length=0;
     await context.moveAttemptSection(1);
     assert.deepEqual(calls,['save','advance','render','top']);
@@ -85,7 +89,8 @@ try{
   });
   await test('Live exam keeps progress only in navigation and timeout has a home action',()=>{
     const html=examHtml({...fixture(),preview:false,previewSummary:null});
-    assert.match(html,/data-action="exam-select-section"/);
+    assert.ok(!html.includes('data-action="exam-select-section"'));
+    assert.ok(html.includes('Prüfungszeit:'));
     assert.equal(actionButtons(html,'submit-exam').length,1);
     assert.doesNotMatch(html,/Có giới hạn thời gian/);
     assert.doesNotMatch(html,/>Còn lại</);
