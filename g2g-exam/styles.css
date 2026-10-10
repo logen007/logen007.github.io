@@ -420,3 +420,27 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 .image-remove-control:has(img):focus-within>.image-remove-button { display:grid; place-items:center; }
 .image-remove-button:focus-visible { outline:2px solid var(--brand-primary); outline-offset:2px; }
 @media (hover:none) { .image-remove-control:has(img)>.image-remove-button { display:grid; place-items:center; } }
+
+/* Matching tables are edited as one group, not a stack of question cards. */
+.letter-group-editor { display:grid; gap:20px; margin-top:20px; }
+.letter-group-toolbar { display:flex; flex-wrap:wrap; gap:16px; align-items:end; }
+.letter-group-toolbar label { display:grid; gap:8px; color:var(--phu); font-size:13px; }
+.letter-group-toolbar label:first-child { width:240px; max-width:100%; }
+.letter-group-toolbar label:last-child { width:140px; }
+.letter-group-editor .truong { height:var(--editor-control); min-width:0; width:100%; }
+.letter-group-audio { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; max-width:720px; }
+.letter-group-audio > div { display:grid; gap:8px; min-width:0; }
+.letter-group-audio > div > span { font-size:13px; color:var(--phu); }
+.letter-group-scroll { overflow-x:auto; }
+.letter-group-table { width:100%; max-width:900px; border-collapse:separate; border-spacing:0 8px; min-width:420px; }
+.letter-group-table th { text-align:left; font-size:13px; font-weight:500; color:var(--phu); padding:0 12px 4px 0; }
+.letter-group-table td { padding:0 12px 0 0; vertical-align:middle; }
+.letter-group-table th:first-child { width:84px; }
+.letter-group-table th:nth-child(3) { width:128px; }
+.letter-group-table th:last-child { width:40px; }
+.letter-group-table td:last-child { padding-right:0; }
+.letter-group-table small { color:var(--phu); white-space:nowrap; }
+.letter-group-table .letter-builder-answer { margin:0; padding:0; display:block; }
+.letter-group-table .letter-builder-answer > label { display:none; }
+.letter-group-editor > .nut { justify-self:start; }
+@media(max-width:600px) { .letter-group-audio { grid-template-columns:1fr; } }

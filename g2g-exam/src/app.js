@@ -741,7 +741,7 @@ async function persistBuilderDraft({silent=false}={}){
           const previousInstructionBlocks=Array.isArray(previousQuestion?.instructionBlocks)
             ?previousQuestion.instructionBlocks
             :[{text:previousQuestion?.prompt||'',imageUrl:previousQuestion?.instructionImageUrl||''}];
-          const instructionBlocks=[...card.querySelectorAll('[data-question-instruction-block]')].map((control,index)=>{
+          const instructionBlocks=card.closest('.letter-group-table')?previousInstructionBlocks:[...card.querySelectorAll('[data-question-instruction-block]')].map((control,index)=>{
             const previousBlock=previousInstructionBlocks[index]||{};
             return {text:control.querySelector('[data-instruction-prompt]')?.value.trim()||'',imageUrl:imageValue(control.querySelector('[data-question-instruction-image]'),questionInstructionImageUrls.get(`${id}:${index}`),control.dataset.removeQuestionImage==='true'?'':previousBlock.imageUrl||'')};
           });
@@ -1011,21 +1011,24 @@ function bindBuilder(){
   app.querySelectorAll('[data-action="remove-section"]').forEach(b=>b.onclick=e=>{e.stopPropagation();confirmAction('Bỏ phần này khỏi bài thi?',()=>act(()=>repo.transaction(st=>removeSection(st,user,exam.id,b.dataset.id)),'Đã bỏ phần.'),{confirmLabel:'Bỏ phần'});});
   app.querySelectorAll('[data-action="move-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>moveQuestion(st,user,exam.id,ui.builderSectionId,b.dataset.id,b.dataset.dir))));
   app.querySelectorAll('[data-action="remove-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã bỏ câu khỏi phần.'));
-  app.querySelectorAll('[data-action="add-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>{
+  app.querySelectorAll('[data-action="add-inline-question"]').forEach(b=>b.onclick=async()=>{
+    const groupScore=b.closest('.letter-group-editor')?.querySelector('[data-letter-group-score]')?.value;
+    if(b.closest('.letter-group-editor')&&!await flushBuilderDraft())return;
+    return act(()=>repo.transaction(st=>{
     const section=exam.sections.find(item=>item.id===ui.builderSectionId);
     if(!section)return;
     const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
     const profile=section.questionProfile||{};
     const choices=questionDraftChoices(profile);
-    const question=createQuestion(st,user,{level:exam.level,skill:section.skill||section.name,part:section.name,type:profile.type||'single',title:'Nháp',choices,correctAnswer:0,maxScore:defaultScore});
+    const question=createQuestion(st,user,{level:exam.level,skill:section.skill||section.name,part:section.name,type:profile.type||'single',title:'Nháp',choices,correctAnswer:0,maxScore:groupScore!==undefined&&groupScore!==''?Math.max(0,Number(groupScore)):defaultScore});
     addQuestionsToSection(st,user,exam.id,section.id,[question.id]);
     if(b.dataset.after){
       const ids=[...section.questionIds];
       const from=ids.indexOf(question.id),after=ids.indexOf(b.dataset.after);
       if(from>=0&&after>=0){ids.splice(from,1);ids.splice(after+1,0,question.id);updateSection(st,user,exam.id,section.id,{questionIds:ids});}
     }
-  }),'Đã thêm câu hỏi.'));
-  app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.'));
+  }),'Đã thêm câu hỏi.');});
+  app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=async()=>{if(b.closest('.letter-group-editor')&&!await flushBuilderDraft())return;return act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.');});
   app.querySelectorAll('[data-action="toggle-question-example"]').forEach(button=>button.onclick=async()=>{
     const card=button.closest('.part-question');if(!card)return;
     const makeExample=card.dataset.example!=='true';

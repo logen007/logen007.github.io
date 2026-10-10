@@ -6,6 +6,7 @@ import {iconHtml} from '../../ui/icons.js';
 import {WRITING_FORM_TYPES,isScoredWritingField,writingFormScore} from '../../domain/writing-form.js';
 import {writingFormEditor} from '../../ui/writing-form.js';
 import {partAudioQuestions} from '../../domain/part-audio.js';
+import {letterTableBuilder,bindLetterTableBuilder} from './letter-table-builder.js';
 
 const icons={
   add:iconHtml('plus'),
@@ -144,6 +145,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).sort((a,b)=>Number(Boolean(b.example))-Number(Boolean(a.example)));
   const choiceProfile=profileFor(section);
   const audioIds=new Set(partAudioQuestions(section,questions).map(q=>q.id));
+  if(choiceProfile.letterTable)return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${instructionHtml(section,choiceProfile,readOnly,null)}${letterTableBuilder({questions,section,defaultScore,readOnly,audioHtml,choicesHtml:q=>choicesHtml(q,choiceProfile,readOnly)})}</div>`;
   const renderQuestion=(q,index)=>choiceProfile.formFrame
     ?writingFormEditor(q,{readOnly})
     :choiceProfile.isWritingForm
@@ -171,7 +173,7 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     let button=control.querySelector('.audio-preview');if(!button){button=document.createElement('button');button.type='button';button.className='audio-preview';control.insertBefore(button,audio);bindInlineAudioPreview(button);}resetAudioPreview(button);
   };
   root.querySelectorAll('.audio-upload input[data-field="audio"]').forEach(input=>input.onchange=()=>{
-    const file=input.files?.[0],control=input.closest('.audio-upload'),questionId=input.closest('.part-question')?.dataset.questionId,label=control?.querySelector('.audio-file-select span');if(!file||!control||!questionId||!label)return;
+    const file=input.files?.[0],control=input.closest('.audio-upload'),questionId=input.closest('.part-question')?.dataset.questionId||input.closest('[data-audio-question-id]')?.dataset.audioQuestionId,label=control?.querySelector('.audio-file-select span');if(!file||!control||!questionId||!label)return;
     input.disabled=true;label.textContent='Đang tải audio · 0%';const upload={name:file.name,promise:null};
     upload.promise=uploadQuestionAudio(file,{onProgress:percent=>{if(pendingAudioUploads.get(questionId)===upload)label.textContent=`Đang tải audio · ${percent}%`;}}).then(url=>{if(pendingAudioUploads.get(questionId)===upload)showUploadedAudio(control,{url,name:file.name});return {url,name:file.name};}).catch(error=>{if(pendingAudioUploads.get(questionId)===upload){pendingAudioUploads.delete(questionId);label.textContent='Tải audio thất bại';notify(error.message);}throw error;}).finally(()=>{if(pendingAudioUploads.get(questionId)===upload)input.disabled=false;});
     pendingAudioUploads.set(questionId,upload);upload.promise.catch(()=>{});
@@ -214,5 +216,6 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     }));
     root.querySelectorAll('[data-skill-total]').forEach(total=>{const skill=total.dataset.skillTotal;const sum=(exam.sections||[]).filter(item=>item.skill===skill).reduce((skillScore,item)=>{const fallback=Number(exam.settings?.skillSettings?.[item.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);return skillScore+(item.questionIds||[]).reduce((partScore,id)=>partScore+(draftScores.has(id)?draftScores.get(id):getQuestionMaxScore(byId(data.questions,id),fallback)),0);},0);total.textContent=`${Number.isInteger(sum)?sum:Number(sum.toFixed(2))} điểm`;});
   };
+  bindLetterTableBuilder(root,updateSkillTotals);
   root.querySelectorAll('[data-field="maxScore"],[data-rubric-score]').forEach(input=>input.oninput=updateSkillTotals);updateSkillTotals();root.querySelectorAll('[data-action="preview-inline-audio"]').forEach(bindInlineAudioPreview);
 }
