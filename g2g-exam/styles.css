@@ -458,6 +458,7 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 .letter-group-table th:first-child { width:84px; }
 .letter-group-table th:nth-child(3) { width:128px; }
 .letter-group-table th:last-child { width:40px; }
+.letter-group-table th:nth-child(4) { width:64px; }
 .letter-group-table td:last-child { padding-right:0; }
 .letter-group-table small { color:var(--phu); white-space:nowrap; }
 .letter-group-table .letter-builder-answer { margin:0; padding:0; display:block; }

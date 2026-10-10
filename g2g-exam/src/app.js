@@ -1031,7 +1031,14 @@ function bindBuilder(){
   app.querySelectorAll('[data-action="remove-inline-question"]').forEach(b=>b.onclick=async()=>{if(b.closest('.letter-group-editor')&&!await flushBuilderDraft())return;return act(()=>repo.transaction(st=>removeQuestionFromSection(st,user,exam.id,ui.builderSectionId,b.dataset.id)),'Đã xóa câu hỏi.');});
   app.querySelectorAll('[data-action="toggle-question-example"]').forEach(button=>button.onclick=async()=>{
     const card=button.closest('.part-question');if(!card)return;
-    const makeExample=card.dataset.example!=='true';
+    const letterGroup=card.closest('.letter-group-editor');
+    const makeExample=letterGroup?card.dataset.letterPrefilled!=='true':card.dataset.example!=='true';
+    if(letterGroup){
+      const shared=Number(letterGroup.querySelector('[data-letter-group-score]')?.value);
+      const fallback=Number(exam.settings?.defaultQuestionScore)||1;
+      card.querySelector('[data-field="maxScore"]').value=makeExample?0:shared>0?shared:fallback;
+      card.dataset.letterPrefilled=String(makeExample);
+    }
     card.dataset.example=makeExample?'true':'false';
     card.classList.toggle('is-example',card.dataset.example==='true');
     let motion=Promise.resolve();
