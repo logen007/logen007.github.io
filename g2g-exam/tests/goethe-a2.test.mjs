@@ -96,6 +96,8 @@ assert.match(letterAnswerError(letterSection,state.questions,{[letterSection.que
 const settingsEditor=renderBuilder({data:state,exam,section:letterSection});
 assert.match(settingsEditor,/id="sectionTableHeading" value="Gegenstand"/);
 assert.match(settingsEditor,/id="sectionImageMaxWidth"/);
+assert.match(settingsEditor,/<div class="goethe-instruction-icons"><input[^>]+id="sectionImageMaxWidth"[^>]+placeholder="img width \(px\)"/);
+assert.doesNotMatch(settingsEditor,/Rộng ảnh tối đa \(px\)|placeholder="Toàn cột"/);
 assert.equal(summarizeExam(exam,state).questions,42);
 updateSection(state,teacher,exam.id,letterSection.id,{instructionImageMaxWidth:620,tableHeading:'Thema'});
 assert.equal(letterSection.instructionImageMaxWidth,620);
