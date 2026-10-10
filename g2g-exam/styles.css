@@ -408,3 +408,9 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 .user-list-filters { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px; }
 .user-list-filters #userSearch { width:min(360px,100%); margin-left:auto; }
 @media(max-width:680px) { .user-list-filters #userSearch { width:100%; margin-left:0; } }
+.image-remove-control { position:relative; }
+.image-remove-button { position:absolute; top:4px; right:4px; z-index:5; width:28px; height:28px; padding:0; border:1px solid var(--vien); border-radius:50%; background:#fff; color:#b42318; font-size:22px; line-height:1; cursor:pointer; display:none; }
+.image-remove-control:has(img):hover>.image-remove-button,
+.image-remove-control:has(img):focus-within>.image-remove-button { display:grid; place-items:center; }
+.image-remove-button:focus-visible { outline:2px solid var(--brand-primary); outline-offset:2px; }
+@media (hover:none) { .image-remove-control:has(img)>.image-remove-button { display:grid; place-items:center; } }

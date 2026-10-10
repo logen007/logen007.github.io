@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {imageValue,EDITOR_IMAGE_INPUTS} from '../src/ui/image-remove.js';
+const input={dataset:{}};
+assert.equal(imageValue(input,undefined,'old.png'),'old.png');
+assert.equal(imageValue(input,'new.png','old.png'),'new.png');
+input.dataset.imageRemoved='true';
+assert.equal(imageValue(input,undefined,'old.png'),'');
+assert.equal(imageValue(input,'upload-finished-after-removal.png','old.png'),'');
+input.dataset.imageRemoved='false';
+assert.equal(imageValue(input,'replacement.png','old.png'),'replacement.png');
+for(const selector of ['section-image','question-card-image','question-instruction-image','choice-image','rubric-image'])assert.ok(EDITOR_IMAGE_INPUTS.includes('[data-'+selector+']'));
+console.log('Image removal covers instructions, questions, answers and writing forms; removal wins over pending uploads.');

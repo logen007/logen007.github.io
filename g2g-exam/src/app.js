@@ -1,4 +1,5 @@
 import {createGradeAutosave} from './ui/grade-autosave.js';
+import {bindImageRemoval,imageValue} from './ui/image-remove.js';
 let gradeAutosave=null,gradePublishing=false;
 window.addEventListener('beforeunload',event=>{if(gradeAutosave?.pending||gradePublishing){event.preventDefault();event.returnValue='';}});
 import {createRepository} from './repository.js';
@@ -697,7 +698,7 @@ async function persistBuilderDraft({silent=false}={}){
         const imageControl=app.querySelector('[data-section-image-control]');
         const instructionImageUrl=section.questionProfile?.instructionImage===false
           ?''
-          :sectionImageUrl??(imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'');
+          :imageValue(app.querySelector('[data-section-image]'),sectionImageUrl,imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'');
         const questionIds=[...app.querySelectorAll('.part-question[data-question-id]')].map(card=>card.dataset.questionId);
         updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl,questionIds});
         app.querySelectorAll('.part-question[data-question-id]').forEach(card=>{
@@ -708,7 +709,7 @@ async function persistBuilderDraft({silent=false}={}){
           if(mode==='form-fields'||mode==='mixed-form'){
             const previousQuestion=byId(st.questions,id),previousRubric=previousQuestion?.rubric||[];
             rubric=[...card.querySelectorAll('[data-rubric-index]')].map(row=>{
-              if(card.dataset.structuredForm==='true')return {...readWritingRow(row,previousRubric[Number(row.dataset.rubricIndex)]),imageUrl:rubricImageUrls.get(`${id}:${row.dataset.rubricIndex}`)??previousRubric[Number(row.dataset.rubricIndex)]?.imageUrl??''};
+              if(card.dataset.structuredForm==='true')return {...readWritingRow(row,previousRubric[Number(row.dataset.rubricIndex)]),imageUrl:imageValue(row.querySelector('[data-rubric-image]'),rubricImageUrls.get(`${id}:${row.dataset.rubricIndex}`),previousRubric[Number(row.dataset.rubricIndex)]?.imageUrl)};
               const type=row.querySelector('[data-rubric-type]')?.value||'text',hidden=row.dataset.rubricHidden==='true';
               return {
               type,
@@ -716,7 +717,7 @@ async function persistBuilderDraft({silent=false}={}){
               answers:row.querySelector('[data-rubric-answer]')?.value.trim()||'',
               maxScore:isScoredWritingField({type,hidden})?Math.max(0,Number(row.querySelector('[data-rubric-score]')?.value)||0):0,
               hidden,
-              imageUrl:rubricImageUrls.get(`${id}:${row.dataset.rubricIndex}`)??(previousRubric[Number(row.dataset.rubricIndex)]?.imageUrl||''),
+              imageUrl:imageValue(row.querySelector('[data-rubric-image]'),rubricImageUrls.get(`${id}:${row.dataset.rubricIndex}`),previousRubric[Number(row.dataset.rubricIndex)]?.imageUrl),
             };});
             if(mode==='form-fields'){
               const maxScore=writingFormScore(rubric);
@@ -731,18 +732,18 @@ async function persistBuilderDraft({silent=false}={}){
           const choices=[...card.querySelectorAll('[data-choice]')].map(input=>{
             const index=Number(input.dataset.choice);
             const existing=previousChoices[index];
-            return {text:card.querySelector(`[data-choice="${index}"]`)?.value.trim()||'',imageUrl:(choiceImageUrls.get(`${id}:${index}`)??(typeof existing==='object'?existing.imageUrl:''))||''};
+            return {text:card.querySelector(`[data-choice="${index}"]`)?.value.trim()||'',imageUrl:imageValue(card.querySelector(`[data-choice-image="${index}"]`),choiceImageUrls.get(`${id}:${index}`),typeof existing==='object'?existing.imageUrl:'')};
           });
           const previousInstructionBlocks=Array.isArray(previousQuestion?.instructionBlocks)
             ?previousQuestion.instructionBlocks
             :[{text:previousQuestion?.prompt||'',imageUrl:previousQuestion?.instructionImageUrl||''}];
           const instructionBlocks=[...card.querySelectorAll('[data-question-instruction-block]')].map((control,index)=>{
             const previousBlock=previousInstructionBlocks[index]||{};
-            return {text:control.querySelector('[data-instruction-prompt]')?.value.trim()||'',imageUrl:questionInstructionImageUrls.get(`${id}:${index}`)??(control.dataset.removeQuestionImage==='true'?'':previousBlock.imageUrl||'')};
+            return {text:control.querySelector('[data-instruction-prompt]')?.value.trim()||'',imageUrl:imageValue(control.querySelector('[data-question-instruction-image]'),questionInstructionImageUrls.get(`${id}:${index}`),control.dataset.removeQuestionImage==='true'?'':previousBlock.imageUrl||'')};
           });
           const firstInstruction=instructionBlocks[0]||{text:'',imageUrl:''};
           const instructionImageUrl=section.questionProfile?.questionImage===true
-            ?(questionCardImageUrls.get(id)??previousQuestion?.instructionImageUrl??'')
+            ?imageValue(card.querySelector('[data-question-card-image]'),questionCardImageUrls.get(id),previousQuestion?.instructionImageUrl)
             :firstInstruction.imageUrl;
           const mixedChoiceHidden=card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden==='true';
           const choiceScore=mixedChoiceHidden?0:Math.max(0,Number(scoreField?.value)||0);
@@ -1107,6 +1108,7 @@ function bindBuilder(){
   });
   const section=exam.sections.find(item=>item.id===ui.builderSectionId)||exam.sections[0];
   bindPartBuilder(section?.templateType,{root:app,data,exam,section,pendingAudioUploads,notify});
+  bindImageRemoval(app,()=>queueBuilderAutosave(0));
   app.querySelectorAll('[data-rubric-type]').forEach(field=>field.addEventListener('change',async()=>{await saveBuilderDraft({silent:true});render();}));
   app.querySelectorAll('.goethe-builder input,.goethe-builder textarea,.goethe-builder select').forEach(field=>{
     field.addEventListener('input',()=>queueBuilderAutosave());
