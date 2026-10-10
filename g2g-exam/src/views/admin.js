@@ -37,7 +37,7 @@ export function examAdminHtml({data,user}){
 
 export function teachersAdminHtml({data,user}){
   if(!isMaster(user))return '<div class="rong">Không có quyền.</div>';
-  return `<div class="tieu-de-trang"><div><h1>Giáo viên & tài khoản</h1><p>Học viên cần đăng nhập Google ít nhất một lần trước khi được nâng quyền thành giáo viên.</p></div></div><div class="table-wrap"><table class="bang"><thead><tr><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Thao tác</th></tr></thead><tbody>${data.users.map(u=>`<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.email)}</td><td>${u.role==='master'?'Quản trị cấp cao':u.role==='teacher'?'Giáo viên':'Học viên'}</td><td>${u.id===user.id?'—':`<button class="nut nho" data-action="toggle-teacher" data-id="${u.id}">${u.role==='teacher'?'Chuyển về Học viên':'Đặt làm Giáo viên'}</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="tieu-de-trang"><div><h1>Giáo viên & tài khoản</h1></div></div><div class="table-wrap"><table class="bang"><thead><tr><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Thao tác</th></tr></thead><tbody>${data.users.map(u=>`<tr data-user-group="${u.role==='teacher'?'teacher':u.role==='student'?(data.classes?.find(c=>c.id===u.classId)?.code==='Extend'||!u.classId?'external':'student'):'admin'}" data-user-search="${esc((u.name+' '+u.email).toLocaleLowerCase('vi'))}"><td><b>${esc(u.name)}</b></td><td>${esc(u.email)}</td><td>${u.role==='master'?'Quản trị cấp cao':u.role==='teacher'?'Giáo viên':'Học viên'}</td><td>${u.id===user.id?'—':`<button class="nut nho" data-action="toggle-teacher" data-id="${u.id}">${u.role==='teacher'?'Chuyển về Học viên':'Đặt làm Giáo viên'}</button>`}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 export function trashAdminHtml({data}){

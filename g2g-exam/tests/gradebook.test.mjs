@@ -130,3 +130,12 @@ assert.equal(retry.pending,true);
 succeeds=true;
 assert.equal(await retry.flush(),true);
 assert.equal(retry.pending,false);
+const {teachersAdminHtml}=await import('../src/views/admin.js');
+const usersHtml=teachersAdminHtml({user:{id:'admin',role:'master'},data:{classes:[{id:'ext',code:'Extend'},{id:'cls',code:'A1-01'}],users:[
+  {id:'t',role:'teacher',name:'Cô Lan',email:'lan@example.com'},
+  {id:'s',role:'student',classId:'cls',name:'An Nguyen',email:'an@example.com'},
+  {id:'e',role:'student',classId:'ext',name:'Binh Tran',email:'binh@example.com'}
+]}});
+for(const group of ['teacher','student','external'])assert.equal((usersHtml.match(new RegExp('data-user-group="'+group+'"','g'))||[]).length,1);
+assert.ok(usersHtml.includes('data-user-search="an nguyen an@example.com"'));
+assert.ok(!usersHtml.includes('Học viên cần đăng nhập'));
