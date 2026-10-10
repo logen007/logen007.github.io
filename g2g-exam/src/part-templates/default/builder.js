@@ -51,9 +51,9 @@ const audioName=q=>{
   return decodeURIComponent(String(q.audioUrl||'').split('/').pop().split('?')[0]||'Audio đã tải lên');
 };
 
-function audioHtml(q,readOnly,showAudio){
+function audioHtml(q,readOnly,showAudio,emptyLabel='Upload audio'){
   if(!showAudio)return '';
-  return `<div class="audio-upload ${q.audioUrl?'has-audio':''}"><label class="audio-file-select" title="${q.audioUrl?'Thay audio':'Tải audio'}"><span>${q.audioUrl?esc(audioName(q)):'Upload audio'}</span><input type="file" data-field="audio" accept="audio/*" ${readOnly?'disabled':''}></label>${q.audioUrl?`<button type="button" class="audio-preview" data-action="preview-inline-audio" title="Nghe thử audio" aria-label="Nghe thử audio">${icons.play}</button><audio class="inline-audio-preview" preload="metadata" src="${esc(q.audioUrl)}"></audio>`:icons.upload}</div>`;
+  return `<div class="audio-upload ${q.audioUrl?'has-audio':''}"><label class="audio-file-select" title="${q.audioUrl?'Thay audio':'Tải audio'}"><span>${q.audioUrl?esc(audioName(q)):esc(emptyLabel)}</span><input type="file" aria-label="Tải audio" data-field="audio" accept="audio/*" ${readOnly?'disabled':''}></label>${q.audioUrl?`<button type="button" class="audio-preview" data-action="preview-inline-audio" title="Nghe thử audio" aria-label="Nghe thử audio">${icons.play}</button><audio class="inline-audio-preview" preload="metadata" src="${esc(q.audioUrl)}"></audio>`:icons.upload}</div>`;
 }
 
 function questionImageHtml(q,readOnly,showQuestionImage){
@@ -123,11 +123,12 @@ function freeResponseHtml(q,{defaultScore,readOnly}){
 
 function instructionHtml(section,choiceProfile,readOnly,question){
   const listening=section.skillKey==='listening'||/nghe|hören|listening/i.test(section.skill||'');
-  const instruction=`<div class="instruction-content"><textarea id="sectionInstruction" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea>${listening?`<div class="instruction-audio" data-audio-question-id="section:${esc(section.id)}"><span>Audio đề bài</span>${audioHtml({audioUrl:section.instructionAudioUrl,audioName:section.instructionAudioName},readOnly,true)}</div>`:''}</div>`;
-  if(!choiceProfile.instructionImage)return `<div class="goethe-instruction">${instruction}</div>`;
+  const instruction=`<div class="instruction-content"><textarea id="sectionInstruction" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea></div>`;
+  const audio=listening?`<div class="instruction-audio" data-audio-question-id="section:${esc(section.id)}"><span>Audio đề bài</span>${audioHtml({audioUrl:section.instructionAudioUrl,audioName:section.instructionAudioName},readOnly,true,'')}</div>`:'';
+  if(!choiceProfile.instructionImage)return `<div class="goethe-instruction ${listening?'goethe-instruction--with-audio':''}">${instruction}${audio}</div>`;
   const imageUrl=section.instructionImageUrl||'';
   const addInstruction=question?`<button type="button" class="icon-btn" data-action="add-question-instruction" data-id="${question.id}" title="Thêm đề bài" aria-label="Thêm đề bài" ${readOnly?'disabled':''}>${icons.add}</button>`:'';
-  return `<div class="goethe-instruction goethe-instruction--media" data-section-image-control data-has-image="${imageUrl?'true':'false'}">${instruction}<div class="goethe-instruction-actions"><div class="goethe-instruction-icons"><input class="truong instruction-image-width" id="sectionImageMaxWidth" type="number" min="1" step="1" aria-label="img width (px)" placeholder="img width (px)" value="${imageMaxWidth(section.instructionImageMaxWidth)??''}" ${readOnly?'disabled':''}><button type="button" class="icon-btn" data-action="clear-section-image" title="Xóa hình ảnh đề bài" aria-label="Xóa hình ảnh đề bài" ${readOnly?'disabled':''}>${icons.remove}</button>${addInstruction}</div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.addImage}<span>Thêm hình ảnh</span>`}</span><input type="file" data-section-image accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
+  return `<div class="goethe-instruction goethe-instruction--media" data-section-image-control data-has-image="${imageUrl?'true':'false'}">${instruction}<div class="goethe-instruction-actions">${audio}<div class="goethe-instruction-icons"><input class="truong instruction-image-width" id="sectionImageMaxWidth" type="number" min="1" step="1" aria-label="img width (px)" placeholder="img width (px)" value="${imageMaxWidth(section.instructionImageMaxWidth)??''}" ${readOnly?'disabled':''}><button type="button" class="icon-btn" data-action="clear-section-image" title="Xóa hình ảnh đề bài" aria-label="Xóa hình ảnh đề bài" ${readOnly?'disabled':''}>${icons.remove}</button>${addInstruction}</div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.addImage}<span>Thêm hình ảnh</span>`}</span><input type="file" data-section-image accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
 }
 
 function instructionBlocksFor(q){

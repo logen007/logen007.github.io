@@ -52,6 +52,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Simple message/error dialogs use the shared compact width of 500px, capped
+  at the available mobile viewport width. Larger editors retain their own size.
+
 - Header account controls use one avatar opening a menu: Profile, other role
   options for authorized admins (Student, Teacher, Admin; omit current role),
   then Log out. No separate role selector or logout icon. Profile edits the

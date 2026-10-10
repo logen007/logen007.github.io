@@ -2,7 +2,7 @@ import {esc} from './format.js';
 
 export function publishErrorsHtml(error){
   const messages=error?.validationErrors||[error?.message||'Không nhận được phản hồi từ máy chủ. Kiểm tra kết nối rồi thử lại.'];
-  return `<div class="noi-hop" role="dialog" aria-modal="true" aria-labelledby="publishErrorTitle"><h2 id="publishErrorTitle">Chưa thể xuất bản đề</h2><p>Sửa các mục dưới đây rồi bấm Xuất bản lại.</p><ul class="publish-error-list">${messages.map(message=>`<li>${esc(message)}</li>`).join('')}</ul><div class="chan-hop"><button class="nut chinh" data-close>Quay lại sửa</button></div></div>`;
+  return `<div class="noi-hop noi-hop--compact" role="dialog" aria-modal="true" aria-labelledby="publishErrorTitle"><h2 id="publishErrorTitle">Chưa thể xuất bản đề</h2><p>Sửa các mục dưới đây rồi bấm Xuất bản lại.</p><ul class="publish-error-list">${messages.map(message=>`<li>${esc(message)}</li>`).join('')}</ul><div class="chan-hop"><button class="nut chinh" data-close>Quay lại sửa</button></div></div>`;
 }
 
 export function showPublishErrors(error){
