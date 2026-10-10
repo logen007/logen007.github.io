@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {normalizeThemeColor,themePalette,colorContrast,initializeTheme,acceptPublicSettings,currentTheme,saveLocalTheme} from '../src/settings/theme.js';
 
 let passed=0;
+const layoutCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(layoutCss,/--max:1600px/);
+assert.match(layoutCss,/#app \{ width:min\(calc\(var\(--max\) \+ 64px\),100%\)/);
+assert.match(layoutCss,/\.noi-dung-thi \{ max-width:var\(--max\)/);
+assert.match(layoutCss,/\.thi--preview \{ max-width:var\(--max\)/);
 async function test(name,run){await run();passed++;console.log(`✓ ${name}`);}
 
 await test('Mã màu không hợp lệ không bị âm thầm đổi thành màu khác',()=>{

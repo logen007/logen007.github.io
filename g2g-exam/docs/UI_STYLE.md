@@ -13,7 +13,8 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
   buttons/cards; reserve elevation for dialogs, notifications and image previews.
 - Card radius 24px (20px on mobile), input radius 12px, navigation/actions pill.
   Icon-only controls are circular. Spacing follows 8/12/16/20/24/32px.
-- Main content remains capped at 1500px. Exam reading width is 1040px.
+- Main content, exam and preview share a 1600px maximum via --max.
+  The outer app includes 32px gutters on desktop and stays capped at viewport width.
 
 ## Shared ownership
 
@@ -73,7 +74,7 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Preview layout
 
-- Keep the preview header and reading content on the same 1040px column.
+- Keep the preview header and reading content on the same 1600px maximum column.
   Show exam title, a small preview badge, a short no-results notice and return to
   editing in one header, not several banners.
 - Place a labeled native dropdown section switcher above the paper, with the
