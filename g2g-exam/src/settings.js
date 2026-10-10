@@ -131,6 +131,7 @@ function setState(message,bad=false){
 function renderSettings(force=true){
   const target=document.querySelector('.noi-dung-quan-tri');
   if(!target||!master()||!settings)return;
+  injectSettingsButton();
   if(!force&&target.querySelector('.g2g-settings-page'))return;
   target.innerHTML=settingsPageHtml({settings,infra,localOnly});
   bindSettingsActions();

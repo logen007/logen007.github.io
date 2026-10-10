@@ -111,6 +111,8 @@ const {parseICTDateTime,formatICTDateTime}=await import('../src/views/exam-acces
 assert.equal(parseICTDateTime('2026-10-10T15:30').toISOString(),'2026-10-10T08:30:00.000Z');
 assert.ok(formatICTDateTime('2026-10-10T08:30:00.000Z').includes('15:30'));
 const controlCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+const settingsSource=readFileSync(new URL('../src/settings.js',import.meta.url),'utf8');
+assert.match(settingsSource,/function renderSettings\(force=true\)\{[\s\S]*?injectSettingsButton\(\);[\s\S]*?target.innerHTML=settingsPageHtml/);
 for(const selector of ['.profile-form select','.grade-filters select','.exam-filter select','.access-code-create input'])assert.ok(controlCss.includes(selector));
 for(const file of ['builder','admin']){
   const source=readFileSync(new URL(`../src/views/${file}.js`,import.meta.url),'utf8');
