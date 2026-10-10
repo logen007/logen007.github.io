@@ -142,6 +142,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
   min-width:0; min-height:var(--control-height); border:1px solid var(--control-border); border-radius:var(--r-sm); background:var(--mat); padding:10px var(--control-pad-x); font:400 14px/1.5 var(--font-ui);
 }
 .truong { height:var(--control-height); }.truong.tim { min-width:220px; flex:1; }
+.letter-builder-answer .truong { height:var(--editor-control); min-width:88px; flex:none; }
 input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 .bo-loc { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
 .cai-dat label { display:block; font-size:13px; color:var(--phu); font-weight:500; margin:16px 0 7px; }.cai-dat input,.cai-dat select,.cai-dat textarea { width:100%; }

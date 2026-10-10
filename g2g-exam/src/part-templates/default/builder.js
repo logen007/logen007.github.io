@@ -66,7 +66,7 @@ function scoreControls(q,defaultScore,readOnly,{mixed=false}={}){
 }
 
 function choicesHtml(q,choiceProfile,readOnly){
-  if(choiceProfile.uniqueLetters)return `<div class="letter-builder-answer"><label for="correct-${esc(q.id)}">Đáp án đúng</label><select id="correct-${esc(q.id)}" data-field="correct" ${readOnly?'disabled':''}>${choiceProfile.choices.map((letter,i)=>`<option value="${i}" ${Number(q.correctAnswer)===i?'selected':''}>${esc(letter.toLowerCase())}</option>`).join('')}</select>${choiceProfile.choices.map((letter,i)=>`<input type="hidden" data-choice="${i}" value="${esc(letter)}">`).join('')}</div>`;
+  if(choiceProfile.uniqueLetters)return `<div class="letter-builder-answer"><label for="correct-${esc(q.id)}">Đáp án đúng</label><select class="truong" id="correct-${esc(q.id)}" data-field="correct" ${readOnly?'disabled':''}>${choiceProfile.choices.map((letter,i)=>`<option value="${i}" ${Number(q.correctAnswer)===i?'selected':''}>${esc(letter.toLowerCase())}</option>`).join('')}</select>${choiceProfile.choices.map((letter,i)=>`<input type="hidden" data-choice="${i}" value="${esc(letter)}">`).join('')}</div>`;
   const choices=[...(q.choices||[]),...Array(choiceProfile.choices.length).fill('')].slice(0,choiceProfile.choices.length);
   return `<div class="goethe-answer-row"><div class="goethe-choices ${choiceProfile.cssClass}">${choiceProfile.choices.map((label,choiceIndex)=>{
     const choice=choices[choiceIndex],imageUrl=typeof choice==='object'?choice.imageUrl:'',hasImage=Boolean(imageUrl),text=blank(textOf(choice))||'';
