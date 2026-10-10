@@ -1,7 +1,7 @@
 import {
   clone,uid,nowIso,byId,isTeacher,isMaster,audit,canEditQuestion,canDeleteQuestion
 } from './base.js';
-import {writingFormScore,normalizeWritingRows} from './writing-form.js';
+import {writingFormScore,normalizeWritingRows,writingOptions} from './writing-form.js';
 
 function choiceText(choice){
   if(choice&&typeof choice==='object')return String(choice.text||'').trim();
@@ -16,6 +16,16 @@ export function getQuestionMaxScore(question,defaultScore=0){
 }
 
 export function getQuestionChoiceError(input,existing=null){
+  if((input.writingFormVersion??existing?.writingFormVersion)===1){
+    const rows=input.rubric??existing?.rubric??[];
+    for(const [index,row] of rows.entries()){
+      if(row.hidden||!['choice','truefalse'].includes(row.type))continue;
+      const options=writingOptions(row),correct=Number(row.correctIndex);
+      if(options.filter(option=>String(option||'').trim()).length<2)return `Ô ${index+1} trong form cần ít nhất 2 lựa chọn hợp lệ.`;
+      if(row.correctIndex==null||!Number.isInteger(correct)||correct<0||correct>=options.length||!String(options[correct]||'').trim())return `Ô ${index+1} trong form chưa có đáp án đúng hợp lệ.`;
+    }
+    return '';
+  }
   const type=input.type??existing?.type??'single';
   if(!['single','truefalse','cloze'].includes(type))return '';
   const choices=clone(input.choices??existing?.choices??[]),choiceTexts=choices.map(choice=>choiceText(choice)||(typeof choice==='object'&&String(choice.imageUrl||'').trim()));
