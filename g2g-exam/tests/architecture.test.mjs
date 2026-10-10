@@ -143,8 +143,9 @@ test('Builder định tuyến editor theo templateType thay vì hard-code Goethe
   assert.equal(app.includes("exam.provider==='GOETHE'&&exam.level==='A1'"),false);
 });
 
-test('Builder giới hạn container Goethe ở 1500px',()=>{
-  assert.ok(read('styles.css').includes('.goethe-builder{width:min(1500px,100%)'));
+test('Builder dùng container chung 1600px',()=>{
+  assert.ok(read('styles.css').includes('.goethe-builder{width:min(var(--max),100%)'));
+  assert.ok(read('styles.css').includes('--max:1600px'));
 });
 
 test('Builder tự lưu thay đổi mà không render lại lúc đang nhập',()=>{

@@ -1,3 +1,4 @@
+import {isPrefilledQuestion} from '../domain/question-display.js';
 import {byId,getQuestionMaxScore,isMaster,canEditExam} from '../core.js';
 import {esc,fmtDate} from '../ui/format.js';
 import {getExamSpec,groupSectionsBySkill} from '../exam-specs/index.js';
@@ -16,7 +17,7 @@ export function examBuilderHtml({data,user,exam,section,readOnly}){
   const groups=groupSectionsBySkill(exam,spec);
   const defaultScoreForSection=item=>Number(exam.settings?.skillSettings?.[item.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
   const sectionScore=item=>(item.questionIds||[]).reduce((sum,id)=>sum+getQuestionMaxScore(byId(data.questions,id),defaultScoreForSection(item)),0);
-  const sectionQuestionCount=item=>(item.questionIds||[]).filter(id=>!byId(data.questions,id)?.example).length;
+  const sectionQuestionCount=item=>(item.questionIds||[]).filter(id=>!isPrefilledQuestion(byId(data.questions,id))).length;
   const icons={gear:iconHtml('settings')};
   const partLabel=(item,skill)=>String(item.name||'').startsWith(skill+' ')?String(item.name).replace(skill+' ','Bài '):item.name;
   const editableStructure=!readOnly&&!configured;

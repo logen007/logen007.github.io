@@ -84,6 +84,11 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   in one white paper surface, separated by whitespace rather than horizontal rules.
   Instruction/stimulus images fill their content column with automatic height;
   never cap their height or crop the text students need to read.
+  Teachers may set an optional image maximum width in px; blank means full
+  content-column width. Preserve aspect ratio and viewport responsiveness.
+  Letter-table headings are teacher-editable, not fixed to Person.
+  Questions worth zero points show their correct answer read-only, use "_" in
+  place of the number, and are excluded from question counts and progress.
 - Put prompt and audio control together; answer options fill the following row.
   Image answers get a readable image area, not a tiny thumbnail beside long text.
 - Current-section answered count lives once in the bottom navigation. Previous

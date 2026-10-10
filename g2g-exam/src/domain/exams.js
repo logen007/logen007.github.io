@@ -3,6 +3,7 @@ import {
   clone,uid,nowIso,byId,isTeacher,isMaster,audit,canEditExam
 } from './base.js';
 import {getQuestionChoiceError} from './questions.js';
+import {imageMaxWidth,isPrefilledQuestion} from './question-display.js';
 import {configuredPartErrors} from './configured-part-validation.js';
 
 function normalizeSection(input={},index=0){
@@ -16,6 +17,8 @@ function normalizeSection(input={},index=0){
     audioPolicy:clone(input.audioPolicy||null),
     instruction:String(input.instruction||''),
     instructionImageUrl:String(input.instructionImageUrl||''),
+    instructionImageMaxWidth:imageMaxWidth(input.instructionImageMaxWidth),
+    tableHeading:String(input.tableHeading??'Person'),
     questionLimit:Math.max(0,Number(input.questionLimit||0)),
     timeMinutes:Math.max(1,Number(input.timeMinutes||30)),
     maxScore:Math.max(0,Number(input.maxScore||0)),
@@ -258,7 +261,7 @@ export function validateExamForPublish(state,exam){
   for(const [index,section] of (exam?.sections||[]).entries()){
     errors.push(...configuredPartErrors(section,state.questions));
     if(!section.name?.trim())errors.push(`Phần ${index+1} chưa có tên.`);
-    const realQuestionIds=(section.questionIds||[]).filter(questionId=>!byId(state.questions,questionId)?.example);
+    const realQuestionIds=(section.questionIds||[]).filter(questionId=>!isPrefilledQuestion(byId(state.questions,questionId)));
     if(!realQuestionIds.length)errors.push(`Phần ${index+1} chưa có câu hỏi tính điểm.`);
     if(!Number.isFinite(Number(section.timeMinutes))||Number(section.timeMinutes)<=0)errors.push(`Phần ${index+1} có thời gian không hợp lệ.`);
     for(const questionId of section.questionIds||[]){
@@ -294,7 +297,7 @@ export function summarizeExam(exam,state){
   for(const section of exam?.sections||[]){
     for(const id of section.questionIds||[]){
       const question=byId(state.questions,id);
-      if(question&&!question.example){
+      if(question&&!isPrefilledQuestion(question)){
         questions++;
         max+=Number(question.maxScore||0);
         if(!question.autoGrade)manual++;

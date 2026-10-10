@@ -1,3 +1,4 @@
+import {isPrefilledQuestion} from '../domain/question-display.js';
 import {ATTEMPT_STATUS,byId} from '../core.js';
 import {esc,fmtDate,statusText,typeLabel} from '../ui/format.js';
 
@@ -8,7 +9,7 @@ export function questionModalHtml(q=null){
 
 export function previewExamModalHtml(ex,questions=[]){
   const questionMap=new Map(questions.map(question=>[question.id,question]));
-  const count=section=>(section.questionIds||[]).filter(id=>!questionMap.get(id)?.example).length;
+  const count=section=>(section.questionIds||[]).filter(id=>!isPrefilledQuestion(questionMap.get(id))).length;
   return `<div class="hop-chon" id="modal"><div class="noi-hop"><div class="dau-hop"><div><div class="nhan-muc">XEM BÀI THI</div><h2>${esc(ex.title)}</h2></div><button class="nut nho" data-action="close-modal">×</button></div>${(ex.sections||[]).map((s,i)=>`<div class="the" style="margin-top:10px"><b>${i+1}. ${esc(s.name)}</b><div class="phu-de">${count(s)} câu · ${s.timeMinutes} phút</div></div>`).join('')}</div></div>`;
 }
 

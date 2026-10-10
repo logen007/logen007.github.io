@@ -1,3 +1,4 @@
+import {isPrefilledQuestion} from './domain/question-display.js';
 import {bindLetterAnswers} from './ui/letter-answers.js';
 import {createGradeAutosave} from './ui/grade-autosave.js';
 import {bindImageRemoval,imageValue} from './ui/image-remove.js';
@@ -210,7 +211,7 @@ function previewExamView(){
 
 function previewSummaryFor(exam){
   const sections=(exam.sections||[]).map(item=>{
-    const items=(item.questionIds||[]).map(id=>byId(data.questions,id)).filter(question=>question&&!question.example);
+    const items=(item.questionIds||[]).map(id=>byId(data.questions,id)).filter(question=>question&&!isPrefilledQuestion(question));
     return {name:item.name,total:items.length,answered:items.filter(question=>answerPresent(ui.previewAnswers[question.id],question)).length};
   });
   return {sections,total:sections.reduce((sum,item)=>sum+item.total,0),answered:sections.reduce((sum,item)=>sum+item.answered,0)};
@@ -249,7 +250,7 @@ function bindExamInputs(attempt,questions){
   });
   const setLocalAnswer=(qid,value)=>{
     attempt.answers={...(attempt.answers||{}),[qid]:value};
-    const required=questions.filter(question=>!question.example),answered=required.filter(question=>answerPresent(attempt.answers[question.id],question)).length;
+    const required=questions.filter(question=>!isPrefilledQuestion(question)),answered=required.filter(question=>answerPresent(attempt.answers[question.id],question)).length;
     app.querySelectorAll('[data-current-answer-count]').forEach(item=>{item.textContent=`${answered}/${required.length}`;});
     const question=questions.find(item=>item.id===qid),card=app.querySelector(`.cau-thi[data-q="${qid}"]`);
     if(card&&question)card.classList.toggle('is-answered',answerPresent(value,question));
@@ -703,7 +704,7 @@ async function persistBuilderDraft({silent=false}={}){
           ?''
           :imageValue(app.querySelector('[data-section-image]'),sectionImageUrl,imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'');
         const questionIds=[...app.querySelectorAll('.part-question[data-question-id]')].map(card=>card.dataset.questionId);
-        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl,questionIds});
+        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl,instructionImageMaxWidth:document.getElementById('sectionImageMaxWidth')?.value||null,tableHeading:document.getElementById('sectionTableHeading')?.value??section.tableHeading??'Person',questionIds});
         app.querySelectorAll('.part-question[data-question-id]').forEach(card=>{
           const id=card.dataset.questionId;
           const example=card.dataset.example==='true';

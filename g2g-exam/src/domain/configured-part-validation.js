@@ -1,3 +1,4 @@
+import {isPrefilledQuestion} from './question-display.js';
 import {letterAnswerError} from './letter-answers.js';
 import {partAudioQuestions} from './part-audio.js';
 
@@ -7,8 +8,8 @@ export function configuredPartErrors(section,questions){
   if(!profile.example&&!profile.manualPerPart)return errors;
   const map=questions instanceof Map?questions:new Map(questions.map(q=>[q.id,q]));
   const rows=(section.questionIds||[]).map(id=>map.get(id)).filter(Boolean);
-  if(rows.filter(q=>!q.example).length!==section.questionLimit)errors.push(`${section.name}: cần đúng ${section.questionLimit} câu tính điểm.`);
-  if(profile.example&&rows.filter(q=>q.example).length!==1)errors.push(`${section.name}: cần một câu Beispiel.`);
+  if(rows.filter(q=>!isPrefilledQuestion(q)).length!==section.questionLimit)errors.push(`${section.name}: cần đúng ${section.questionLimit} câu tính điểm.`);
+  if(profile.example&&rows.filter(q=>isPrefilledQuestion(q)).length<1)errors.push(`${section.name}: cần ít nhất một câu ví dụ.`);
   if(profile.uniqueLetters){
     const error=letterAnswerError(section,map,Object.fromEntries(rows.map(q=>[q.id,q.correctAnswer])));
     if(error)errors.push(`${section.name}: các đáp án đúng không được trùng nhau, kể cả Beispiel.`);

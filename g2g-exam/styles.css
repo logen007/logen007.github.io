@@ -143,6 +143,8 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 }
 .truong { height:var(--control-height); }.truong.tim { min-width:220px; flex:1; }
 .letter-builder-answer .truong { height:var(--editor-control); min-width:88px; flex:none; }
+.part-display-setting { display:grid; gap:8px; font-size:13px; color:var(--phu); margin-bottom:16px; max-width:260px; }
+.part-display-setting .truong { width:100%; min-width:0; height:var(--editor-control); }
 input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 .bo-loc { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
 .cai-dat label { display:block; font-size:13px; color:var(--phu); font-weight:500; margin:16px 0 7px; }.cai-dat input,.cai-dat select,.cai-dat textarea { width:100%; }

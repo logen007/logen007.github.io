@@ -1,3 +1,4 @@
+import {isPrefilledQuestion} from '../../src/domain/question-display.js';
 import {query,withTx,audit,appError} from './db.js';
 import {deleteTrashedExam} from './trash-delete.js';
 import {publicWritingRows,writingFormScore,normalizeWritingRows} from './writing-form.js';
@@ -7,7 +8,7 @@ import {ensureClassCodes} from './actions/class-enrollment.js';
 
 const stripId=x=>{const y=structuredClone(x||{});delete y.id;return y;};
 const isTeacher=u=>u?.role==='teacher'||u?.role==='master';
-function publicQuestion(data){const q=structuredClone(data||{});if(!q.example)delete q.correctAnswer;if(q.writingFormVersion===1&&!q.example)q.rubric=publicWritingRows(q.rubric);else if(q.writingFormVersion!==1)delete q.rubric;if(Array.isArray(q.pairs)&&!q.example){const rights=q.pairs.map(x=>x[1]).sort(()=>Math.random()-.5);q.pairs=q.pairs.map((x,i)=>[x[0],rights[i]]);}return q;}
+function publicQuestion(data){const q=structuredClone(data||{});if(!isPrefilledQuestion(q))delete q.correctAnswer;if(q.writingFormVersion===1&&!isPrefilledQuestion(q))q.rubric=publicWritingRows(q.rubric);else if(q.writingFormVersion!==1)delete q.rubric;if(Array.isArray(q.pairs)&&!isPrefilledQuestion(q)){const rights=q.pairs.map(x=>x[1]).sort(()=>Math.random()-.5);q.pairs=q.pairs.map((x,i)=>[x[0],rights[i]]);}return q;}
 async function rows(sql,args=[]){return (await query(sql,args)).rows;}
 async function allowedExamIds(user){if(user.role==='master'||user.role==='teacher')return null;return new Set();}
 function rowEntity(r){const item={...(r.data||{}),id:r.id,...(r.owner_id?{ownerId:r.owner_id}:{}),...(r.status?{status:r.status}:{}),...(typeof r.locked==='boolean'?{locked:r.locked}:{})};if(item.writingFormVersion===1){item.rubric=normalizeWritingRows(item.rubric);item.maxScore=writingFormScore(item.rubric);}return item;}
@@ -38,7 +39,7 @@ export async function loadState(user){
       const ids=(exam.sections||[]).flatMap(s=>s.questionIds||[]);
       return {id:exam.id,title:exam.title,provider:exam.provider,level:exam.level,learningLevel:exam.learningLevel,status:exam.status,hidden:true,
         ...codeAccess,
-        questionCount:allQuestions.filter(q=>ids.includes(q.id)&&!q.example).length,
+        questionCount:allQuestions.filter(q=>ids.includes(q.id)&&!isPrefilledQuestion(q)).length,
         sections:(exam.sections||[]).map(s=>({id:s.id,name:s.name,timeMinutes:s.timeMinutes,questionIds:[]}))};
     });
     state.questions=[...new Map(allQuestions.filter(q=>allowed.has(q.id)).map(q=>[q.id,{id:q.id,...publicQuestion(q)}])).values()];

@@ -285,16 +285,22 @@ try{
   const {saveManualGrade}=await import('../server/src/actions/grading.js');
   const draftState={exams:[],questions:[],attempts:[],auditLogs:[]};
   const a2=createExamDraft(draftState,teacher,{provider:'GOETHE',level:'A2',title:'A2 integration'});
+  for(const q of draftState.questions)if(q.example){q.example=false;q.maxScore=0;}
   for(const q of draftState.questions)await query('INSERT INTO questions(id,owner_id,data) VALUES($1,$2,$3)',[q.id,teacher.id,JSON.stringify(q)]);
   await query("INSERT INTO exams(id,owner_id,status,data) VALUES($1,$2,'published',$3)",[a2.id,teacher.id,JSON.stringify(a2)]);
   const a2Started=await startAttempt(student,{examId:a2.id});
   const a2Id=a2Started.attemptId||a2Started.id;
   const a2Row=(await query('SELECT * FROM attempts WHERE id=$1',[a2Id])).rows[0];
   assert.equal(a2Row.public_data.examDeadlineMs-Date.parse(a2Row.public_data.startedAt),5400000);
+  const a2StudentState=await loadState(student);
+  for(const q of a2StudentState.questions.filter(q=>draftState.questions.some(source=>source.id===q.id))){
+    if(q.maxScore===0)assert.ok('correctAnswer' in q);
+    else assert.equal('correctAnswer' in q,false);
+  }
   // Move directly to the matching part to exercise reserved Beispiel letters.
   const matching=a2.sections.find(s=>s.questionProfile.uniqueLetters);
   await query('UPDATE attempts SET public_data=public_data||$2::jsonb WHERE id=$1',[a2Id,JSON.stringify({currentSectionId:matching.id,currentQuestionIds:matching.questionIds})]);
-  const real=matching.questionIds.filter(id=>!draftState.questions.find(q=>q.id===id).example);
+  const real=matching.questionIds.filter(id=>draftState.questions.find(q=>q.id===id).maxScore>0);
   await assert.rejects(()=>saveAnswers(student,{attemptId:a2Id,answers:{[real[0]]:0}}),/einmal/);
   await saveAnswers(student,{attemptId:a2Id,answers:{[real[0]]:1}});
   await assert.rejects(()=>saveAnswers(student,{attemptId:a2Id,answers:{[real[1]]:1}}),/einmal/);

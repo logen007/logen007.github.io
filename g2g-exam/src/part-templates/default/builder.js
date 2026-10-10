@@ -1,3 +1,4 @@
+import {imageMaxWidth} from '../../domain/question-display.js';
 import {byId,getQuestionMaxScore} from '../../core.js';
 import {esc} from '../../ui/format.js';
 import {uploadQuestionAudio} from '../../media.js';
@@ -124,7 +125,7 @@ function instructionHtml(section,choiceProfile,readOnly,question){
   if(!choiceProfile.instructionImage)return `<div class="goethe-instruction">${instruction}</div>`;
   const imageUrl=section.instructionImageUrl||'';
   const addInstruction=question?`<button type="button" class="icon-btn" data-action="add-question-instruction" data-id="${question.id}" title="Thêm đề bài" aria-label="Thêm đề bài" ${readOnly?'disabled':''}>${icons.add}</button>`:'';
-  return `<div class="goethe-instruction goethe-instruction--media" data-section-image-control data-has-image="${imageUrl?'true':'false'}">${instruction}<div class="goethe-instruction-actions"><div class="goethe-instruction-icons"><button type="button" class="icon-btn" data-action="clear-section-image" title="Xóa hình ảnh đề bài" aria-label="Xóa hình ảnh đề bài" ${readOnly?'disabled':''}>${icons.remove}</button>${addInstruction}</div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.addImage}<span>Thêm hình ảnh</span>`}</span><input type="file" data-section-image accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
+  return `<div class="goethe-instruction goethe-instruction--media" data-section-image-control data-has-image="${imageUrl?'true':'false'}">${instruction}<div class="goethe-instruction-actions"><label class="part-display-setting">Rộng ảnh tối đa (px)<input class="truong" id="sectionImageMaxWidth" type="number" min="1" step="1" placeholder="Toàn cột" value="${imageMaxWidth(section.instructionImageMaxWidth)??''}" ${readOnly?'disabled':''}></label><div class="goethe-instruction-icons"><button type="button" class="icon-btn" data-action="clear-section-image" title="Xóa hình ảnh đề bài" aria-label="Xóa hình ảnh đề bài" ${readOnly?'disabled':''}>${icons.remove}</button>${addInstruction}</div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.addImage}<span>Thêm hình ảnh</span>`}</span><input type="file" data-section-image accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
 }
 
 function instructionBlocksFor(q){
@@ -152,7 +153,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
     :choiceProfile.isFreeResponse
       ?freeResponseHtml(q,{defaultScore,readOnly})
       :choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile:{...choiceProfile,showAudio:choiceProfile.showAudio&&audioIds.has(q.id)}});
-  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${instructionHtml(section,choiceProfile,readOnly,choiceProfile.instructionImage?questions.find(question=>!question.example)||questions[0]:null)}<div class="goethe-questions">${questions.map(renderQuestion).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
+  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${section.questionProfile?.layout==='letter-table'?`<label class="part-display-setting">Nhãn bảng<input class="truong" id="sectionTableHeading" value="${esc(section.tableHeading??'Person')}" ${readOnly?'disabled':''}></label>`:''}${instructionHtml(section,choiceProfile,readOnly,choiceProfile.instructionImage?questions.find(question=>!question.example)||questions[0]:null)}<div class="goethe-questions">${questions.map(renderQuestion).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
 }
 
 export function bindBuilder({root=document,data,exam,section,pendingAudioUploads=new Map(),notify=()=>{}}={}){

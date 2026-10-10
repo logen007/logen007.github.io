@@ -1,3 +1,4 @@
+import {isPrefilledQuestion} from '../domain/question-display.js';
 import {byId,clone,createExam,createQuestion,updateQuestion,updateExam,addQuestionsToSection} from '../core.js';
 import {getExamSpec,buildSectionsFromSpec,buildSkillSettings} from '../exam-specs/index.js';
 import {writingFormScore} from '../domain/writing-form.js';
@@ -37,10 +38,10 @@ function populateConfiguredSections(state,user,exam){
       if(Object.keys(patch).length)updateQuestion(state,user,questionId,patch);
     }
     const additions=[];
-    if(profile.example&&!(section.questionIds||[]).some(id=>byId(state.questions,id)?.example)){
+    if(profile.example&&!(section.questionIds||[]).some(id=>isPrefilledQuestion(byId(state.questions,id)))){
       additions.push(createQuestion(state,user,{level:exam.level,skill:section.skill,part:section.name,type:profile.type||'single',title:'Nháp',choices,correctAnswer:0,example:true,maxScore:0}).id);
     }
-    const realQuestionCount=(section.questionIds||[]).filter(questionId=>!byId(state.questions,questionId)?.example).length;
+    const realQuestionCount=(section.questionIds||[]).filter(questionId=>!isPrefilledQuestion(byId(state.questions,questionId))).length;
     for(let index=realQuestionCount;index<required;index++){
       const isStimulusStart=(profile.stimulusStarts||[]).map(Number).includes(index);
       additions.push(createQuestion(state,user,{

@@ -1,3 +1,4 @@
+import {isPrefilledQuestion,imageMaxWidth} from '../domain/question-display.js';
 import {letterAnswersHtml} from '../ui/letter-answers.js';
 import {partAudioSegments} from '../domain/part-audio.js';
 import {examDurationSeconds} from '../domain/exam-clock.js';
@@ -64,22 +65,22 @@ export function studentAttemptDetailHtml({review}){
 
 export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],online,preview=false,previewSummary=null}){
   const sec=exam.sections[sectionIndex];
-  const orderedQuestions=questions.map((q,originalIndex)=>({q,originalIndex})).sort((a,b)=>Number(Boolean(b.q.example))-Number(Boolean(a.q.example)));
-  const requiredQuestions=questions.filter(q=>!q.example);
+  const orderedQuestions=questions.map((q,originalIndex)=>({q,originalIndex})).sort((a,b)=>Number(Boolean(isPrefilledQuestion(b.q)))-Number(Boolean(isPrefilledQuestion(a.q))));
+  const requiredQuestions=questions.filter(q=>!isPrefilledQuestion(q));
   const answered=requiredQuestions.filter(q=>answerPresent(attempt.answers?.[q.id],q)).length;
   const previousAction=preview?'preview-prev-section':'prev-section';
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Zur Bearbeitung':'Abgeben'):'Weiter';
-  const sectionInstruction=sec.instruction||sec.instructionImageUrl?`<section class="exam-instruction">${sec.instruction?`<div><p>${esc(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl?`<img src="${esc(sec.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';
+  const sectionInstruction=sec.instruction||sec.instructionImageUrl?`<section class="exam-instruction">${sec.instruction?`<div><p>${esc(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl?`<img ${imageMaxWidth(sec.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(sec.instructionImageMaxWidth)}px"`:''} src="${esc(sec.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
   const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
-  let questionNumber=exam.sections.slice(0,sectionIndex).filter(item=>!sec.questionProfile?.numberWithinSkill||item.skillKey===sec.skillKey).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!knownQuestions.get(id)?.example).length,0);
+  let questionNumber=exam.sections.slice(0,sectionIndex).filter(item=>!sec.questionProfile?.numberWithinSkill||item.skillKey===sec.skillKey).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!isPrefilledQuestion(knownQuestions.get(id))).length,0);
   let exampleTitleShown=false;
   const questionList=sec.questionProfile?.uniqueLetters?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex})=>{
-    const showExampleTitle=Boolean(q.example&&!exampleTitleShown);if(showExampleTitle)exampleTitleShown=true;
+    const showExampleTitle=Boolean(isPrefilledQuestion(q)&&!exampleTitleShown);if(showExampleTitle)exampleTitleShown=true;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
-    return renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:q.example?null:++questionNumber,showExampleTitle,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
+    return renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:isPrefilledQuestion(q)?'_':++questionNumber,showExampleTitle,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
   }).join('')||'<div class="rong">Dieser Teil enthält noch keine Aufgaben.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sec.name))}</h1></div></div>`
@@ -107,7 +108,7 @@ export function unansweredExamQuestions(exam,questions,answers){
   let number=0;
   return (exam.sections||[]).flatMap(section=>(section.questionIds||[]).flatMap(id=>{
     const q=byQuestion.get(id);
-    if(!q||q.example)return [];
+    if(!q||isPrefilledQuestion(q))return [];
     number++;
     return q.type!=='speaking'&&!answerPresent(answers[id],q)?[{id,number,sectionId:section.id}]:[];
   }));
@@ -160,7 +161,7 @@ function exampleAnswer(q){
 }
 
 export function renderQuestionHtml(q,answer,attempt,{wordRange=null,sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null,showExampleTitle=true,formFrame=false,mobileThreeChoices=false}={}){
-  const isExample=Boolean(q.example),exampleTitle=isExample&&showExampleTitle?'<div class="question-example-title">Beispiel</div>':'';
+  const isExample=Boolean(isPrefilledQuestion(q)),exampleTitle=isExample&&showExampleTitle?'<div class="question-example-title">Beispiel</div>':'';
   if(isExample)answer=exampleAnswer(q);
   if(q.type==='writing'&&(formFrame||q.writingFormVersion===1))return `<div class="cau-thi writing-form-question ${isExample?'is-example':''}" data-q="${esc(q.id)}">${exampleTitle}${writingFormDisplay(q,answer,{readOnly:isExample})}</div>`;
   const played=sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`);
@@ -170,7 +171,7 @@ export function renderQuestionHtml(q,answer,attempt,{wordRange=null,sectionInstr
   const isSharedInstruction=normalizedPrompt.length>12&&normalizedSection.includes(normalizedPrompt);
   const questionText=rawPrompt==='Nháp'||isSharedInstruction?'':rawPrompt;
   const questionAriaText=questionText.replace(/\[img\]/gi,' ').replace(/\s+/g,' ').trim();
-  const prompt=`${q.instruction?`<div class="question-instruction">${esc(q.instruction)}</div>`:''}${questionText||questionNumber?`<div class="noi">${questionNumber?`<strong class="question-number">${questionNumber}.</strong> `:''}${questionPromptHtml(questionText,q)}</div>`:''}`;
+  const prompt=`${q.instruction?`<div class="question-instruction">${esc(q.instruction)}</div>`:''}${questionText||questionNumber?`<div class="noi">${questionNumber?`<strong class="question-number">${questionNumber}${questionNumber==='_'?'':'.'}</strong> `:''}${questionPromptHtml(questionText,q)}</div>`:''}`;
   const stimulus=hasStimulus?questionStimulusHtml(q,{hideImage:/\[img\]/i.test(questionText)}):'';
   const head=exampleTitle+stimulus+(prompt||audio?`<div class="preview-question-heading">${prompt?`<div class="preview-question-prompt">${prompt}</div>`:''}${audio}</div>`:'');
   const root=`cau-thi ${isExample?'is-example ':''}${answerPresent(answer,q)?'is-answered':''}`;
@@ -185,7 +186,7 @@ export function renderQuestionHtml(q,answer,attempt,{wordRange=null,sectionInstr
 }
 
 function writingFieldsHtml(q,answer,{framed=false}={}){
-  const readOnly=Boolean(q.example),values=answer&&typeof answer==='object'?answer:{},rows=(q.rubric||[]).map((row,index)=>({...row,index})).filter(row=>!row.hidden);
+  const readOnly=Boolean(isPrefilledQuestion(q)),values=answer&&typeof answer==='object'?answer:{},rows=(q.rubric||[]).map((row,index)=>({...row,index})).filter(row=>!row.hidden);
   const {markers}=writingPointLayout(q.rubric);
   let lastLabel=null,groups=[];
   for(const row of rows){

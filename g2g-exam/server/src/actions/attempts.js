@@ -1,3 +1,4 @@
+import {isPrefilledQuestion} from '../../../src/domain/question-display.js';
 import {query,withTx,getSettings,audit,uid,now,appError} from '../db.js';
 import {examById,attemptExam,questionMap,scoreQuestion,resultFor,sectionMeta} from './shared.js';
 import {codeHash,checkCodeRate} from './exam-access.js';
@@ -185,7 +186,7 @@ export async function submitAttempt(user,{attemptId}){
     for(const id of section.questionIds||[]){
       const question=questions.get(id);
       if(!question)continue;
-      if(question.example)continue;
+      if(isPrefilledQuestion(question))continue;
       if(isAutomaticWritingForm(exam,section,question))subtotal+=scoreWritingForm(question.rubric,attempt.public_data.answers?.[id]);
       else if(question.autoGrade)subtotal+=scoreQuestion(question,attempt.public_data.answers?.[id]);
       else hasManual=true;

@@ -1,3 +1,4 @@
+import {isPrefilledQuestion} from './question-display.js';
 import {
   ATTEMPT_STATUS,clone,uid,nowIso,byId,isStudent,audit,
   canGradeExam,canPublishExamResult
@@ -9,7 +10,7 @@ import {manualGroups} from './manual-grading.js';
 import {letterAnswerError} from './letter-answers.js';
 
 function questionScore(question,answer){
-  if(!question?.autoGrade||question.example||answer==null||answer==='')return 0;
+  if(!question?.autoGrade||isPrefilledQuestion(question)||answer==null||answer==='')return 0;
   if(['single','truefalse','cloze'].includes(question.type)){
     return Number(answer)===Number(question.correctAnswer)?Number(question.maxScore||0):0;
   }
@@ -111,7 +112,7 @@ export function calculateAutomaticScores(state,attempt){
     let sectionScore=0;
     for(const questionId of section.questionIds||[]){
       const question=byId(state.questions,questionId);
-      if(question?.example)continue;
+      if(isPrefilledQuestion(question))continue;
       if(isAutomaticWritingForm(exam,section,question))sectionScore+=scoreWritingForm(question.rubric,attempt.answers?.[questionId]);
       else if(question?.autoGrade)sectionScore+=questionScore(question,attempt.answers?.[questionId]);
     }
@@ -122,7 +123,7 @@ export function calculateAutomaticScores(state,attempt){
 }
 
 export function hasManualQuestions(state,exam){
-  return (exam.sections||[]).some(section=>(section.questionIds||[]).some(questionId=>{const question=byId(state.questions,questionId);return question&&!question.example&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question);}));
+  return (exam.sections||[]).some(section=>(section.questionIds||[]).some(questionId=>{const question=byId(state.questions,questionId);return question&&!isPrefilledQuestion(question)&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question);}));
 }
 
 export function submitAttempt(state,user,attemptId){
