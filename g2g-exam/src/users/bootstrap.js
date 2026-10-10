@@ -1,4 +1,4 @@
-let selectedGroup='teacher',searchTerm='';
+let selectedGroup='all',searchTerm='';
 function mount(){
   const main=document.querySelector('.noi-dung-quan-tri');
   const heading=main?.querySelector('.tieu-de-trang h1');
@@ -7,13 +7,13 @@ function mount(){
   main.querySelector('.tieu-de-trang p')?.remove();
   if(main.querySelector('#userRolePanel'))return;
   const rows=[...main.querySelectorAll('[data-user-group]')];
-  const groups=[['teacher','Giáo Viên'],['student','Học Viên'],['external','Học viên Vãng lai']];
+  const groups=[['all','Tất cả'],['teacher','Giáo Viên'],['student','Học Viên'],['external','Học viên Vãng lai']];
   const panel=document.createElement('section');
-  panel.id='userRolePanel';panel.className='profile-form';panel.style.marginBottom='24px';
+  panel.id='userRolePanel';panel.className='user-list-filters';
   panel.innerHTML='<div class="nhom-nut" data-user-groups></div><input class="truong" id="userSearch" type="search" aria-label="Tìm tên hoặc email" placeholder="Tìm theo tên hoặc email" autocomplete="off">';
   const buttons=groups.map(([key,label])=>{
     const button=document.createElement('button');button.type='button';
-    button.textContent=label+' ('+rows.filter(row=>row.dataset.userGroup===key).length+')';
+    button.textContent=label+' ('+(key==='all'?rows.length:rows.filter(row=>row.dataset.userGroup===key).length)+')';
     button.dataset.userGroupFilter=key;
     panel.querySelector('[data-user-groups]').append(button);
     return button;
@@ -24,7 +24,7 @@ function mount(){
   main.querySelector('tbody')?.append(empty);
   function filter(){
     let count=0;
-    rows.forEach(row=>{row.hidden=row.dataset.userGroup!==selectedGroup||!row.dataset.userSearch.includes(searchTerm.trim().toLocaleLowerCase('vi'));if(!row.hidden)count++;});
+    rows.forEach(row=>{row.hidden=(selectedGroup!=='all'&&row.dataset.userGroup!==selectedGroup)||!row.dataset.userSearch.includes(searchTerm.trim().toLocaleLowerCase('vi'));if(!row.hidden)count++;});
     empty.hidden=count>0;
     buttons.forEach(button=>{const active=button.dataset.userGroupFilter===selectedGroup;button.className='nut'+(active?' chinh':'');button.setAttribute('aria-pressed',String(active));});
   }
