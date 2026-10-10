@@ -21,7 +21,7 @@ import {
   loginHtml,studentHomeHtml,studentResultsHtml,studentAttemptDetailHtml,examHtml,submittedHtml,expiredHtml,answerPresent
 } from './views/student.js';
 import {
-  adminShellHtml,dashboardHtml,examAdminHtml,gradingAdminHtml,gradesAdminHtml,
+  adminShellHtml,dashboardHtml,examAdminHtml,
   teachersAdminHtml,trashAdminHtml
 } from './views/admin.js';
 import {examBuilderHtml,gradingDetailHtml} from './views/builder.js';
@@ -447,6 +447,7 @@ async function submitCurrentExam(confirmed=false){
 }
 
 function adminView(){
+  if(ui.adminTab==='grading')ui.adminTab='grades';
   if(isMaster(user)&&['grading','grades'].includes(ui.adminTab))ui.adminTab='dashboard';
   let content='';
   if(ui.adminTab==='dashboard'&&isMaster(user)){
@@ -457,7 +458,6 @@ function adminView(){
     }
   }
   else if(ui.adminTab==='exams')content=examAdminHtml({data,user});
-  else if(ui.adminTab==='grading')content=gradingAdminHtml({data,user});
   else if(ui.adminTab==='grades')content=gradebookHtml({data,ui});
   else if(ui.adminTab==='teachers')content=teachersAdminHtml({data,user});
   else if(ui.adminTab==='classes')content=classesHtml({data,classId:ui.classId});
@@ -476,7 +476,7 @@ function examBuilderView(){
 
 function gradingDetailView(){
   const attempt=byId(data.attempts,ui.gradeAttemptId),exam=attempt&&byId(data.exams,attempt.examId);
-  if(!attempt||!exam||isMaster(user)||!canGradeExam(data,user,exam)){ui.view='admin';ui.adminTab=isMaster(user)?'dashboard':'grading';render();return;}
+  if(!attempt||!exam||isMaster(user)||!canGradeExam(data,user,exam)){ui.view='admin';ui.adminTab=isMaster(user)?'dashboard':'grades';render();return;}
   app.innerHTML=layout(gradingDetailHtml({data,user,attempt,exam}));
   bindGradeCalculator(attempt);
 }
@@ -1091,7 +1091,7 @@ function bindBuilder(){
 }
 
 function bindGrading(){
-  app.querySelectorAll('[data-action="back-grading"]').forEach(b=>b.onclick=()=>{ui.view='admin';ui.adminTab='grading';render();});
+  app.querySelectorAll('[data-action="back-grading"]').forEach(b=>b.onclick=()=>{ui.view='admin';ui.adminTab='grades';render();});
   app.querySelectorAll('[data-action="save-grade"]').forEach(b=>b.onclick=()=>saveGrade(false));
   app.querySelectorAll('[data-action="publish-result"]').forEach(b=>b.onclick=()=>saveGrade(true));
 }
@@ -1118,7 +1118,7 @@ async function saveGrade(andPublish){
   if(andPublish){
     if(fresh.status!==ATTEMPT_STATUS.READY){notify('Cần chấm đủ các phần trước khi công bố.');render();return;}
     const published=await act(()=>repo.transaction(st=>publishAttempt(st,user,attempt.id)),'Đã công bố kết quả và xếp email thông báo.',{rerender:false});
-    if(published){data=await repo.getState();ui.view='admin';ui.adminTab='grading';render();}
+    if(published){data=await repo.getState();ui.view='admin';ui.adminTab='grades';render();}
   }else render();
 }
 

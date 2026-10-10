@@ -1,4 +1,4 @@
-import {esc} from '../ui/format.js';
+import {esc,fmtDate} from '../ui/format.js';
 import {STUDENT_LEVELS} from '../domain/student-profile.js';
 import {filteredGradebook,gradeBand,skillScores,examResult,isStandardTelc,telcResult} from '../domain/gradebook.js';
 import {mountDialog} from './classes.js';
@@ -14,16 +14,17 @@ export function gradebookHtml({data,ui}){
   const filters={provider:'GOETHE',...ui.gradeFilters},telc=filters.provider==='TELC';
   const reviewers=data.users.filter(user=>['teacher','master'].includes(user.role));
   const students=data.users.filter(user=>user.role==='student');
-  const filtersHtml=filter('provider','Loại đề',[['GOETHE','Goethe'],['TELC','TELC']],filters.provider)+filter('level','Trình độ',STUDENT_LEVELS.map(item=>[item,item]),filters.level)+filter('classId','Mã lớp',(data.classes||[]).map(item=>[item.id,item.code]),filters.classId)+filter('reviewerId','Giáo viên chấm bài',reviewers.map(item=>[item.id,item.name]),filters.reviewerId)+filter('studentId','Học viên',students.map(item=>[item.id,item.name]),filters.studentId);
+  const filtersHtml=filter('provider','Loại đề',[['GOETHE','Goethe'],['TELC','TELC']],filters.provider)+filter('level','Trình độ',STUDENT_LEVELS.map(item=>[item,item]),filters.level)+filter('classId','Mã lớp',(data.classes||[]).map(item=>[item.id,item.code]),filters.classId)+filter('reviewerId','Giáo viên chấm bài',reviewers.map(item=>[item.id,item.name]),filters.reviewerId)+filter('studentId','Học viên',students.map(item=>[item.id,item.name]),filters.studentId)+filter('status','Trạng thái',[['pending','Cần chấm'],['graded','Đã chấm']],filters.status);
   const keys=telc?['reading','grammar','listening','writing']:['reading','listening','writing'];
-  const rows=filteredGradebook(data,filters).map(({student,attempt,exam,skills,classCode})=>{
-    const minutes=attempt?Math.max(0,Math.round((Date.parse(attempt.submittedAt)-Date.parse(attempt.startedAt))/60000)):null;
+  const rows=filteredGradebook(data,filters).map(({student,attempt,exam,skills,classCode,status})=>{
+    const minutes=Math.max(0,Math.round((attempt.durationSeconds??((Date.parse(attempt.submittedAt)-Date.parse(attempt.startedAt))/1000))/60));
+    const graded=status==='graded',title=attempt.examTitle||exam.title||'Bài thi';
     const written=keys.reduce((sum,key)=>sum+Number(skills[key]?.score||0),0),max=keys.reduce((sum,key)=>sum+Number(skills[key]?.max||0),0);
     const speaking=skills.speaking;
     const result=attempt?(attempt.resultSummary?.result||(isStandardTelc(exam)?telcResult(skills):attempt.result)):'—';
-    return `<tr><td><button class="table-link" data-action="student-profile" data-id="${esc(student.id)}">${esc(student.name)}</button></td><td>${esc(classCode)}</td><td>${esc(attempt?.examTitle||'—')}</td><td>${Number.isFinite(minutes)?`${minutes} phút`:'—'}</td>${keys.map(key=>`<td>${skills[key]?badge(skills[key].score,skills[key].max):'—'}</td>`).join('')}${telc?`<td>${attempt?badge(written,max):'—'}</td>`:''}<td>${speaking?badge(speaking.score,speaking.max):'—'}${attempt?` <button class="nut nho" data-action="edit-oral" data-id="${esc(attempt.id)}">${speaking?'Sửa':'Nhập điểm'}</button>`:''}</td>${telc?`<td>${esc(result||'—')}</td>`:''}</tr>`;
+    return `<tr><td><button class="table-link" data-action="student-profile" data-id="${esc(student.id)}">${esc(student.name)}</button></td><td>${esc(classCode)}</td><td><button class="table-link ${graded?'grade-attempt--graded':''}" data-action="grade-attempt" data-id="${esc(attempt.id)}" aria-label="${graded?'Xem':'Chấm bài'}: ${esc(title)}">${esc(title)}</button><span class="phu">${attempt.attemptNo?`Lần #${esc(attempt.attemptNo)} · `:''}${fmtDate(attempt.submittedAt)}</span></td><td>${Number.isFinite(minutes)?`${minutes} phút`:'—'}</td>${keys.map(key=>`<td>${skills[key]?badge(skills[key].score,skills[key].max):'—'}</td>`).join('')}${telc?`<td>${attempt?badge(written,max):'—'}</td>`:''}<td>${speaking?badge(speaking.score,speaking.max):'—'}${!graded?` <button class="nut nho" data-action="edit-oral" data-id="${esc(attempt.id)}">${speaking?'Sửa':'Nhập điểm'}</button>`:''}</td>${telc?`<td>${esc(result||'—')}</td>`:''}<td><span class="nhan ${graded?'xanh':'vang'}">${graded?'Đã chấm':'Cần chấm'}</span></td></tr>`;
   }).join('');
-  return `<div class="tieu-de-trang"><h1>Bảng điểm</h1></div><div class="grade-filters">${filtersHtml}</div><div class="table-wrap"><table class="bang"><thead><tr><th>Học viên</th><th>Mã lớp</th><th>Bài thi gần nhất</th><th>Tổng thời gian</th><th>Điểm đọc</th>${telc?'<th>Ngữ pháp</th>':''}<th>Điểm nghe</th><th>Điểm viết</th>${telc?'<th>Tổng điểm</th>':''}<th>Điểm nói</th>${telc?'<th>Kết quả</th>':''}</tr></thead><tbody>${rows||`<tr><td colspan="${telc?11:8}">Không có kết quả phù hợp.</td></tr>`}</tbody></table></div>`;
+  return `<div class="tieu-de-trang"><h1>Bài Thi</h1></div><div class="grade-filters">${filtersHtml}</div><div class="table-wrap"><table class="bang"><thead><tr><th>Học viên</th><th>Mã lớp</th><th>Bài thi</th><th>Thời gian</th><th>Đọc</th>${telc?'<th>Ngữ pháp</th>':''}<th>Nghe</th><th>Viết</th>${telc?'<th>Tổng điểm</th>':''}<th>Nói</th>${telc?'<th>Kết quả</th>':''}<th>Trạng thái</th></tr></thead><tbody>${rows||`<tr><td colspan="${telc?12:9}">Không có bài thi phù hợp.</td></tr>`}</tbody></table></div>`;
 }
 
 export function bindGradebook(root,{data,repo,ui,onSaved,render}){

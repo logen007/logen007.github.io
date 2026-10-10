@@ -28,7 +28,11 @@ const data={questions,classes:[{id:'class',code:'i1026'}],users:[{id:'s',role:'s
  {id:'telc',examId:'t',studentId:'s',status:'published',submittedAt:'2026-10-10',reviewerId:'t2'},
  {id:'pending',examId:'g',studentId:'s',status:'grading',submittedAt:'2026-10-11',reviewerId:'t2'},
 ]};
-assert.equal(filteredGradebook(data)[0].attempt.id,'last');
+assert.equal(filteredGradebook(data)[0].attempt.id,'pending');
+assert.equal(filteredGradebook(data).length,3);
+assert.equal(filteredGradebook(data,{status:'graded'}).length,2);
+assert.equal(filteredGradebook(data,{status:'pending'})[0].attempt.id,'pending');
+assert.equal(filteredGradebook({...data,attempts:[...data.attempts,{...data.attempts[0],id:'draft',status:'in_progress'},{...data.attempts[0],id:'abandoned',status:'abandoned'}]}).length,3);
 assert.equal(filteredGradebook(data,{reviewerId:'t1'})[0].attempt.id,'first');
 assert.equal(filteredGradebook(data,{provider:'TELC'})[0].attempt.id,'telc');
 assert.equal(filteredGradebook(data,{level:'A1.1'}).length,0);
@@ -58,3 +62,20 @@ assert.ok(html.includes('role="tooltip"'));
 assert.ok(html.includes('data-action="edit-oral"'));
 assert.ok(!html.includes('<th>Ngữ pháp</th>'));
 assert.ok(gradebookHtml({data,ui:{gradeFilters:{provider:'TELC'}}}).includes('<th>Ngữ pháp</th>'));
+for(const provider of ['GOETHE','TELC']){
+  const page=gradebookHtml({data,ui:{gradeFilters:{provider}}});
+  for(const label of ['Bài Thi','<th>Bài thi</th>','<th>Thời gian</th>','<th>Đọc</th>','<th>Nghe</th>','<th>Viết</th>','<th>Nói</th>','data-grade-filter="status"'])assert.ok(page.includes(label),label);
+  for(const label of ['Bảng điểm','Bài thi gần nhất','Tổng thời gian','<th>Điểm'])assert.ok(!page.includes(label),label);
+  assert.ok(page.includes('class="table-link grade-attempt--graded" data-action="grade-attempt"'));
+}
+const pendingHtml=gradebookHtml({data,ui:{gradeFilters:{status:'pending'}}});
+assert.ok(pendingHtml.includes('data-action="grade-attempt" data-id="pending"'));
+assert.ok(!pendingHtml.includes('grade-attempt--graded'));
+const gradedHtml=gradebookHtml({data,ui:{gradeFilters:{status:'graded'}}});
+assert.ok(!gradedHtml.includes('data-action="edit-oral"'));
+const {topbarHtml}=await import('../src/ui/layout.js');
+const nav=topbarHtml({user:{role:'teacher',name:'Teacher'},online:true,ui:{adminTab:'grades'}});
+assert.ok(nav.includes('<span>Đề Thi</span>'));
+assert.ok(nav.includes('<span>Bài Thi</span>'));
+assert.ok(!nav.includes('data-tab="grading"'));
+assert.ok(!nav.includes('Bảng điểm'));

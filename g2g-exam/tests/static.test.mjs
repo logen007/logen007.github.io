@@ -59,7 +59,7 @@ test('Chuỗi import tương đối của frontend không trỏ tới file thi�
 
 test('Giao diện modular vẫn có đủ nhãn tiếng Việt quan trọng',()=>{
   const source=jsTree('src');
-  for(const text of ['Bài thi','Chấm bài','Bảng điểm','Đã nộp bài']){
+  for(const text of ['Đề Thi','Bài Thi','Chấm bài','Đã nộp bài']){
     assert.ok(source.includes(text),`Thiếu nhãn tiếng Việt: ${text}`);
   }
   assert.equal(source.includes('Tạo câu hỏi trực tiếp trong phần này.'),false);

@@ -79,17 +79,20 @@ export function skillPassResult(skills){
 export function filteredGradebook(data,filters={}){
   const provider=filters.provider||'GOETHE';
   const exams=new Map(data.exams.map(exam=>[exam.id,exam]));
+  const students=new Map(data.users.map(student=>[student.id,student]));
   const rows=[];
-  for(const student of data.users.filter(user=>user.role==='student')){
+  for(const attempt of data.attempts){
+    if(!['submitted','grading','ready','published'].includes(attempt.status))continue;
+    const student=students.get(attempt.studentId)||{id:attempt.studentId,name:attempt.studentName||'Học viên',email:attempt.studentEmail||''};
     if(filters.level&&(student.level||'A1')!==filters.level)continue;
     if(filters.classId&&student.classId!==filters.classId)continue;
     if(filters.studentId&&student.id!==filters.studentId)continue;
-    const attempts=data.attempts.filter(attempt=>attempt.studentId===student.id&&attempt.status==='published'&&String(exams.get(attempt.examId)?.provider||'').toUpperCase()===provider&&(!filters.reviewerId||attempt.reviewerId===filters.reviewerId));
-    attempts.sort((a,b)=>String(b.submittedAt||b.startedAt).localeCompare(String(a.submittedAt||a.startedAt))||Number(b.attemptNo)-Number(a.attemptNo));
-    const attempt=attempts[0];
-    if(filters.reviewerId&&!attempt)continue;
-    const exam=attempt&&(attempt.examSnapshot||exams.get(attempt.examId));
-    rows.push({student,attempt,exam,skills:attempt?(attempt.resultSummary?.skills||skillScores(exam,exam.questionSnapshot||data.questions,attempt)):{},classCode:data.classes?.find(item=>item.id===student.classId)?.code||'—'});
+    const exam=attempt.examSnapshot||exams.get(attempt.examId);
+    if(!exam||String(exam.provider||'').toUpperCase()!==provider)continue;
+    if(filters.reviewerId&&attempt.reviewerId!==filters.reviewerId)continue;
+    const status=attempt.status==='published'?'graded':'pending';
+    if(filters.status&&filters.status!==status)continue;
+    rows.push({student,attempt,exam,status,skills:attempt.resultSummary?.skills||skillScores(exam,exam.questionSnapshot||data.questions,attempt),classCode:data.classes?.find(item=>item.id===student.classId)?.code||'—'});
   }
-  return rows.sort((a,b)=>a.student.name.localeCompare(b.student.name,'vi'));
+  return rows.sort((a,b)=>String(b.attempt.submittedAt||b.attempt.startedAt).localeCompare(String(a.attempt.submittedAt||a.attempt.startedAt))||Number(b.attempt.attemptNo||0)-Number(a.attempt.attemptNo||0));
 }

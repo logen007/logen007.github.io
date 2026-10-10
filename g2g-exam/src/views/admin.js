@@ -1,7 +1,7 @@
 import {
-  ATTEMPT_STATUS,byId,isMaster,canEditExam,gradebookRows
+  ATTEMPT_STATUS,isMaster,canEditExam
 } from '../core.js';
-import {esc,fmtDate,statusClass,statusText} from '../ui/format.js';
+import {esc} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
 
 export function adminShellHtml({content}){
@@ -32,26 +32,7 @@ export function dashboardHtml({data,infrastructure=null}){
 
 export function examAdminHtml({data,user}){
   const exams=data.exams.filter(x=>x.status!=='trash');
-  return `<div class="tieu-de-trang"><div><h1>Bài thi</h1></div><button class="nut chinh" data-action="new-exam">+ Tạo bài thi</button></div><div class="table-wrap"><table class="bang"><thead><tr><th>Bài thi</th><th>Loại đề</th><th>Người tạo</th><th>Lượt thi</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${exams.map(ex=>{const own=canEditExam(user,ex),attempts=data.attempts.filter(a=>a.examId===ex.id&&a.status!=='abandoned').length;return `<tr><td><button class="table-link" data-action="edit-exam" data-id="${esc(ex.id)}">${esc(ex.title)}</button></td><td>${esc([ex.provider,ex.level].filter(Boolean).join(' ')||ex.level)}</td><td>${esc(ex.ownerName)}</td><td>${attempts}</td><td><span class="nhan ${ex.status==='published'?'xanh':'xam'}">${ex.status==='published'?'Đã xuất bản':'Bản nháp'}</span></td><td><div class="hanh-dong-bang">${own&&ex.status!=='published'?`<button class="nut nho chinh" data-action="publish-exam" data-id="${esc(ex.id)}">Xuất bản</button>`:''}${own?`<button class="icon-btn" title="Cài đặt đề" aria-label="Cài đặt đề" data-action="exam-access-settings" data-id="${esc(ex.id)}">${iconHtml('settings')}</button>`:''}<button class="icon-btn" data-action="duplicate-exam" data-id="${esc(ex.id)}" aria-label="Nhân bản ${esc(ex.title)}" title="Nhân bản">${iconHtml('copy')}</button>${own?`<button class="icon-btn" data-action="delete-exam" data-id="${esc(ex.id)}" aria-label="Xóa ${esc(ex.title)}" title="Xóa">${iconHtml('trash')}</button>`:''}</div></td></tr>`;}).join('')}</tbody></table></div>`;
-}
-
-export function gradingAdminHtml({data,user}){
-  const attempts=data.attempts.filter(a=>[ATTEMPT_STATUS.GRADING,ATTEMPT_STATUS.READY,ATTEMPT_STATUS.PUBLISHED].includes(a.status)).sort((a,b)=>String(b.submittedAt||b.startedAt).localeCompare(String(a.submittedAt||a.startedAt)));
-  const pending=attempts.filter(a=>a.status!==ATTEMPT_STATUS.PUBLISHED).length,done=attempts.length-pending;
-  return `<div class="tieu-de-trang"><h1>Chấm bài</h1></div><div class="hang-thong-ke"><div class="thong-ke"><span>Cần chấm</span><b>${pending}</b></div><div class="thong-ke"><span>Đã chấm</span><b>${done}</b></div></div><div class="table-wrap"><table class="bang"><thead><tr><th>Học viên</th><th>Bài thi</th><th>Thời gian nộp</th><th>Lần thi</th><th>Điểm</th><th>Người chấm</th><th>Trạng thái</th><th></th></tr></thead><tbody>${attempts.map(a=>`<tr><td><b>${esc(a.studentName)}</b><span class="phu">${esc(a.studentEmail)}</span></td><td>${esc(a.examTitle)}</td><td>${fmtDate(a.submittedAt)}</td><td>#${a.attemptNo}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?a.totalScore??'—':a.autoScore??'—'}</td><td>${esc(a.status===ATTEMPT_STATUS.PUBLISHED?a.reviewerName||'—':'—')}</td><td><span class="nhan ${statusClass(a.status)}">${a.status===ATTEMPT_STATUS.PUBLISHED?'Đã chấm':'Cần chấm'}</span></td><td><button class="nut nho ${a.status===ATTEMPT_STATUS.PUBLISHED?'':'chinh'}" data-action="grade-attempt" data-id="${esc(a.id)}">${a.status===ATTEMPT_STATUS.PUBLISHED?'Xem':'Chấm bài'}</button></td></tr>`).join('')||'<tr><td colspan="8" class="rong">Chưa có bài làm.</td></tr>'}</tbody></table></div>`;
-}
-
-export function gradesAdminHtml({data,ui}){
-  if(ui.gradeMode==='all'){
-    const attempts=data.attempts.filter(a=>a.status===ATTEMPT_STATUS.PUBLISHED).sort((a,b)=>String(b.publishedAt||b.startedAt).localeCompare(String(a.publishedAt||a.startedAt)));
-    return `<div class="tieu-de-trang"><div><h1>Bảng điểm</h1><p>Toàn bộ các lần thi đã được công bố.</p></div></div>${gradeModeButtonsHtml(ui.gradeMode)}<div class="table-wrap"><table class="bang"><thead><tr><th>Học viên</th><th>Bài thi</th><th>Lần</th><th>Ngày</th><th>Tổng điểm</th><th>Kết quả</th></tr></thead><tbody>${attempts.map(a=>`<tr><td><b>${esc(a.studentName)}</b></td><td>${esc(a.examTitle)}</td><td>#${a.attemptNo}</td><td>${fmtDate(a.publishedAt||a.submittedAt)}</td><td><b>${a.totalScore??'—'}</b></td><td>${esc(a.result||'—')}</td></tr>`).join('')||'<tr><td colspan="6" class="rong">Chưa có kết quả đã công bố.</td></tr>'}</tbody></table></div>`;
-  }
-  const rows=gradebookRows(data,ui.gradeMode);
-  return `<div class="tieu-de-trang"><div><h1>Bảng điểm</h1><p>Xem điểm cao nhất, điểm gần nhất hoặc toàn bộ lịch sử.</p></div></div>${gradeModeButtonsHtml(ui.gradeMode)}<div class="table-wrap"><table class="bang"><thead><tr><th>Học viên</th><th>Bài thi</th><th>Tổng điểm</th><th>Kết quả</th><th>Số lần thi</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td><b>${esc(r.user.name)}</b><span class="phu">${esc(r.user.email)}</span></td><td>${esc(r.attempt?.examTitle||'—')}</td><td>${r.attempt?.totalScore??'—'}</td><td>${esc(r.attempt?.result||'—')}</td><td>${r.attempts.length}</td><td><button class="nut nho" data-action="student-grade-detail" data-id="${r.user.id}">Chi tiết</button></td></tr>`).join('')}</tbody></table></div>`;
-}
-
-export function gradeModeButtonsHtml(mode){
-  return `<div class="nhom-nut" style="margin-bottom:14px"><button class="nut ${mode==='best'?'chinh':''}" data-action="grade-mode" data-mode="best">Điểm cao nhất</button><button class="nut ${mode==='latest'?'chinh':''}" data-action="grade-mode" data-mode="latest">Điểm gần nhất</button><button class="nut ${mode==='all'?'chinh':''}" data-action="grade-mode" data-mode="all">Tất cả lần thi</button></div>`;
+  return `<div class="tieu-de-trang"><div><h1>Đề Thi</h1></div><button class="nut chinh" data-action="new-exam">+ Tạo đề thi</button></div><div class="table-wrap"><table class="bang"><thead><tr><th>Đề thi</th><th>Loại đề</th><th>Người tạo</th><th>Lượt thi</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${exams.map(ex=>{const own=canEditExam(user,ex),attempts=data.attempts.filter(a=>a.examId===ex.id&&a.status!=='abandoned').length;return `<tr><td><button class="table-link" data-action="edit-exam" data-id="${esc(ex.id)}">${esc(ex.title)}</button></td><td>${esc([ex.provider,ex.level].filter(Boolean).join(' ')||ex.level)}</td><td>${esc(ex.ownerName)}</td><td>${attempts}</td><td><span class="nhan ${ex.status==='published'?'xanh':'xam'}">${ex.status==='published'?'Đã xuất bản':'Bản nháp'}</span></td><td><div class="hanh-dong-bang">${own&&ex.status!=='published'?`<button class="nut nho chinh" data-action="publish-exam" data-id="${esc(ex.id)}">Xuất bản</button>`:''}${own?`<button class="icon-btn" title="Cài đặt đề" aria-label="Cài đặt đề" data-action="exam-access-settings" data-id="${esc(ex.id)}">${iconHtml('settings')}</button>`:''}<button class="icon-btn" data-action="duplicate-exam" data-id="${esc(ex.id)}" aria-label="Nhân bản ${esc(ex.title)}" title="Nhân bản">${iconHtml('copy')}</button>${own?`<button class="icon-btn" data-action="delete-exam" data-id="${esc(ex.id)}" aria-label="Xóa ${esc(ex.title)}" title="Xóa">${iconHtml('trash')}</button>`:''}</div></td></tr>`;}).join('')}</tbody></table></div>`;
 }
 
 export function teachersAdminHtml({data,user}){
