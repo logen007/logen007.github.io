@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import {studentResultsHtml} from '../src/views/student.js';
 import {examAdminHtml} from '../src/views/admin.js';
 import {examPublishButton} from '../src/ui/exam-publish-button.js';
@@ -49,6 +50,19 @@ import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+{
+  const source=read('src/app.js'),start=source.indexOf("  const account=app.querySelector");
+  const block=source.slice(start,source.indexOf('  app.querySelectorAll',start));
+  const menu={hidden:false},avatar={setAttribute(){}},inside={};
+  const account={querySelector:s=>s.includes('data-role-menu')?menu:avatar,contains:target=>target===inside,addEventListener(){}};
+  vm.runInNewContext(block,{app:{querySelector:()=>account}});
+  account.onfocusout({relatedTarget:null});
+  assert.equal(menu.hidden,false,'Touch blur must not hide a menu before click');
+  account.onfocusout({relatedTarget:inside});
+  assert.equal(menu.hidden,false);
+  account.onfocusout({relatedTarget:{}});
+  assert.equal(menu.hidden,true,'Keyboard focus outside closes menu');
+}
 assert.match(read('styles.css'),/\.bang thead th\s*\{\s*white-space:nowrap;/);
 assert.doesNotMatch(read('styles.css'),/\.table-link\s*\{\s*white-space:nowrap;/);
 assert.doesNotMatch(read('styles.css'),/\.student-result-info h2\s*\{[^}]*white-space:nowrap/);

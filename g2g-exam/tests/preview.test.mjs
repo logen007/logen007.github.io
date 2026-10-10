@@ -231,11 +231,11 @@ try{
     assert.doesNotMatch(html,/⌄/);
     assert.equal(actionButtons(html,'toggle-role-menu').length,1);
     assert.equal(actionButtons(html,'test-role').length,2);
-    assert.match(html,/data-role="student">Student<\/button>/);
-    assert.match(html,/data-role="teacher">Teacher<\/button>/);
+    assert.match(html,/data-role="student"><svg[^]*?<span>Student<\/span><\/button>/);
+    assert.match(html,/data-role="teacher"><svg[^]*?<span>Teacher<\/span><\/button>/);
     assert.doesNotMatch(html,/data-role="master"|header-logout|account-role-trigger/);
-    assert.match(html,/data-action="account-profile">Profile/);
-    assert.match(html,/data-action="logout">Log out/);
+    assert.match(html,/data-action="account-profile"><svg[^]*?<span>Profile<\/span>/);
+    assert.match(html,/data-action="logout"><svg[^]*?<span>Log out<\/span>/);
     const regular=topbarHtml({user:{role:'teacher',name:'Teacher'},mode:'api',online:true});
     assert.equal(actionButtons(regular,'test-role').length,0);
     assert.equal(actionButtons(regular,'account-profile').length,1);
@@ -244,7 +244,7 @@ try{
     for(const role of ['student','teacher']){
       const roleHtml=topbarHtml({user:{id:'master',role,name:'Admin',canTestRoles:true},mode:'api',online:true,canSwitchRole:true});
       assert.doesNotMatch(roleHtml,new RegExp(`data-role="${role}"`));
-      assert.match(roleHtml,/data-role="master">Admin/);
+      assert.match(roleHtml,/data-role="master"><svg[^]*?<span>Admin<\/span>/);
       assert.match(roleHtml,new RegExp(`data-current-role="${role}"`));
     }
   });

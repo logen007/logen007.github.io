@@ -815,7 +815,7 @@ function bindGlobal(){
   if(account){
     const close=()=>{account.querySelector('[data-role-menu]').hidden=true;account.querySelector('.account-avatar').setAttribute('aria-expanded','false');};
     account.onkeydown=event=>{if(event.key==='Escape'){close();account.querySelector('.account-avatar').focus();}};
-    account.onfocusout=event=>{if(!account.contains(event.relatedTarget))close();};
+    account.onfocusout=event=>{if(event.relatedTarget&&!account.contains(event.relatedTarget))close();};
     account.addEventListener('click',event=>{if(event.target.closest('[data-role-menu] button'))close();});
   }
   app.querySelectorAll('[data-action="test-role"]').forEach(button=>button.onclick=async()=>{

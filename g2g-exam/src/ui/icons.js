@@ -1,5 +1,9 @@
 // Shared outline icons: the control owns its border, size and interaction state.
 const paths={
+  profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
+  student:'<path d="m2 8 10-5 10 5-10 5-10-5ZM6 10v6c4 3 8 3 12 0v-6M22 8v8"/>',
+  teacher:'<rect x="8" y="3" width="13" height="12" rx="2"/><circle cx="5" cy="11" r="3"/><path d="M1 21v-3a4 4 0 0 1 8 0v3M14 19h5M16 15v4"/>',
+  admin:'<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/>',
   publish:'<path d="M12 16V4M7 9l5-5 5 5M4 16v4h16v-4"/>',
   unpublish:'<path d="M12 4v12M7 11l5 5 5-5M4 16v4h16v-4"/>',
   exams:'<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>',
