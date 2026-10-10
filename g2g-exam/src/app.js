@@ -1,3 +1,6 @@
+import {createGradeAutosave} from './ui/grade-autosave.js';
+let gradeAutosave=null,gradePublishing=false;
+window.addEventListener('beforeunload',event=>{if(gradeAutosave?.pending||gradePublishing){event.preventDefault();event.returnValue='';}});
 import {createRepository} from './repository.js';
 import {unansweredExamQuestions} from './views/student.js';
 import {
@@ -614,6 +617,8 @@ function setBuilderSaveStatus(state,text){
 }
 
 async function flushBuilderDraft(){
+  if(gradePublishing)return false;
+  if(ui.view==='grading-detail'&&gradeAutosave&&!await gradeAutosave.flush())return false;
   if(ui.view!=='builder'||document.getElementById('examTitle')?.disabled)return true;
   let revision;
   do{
@@ -766,12 +771,13 @@ function queueBuilderAutosave(delay=450){
 }
 
 function bindGlobal(){
-  app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{await repo.signOut();user=null;authenticatedUser=null;ui.view='login';render();});
+  app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await repo.signOut();user=null;authenticatedUser=null;ui.view='login';render();});
   app.querySelectorAll('[data-action="toggle-role-menu"]').forEach(button=>button.onclick=event=>{
     event.stopPropagation();const account=button.closest('.header-account'),menu=account?.querySelector('[data-role-menu]');if(!menu)return;
     menu.hidden=!menu.hidden;account.querySelectorAll('[data-action="toggle-role-menu"]').forEach(trigger=>trigger.setAttribute('aria-expanded',String(!menu.hidden)));
   });
   app.querySelectorAll('[data-action="test-role"]').forEach(button=>button.onclick=async()=>{
+    if(!await flushBuilderDraft())return;
     if(!authenticatedUser?.canTestRoles&&!isMaster(authenticatedUser))return;
     try{
       user=typeof repo.switchTestRole==='function'?await repo.switchTestRole(button.dataset.role):{...authenticatedUser,role:button.dataset.role};
@@ -1091,15 +1097,29 @@ function bindBuilder(){
 }
 
 function bindGrading(){
-  app.querySelectorAll('[data-action="back-grading"]').forEach(b=>b.onclick=()=>{ui.view='admin';ui.adminTab='grades';render();});
-  app.querySelectorAll('[data-action="save-grade"]').forEach(b=>b.onclick=()=>saveGrade(false));
-  app.querySelectorAll('[data-action="publish-result"]').forEach(b=>b.onclick=()=>saveGrade(true));
+  if(ui.view==='grading-detail'&&app.querySelector('[data-action="publish-result"]')){
+    gradeAutosave=createGradeAutosave(()=>saveGrade(false),text=>{const status=app.querySelector('[data-grade-save-status]');if(status)status.textContent=text;});
+    app.querySelectorAll('.manual-score,#gradeOralScore,#gradeFeedback').forEach(input=>input.addEventListener('input',()=>gradeAutosave.change()));
+  }
+  app.querySelectorAll('[data-action="back-grading"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;gradeAutosave=null;ui.view='admin';ui.adminTab='grades';render();});
+  app.querySelectorAll('[data-action="publish-result"]').forEach(b=>b.onclick=async()=>{
+    b.disabled=true;
+    const inputs=[...app.querySelectorAll('.manual-score,#gradeOralScore,#gradeFeedback')];
+    try{
+      if(!await flushBuilderDraft())return;
+      gradePublishing=true;
+      inputs.forEach(input=>input.readOnly=true);
+      await saveGrade(true);
+    }finally{gradePublishing=false;inputs.forEach(input=>input.readOnly=false);b.disabled=false;}
+  });
 }
 
 async function saveGrade(andPublish){
   const attempt=byId(data.attempts,ui.gradeAttemptId);
   if(!attempt)return;
   for(const input of app.querySelectorAll('.manual-score,#gradeOralScore')){
+    const previous=input.id==='gradeOralScore'?attempt.oralScore:attempt.manualScores?.[input.dataset.skill];
+    input.setCustomValidity(input.value===''&&previous!=null?'Vui lòng nhập điểm, nhập 0 nếu không có điểm.':'');
     if(!input.checkValidity()){input.reportValidity();return;}
   }
   const oralInput=document.getElementById('gradeOralScore');
@@ -1114,7 +1134,7 @@ async function saveGrade(andPublish){
   const scores={};
   app.querySelectorAll('.manual-score').forEach(i=>{if(i.value!=='')scores[i.dataset.skill]=Number(i.value);});
   const feedback=document.getElementById('gradeFeedback')?.value||'';
-  const saved=await act(()=>repo.transaction(st=>saveManualScore(st,user,attempt.id,{scores,feedback})),andPublish?null:'Đã lưu điểm tạm.',{rerender:false});
+  const saved=await act(()=>repo.transaction(st=>saveManualScore(st,user,attempt.id,{scores,feedback})),null,{rerender:false});
   if(!saved)return;
   data=await repo.getState();
   const fresh=byId(data.attempts,attempt.id);
@@ -1122,7 +1142,8 @@ async function saveGrade(andPublish){
     if(fresh.status!==ATTEMPT_STATUS.READY){notify('Cần chấm đủ các phần trước khi công bố.');render();return;}
     const published=await act(()=>repo.transaction(st=>publishAttempt(st,user,attempt.id)),'Đã công bố kết quả và xếp email thông báo.',{rerender:false});
     if(published){data=await repo.getState();ui.view='admin';ui.adminTab='grades';render();}
-  }else render();
+  }
+  return true;
 }
 
 async function toggleTeacher(id){

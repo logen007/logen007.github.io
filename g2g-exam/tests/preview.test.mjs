@@ -633,7 +633,7 @@ try{
     const functions=source.slice(source.indexOf('async function saveBuilderDraft('),source.indexOf('async function persistBuilderDraft('));
     let active=0,maxActive=0,calls=0,changeDuringSave=false,fail=false,readOnly=false;
     const context=vm.createContext({
-      builderSavePromise:null,builderAutosaveTimer:null,builderEditRevision:0,
+      builderSavePromise:null,builderAutosaveTimer:null,builderEditRevision:0,gradePublishing:false,gradeAutosave:null,
       clearTimeout:()=>{},ui:{view:'builder'},document:{getElementById:()=>({disabled:readOnly})},
       app:{querySelector:()=>null},
       persistBuilderDraft:async()=>{
