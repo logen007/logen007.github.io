@@ -139,6 +139,8 @@ CREATE TABLE IF NOT EXISTS classes (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS classes_code_idx ON classes(lower(code));
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS description text NOT NULL DEFAULT '';
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS teacher_ids text[] NOT NULL DEFAULT '{}';
 
 -- Lượt thi bỏ dở không phải là lịch sử làm bài và không được lưu lâu dài.
 DELETE FROM notifications WHERE attempt_id IN (SELECT id FROM attempts WHERE status='abandoned');

@@ -24,6 +24,16 @@ try{
   const {loadState}=await import('../server/src/state.js');
   const teacher={id:'t',role:'teacher',name:'Teacher'},student={id:'s',role:'student',name:'Student',level:'A1.1',profileCompletedAt:'2026-01-01'};
   for(const user of [teacher,student])await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4)',[user.id,`${user.id}@example.test`,user.role,JSON.stringify(user)]);
+  const {saveClass}=await import('../server/src/actions/classes.js');
+  await assert.rejects(()=>saveClass(student,{code:'Forbidden'}));
+  const classroom=await saveClass(teacher,{code:'A1-01',description:'Evening class',teacherIds:['t','t']});
+  assert.deepEqual(classroom.teacherIds,['t']);
+  assert.equal((await loadState(teacher)).classes.find(c=>c.id===classroom.id).description,'Evening class');
+  await assert.rejects(()=>saveClass(teacher,{id:classroom.id,code:'A1-01',teacherIds:['s']}));
+  await saveClass(teacher,{id:classroom.id,code:'A1-02'});
+  assert.deepEqual((await loadState(teacher)).classes.find(c=>c.id===classroom.id).teacherIds,['t']);
+  await saveClass(teacher,{id:classroom.id,code:'A1-02',description:'Updated',teacherIds:[]});
+  assert.deepEqual((await loadState(teacher)).classes.find(c=>c.id===classroom.id).teacherIds,[]);
   const sections=[];
   for(const [skill,max] of Object.entries({reading:75,grammar:30,listening:75,writing:45})){
     sections.push({id:skill,name:skill,skillKey:skill,questionIds:[skill],timeMinutes:10});
@@ -104,6 +114,10 @@ try{
   const {duplicateExam,detachLockedDraftQuestions}=await import('../src/domain/exams.js');
   const copier={id:'t2',role:'teacher',name:'Copier'};
   await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4)',['t2','t2@example.test','teacher',JSON.stringify(copier)]);
+  await saveClass(teacher,{id:classroom.id,code:'A1-02',teacherIds:['t','t2']});
+  assert.deepEqual((await loadState(teacher)).classes.find(c=>c.id===classroom.id).teacherIds,['t','t2']);
+  await saveClass(teacher,{id:classroom.id,code:'A1-02',teacherIds:['t2']});
+  assert.deepEqual((await loadState(teacher)).classes.find(c=>c.id===classroom.id).teacherIds,['t2']);
   const sourceState=await loadState(copier);
   const copied=duplicateExam(sourceState,copier,'e');
   const copiedIds=copied.sections.flatMap(s=>s.questionIds);

@@ -1,10 +1,19 @@
 import {esc} from '../ui/format.js';
 import {STUDENT_LEVELS,validateStudentProfile} from '../domain/student-profile.js';
 
+export function teacherChip(teacher){
+  const initials=String(teacher.name||'GV').trim().split(/\s+/).slice(-2).map(word=>word[0]).join('');
+  return `<span class="class-teacher-avatar">${teacher.picture?`<img src="${esc(teacher.picture)}" alt="" referrerpolicy="no-referrer">`:esc(initials)}</span><span>${esc(teacher.name||'Giáo viên')}</span>`;
+}
+export function classFormHtml(current,users){
+  const teachers=users.filter(user=>user.role==='teacher'&&(user.active!==false||current?.teacherIds?.includes(user.id)));
+  return `<form class="profile-form class-form"><label>Mã lớp<input name="code" required maxlength="60" value="${esc(current?.code||'')}" placeholder="Ví dụ: A1-2026-01"></label><label>Mô tả<textarea name="description" rows="3" maxlength="2000" placeholder="Lịch học, mục tiêu hoặc ghi chú của lớp">${esc(current?.description||'')}</textarea></label><fieldset class="class-teachers"><legend>Giáo viên</legend><p class="phu-de">Có thể chọn nhiều giáo viên. Bỏ tích để gỡ khỏi lớp.</p><div class="class-teacher-options">${teachers.map(teacher=>`<label class="class-teacher-option"><input name="teacherIds" type="checkbox" value="${esc(teacher.id)}" ${current?.teacherIds?.includes(teacher.id)?'checked':''}>${teacherChip(teacher)}${teacher.active===false?'<small>Đã ngừng hoạt động</small>':''}</label>`).join('')||'<p class="phu-de">Chưa có tài khoản giáo viên.</p>'}</div></fieldset><p data-error role="alert"></p><button class="nut chinh" type="submit">Lưu lớp</button></form>`;
+}
+
 export function classesHtml({data}){
   const classes=data.classes||[],students=data.users.filter(item=>item.role==='student');
   return `<div class="tieu-de-trang"><h1>Lớp học</h1><button class="nut chinh" data-action="new-class">+ Thêm lớp</button></div>
-    <div class="table-wrap"><table class="bang"><thead><tr><th>Mã lớp</th><th>Học viên</th><th></th></tr></thead><tbody>${classes.map(item=>`<tr><td>${esc(item.code)}</td><td>${students.filter(student=>student.classId===item.id).length}</td><td><button class="nut nho" data-action="edit-class" data-id="${esc(item.id)}">Sửa mã lớp</button></td></tr>`).join('')||'<tr><td colspan="3">Chưa có lớp. Hãy thêm mã lớp để học viên đăng ký.</td></tr>'}</tbody></table></div>
+    <div class="table-wrap"><table class="bang"><thead><tr><th>Mã lớp</th><th>Mô tả</th><th>Giáo viên</th><th>Học viên</th><th></th></tr></thead><tbody>${classes.map(item=>`<tr><td>${esc(item.code)}</td><td class="class-description">${esc(item.description||'—')}</td><td><div class="class-teacher-chips">${(item.teacherIds||[]).map(id=>data.users.find(user=>user.id===id)).filter(Boolean).map(teacher=>`<span class="class-teacher-chip">${teacherChip(teacher)}</span>`).join('')||'—'}</div></td><td>${students.filter(student=>student.classId===item.id).length}</td><td><button class="nut nho" data-action="edit-class" data-id="${esc(item.id)}">Chỉnh sửa</button></td></tr>`).join('')||'<tr><td colspan="5">Chưa có lớp. Hãy thêm mã lớp để học viên đăng ký.</td></tr>'}</tbody></table></div>
     <h2>Học viên</h2><div class="table-wrap"><table class="bang"><thead><tr><th>Họ và tên</th><th>Mã lớp</th><th>Trình độ</th><th></th></tr></thead><tbody>${students.map(student=>`<tr><td>${esc(student.name)}<span class="phu">${esc(student.email)}</span></td><td>${esc(classes.find(item=>item.id===student.classId)?.code||'Chưa chọn lớp')}</td><td>${esc(student.level||'A1.1')}</td><td><button class="nut nho" data-action="student-profile" data-id="${esc(student.id)}">Thông tin</button></td></tr>`).join('')||'<tr><td colspan="4">Chưa có học viên.</td></tr>'}</tbody></table></div>`;
 }
 
@@ -17,7 +26,7 @@ export function mountDialog(title,body,{required=false}={}){
   modal.addEventListener('keydown',event=>{
     if(event.key==='Escape'&&!required)modal.remove();
     if(event.key!=='Tab')return;
-    const focusable=[...modal.querySelectorAll('button,input,select')].filter(item=>!item.disabled);
+    const focusable=[...modal.querySelectorAll('button,input,select,textarea')].filter(item=>!item.disabled);
     const first=focusable[0],last=focusable.at(-1);
     if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
     if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
@@ -55,17 +64,18 @@ export function bindClasses(root,{data,repo,onSaved}){
   root.querySelectorAll('[data-action="student-profile"]').forEach(button=>button.onclick=()=>openStudentProfile({data,repo,student:data.users.find(item=>item.id===button.dataset.id),onSaved}));
   root.querySelectorAll('[data-action="new-class"],[data-action="edit-class"]').forEach(button=>button.onclick=()=>{
     const current=data.classes.find(item=>item.id===button.dataset.id);
-    const modal=mountDialog(current?'Sửa mã lớp':'Thêm lớp',`<form class="profile-form"><label>Mã lớp<input name="code" required maxlength="60" value="${esc(current?.code||'')}"></label><p data-error role="alert"></p><button class="nut chinh" type="submit">Lưu lớp</button></form>`);
+    const modal=mountDialog(current?'Chỉnh sửa lớp':'Thêm lớp',classFormHtml(current,data.users));
     modal.querySelector('form').onsubmit=async event=>{
       event.preventDefault();const form=event.currentTarget,save=form.querySelector('button');save.disabled=true;
       try{
         const code=form.elements.code.value.trim();
+        const description=form.elements.description.value.trim(),teacherIds=[...form.querySelectorAll('[name="teacherIds"]:checked')].map(input=>input.value);
         if(!code)throw new Error('Vui lòng nhập mã lớp.');
-        if(repo.mode==='api'){await repo.call('saveClass',{id:current?.id,code});await repo.reload();}
+        if(repo.mode==='api'){await repo.call('saveClass',{id:current?.id,code,description,teacherIds});await repo.reload();}
         else await repo.transaction(state=>{
           if(state.classes.some(item=>item.id!==current?.id&&item.code.toLowerCase()===code.toLowerCase()))throw new Error('Mã lớp đã tồn tại.');
-          if(current)state.classes.find(item=>item.id===current.id).code=code;
-          else state.classes.push({id:crypto.randomUUID(),code,active:true});
+          if(current)Object.assign(state.classes.find(item=>item.id===current.id),{code,description,teacherIds});
+          else state.classes.push({id:crypto.randomUUID(),code,description,teacherIds,active:true});
         });
         modal.remove();await onSaved();
       }catch(error){form.querySelector('[data-error]').textContent=error.message;save.disabled=false;}

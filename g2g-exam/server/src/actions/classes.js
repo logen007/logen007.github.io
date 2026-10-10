@@ -2,21 +2,31 @@ import {withTx,appError,audit,uid,now} from '../db.js';
 import {isTeacher} from './shared.js';
 import {validateStudentProfile} from '../../../src/domain/student-profile.js';
 
-export async function saveClass(user,{id,code}){
+export async function saveClass(user,{id,code,description,teacherIds}){
   if(!isTeacher(user))throw appError(403,'Chỉ giáo viên được quản lý lớp.');
   code=String(code||'').trim();
   if(!code||code.length>60)throw appError(400,'Mã lớp cần từ 1–60 ký tự.');
+  if(description!==undefined&&(typeof description!=='string'||description.length>2000))throw appError(400,'Mô tả tối đa 2.000 ký tự.');
+  if(teacherIds!==undefined&&(!Array.isArray(teacherIds)||teacherIds.some(value=>typeof value!=='string')||teacherIds.length>100))throw appError(400,'Danh sách giáo viên không hợp lệ.');
   return withTx(async client=>{
+    let previous={};
     if(id){
-      const found=await client.query('SELECT id FROM classes WHERE id=$1 FOR UPDATE',[id]);
+      const found=await client.query('SELECT * FROM classes WHERE id=$1 FOR UPDATE',[id]);
       if(!found.rowCount)throw appError(404,'Không tìm thấy lớp.');
+      previous=found.rows[0];
     }else id=uid('class');
+    description=description===undefined?previous.description||'':description.trim();
+    teacherIds=[...new Set(teacherIds===undefined?previous.teacher_ids||[]:teacherIds)];
+    if(teacherIds.length){
+      const teachers=await client.query("SELECT id FROM users WHERE id=ANY($1::text[]) AND role='teacher' AND active=true FOR SHARE",[teacherIds]);
+      if(teachers.rowCount!==teacherIds.length)throw appError(400,'Vui lòng chọn giáo viên đang hoạt động.');
+    }
     try{
-      await client.query(`INSERT INTO classes(id,code,created_by) VALUES($1,$2,$3)
-        ON CONFLICT(id) DO UPDATE SET code=EXCLUDED.code,updated_at=now()`,[id,code,user.id]);
+      await client.query(`INSERT INTO classes(id,code,created_by,description,teacher_ids) VALUES($1,$2,$3,$4,$5)
+        ON CONFLICT(id) DO UPDATE SET code=EXCLUDED.code,description=EXCLUDED.description,teacher_ids=EXCLUDED.teacher_ids,updated_at=now()`,[id,code,user.id,description,teacherIds]);
     }catch(error){if(error.code==='23505')throw appError(409,'Mã lớp đã tồn tại.');throw error;}
     await audit(user,'save_class','class',id,{code},client);
-    return {id,code};
+    return {id,code,description,teacherIds};
   });
 }
 

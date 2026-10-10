@@ -5,8 +5,17 @@ import {studentExamCardHtml,studentHomeHtml} from '../src/views/student.js';
 import {resultSummaryHtml} from '../src/views/result-summary.js';
 import {studentProfileCardHtml,studentShareText} from '../src/views/student-profile-card.js';
 import {examAccessFormHtml} from '../src/views/exam-access.js';
+import {classFormHtml,classesHtml} from '../src/views/classes.js';
 
 assert.equal(STUDENT_LEVELS.length,12);
+const classTeachers=[{id:'t1',name:'Cô Lan',role:'teacher',picture:'https://example.com/lan.jpg'},{id:'t2',name:'Cô Mai',role:'teacher'},{id:'s',name:'Student',role:'student'}];
+const classItem={id:'c',code:'A1-01',description:'Lớp <mới>',teacherIds:['t1','t2']};
+const classForm=classFormHtml(classItem,classTeachers);
+assert.ok(classForm.includes('name="description"'));
+assert.equal((classForm.match(/ checked/g)||[]).length,2);
+assert.ok(classForm.includes('lan.jpg'));
+assert.ok(!classForm.includes('value="s"'));
+assert.ok(classesHtml({data:{classes:[classItem],users:classTeachers}}).includes('Lớp &lt;mới&gt;'));
 const settingsHtml=examAccessFormHtml({title:'<Exam>',provider:'GOETHE',level:'A1',hidden:true,learningLevel:'A1.2'});
 assert.ok(settingsHtml.includes('&lt;Exam&gt;'));
 for(const label of ['Quyền truy cập','Trình độ','Mã thi','Lưu thay đổi','Tạo mã'])assert.ok(settingsHtml.includes(label));
