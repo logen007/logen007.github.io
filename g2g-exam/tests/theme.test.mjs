@@ -4,6 +4,10 @@ import {normalizeThemeColor,themePalette,colorContrast,initializeTheme,acceptPub
 
 let passed=0;
 const layoutCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(layoutCss,/\.exam-instruction img \{[^}]*width:100%; max-width:100%; height:auto; max-height:none;/);
+assert.match(layoutCss,/\.question-stimulus img \{[^}]*width:100%; max-width:100%; height:auto; max-height:none;/);
+assert.doesNotMatch(layoutCss.match(/\.exam-paper \.cau-thi \{[^}]+\}/)?.[0]||'',/border-bottom:1px/);
+assert.doesNotMatch(layoutCss,/\.exam-paper \.exam-instruction img \{ max-height:360px/);
 assert.match(layoutCss,/--max:1600px/);
 assert.match(layoutCss,/#app \{ width:min\(calc\(var\(--max\) \+ 64px\),100%\)/);
 assert.match(layoutCss,/\.noi-dung-thi \{ max-width:var\(--max\)/);

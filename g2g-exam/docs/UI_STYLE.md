@@ -81,7 +81,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   current section selected and answer counts in its options. Whole-exam progress
   and a quiet reset link sit beside it. Do not render this in real exams.
 - Show the current section heading once. Group its instruction and questions
-  in one white paper surface with internal dividers rather than nested cards.
+  in one white paper surface, separated by whitespace rather than horizontal rules.
+  Instruction/stimulus images fill their content column with automatic height;
+  never cap their height or crop the text students need to read.
 - Put prompt and audio control together; answer options fill the following row.
   Image answers get a readable image area, not a tiny thumbnail beside long text.
 - Current-section answered count lives once in the bottom navigation. Previous

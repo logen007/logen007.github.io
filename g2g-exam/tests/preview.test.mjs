@@ -407,8 +407,8 @@ try{
     const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
     assert.match(css,/\.exam-instruction\s*\{[^}]*flex-direction:column/);
     assert.match(css,/\.question-stimulus\s*\{[^}]*flex-direction:column/);
-    assert.match(css,/\.exam-instruction img\s*\{[^}]*max-width:min\(760px,100%\)/);
-    assert.match(css,/\.question-stimulus img\s*\{[^}]*max-width:min\(760px,86%\)/);
+    assert.match(css,/\.exam-instruction img\s*\{[^}]*width:100%; max-width:100%; height:auto; max-height:none/);
+    assert.match(css,/\.question-stimulus img\s*\{[^}]*width:100%; max-width:100%; height:auto; max-height:none/);
     assert.match(css,/\.exam-instruction img\s*\{[^}]*align-self:flex-start/);
     assert.match(css,/\.question-stimulus img\s*\{[^}]*align-self:flex-start/);
   });
