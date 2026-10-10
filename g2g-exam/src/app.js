@@ -1,4 +1,5 @@
 import {createRepository} from './repository.js';
+import {unansweredExamQuestions} from './views/student.js';
 import {
   ATTEMPT_STATUS,byId,isMaster,isStudent,canEditExam,canGradeExam,
   createQuestion,updateQuestion,softDeleteQuestion,restoreQuestion,permanentlyDeleteQuestion,
@@ -410,6 +411,7 @@ function startExamTimer(attempt,exam,sectionIndex){
     if(left<=0&&!timerBusy){
       clearTimer();
       timerBusy=true;
+      document.querySelector('[data-confirm-cancel]')?.click();
       document.querySelectorAll('.answer-one,.answer-match,.answer-text,.play-audio').forEach(x=>x.disabled=true);
       for(const pending of saveTimers.values())clearTimeout(pending);
       saveTimers.clear();
@@ -426,8 +428,15 @@ function startExamTimer(attempt,exam,sectionIndex){
   tick();
 }
 
-async function submitCurrentExam(){
+async function submitCurrentExam(confirmed=false){
   if(submitBusy)return;
+  if(!confirmed){
+    const attempt=byId(data.attempts,ui.attemptId),exam=attempt&&byId(data.exams,attempt.examId);
+    if(!attempt||!exam)return;
+    const missing=unansweredExamQuestions(exam,data.questions,{...attempt.answers,...readExamAnswers(app)});
+    confirmAction(missing.length?`Noch nicht vollständig beantwortete Aufgaben: ${missing.map(item=>item.number).join(', ')}. Möchten Sie trotzdem abgeben?`:'Möchten Sie die Prüfung jetzt abgeben?',()=>submitCurrentExam(true),{confirmLabel:'Prüfung abgeben',cancelLabel:'Weiterarbeiten'});
+    return;
+  }
   submitBusy=true;
   try{
     if(!await flushTextAnswers())return;
@@ -786,6 +795,10 @@ function bindGlobal(){
 }
 
 function bindViewSpecific(){
+  app.querySelectorAll('[data-action="exam-select-section"]').forEach(select=>select.onchange=()=>{
+    const attempt=byId(data.attempts,ui.attemptId);
+    if(attempt)moveAttemptSection(Number(select.value)-(attempt.currentSectionIndex||0));
+  });
   app.querySelectorAll('[data-action="share-profile"]').forEach(button=>button.onclick=async()=>{
     const status=app.querySelector('[data-share-status]');
     try{status.textContent=await shareStudentProfile(data,user);}
@@ -832,7 +845,8 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="new-exam"]').forEach(b=>b.onclick=()=>createNewExam());
   app.querySelectorAll('[data-action="edit-exam"]').forEach(b=>b.onclick=()=>openBuilder(b.dataset.id));
   app.querySelectorAll('[data-action="duplicate-exam"]').forEach(b=>b.onclick=async()=>{
-    const copy=await act(()=>repo.transaction(st=>duplicateExam(st,user,b.dataset.id)),'Đã nhân bản bài thi.',{rerender:false});
+    const copy=await act(()=>repo.mode==='api'?repo.call('copyExam',{examId:b.dataset.id}):repo.transaction(st=>duplicateExam(st,user,b.dataset.id)),'Đã nhân bản bài thi.',{rerender:false});
+    if(copy&&repo.mode==='api')await repo.reload();
     if(copy){data=await repo.getState();ui.adminTab='exams';await openBuilder(copy.id);}
   });
   app.querySelectorAll('[data-action="view-exam"]').forEach(b=>b.onclick=()=>previewExamModal(byId(data.exams,b.dataset.id)));
@@ -877,11 +891,6 @@ async function moveAttemptSection(delta){
   const attempt=byId(data.attempts,ui.attemptId),exam=attempt&&byId(data.exams,attempt.examId);
   if(!attempt||!exam)return;
   if(attempt.status!==ATTEMPT_STATUS.IN_PROGRESS){ui.view='student-home';render();notify('Dieser Prüfungsversuch ist bereits beendet. Starten Sie einen neuen Versuch.');return;}
-  if(delta>0){
-    const answers=readExamAnswers(app),section=exam.sections[attempt.currentSectionIndex||0];
-    const missing=(section.questionIds||[]).map(id=>byId(data.questions,id)).find(q=>q&&!q.example&&q.type!=='speaking'&&!answerPresent(answers[q.id],q));
-    if(missing){revealUnansweredQuestion(app,missing.id);return;}
-  }
   if(!await flushTextAnswers())return;
   const next=Math.max(0,Math.min(exam.sections.length-1,(attempt.currentSectionIndex||0)+delta));
   const result=await act(()=>repo.transaction(st=>setAttemptSection(st,user,attempt.id,next)),null,{rerender:false});

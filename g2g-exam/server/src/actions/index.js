@@ -1,4 +1,5 @@
 import {appError,query} from '../db.js';
+import {copyExam} from './exam-copy.js';
 import {isTeacher} from './shared.js';
 import {saveClass,saveStudentProfile} from './classes.js';
 import {saveOralScore} from './oral.js';
@@ -9,6 +10,7 @@ import {updateSystemSettings,updateSmtpSecret,testSmtp,getInfrastructureStatus,s
 
 export async function handleAction(user,name,data={}){
   switch(name){
+    case 'copyExam': return copyExam(user,data);
     case 'saveExamAccess': return saveExamAccess(user,data);
     case 'listExamCodes': return listExamCodes(user,data);
     case 'createExamCode': return createExamCode(user,data);

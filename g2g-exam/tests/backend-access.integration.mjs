@@ -113,4 +113,18 @@ try{
   await commitOperations(copier,[{collection:'questions',id:editable.id,item:{...editable,title:'Copier edit saved'}}]);
   assert.equal((await query('SELECT data FROM questions WHERE id=$1',[editable.id])).rows[0].data.title,'Copier edit saved');
   console.log('SQL copy/reload/edit by a different teacher passed.');
+  const {copyExam}=await import('../server/src/actions/exam-copy.js');
+  await assert.rejects(()=>copyExam(student,{examId:'e'}));
+  const serverCopy=await copyExam(copier,{examId:'e'});
+  const copiedState=await loadState(copier);
+  const serverExam=copiedState.exams.find(e=>e.id===serverCopy.id);
+  assert.equal(serverExam.ownerId,copier.id);
+  assert.equal(serverExam.status,'draft');
+  const serverQuestion=copiedState.questions.find(q=>q.id===serverExam.sections[0].questionIds[0]);
+  await commitOperations(copier,[{collection:'questions',id:serverQuestion.id,item:{...serverQuestion,title:'Actual server copy edit'}}]);
+  assert.equal((await query('SELECT data FROM questions WHERE id=$1',[serverQuestion.id])).rows[0].data.title,'Actual server copy edit');
+  // Stale display metadata must not overrule authoritative ownership.
+  await query("UPDATE exams SET data=data||$2::jsonb WHERE id=$1",[serverCopy.id,JSON.stringify({ownerId:'t'})]);
+  assert.equal((await loadState(copier)).exams.find(e=>e.id===serverCopy.id).ownerId,copier.id);
+  console.log('Server-authenticated copy ownership and stale metadata regression passed.');
 }finally{hook.deregister();await db.close();delete globalThis.__testDb;}

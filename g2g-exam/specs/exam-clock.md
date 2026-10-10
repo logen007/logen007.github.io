@@ -7,4 +7,6 @@ User-approved 2026-10-10, supersedes per-section expiry behavior.
 - The server also submits expired attempts when the browser is disconnected.
 - Early and automatic submissions record elapsed time; automatic time is capped at the deadline.
 - Manual abandonment remains distinct from automatic submission.
+- Students may skip questions and select any section in any order.
+- Manual submission from any section requires confirmation listing unanswered questions, excluding examples and oral tasks. Cancel continues working; timeout bypasses confirmation.
 - Copies belong to the copier. Copied questions must be independently editable before any student attempt; original questions and attempts remain untouched.

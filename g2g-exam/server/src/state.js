@@ -7,7 +7,7 @@ const isTeacher=u=>u?.role==='teacher'||u?.role==='master';
 function publicQuestion(data){const q=structuredClone(data||{});if(!q.example)delete q.correctAnswer;if(q.writingFormVersion===1&&!q.example)q.rubric=publicWritingRows(q.rubric);else if(q.writingFormVersion!==1)delete q.rubric;if(Array.isArray(q.pairs)&&!q.example){const rights=q.pairs.map(x=>x[1]).sort(()=>Math.random()-.5);q.pairs=q.pairs.map((x,i)=>[x[0],rights[i]]);}return q;}
 async function rows(sql,args=[]){return (await query(sql,args)).rows;}
 async function allowedExamIds(user){if(user.role==='master'||user.role==='teacher')return null;return new Set();}
-function rowEntity(r){const item={id:r.id,...(r.data||{})};if(item.writingFormVersion===1){item.rubric=normalizeWritingRows(item.rubric);item.maxScore=writingFormScore(item.rubric);}return item;}
+function rowEntity(r){const item={...(r.data||{}),id:r.id,...(r.owner_id?{ownerId:r.owner_id}:{}),...(r.status?{status:r.status}:{}),...(typeof r.locked==='boolean'?{locked:r.locked}:{})};if(item.writingFormVersion===1){item.rubric=normalizeWritingRows(item.rubric);item.maxScore=writingFormScore(item.rubric);}return item;}
 function attemptEntity(r,includePrivate=false){return {id:r.id,...(r.public_data||{}),...(includePrivate?(r.private_data||{}):{})};}
 
 export async function loadState(user){
@@ -44,8 +44,8 @@ export async function loadState(user){
     return state;
   }
   state.users=(await rows(`SELECT id,email,role,active,data FROM users ORDER BY created_at DESC`)).map(r=>({id:r.id,email:r.email,role:r.role,active:r.active,...r.data}));
-  state.questions=(await rows(`SELECT id,data FROM questions ORDER BY updated_at DESC`)).map(rowEntity);
-  state.exams=(await rows(`SELECT id,data FROM exams ORDER BY updated_at DESC`)).map(rowEntity);
+  state.questions=(await rows(`SELECT id,owner_id,status,locked,data FROM questions ORDER BY updated_at DESC`)).map(rowEntity);
+  state.exams=(await rows(`SELECT id,owner_id,status,locked,data FROM exams ORDER BY updated_at DESC`)).map(rowEntity);
   const allowed=await allowedExamIds(user);
   const ars=await rows(`SELECT id,exam_id,public_data,private_data FROM attempts ORDER BY created_at DESC`);
   state.attempts=ars.filter(r=>!allowed||allowed.has(r.exam_id)).map(r=>attemptEntity(r,true));
