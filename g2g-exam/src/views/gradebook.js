@@ -8,7 +8,7 @@ function badge(score,max){
   if(!band)return '—';
   return `<span tabindex="0" class="score-badge score-${band.key}" aria-label="${number(score)}/${number(max)}: ${band.label}">${number(score)}/${number(max)}<span role="tooltip" class="score-tooltip">${band.label}</span></span>`;
 }
-function filter(name,label,items,selected){return `<label>${label}<select data-grade-filter="${name}">${name==='provider'?'':'<option value="">Tất cả</option>'}${items.map(([value,text])=>`<option value="${esc(value)}" ${value===selected?'selected':''}>${esc(text)}</option>`).join('')}</select></label>`;}
+function filter(name,label,items,selected){return `<label><select aria-label="${esc(label)}" data-grade-filter="${name}">${name==='provider'?'':`<option value="">${esc(label)}</option>`}${items.map(([value,text])=>`<option value="${esc(value)}" ${value===selected?'selected':''}>${esc(text)}</option>`).join('')}</select></label>`;}
 export function gradebookHtml({data,ui}){
   const filters={provider:'GOETHE',...ui.gradeFilters},telc=filters.provider==='TELC';
   const reviewers=data.users.filter(user=>['teacher','master'].includes(user.role));

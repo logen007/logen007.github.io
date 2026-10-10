@@ -20,7 +20,12 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
 
 Filter dropdowns, profile forms and exam access controls use the shared form rule in styles.css:
 44px height, 12px corner radius, 14px horizontal padding, one native chevron and common focus/hover states.
-Student exam filters use two labeled dropdowns (provider and learning level), aligned with the action button.
+Filter dropdowns use the field name (e.g. Loại đề, Trình độ, Mã lớp) as the
+unfiltered/default option instead of “Tất cả”, with no visible label above.
+Keep an aria-label even after a value is selected. Preserve the original filter
+values and behavior; filters with a required selection retain that selection.
+This applies to dropdown filters, not count tabs such as “Tất cả (234)”.
+Student exam filters use two compact dropdowns aligned with the action button.
 Compact list actions use 40px height. Exam settings triggers are icon-only gears with accessible labels.
 Exam access layout groups visibility, level and code creation, with feedback beside each form.
 

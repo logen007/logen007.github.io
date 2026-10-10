@@ -21,6 +21,11 @@ import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+for(const file of ['src/views/admin.js','src/views/gradebook.js','src/views/student.js']){
+  const source=read(file);
+  assert.doesNotMatch(source,/<option[^>]*>Tất cả<\/option>/);
+  assert.match(source,/<select aria-label=/);
+}
 const saveSource=read('src/app.js').match(/async function saveBuilderDraft\([\s\S]*?\n\}/)[0];
 const saveHarness=new Function(`let builderAutosaveTimer=null,builderSavePromise=null,builderEditRevision=0,builderSavedRevision=0,calls=0,release,fail=false;
   async function persistBuilderDraft(){calls++;const revision=builderEditRevision;await new Promise(resolve=>release=resolve);if(fail)return false;builderSavedRevision=revision;return true;}
