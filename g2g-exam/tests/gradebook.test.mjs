@@ -57,7 +57,7 @@ console.log('TELC B1/B2: independent 135/225 and 45/75 gates, grades, missing or
 
 const html=gradebookHtml({data,ui:{}});
 const visitorHtml=gradebookHtml({data:{...data,classes:[{id:'class',code:'Extend'}]},ui:{}});
-assert.match(visitorHtml,/<\/button><\/td><td><\/td><td>/);
+assert.match(visitorHtml,/<\/button><\/td><td>—<\/td><td>/);
 assert.doesNotMatch(visitorHtml,/Học viên Vãng lai/);
 assert.ok(html.includes('<td>i1026</td>'));
 assert.ok(html.includes('<th>Bài thi</th><th>Lần thi</th>'));
