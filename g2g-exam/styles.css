@@ -186,7 +186,7 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 
 /* Builder keeps the approved two-row question/answers layout. */
 .goethe-builder{width:min(var(--max),100%);margin:0 auto;padding:32px 0 48px;}
-.exam-title-input { width:100%; min-width:0; font:450 clamp(26px,2.5vw,36px)/1.25 var(--font-ui); letter-spacing:-.035em; color:var(--chu); border:0; border-radius:8px; background:transparent; padding:4px 0; }
+.exam-title-input { display:block; width:100%; min-width:0; resize:none; overflow:hidden; white-space:pre-wrap; overflow-wrap:anywhere; font:450 clamp(26px,2.5vw,36px)/1.25 var(--font-ui); letter-spacing:-.035em; color:var(--chu); border:0; border-radius:8px; background:transparent; padding:4px 0; }
 .builder-heading { display:flex; align-items:flex-start; gap:20px; }.builder-meta { display:flex; align-items:center; gap:20px; }.builder-meta p { margin:0; }.builder-back { flex:none; margin:0; }.builder-back:hover { text-decoration:none; }.builder-title { min-width:0; flex:1; }.builder-save-status { color:var(--phu); font-size:12px; padding-right:8px; }.builder-save-status[data-state=error] { color:var(--do); }
 .goethe-layout { display:grid; grid-template-columns:260px minmax(0,1fr); gap:20px; align-items:start; }
 .goethe-outline { display:flex; flex-direction:column; gap:28px; padding:22px; }

@@ -599,7 +599,9 @@ function studentGradeModal(studentId){app.insertAdjacentHTML('beforeend',student
 function closeModal(){document.getElementById('modal')?.remove();}
 function bindModalClose(){app.querySelectorAll('[data-action="close-modal"]').forEach(b=>b.onclick=closeModal);}
 
+let titleResizeObserver;
 function render(){
+  titleResizeObserver?.disconnect();
   clearTimer();
   stopActiveAudio();
   if(!user){ui.view='login';loginView();return;}
@@ -616,6 +618,14 @@ function render(){
   else adminView();
   bindGlobal();
   bindViewSpecific();
+  const titleField=document.getElementById('examTitle');
+  if(titleField){
+    const fitTitle=()=>{titleField.style.height='auto';titleField.style.height=titleField.scrollHeight+'px';};
+    fitTitle();titleField.addEventListener('input',fitTitle);
+    let lastWidth=titleField.getBoundingClientRect().width;
+    titleResizeObserver=new ResizeObserver(()=>{const width=titleField.getBoundingClientRect().width;if(width!==lastWidth){lastWidth=width;fitTitle();}});
+    titleResizeObserver.observe(titleField);
+  }
   const profileSaved=async()=>{data=await repo.getState();const fresh=data.users.find(item=>item.id===user.id);if(fresh)user={...user,...fresh,role:user.role};render();};
   app.querySelector('[data-action="account-profile"]')?.addEventListener('click',async()=>{
     if(!await flushBuilderDraft())return;

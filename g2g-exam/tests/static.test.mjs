@@ -50,6 +50,9 @@ import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+assert.match(read('src/views/builder.js'),/<textarea id="examTitle"/);
+assert.doesNotMatch(read('src/views/builder.js'),/<input id="examTitle"/);
+assert.match(read('src/app.js'),/titleField\.addEventListener\('input',fitTitle\)/);
 {
   const source=read('src/app.js'),start=source.indexOf("  const account=app.querySelector");
   const block=source.slice(start,source.indexOf('  app.querySelectorAll',start));
