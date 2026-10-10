@@ -297,7 +297,8 @@ try{
     assert.equal(tags(real,'div').filter(tag=>hasClass(tag,'preview-outline')).length,0);
     assert.doesNotMatch(real,/\bdata-preview-/);
     assert.doesNotMatch(real,/data-action="(?:preview-[^"]*|reset-preview|close-preview)"/);
-    assert.match(header(real),/\bid="examTimer"/);
+    assert.doesNotMatch(header(real),/\bid="examTimer"/);
+    assert.equal((real.match(/id="examMainTime"/g)||[]).length,1);
     assert.match(real,/\bid="examTimeSummary"/);
     assert.match(real,/\bid="saveState"/);
   });
