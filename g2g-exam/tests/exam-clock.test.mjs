@@ -9,7 +9,7 @@ assert.equal(examDurationSeconds(exam),1800);
 assert.equal(examDeadlineMs(attempt,exam),Date.parse('2026-10-10T00:30:00Z'));
 assert.equal(submissionTiming(attempt,exam,Date.parse('2026-10-10T00:10:00Z')).durationSeconds,600);
 assert.deepEqual(submissionTiming(attempt,exam,Date.parse('2026-10-10T00:40:00Z')),{timedOut:true,durationSeconds:1800,submittedAt:'2026-10-10T00:30:00.000Z'});
-assert.ok(submittedHtml({durationSeconds:65}).includes('1 Min. 5 Sek.'));
+assert.ok(submittedHtml({durationSeconds:65}).includes('Thời gian làm bài: <strong>1 phút 5 giây</strong>'));
 assert.deepEqual(unansweredExamQuestions({sections:[{id:'s',questionIds:['ex','a','b','oral']}]},[{id:'ex',example:true},{id:'a',type:'single'},{id:'b',type:'single'},{id:'oral',type:'speaking'}],{a:0}),[{id:'b',number:2,sectionId:'s'}]);
 const teacher={id:'copy-owner',role:'teacher',name:'Copier'};
 const state={exams:[{id:'source',title:'Original',ownerId:'original-owner',status:'published',locked:true,sections:[{id:'s',questionIds:['q']}]}],questions:[{id:'q',ownerId:'original-owner',locked:true,type:'single',choices:['a','b'],correctAnswer:0}],attempts:[],auditLog:[]};
