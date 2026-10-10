@@ -59,6 +59,8 @@ assert.equal(resultSummary(exam,state.questions,{...marks,oralScore:14.99}).pass
 const htmlFor=name=>{const index=exam.sections.findIndex(s=>s.name===name),section=exam.sections[index];return examHtml({exam,attempt:{id:'preview',answers:{}},sectionIndex:index,questions:section.questionIds.map(id=>state.questions.find(q=>q.id===id)),allQuestions:state.questions,preview:true,online:true});};
 assert.match(htmlFor('Đọc 1'),/exam-reading-split/);
 assert.match(htmlFor('Đọc 4'),/exam-reading-split/);
+assert.doesNotMatch(htmlFor('Đọc 4'),/Jeden Buchstaben dürfen Sie nur einmal verwenden/);
+assert.doesNotMatch(htmlFor('Nghe 2'),/Jeden Buchstaben dürfen Sie nur einmal verwenden/);
 assert.equal((htmlFor('Đọc 4').match(/<select id="letter-/g)||[]).length,5);
 assert.deepEqual(exam.sections.find(s=>s.name==='Đọc 4').questionProfile.choices,['A','B','C','D','E','F','X']);
 assert.match(renderBuilder({data:state,exam,section:exam.sections.find(s=>s.name==='Đọc 4')}),/<select class="truong" id="correct-/);

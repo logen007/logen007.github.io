@@ -16,7 +16,7 @@ export function letterAnswersHtml(section,questions,answers,startNumber){
   const body=layout==='letter-table'
     ?`<div class="letter-table-scroll"><table class="letter-table"><thead><tr><th scope="row">Person</th>${items.map(({q,number})=>`<th scope="col">${q.example?'Beispiel · 0':number}<span>${esc(q.title==='Nháp'?'':q.title)}</span></th>`).join('')}</tr></thead><tbody><tr><th scope="row">Lösung</th>${items.map(({q})=>`<td>${control(q,answers[q.id],layout)}</td>`).join('')}</tr></tbody></table></div>`
     :items.map(({q,number})=>`<div class="letter-question"><label for="letter-${esc(q.id)}"><b>${q.example?'Beispiel · 0':number}.</b> ${esc(q.title==='Nháp'?'':q.title)}</label>${control(q,answers[q.id],layout).replace('<input ','<input id="letter-'+esc(q.id)+'" ')}</div>`).join('');
-  return `<section class="letter-answers" data-letter-section><p class="phu-de">Jeden Buchstaben dürfen Sie nur einmal verwenden.</p>${body}<p class="letter-answer-error" role="status" aria-live="polite"></p></section>`;
+  return `<section class="letter-answers" data-letter-section>${body}<p class="letter-answer-error" role="status" aria-live="polite"></p></section>`;
 }
 
 export function bindLetterAnswers(root,questions,answers,onSave){
