@@ -32,6 +32,9 @@ import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+assert.match(read('styles.css'),/\.bang thead th\s*\{\s*white-space:nowrap;/);
+assert.doesNotMatch(read('styles.css'),/\.table-link\s*\{\s*white-space:nowrap;/);
+assert.doesNotMatch(read('styles.css'),/\.student-result-info h2\s*\{[^}]*white-space:nowrap/);
 for(const file of ['src/views/admin.js','src/views/gradebook.js','src/views/student.js']){
   const source=read(file);
   assert.doesNotMatch(source,/<option[^>]*>Tất cả<\/option>/);

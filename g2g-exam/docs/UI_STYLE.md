@@ -9,10 +9,10 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
   published/success green, draft/pending neutral, failed/error red. Preserve a
   readable status description (accessible name or concise text); never rely on
   color alone.
-- Interface titles stay on one line (white-space: nowrap). Long titles must remain
-  readable through local horizontal scrolling or an accessible full-title view;
-  never force the whole mobile page wider. This does not apply to exam question,
-  instruction or answer content.
+- Table column headings (e.g. Người tạo, Lượt thi) stay on one line
+  (white-space: nowrap). On mobile, wide tables scroll inside their wrapper,
+  never force the whole page wider. This rule does not apply to exam names,
+  page/card titles or body content: those can wrap naturally.
 - Mobile is a first-class layout: preserve touch targets, explicit gaps, stable
   alignment and local table overflow; avoid page-wide overflow and layout jumps.
 
