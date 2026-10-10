@@ -1,6 +1,23 @@
 import assert from 'node:assert/strict';
 import {studentResultsHtml} from '../src/views/student.js';
 import {examAdminHtml} from '../src/views/admin.js';
+import {examPublishButton} from '../src/ui/exam-publish-button.js';
+import {unpublishExam} from '../src/core.js';
+
+const pubButton=examPublishButton({id:'test',status:'draft'},{compact:true});
+assert.match(pubButton,/class="icon-btn".*data-action="publish-exam"/);
+assert.doesNotMatch(pubButton,/<span>/);
+const unpubButton=examPublishButton({id:'test',status:'published'});
+assert.match(unpubButton,/data-action="unpublish-exam"/);
+assert.match(unpubButton,/<svg.*<span>Bỏ xuất bản<\/span>/);
+const pubState={exams:[{id:'test',ownerId:'owner',status:'published',sections:[]}],questions:[],attempts:[{id:'attempt',examId:'test',status:'published'}],auditLogs:[]};
+const originalAttempts=JSON.stringify(pubState.attempts);
+assert.throws(()=>unpublishExam(pubState,{id:'other',role:'teacher'},'test'),/không có quyền/);
+assert.equal(pubState.exams[0].status,'published');
+unpublishExam(pubState,{id:'owner',role:'teacher'},'test');
+assert.equal(pubState.exams[0].status,'draft');
+assert.equal(JSON.stringify(pubState.attempts),originalAttempts);
+assert.throws(()=>unpublishExam(pubState,{role:'master'},'test'),/Chỉ có thể/);
 
 const examList=examAdminHtml({user:{id:'owner',role:'master'},data:{attempts:[],exams:[
   {id:'one',title:'Long <title>',ownerId:'owner',status:'published'},

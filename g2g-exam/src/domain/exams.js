@@ -283,6 +283,17 @@ export function validateExamForPublish(state,exam){
   return [...new Set(errors)];
 }
 
+export function unpublishExam(state,user,examId){
+  const exam=byId(state.exams,examId);
+  if(!exam)throw new Error('Không tìm thấy bài thi.');
+  if(!canEditExam(user,exam))throw new Error('Bạn không có quyền bỏ xuất bản bài thi này.');
+  if(exam.status!=='published')throw new Error('Chỉ có thể bỏ xuất bản đề đang được xuất bản.');
+  exam.status='draft';
+  exam.updatedAt=nowIso();
+  audit(state,user,'unpublish','exam',examId);
+  return exam;
+}
+
 export function publishExam(state,user,examId){
   const exam=byId(state.exams,examId);
   if(!exam)throw new Error('Không tìm thấy bài thi.');

@@ -14,7 +14,7 @@ import {
   addSection,removeSection,moveSection,updateSection,addQuestionsToSection,
   removeQuestionFromSection,moveQuestion,
   startAttempt,saveAnswer,setAttemptSection,getSectionRemainingSeconds,submitAttempt,abandonAttempt,
-  saveManualScore,publishAttempt,publishExam
+  saveManualScore,publishAttempt,publishExam,unpublishExam
 } from './core.js';
 import {uploadQuestionAudio,uploadQuestionImage} from './media.js';
 import {countWords} from './ui/format.js';
@@ -888,6 +888,16 @@ function bindViewSpecific(){
   });
   app.querySelectorAll('[data-action="view-exam"]').forEach(b=>b.onclick=()=>previewExamModal(byId(data.exams,b.dataset.id)));
   app.querySelectorAll('[data-action="delete-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>softDeleteExam(st,user,b.dataset.id)),'Đã chuyển bài thi vào Thùng rác.'));
+  app.querySelectorAll('[data-action="unpublish-exam"]').forEach(b=>b.onclick=async()=>{
+    if(b.disabled)return;
+    b.disabled=true;
+    try{
+      if(!await flushBuilderDraft())return;
+      await repo.transaction(st=>unpublishExam(st,user,b.dataset.id));
+      data=await repo.getState();notify('Đã bỏ xuất bản. Đề đã chuyển về bản nháp.');render();
+    }catch(error){notify(error.message);}
+    finally{if(b.isConnected)b.disabled=false;}
+  });
   app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=async()=>{
     if(b.disabled)return;
     b.disabled=true;
