@@ -5,6 +5,19 @@ import {writingFormEditor,writingFormDisplay,writingSubmission} from '../src/ui/
 import {createQuestion,updateQuestion,getQuestionChoiceError} from '../src/domain/questions.js';
 import {validateExamForPublish} from '../src/domain/exams.js';
 import {seedState} from '../src/seed.js';
+import {createExamDraft,ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
+
+const repairState=structuredClone(seedState),repairTeacher=repairState.users.find(u=>u.role==='teacher');
+const repairExam=createExamDraft(repairState,repairTeacher,{provider:'GOETHE',level:'A1',title:'Legacy form repair'});
+const repairSection=repairExam.sections.find(s=>s.questionProfile?.formFrame);
+const repairQuestion=repairState.questions.find(q=>q.id===repairSection.questionIds[0]);
+delete repairQuestion.writingFormVersion;repairQuestion.type='single';repairQuestion.choices=[];
+const originalRows=structuredClone(repairQuestion.rubric);
+assert.equal(ensureExamMatchesConfiguredSpec(repairState,repairTeacher,repairExam.id),true);
+assert.equal(repairQuestion.writingFormVersion,1);
+assert.deepEqual(repairQuestion.rubric,originalRows);
+assert.equal(getQuestionChoiceError(repairQuestion),'');
+assert.equal(ensureExamMatchesConfiguredSpec(repairState,repairTeacher,repairExam.id),false);
 
 const demo=patientWritingDemo(),q={id:'patient',...demo.question};
 const legacyForm={id:'legacy-form',code:'Q-0580',type:'single',title:'Form',writingFormVersion:1,choices:[],rubric:[{type:'choice',label:'Zahlungsweise',options:['monatlich','vierteljährlich','halbjährlich'],correctIndex:1,maxScore:1},{type:'signature',value:'Kristina Pinnow',maxScore:0}]};

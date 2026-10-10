@@ -83,7 +83,20 @@ export function ensureExamMatchesConfiguredSpec(state,user,examId,{stamp=Date.no
     return JSON.stringify(existing?.questionProfile||null)!==JSON.stringify(expectedSection.questionProfile||null)
       ||JSON.stringify(existing?.audioPolicy||null)!==JSON.stringify(expectedSection.audioPolicy||null);
   });
-  if(hasAllParts&&!hasStaleProfile)return false;
+  if(hasAllParts&&!hasStaleProfile){
+    let repaired=false;
+    for(const section of exam.sections||[]){
+      if(!section.questionProfile?.formFrame)continue;
+      for(const id of section.questionIds||[]){
+        const question=byId(state.questions,id);
+        if(question&&question.writingFormVersion!==1){
+          updateQuestion(state,user,id,{writingFormVersion:1,type:section.questionProfile.type||question.type});
+          repaired=true;
+        }
+      }
+    }
+    return repaired;
+  }
   if(hasAllParts){
     const expectedByName=new Map(expectedSections.map(section=>[section.name,section]));
     const sections=exam.sections.map(section=>{

@@ -883,7 +883,17 @@ function bindViewSpecific(){
   });
   app.querySelectorAll('[data-action="view-exam"]').forEach(b=>b.onclick=()=>previewExamModal(byId(data.exams,b.dataset.id)));
   app.querySelectorAll('[data-action="delete-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>softDeleteExam(st,user,b.dataset.id)),'Đã chuyển bài thi vào Thùng rác.'));
-  app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await act(()=>repo.transaction(st=>publishExam(st,user,b.dataset.id)),'Đã xuất bản bài thi.');});
+  app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=async()=>{
+    if(b.disabled)return;
+    b.disabled=true;
+    try{
+      if(!await flushBuilderDraft())return;
+      await act(()=>repo.transaction(st=>{
+        ensureExamMatchesConfiguredSpec(st,user,b.dataset.id);
+        return publishExam(st,user,b.dataset.id);
+      }),'Đã xuất bản bài thi.');
+    }finally{if(b.isConnected)b.disabled=false;}
+  });
   app.querySelectorAll('[data-action="preview-exam"]').forEach(b=>b.onclick=async()=>{
     if(!await flushBuilderDraft())return;
     const exam=byId(data.exams,b.dataset.id);
