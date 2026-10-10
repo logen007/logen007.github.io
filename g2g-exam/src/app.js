@@ -795,6 +795,7 @@ function bindGlobal(){
 }
 
 function bindViewSpecific(){
+  app.querySelectorAll('[data-exam-provider-filter]').forEach(select=>select.onchange=()=>{ui.examFilter=select.value;render();});
   app.querySelectorAll('[data-action="exam-select-section"]').forEach(select=>select.onchange=()=>{
     const attempt=byId(data.attempts,ui.attemptId);
     if(attempt)moveAttemptSection(Number(select.value)-(attempt.currentSectionIndex||0));

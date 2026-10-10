@@ -17,6 +17,12 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
 
 ## Shared ownership
 
+Filter dropdowns, profile forms and exam access controls use the shared form rule in styles.css:
+44px height, 12px corner radius, 14px horizontal padding, one native chevron and common focus/hover states.
+Student exam filters use two labeled dropdowns (provider and learning level), aligned with the action button.
+Compact list actions use 40px height. Exam settings triggers are icon-only gears with accessible labels.
+Exam access layout groups visibility, level and code creation, with feedback beside each form.
+
 - `styles.css` owns tokens, base controls, navigation, page layout, exam and builder.
 - `enhancements.css` owns settings/infrastructure layouts using those tokens.
   Do not append another global visual override block here.

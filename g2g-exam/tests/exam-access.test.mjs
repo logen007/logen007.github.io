@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {promotionTarget,STUDENT_LEVELS} from '../src/domain/student-profile.js';
 import {resultSummary} from '../src/domain/result-summary.js';
 import {studentExamCardHtml,studentHomeHtml} from '../src/views/student.js';
@@ -21,6 +22,14 @@ assert.ok(settingsHtml.includes('&lt;Exam&gt;'));
 for(const label of ['Quyền truy cập','Trình độ','Mã thi','Lưu thay đổi','Tạo mã'])assert.ok(settingsHtml.includes(label));
 assert.ok(settingsHtml.includes('data-settings-status'));
 assert.ok(settingsHtml.includes('data-code-status'));
+assert.ok(settingsHtml.includes('access-level-row'));
+const controlCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+for(const selector of ['.profile-form select','.grade-filters select','.exam-filter select','.access-code-create input'])assert.ok(controlCss.includes(selector));
+for(const file of ['builder','admin']){
+  const source=readFileSync(new URL(`../src/views/${file}.js`,import.meta.url),'utf8');
+  assert.match(source,/class="icon-btn" title="Cài đặt đề" aria-label="Cài đặt đề" data-action="exam-access-settings"/);
+  assert.ok(!source.includes('>Cài đặt đề</button>'));
+}
 assert.equal(promotionTarget('A1.1','B1.1',true),'B1.2');
 assert.equal(promotionTarget('A1.1','B1.1',false),null);
 assert.equal(promotionTarget('B2.1','A1.1',true),null);
@@ -56,4 +65,6 @@ const home=studentHomeHtml({data:profileData,user:student});
 assert.ok(!home.includes('Xin chào'));
 assert.ok(!home.includes('Xem toàn bộ kết quả'));
 assert.ok(!home.includes('Chọn bài thi để bắt đầu.'));
+assert.ok(home.includes('data-exam-provider-filter'));
+assert.ok(home.includes('data-exam-level-filter'));
 console.log('Student profile: real level, class, safe sharing and removed legacy overview passed.');
