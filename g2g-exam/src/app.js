@@ -973,6 +973,11 @@ function clearBuilderEditUrl(){
 async function openBuilder(id){
   let exam=byId(data.exams,id);
   if(!exam||isStudent(user))return;
+  if(repo.mode==='api'&&canEditExam(user,exam)){
+    const prepared=await act(()=>repo.call('prepareExamForEditing',{examId:id}),null,{rerender:false});
+    if(!prepared)return;
+    await repo.reload();data=await repo.getState();exam=byId(data.exams,id);
+  }
   const changed=canEditExam(user,exam)?await repo.transaction(st=>{
     const detached=detachLockedDraftQuestions(st,user,id);
     const migrated=ensureExamMatchesConfiguredSpec(st,user,id);

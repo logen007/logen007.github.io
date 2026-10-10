@@ -263,6 +263,17 @@ try{
   await db.exec(await fs.readFile(new URL('../server/schema.sql',import.meta.url),'utf8'));
   assert.ok(!(await query('SELECT data FROM exams WHERE id=$1',[mediaExam.id])).rows[0].data.sections[0].instructionAudioUrl);
   console.log('Thirty-day trash retention, history deletion, repeat safety, references, restore timestamps and retired audio migration passed.');
+  const {prepareExamForEditing}=await import('../server/src/actions/exam-copy.js');
+  await query("UPDATE questions SET owner_id='t' WHERE id=$1",[serverQuestion.id]);
+  const beforeIsolation=(await query('SELECT data FROM exams WHERE id=$1',[serverExam.id])).rows[0].data;
+  await assert.rejects(()=>prepareExamForEditing({id:'t',role:'teacher'},{examId:serverExam.id}),/quyền sửa/);
+  assert.equal((await prepareExamForEditing(copier,{examId:serverExam.id})).changed,true);
+  const afterIsolation=(await loadState(copier)).exams.find(e=>e.id===serverExam.id);
+  assert.notDeepEqual(afterIsolation.sections[0].questionIds,beforeIsolation.sections[0].questionIds);
+  const isolatedState=await loadState(copier);
+  for(const id of afterIsolation.sections.flatMap(s=>s.questionIds))assert.equal(isolatedState.questions.find(q=>q.id===id).ownerId,copier.id);
+  assert.equal((await prepareExamForEditing(copier,{examId:serverExam.id})).changed,false);
+  assert.equal((await query('SELECT owner_id FROM questions WHERE id=$1',[serverQuestion.id])).rows[0].owner_id,'t');
   await commitOperations({id:'admin',role:'master'},[{collection:'questions',id:'owner-regression',item:{ownerId:'t2',title:'Owned by teacher',status:'active'}}]);
   assert.equal((await query("SELECT owner_id FROM questions WHERE id='owner-regression'")).rows[0].owner_id,'t2');
   await commitOperations(copier,[{collection:'questions',id:'owner-regression',item:{ownerId:'t2',title:'Teacher can edit',status:'active'}}]);
