@@ -234,19 +234,19 @@ try{
     assert.match(html,/data-role="student"><svg[^]*?<span>Student<\/span><\/button>/);
     assert.match(html,/data-role="teacher"><svg[^]*?<span>Teacher<\/span><\/button>/);
     assert.doesNotMatch(html,/data-action="test-role" data-role="master"|header-logout|account-role-trigger/);
-    assert.match(html,/class="account-role-dot" data-role="master"/);
+    assert.match(html,/class="account-role-indicator" data-role="master"/);
     assert.match(html,/data-action="account-profile"><svg[^]*?<span>Profile<\/span>/);
     assert.match(html,/data-action="logout"><svg[^]*?<span>Log out<\/span>/);
     const regular=topbarHtml({user:{role:'teacher',name:'Teacher'},mode:'api',online:true});
     assert.equal(actionButtons(regular,'test-role').length,0);
-    assert.doesNotMatch(regular,/account-role-dot/);
+    assert.doesNotMatch(regular,/account-role-indicator/);
     assert.equal(actionButtons(regular,'account-profile').length,1);
     const withPicture=topbarHtml({user:{id:'master',role:'master',name:'Admin',picture:'https://lh3.googleusercontent.com/avatar.jpg'},mode:'api',online:true,canSwitchRole:true});
     assert.match(withPicture,/<img src="https:\/\/lh3\.googleusercontent\.com\/avatar\.jpg" alt="" referrerpolicy="no-referrer">/);
     for(const role of ['student','teacher']){
       const roleHtml=topbarHtml({user:{id:'master',role,name:'Admin',canTestRoles:true},mode:'api',online:true,canSwitchRole:true});
       assert.doesNotMatch(roleHtml,new RegExp(`data-action="test-role" data-role="${role}"`));
-      assert.match(roleHtml,new RegExp(`class="account-role-dot" data-role="${role}"`));
+      assert.match(roleHtml,new RegExp(`class="account-role-indicator" data-role="${role}"`));
       assert.match(roleHtml,/data-role="master"><svg[^]*?<span>Admin<\/span>/);
       assert.match(roleHtml,new RegExp(`data-current-role="${role}"`));
     }

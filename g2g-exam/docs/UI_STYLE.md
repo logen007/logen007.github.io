@@ -56,9 +56,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   options for authorized admins (Student, Teacher, Admin; omit current role),
   then Log out. No separate role selector or logout icon. Profile edits the
   current user's name; students also have a class confirmation-code field.
-- Admin avatars show a small current-role dot: Admin purple, Teacher blue,
-  Student green, with a surface-colored border. Keep the current role in the
-  avatar's accessible name and title; regular users do not have this dot.
+- Admin avatars have a current-role outline icon beside them: Admin purple,
+  Teacher blue, Student green. Reuse the menu role icons and keep the role in
+  the avatar's accessible name and title; regular users do not have this icon.
 
 - The exam-list title and “Tạo đề thi” action always share one row, including
   mobile: title left, action right, vertically centered. Never apply the generic
