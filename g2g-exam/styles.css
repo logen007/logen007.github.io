@@ -404,3 +404,4 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 .table-link.grade-attempt--graded { color:var(--xanh); }
 .confirmation-copy { position:relative; display:inline-flex; flex:none; }
 .confirmation-copy-tooltip { position:absolute; left:50%; transform:translateX(-50%); bottom:calc(100% + 4px); z-index:3; padding:5px 10px; border-radius:8px; background:var(--chu); color:var(--mat); font-size:12px; white-space:nowrap; pointer-events:none; }
+.roster-search { width:min(360px,100%); margin-bottom:20px; }

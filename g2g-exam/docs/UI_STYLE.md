@@ -35,6 +35,13 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Independent UI blocks must never touch: use explicit gap/margin, typically
+  16–24px between search/filter controls and the table or card below (20px default).
+  Use 8–12px within related control groups. Check spacing at desktop and mobile
+  widths; do not rely on incidental text/label margins to separate blocks.
+- Roster search fields are compact (maximum 360px, capped at 100% on mobile),
+  with an accessible name even when the visible label is omitted.
+
 - Tooltips always appear above and horizontally centered on their triggering
   button/control, never anchored to a table cell or full-width action row.
   Copy feedback follows this same rule and must not shift the layout.

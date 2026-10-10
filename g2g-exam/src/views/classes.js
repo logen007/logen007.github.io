@@ -12,7 +12,7 @@ export function classFormHtml(current,users){
 }
 
 export function studentRosterHtml(data,students,{external=false}={}){
-  return `<div class="profile-form"><label>Tìm học viên<input type="search" data-student-search placeholder="Tên học viên hoặc email" autocomplete="off"></label></div>
+  return `<div class="profile-form roster-search"><input type="search" data-student-search aria-label="Tên học viên hoặc email" placeholder="Tên học viên hoặc email" autocomplete="off"></div>
     <div class="table-wrap"><table class="bang"><thead><tr><th>Họ và tên</th><th>Trình độ</th>${external?'<th>Mã xác nhận</th>':''}<th></th></tr></thead><tbody>
     ${students.map(student=>`<tr data-student-row data-search="${esc((student.name+' '+student.email).toLocaleLowerCase('vi'))}"><td>${esc(student.name)}<span class="phu">${esc(student.email)}</span></td><td>${esc(normalizeStudentLevel(student.level)||'A1')}</td>${external?`<td><div class="nhom-nut"><strong>${esc(student.confirmationCode||'—')}</strong>${student.confirmationCode?`<span class="confirmation-copy"><button class="icon-btn" type="button" data-copy-confirmation="${esc(student.confirmationCode)}" title="Copy mã xác nhận" aria-label="Copy mã xác nhận">${iconHtml('copy')}</button><small class="confirmation-copy-tooltip" data-copy-status role="status" hidden></small></span>`:''}</div></td>`:''}<td><button class="nut nho" data-action="student-profile" data-id="${esc(student.id)}">Thông tin</button></td></tr>`).join('')}
     <tr data-student-empty ${students.length?'hidden':''}><td colspan="${external?4:3}">Không tìm thấy học viên.</td></tr></tbody></table></div>`;
