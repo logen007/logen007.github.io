@@ -229,16 +229,32 @@ try{
   assert.equal(String((await query("SELECT trashed_at FROM exams WHERE id='trash-exam'")).rows[0].trashed_at),String(firstTrash));
   await query('ALTER TABLE exams DISABLE TRIGGER exams_trash_time');
   await query('ALTER TABLE questions DISABLE TRIGGER questions_trash_time');
-  await query("UPDATE exams SET trashed_at=now()-interval '5 days 1 minute' WHERE id IN ('trash-exam','e')");
-  await query("UPDATE questions SET trashed_at=now()-interval '5 days 1 minute' WHERE id IN ('trash-free','trash-used','trash-snapshot')");
+  await query("UPDATE exams SET trashed_at=now()-interval '30 days 1 minute' WHERE id IN ('trash-exam','e')");
+  await query("UPDATE questions SET trashed_at=now()-interval '30 days 1 minute' WHERE id IN ('trash-free','trash-used','trash-snapshot')");
   await query('ALTER TABLE exams ENABLE TRIGGER exams_trash_time');
   await query('ALTER TABLE questions ENABLE TRIGGER questions_trash_time');
-  assert.deepEqual(await runTrashGarbageCollection(),{exams:1,questions:1});
-  assert.equal((await query("SELECT id FROM exams WHERE id='e'")).rowCount,1);
-  assert.equal((await query("SELECT id FROM questions WHERE id IN ('trash-fresh','trash-used','trash-snapshot')")).rowCount,3);
+  assert.deepEqual(await runTrashGarbageCollection(),{exams:2,questions:2});
+  assert.equal((await query("SELECT id FROM exams WHERE id='e'")).rowCount,0);
+  assert.equal((await query("SELECT id FROM attempts WHERE exam_id='e'")).rowCount,0);
+  assert.equal((await query("SELECT id FROM questions WHERE id IN ('trash-fresh','trash-used','trash-snapshot')")).rowCount,2);
   assert.deepEqual(await runTrashGarbageCollection(),{exams:0,questions:0});
-  await query("UPDATE questions SET status='active' WHERE id='trash-used'");
-  assert.equal((await query("SELECT trashed_at FROM questions WHERE id='trash-used'")).rows[0].trashed_at,null);
+  const {emptyTrash}=await import('../server/src/trash-gc.js');
+  await assert.rejects(()=>emptyTrash({role:'teacher'}),/Quản trị cấp cao/);
+  await query("INSERT INTO exams(id,owner_id,status,data) VALUES('configured-trash','t','trash','{}')");
+  await query('ALTER TABLE exams DISABLE TRIGGER exams_trash_time');
+  await query("UPDATE exams SET trashed_at=now()-interval '10 days' WHERE id='configured-trash'");
+  await query('ALTER TABLE exams ENABLE TRIGGER exams_trash_time');
+  assert.deepEqual(await runTrashGarbageCollection(),{exams:0,questions:0});
+  DEFAULT_SETTINGS.operations.trashRetentionDays=7;
+  assert.deepEqual(await runTrashGarbageCollection(),{exams:1,questions:0});
+  DEFAULT_SETTINGS.operations.trashRetentionDays=30;
+  await query("INSERT INTO exams(id,owner_id,status,data) VALUES('manual-trash','t','trash','{}')");
+  const emptied=await emptyTrash({id:'m',role:'master'});
+  assert.equal(emptied.exams,1);
+  assert.equal((await query('SELECT id FROM exams WHERE id=$1',[serverExam.id])).rowCount,1);
+  assert.deepEqual(await emptyTrash({id:'m',role:'master'}),{exams:0,questions:0});
+  await query("UPDATE questions SET status='active' WHERE id='trash-snapshot'");
+  assert.equal((await query("SELECT trashed_at FROM questions WHERE id='trash-snapshot'")).rows[0].trashed_at,null);
   // Retired audio is stripped on writes and on deployment migration, not question media.
   const mediaExam=(await loadState(copier)).exams.find(e=>e.id===serverExam.id);
   await commitOperations(copier,[{collection:'exams',id:mediaExam.id,item:{...mediaExam,sections:mediaExam.sections.map(s=>({...s,instructionAudioUrl:'/uploads/retired.mp3'}))}}]);
@@ -246,5 +262,5 @@ try{
   await query("UPDATE exams SET data=jsonb_set(data,'{sections,0,instructionAudioUrl}','\"/uploads/retired.mp3\"') WHERE id=$1",[mediaExam.id]);
   await db.exec(await fs.readFile(new URL('../server/schema.sql',import.meta.url),'utf8'));
   assert.ok(!(await query('SELECT data FROM exams WHERE id=$1',[mediaExam.id])).rows[0].data.sections[0].instructionAudioUrl);
-  console.log('Five-day trash retention, repeat safety, references, restore timestamps and retired audio migration passed.');
+  console.log('Thirty-day trash retention, history deletion, repeat safety, references, restore timestamps and retired audio migration passed.');
 }finally{hook.deregister();await db.close();delete globalThis.__testDb;}

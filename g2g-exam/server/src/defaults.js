@@ -6,7 +6,7 @@ export const DEFAULT_SETTINGS={
   exam:{allowRestart:true},
   smtp:{enabled:false,host:'',port:587,security:'starttls',username:'',fromName:'G2G Career',fromEmail:'admin@g2gcareer.com',replyTo:'admin@g2gcareer.com',timeoutMs:20000,rejectUnauthorized:true},
   email:{enabled:false,resultSubject:'G2G – Đã có kết quả {exam}',resultText:'Xin chào {student},\n\nKết quả bài thi {exam} của bạn đã được công bố.\nĐiểm: {score}\nKết quả: {result}\n\nXem chi tiết: {url}',resultHtml:'<p>Xin chào <strong>{student}</strong>,</p><p>Kết quả bài thi <strong>{exam}</strong> của bạn đã được công bố.</p><p>Điểm: <strong>{score}</strong><br>Kết quả: <strong>{result}</strong></p><p><a href="{url}">Đăng nhập để xem chi tiết</a></p>'},
-  operations:{maintenanceMode:false,maintenanceMessage:'Hệ thống đang bảo trì. Vui lòng quay lại sau.'}
+  operations:{trashRetentionDays:30,maintenanceMode:false,maintenanceMessage:'Hệ thống đang bảo trì. Vui lòng quay lại sau.'}
 };
 
 export function mergeSettings(input={}){

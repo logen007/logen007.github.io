@@ -117,7 +117,7 @@ function collectForm(){
     exam:{...settings.exam,allowRestart:chk('sRestart')},
     smtp:{...settings.smtp,enabled:chk('sSmtp'),host:val('sHost'),port:Number(val('sPort')||587),security:val('sSecurity'),username:val('sUser'),fromName:val('sFromName'),fromEmail:val('sFrom'),replyTo:val('sReply'),timeoutMs:Number(val('sTimeout')||20000),rejectUnauthorized:chk('sTlsVerify')},
     email:{...settings.email,enabled:chk('sEmail'),resultSubject:val('sSubject'),resultText:document.getElementById('sText')?.value||'',resultHtml:document.getElementById('sHtml')?.value||''},
-    operations:{...settings.operations,maintenanceMode:chk('sMaintenance'),maintenanceMessage:val('sMaintenanceText')},
+    operations:{...settings.operations,trashRetentionDays:Number(val('sTrashDays')),maintenanceMode:chk('sMaintenance'),maintenanceMessage:val('sMaintenanceText')},
   };
 }
 

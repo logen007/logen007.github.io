@@ -56,6 +56,7 @@ try{
   state.attempts=[];
   const copy=duplicateExam(state,owner,'original');
   assert.notEqual(copy.sections[0].questionIds[0],'original-question');
+  state.exams.find(e=>e.id==='original').status='trash';
   permanentlyDeleteExam(state,owner,'original');
   state.questions=state.questions.filter(q=>q.id!=='original-question');
   const filenames=['copied-image.png','copied-audio.mp3','copied-choice.png','copied-instruction.png'];

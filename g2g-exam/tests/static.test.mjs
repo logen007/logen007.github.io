@@ -185,7 +185,10 @@ test('Dashboard master đọc tài nguyên VPS và dung lượng từng đề t�
   const backend=read('server/src/actions/settings.js'),view=read('src/views/admin.js');
   for(const token of ['os.loadavg()','os.totalmem()','fs.statfs','pg_database_size','examStorage'])assert.ok(backend.includes(token));
   assert.ok(view.includes('Tài nguyên hệ thống'));
-  assert.ok(view.includes('Dung lượng từng đề thi'));
+  assert.ok(view.includes('class="dashboard-exam-storage"'));
+  assert.ok(!view.includes('Dung lượng từng đề thi'));
+  assert.ok(!view.includes('the dashboard-exam-storage'));
+  assert.ok(view.includes("data.users.filter(u=>u.role!=='master')"));
 });
 
 test('HTML ban đầu không còn render form đăng nhập cũ trước landing page',()=>{

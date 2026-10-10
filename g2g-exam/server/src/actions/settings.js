@@ -44,6 +44,8 @@ function cleanSettings(input={}){
   const settings=mergeSettings(input);
   const optionalEmail=value=>!value||validEmail(value);
   settings.version=5;
+  settings.operations.trashRetentionDays=Number(settings.operations.trashRetentionDays);
+  if(!Number.isInteger(settings.operations.trashRetentionDays)||settings.operations.trashRetentionDays<1||settings.operations.trashRetentionDays>3650)throw appError(400,'Thời hạn thùng rác phải từ 1 đến 3650 ngày.');
   settings.general.systemName=String(settings.general.systemName||'').trim().slice(0,80);
   settings.general.organizationName=String(settings.general.organizationName||'').trim().slice(0,100);
   settings.general.supportEmail=String(settings.general.supportEmail||'').trim().slice(0,160);

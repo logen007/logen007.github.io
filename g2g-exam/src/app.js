@@ -899,7 +899,14 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="toggle-teacher"]').forEach(b=>b.onclick=()=>toggleTeacher(b.dataset.id));
   app.querySelectorAll('[data-action="restore-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>restoreExam(st,user,b.dataset.id)),'Đã khôi phục bài thi.'));
   app.querySelectorAll('[data-action="restore-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>restoreQuestion(st,user,b.dataset.id)),'Đã khôi phục câu hỏi.'));
-  app.querySelectorAll('[data-action="permanent-exam"]').forEach(b=>b.onclick=()=>confirmAction('Xóa vĩnh viễn bài thi? Hành động không thể hoàn tác.',()=>act(()=>repo.transaction(st=>permanentlyDeleteExam(st,user,b.dataset.id)),'Đã xóa vĩnh viễn.'),{confirmLabel:'Xóa vĩnh viễn',danger:true}));
+  app.querySelectorAll('[data-action="permanent-exam"]').forEach(b=>b.onclick=()=>confirmAction('Xóa vĩnh viễn đề và toàn bộ bài làm, bảng điểm liên quan? Không thể khôi phục.',()=>act(()=>repo.transaction(st=>permanentlyDeleteExam(st,user,b.dataset.id)),'Đã xóa vĩnh viễn đề và lịch sử bài làm.'),{confirmLabel:'Xóa vĩnh viễn',danger:true}));
+  app.querySelector('[data-action="empty-trash"]')?.addEventListener('click',()=>confirmAction('Xóa vĩnh viễn tất cả đề trong Thùng rác cùng bài làm và bảng điểm liên quan? Không thể khôi phục. Câu hỏi và media còn được sử dụng sẽ được giữ lại.',()=>act(()=>repo.mode==='api'?(async()=>{const result=await repo.call('emptyTrash');await repo.reload();return result;})():repo.transaction(st=>{
+    for(const exam of [...st.exams].filter(e=>e.status==='trash'))permanentlyDeleteExam(st,user,exam.id);
+    for(const q of [...st.questions].filter(q=>q.status==='trash')){
+      const referenced=st.exams.some(e=>(e.sections||[]).some(s=>s.questionIds?.includes(q.id)))||(st.attempts||[]).some(a=>Object.hasOwn(a.answers||{},q.id)||(a.examSnapshot?.questionSnapshot||[]).some(x=>x.id===q.id));
+      if(!referenced)permanentlyDeleteQuestion(st,user,q.id);
+    }
+  }),'Đã dọn thùng rác. Nội dung còn được sử dụng được giữ lại.'),{confirmLabel:'Dọn sạch thùng rác',danger:true}));
   app.querySelectorAll('[data-action="permanent-question"]').forEach(b=>b.onclick=()=>confirmAction('Xóa vĩnh viễn câu hỏi? Hành động không thể hoàn tác.',()=>act(()=>repo.transaction(st=>permanentlyDeleteQuestion(st,user,b.dataset.id)),'Đã xóa vĩnh viễn.'),{confirmLabel:'Xóa vĩnh viễn',danger:true}));
   bindBuilder();
   bindGrading();

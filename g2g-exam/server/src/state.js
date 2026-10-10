@@ -1,4 +1,5 @@
 import {query,withTx,audit,appError} from './db.js';
+import {deleteTrashedExam} from './trash-delete.js';
 import {publicWritingRows,writingFormScore,normalizeWritingRows} from './writing-form.js';
 import {expireCodes} from './actions/exam-access.js';
 import {preserveAttemptSnapshots} from './exam-snapshots.js';
@@ -76,7 +77,8 @@ async function applyQuestion(c,user,op){
 async function applyExam(c,user,op){
   const current=await c.query(`SELECT * FROM exams WHERE id=$1 FOR UPDATE`,[op.id]);
   if(op.kind==='delete'){
-    if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được xóa vĩnh viễn bài thi.');const a=await c.query(`SELECT 1 FROM attempts WHERE exam_id=$1 LIMIT 1`,[op.id]);if(a.rowCount)throw appError(409,'Bài thi đã có lịch sử làm bài nên không thể xóa vĩnh viễn.');await c.query(`DELETE FROM exams WHERE id=$1`,[op.id]);return;
+    if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được xóa vĩnh viễn bài thi.');
+    await deleteTrashedExam(c,op.id);return;
   }
   const item=op.item||{};
   // Instruction audio was retired; question/example audio remains unchanged.

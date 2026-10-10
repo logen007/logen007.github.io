@@ -145,9 +145,10 @@ export function permanentlyDeleteExam(state,user,id){
   if(!isMaster(user))throw new Error('Chỉ quản trị cấp cao được xóa vĩnh viễn.');
   const exam=byId(state.exams,id);
   if(!exam)throw new Error('Không tìm thấy bài thi.');
-  if((state.attempts||[]).some(attempt=>attempt.examId===id)){
-    throw new Error('Bài thi đã có lịch sử làm bài nên không thể xóa vĩnh viễn. Có thể giữ trong Thùng rác để bảo toàn bảng điểm.');
-  }
+  if(exam.status!=='trash')throw new Error('Chỉ xóa vĩnh viễn đề trong Thùng rác.');
+  const removed=new Set((state.attempts||[]).filter(a=>a.examId===id).map(a=>a.id));
+  state.attempts=(state.attempts||[]).filter(a=>a.examId!==id);
+  state.notifications=(state.notifications||[]).filter(n=>!removed.has(n.attemptId));
   state.exams=state.exams.filter(x=>x.id!==id);
   audit(state,user,'delete_forever','exam',id);
 }

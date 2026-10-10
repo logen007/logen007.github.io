@@ -1,5 +1,6 @@
 import {appError,query} from '../db.js';
 import {copyExam} from './exam-copy.js';
+import {emptyTrash} from '../trash-gc.js';
 import {isTeacher} from './shared.js';
 import {saveClass,saveStudentProfile,saveStudentName} from './classes.js';
 import {verifyClassCode,enrollInClass} from './class-enrollment.js';
@@ -11,6 +12,7 @@ import {updateSystemSettings,updateSmtpSecret,testSmtp,getInfrastructureStatus,s
 
 export async function handleAction(user,name,data={}){
   switch(name){
+    case 'emptyTrash': return emptyTrash(user);
     case 'copyExam': return copyExam(user,data);
     case 'saveExamAccess': return saveExamAccess(user,data);
     case 'listExamCodes': return listExamCodes(user,data);
