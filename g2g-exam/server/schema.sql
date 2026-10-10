@@ -48,6 +48,38 @@ CREATE INDEX IF NOT EXISTS attempts_student_idx ON attempts(student_id);
 CREATE INDEX IF NOT EXISTS attempts_exam_idx ON attempts(exam_id);
 CREATE INDEX IF NOT EXISTS attempts_status_idx ON attempts(status);
 
+CREATE TABLE IF NOT EXISTS exam_codes (
+  id text PRIMARY KEY,
+  exam_id text NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+  code text,
+  code_hash text NOT NULL UNIQUE,
+  expires_at timestamptz NOT NULL,
+  created_by text NOT NULL REFERENCES users(id),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS exam_code_uses (
+  code_id text NOT NULL REFERENCES exam_codes(id),
+  student_id text NOT NULL REFERENCES users(id),
+  attempt_id text NOT NULL,
+  used_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(code_id,student_id)
+);
+CREATE INDEX IF NOT EXISTS exam_codes_expiry_idx ON exam_codes(expires_at) WHERE code IS NOT NULL;
+CREATE INDEX IF NOT EXISTS exam_codes_exam_idx ON exam_codes(exam_id,expires_at);
+CREATE TABLE IF NOT EXISTS exam_code_checks (
+  student_id text PRIMARY KEY REFERENCES users(id),
+  window_at timestamptz NOT NULL DEFAULT now(),
+  checks integer NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS level_promotions (
+  attempt_id text PRIMARY KEY REFERENCES attempts(id),
+  student_id text NOT NULL REFERENCES users(id),
+  from_level text NOT NULL,
+  to_level text NOT NULL,
+  acknowledged_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS grading_requests (
   id text PRIMARY KEY,
   exam_id text NOT NULL REFERENCES exams(id) ON DELETE CASCADE,

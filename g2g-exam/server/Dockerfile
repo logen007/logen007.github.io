@@ -12,6 +12,7 @@ RUN cp /app/public/vi.html /app/public/index.html
 COPY src /app/public/src
 COPY src/domain/student-profile.js /app/src/domain/student-profile.js
 COPY src/domain/gradebook.js /app/src/domain/gradebook.js
+COPY src/domain/result-summary.js /app/src/domain/result-summary.js
 COPY specs /app/public/specs
 COPY specs /app/specs
 COPY server/runtime/runtime-config.js /app/public/runtime-config.js

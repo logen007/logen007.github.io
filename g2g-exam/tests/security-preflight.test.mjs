@@ -75,8 +75,10 @@ test('Học viên không nhận đáp án đúng hoặc điểm riêng tư chưa
   const source=read('server/src/state.js');
   assert.ok(source.includes('delete q.correctAnswer'));
   const studentBlock=source.match(/if\(user\.role==='student'\)\{([\s\S]*?)return state;\s*\}/)?.[1]||'';
-  assert.ok(studentBlock.includes('SELECT id,public_data FROM attempts'));
-  assert.equal(studentBlock.includes('private_data'),false);
+  assert.ok(studentBlock.includes('state.attempts=attempts.map(r=>({id:r.id,...r.public_data}))'));
+  assert.ok(studentBlock.includes('const {questionSnapshot,...snapshot}'));
+  assert.ok(studentBlock.includes('publicQuestion(q)'));
+  assert.ok(studentBlock.includes('allowed.has(q.id)'));
 });
 
 test('Xem lại bài làm chỉ mở cho đúng học viên; đáp án chuẩn đợi công bố',()=>{

@@ -156,7 +156,8 @@ function manualLimits(state,exam){
 export function saveManualScore(state,user,attemptId,payload={}){
   const attempt=byId(state.attempts,attemptId);
   if(!attempt)throw new Error('Không tìm thấy lượt thi.');
-  const exam=byId(state.exams,attempt.examId);
+  const exam=attempt.examSnapshot||byId(state.exams,attempt.examId);
+  if(exam.questionSnapshot)state={...state,questions:exam.questionSnapshot};
   if(!canGradeExam(state,user,exam))throw new Error('Bạn chưa có quyền chấm bài thi này.');
   if(![ATTEMPT_STATUS.GRADING,ATTEMPT_STATUS.READY].includes(attempt.status))throw new Error('Bài này không ở trạng thái chấm.');
   if(!attempt.scoringVersion){

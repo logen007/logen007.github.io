@@ -12,6 +12,7 @@ import {uploadQuestionAudio,uploadQuestionImage} from './media.js';
 import {countWords} from './ui/format.js';
 import {topbarHtml} from './ui/layout.js';
 import {classesHtml,bindClasses,openStudentProfile} from './views/classes.js';
+import {openExamAccess,openCodeEntry,showPromotion} from './views/exam-access.js';
 import {gradebookHtml,bindGradebook} from './views/gradebook.js';
 import {confirmAction} from './ui/confirm.js';
 import {
@@ -166,7 +167,7 @@ function loginView(){
   });
 }
 
-function studentHomeView(){app.innerHTML=layout(studentHomeHtml({data,user,filter:ui.examFilter}));}
+function studentHomeView(){app.innerHTML=layout(studentHomeHtml({data,user,filter:ui.examFilter,levelFilter:ui.examLevelFilter}));}
 function studentResultsView(){app.innerHTML=layout(studentResultsHtml({data,user}));}
 function submittedView(){app.innerHTML=layout(submittedHtml());}
 
@@ -466,9 +467,10 @@ function gradingDetailView(){
 }
 
 function bindGradeCalculator(attempt){
-  app.querySelectorAll('.manual-score').forEach(input=>input.oninput=()=>{
+  app.querySelectorAll('.manual-score,#gradeOralScore').forEach(input=>input.oninput=()=>{
     let total=Number(attempt.autoScore)||0;
     app.querySelectorAll('.manual-score').forEach(x=>total+=Number(x.value)||0);
+    total+=Number(document.getElementById('gradeOralScore')?.value||0);
     document.getElementById('gradeTotal').textContent=total;
   });
 }
@@ -578,6 +580,7 @@ function render(){
     bindGradebook(app,{data,repo,ui,onSaved:profileSaved,render});
   }
   if(isStudent(user)&&!user.canTestRoles&&!user.profileCompletedAt&&!document.getElementById('modal'))openStudentProfile({data,repo,student:user,onSaved:profileSaved,required:true});
+  else if(isStudent(user)&&['student-home','student-results','student-attempt-detail','submitted'].includes(ui.view)&&data.promotions?.length&&!document.getElementById('modal'))showPromotion({repo,promotion:data.promotions[0],onSaved:profileSaved});
 }
 
 async function saveBuilderDraft({silent=false}={}){
@@ -778,6 +781,18 @@ function bindGlobal(){
 }
 
 function bindViewSpecific(){
+  app.querySelectorAll('[data-action="share-profile"]').forEach(button=>button.onclick=async()=>{
+    const status=app.querySelector('[data-share-status]');
+    try{status.textContent=await shareStudentProfile(data,user);}
+    catch(error){if(error.name!=='AbortError')status.textContent='Chưa chia sẻ được. Vui lòng thử lại hoặc sao chép địa chỉ trang.';}
+  });
+  app.querySelectorAll('[data-action="enter-code"]').forEach(button=>button.onclick=()=>openCodeEntry({repo,examId:button.dataset.exam,onStarted:async id=>{data=await repo.getState();ui.attemptId=id;ui.view='exam';render();window.scrollTo(0,0);}}));
+  app.querySelectorAll('[data-exam-level-filter]').forEach(select=>select.onchange=()=>{ui.examLevelFilter=select.value;render();});
+  app.querySelectorAll('[data-action="exam-access-settings"]').forEach(button=>button.onclick=async()=>{
+    if(!await flushBuilderDraft())return;
+    const exam=byId(data.exams,button.dataset.id);
+    if(exam)await openExamAccess({repo,exam,onSaved:async()=>{data=await repo.getState();render();}});
+  });
   app.querySelectorAll('[data-action="start"]').forEach(b=>b.onclick=()=>beginAttempt(b.dataset.exam,true));
   app.querySelectorAll('[data-action="prev-section"]').forEach(b=>b.onclick=()=>moveAttemptSection(-1));
   app.querySelectorAll('[data-action="next-section"]').forEach(b=>b.onclick=()=>moveAttemptSection(1));
@@ -1069,6 +1084,15 @@ function bindGrading(){
 async function saveGrade(andPublish){
   const attempt=byId(data.attempts,ui.gradeAttemptId);
   if(!attempt)return;
+  const oralInput=document.getElementById('gradeOralScore');
+  if(oralInput?.value){
+    if(!oralInput.checkValidity()){oralInput.reportValidity();return;}
+    if(repo.mode==='api'){
+      const result=await act(()=>repo.call('saveOralScore',{attemptId:attempt.id,score:Number(oralInput.value)}),null,{rerender:false});
+      if(!result)return;
+      await repo.reload();
+    }else await repo.transaction(st=>{const a=byId(st.attempts,attempt.id);a.oralScore=Number(oralInput.value);a.oralMax=Number(oralInput.max);});
+  }
   const scores={};
   app.querySelectorAll('.manual-score').forEach(i=>{if(i.value!=='')scores[i.dataset.skill]=Number(i.value);});
   const feedback=document.getElementById('gradeFeedback')?.value||'';
@@ -1114,3 +1138,4 @@ else{
   else if(!isStudent(user)&&initialUrl.searchParams.get('tab')){ui.adminTab=initialUrl.searchParams.get('tab');ui.view='admin';}
   render();
 }
+import {shareStudentProfile} from './views/student-profile-card.js';

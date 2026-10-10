@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import {promotionTarget,STUDENT_LEVELS} from '../src/domain/student-profile.js';
+import {resultSummary} from '../src/domain/result-summary.js';
+import {studentExamCardHtml,studentHomeHtml} from '../src/views/student.js';
+import {resultSummaryHtml} from '../src/views/result-summary.js';
+import {studentProfileCardHtml,studentShareText} from '../src/views/student-profile-card.js';
+
+assert.equal(STUDENT_LEVELS.length,12);
+assert.equal(promotionTarget('A1.1','B1.1',true),'B1.2');
+assert.equal(promotionTarget('A1.1','B1.1',false),null);
+assert.equal(promotionTarget('B2.1','A1.1',true),null);
+assert.equal(promotionTarget('C2.2','C2.2',true),null);
+assert.equal(promotionTarget('C2.1','C2.2',true),'C2.2');
+assert.equal(promotionTarget('A1.1',null,true),null);
+const exam={id:'e',provider:'TELC',level:'B1',learningLevel:'B1.1',status:'published',title:'Exam',sections:[]};
+const questions=[];
+for(const [skill,max] of Object.entries({reading:75,grammar:30,listening:75,writing:45})){
+  exam.sections.push({id:skill,name:skill,skillKey:skill,timeMinutes:10,questionIds:[skill]});
+  questions.push({id:skill,maxScore:max});
+}
+const marks={scoringVersion:2,sectionScores:{reading:75,grammar:30,listening:30,writing:0},manualScores:{},oralScore:45,oralMax:75};
+assert.equal(resultSummary(exam,questions,marks).passed,true);
+assert.equal(resultSummary(exam,questions,{...marks,oralScore:44.5}).passed,false);
+assert.equal(resultSummary(exam,questions,{...marks,oralScore:null}).complete,false);
+assert.ok(resultSummaryHtml(resultSummary(exam,questions,marks)).includes('135/225'));
+const data={exams:[exam],questions,attempts:[],users:[]};
+assert.ok(studentExamCardHtml({...exam,hidden:true,hasActiveCodes:true},[],data).includes('Nhập mã'));
+assert.ok(studentExamCardHtml({...exam,hidden:true,hasActiveCodes:false},[],data).includes('Không có mã thi'));
+assert.ok(!studentExamCardHtml({...exam,hidden:true},[],data).includes('data-action="start"'));
+assert.ok(studentHomeHtml({data,user:{id:'s',name:'Student'},levelFilter:'B1.1'}).includes('Nhập mã đề'));
+console.log('Access UI, TELC gates, cross-level advancement and no downgrade passed.');
+const student={id:'s',name:'Lan <script>',level:'B1.2',classId:'c',picture:'https://example.com/avatar.jpg'};
+const profileData={...data,classes:[{id:'c',code:'PRIVATE-CLASS'}]};
+const profile=studentProfileCardHtml(profileData,student);
+assert.ok(profile.includes('Lan &lt;script&gt;'));
+assert.ok(profile.includes('PRIVATE-CLASS'));
+assert.ok(profile.includes('B1.2'));
+assert.ok(profile.includes('data-action="share-profile"'));
+assert.ok(!studentShareText(profileData,student).includes('PRIVATE-CLASS'));
+const home=studentHomeHtml({data:profileData,user:student});
+assert.ok(!home.includes('Xin chào'));
+assert.ok(!home.includes('Xem toàn bộ kết quả'));
+assert.ok(!home.includes('Chọn bài thi để bắt đầu.'));
+console.log('Student profile: real level, class, safe sharing and removed legacy overview passed.');

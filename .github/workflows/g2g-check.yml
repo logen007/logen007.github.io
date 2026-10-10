@@ -20,3 +20,8 @@ jobs:
       - name: Run tests
         working-directory: g2g-exam
         run: npm test
+      - name: Install isolated SQL test runtime
+        run: npm install --prefix "$RUNNER_TEMP/g2g-test-db" --no-save --ignore-scripts @electric-sql/pglite@0.5.8
+      - name: Check exam codes and promotions against SQL
+        working-directory: g2g-exam
+        run: G2G_PGLITE_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js" node tests/backend-access.integration.mjs

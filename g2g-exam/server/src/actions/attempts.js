@@ -1,15 +1,26 @@
 import {query,withTx,getSettings,audit,uid,now,appError} from '../db.js';
-import {examById,questionMap,scoreQuestion,resultFor,sectionMeta} from './shared.js';
+import {examById,attemptExam,questionMap,scoreQuestion,resultFor,sectionMeta} from './shared.js';
+import {codeHash,checkCodeRate} from './exam-access.js';
 import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
 
-export async function startAttempt(user,{examId,restart=false}){
+export async function startAttempt(user,{examId,restart=false,code}){
   if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
   if(!user.canTestRoles&&!user.profileCompletedAt)throw appError(409,'Vui lòng hoàn tất họ tên và mã lớp trước khi thi.');
   const settings=await getSettings();
-  const exam=await examById(examId);
-  if(exam.status!=='published')throw appError(409,'Bài thi chưa mở cho học viên.');
+  if(code)await checkCodeRate(user);
 
   return withTx(async client=>{
+    let access;
+    if(code){
+      access=(await client.query('SELECT * FROM exam_codes WHERE code_hash=$1 AND expires_at>now() FOR UPDATE',[codeHash(code)])).rows[0];
+      if(!access||Date.parse(access.expires_at)<=Date.now()||(examId&&examId!==access.exam_id))throw appError(403,'Mã thi không hợp lệ hoặc đã hết hạn.');
+      examId=access.exam_id;
+    }
+    await client.query('SELECT id FROM exams WHERE id=$1 FOR UPDATE',[examId]);
+    const exam=await examById(examId,client);
+    if(exam.status!=='published')throw appError(409,'Bài thi chưa mở cho học viên.');
+    if(exam.hidden&&!access)throw appError(403,'Vui lòng nhập mã thi.');
+    if(access&&(await client.query('SELECT 1 FROM exam_code_uses WHERE code_id=$1 AND student_id=$2',[access.id,user.id])).rowCount)throw appError(409,'Bạn đã sử dụng mã thi này.');
     await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`,[`${user.id}:${examId}`]);
     const rows=(await client.query(`SELECT * FROM attempts WHERE student_id=$1 AND exam_id=$2 ORDER BY attempt_no DESC FOR UPDATE`,[user.id,examId])).rows;
     const current=rows.find(row=>row.status==='in_progress');
@@ -26,7 +37,10 @@ export async function startAttempt(user,{examId,restart=false}){
       status:'in_progress',startedAt,updatedAt:startedAt,currentSectionIndex:0,
       ...meta,answers:{},audioSessions:{},publishedAt:null,
     };
-    await client.query(`INSERT INTO attempts(id,student_id,exam_id,status,attempt_no,public_data) VALUES($1,$2,$3,'in_progress',$4,$5::jsonb)`,[id,user.id,examId,attemptNo,JSON.stringify(data)]);
+    const questions=await questionMap(exam);
+    const examSnapshot={...exam,questionSnapshot:[...questions.values()],scoringPolicyVersion:1};
+    await client.query(`INSERT INTO attempts(id,student_id,exam_id,status,attempt_no,public_data,private_data) VALUES($1,$2,$3,'in_progress',$4,$5::jsonb,$6::jsonb)`,[id,user.id,examId,attemptNo,JSON.stringify(data),JSON.stringify({examSnapshot})]);
+    if(access)await client.query('INSERT INTO exam_code_uses(code_id,student_id,attempt_id) VALUES($1,$2,$3)',[access.id,user.id,id]);
 
     if(!exam.locked){
       const examData={...exam,locked:true,lockedAt:startedAt};
@@ -57,14 +71,14 @@ export async function saveAnswers(user,{attemptId,answers={}}){
 }
 
 async function partAudioContext(client,attempt,sectionId){
-  const exam=await examById(attempt.exam_id,client);
+  const exam=await attemptExam(attempt,client);
   const section=(exam.sections||[]).find(item=>item.id===sectionId);
   if(!section)throw appError(404,'Không tìm thấy Part audio.');
   if(attempt.public_data?.currentSectionId!==section.id)throw appError(409,'Part audio không thuộc phần thi hiện tại.');
   const policy=section.audioPolicy||{};
   const allowed=new Set(attempt.public_data.currentQuestionIds||[]);
   const ids=(section.questionIds||[]).filter(id=>allowed.has(id));
-  const questionRows=ids.length?(await client.query(`SELECT data FROM questions WHERE id=ANY($1::text[])`,[ids])).rows:[];
+  const questionRows=exam.questionSnapshot?exam.questionSnapshot.filter(q=>ids.includes(q.id)).map(q=>({data:q})):ids.length?(await client.query(`SELECT data FROM questions WHERE id=ANY($1::text[])`,[ids])).rows:[];
   const hasQuestionAudio=questionRows.some(row=>String(row.data?.audioUrl||'').trim());
   const hasAudio=Boolean(String(section.instructionAudioUrl||'').trim())||hasQuestionAudio;
   if(!hasAudio)throw appError(409,'Part audio không có audio trong phần thi hiện tại.');
@@ -118,7 +132,7 @@ export async function setAttemptSection(user,{attemptId,index}){
     if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
     const attempt=result.rows[0],publicData=attempt.public_data;
     if(attempt.student_id!==user.id||attempt.status!=='in_progress')throw appError(403,'Không có quyền chuyển phần thi.');
-    const exam=await examById(attempt.exam_id,client);
+    const exam=await attemptExam(attempt,client);
     const safe=Math.max(0,Math.min(Number(index)||0,Math.max(0,(exam.sections||[]).length-1)));
     const meta=sectionMeta(exam,safe,publicData.sectionStates||{});
     const out={...publicData,currentSectionIndex:safe,...meta,updatedAt:now()};
@@ -147,7 +161,7 @@ export async function submitAttempt(user,{attemptId}){
   if(attempt.student_id!==user.id)throw appError(403,'Không có quyền nộp lượt thi này.');
   if(attempt.status!=='in_progress')return {status:attempt.status};
 
-  const exam=await examById(attempt.exam_id);
+  const exam=await attemptExam(attempt);
   const questions=await questionMap(exam);
   const sectionScores={};
   let autoScore=0,hasManual=false;
@@ -171,7 +185,7 @@ export async function submitAttempt(user,{attemptId}){
   const resultText=hasManual?null:resultFor(exam,questions,sectionScores,{});
   const at=now();
   const publicData={...attempt.public_data,status,submittedAt:at,updatedAt:at};
-  const privateData={autoScore,sectionScores,scoringVersion:2,manualScores:{},totalScore,result:resultText,feedback:'',updatedAt:at};
+  const privateData={...attempt.private_data,autoScore,sectionScores,scoringVersion:2,manualScores:{},totalScore,result:resultText,feedback:'',updatedAt:at};
   await query(`UPDATE attempts SET status=$2,public_data=$3::jsonb,private_data=$4::jsonb,updated_at=now() WHERE id=$1`,[attemptId,status,JSON.stringify(publicData),JSON.stringify(privateData)]);
   await audit(user,'submit_attempt','attempt',attemptId,{status});
   return {status};

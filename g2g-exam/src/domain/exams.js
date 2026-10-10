@@ -44,6 +44,8 @@ export function createExam(state,user,input={}){
     id:uid('exam'),
     title:String(input.title||'Bài thi thử mới').trim(),
     level:input.level||'B1',
+    learningLevel:input.learningLevel||null,
+    hidden:Boolean(input.hidden),
     provider:['GOETHE','TELC'].includes(String(input.provider||'').toUpperCase())?String(input.provider).toUpperCase():null,
     settings:{defaultQuestionScore:Math.max(0,Number(input.settings?.defaultQuestionScore??1)),totalTimeMinutes:Math.max(1,Number(input.settings?.totalTimeMinutes??60)),skillTimes:{...(input.settings?.skillTimes||{})},skillSettings:clone(input.settings?.skillSettings||{})},
     ownerId:user.id,
@@ -78,7 +80,7 @@ export function duplicateExam(state,user,sourceId){
     questionIds.set(id,copy.id);
   }
   const sections=(source.sections||[]).map(section=>({...clone(section),id:uid('sec'),questionIds:(section.questionIds||[]).map(id=>questionIds.get(id))}));
-  const exam=createExam(state,user,{title:`${source.title} - Copy ${copyNo}`,provider:source.provider,level:source.level,settings:source.settings,passScore:source.passScore,sections});
+  const exam=createExam(state,user,{title:`${source.title} - Copy ${copyNo}`,provider:source.provider,level:source.level,settings:source.settings,hidden:source.hidden,learningLevel:source.learningLevel,passScore:source.passScore,sections});
   audit(state,user,'duplicate','exam',exam.id,{sourceId});
   return exam;
 }

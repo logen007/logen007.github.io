@@ -2,12 +2,17 @@ import {appError,query} from '../db.js';
 import {isTeacher} from './shared.js';
 import {saveClass,saveStudentProfile} from './classes.js';
 import {saveOralScore} from './oral.js';
+import {saveExamAccess,listExamCodes,createExamCode,acknowledgePromotion} from './exam-access.js';
 import {startAttempt,saveAnswers,startPartAudio,completePartAudio,setAttemptSection,abandonAttempt,submitAttempt} from './attempts.js';
 import {saveManualGrade,publishAttemptResult,deliverResultEmail} from './grading.js';
 import {updateSystemSettings,updateSmtpSecret,testSmtp,getInfrastructureStatus,setUserRole,setTeacherByEmail} from './settings.js';
 
 export async function handleAction(user,name,data={}){
   switch(name){
+    case 'saveExamAccess': return saveExamAccess(user,data);
+    case 'listExamCodes': return listExamCodes(user,data);
+    case 'createExamCode': return createExamCode(user,data);
+    case 'acknowledgePromotion': return acknowledgePromotion(user,data);
     case 'saveClass': return saveClass(user,data);
     case 'saveStudentProfile': return saveStudentProfile(user,data);
     case 'saveOralScore': return saveOralScore(user,data);
@@ -16,15 +21,16 @@ export async function handleAction(user,name,data={}){
       if(!found.rowCount||found.rows[0].student_id!==user.id)throw appError(404,'Không tìm thấy bài làm.');
       const row=found.rows[0];
       const exam=await query(`SELECT data FROM exams WHERE id=$1`,[row.exam_id]);
-      const ids=[...new Set((exam.rows[0]?.data?.sections||[]).flatMap(section=>section.questionIds||[]))];
-      const questions=ids.length?await query(`SELECT id,data FROM questions WHERE id=ANY($1::text[])`,[ids]):{rows:[]};
+      const examData=row.private_data?.examSnapshot||exam.rows[0]?.data||{};
+      const ids=[...new Set((examData.sections||[]).flatMap(section=>section.questionIds||[]))];
+      const questions=examData.questionSnapshot?{rows:examData.questionSnapshot.map(q=>({id:q.id,data:q}))}:ids.length?await query(`SELECT id,data FROM questions WHERE id=ANY($1::text[])`,[ids]):{rows:[]};
       const published=row.status==='published';
-      return {attempt:row.public_data,sections:(exam.rows[0]?.data?.sections||[]).map(section=>({name:section.name,questions:(section.questionIds||[]).map(id=>{
+      return {attempt:row.public_data,sections:(examData.sections||[]).map(section=>({name:section.name,questions:(section.questionIds||[]).map(id=>{
         const question=questions.rows.find(q=>q.id===id);
         if(!question)return null;
         const q=question.data||{};
         return {id,title:q.title||q.prompt||'',type:q.type||'',answer:row.public_data.answers?.[id],correct:published?(q.writingFormVersion===1?null:q.correctAnswer):null,choices:(q.choices||[]).map(choice=>({text:typeof choice==='object'?String(choice.text||''):String(choice||'')})),fields:q.writingFormVersion===1?(q.rubric||[]).map((field,index)=>({index,label:field.label||'',type:field.type||'text',expected:published?field.answers||field.options?.[field.correctIndex]||'':null})):[]};
-      }).filter(Boolean)})),score:published?{total:row.private_data.totalScore,sections:row.private_data.sectionScores,feedback:row.private_data.feedback,result:row.private_data.result,reviewerName:row.public_data.reviewerName}:null};
+      }).filter(Boolean)})),score:published?{summary:row.private_data.resultSummary,promotion:row.private_data.promotion,total:row.private_data.totalScore,sections:row.private_data.sectionScores,feedback:row.private_data.feedback,result:row.private_data.result,reviewerName:row.public_data.reviewerName}:null};
     }
     case 'startAttemptSecure': return startAttempt(user,data);
     case 'saveAnswers': return saveAnswers(user,data);

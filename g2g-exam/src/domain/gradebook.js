@@ -88,8 +88,8 @@ export function filteredGradebook(data,filters={}){
     attempts.sort((a,b)=>String(b.submittedAt||b.startedAt).localeCompare(String(a.submittedAt||a.startedAt))||Number(b.attemptNo)-Number(a.attemptNo));
     const attempt=attempts[0];
     if(filters.reviewerId&&!attempt)continue;
-    const exam=attempt&&exams.get(attempt.examId);
-    rows.push({student,attempt,exam,skills:attempt?skillScores(exam,data.questions,attempt):{},classCode:data.classes?.find(item=>item.id===student.classId)?.code||'—'});
+    const exam=attempt&&(attempt.examSnapshot||exams.get(attempt.examId));
+    rows.push({student,attempt,exam,skills:attempt?(attempt.resultSummary?.skills||skillScores(exam,exam.questionSnapshot||data.questions,attempt)):{},classCode:data.classes?.find(item=>item.id===student.classId)?.code||'—'});
   }
   return rows.sort((a,b)=>a.student.name.localeCompare(b.student.name,'vi'));
 }

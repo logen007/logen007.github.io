@@ -1,5 +1,6 @@
 import {query,withTx,audit,appError} from './db.js';
 import {publicWritingRows,writingFormScore,normalizeWritingRows} from './writing-form.js';
+import {expireCodes} from './actions/exam-access.js';
 
 const stripId=x=>{const y=structuredClone(x||{});delete y.id;return y;};
 const isTeacher=u=>u?.role==='teacher'||u?.role==='master';
@@ -13,10 +14,32 @@ export async function loadState(user){
   const state={schemaVersion:6,revision:Date.now(),users:[],questions:[],exams:[],attempts:[],gradingRequests:[],notifications:[],auditLog:[]};
   state.classes=await rows('SELECT id,code,active FROM classes WHERE active=true ORDER BY lower(code)');
   if(user.role==='student'){
+    await expireCodes();
     state.users=[user];
     state.exams=(await rows(`SELECT id,data FROM exams WHERE status='published' ORDER BY updated_at DESC`)).map(rowEntity);
-    state.questions=(await rows(`SELECT id,data FROM questions WHERE status<>'trash'`)).map(r=>({id:r.id,...publicQuestion(r.data)}));
-    state.attempts=(await rows(`SELECT id,public_data FROM attempts WHERE student_id=$1 ORDER BY created_at DESC`,[user.id])).map(r=>({id:r.id,...r.public_data}));
+    const attempts=await rows(`SELECT id,public_data,private_data,status,exam_id FROM attempts WHERE student_id=$1 ORDER BY created_at DESC`,[user.id]);
+    state.attempts=attempts.map(r=>({id:r.id,...r.public_data}));
+    const allQuestions=(await rows(`SELECT id,data FROM questions WHERE status<>'trash'`)).map(rowEntity);
+    const activeCodes=await rows('SELECT c.exam_id,NOT EXISTS(SELECT 1 FROM exam_code_uses u WHERE u.code_id=c.id AND u.student_id=$1) AS unused FROM exam_codes c WHERE c.expires_at>now()',[user.id]);
+    const allowed=new Set();
+    state.exams=state.exams.map(exam=>{
+      const codeAccess={hasActiveCodes:activeCodes.some(c=>c.exam_id===exam.id),allCodesUsed:activeCodes.some(c=>c.exam_id===exam.id)&&!activeCodes.some(c=>c.exam_id===exam.id&&c.unused)};
+      const active=attempts.find(a=>a.exam_id===exam.id&&a.status==='in_progress');
+      if(active?.private_data?.examSnapshot){
+        const {questionSnapshot,...snapshot}=active.private_data.examSnapshot;
+        allQuestions.push(...questionSnapshot);
+        for(const q of questionSnapshot)allowed.add(q.id);
+        return {...snapshot,hidden:exam.hidden,...codeAccess};
+      }
+      if(!exam.hidden){for(const section of exam.sections||[])for(const id of section.questionIds||[])allowed.add(id);return exam;}
+      const ids=(exam.sections||[]).flatMap(s=>s.questionIds||[]);
+      return {id:exam.id,title:exam.title,provider:exam.provider,level:exam.level,learningLevel:exam.learningLevel,status:exam.status,hidden:true,
+        ...codeAccess,
+        questionCount:allQuestions.filter(q=>ids.includes(q.id)&&!q.example).length,
+        sections:(exam.sections||[]).map(s=>({id:s.id,name:s.name,timeMinutes:s.timeMinutes,questionIds:[]}))};
+    });
+    state.questions=[...new Map(allQuestions.filter(q=>allowed.has(q.id)).map(q=>[q.id,{id:q.id,...publicQuestion(q)}])).values()];
+    state.promotions=await rows('SELECT attempt_id AS "attemptId",from_level AS "fromLevel",to_level AS "toLevel" FROM level_promotions WHERE student_id=$1 AND acknowledged_at IS NULL ORDER BY created_at',[user.id]);
     state.notifications=(await rows(`SELECT id,data,status FROM notifications WHERE student_id=$1 ORDER BY created_at DESC LIMIT 200`,[user.id])).map(r=>({id:r.id,status:r.status,...r.data}));
     return state;
   }
@@ -52,7 +75,7 @@ async function applyExam(c,user,op){
   if(!current.rowCount){if(!isTeacher(user)||item.ownerId!==user.id)throw appError(403,'Không có quyền tạo bài thi.');await c.query(`INSERT INTO exams(id,owner_id,status,locked,data) VALUES($1,$2,$3,$4,$5::jsonb)`,[op.id,user.id,item.status||'draft',Boolean(item.locked),JSON.stringify(stripId(item))]);return;}
   const old=current.rows[0],oldData=old.data||{};if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa bài thi này.');if(old.status==='trash'&&item.status!=='trash'&&user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được khôi phục bài thi.');if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu bài thi.');
   const structural=JSON.stringify([oldData.level,oldData.passScore,oldData.sections])!==JSON.stringify([item.level,item.passScore,item.sections]);if(old.locked&&structural&&user.role!=='master')throw appError(409,'Bài thi đã có học viên làm nên cấu trúc đã khóa.');
-  await c.query(`UPDATE exams SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,ownerId:old.owner_id}))]);
+  await c.query(`UPDATE exams SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,hidden:Boolean(oldData.hidden),learningLevel:oldData.learningLevel||null,ownerId:old.owner_id}))]);
 }
 async function applyUser(c,user,op){if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được quản lý tài khoản.');if(op.kind==='delete')throw appError(409,'Không xóa tài khoản trực tiếp; hãy vô hiệu hóa tài khoản.');const item=op.item||{};const cur=await c.query(`SELECT * FROM users WHERE id=$1 FOR UPDATE`,[op.id]);if(!cur.rowCount)throw appError(404,'Không tìm thấy tài khoản.');if(op.id===user.id&&item.role&&item.role!=='master')throw appError(409,'Không thể tự hạ quyền tài khoản Quản trị cấp cao.');const old=cur.rows[0],role=['student','teacher','master'].includes(item.role)?item.role:old.role;const data=stripId(item);delete data.email;delete data.role;delete data.active;await c.query(`UPDATE users SET role=$2,active=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,role,item.active!==false,JSON.stringify(data)]);}
 

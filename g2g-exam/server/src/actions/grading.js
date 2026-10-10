@@ -1,7 +1,9 @@
-import {query,withTx,getSettings,audit,now,appError} from '../db.js';
-import {sendConfiguredMail,renderTemplate} from '../mail.js';
-import {isTeacher,examById,canGrade,questionMap,resultFor} from './shared.js';
+import {query,withTx,audit,now,appError} from '../db.js';
+import {sendConfiguredMail} from '../mail.js';
+import {isTeacher,attemptExam,canGrade,questionMap} from './shared.js';
 import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
+import {finalizeOutcome} from '../result-outcome.js';
+import {resultSummary} from '../../../src/domain/result-summary.js';
 
 export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
   if(!isTeacher(user))throw appError(403,'Chỉ giáo viên được chấm bài.');
@@ -9,7 +11,7 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
     const result=await client.query(`SELECT * FROM attempts WHERE id=$1 FOR UPDATE`,[attemptId]);
     if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
     const attempt=result.rows[0];
-    const exam=await examById(attempt.exam_id,client);
+    const exam=await attemptExam(attempt,client);
     if(!(await canGrade(user,exam)))throw appError(403,'Bạn chưa được cấp quyền chấm bài này.');
     if(!['grading','ready'].includes(attempt.status))throw appError(409,'Bài không ở trạng thái chấm.');
 
@@ -39,9 +41,9 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
     }
 
     const complete=Object.keys(limits).every(skill=>Number.isFinite(Number(clean[skill])));
-    const manualTotal=Object.values(clean).reduce((sum,n)=>sum+(Number(n)||0),0);
-    const totalScore=complete?autoScore+manualTotal:null;
-    const resultText=complete?resultFor(exam,questions,sectionScores,clean):null;
+    const summary=resultSummary(exam,questions,{...previous,sectionScores,manualScores:clean,scoringVersion:2});
+    const totalScore=complete?summary.total:null;
+    const resultText=complete?summary.result:null;
     const status=complete?'ready':'grading';
     const at=now();
     const privateData={
@@ -55,8 +57,7 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
   });
 }
 
-export async function deliverResultEmail(attemptId){
-  const id=`result-${attemptId}`;
+export async function deliverResultEmail(attemptId,id=`result-${attemptId}`){
   const claim=await withTx(async client=>{
     const result=await client.query(`SELECT * FROM notifications WHERE id=$1 FOR UPDATE`,[id]);
     if(!result.rowCount)return null;
@@ -80,49 +81,24 @@ export async function deliverResultEmail(attemptId){
 
 export async function publishAttemptResult(user,{attemptId}){
   if(!isTeacher(user))throw appError(403,'Chỉ giáo viên được công bố kết quả.');
-  const settings=await getSettings();
   const out=await withTx(async client=>{
-    const result=await client.query(`SELECT * FROM attempts WHERE id=$1 FOR UPDATE`,[attemptId]);
+    const result=await client.query('SELECT * FROM attempts WHERE id=$1 FOR UPDATE',[attemptId]);
     if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
-    const attempt=result.rows[0];
-    const exam=await examById(attempt.exam_id,client);
+    const attempt=result.rows[0],exam=await attemptExam(attempt,client);
     if(!(await canGrade(user,exam)))throw appError(403,'Không có quyền công bố kết quả.');
     if(attempt.status==='published')return {alreadyPublished:true};
     if(attempt.status!=='ready')throw appError(409,'Bài chưa được chấm đủ.');
-
-    const privateData=attempt.private_data||{};
-    if(!Number.isFinite(Number(privateData.totalScore)))throw appError(409,'Bài chưa có tổng điểm hợp lệ.');
-    const at=now();
-    const vars={
-      exam:attempt.public_data.examTitle||exam.title,
-      student:attempt.public_data.studentName||'học viên',
-      score:String(privateData.totalScore),
-      result:String(privateData.result||''),
-      url:settings.general.publicUrl,
-    };
-    const publicData={
-      ...attempt.public_data,status:'published',publishedAt:at,updatedAt:at,
-      autoScore:Number(privateData.autoScore||0),manualScores:privateData.manualScores||{},
-      scoringVersion:privateData.scoringVersion,
-      sectionScores:privateData.sectionScores||{},totalScore:Number(privateData.totalScore),
-      result:privateData.result||'',reviewerId:user.id,
-      reviewerName:user.name||'',feedback:privateData.feedback||'',
-    };
-    const emailOn=Boolean(settings.email.enabled&&settings.smtp.enabled);
-    const to=attempt.public_data.studentEmail||'';
-    const notificationStatus=!emailOn?'email_disabled':to?'queued':'no_email';
-    const notificationData={
-      type:'result_published',to,studentId:attempt.student_id,attemptId,
-      subject:renderTemplate(settings.email.resultSubject,vars,false),
-      text:renderTemplate(settings.email.resultText,vars,false),
-      html:renderTemplate(settings.email.resultHtml,vars,true),createdAt:at,
-    };
-    await client.query(`UPDATE attempts SET status='published',public_data=$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify(publicData)]);
-    await client.query(`INSERT INTO notifications(id,student_id,attempt_id,status,data) VALUES($1,$2,$3,$4,$5::jsonb) ON CONFLICT(id) DO NOTHING`,[`result-${attemptId}`,attempt.student_id,attemptId,notificationStatus,JSON.stringify(notificationData)]);
+    const marks=attempt.private_data||{};
+    if(marks.totalScore==null||!Number.isFinite(Number(marks.totalScore)))throw appError(409,'Bài chưa có tổng điểm hợp lệ.');
+    const {patch,notificationStatus}=await finalizeOutcome(client,attempt,exam,marks,user);
+    const publicData={...attempt.public_data,status:'published',publishedAt:now(),updatedAt:now(),
+      autoScore:Number(marks.autoScore||0),manualScores:marks.manualScores||{},scoringVersion:marks.scoringVersion,
+      sectionScores:marks.sectionScores||{},oralScore:marks.oralScore,oralMax:marks.oralMax,
+      reviewerId:user.id,reviewerName:user.name||'',feedback:marks.feedback||'',...patch};
+    await client.query('UPDATE attempts SET status=\'published\',public_data=$2::jsonb,private_data=private_data||$3::jsonb,updated_at=now() WHERE id=$1',[attemptId,JSON.stringify(publicData),JSON.stringify(patch)]);
     await audit(user,'publish_result','attempt',attemptId,{studentId:attempt.student_id,notificationStatus},client);
     return {alreadyPublished:false,notificationStatus};
   });
-
   const email=await deliverResultEmail(attemptId);
   return {status:'published',...out,email};
 }

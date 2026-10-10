@@ -33,10 +33,15 @@ export function resultFor(exam,questions,sectionScores={},manualScores={}){
 }
 
 export async function questionMap(exam){
+  if(exam.questionSnapshot)return new Map(exam.questionSnapshot.map(q=>[q.id,q]));
   const ids=[...new Set((exam.sections||[]).flatMap(section=>section.questionIds||[]))];
   if(!ids.length)return new Map();
   const result=await query(`SELECT id,data FROM questions WHERE id=ANY($1::text[])`,[ids]);
   return new Map(result.rows.map(row=>[row.id,{id:row.id,...row.data}]));
+}
+
+export async function attemptExam(attempt,client){
+  return attempt.private_data?.examSnapshot||examById(attempt.exam_id,client);
 }
 
 export function sectionMeta(exam,index,previous={}){
