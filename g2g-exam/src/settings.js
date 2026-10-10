@@ -4,6 +4,8 @@ import {
   updateSystemSettings,updateSmtpSecret,testSmtp
 } from './settings/api.js';
 import {settingsPageHtml} from './settings/view.js';
+import {bindSettingsTabs} from './settings/tabs.js';
+let selectedSettingsTab='general';
 import {initializeTheme,acceptPublicSettings,currentTheme,saveLocalTheme,normalizeThemeColor,applyTheme} from './settings/theme.js';
 import {iconHtml} from './ui/icons.js';
 
@@ -134,6 +136,7 @@ function renderSettings(force=true){
   injectSettingsButton();
   if(!force&&target.querySelector('.g2g-settings-page'))return;
   target.innerHTML=settingsPageHtml({settings,infra,localOnly});
+  bindSettingsTabs(target,selectedSettingsTab,tab=>{selectedSettingsTab=tab;});
   bindSettingsActions();
 }
 

@@ -1,4 +1,10 @@
 import assert from 'node:assert/strict';
+import {settingsTabs,settingsTabsHtml} from '../src/settings/tabs.js';
+assert.equal(settingsTabs.length,4);
+const settingsTabMarkup=settingsTabsHtml();
+assert.equal((settingsTabMarkup.match(/role="tab"/g)||[]).length,4);
+assert.equal((settingsTabMarkup.match(/aria-selected="true"/g)||[]).length,1);
+assert.match(settingsTabMarkup,/aria-controls="settings-panel-operations"/);
 import {readFileSync} from 'node:fs';
 import {normalizeThemeColor,themePalette,colorContrast,initializeTheme,acceptPublicSettings,currentTheme,saveLocalTheme} from '../src/settings/theme.js';
 

@@ -5,7 +5,7 @@ import {iconHtml} from './icons.js';
 export function topbarHtml({user,mode,online,ui={},canSwitchRole=false}){
   const role=isStudent(user)?'Học viên':isMaster(user)?'Quản trị cấp cao':'Giáo viên';
   const tabs=user&&!isStudent(user)
-    ?(isMaster(user)?[['dashboard','Tổng quan','grades'],['exams','Đề Thi','exams'],['classes','Lớp học','users'],['teachers','Người dùng','users'],['trash','Thùng rác','trash']]:[['exams','Đề Thi','exams'],['grades','Bài Thi','grading'],['classes','Lớp học','users']])
+    ?(isMaster(user)?[['dashboard','Tổng quan','grades'],['exams','Đề Thi','exams'],['teachers','Người dùng','users'],['trash','Thùng rác','trash']]:[['exams','Đề Thi','exams'],['grades','Bài Thi','grading'],['classes','Lớp học','users']])
     :[];
   const navigation=tabs.length?`<nav class="thanh-ben" aria-label="Điều hướng quản trị">${tabs.map(([key,label,icon])=>`<button class="muc-ben ${['teachers','trash'].includes(key)?'muc-ben--icon':''} ${ui.adminTab===key?'active':''}" data-action="admin-tab" data-tab="${key}" title="${label}" aria-label="${label}" ${ui.adminTab===key?'aria-current="page"':''}>${iconHtml(icon)}${['teachers','trash'].includes(key)?'':`<span>${label}</span>`}</button>`).join('')}</nav>`
     :isStudent(user)?`<nav class="site-nav" aria-label="Điều hướng học viên"><button class="muc-ben ${ui.view==='student-home'?'active':''}" data-action="student-home" ${ui.view==='student-home'?'aria-current="page"':''}>${iconHtml('exams')}<span>Đề Thi</span></button><button class="muc-ben ${ui.view==='student-results'?'active':''}" data-action="student-results" ${ui.view==='student-results'?'aria-current="page"':''}>${iconHtml('grades')}<span>Kết quả</span></button></nav>`:'';
