@@ -50,6 +50,8 @@ import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+assert.ok(read('styles.css').includes('var(--part-columns,3)'));
+assert.ok(read('src/views/builder.js').includes('Math.min(5,Math.max(2,items.length))'));
 assert.doesNotMatch(read('src/part-templates/default/builder.js'),/<span>Audio đề bài<\/span>/);
 assert.match(read('src/part-templates/default/builder.js'),/role="group" aria-label="Audio đề bài"/);
 assert.match(read('src/ui/publish-errors.js'),/noi-hop noi-hop--compact/);

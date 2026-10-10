@@ -52,6 +52,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Mobile skill/part navigation uses an adaptive 2–5-column grid, not a fixed
+  three-column layout. Keep explicit row and column gaps; wrap only when needed
+  to preserve readable labels and touch targets.
+
 - Minimize visible form labels; prefer concise placeholders inside empty inputs.
   Keep a persistent accessible name (aria-label or visually hidden label).
   For icon-only upload controls, use an accessible name and tooltip instead of
