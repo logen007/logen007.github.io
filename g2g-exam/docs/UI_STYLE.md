@@ -41,6 +41,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- The exam-list title and “Tạo đề thi” action always share one row, including
+  mobile: title left, action right, vertically centered. Never apply the generic
+  mobile full-width title wrapping rule to this heading.
+
 - Independent UI blocks must never touch: use explicit gap/margin, typically
   16–24px between search/filter controls and the table or card below (20px default).
   Use 8–12px within related control groups. Check spacing at desktop and mobile

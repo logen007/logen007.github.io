@@ -425,6 +425,9 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 
 /* Matching tables are edited as one group, not a stack of question cards. */
 .student-result-list { display:grid; gap:16px; }
+.tieu-de-trang.exam-list-heading { flex-wrap:nowrap; align-items:center; gap:12px; }
+.tieu-de-trang.exam-list-heading > div:first-child { flex:1 1 auto; min-width:0; }
+.exam-list-heading > .nut { flex:0 0 auto; white-space:nowrap; }
 .instruction-content { display:grid; gap:12px; min-width:0; }
 .instruction-content > textarea { width:100%; }
 .instruction-audio { display:grid; gap:8px; max-width:420px; }
