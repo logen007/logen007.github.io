@@ -124,7 +124,7 @@ function freeResponseHtml(q,{defaultScore,readOnly}){
 function instructionHtml(section,choiceProfile,readOnly,question){
   const listening=section.skillKey==='listening'||/nghe|hören|listening/i.test(section.skill||'');
   const instruction=`<div class="instruction-content"><textarea id="sectionInstruction" placeholder="Đề bài" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea></div>`;
-  const audio=listening?`<div class="instruction-audio" data-audio-question-id="section:${esc(section.id)}"><span>Audio đề bài</span>${audioHtml({audioUrl:section.instructionAudioUrl,audioName:section.instructionAudioName},readOnly,true,'')}</div>`:'';
+  const audio=listening?`<div class="instruction-audio" role="group" aria-label="Audio đề bài" data-audio-question-id="section:${esc(section.id)}">${audioHtml({audioUrl:section.instructionAudioUrl,audioName:section.instructionAudioName},readOnly,true,'')}</div>`:'';
   if(!choiceProfile.instructionImage)return `<div class="goethe-instruction ${listening?'goethe-instruction--with-audio':''}">${instruction}${audio}</div>`;
   const imageUrl=section.instructionImageUrl||'';
   const addInstruction=question?`<button type="button" class="icon-btn" data-action="add-question-instruction" data-id="${question.id}" title="Thêm đề bài" aria-label="Thêm đề bài" ${readOnly?'disabled':''}>${icons.add}</button>`:'';

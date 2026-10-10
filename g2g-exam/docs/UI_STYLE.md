@@ -52,6 +52,11 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Minimize visible form labels; prefer concise placeholders inside empty inputs.
+  Keep a persistent accessible name (aria-label or visually hidden label).
+  For icon-only upload controls, use an accessible name and tooltip instead of
+  redundant visible labels. Keep visible labels only when necessary for clarity.
+
 - Simple message/error dialogs use the shared compact width of 500px, capped
   at the available mobile viewport width. Larger editors retain their own size.
 
