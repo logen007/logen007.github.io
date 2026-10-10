@@ -100,10 +100,16 @@ assert.ok(rosterPage.includes('aria-label="Tên học viên hoặc email"'));
 assert.ok(!rosterPage.includes('<label>Tìm học viên'));
 const settingsHtml=examAccessFormHtml({title:'<Exam>',provider:'GOETHE',level:'A1',hidden:true,learningLevel:'A1.2'});
 assert.ok(settingsHtml.includes('&lt;Exam&gt;'));
-for(const label of ['Quyền truy cập','Trình độ','Mã thi','Lưu thay đổi','Tạo mã'])assert.ok(settingsHtml.includes(label));
+for(const label of ['Quyền truy cập','Mã thi','Lưu thay đổi','Tạo mã'])assert.ok(settingsHtml.includes(label));
 assert.ok(settingsHtml.includes('data-settings-status'));
 assert.ok(settingsHtml.includes('data-code-status'));
-assert.ok(settingsHtml.includes('access-level-row'));
+assert.ok(!settingsHtml.includes('access-level-row'));
+assert.ok(!settingsHtml.includes('name="learningLevel"'));
+assert.ok(examAccessFormHtml({hidden:false}).includes('access-codes" hidden'));
+assert.ok(settingsHtml.includes('Theo giờ Việt Nam (Indochina Time - ICT)'));
+const {parseICTDateTime,formatICTDateTime}=await import('../src/views/exam-access.js');
+assert.equal(parseICTDateTime('2026-10-10T15:30').toISOString(),'2026-10-10T08:30:00.000Z');
+assert.ok(formatICTDateTime('2026-10-10T08:30:00.000Z').includes('15:30'));
 const controlCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 for(const selector of ['.profile-form select','.grade-filters select','.exam-filter select','.access-code-create input'])assert.ok(controlCss.includes(selector));
 for(const file of ['builder','admin']){
