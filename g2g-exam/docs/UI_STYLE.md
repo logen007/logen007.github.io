@@ -35,6 +35,12 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Tooltips always appear above and horizontally centered on their triggering
+  button/control, never anchored to a table cell or full-width action row.
+  Copy feedback follows this same rule and must not shift the layout.
+- Student class selection supports typing a class code to filter suggestions.
+  Confirm only an existing class; never accept an arbitrary class code.
+
 - Admin and student navigation uses centered pills in the white rounded header;
   overflow wraps to a scrollable second row. Show only working controls.
 - Preserve the role label and existing navigation action hooks used by modules.

@@ -8,7 +8,7 @@ export function openClassEnrollment({repo,user,onSaved,initialCode=''}){
     <div data-class-choice hidden></div><p data-error role="alert"></p>
     <button class="nut chinh" type="submit">Xác nhận mã</button></form>`,{compact:true});
   const form=modal.querySelector('form'),choice=form.querySelector('[data-class-choice]'),button=form.querySelector('button');
-  let verifiedCode=null;
+  let verifiedCode=null,availableClasses=[];
   form.elements.code.addEventListener('input',()=>{verifiedCode=null;choice.hidden=true;choice.innerHTML='';button.textContent='Xác nhận mã';});
   form.onsubmit=async event=>{
     event.preventDefault();button.disabled=true;form.querySelector('[data-error]').textContent='';
@@ -18,11 +18,13 @@ export function openClassEnrollment({repo,user,onSaved,initialCode=''}){
       if(verifiedCode!==code){
         const result=await repo.call('verifyClassCode',{code});
         if(!result.classes.length)throw new Error('Chưa có lớp để chọn. Vui lòng liên hệ giáo viên.');
-        verifiedCode=code;
-        choice.innerHTML=`<label>Lớp học<select name="classId" required><option value="">Chọn lớp</option>${result.classes.map(item=>`<option value="${esc(item.id)}">${esc(item.code)}${item.description?' — '+esc(item.description):''}</option>`).join('')}</select></label><p class="phu-de">Mã chỉ dùng một lần. Kiểm tra đúng lớp trước khi xác nhận.</p>`;
-        choice.hidden=false;button.textContent='Xác nhận chọn lớp';choice.querySelector('select').focus();
+        verifiedCode=code;availableClasses=result.classes;
+        choice.innerHTML=`<label>Lớp học<input name="classCode" list="enrollment-class-options" required autocomplete="off" placeholder="Gõ mã lớp để tìm"><datalist id="enrollment-class-options">${result.classes.map(item=>`<option value="${esc(item.code)}">${esc(item.description||item.code)}</option>`).join('')}</datalist></label><p class="phu-de">Mã chỉ dùng một lần. Kiểm tra đúng lớp trước khi xác nhận.</p>`;
+        choice.hidden=false;button.textContent='Xác nhận chọn lớp';choice.querySelector('input').focus();
       }else{
-        await repo.call('enrollInClass',{code,classId:form.elements.classId.value});
+        const selected=availableClasses.find(item=>item.code.toLocaleLowerCase()===form.elements.classCode.value.trim().toLocaleLowerCase());
+        if(!selected)throw new Error('Vui lòng chọn một mã lớp trong danh sách.');
+        await repo.call('enrollInClass',{code,classId:selected.id});
         await repo.reload();modal.remove();await onSaved();
       }
     }catch(error){form.querySelector('[data-error]').textContent=error.message;}

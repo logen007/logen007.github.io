@@ -20,7 +20,7 @@ import {openClassEnrollment} from '../src/views/class-enrollment.js';
     body:{append(modal){active=modal;}},
     createElement(){
       const button=element(),error={textContent:''},choice={hidden:true,innerHTML:'',querySelector:()=>element()};
-      const form={elements:{name:element(),confirmationCode:element(),code:element(),classId:{value:'class1'}},
+      const form={elements:{name:element(),confirmationCode:element(),code:element(),classCode:{value:'A1-01'}},
         querySelector:selector=>selector==='[data-error]'?error:selector==='[data-class-choice]'?choice:button,
         requestSubmit(){this.pending=this.onsubmit({preventDefault(){},currentTarget:this});}};
       return {form,button,error,choice,addEventListener(){},remove(){if(active===this)active=null;},
@@ -56,6 +56,12 @@ import {openClassEnrollment} from '../src/views/class-enrollment.js';
         await active.form.pending;
         assert.equal(calls[1].action,'verifyClassCode');
         assert.equal(active.choice.hidden,false);
+        assert.ok(active.choice.innerHTML.includes('list="enrollment-class-options"'));
+        active.form.elements.classCode.value='Không tồn tại';
+        await active.form.onsubmit({preventDefault(){},currentTarget:active.form});
+        assert.equal(calls.length,2);
+        assert.ok(active.error.textContent.includes('chọn một mã lớp'));
+        active.form.elements.classCode.value='A1-01';
         assert.ok(active.html.includes('Nhập mã đã được giáo viên cung cấp'));
         await active.form.onsubmit({preventDefault(){},currentTarget:active.form});
         assert.equal(calls[2].action,'enrollInClass');
@@ -69,6 +75,7 @@ import {openClassEnrollment} from '../src/views/class-enrollment.js';
     assert.equal(active.choice.hidden,true);
     openStudentProfile({data,student:{...student,level:'B1'},repo,onSaved:async()=>{}});
     assert.ok(active.html.includes('Trình độ: B1'));
+    assert.ok(active.html.includes('list="profile-class-options"'));
     assert.ok(!active.html.includes('Cập nhật khi đỗ đề thi.'));
     assert.ok(!active.html.includes('<label>Họ và tên đầy đủ'));
   }finally{globalThis.document=previousDocument;}
