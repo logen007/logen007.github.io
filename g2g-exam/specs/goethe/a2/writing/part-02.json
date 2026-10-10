@@ -1,0 +1,21 @@
+{
+  "status": "APPROVED",
+  "key": "writing-2",
+  "name": "Viết 2",
+  "questionLimit": 1,
+  "template": "GENERIC",
+  "questionProfile": {
+    "type": "writing",
+    "layout": "free-response",
+    "instructionImage": true,
+    "audio": false,
+    "choiceImages": false,
+    "numberWithinSkill": true,
+    "example": false,
+    "manualPerPart": true,
+    "wordRange": [
+      30,
+      40
+    ]
+  }
+}

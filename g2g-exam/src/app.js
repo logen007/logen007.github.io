@@ -1,3 +1,4 @@
+import {bindLetterAnswers} from './ui/letter-answers.js';
 import {createGradeAutosave} from './ui/grade-autosave.js';
 import {bindImageRemoval,imageValue} from './ui/image-remove.js';
 let gradeAutosave=null,gradePublishing=false;
@@ -253,6 +254,7 @@ function bindExamInputs(attempt,questions){
     const question=questions.find(item=>item.id===qid),card=app.querySelector(`.cau-thi[data-q="${qid}"]`);
     if(card&&question)card.classList.toggle('is-answered',answerPresent(value,question));
   };
+  bindLetterAnswers(app,questions,attempt.answers||{},(qid,value)=>{setLocalAnswer(qid,value);queueAnswer(attempt.id,qid,value,0);});
   app.querySelectorAll('.answer-one').forEach(el=>el.onchange=()=>{
     const value=el.value===''?null:Number(el.value);
     setLocalAnswer(el.dataset.q,value);
@@ -298,6 +300,7 @@ function bindExamInputs(attempt,questions){
 }
 
 function bindPreviewInputs(attempt,questions){
+  bindLetterAnswers(app,questions,ui.previewAnswers,(qid,value)=>{ui.previewAnswers[qid]=value;refreshPreviewProgress();});
   app.querySelectorAll('.answer-one').forEach(el=>el.onchange=()=>{ui.previewAnswers[el.dataset.q]=el.value===''?null:Number(el.value);refreshPreviewProgress();});
   app.querySelectorAll('.answer-match').forEach(el=>el.onchange=()=>{
     const qid=el.dataset.q,q=questions.find(x=>x.id===qid),values=Array(q?.pairs?.length||0).fill('');
@@ -727,7 +730,7 @@ async function persistBuilderDraft({silent=false}={}){
           }
           const titleField=card.querySelector('[data-field="title"]');
           const scoreField=card.querySelector('[data-field="maxScore"]');
-          const correct=card.querySelector('[data-field="correct"]:checked');
+          const correct=card.querySelector('[data-field="correct"]:checked,select[data-field="correct"]');
           const previousQuestion=byId(st.questions,id),previousChoices=previousQuestion?.choices||[];
           const choices=[...card.querySelectorAll('[data-choice]')].map(input=>{
             const index=Number(input.dataset.choice);

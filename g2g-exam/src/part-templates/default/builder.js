@@ -4,6 +4,7 @@ import {uploadQuestionAudio} from '../../media.js';
 import {iconHtml} from '../../ui/icons.js';
 import {WRITING_FORM_TYPES,isScoredWritingField,writingFormScore} from '../../domain/writing-form.js';
 import {writingFormEditor} from '../../ui/writing-form.js';
+import {partAudioQuestions} from '../../domain/part-audio.js';
 
 const icons={
   add:iconHtml('plus'),
@@ -22,6 +23,8 @@ function profileFor(section){
   const source=section?.questionProfile||{};
   const isTrueFalse=source.layout==='true-false'&&Array.isArray(source.choices)&&source.choices.length===2;
   return {
+    uniqueLetters:source.uniqueLetters===true,
+    letterTable:source.layout==='letter-table',
     type:source.type||'single',
     choices:Array.isArray(source.choices)&&source.choices.length>=2?source.choices:(isTrueFalse?['Richtig','Falsch']:['A','B','C']),
     cssClass:isTrueFalse?'goethe-choices--true-false':'',
@@ -63,6 +66,7 @@ function scoreControls(q,defaultScore,readOnly,{mixed=false}={}){
 }
 
 function choicesHtml(q,choiceProfile,readOnly){
+  if(choiceProfile.uniqueLetters)return `<div class="letter-builder-answer"><label for="correct-${esc(q.id)}">Đáp án đúng</label><select id="correct-${esc(q.id)}" data-field="correct" ${readOnly?'disabled':''}>${choiceProfile.choices.map((letter,i)=>`<option value="${i}" ${Number(q.correctAnswer)===i?'selected':''}>${esc(letter.toLowerCase())}</option>`).join('')}</select>${choiceProfile.choices.map((letter,i)=>`<input type="hidden" data-choice="${i}" value="${esc(letter)}">`).join('')}</div>`;
   const choices=[...(q.choices||[]),...Array(choiceProfile.choices.length).fill('')].slice(0,choiceProfile.choices.length);
   return `<div class="goethe-answer-row"><div class="goethe-choices ${choiceProfile.cssClass}">${choiceProfile.choices.map((label,choiceIndex)=>{
     const choice=choices[choiceIndex],imageUrl=typeof choice==='object'?choice.imageUrl:'',hasImage=Boolean(imageUrl),text=blank(textOf(choice))||'';
@@ -73,7 +77,7 @@ function choicesHtml(q,choiceProfile,readOnly){
 function choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile}){
   const stimulus=choiceProfile.instructionImage&&Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length?fixedStimulusHtml(q,index,readOnly):'';
   const media=choiceProfile.questionImage?questionImageHtml(q,readOnly,true):audioHtml(q,readOnly,choiceProfile.showAudio);
-  return `<article class="goethe-question ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="choices" data-question-id="${q.id}">${stimulus}<div class="goethe-question-row"><textarea data-field="title" placeholder="Câu hỏi ${index+1}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly)}${media}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</article>`;
+  return `<article class="goethe-question ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="choices" data-question-id="${q.id}">${stimulus}<div class="goethe-question-row"><textarea data-field="title" placeholder="${choiceProfile.letterTable?'Tên người trong bảng đáp án':q.example?'Câu ví dụ (Beispiel)':'Câu hỏi '+(index+1)}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly)}${media}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</article>`;
 }
 
 function fixedStimulusHtml(q,questionIndex,readOnly){
@@ -138,6 +142,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
   const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).sort((a,b)=>Number(Boolean(b.example))-Number(Boolean(a.example)));
   const choiceProfile=profileFor(section);
+  const audioIds=new Set(partAudioQuestions(section,questions).map(q=>q.id));
   const renderQuestion=(q,index)=>choiceProfile.formFrame
     ?writingFormEditor(q,{readOnly})
     :choiceProfile.isWritingForm
@@ -146,8 +151,8 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
       ?mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile})
     :choiceProfile.isFreeResponse
       ?freeResponseHtml(q,{defaultScore,readOnly})
-      :choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile});
-  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${instructionHtml(section,choiceProfile,readOnly,choiceProfile.instructionImage?questions.find(question=>!question.example)||questions[0]:null)}<div class="goethe-questions">${questions.map(renderQuestion).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
+      :choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile:{...choiceProfile,showAudio:choiceProfile.showAudio&&audioIds.has(q.id)}});
+  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${section.audioPolicy?`<p class="phu-de part-audio-guide">Tải audio một lượt nghe cho Beispiel và ${section.audioPolicy.sharedPart?'câu tính điểm đầu tiên (audio toàn bài)':'từng câu hỏi'}. Hệ thống tự phát ${section.audioPolicy.segmentRepeat} lượt cho ${section.audioPolicy.sharedPart?'audio toàn bài':'mỗi câu'}, Beispiel một lượt.</p>`:''}${instructionHtml(section,choiceProfile,readOnly,choiceProfile.instructionImage?questions.find(question=>!question.example)||questions[0]:null)}<div class="goethe-questions">${questions.map(renderQuestion).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
 }
 
 export function bindBuilder({root=document,data,exam,section,pendingAudioUploads=new Map(),notify=()=>{}}={}){

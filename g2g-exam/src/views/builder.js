@@ -7,6 +7,8 @@ import {writingSubmission} from '../ui/writing-form.js';
 import {isAutomaticWritingForm} from '../domain/writing-form.js';
 import {resultSummary} from '../domain/result-summary.js';
 import {resultSummaryHtml} from './result-summary.js';
+import {manualGroups} from '../domain/manual-grading.js';
+import {oralMaximum} from '../domain/gradebook.js';
 
 export function examBuilderHtml({data,user,exam,section,readOnly}){
   const spec=getExamSpec(exam.provider,exam.level);
@@ -28,7 +30,7 @@ export function gradingDetailHtml({data,user,attempt,exam}){
   const a=attempt,ex=exam,published=a.status==='published';
   const summary=a.resultSummary||resultSummary(ex,data.questions,a);
   const hasSpeakingSection=(ex.sections||[]).some(s=>/speaking|sprechen|nói/i.test(s.skillKey||s.skill||s.name));
-  const oralEditor=!hasSpeakingSection?`<div class="grading-score-row"><label for="gradeOralScore">Điểm nói</label><div><input id="gradeOralScore" type="number" min="0" max="${ex.provider==='TELC'?75:15}" step="0.01" value="${a.oralScore??''}" placeholder="Chưa chấm" ${published?'disabled':''}><span>/ ${ex.provider==='TELC'?75:15}</span></div></div>`:'';
+  const oralEditor=!hasSpeakingSection?`<div class="grading-score-row"><label for="gradeOralScore">Điểm nói</label><div><input id="gradeOralScore" type="number" min="0" max="${oralMaximum(ex)}" step="0.01" value="${a.oralScore??''}" placeholder="Chưa chấm" ${published?'disabled':''}><span>/ ${oralMaximum(ex)}</span></div></div>`:'';
   const sections=(ex.sections||[]).map(section=>({section,questions:(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean)}));
   const manual=sections.flatMap(({section,questions})=>questions.filter(q=>!q.example&&!q.autoGrade&&!isAutomaticWritingForm(ex,section,q)));
   const auto=sections.filter(({questions})=>questions.length).map(({section,questions})=>{
@@ -36,12 +38,12 @@ export function gradingDetailHtml({data,user,attempt,exam}){
     const max=automatic.reduce((sum,q)=>sum+Number(q.maxScore||0),0);
     if(!max)return '';
     const score=Number(a.sectionScores?.[section.name]||0);
-    return `<details class="grading-section"><summary><b>${esc(section.name)}</b><span>${score}/${max} điểm</span></summary><div>${automatic.map(q=>{const answer=a.answers?.[q.id];return `<div class="grading-answer"><b>${esc(q.title||q.prompt||'Câu hỏi')}</b>${q.writingFormVersion===1?writingSubmission(q,answer):`<span>Đã chọn: ${esc(answer&&typeof answer==='object'?JSON.stringify(answer):answer??'Chưa trả lời')}</span>`}</div>`;}).join('')}</div></details>`;
+    return `<details class="grading-section"><summary><b>${esc(section.name)}</b><span>${score}/${max} điểm</span></summary><div>${automatic.map(q=>{const answer=a.answers?.[q.id];return `<div class="grading-answer"><b>${esc(q.title||q.prompt||'Câu hỏi')}</b>${q.writingFormVersion===1?writingSubmission(q,answer):`<span>Đã chọn: ${esc(answer==null||answer===''?'Chưa trả lời':section.questionProfile?.uniqueLetters?(typeof q.choices?.[Number(answer)]==='object'?q.choices[Number(answer)].text:q.choices?.[Number(answer)])||'Chưa trả lời':answer&&typeof answer==='object'?JSON.stringify(answer):answer)}</span>`}</div>`;}).join('')}</div></details>`;
   }).filter(Boolean).join('');
   const submission=q=>q.writingFormVersion===1?writingSubmission(q,a.answers?.[q.id]):esc(a.answers?.[q.id]||'(Học viên chưa nhập nội dung)');
   const isFormWriting=sections.some(({section})=>section.questionProfile?.layout==='form-fields');
   const skills=[...new Set(manual.map(q=>q.skill))];
-  const manualBody=manual.length?`<h2>${isFormWriting?'Viết · Bài 2':'Phần cần chấm'}</h2>${manual.map(q=>`<div class="grading-writing"><p>${esc(q.title||q.prompt||'')}</p><div class="bai-lam">${q.type==='writing'?submission(q):'Thực hiện theo hướng dẫn của giáo viên.'}</div></div>`).join('')}${skills.map(skill=>{const max=manual.filter(q=>q.skill===skill).reduce((sum,q)=>sum+Number(q.maxScore||0),0);return `<div class="grading-score-row"><label>${isFormWriting&&/viết|writing|schreiben/i.test(skill)?'Điểm Viết Bài 2':esc(skill)}</label><div><input class="manual-score" data-skill="${esc(skill)}" data-max="${max}" type="number" min="0" max="${max}" step="0.01" value="${a.manualScores?.[skill]??''}" ${published?'disabled':''}><span>/ ${max}</span></div></div>`;}).join('')}`:'';
+  const manualBody=manualGroups(ex,data.questions).map(group=>`<h2>${esc(group.section.questionProfile?.manualPerPart?group.section.name:isFormWriting?'Viết · Bài 2':'Phần cần chấm')}</h2>${group.section.instruction?`<p>${esc(group.section.instruction)}</p>`:''}${group.questions.map(q=>`<div class="grading-writing"><p>${esc(q.title==='Nháp'?'':q.title||q.prompt||'')}</p><div class="bai-lam">${q.type==='writing'?submission(q):'Thực hiện theo hướng dẫn của giáo viên.'}</div></div>`).join('')}<div class="grading-score-row"><label>${isFormWriting?'Điểm Viết Bài 2':'Điểm '+esc(group.key)}</label><div><input class="manual-score" data-skill="${esc(group.key)}" data-max="${group.max}" type="number" min="0" max="${group.max}" step="0.01" value="${a.manualScores?.[group.key]??''}" ${published?'disabled':''}><span>/ ${group.max}</span></div></div>`).join('');
   return `<main class="khung grading-detail"><div class="tieu-de-trang"><div><h1>${esc(a.studentName)}</h1><p>Lần #${a.attemptNo} - ${elapsed} - ${fmtDate(a.submittedAt||a.startedAt)}</p></div><div class="nhom-nut"><button class="nut" data-action="back-grading">Quay lại</button>${published?'':`<span data-grade-save-status role="status" aria-live="polite"></span><button class="nut chinh" data-action="publish-result">Công Bố</button>`}</div></div>${resultSummaryHtml(summary,{title:a.examTitle||ex.title})}<section class="the grading-panel"><h2>Phần tự chấm</h2>${auto||'<p>Không có phần tự chấm.</p>'}${manualBody}${oralEditor}<label class="grading-feedback">Nhận xét<textarea class="nhan-xet" id="gradeFeedback" ${published?'disabled':''}>${esc(a.feedback||'')}</textarea></label><div class="tong-diem"><span>Tổng Điểm</span><strong id="gradeTotal">${summary.total}</strong></div></section></main>`;
 }
 

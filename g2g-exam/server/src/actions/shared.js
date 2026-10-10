@@ -15,7 +15,7 @@ export async function canGrade(user,exam){
 }
 
 export function scoreQuestion(question,answer){
-  if(!question?.autoGrade||question.example)return 0;
+  if(!question?.autoGrade||question.example||answer==null||answer==='')return 0;
   if(['single','truefalse','cloze'].includes(question.type)){
     return Number(answer)===Number(question.correctAnswer)?Number(question.maxScore||0):0;
   }

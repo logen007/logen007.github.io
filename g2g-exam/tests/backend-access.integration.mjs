@@ -278,4 +278,37 @@ try{
   assert.equal((await query("SELECT owner_id FROM questions WHERE id='owner-regression'")).rows[0].owner_id,'t2');
   await commitOperations(copier,[{collection:'questions',id:'owner-regression',item:{ownerId:'t2',title:'Teacher can edit',status:'active'}}]);
   await assert.rejects(()=>commitOperations(copier,[{collection:'questions',id:'invalid-owner',item:{ownerId:'t',status:'active'}}]),/quyền tạo/);
+  // A2 runs the same production save/submit/grading actions in real SQL.
+  {
+  const {createExamDraft}=await import('../src/controllers/exam-factory.js');
+  const {saveAnswers}=await import('../server/src/actions/attempts.js');
+  const {saveManualGrade}=await import('../server/src/actions/grading.js');
+  const draftState={exams:[],questions:[],attempts:[],auditLogs:[]};
+  const a2=createExamDraft(draftState,teacher,{provider:'GOETHE',level:'A2',title:'A2 integration'});
+  for(const q of draftState.questions)await query('INSERT INTO questions(id,owner_id,data) VALUES($1,$2,$3)',[q.id,teacher.id,JSON.stringify(q)]);
+  await query("INSERT INTO exams(id,owner_id,status,data) VALUES($1,$2,'published',$3)",[a2.id,teacher.id,JSON.stringify(a2)]);
+  const a2Started=await startAttempt(student,{examId:a2.id});
+  const a2Id=a2Started.attemptId||a2Started.id;
+  const a2Row=(await query('SELECT * FROM attempts WHERE id=$1',[a2Id])).rows[0];
+  assert.equal(a2Row.public_data.examDeadlineMs-Date.parse(a2Row.public_data.startedAt),5400000);
+  // Move directly to the matching part to exercise reserved Beispiel letters.
+  const matching=a2.sections.find(s=>s.questionProfile.uniqueLetters);
+  await query('UPDATE attempts SET public_data=public_data||$2::jsonb WHERE id=$1',[a2Id,JSON.stringify({currentSectionId:matching.id,currentQuestionIds:matching.questionIds})]);
+  const real=matching.questionIds.filter(id=>!draftState.questions.find(q=>q.id===id).example);
+  await assert.rejects(()=>saveAnswers(student,{attemptId:a2Id,answers:{[real[0]]:0}}),/einmal/);
+  await saveAnswers(student,{attemptId:a2Id,answers:{[real[0]]:1}});
+  await assert.rejects(()=>saveAnswers(student,{attemptId:a2Id,answers:{[real[1]]:1}}),/einmal/);
+  await saveAnswers(student,{attemptId:a2Id,answers:{[real[0]]:null,[real[1]]:1}});
+  await submitAttempt(student,{attemptId:a2Id});
+  assert.equal((await saveManualGrade(teacher,{attemptId:a2Id,scores:{'Viết 1':6}})).status,'grading');
+  await assert.rejects(()=>saveManualGrade(teacher,{attemptId:a2Id,scores:{'Viết 2':11}}),/0–10/);
+  assert.equal((await saveManualGrade(teacher,{attemptId:a2Id,scores:{'Viết 2':6}})).status,'ready');
+  await assert.rejects(()=>saveOralScore(teacher,{attemptId:a2Id,score:26}),/25/);
+  await saveOralScore(teacher,{attemptId:a2Id,score:15});
+  const marks=(await query('SELECT private_data FROM attempts WHERE id=$1',[a2Id])).rows[0].private_data;
+  assert.equal(marks.oralMax,25);assert.deepEqual(marks.manualScores,{'Viết 1':6,'Viết 2':6});
+  await publishAttemptResult(teacher,{attemptId:a2Id});
+  assert.equal((await query('SELECT status FROM attempts WHERE id=$1',[a2Id])).rows[0].status,'published');
+  console.log('A2 SQL: 90-minute deadline, unique letters, reserved example, clearing answers, independent writing grades and oral /25 passed.');
+  }
 }finally{hook.deregister();await db.close();delete globalThis.__testDb;}

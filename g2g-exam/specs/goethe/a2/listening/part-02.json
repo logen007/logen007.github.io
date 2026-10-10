@@ -1,0 +1,37 @@
+{
+  "status": "APPROVED",
+  "key": "listening-2",
+  "name": "Nghe 2",
+  "questionLimit": 5,
+  "template": "GENERIC",
+  "questionProfile": {
+    "type": "single",
+    "layout": "letter-table",
+    "instructionImage": true,
+    "audio": true,
+    "choiceImages": false,
+    "numberWithinSkill": true,
+    "example": true,
+    "choices": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I"
+    ],
+    "uniqueLetters": true
+  },
+  "audio": {
+    "mode": "per_question_segment",
+    "sharedPart": true,
+    "maxSessions": 1,
+    "segmentRepeat": 1,
+    "controls": false,
+    "pauseAllowed": false,
+    "replayAllowed": false
+  }
+}

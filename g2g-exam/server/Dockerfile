@@ -14,6 +14,8 @@ COPY src/domain/student-profile.js /app/src/domain/student-profile.js
 COPY src/domain/gradebook.js /app/src/domain/gradebook.js
 COPY src/domain/result-summary.js /app/src/domain/result-summary.js
 COPY src/domain/exam-clock.js /app/src/domain/exam-clock.js
+COPY src/domain/manual-grading.js src/domain/writing-form.js src/domain/letter-answers.js /app/src/domain/
+COPY src/exam-specs /app/src/exam-specs
 COPY specs /app/public/specs
 COPY specs /app/specs
 COPY server/runtime/runtime-config.js /app/public/runtime-config.js

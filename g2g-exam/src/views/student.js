@@ -1,3 +1,5 @@
+import {letterAnswersHtml} from '../ui/letter-answers.js';
+import {partAudioSegments} from '../domain/part-audio.js';
 import {examDurationSeconds} from '../domain/exam-clock.js';
 import {
   ATTEMPT_STATUS,byId,getPublishedExams,getStudentResults,getLatestPublishedAttempt,
@@ -47,7 +49,7 @@ export function studentResultsHtml({data,user}){
 export function studentAttemptDetailHtml({review}){
   const attempt=review.attempt||{},score=review.score;
   const text=value=>value&&typeof value==='object'?JSON.stringify(value):String(value??'Chưa trả lời');
-  const option=(q,index)=>{const value=q.choices?.[Number(index)];return typeof value==='object'?value.text||String(index):value||String(index);};
+  const option=(q,index)=>{if(index==null||index==='')return 'Chưa trả lời';const value=q.choices?.[Number(index)];return typeof value==='object'?value.text||String(index):value||String(index);};
   const answer=q=>{
     if(q.fields?.length){
       return q.fields.filter(field=>!['heading','note','image','signature'].includes(field.type)).map(field=>`<div class="review-field"><b>${esc(field.label||'Ô trả lời')}</b><span>${esc(text(q.answer?.[field.index]))}</span>${score&&field.expected?`<small>Đáp án: ${esc(field.expected)}</small>`:''}</div>`).join('');
@@ -72,17 +74,17 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
   const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
-  let questionNumber=exam.sections.slice(0,sectionIndex).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!knownQuestions.get(id)?.example).length,0);
+  let questionNumber=exam.sections.slice(0,sectionIndex).filter(item=>!sec.questionProfile?.numberWithinSkill||item.skillKey===sec.skillKey).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!knownQuestions.get(id)?.example).length,0);
   let exampleTitleShown=false;
-  const questionList=`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex})=>{
+  const questionList=sec.questionProfile?.uniqueLetters?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex})=>{
     const showExampleTitle=Boolean(q.example&&!exampleTitleShown);if(showExampleTitle)exampleTitleShown=true;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
-    return renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:q.example?null:++questionNumber,showExampleTitle,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
+    return renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:q.example?null:++questionNumber,showExampleTitle,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
   }).join('')||'<div class="rong">Dieser Teil enthält noch keine Aufgaben.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sec.name))}</h1></div></div>`
     :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(germanSectionName(sec.name))}</h1></div></div>`;
-  const body=`<main class="noi-dung-thi">${context}${preview?'':`<div class="exam-free-navigation"><span>Prüfungszeit: <strong id="examMainTime">--:--</strong></span><button class="nut" data-action="submit-exam">Prüfung abgeben</button></div>`}<div class="exam-paper">${sectionInstruction}${sectionAudio}${questionList}</div><nav class="dieu-huong-thi" aria-label="Prüfungsnavigation"><button class="nut" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${preview?'Vorheriger Teil':'Zurück'}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh" data-action="${nextAction}">${nextLabel}</button></nav></main>`;
+  const body=`<main class="noi-dung-thi">${context}${preview?'':`<div class="exam-free-navigation"><span>Prüfungszeit: <strong id="examMainTime">--:--</strong></span><button class="nut" data-action="submit-exam">Prüfung abgeben</button></div>`}<div class="exam-paper">${sec.questionProfile?.splitLayout?`<div class="exam-reading-split">${sectionInstruction}<div>${sectionAudio}${questionList}</div></div>`:sectionInstruction+sectionAudio+questionList}</div><nav class="dieu-huong-thi" aria-label="Prüfungsnavigation"><button class="nut" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${preview?'Vorheriger Teil':'Zurück'}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh" data-action="${nextAction}">${nextLabel}</button></nav></main>`;
   const header=preview
     ?`<header class="thanh-thi thanh-thi--preview"><strong>${esc(exam.title)}</strong><div class="preview-header-row"><button class="text-link" data-action="close-preview"><span aria-hidden="true">←</span> Zurück</button>${previewOutlineHtml(previewSummary,sectionIndex)}</div></header>`
     :`<header class="thanh-thi"><span class="exam-mobile-brand"><img src="/brand/favicon" alt=""><strong>Deutschprüfung</strong></span><div class="thong-tin-thi"><span>Teil ${sectionIndex+1}/${exam.sections.length}</span><b id="examTimer">--:--</b></div></header>`;
@@ -127,9 +129,7 @@ function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
   if(!audioQuestions.length||(!policyEnabled&&!hasSpecialAudio))return '';
   const repeat=Math.max(1,Number(policy.segmentRepeat)||1),key=`g2g.section-audio.${attempt.id}.${section.id}`;
   const used=!preview&&(Boolean(attempt.audioSessions?.[section.id]?.startedAt)||Boolean(sessionStorage.getItem(key)));
-  const segments=[];
-  let taskNumber=0;
-  audioQuestions.forEach(question=>segments.push({url:question.audioUrl,repeat:question.example?1:repeat,label:question.example?'Beispiel':`Aufgabe ${++taskNumber}`}));
+  const segments=partAudioSegments(section,questions);
   const audios=segments.map((segment,index)=>`<audio class="section-audio-segment" data-order="${index}" data-repeat="${segment.repeat}" data-label="${esc(segment.label)}" preload="metadata" src="${esc(segment.url)}"></audio>`).join('');
   return `<section class="section-audio" data-section-audio="${esc(section.id)}" data-storage-key="${esc(key)}">${audios}<button type="button" class="section-audio-play" aria-label="Audio abspielen" ${used?'disabled':''}>${iconHtml('play')}</button><div class="section-audio-body"><span class="section-audio-progress" role="progressbar" aria-label="Audiofortschritt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><i></i></span><span class="section-audio-status" aria-live="polite">${used?'Audio wurde bereits abgespielt':'Audio kann nur einmal abgespielt werden'}</span></div></section>`;
 }
@@ -159,7 +159,7 @@ function exampleAnswer(q){
   return '';
 }
 
-export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null,showExampleTitle=true,formFrame=false,mobileThreeChoices=false}={}){
+export function renderQuestionHtml(q,answer,attempt,{wordRange=null,sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null,showExampleTitle=true,formFrame=false,mobileThreeChoices=false}={}){
   const isExample=Boolean(q.example),exampleTitle=isExample&&showExampleTitle?'<div class="question-example-title">Beispiel</div>':'';
   if(isExample)answer=exampleAnswer(q);
   if(q.type==='writing'&&(formFrame||q.writingFormVersion===1))return `<div class="cau-thi writing-form-question ${isExample?'is-example':''}" data-q="${esc(q.id)}">${exampleTitle}${writingFormDisplay(q,answer,{readOnly:isExample})}</div>`;
@@ -179,7 +179,7 @@ export function renderQuestionHtml(q,answer,attempt,{sectionInstruction='',previ
     return `<div class="${root}" data-q="${q.id}">${head}<div class="answer-options ${choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}${mobileThreeChoices?' answer-options--mobile-three':''}" role="radiogroup" aria-label="${esc(questionAriaText||'Antwort auswählen')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="${isExample?'':'answer-one'}" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(`${letter}. ${text||''}`)}" value="${index}" ${String(answer)===String(index)?'checked':''} ${isExample?'disabled':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span><strong class="answer-letter">${letter}.</strong> ${esc(text)}</span></span></label>`;}).join('')}</div></div>`;
   }
   if(q.type==='matching')return `<div class="${root}" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div class="matching-row"><b>${esc(p[0])}</b><select class="dap-an ${isExample?'':'answer-match'}" data-q="${q.id}" data-i="${i}" ${isExample?'disabled':''}><option value="">Antwort auswählen</option>${[...new Set((q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;
-  if(q.type==='writing')return `<div class="${root}" data-q="${q.id}">${head}${Array.isArray(q.rubric)&&q.rubric.length?writingFieldsHtml(q,answer,{framed:formFrame}):`<textarea class="viet ${isExample?'':'answer-text'}" data-q="${q.id}" placeholder="Schreiben Sie hier..." ${isExample?'disabled':''}>${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> Wörter</div>`}</div>`;
+  if(q.type==='writing')return `<div class="${root}" data-q="${q.id}">${head}${wordRange?`<p class="phu-de">Schreiben Sie ${wordRange[0]}–${wordRange[1]} Wörter.</p>`:''}${Array.isArray(q.rubric)&&q.rubric.length?writingFieldsHtml(q,answer,{framed:formFrame}):`<textarea class="viet ${isExample?'':'answer-text'}" data-q="${q.id}" placeholder="Schreiben Sie hier..." ${isExample?'disabled':''}>${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> Wörter</div>`}</div>`;
   if(q.type==='speaking')return `<div class="cau-thi" data-q="${q.id}">${head}<div class="goi-y">Der mündliche Teil wird nach den Anweisungen der Lehrkraft oder des Prüfungsraums durchgeführt und manuell bewertet.</div></div>`;
   return `<div class="cau-thi">${head}</div>`;
 }

@@ -4,6 +4,7 @@ import {isTeacher,attemptExam,canGrade,questionMap} from './shared.js';
 import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
 import {finalizeOutcome} from '../result-outcome.js';
 import {resultSummary} from '../../../src/domain/result-summary.js';
+import {manualGroups} from '../../../src/domain/manual-grading.js';
 
 export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
   if(!isTeacher(user))throw appError(403,'Chỉ giáo viên được chấm bài.');
@@ -15,11 +16,7 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
     if(!(await canGrade(user,exam)))throw appError(403,'Bạn chưa được cấp quyền chấm bài này.');
     if(!['grading','ready'].includes(attempt.status))throw appError(409,'Bài không ở trạng thái chấm.');
 
-    const questions=await questionMap(exam),limits={};
-    for(const section of exam.sections||[])for(const id of section.questionIds||[]){
-      const question=questions.get(id);
-      if(question&&!question.example&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question))limits[question.skill]=(limits[question.skill]||0)+Number(question.maxScore||0);
-    }
+    const questions=await questionMap(exam),limits=Object.fromEntries(manualGroups(exam,questions).map(group=>[group.key,group.max]));
     const previous=attempt.private_data||{},clean={...(previous.manualScores||{})};
     const sectionScores={...(previous.sectionScores||{})};
     let autoScore=Number(previous.autoScore||0);

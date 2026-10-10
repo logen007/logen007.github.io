@@ -1,0 +1,22 @@
+{
+  "status": "APPROVED",
+  "key": "reading-2",
+  "name": "Đọc 2",
+  "questionLimit": 5,
+  "template": "GENERIC",
+  "questionProfile": {
+    "type": "single",
+    "layout": "choices",
+    "instructionImage": true,
+    "audio": false,
+    "choiceImages": false,
+    "numberWithinSkill": true,
+    "example": true,
+    "choices": [
+      "A",
+      "B",
+      "C"
+    ],
+    "splitLayout": true
+  }
+}

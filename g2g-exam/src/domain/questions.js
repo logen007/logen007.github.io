@@ -18,7 +18,7 @@ export function getQuestionMaxScore(question,defaultScore=0){
 export function getQuestionChoiceError(input,existing=null){
   const type=input.type??existing?.type??'single';
   if(!['single','truefalse','cloze'].includes(type))return '';
-  const choices=clone(input.choices??existing?.choices??[]),choiceTexts=choices.map(choiceText);
+  const choices=clone(input.choices??existing?.choices??[]),choiceTexts=choices.map(choice=>choiceText(choice)||(typeof choice==='object'&&String(choice.imageUrl||'').trim()));
   if(choiceTexts.filter(Boolean).length<2)return 'Câu tự chấm cần ít nhất 2 lựa chọn hợp lệ.';
   const correct=Number(input.correctAnswer??existing?.correctAnswer);
   if(!Number.isInteger(correct)||correct<0||correct>=choices.length||!choiceTexts[correct])return 'Đáp án đúng không hợp lệ.';

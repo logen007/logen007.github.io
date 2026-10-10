@@ -1,6 +1,6 @@
 import {withTx,appError,audit,now,uid} from '../db.js';
 import {isTeacher,attemptExam,questionMap,canGrade} from './shared.js';
-import {skillScores,examResult} from '../../../src/domain/gradebook.js';
+import {skillScores,examResult,oralMaximum} from '../../../src/domain/gradebook.js';
 import {finalizeOutcome} from '../result-outcome.js';
 import {deliverResultEmail} from './grading.js';
 
@@ -16,7 +16,7 @@ export async function saveOralScore(user,{attemptId,score}){
     const attempt={...row.public_data,...row.private_data};
     const prior=skillScores(exam,questions,attempt);
     if(attempt.oralScore===score)return {ok:true};
-    const max=prior.speaking?.max||(String(exam.provider).toUpperCase()==='TELC'?75:15);
+    const max=prior.speaking?.max||oralMaximum(exam);
     if(score<0||score>max)throw appError(400,`Điểm Nói phải từ 0 đến ${max}.`);
     const patch={oralScore:score,oralMax:max,oralReviewerId:user.id,oralReviewerName:user.name,updatedAt:now()};
     const skills=skillScores(exam,questions,{...attempt,...patch});

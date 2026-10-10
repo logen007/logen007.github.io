@@ -1,0 +1,69 @@
+import assert from 'node:assert/strict';
+import {seedState} from '../src/seed.js';
+import {createExamDraft} from '../src/controllers/exam-factory.js';
+import {examDurationSeconds} from '../src/domain/exam-clock.js';
+import {manualGroups} from '../src/domain/manual-grading.js';
+import {oralMaximum} from '../src/domain/gradebook.js';
+import {resultSummary} from '../src/domain/result-summary.js';
+import {partAudioSegments,partAudioQuestions} from '../src/domain/part-audio.js';
+import {letterAnswerError} from '../src/domain/letter-answers.js';
+import {examHtml} from '../src/views/student.js';
+import {gradingDetailHtml} from '../src/views/builder.js';
+import {renderBuilder} from '../src/part-templates/default/builder.js';
+import {validateExamForPublish,duplicateExam,startAttempt,submitAttempt,saveManualScore} from '../src/core.js';
+globalThis.sessionStorage={getItem:()=>null};
+const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teacher-lan'),student=state.users.find(u=>u.id==='student-a');
+const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'A2',title:'A2 test'});
+assert.equal(exam.sections.length,10);
+assert.equal(examDurationSeconds(exam),5400);
+assert.equal(oralMaximum(exam),25);
+assert.equal(oralMaximum({provider:'GOETHE',level:'A1'}),15);
+assert.deepEqual(manualGroups(exam,state.questions).map(g=>[g.key,g.max]),[['Viết 1',10],['Viết 2',10]]);
+for(const section of exam.sections){
+  const questions=section.questionIds.map(id=>state.questions.find(q=>q.id===id));
+  assert.equal(questions.filter(q=>!q.example).length,section.skillKey==='writing'?1:5);
+  assert.equal(questions.filter(q=>q.example).length,section.skillKey==='writing'?0:1);
+  questions.forEach((q,i)=>{q.title='Question '+i;if(q.choices?.length)q.choices=q.choices.map((c,i)=>typeof c==='object'?c:{text:String(c)});if(section.questionProfile.uniqueLetters)q.correctAnswer=i;else if(q.autoGrade)q.choices=[{text:'A'},{text:'B'},{text:'C'}];});
+  if(section.audioPolicy){
+    const selected=partAudioQuestions(section,questions);selected.forEach((q,i)=>q.audioUrl='/uploads/'+section.id+'-'+i+'.mp3');
+    const repeats=partAudioSegments(section,questions).map(s=>s.repeat);
+    const expected={'Nghe 1':[1,2,2,2,2,2],'Nghe 2':[1,1],'Nghe 3':[1,1,1,1,1,1],'Nghe 4':[1,2]};
+    assert.deepEqual(repeats,expected[section.name]);
+    const builder=renderBuilder({data:state,exam,section});
+    assert.equal((builder.match(/data-field="audio"/g)||[]).length,selected.length);
+  }
+  if(section.questionProfile.uniqueLetters){
+    const answers=Object.fromEntries(questions.filter(q=>!q.example).map(q=>[q.id,q.correctAnswer]));
+    assert.equal(letterAnswerError(section,questions,answers),'');
+    assert.match(letterAnswerError(section,questions,{...answers,[questions[1].id]:0}),/einmal/);
+    assert.match(letterAnswerError(section,questions,{...answers,[questions[1].id]:-1}),/gültigen/);
+  }
+}
+assert.deepEqual(validateExamForPublish(state,exam),[]);
+const hearing=exam.sections.find(s=>s.name==='Nghe 1'),missing=state.questions.find(q=>q.id===hearing.questionIds[1]);
+const url=missing.audioUrl;missing.audioUrl='';assert.ok(validateExamForPublish(state,exam).some(e=>e.includes('audio')));missing.audioUrl=url;
+exam.status='published';
+const attempt=startAttempt(state,student,exam.id);
+attempt.answers=Object.fromEntries(exam.sections.flatMap(s=>s.questionIds.map(id=>[id,null])));
+submitAttempt(state,student,attempt.id);
+assert.equal(attempt.autoScore,0,'Blank answers must not score as option A');
+saveManualScore(state,teacher,attempt.id,{scores:{'Viết 1':6}});
+assert.equal(attempt.status,'grading');
+assert.throws(()=>saveManualScore(state,teacher,attempt.id,{scores:{'Viết 2':11}}),/0–10/);
+saveManualScore(state,teacher,attempt.id,{scores:{'Viết 2':6}});
+assert.equal(attempt.status,'ready');
+const marks={scoringVersion:2,manualScores:{'Viết 1':6,'Viết 2':6},sectionScores:Object.fromEntries(exam.sections.filter(s=>s.skillKey!=='writing').map(s=>[s.name,3])),oralScore:15};
+const summary=resultSummary(exam,state.questions,marks);
+assert.equal(summary.passed,true);assert.equal(summary.skills.writing.score,12);assert.equal(summary.skills.speaking.max,25);
+assert.equal(resultSummary(exam,state.questions,{...marks,oralScore:14.99}).passed,false);
+const htmlFor=name=>{const index=exam.sections.findIndex(s=>s.name===name),section=exam.sections[index];return examHtml({exam,attempt:{id:'preview',answers:{}},sectionIndex:index,questions:section.questionIds.map(id=>state.questions.find(q=>q.id===id)),allQuestions:state.questions,preview:true,online:true});};
+assert.match(htmlFor('Đọc 1'),/exam-reading-split/);
+assert.match(htmlFor('Đọc 4'),/maxlength="1"/);
+assert.match(htmlFor('Nghe 2'),/letter-table/);assert.equal((htmlFor('Nghe 2').match(/<select data-letter-answer/g)||[]).length,5);
+assert.match(htmlFor('Viết 1'),/20–30 Wörter/);assert.match(htmlFor('Viết 2'),/30–40 Wörter/);
+const grading=gradingDetailHtml({data:state,user:teacher,exam,attempt});
+assert.match(grading,/data-skill="Viết 1"/);assert.match(grading,/data-skill="Viết 2"/);assert.match(grading,/id="gradeOralScore"[^>]+max="25"/);
+const copy=duplicateExam(state,teacher,exam.id);
+assert.equal(examDurationSeconds(copy),5400);assert.equal(copy.sections.length,10);
+assert.ok(copy.sections.every(s=>s.questionIds.every(id=>!exam.sections.some(o=>o.questionIds.includes(id)))));
+console.log('Goethe A2: structure, examples, 90-minute clock, audio playlists, unique letters, rendering, independent copy and grading passed.');

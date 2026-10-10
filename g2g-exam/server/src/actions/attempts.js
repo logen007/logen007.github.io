@@ -3,6 +3,7 @@ import {examById,attemptExam,questionMap,scoreQuestion,resultFor,sectionMeta} fr
 import {codeHash,checkCodeRate} from './exam-access.js';
 import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
 import {examDeadlineMs,submissionTiming} from '../../../src/domain/exam-clock.js';
+import {letterAnswerError} from '../../../src/domain/letter-answers.js';
 
 export async function startAttempt(user,{examId,restart=false,code}){
   if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
@@ -65,10 +66,15 @@ export async function saveAnswers(user,{attemptId,answers={}}){
     const attempt=result.rows[0],publicData=attempt.public_data;
     if(attempt.student_id!==user.id)throw appError(403,'Không có quyền lưu lượt thi này.');
     if(attempt.status!=='in_progress')throw appError(409,'Lượt thi đã kết thúc.');
-    const deadline=examDeadlineMs(publicData,await attemptExam(attempt,client));
+    const exam=await attemptExam(attempt,client),deadline=examDeadlineMs(publicData,exam);
     if(Date.now()>=deadline)throw appError(409,'Phần thi đã hết thời gian.');
     const allowed=new Set(publicData.currentQuestionIds||[]),next={...(publicData.answers||{})};
     for(const [key,value] of Object.entries(answers||{}))if(allowed.has(key))next[key]=value;
+    const section=exam.sections?.find(s=>s.id===publicData.currentSectionId);
+    if(section?.questionProfile?.uniqueLetters){
+      const error=letterAnswerError(section,await questionMap(exam),next);
+      if(error)throw appError(400,error);
+    }
     const out={...publicData,answers:next,updatedAt:now()};
     await client.query(`UPDATE attempts SET public_data=$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify(out)]);
     return {ok:true};

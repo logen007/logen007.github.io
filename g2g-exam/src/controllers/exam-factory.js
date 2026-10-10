@@ -4,7 +4,7 @@ import {writingFormScore} from '../domain/writing-form.js';
 
 export function questionDraftChoices(profile={}){
   const configured=Array.isArray(profile.choices)&&profile.choices.length>=2?clone(profile.choices):['Nháp','Nháp','Nháp'];
-  return profile.layout==='true-false'?configured:configured.map((_,index)=>index<2?'Nháp':'');
+  return profile.layout==='true-false'||profile.uniqueLetters?configured:configured.map((_,index)=>index<2?'Nháp':'');
 }
 
 function populateConfiguredSections(state,user,exam){
@@ -31,6 +31,9 @@ function populateConfiguredSections(state,user,exam){
       if(Object.keys(patch).length)updateQuestion(state,user,questionId,patch);
     }
     const additions=[];
+    if(profile.example&&!(section.questionIds||[]).some(id=>byId(state.questions,id)?.example)){
+      additions.push(createQuestion(state,user,{level:exam.level,skill:section.skill,part:section.name,type:profile.type||'single',title:'Nháp',choices,correctAnswer:0,example:true,maxScore:0}).id);
+    }
     const realQuestionCount=(section.questionIds||[]).filter(questionId=>!byId(state.questions,questionId)?.example).length;
     for(let index=realQuestionCount;index<required;index++){
       const isStimulusStart=(profile.stimulusStarts||[]).map(Number).includes(index);

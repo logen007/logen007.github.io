@@ -1,4 +1,9 @@
 import {TELC_SCORING} from '../../specs/telc/scoring.js';
+import {getExamSpec} from '../exam-specs/index.js';
+
+export function oralMaximum(exam){
+  return getExamSpec(exam.provider,exam.level)?.oralMax||(String(exam.provider).toUpperCase()==='TELC'?75:15);
+}
 
 export function isStandardTelc(exam){
   return String(exam?.provider).toUpperCase()==='TELC'&&TELC_SCORING.levels.includes(String(exam.level).toUpperCase());
@@ -53,7 +58,7 @@ export function skillScores(exam,questions,attempt){
     if(attempt.scoringVersion||entry.score===0)entry.score+=Number(score||0);
   }
   if(attempt.oralScore!=null){
-    skills.speaking={score:Number(attempt.oralScore),max:Number(attempt.oralMax||skills.speaking?.max||(String(exam.provider).toUpperCase()==='TELC'?75:15))};
+    skills.speaking={score:Number(attempt.oralScore),max:Number(attempt.oralMax||skills.speaking?.max||oralMaximum(exam))};
   }
   for(const entry of Object.values(skills)){
     entry.score=Math.round(entry.score*100)/100;entry.max=Math.round(entry.max*100)/100;

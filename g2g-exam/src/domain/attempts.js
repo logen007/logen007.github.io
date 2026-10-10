@@ -5,9 +5,11 @@ import {
 import {isAutomaticWritingForm,scoreWritingForm} from './writing-form.js';
 import {skillScores,examResult} from './gradebook.js';
 import {examDeadlineMs,submissionTiming} from './exam-clock.js';
+import {manualGroups} from './manual-grading.js';
+import {letterAnswerError} from './letter-answers.js';
 
 function questionScore(question,answer){
-  if(!question?.autoGrade||question.example)return 0;
+  if(!question?.autoGrade||question.example||answer==null||answer==='')return 0;
   if(['single','truefalse','cloze'].includes(question.type)){
     return Number(answer)===Number(question.correctAnswer)?Number(question.maxScore||0):0;
   }
@@ -68,6 +70,8 @@ export function saveAnswer(state,user,attemptId,questionId,answer){
   if(sectionIndex>=0&&exam.sections[sectionIndex].autoSubmit!==false&&getSectionRemainingSeconds(attempt,exam,sectionIndex)<=0){
     throw new Error('Phần thi này đã hết thời gian.');
   }
+  const letterError=sectionIndex>=0?letterAnswerError(exam.sections[sectionIndex],state.questions,{...attempt.answers,[questionId]:answer}):'';
+  if(letterError)throw new Error(letterError);
   attempt.answers[questionId]=clone(answer);
   attempt.updatedAt=nowIso();
   return attempt;
@@ -144,12 +148,7 @@ export function submitAttempt(state,user,attemptId){
 }
 
 function manualLimits(state,exam){
-  const limits={};
-  for(const section of exam.sections||[])for(const id of section.questionIds||[]){
-    const question=byId(state.questions,id);
-    if(question&&!question.example&&!question.autoGrade&&!isAutomaticWritingForm(exam,section,question))limits[question.skill]=(limits[question.skill]||0)+Number(question.maxScore||0);
-  }
-  return limits;
+  return Object.fromEntries(manualGroups(exam,state.questions).map(group=>[group.key,group.max]));
 }
 
 export function saveManualScore(state,user,attemptId,payload={}){

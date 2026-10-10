@@ -3,6 +3,7 @@ import {
   clone,uid,nowIso,byId,isTeacher,isMaster,audit,canEditExam
 } from './base.js';
 import {getQuestionChoiceError} from './questions.js';
+import {configuredPartErrors} from './configured-part-validation.js';
 
 function normalizeSection(input={},index=0){
   return {
@@ -255,6 +256,7 @@ export function validateExamForPublish(state,exam){
   if(!exam?.sections?.length)errors.push('Bài thi chưa có phần nào.');
   const seen=new Set();
   for(const [index,section] of (exam?.sections||[]).entries()){
+    errors.push(...configuredPartErrors(section,state.questions));
     if(!section.name?.trim())errors.push(`Phần ${index+1} chưa có tên.`);
     const realQuestionIds=(section.questionIds||[]).filter(questionId=>!byId(state.questions,questionId)?.example);
     if(!realQuestionIds.length)errors.push(`Phần ${index+1} chưa có câu hỏi tính điểm.`);

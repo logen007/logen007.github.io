@@ -42,7 +42,7 @@ export async function loadApprovedExamSpec(relativePath){
       parts,
     };
   }));
-  return {provider:String(source.provider||'').toUpperCase(),level:String(source.level||'').toUpperCase(),configured:true,skills};
+  return {provider:String(source.provider||'').toUpperCase(),level:String(source.level||'').toUpperCase(),configured:true,skills,...(source.oralMax?{oralMax:Number(source.oralMax)}:{})};
 }
 
 export async function loadApprovedPartSpec(relativePath){
