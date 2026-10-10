@@ -1,6 +1,7 @@
 import {byId,clone,createExam,createQuestion,updateQuestion,updateExam,addQuestionsToSection} from '../core.js';
 import {getExamSpec,buildSectionsFromSpec,buildSkillSettings} from '../exam-specs/index.js';
 import {writingFormScore} from '../domain/writing-form.js';
+import {choiceLetter} from '../domain/letter-answers.js';
 
 export function questionDraftChoices(profile={}){
   const configured=Array.isArray(profile.choices)&&profile.choices.length>=2?clone(profile.choices):['Nháp','Nháp','Nháp'];
@@ -23,6 +24,11 @@ function populateConfiguredSections(state,user,exam){
       const patch={};
       if(profile.type&&question.type!==profile.type)patch.type=profile.type;
       if(Array.isArray(profile.choices)&&question.choices?.length>profile.choices.length)patch.choices=question.choices.slice(0,profile.choices.length);
+      if(profile.uniqueLetters&&JSON.stringify((question.choices||[]).map(choiceLetter))!==JSON.stringify(profile.choices)){
+        const letter=choiceLetter(question.choices?.[question.correctAnswer]);
+        patch.choices=clone(profile.choices);
+        patch.correctAnswer=profile.choices.indexOf(letter);
+      }
       if(profile.layout==='true-false'&&JSON.stringify(question.choices||[])===JSON.stringify(['Đúng','Sai']))patch.choices=clone(profile.choices||['Richtig','Falsch']);
       if(hasFormRows&&(!Array.isArray(question.rubric)||!question.rubric.length))patch.rubric=clone(initialRubric);
       if(profile.formFrame===true&&question.writingFormVersion!==1)patch.writingFormVersion=1;

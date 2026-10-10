@@ -11,9 +11,8 @@ user-approved practice format, not an independently inferred official format.
 | Speaking | Offline | Teacher-entered total | 25 | Excluded |
 
 Reading 1–3: shared text/image left, ABC questions right; stacked on mobile.
-Reading 4: long prompts, one-letter inputs, no repeated letter including example.
-The alphabet in the question profile is an answer encoding, not a claim that
-every exam contains 26 stimuli; the teacher's instruction lists the actual texts.
+Reading 4: long prompts, dropdown a–f and x, no repeated letter including example.
+Updated from the user's reference image: x means no matching text.
 
 Listening 1: ABC text, example once then each question twice.
 Listening 2: shared image, person/answer table, dropdown a–i, letters not reusable.

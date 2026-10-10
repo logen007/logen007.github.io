@@ -5,7 +5,7 @@ function control(q,answer,layout){
   const value=q.example?q.correctAnswer:answer,letter=value==null||value===''?'':choiceLetter(q.choices?.[Number(value)]);
   if(q.example)return `<span class="letter-example">${esc(letter.toLowerCase())}</span>`;
   const attrs=`data-letter-answer data-q="${esc(q.id)}" aria-label="Antwort: ${esc(q.title)}"`;
-  if(layout==='letter-table')return `<select ${attrs}><option value="">—</option>${(q.choices||[]).map((choice,i)=>`<option value="${i}" ${String(value)===String(i)?'selected':''}>${esc(choiceLetter(choice).toLowerCase())}</option>`).join('')}</select>`;
+  if(layout==='letter-table'||layout==='letter-select')return `<select id="letter-${esc(q.id)}" ${attrs}><option value="">—</option>${(q.choices||[]).map((choice,i)=>`<option value="${i}" ${String(value)===String(i)?'selected':''}>${esc(choiceLetter(choice).toLowerCase())}</option>`).join('')}</select>`;
   return `<input ${attrs} maxlength="1" autocomplete="off" autocapitalize="characters" value="${esc(letter.toLowerCase())}">`;
 }
 
