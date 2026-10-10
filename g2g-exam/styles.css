@@ -434,7 +434,13 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 .instruction-audio > span { font-size:13px; color:var(--phu); }
 .publish-error-list { display:grid; gap:16px; margin:20px 0; padding-left:24px; max-height:55vh; overflow:auto; overflow-wrap:anywhere; }
 .student-result-row { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:24px; padding:24px; border:1px solid var(--vien); border-radius:24px; background:#fff; }
-.student-result-info h2 { margin:0; font-size:18px; font-weight:550; line-height:1.4; overflow-wrap:anywhere; }
+.student-result-info h2 { margin:0; font-size:18px; font-weight:550; line-height:1.4; white-space:nowrap; overflow:auto; }
+.student-result-info h2.passed { color:var(--xanh); }
+.student-result-info h2.failed { color:var(--do); }
+.tieu-de-trang h1,.exam-context h1,.the-de h3,.learner-name h1 { min-width:0; max-width:100%; white-space:nowrap; overflow:auto; }
+.table-link { white-space:nowrap; }
+.table-link.exam-title-status.is-published { color:var(--xanh); }
+.table-link.exam-title-status.is-draft { color:var(--phu); }
 .student-result-info p { margin:8px 0 0; color:var(--phu); font-size:13px; }
 .student-result-outcome { display:flex; align-items:center; gap:20px; }
 .student-result-score { display:flex; align-items:baseline; gap:6px; white-space:nowrap; }

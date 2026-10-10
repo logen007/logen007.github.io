@@ -5,6 +5,17 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
 
 ## Visual hierarchy
 
+- Show status through the title color instead of a separate status column:
+  published/success green, draft/pending neutral, failed/error red. Preserve a
+  readable status description (accessible name or concise text); never rely on
+  color alone.
+- Interface titles stay on one line (white-space: nowrap). Long titles must remain
+  readable through local horizontal scrolling or an accessible full-title view;
+  never force the whole mobile page wider. This does not apply to exam question,
+  instruction or answer content.
+- Mobile is a first-class layout: preserve touch targets, explicit gaps, stable
+  alignment and local table overflow; avoid page-wide overflow and layout jumps.
+
 - Google Sans Flex, optical sizing enabled. Body 15px/1.5 at weight 400;
   form controls 14px; supporting text 12–13px. Mobile editable text can use 16px.
 - Page title 28–40px at weight 450; card heading 20–24px at weight 500.

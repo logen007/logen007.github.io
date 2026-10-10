@@ -1,11 +1,22 @@
 import assert from 'node:assert/strict';
 import {studentResultsHtml} from '../src/views/student.js';
+import {examAdminHtml} from '../src/views/admin.js';
+
+const examList=examAdminHtml({user:{id:'owner',role:'master'},data:{attempts:[],exams:[
+  {id:'one',title:'Long <title>',ownerId:'owner',status:'published'},
+  {id:'two',title:'Draft',ownerId:'owner',status:'draft'}
+]}});
+assert.doesNotMatch(examList,/<th>Trạng thái<\/th>/);
+assert.match(examList,/exam-title-status is-published/);
+assert.match(examList,/exam-title-status is-draft/);
+assert.match(examList,/aria-label="Long &lt;title&gt; — Đã xuất bản"/);
 
 const resultView=attempts=>studentResultsHtml({data:{attempts},user:{id:'student-test'}});
 const resultAttempt={id:'result-1',studentId:'student-test',examTitle:'A2 <test>',attemptNo:2,startedAt:'2026-10-10T10:00:00Z',status:'published',totalScore:0,result:'Chưa đạt',reviewerName:'Private reviewer'};
 const publishedResult=resultView([resultAttempt]);
 assert.match(publishedResult,/student-result-score"><strong>0<\/strong>/);
 assert.match(publishedResult,/student-result-badge failed/);
+assert.match(publishedResult,/<h2 class="failed">/);
 assert.match(publishedResult,/A2 &lt;test&gt;/);
 assert.match(publishedResult,/data-action="student-attempt-detail" data-id="result-1"/);
 assert.doesNotMatch(publishedResult,/<table|Private reviewer|Trạng thái|Người chấm/);
