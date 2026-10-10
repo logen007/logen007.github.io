@@ -118,6 +118,12 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .the-de .chan { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:24px; font-size:12px; color:var(--phu); }.the-de .hanh-dong { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
 .the-de .chan strong { color:var(--chu); font-weight:700; }.exam-latest-result { font-weight:600; }.exam-latest-result.failed { color:#c83b3b; }.exam-latest-result.passed { color:#218a58; }
 .table-wrap { overflow:auto; background:var(--mat); border:1px solid var(--vien); border-radius:var(--r); }
+.profile-form { display:grid; gap:16px; }.profile-form label { display:grid; gap:8px; }.profile-form [data-error] { color:#b42318; margin:0; }
+.grade-filters { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:24px; }.grade-filters label { display:grid; gap:8px; flex:1 1 150px; color:var(--phu); font-size:13px; }.grade-filters select { width:100%; }
+.score-badge { position:relative; display:inline-flex; padding:4px 10px; border-radius:var(--pill); white-space:nowrap; font-weight:500; }
+.score-excellent { background:#c5ebd7; color:#145c37; }.score-good { background:#c9daf8; color:#244d81; }.score-satisfactory { background:#fff2cc; color:#735700; }.score-sufficient { background:#eef1f3; color:#43515a; }.score-failed { background:#f9d7d3; color:#9b2720; }
+.score-tooltip { position:absolute; z-index:2; top:100%; left:0; padding:5px 10px; border-radius:var(--pill); background:var(--chu); color:var(--mat); font-size:12px; font-weight:400; pointer-events:none; opacity:0; }
+.score-badge:hover .score-tooltip,.score-badge:focus .score-tooltip { opacity:1; }
 .bang { width:100%; border-collapse:collapse; min-width:760px; }
 .bang th,.bang td { text-align:left; padding:18px 20px; border-bottom:1px solid var(--vien); font-size:14px; vertical-align:middle; }
 .bang th { font-size:12px; font-weight:500; color:var(--phu); background:#fafafa; }.bang tbody tr:hover { background:#fcfcfd; }.bang tr:last-child td { border-bottom:0; }

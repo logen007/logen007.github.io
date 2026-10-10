@@ -1,11 +1,16 @@
 import {appError,query} from '../db.js';
 import {isTeacher} from './shared.js';
+import {saveClass,saveStudentProfile} from './classes.js';
+import {saveOralScore} from './oral.js';
 import {startAttempt,saveAnswers,startPartAudio,completePartAudio,setAttemptSection,abandonAttempt,submitAttempt} from './attempts.js';
 import {saveManualGrade,publishAttemptResult,deliverResultEmail} from './grading.js';
 import {updateSystemSettings,updateSmtpSecret,testSmtp,getInfrastructureStatus,setUserRole,setTeacherByEmail} from './settings.js';
 
 export async function handleAction(user,name,data={}){
   switch(name){
+    case 'saveClass': return saveClass(user,data);
+    case 'saveStudentProfile': return saveStudentProfile(user,data);
+    case 'saveOralScore': return saveOralScore(user,data);
     case 'getAttemptReview': {
       const found=await query(`SELECT public_data,private_data,status,student_id,exam_id FROM attempts WHERE id=$1`,[data.attemptId]);
       if(!found.rowCount||found.rows[0].student_id!==user.id)throw appError(404,'Không tìm thấy bài làm.');

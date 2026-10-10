@@ -6,6 +6,7 @@ import {esc,fmtDate,statusClass,statusText,countWords} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
 import {writingPointLayout,isScoredWritingField,isRequiredWritingField} from '../domain/writing-form.js';
 import {writingFormDisplay} from '../ui/writing-form.js';
+import {resultClass} from '../domain/gradebook.js';
 
 export function loginHtml({mode}){
   const demo=mode==='local'?`<div class="che-do-demo"><div class="phu-de">Tài khoản thử nghiệm</div><div class="chon-demo"><button class="nut full demo-login" data-id="student-a">Vào vai Học viên</button><button class="nut full demo-login" data-id="teacher-lan">Vào vai Cô Lan</button><button class="nut full demo-login" data-id="master-1">Vào vai Quản trị cấp cao</button></div></div>`:'';
@@ -30,7 +31,7 @@ export function studentExamCardHtml(ex,attempts,data){
   const mins=(ex.sections||[]).reduce((n,s)=>n+(Number(s.timeMinutes)||0),0);
   const provider=String(ex.provider||'').trim();
   const latestResult=latest?.result||'Chưa đạt';
-  const latestLine=latest?`Lần thi gần nhất <strong>${esc(latest.totalScore??'—')}</strong> điểm - <span class="exam-latest-result ${latestResult==='Đạt'?'passed':'failed'}">${esc(latestResult)}</span>`:'Chưa từng thi';
+  const latestLine=latest?`Lần thi gần nhất <strong>${esc(latest.totalScore??'—')}</strong> điểm - <span class="exam-latest-result ${resultClass(latestResult)}">${esc(latestResult)}</span>`:'Chưa từng thi';
   return `<article class="the the-de"><span class="nhan">${esc(provider?`${provider.charAt(0).toUpperCase()}${provider.slice(1).toLowerCase()} ${ex.level}`:ex.level)}</span>${published.length?'':'<span class="the-de-new">Mới</span>'}<h3>${esc(ex.title)}</h3><div class="meta">${sum.sections} phần · ${sum.questions} câu · ${mins} phút</div><div class="day"></div><div class="chan"><span>${latestLine}</span></div><div class="hanh-dong"><button class="nut chinh" data-action="start" data-exam="${ex.id}">Bắt đầu thi</button></div></article>`;
 }
 

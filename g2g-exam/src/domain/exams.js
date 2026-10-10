@@ -73,6 +73,7 @@ export function duplicateExam(state,user,sourceId){
     const original=byId(state.questions,id);
     if(!original)throw new Error('Bài thi có câu hỏi không còn tồn tại.');
     const copy={...clone(original),id:uid('q'),code:`${original.code||'Q'}-COPY-${copyNo}`,ownerId:user.id,ownerName:user.name,locked:false,usedCount:0,correctRate:null,status:'active',createdAt:nowIso(),updatedAt:nowIso()};
+    delete copy.lockedAt;
     state.questions.push(copy);
     questionIds.set(id,copy.id);
   }
@@ -80,6 +81,26 @@ export function duplicateExam(state,user,sourceId){
   const exam=createExam(state,user,{title:`${source.title} - Copy ${copyNo}`,provider:source.provider,level:source.level,settings:source.settings,passScore:source.passScore,sections});
   audit(state,user,'duplicate','exam',exam.id,{sourceId});
   return exam;
+}
+
+// Older drafts may still reference a published question. Fork the question,
+// never unlock or mutate the original used by an exam or an attempt.
+export function detachLockedDraftQuestions(state,user,examId){
+  const exam=byId(state.exams,examId);
+  if(!exam||exam.status!=='draft'||exam.locked||!canEditExam(user,exam)||structuralAttemptExists(state,examId))return false;
+  const copies=new Map();
+  for(const section of exam.sections||[])for(const id of section.questionIds||[]){
+    const original=byId(state.questions,id);
+    if(!original?.locked||copies.has(id))continue;
+    const copy={...clone(original),id:uid('q'),ownerId:user.id,ownerName:user.name,locked:false,usedCount:0,correctRate:null,status:'active',createdAt:nowIso(),updatedAt:nowIso()};
+    delete copy.lockedAt;
+    state.questions.push(copy);copies.set(id,copy.id);
+  }
+  if(!copies.size)return false;
+  for(const section of exam.sections||[])section.questionIds=(section.questionIds||[]).map(id=>copies.get(id)||id);
+  exam.updatedAt=nowIso();
+  audit(state,user,'detach_draft_questions','exam',examId,{count:copies.size});
+  return true;
 }
 
 export function updateExam(state,user,id,patch){

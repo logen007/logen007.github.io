@@ -1,0 +1,60 @@
+import assert from 'node:assert/strict';
+import {canonicalSkill,skillScores,skillPassResult,gradeBand,filteredGradebook,telcResult,isStandardTelc} from '../src/domain/gradebook.js';
+import {validateStudentProfile} from '../src/domain/student-profile.js';
+import {gradebookHtml} from '../src/views/gradebook.js';
+
+const exam={id:'g',provider:'GOETHE',sections:[
+  {name:'Hören Teil 1',skillKey:'listening',questionIds:['a','example']},
+  {name:'Hören Teil 2',skillKey:'listening',questionIds:['b']},
+  {name:'Hören Teil 3',skillKey:'listening',questionIds:['c']},
+  {name:'Schreiben Teil 1',skillKey:'writing',questionIds:['w']},
+]};
+const questions=['a','b','c'].map(id=>({id,maxScore:5})).concat([{id:'example',maxScore:100,example:true},{id:'w',maxScore:15}]);
+const attempt={scoringVersion:2,sectionScores:{'Hören Teil 1':3,'Hören Teil 2':3,'Hören Teil 3':3,'Schreiben Teil 1':2},manualScores:{'Viết':7}};
+const scores=skillScores(exam,questions,attempt);
+assert.equal(canonicalSkill('Đọc hiểu'),'reading');
+assert.equal(canonicalSkill('Ngữ pháp'),'grammar');
+assert.deepEqual(scores.listening,{score:9,max:15});
+assert.deepEqual(scores.writing,{score:9,max:15});
+assert.equal(skillPassResult(scores),'Đạt');
+assert.equal(skillPassResult({...scores,listening:{score:8.99,max:15}}),'Chưa đạt');
+assert.deepEqual(skillScores(exam,questions,{...attempt,oralScore:0,oralMax:15}).speaking,{score:0,max:15});
+for(const [score,label] of [[90,'sehr gut'],[89.99,'gut'],[80,'gut'],[70,'befriedigend'],[60,'ausreichend'],[59.99,'nicht bestanden']])assert.equal(gradeBand(score,100).label,label);
+assert.equal(gradeBand(null,15),null);
+
+const data={questions,classes:[{id:'class',code:'i1026'}],users:[{id:'s',role:'student',name:'Nguyen A',classId:'class',level:'A1.2'}],exams:[exam,{id:'t',provider:'TELC',sections:[]}],attempts:[
+ {id:'first',examId:'g',studentId:'s',status:'published',submittedAt:'2026-10-08',reviewerId:'t1',...attempt},
+ {id:'last',examId:'g',studentId:'s',status:'published',submittedAt:'2026-10-09',reviewerId:'t2',...attempt},
+ {id:'telc',examId:'t',studentId:'s',status:'published',submittedAt:'2026-10-10',reviewerId:'t2'},
+ {id:'pending',examId:'g',studentId:'s',status:'grading',submittedAt:'2026-10-11',reviewerId:'t2'},
+]};
+assert.equal(filteredGradebook(data)[0].attempt.id,'last');
+assert.equal(filteredGradebook(data,{reviewerId:'t1'})[0].attempt.id,'first');
+assert.equal(filteredGradebook(data,{provider:'TELC'})[0].attempt.id,'telc');
+assert.equal(filteredGradebook(data,{level:'A1.1'}).length,0);
+assert.equal(filteredGradebook(data,{classId:'missing'}).length,0);
+assert.equal(filteredGradebook(data,{studentId:'missing'}).length,0);
+assert.equal(validateStudentProfile({name:'  Nguyen   A  ',classId:'class'},data.classes).level,'A1.1');
+assert.throws(()=>validateStudentProfile({name:'Nguyen A',classId:'unknown'},data.classes));
+assert.throws(()=>validateStudentProfile({name:'Nguyen A',classId:'class',level:'admin'},data.classes));
+console.log('Gradebook: skill aggregation, boundary grades, filters, profile validation passed.');
+
+const telcSkills=(written,oral)=>({reading:{score:Math.min(written,75),max:75},grammar:{score:Math.max(0,Math.min(written-75,30)),max:30},listening:{score:Math.max(0,Math.min(written-105,75)),max:75},writing:{score:Math.max(0,written-180),max:45},...(oral==null?{}:{speaking:{score:oral,max:75}})});
+assert.equal(telcResult(telcSkills(135,45)),'ausreichend');
+assert.equal(telcResult(telcSkills(150,40)),'nicht bestanden');
+assert.equal(telcResult(telcSkills(134.5,75)),'nicht bestanden');
+assert.equal(telcResult(telcSkills(200,60)),'gut');
+assert.equal(telcResult(telcSkills(225,null)),'Chờ điểm Nói');
+assert.equal(telcResult({...telcSkills(135,45),reading:{score:30,max:45}}),'Chưa đủ cấu trúc điểm TELC');
+assert.equal(isStandardTelc({provider:'TELC',level:'B1'}),true);
+assert.equal(isStandardTelc({provider:'TELC',level:'C1'}),false);
+for(const [written,oral,label] of [[225,45,'sehr gut'],[195,45,'gut'],[165,45,'befriedigend'],[164.5,45,'ausreichend']])assert.equal(telcResult(telcSkills(written,oral)),label);
+console.log('TELC B1/B2: independent 135/225 and 45/75 gates, grades, missing oral and format scope passed.');
+
+const html=gradebookHtml({data,ui:{}});
+assert.ok(html.includes('Giáo viên chấm bài'));
+assert.ok(html.includes('data-grade-filter="classId"'));
+assert.ok(html.includes('role="tooltip"'));
+assert.ok(html.includes('data-action="edit-oral"'));
+assert.ok(!html.includes('<th>Ngữ pháp</th>'));
+assert.ok(gradebookHtml({data,ui:{gradeFilters:{provider:'TELC'}}}).includes('<th>Ngữ pháp</th>'));

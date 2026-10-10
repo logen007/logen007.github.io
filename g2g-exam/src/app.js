@@ -2,7 +2,7 @@ import {createRepository} from './repository.js';
 import {
   ATTEMPT_STATUS,byId,isMaster,isStudent,canEditExam,canGradeExam,
   createQuestion,updateQuestion,softDeleteQuestion,restoreQuestion,permanentlyDeleteQuestion,
-  updateExam,duplicateExam,softDeleteExam,restoreExam,permanentlyDeleteExam,
+  updateExam,duplicateExam,detachLockedDraftQuestions,softDeleteExam,restoreExam,permanentlyDeleteExam,
   addSection,removeSection,moveSection,updateSection,addQuestionsToSection,
   removeQuestionFromSection,moveQuestion,
   startAttempt,saveAnswer,setAttemptSection,getSectionRemainingSeconds,submitAttempt,abandonAttempt,
@@ -11,6 +11,8 @@ import {
 import {uploadQuestionAudio,uploadQuestionImage} from './media.js';
 import {countWords} from './ui/format.js';
 import {topbarHtml} from './ui/layout.js';
+import {classesHtml,bindClasses,openStudentProfile} from './views/classes.js';
+import {gradebookHtml,bindGradebook} from './views/gradebook.js';
 import {confirmAction} from './ui/confirm.js';
 import {
   loginHtml,studentHomeHtml,studentResultsHtml,studentAttemptDetailHtml,examHtml,submittedHtml,expiredHtml,answerPresent
@@ -440,8 +442,9 @@ function adminView(){
   }
   else if(ui.adminTab==='exams')content=examAdminHtml({data,user});
   else if(ui.adminTab==='grading')content=gradingAdminHtml({data,user});
-  else if(ui.adminTab==='grades')content=gradesAdminHtml({data,ui});
+  else if(ui.adminTab==='grades')content=gradebookHtml({data,ui});
   else if(ui.adminTab==='teachers')content=teachersAdminHtml({data,user});
+  else if(ui.adminTab==='classes')content=classesHtml({data});
   else if(ui.adminTab==='trash')content=trashAdminHtml({data});
   app.innerHTML=layout(adminShellHtml({content,user,ui}));
 }
@@ -569,6 +572,12 @@ function render(){
   else adminView();
   bindGlobal();
   bindViewSpecific();
+  const profileSaved=async()=>{data=await repo.getState();const fresh=data.users.find(item=>item.id===user.id);if(fresh)user={...user,...fresh,role:user.role};render();};
+  if(!isStudent(user)){
+    bindClasses(app,{data,repo,onSaved:profileSaved});
+    bindGradebook(app,{data,repo,ui,onSaved:profileSaved,render});
+  }
+  if(isStudent(user)&&!user.canTestRoles&&!user.profileCompletedAt&&!document.getElementById('modal'))openStudentProfile({data,repo,student:user,onSaved:profileSaved,required:true});
 }
 
 async function saveBuilderDraft({silent=false}={}){
@@ -804,7 +813,7 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="edit-exam"]').forEach(b=>b.onclick=()=>openBuilder(b.dataset.id));
   app.querySelectorAll('[data-action="duplicate-exam"]').forEach(b=>b.onclick=async()=>{
     const copy=await act(()=>repo.transaction(st=>duplicateExam(st,user,b.dataset.id)),'Đã nhân bản bài thi.',{rerender:false});
-    if(copy){data=await repo.getState();ui.adminTab='exams';render();}
+    if(copy){data=await repo.getState();ui.adminTab='exams';await openBuilder(copy.id);}
   });
   app.querySelectorAll('[data-action="view-exam"]').forEach(b=>b.onclick=()=>previewExamModal(byId(data.exams,b.dataset.id)));
   app.querySelectorAll('[data-action="delete-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>softDeleteExam(st,user,b.dataset.id)),'Đã chuyển bài thi vào Thùng rác.'));
@@ -904,9 +913,10 @@ async function openBuilder(id){
   let exam=byId(data.exams,id);
   if(!exam||isStudent(user))return;
   const changed=canEditExam(user,exam)?await repo.transaction(st=>{
+    const detached=detachLockedDraftQuestions(st,user,id);
     const migrated=ensureExamMatchesConfiguredSpec(st,user,id);
     const populated=repo.mode==='local'&&populateGoetheA1TestFixture(st,user,id);
-    return migrated||populated;
+    return detached||migrated||populated;
   }):false;
   if(changed){data=await repo.getState();exam=byId(data.exams,id);}
   ui.builderExamId=id;

@@ -3,7 +3,7 @@ import { seedState } from '../src/seed.js';
 import {
   clone, byId, canEditQuestion, canEditExam, canGradeExam, canSeeTrash, canPublishExamResult, getQuestionMaxScore,
   createQuestion, updateQuestion, softDeleteQuestion, restoreQuestion, permanentlyDeleteQuestion,
-  createExam, duplicateExam, addSection, removeSection, moveSection, addQuestionsToSection, removeQuestionFromSection,
+  createExam, duplicateExam, detachLockedDraftQuestions, addSection, removeSection, moveSection, addQuestionsToSection, removeQuestionFromSection,
   startAttempt, saveAnswer, setAttemptSection, getSectionRemainingSeconds, abandonAttempt,
   submitAttempt, saveManualScore, publishAttempt, getStudentResults, validateExamForPublish, publishExam,
   ATTEMPT_STATUS,summarizeExam
@@ -87,7 +87,25 @@ test('Giáo viên nhân bản đề của người khác thành bản nháp do m
   assert.equal(copy.ownerId,u.mai.id);
   assert.equal(copy.status,'draft');
   assert.notEqual(copy.sections[0].questionIds[0],source.sections[0].questionIds[0]);
+  const sourceQuestion=byId(s.questions,source.sections[0].questionIds[0]);
+  const copiedQuestion=byId(s.questions,copy.sections[0].questionIds[0]);
+  updateQuestion(s,u.mai,copiedQuestion.id,{title:'Edited copy'});
+  assert.notEqual(sourceQuestion.title,'Edited copy');
+  assert.equal(copiedQuestion.locked,false);
   assert.equal(duplicateExam(s,u.mai,source.id).title,`${source.title} - Copy 2`);
+});
+
+test('Bản nháp cũ tách câu bị khóa mà không mở khóa hay sửa đề gốc',()=>{
+  const s=fresh(),u=users(s),source=byId(s.exams,'exam-b1-01');
+  const original=byId(s.questions,source.sections[0].questionIds[0]);original.locked=true;
+  const draft=createExam(s,u.mai,{title:'Legacy copy',sections:source.sections});
+  assert.throws(()=>updateQuestion(s,u.mai,original.id,{title:'Cannot edit original'}));
+  assert.equal(detachLockedDraftQuestions(s,u.mai,draft.id),true);
+  const id=draft.sections[0].questionIds[0];assert.notEqual(id,original.id);
+  updateQuestion(s,u.mai,id,{title:'Can edit copy'});
+  assert.equal(original.locked,true);assert.notEqual(original.title,'Can edit copy');
+  assert.equal(detachLockedDraftQuestions(s,u.mai,draft.id),false);
+  assert.equal(detachLockedDraftQuestions(s,u.master,source.id),false);
 });
 
 test('Giáo viên có thể chấm bài mà không cần xin quyền',()=>{

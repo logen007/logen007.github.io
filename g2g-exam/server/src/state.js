@@ -11,6 +11,7 @@ function attemptEntity(r,includePrivate=false){return {id:r.id,...(r.public_data
 
 export async function loadState(user){
   const state={schemaVersion:6,revision:Date.now(),users:[],questions:[],exams:[],attempts:[],gradingRequests:[],notifications:[],auditLog:[]};
+  state.classes=await rows('SELECT id,code,active FROM classes WHERE active=true ORDER BY lower(code)');
   if(user.role==='student'){
     state.users=[user];
     state.exams=(await rows(`SELECT id,data FROM exams WHERE status='published' ORDER BY updated_at DESC`)).map(rowEntity);

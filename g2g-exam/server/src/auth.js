@@ -67,10 +67,10 @@ export async function registerAuthRoutes(fastify){
       if(settings.auth.allowNewStudents===false&&!master&&!preapprovedTeacher)throw appError(403,'Hệ thống hiện không nhận thêm tài khoản học viên mới.');
       const domain=String(settings.auth.allowedDomain||'').toLowerCase();
       if(domain&&!email.endsWith(`@${domain}`)&&!master&&!preapprovedTeacher)throw appError(403,`Chỉ email thuộc ${domain} được đăng ký.`);
-      const data={name:p.name||email.split('@')[0],picture:p.picture||'',createdAt:now()};
+      const data={name:p.name||email.split('@')[0],picture:p.picture||'',createdAt:now(),...(role==='student'?{level:'A1.1'}:{})};
       await query(`INSERT INTO users(id,email,role,active,data) VALUES($1,$2,$3,true,$4::jsonb)`,[id,email,role,JSON.stringify(data)]);
     }else{
-      const data={...existing,name:p.name||existing.name||email.split('@')[0],picture:p.picture||existing.picture||''};
+      const data={...existing,name:existing.profileCompletedAt?existing.name:p.name||existing.name||email.split('@')[0],picture:p.picture||existing.picture||''};
       delete data.id;delete data.email;delete data.role;delete data.active;
       await query(`UPDATE users SET email=$2,role=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[id,email,role,JSON.stringify(data)]);
     }

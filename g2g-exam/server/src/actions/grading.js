@@ -103,6 +103,7 @@ export async function publishAttemptResult(user,{attemptId}){
     const publicData={
       ...attempt.public_data,status:'published',publishedAt:at,updatedAt:at,
       autoScore:Number(privateData.autoScore||0),manualScores:privateData.manualScores||{},
+      scoringVersion:privateData.scoringVersion,
       sectionScores:privateData.sectionScores||{},totalScore:Number(privateData.totalScore),
       result:privateData.result||'',reviewerId:user.id,
       reviewerName:user.name||'',feedback:privateData.feedback||'',

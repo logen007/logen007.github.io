@@ -3,6 +3,7 @@ import {
   canGradeExam,canPublishExamResult
 } from './base.js';
 import {isAutomaticWritingForm,scoreWritingForm} from './writing-form.js';
+import {skillScores,examResult} from './gradebook.js';
 
 function questionScore(question,answer){
   if(!question?.autoGrade||question.example)return 0;
@@ -95,31 +96,8 @@ export function abandonAttempt(state,user,attemptId){
   return {id:attempt.id,status:ATTEMPT_STATUS.ABANDONED,deleted:true};
 }
 
-function canonicalSkill(value=''){
-  const text=String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  if(/horen|nghe|listening/.test(text))return 'listening';
-  if(/lesen|doc|reading/.test(text))return 'reading';
-  if(/schreiben|viet|writing/.test(text))return 'writing';
-  if(/sprechen|noi|speaking/.test(text))return 'speaking';
-  return text.replace(/\b(teil|part|phan|bai)\s*\d+\b/g,'').trim()||'other';
-}
-
 export function resultBySkill(state,exam,sectionScores={},manualScores={}){
-  const earned={},maximum={};
-  for(const section of exam.sections||[]){
-    const skill=canonicalSkill(section.skillKey||section.skill||section.name);
-    earned[skill]=(earned[skill]||0)+Number(sectionScores[section.name]||0);
-    for(const id of section.questionIds||[]){
-      const question=byId(state.questions,id);
-      if(question&&!question.example)maximum[skill]=(maximum[skill]||0)+Number(question.maxScore||0);
-    }
-  }
-  for(const [label,score] of Object.entries(manualScores||{})){
-    const skill=canonicalSkill(label);
-    earned[skill]=(earned[skill]||0)+Number(score||0);
-  }
-  const skills=Object.keys(maximum).filter(skill=>maximum[skill]>0);
-  return skills.length&&skills.every(skill=>earned[skill]>=maximum[skill]*0.6)?'Đạt':'Chưa đạt';
+  return examResult(exam,skillScores(exam,state.questions,{sectionScores,manualScores,scoringVersion:2}));
 }
 
 export function calculateAutomaticScores(state,attempt){

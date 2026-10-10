@@ -4,6 +4,7 @@ import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
 
 export async function startAttempt(user,{examId,restart=false}){
   if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
+  if(!user.canTestRoles&&!user.profileCompletedAt)throw appError(409,'Vui lòng hoàn tất họ tên và mã lớp trước khi thi.');
   const settings=await getSettings();
   const exam=await examById(examId);
   if(exam.status!=='published')throw appError(409,'Bài thi chưa mở cho học viên.');

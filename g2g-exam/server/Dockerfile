@@ -5,10 +5,13 @@ COPY server/package.json ./package.json
 RUN npm install --omit=dev
 
 WORKDIR /app
+COPY package.json /app/package.json
 RUN mkdir -p /app/public/src /data/uploads
 COPY vi.html styles.css enhancements.css runtime-config.js /app/public/
 RUN cp /app/public/vi.html /app/public/index.html
 COPY src /app/public/src
+COPY src/domain/student-profile.js /app/src/domain/student-profile.js
+COPY src/domain/gradebook.js /app/src/domain/gradebook.js
 COPY specs /app/public/specs
 COPY specs /app/specs
 COPY server/runtime/runtime-config.js /app/public/runtime-config.js

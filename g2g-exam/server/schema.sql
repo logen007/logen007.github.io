@@ -98,6 +98,16 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 CREATE INDEX IF NOT EXISTS audit_at_idx ON audit_log(at DESC);
 
+CREATE TABLE IF NOT EXISTS classes (
+  id text PRIMARY KEY,
+  code text NOT NULL,
+  active boolean NOT NULL DEFAULT true,
+  created_by text NOT NULL REFERENCES users(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS classes_code_idx ON classes(lower(code));
+
 -- Lượt thi bỏ dở không phải là lịch sử làm bài và không được lưu lâu dài.
 DELETE FROM notifications WHERE attempt_id IN (SELECT id FROM attempts WHERE status='abandoned');
 DELETE FROM attempts WHERE status='abandoned';

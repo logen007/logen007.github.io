@@ -1,4 +1,5 @@
 import {query,now,appError} from '../db.js';
+import {skillScores,examResult} from '../../../src/domain/gradebook.js';
 
 export const isTeacher=user=>user?.role==='teacher'||user?.role==='master';
 
@@ -27,31 +28,8 @@ export function scoreQuestion(question,answer){
   return 0;
 }
 
-function canonicalSkill(value=''){
-  const text=String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  if(/horen|nghe|listening/.test(text))return 'listening';
-  if(/lesen|doc|reading/.test(text))return 'reading';
-  if(/schreiben|viet|writing/.test(text))return 'writing';
-  if(/sprechen|noi|speaking/.test(text))return 'speaking';
-  return text.replace(/\b(teil|part|phan|bai)\s*\d+\b/g,'').trim()||'other';
-}
-
 export function resultFor(exam,questions,sectionScores={},manualScores={}){
-  const earned={},maximum={};
-  for(const section of exam.sections||[]){
-    const skill=canonicalSkill(section.skillKey||section.skill||section.name);
-    earned[skill]=(earned[skill]||0)+Number(sectionScores[section.name]||0);
-    for(const id of section.questionIds||[]){
-      const question=questions.get(id);
-      if(question&&!question.example)maximum[skill]=(maximum[skill]||0)+Number(question.maxScore||0);
-    }
-  }
-  for(const [label,score] of Object.entries(manualScores||{})){
-    const skill=canonicalSkill(label);
-    earned[skill]=(earned[skill]||0)+Number(score||0);
-  }
-  const skills=Object.keys(maximum).filter(skill=>maximum[skill]>0);
-  return skills.length&&skills.every(skill=>earned[skill]>=maximum[skill]*0.6)?'Đạt':'Chưa đạt';
+  return examResult(exam,skillScores(exam,questions,{sectionScores,manualScores,scoringVersion:2}));
 }
 
 export async function questionMap(exam){
