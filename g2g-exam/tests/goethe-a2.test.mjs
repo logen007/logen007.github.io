@@ -30,6 +30,7 @@ for(const section of exam.sections){
     const expected={'Nghe 1':[1,2,2,2,2,2],'Nghe 2':[1,1],'Nghe 3':[1,1,1,1,1,1],'Nghe 4':[1,2]};
     assert.deepEqual(repeats,expected[section.name]);
     const builder=renderBuilder({data:state,exam,section});
+    assert.doesNotMatch(builder,/Tải audio một lượt nghe|Hệ thống tự phát|part-audio-guide/);
     assert.equal((builder.match(/data-field="audio"/g)||[]).length,selected.length);
   }
   if(section.questionProfile.uniqueLetters){

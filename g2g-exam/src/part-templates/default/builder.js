@@ -152,7 +152,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
     :choiceProfile.isFreeResponse
       ?freeResponseHtml(q,{defaultScore,readOnly})
       :choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile:{...choiceProfile,showAudio:choiceProfile.showAudio&&audioIds.has(q.id)}});
-  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${section.audioPolicy?`<p class="phu-de part-audio-guide">Tải audio một lượt nghe cho Beispiel và ${section.audioPolicy.sharedPart?'câu tính điểm đầu tiên (audio toàn bài)':'từng câu hỏi'}. Hệ thống tự phát ${section.audioPolicy.segmentRepeat} lượt cho ${section.audioPolicy.sharedPart?'audio toàn bài':'mỗi câu'}, Beispiel một lượt.</p>`:''}${instructionHtml(section,choiceProfile,readOnly,choiceProfile.instructionImage?questions.find(question=>!question.example)||questions[0]:null)}<div class="goethe-questions">${questions.map(renderQuestion).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
+  return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${instructionHtml(section,choiceProfile,readOnly,choiceProfile.instructionImage?questions.find(question=>!question.example)||questions[0]:null)}<div class="goethe-questions">${questions.map(renderQuestion).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
 }
 
 export function bindBuilder({root=document,data,exam,section,pendingAudioUploads=new Map(),notify=()=>{}}={}){
