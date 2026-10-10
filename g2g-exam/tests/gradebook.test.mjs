@@ -59,7 +59,8 @@ const html=gradebookHtml({data,ui:{}});
 assert.ok(html.includes('Giáo viên chấm bài'));
 assert.ok(html.includes('data-grade-filter="classId"'));
 assert.ok(html.includes('role="tooltip"'));
-assert.ok(html.includes('data-action="edit-oral"'));
+assert.ok(!html.includes('data-action="edit-oral"'));
+assert.ok(!html.includes('<th>Trạng thái</th>'));
 assert.ok(!html.includes('<th>Ngữ pháp</th>'));
 assert.ok(gradebookHtml({data,ui:{gradeFilters:{provider:'TELC'}}}).includes('<th>Ngữ pháp</th>'));
 for(const provider of ['GOETHE','TELC']){
@@ -79,3 +80,22 @@ assert.ok(nav.includes('<span>Đề Thi</span>'));
 assert.ok(nav.includes('<span>Bài Thi</span>'));
 assert.ok(!nav.includes('data-tab="grading"'));
 assert.ok(!nav.includes('Bảng điểm'));
+const {resultSummaryHtml}=await import('../src/views/result-summary.js');
+for(const [score,label,key] of [[90,'sehr gut','excellent'],[80,'gut','good'],[70,'befriedigend','satisfactory'],[60,'ausreichend','sufficient'],[59,'nicht bestanden','failed']]){
+  const summaryHtml=resultSummaryHtml({provider:'GOETHE',skills:{reading:{score,max:100}},total:score});
+  assert.ok(summaryHtml.includes('<th>Kết quả</th>'));
+  assert.ok(summaryHtml.includes(`score-${key}">${label}</span>`));
+}
+const {gradingDetailHtml}=await import('../src/views/builder.js');
+const gradingExam={provider:'GOETHE',level:'A1',sections:[{name:'Schreiben Teil 1',questionProfile:{layout:'form-fields'},questionIds:[]},{name:'Schreiben Teil 2',questionIds:['essay']}]};
+const gradingData={questions:[{id:'essay',skill:'Viết',type:'writing',maxScore:10}]};
+const gradingAttempt={status:'grading',manualScores:{},resultSummary:{provider:'GOETHE',skills:{},total:0}};
+const detail=gradingDetailHtml({data:gradingData,exam:gradingExam,attempt:gradingAttempt});
+const labels=['Điểm Viết Bài 2','Điểm nói','Nhận xét','Tổng Điểm'];
+for(let i=1;i<labels.length;i++)assert.ok(detail.indexOf(labels[i])>detail.indexOf(labels[i-1]));
+assert.ok(detail.includes('min="0" max="10"'));
+assert.ok(detail.includes('min="0" max="15"'));
+assert.ok(!detail.includes('Điểm phần này'));
+const reviewed=gradingDetailHtml({data:gradingData,exam:gradingExam,attempt:{...gradingAttempt,status:'published'}});
+assert.ok(!reviewed.includes('data-action="save-grade"'));
+assert.match(reviewed,/id="gradeOralScore"[^>]*disabled/);

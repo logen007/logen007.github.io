@@ -1099,6 +1099,9 @@ function bindGrading(){
 async function saveGrade(andPublish){
   const attempt=byId(data.attempts,ui.gradeAttemptId);
   if(!attempt)return;
+  for(const input of app.querySelectorAll('.manual-score,#gradeOralScore')){
+    if(!input.checkValidity()){input.reportValidity();return;}
+  }
   const oralInput=document.getElementById('gradeOralScore');
   if(oralInput?.value){
     if(!oralInput.checkValidity()){oralInput.reportValidity();return;}
