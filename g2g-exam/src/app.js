@@ -117,7 +117,7 @@ function syncViewUrl(){
   else if(ui.view==='exam'&&ui.attemptId){url.searchParams.set('view','exam');url.searchParams.set('attempt',ui.attemptId);}
   else if(ui.view==='student-results')url.searchParams.set('view','results');
   else if(ui.view==='student-attempt-detail')url.searchParams.set('view','results');
-  else if(ui.view==='admin'&&ui.adminTab!=='exams')url.searchParams.set('tab',ui.adminTab);
+  else if(ui.view==='admin')url.searchParams.set('tab',ui.adminTab);
   history.replaceState(null,'',url.pathname+url.search+url.hash);
 }
 

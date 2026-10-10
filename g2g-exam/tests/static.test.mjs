@@ -181,6 +181,12 @@ test('Chuyển vào thùng rác trực tiếp và vẫn xác nhận xóa vĩnh v
   assert.match(app,/\[data-action="permanent-exam"\][^\n]+confirmAction/);
 });
 
+test('Trang Đề Thi giữ tab rõ ràng trên URL',()=>{
+  const app=read('src/app.js');
+  assert.ok(app.includes("else if(ui.view==='admin')url.searchParams.set('tab',ui.adminTab)"));
+  assert.ok(!app.includes("ui.view==='admin'&&ui.adminTab!=='exams'"));
+});
+
 test('Dashboard master đọc tài nguyên VPS và dung lượng từng đề từ backend',()=>{
   const backend=read('server/src/actions/settings.js'),view=read('src/views/admin.js');
   for(const token of ['os.loadavg()','os.totalmem()','fs.statfs','pg_database_size','examStorage'])assert.ok(backend.includes(token));
