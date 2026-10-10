@@ -171,6 +171,9 @@ const rosterData={classes:[classItem,{id:'ext',code:'Extend'}],users:[
 ]};
 const classList=classesHtml({data:rosterData});
 assert.ok(classList.includes('data-open-class="c"'));
+assert.ok(!classList.includes('data-open-class="ext"'));
+assert.ok(classList.includes('Học viên Vãng lai'));
+assert.ok(!classList.includes('Học viên Extend'));
 assert.ok(classList.includes('data-student-search'));
 assert.ok(classList.includes('Mã xác nhận'));
 assert.ok(classList.includes('ABCDE'));

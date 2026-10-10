@@ -429,6 +429,7 @@ function startExamTimer(attempt,exam,sectionIndex){
     if(left<=0&&!timerBusy){
       clearTimer();
       timerBusy=true;
+      stopActiveAudio();
       document.querySelector('[data-confirm-cancel]')?.click();
       document.querySelectorAll('.answer-one,.answer-match,.answer-text,.play-audio').forEach(x=>x.disabled=true);
       for(const pending of saveTimers.values())clearTimeout(pending);

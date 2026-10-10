@@ -7,7 +7,7 @@ function mount(){
   main.querySelector('.tieu-de-trang p')?.remove();
   if(main.querySelector('#userRolePanel'))return;
   const rows=[...main.querySelectorAll('[data-user-group]')];
-  const groups=[['teacher','Giáo Viên'],['student','Học Viên'],['external','Học Viên Extend']];
+  const groups=[['teacher','Giáo Viên'],['student','Học Viên'],['external','Học viên Vãng lai']];
   const panel=document.createElement('section');
   panel.id='userRolePanel';panel.className='profile-form';panel.style.marginBottom='24px';
   panel.innerHTML='<div class="nhom-nut" data-user-groups></div><input class="truong" id="userSearch" type="search" aria-label="Tìm tên hoặc email" placeholder="Tìm theo tên hoặc email" autocomplete="off">';
