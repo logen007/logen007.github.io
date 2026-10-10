@@ -2,6 +2,7 @@ import {query,withTx,getSettings,audit,uid,now,appError} from '../db.js';
 import {examById,attemptExam,questionMap,scoreQuestion,resultFor,sectionMeta} from './shared.js';
 import {codeHash,checkCodeRate} from './exam-access.js';
 import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
+import {examDeadlineMs,submissionTiming} from '../../../src/domain/exam-clock.js';
 
 export async function startAttempt(user,{examId,restart=false,code}){
   if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
@@ -31,11 +32,14 @@ export async function startAttempt(user,{examId,restart=false,code}){
     const id=uid('attempt');
     const startedAt=now();
     const meta=sectionMeta(exam,0,{});
+    const deadline=examDeadlineMs({startedAt},exam);
+    meta.currentDeadlineMs=deadline;
+    for(const state of Object.values(meta.sectionStates))state.deadlineAt=new Date(deadline).toISOString();
     const data={
       examId,examTitle:exam.title,examVersion:Number(exam.version||1),
       studentId:user.id,studentName:user.name||'',studentEmail:user.email||'',attemptNo,
       status:'in_progress',startedAt,updatedAt:startedAt,currentSectionIndex:0,
-      ...meta,answers:{},audioSessions:{},publishedAt:null,
+      ...meta,examDeadlineMs:deadline,answers:{},audioSessions:{},publishedAt:null,
     };
     const questions=await questionMap(exam);
     const examSnapshot={...exam,questionSnapshot:[...questions.values()],scoringPolicyVersion:1};
@@ -61,7 +65,8 @@ export async function saveAnswers(user,{attemptId,answers={}}){
     const attempt=result.rows[0],publicData=attempt.public_data;
     if(attempt.student_id!==user.id)throw appError(403,'Không có quyền lưu lượt thi này.');
     if(attempt.status!=='in_progress')throw appError(409,'Lượt thi đã kết thúc.');
-    if(Number(publicData.currentDeadlineMs||0)&&Date.now()>Number(publicData.currentDeadlineMs))throw appError(409,'Phần thi đã hết thời gian.');
+    const deadline=examDeadlineMs(publicData,await attemptExam(attempt,client));
+    if(Date.now()>=deadline)throw appError(409,'Phần thi đã hết thời gian.');
     const allowed=new Set(publicData.currentQuestionIds||[]),next={...(publicData.answers||{})};
     for(const [key,value] of Object.entries(answers||{}))if(allowed.has(key))next[key]=value;
     const out={...publicData,answers:next,updatedAt:now()};
@@ -135,7 +140,10 @@ export async function setAttemptSection(user,{attemptId,index}){
     const exam=await attemptExam(attempt,client);
     const safe=Math.max(0,Math.min(Number(index)||0,Math.max(0,(exam.sections||[]).length-1)));
     const meta=sectionMeta(exam,safe,publicData.sectionStates||{});
-    const out={...publicData,currentSectionIndex:safe,...meta,updatedAt:now()};
+    meta.currentDeadlineMs=examDeadlineMs(publicData,exam);
+    for(const state of Object.values(meta.sectionStates))state.deadlineAt=new Date(meta.currentDeadlineMs).toISOString();
+    if(Date.now()>=meta.currentDeadlineMs)throw appError(409,'Die Prüfungszeit ist abgelaufen.');
+    const out={...publicData,examDeadlineMs:meta.currentDeadlineMs,currentSectionIndex:safe,...meta,updatedAt:now()};
     await client.query(`UPDATE attempts SET public_data=$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify(out)]);
     return {attemptId,index:safe};
   });
@@ -155,7 +163,8 @@ export async function abandonAttempt(user,{attemptId}){
 }
 
 export async function submitAttempt(user,{attemptId}){
-  const result=await query(`SELECT * FROM attempts WHERE id=$1`,[attemptId]);
+  return withTx(async client=>{
+  const result=await client.query(`SELECT * FROM attempts WHERE id=$1 FOR UPDATE`,[attemptId]);
   if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
   const attempt=result.rows[0];
   if(attempt.student_id!==user.id)throw appError(403,'Không có quyền nộp lượt thi này.');
@@ -184,9 +193,20 @@ export async function submitAttempt(user,{attemptId}){
   const totalScore=hasManual?null:autoScore;
   const resultText=hasManual?null:resultFor(exam,questions,sectionScores,{});
   const at=now();
-  const publicData={...attempt.public_data,status,submittedAt:at,updatedAt:at};
+  const publicData={...attempt.public_data,status,...submissionTiming(attempt.public_data,exam),updatedAt:at};
   const privateData={...attempt.private_data,autoScore,sectionScores,scoringVersion:2,manualScores:{},totalScore,result:resultText,feedback:'',updatedAt:at};
-  await query(`UPDATE attempts SET status=$2,public_data=$3::jsonb,private_data=$4::jsonb,updated_at=now() WHERE id=$1`,[attemptId,status,JSON.stringify(publicData),JSON.stringify(privateData)]);
-  await audit(user,'submit_attempt','attempt',attemptId,{status});
+  await client.query(`UPDATE attempts SET status=$2,public_data=$3::jsonb,private_data=$4::jsonb,updated_at=now() WHERE id=$1`,[attemptId,status,JSON.stringify(publicData),JSON.stringify(privateData)]);
+  await audit(user,'submit_attempt','attempt',attemptId,{status},client);
   return {status};
+  });
+}
+
+export async function submitExpiredAttempts(){
+  const legacy=await query("SELECT * FROM attempts WHERE status='in_progress' AND NOT(public_data ? 'examDeadlineMs') LIMIT 100");
+  for(const row of legacy.rows){
+    const deadline=examDeadlineMs(row.public_data,await attemptExam(row));
+    if(Number.isFinite(deadline))await query("UPDATE attempts SET public_data=public_data||$2::jsonb WHERE id=$1 AND status='in_progress'",[row.id,JSON.stringify({examDeadlineMs:deadline,currentDeadlineMs:deadline})]);
+  }
+  const due=await query(`SELECT id,student_id FROM attempts WHERE status='in_progress' AND (public_data->>'examDeadlineMs')::numeric <= $1 LIMIT 100`,[Date.now()]);
+  for(const row of due.rows)await submitAttempt({id:row.student_id},{attemptId:row.id});
 }

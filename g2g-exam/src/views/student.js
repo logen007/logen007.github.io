@@ -195,8 +195,10 @@ function writingFieldsHtml(q,answer,{framed=false}={}){
   return `<div class="writing-response-form${framed?' writing-response-form--framed':''}">${groups.map(group=>`<div class="writing-display-group${group.full?' is-full':''}">${group.label?`<span class="writing-display-label">${esc(group.label)}</span>`:''}<div>${group.fields.join('')}</div></div>`).join('')}</div>`;
 }
 
-export function submittedHtml(){
-  return `<main class="khung"><section class="the ket-qua-cho"><div class="vong thanh-cong">✓</div><h1>Đã nộp bài</h1><span class="nhan vang">ĐANG CHỜ CHẤM</span><p>Khi giáo viên chấm xong, điểm số sẽ được thông báo qua email và hiển thị tại trang kết quả.</p><button class="nut" data-action="student-home" style="margin-top:18px">Về danh sách bài thi</button></section></main>`;
+export function submittedHtml(attempt={}){
+  const duration=Number(attempt?.durationSeconds);
+  const elapsed=Number.isFinite(duration)?`<p>Bearbeitungszeit: <strong>${Math.floor(duration/60)} Min. ${duration%60} Sek.</strong></p>`:'';
+  return `<main class="khung"><section class="the ket-qua-cho"><div class="vong thanh-cong">✓</div><h1>Đã nộp bài</h1>${elapsed}<span class="nhan vang">ĐANG CHỜ CHẤM</span><p>Khi giáo viên chấm xong, điểm số sẽ được thông báo qua email và hiển thị tại trang kết quả.</p><button class="nut" data-action="student-home" style="margin-top:18px">Về danh sách bài thi</button></section></main>`;
 }
 
 export function expiredHtml(){

@@ -169,7 +169,7 @@ function loginView(){
 
 function studentHomeView(){app.innerHTML=layout(studentHomeHtml({data,user,filter:ui.examFilter,levelFilter:ui.examLevelFilter}));}
 function studentResultsView(){app.innerHTML=layout(studentResultsHtml({data,user}));}
-function submittedView(){app.innerHTML=layout(submittedHtml());}
+function submittedView(){app.innerHTML=layout(submittedHtml(byId(data.attempts,ui.attemptId)));}
 
 function examView(){
   clearTimer();
@@ -402,30 +402,35 @@ async function flushTextAnswers(){
 
 function startExamTimer(attempt,exam,sectionIndex){
   const section=exam.sections[sectionIndex],el=document.getElementById('examTimer'),summary=document.getElementById('examTimeSummary');
-  if(section.showTimer===false){if(el)el.textContent='—';if(summary)summary.textContent='—';return;}
   const tick=async()=>{
     const left=getSectionRemainingSeconds(attempt,exam,sectionIndex);
     const display=`${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`;
     if(el)el.textContent=display;
     if(summary)summary.textContent=display;
     if(left<=0&&!timerBusy){
-      timerBusy=true;
       clearTimer();
+      timerBusy=true;
       document.querySelectorAll('.answer-one,.answer-match,.answer-text,.play-audio').forEach(x=>x.disabled=true);
-      await flushTextAnswers();
-      await act(()=>repo.transaction(st=>abandonAttempt(st,user,attempt.id)),null,{rerender:false});
-      data=await repo.getState();ui.view='expired';render();
+      for(const pending of saveTimers.values())clearTimeout(pending);
+      saveTimers.clear();
+      const result=await act(()=>repo.mode==='api'?repo.submitAttemptSecure(attempt.id):repo.transaction(st=>submitAttempt(st,user,attempt.id)),null,{rerender:false});
+      if(result){
+        data=await repo.getState();ui.view='submitted';render();
+        const modal=document.createElement('div');modal.className='hop-chon';
+        modal.innerHTML='<div class="noi-hop ket-qua-cho" role="dialog" aria-modal="true" aria-labelledby="timeoutTitle"><div class="vong">⌛</div><h2 id="timeoutTitle">Die Prüfungszeit ist abgelaufen</h2><p>Leider ist die Zeit um. Ihre gespeicherten Antworten wurden automatisch abgegeben.</p><button class="nut chinh" data-close>Ergebnisübersicht</button></div>';
+        document.body.append(modal);modal.querySelector('button').focus();modal.querySelector('[data-close]').onclick=()=>modal.remove();
+      }else{timerBusy=false;timerHandle=setInterval(tick,5000);}
     }
   };
-  tick();
   timerHandle=setInterval(tick,1000);
+  tick();
 }
 
 async function submitCurrentExam(){
   if(submitBusy)return;
   submitBusy=true;
   try{
-    await flushTextAnswers();
+    if(!await flushTextAnswers())return;
     const result=await act(()=>repo.transaction(st=>submitAttempt(st,user,ui.attemptId)),null,{rerender:false});
     if(result){data=await repo.getState();ui.view='submitted';render();}
   }finally{submitBusy=false;}

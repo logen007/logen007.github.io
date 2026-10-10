@@ -124,7 +124,7 @@ test('Bắt đầu thi luôn xóa lượt đang dở và tạo lượt mới t�
   const a2=startAttempt(s,u.student,'exam-b1-03');assert.notEqual(a2.id,a1.id);assert.equal(a2.attemptNo,a1.attemptNo);assert.equal(s.attempts.some(item=>item.id===a1.id),false);
 });
 
-test('Hết giờ xóa hẳn lượt thi qua core barrel',()=>{
+test('Chủ động bỏ bài xóa lượt thi qua core barrel',()=>{
   const s=fresh(),u=users(s),attempt=startAttempt(s,u.student,'exam-b1-03');
   const result=abandonAttempt(s,u.student,attempt.id);
   assert.equal(result.deleted,true);

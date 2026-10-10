@@ -81,5 +81,36 @@ try{
   assert.equal((await query("SELECT count(*)::int AS n FROM level_promotions WHERE student_id='s2'")).rows[0].n,1);
   for(let i=0;i<11;i++)try{await startAttempt(student,{code:'ZZZZZ'});}catch{}
   await assert.rejects(()=>startAttempt(student,{code:'ZZZZZ'}),/quá nhiều/);
-  console.log('SQL integration passed: hidden content, code once-per-student, abandonment, expiry, snapshots, private marks, published promotion, replay and rate limit.');
+  const {setAttemptSection,submitExpiredAttempts,saveAnswers}=await import('../server/src/actions/attempts.js');
+  await saveExamAccess(teacher,{examId:'e',hidden:false,learningLevel:'B1.1'});
+  const timed=await startAttempt(other,{examId:'e'});
+  const initial=(await query('SELECT public_data FROM attempts WHERE id=$1',[timed.attemptId])).rows[0].public_data;
+  assert.equal(initial.examDeadlineMs-Date.parse(initial.startedAt),40*60000);
+  await setAttemptSection(other,{attemptId:timed.attemptId,index:1});
+  const moved=(await query('SELECT public_data FROM attempts WHERE id=$1',[timed.attemptId])).rows[0].public_data;
+  assert.equal(moved.currentDeadlineMs,initial.examDeadlineMs);
+  const end=Date.now()-1000;
+  await query('UPDATE attempts SET public_data=public_data||$2::jsonb WHERE id=$1',[timed.attemptId,JSON.stringify({startedAt:new Date(end-2400000).toISOString(),examDeadlineMs:end})]);
+  await assert.rejects(()=>saveAnswers(other,{attemptId:timed.attemptId,answers:{grammar:0}}),/hết thời gian/);
+  await submitExpiredAttempts();
+  const expired=(await query('SELECT status,public_data FROM attempts WHERE id=$1',[timed.attemptId])).rows[0];
+  assert.equal(expired.status,'ready');
+  assert.equal(expired.public_data.timedOut,true);
+  assert.equal(expired.public_data.durationSeconds,2400);
+  await submitExpiredAttempts();
+  assert.equal((await query('SELECT count(*)::int AS n FROM attempts WHERE id=$1',[timed.attemptId])).rows[0].n,1);
+  console.log('SQL integration passed: access, promotion, whole-exam deadline, expired autosubmit and repeat safety.');
+  const {commitOperations}=await import('../server/src/state.js');
+  const {duplicateExam,detachLockedDraftQuestions}=await import('../src/domain/exams.js');
+  const copier={id:'t2',role:'teacher',name:'Copier'};
+  await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4)',['t2','t2@example.test','teacher',JSON.stringify(copier)]);
+  const sourceState=await loadState(copier);
+  const copied=duplicateExam(sourceState,copier,'e');
+  const copiedIds=copied.sections.flatMap(s=>s.questionIds);
+  await commitOperations(copier,[...sourceState.questions.filter(q=>copiedIds.includes(q.id)).map(item=>({collection:'questions',id:item.id,item})),{collection:'exams',id:copied.id,item:copied}]);
+  const reloaded=await loadState(copier),editable=reloaded.questions.find(q=>q.id===copiedIds[0]);
+  assert.equal(editable.ownerId,copier.id);assert.equal(editable.locked,false);
+  await commitOperations(copier,[{collection:'questions',id:editable.id,item:{...editable,title:'Copier edit saved'}}]);
+  assert.equal((await query('SELECT data FROM questions WHERE id=$1',[editable.id])).rows[0].data.title,'Copier edit saved');
+  console.log('SQL copy/reload/edit by a different teacher passed.');
 }finally{hook.deregister();await db.close();delete globalThis.__testDb;}

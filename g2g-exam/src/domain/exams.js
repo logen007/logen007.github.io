@@ -81,6 +81,7 @@ export function duplicateExam(state,user,sourceId){
   }
   const sections=(source.sections||[]).map(section=>({...clone(section),id:uid('sec'),questionIds:(section.questionIds||[]).map(id=>questionIds.get(id))}));
   const exam=createExam(state,user,{title:`${source.title} - Copy ${copyNo}`,provider:source.provider,level:source.level,settings:source.settings,hidden:source.hidden,learningLevel:source.learningLevel,passScore:source.passScore,sections});
+  exam.copiedFrom=sourceId;
   audit(state,user,'duplicate','exam',exam.id,{sourceId});
   return exam;
 }
@@ -89,11 +90,12 @@ export function duplicateExam(state,user,sourceId){
 // never unlock or mutate the original used by an exam or an attempt.
 export function detachLockedDraftQuestions(state,user,examId){
   const exam=byId(state.exams,examId);
-  if(!exam||exam.status!=='draft'||exam.locked||!canEditExam(user,exam)||structuralAttemptExists(state,examId))return false;
+  if(!exam||exam.locked||!canEditExam(user,exam)||structuralAttemptExists(state,examId))return false;
+  if(exam.status!=='draft'&&!(exam.copiedFrom||/ - Copy \d+$/.test(exam.title)))return false;
   const copies=new Map();
   for(const section of exam.sections||[])for(const id of section.questionIds||[]){
     const original=byId(state.questions,id);
-    if(!original?.locked||copies.has(id))continue;
+    if(!original||copies.has(id)||(!original.locked&&original.ownerId===user.id))continue;
     const copy={...clone(original),id:uid('q'),ownerId:user.id,ownerName:user.name,locked:false,usedCount:0,correctRate:null,status:'active',createdAt:nowIso(),updatedAt:nowIso()};
     delete copy.lockedAt;
     state.questions.push(copy);copies.set(id,copy.id);

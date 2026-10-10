@@ -4,6 +4,7 @@ import {
 } from './base.js';
 import {isAutomaticWritingForm,scoreWritingForm} from './writing-form.js';
 import {skillScores,examResult} from './gradebook.js';
+import {examDeadlineMs,submissionTiming} from './exam-clock.js';
 
 function questionScore(question,answer){
   if(!question?.autoGrade||question.example)return 0;
@@ -25,16 +26,13 @@ function startSectionClock(attempt,exam,index){
   attempt.sectionStates||={};
   if(!attempt.sectionStates[section.id]){
     const startedAt=nowIso();
-    const ms=Math.max(1,Number(section.timeMinutes||30))*60*1000;
-    attempt.sectionStates[section.id]={startedAt,deadlineAt:new Date(Date.now()+ms).toISOString()};
+    attempt.examDeadlineMs=examDeadlineMs(attempt,exam);
+    attempt.sectionStates[section.id]={startedAt,deadlineAt:new Date(attempt.examDeadlineMs).toISOString()};
   }
 }
 
 export function getSectionRemainingSeconds(attempt,exam,index=attempt?.currentSectionIndex||0){
-  const section=exam?.sections?.[index];
-  const deadline=section&&attempt?.sectionStates?.[section.id]?.deadlineAt;
-  if(!deadline)return Math.max(0,Number(section?.timeMinutes||0)*60);
-  return Math.max(0,Math.ceil((new Date(deadline).getTime()-Date.now())/1000));
+  return Math.max(0,Math.ceil((examDeadlineMs(attempt,exam)-Date.now())/1000));
 }
 
 export function startAttempt(state,user,examId,{restart=false}={}){
@@ -135,6 +133,7 @@ export function submitAttempt(state,user,attemptId){
   attempt.scoringVersion=2;
   attempt.status=hasManualQuestions(state,exam)?ATTEMPT_STATUS.GRADING:ATTEMPT_STATUS.READY;
   attempt.submittedAt=nowIso();
+  Object.assign(attempt,submissionTiming(attempt,exam));
   attempt.updatedAt=nowIso();
   if(attempt.status===ATTEMPT_STATUS.READY){
     attempt.totalScore=attempt.autoScore;
