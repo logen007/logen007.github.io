@@ -14,7 +14,7 @@ export function classFormHtml(current,users){
 export function studentRosterHtml(data,students,{external=false}={}){
   return `<div class="profile-form"><label>Tìm học viên<input type="search" data-student-search placeholder="Tên học viên hoặc email" autocomplete="off"></label></div>
     <div class="table-wrap"><table class="bang"><thead><tr><th>Họ và tên</th><th>Trình độ</th>${external?'<th>Mã xác nhận</th>':''}<th></th></tr></thead><tbody>
-    ${students.map(student=>`<tr data-student-row data-search="${esc((student.name+' '+student.email).toLocaleLowerCase('vi'))}"><td>${esc(student.name)}<span class="phu">${esc(student.email)}</span></td><td>${esc(normalizeStudentLevel(student.level)||'A1')}</td>${external?`<td><div class="nhom-nut"><strong>${esc(student.confirmationCode||'—')}</strong>${student.confirmationCode?`<button class="icon-btn" type="button" data-copy-confirmation="${esc(student.confirmationCode)}" title="Copy mã xác nhận" aria-label="Copy mã xác nhận">${iconHtml('copy')}</button><small data-copy-status role="status"></small>`:''}</div></td>`:''}<td><button class="nut nho" data-action="student-profile" data-id="${esc(student.id)}">Thông tin</button></td></tr>`).join('')}
+    ${students.map(student=>`<tr data-student-row data-search="${esc((student.name+' '+student.email).toLocaleLowerCase('vi'))}"><td>${esc(student.name)}<span class="phu">${esc(student.email)}</span></td><td>${esc(normalizeStudentLevel(student.level)||'A1')}</td>${external?`<td><div class="nhom-nut confirmation-copy"><strong>${esc(student.confirmationCode||'—')}</strong>${student.confirmationCode?`<button class="icon-btn" type="button" data-copy-confirmation="${esc(student.confirmationCode)}" title="Copy mã xác nhận" aria-label="Copy mã xác nhận">${iconHtml('copy')}</button><small class="confirmation-copy-tooltip" data-copy-status role="status" hidden></small>`:''}</div></td>`:''}<td><button class="nut nho" data-action="student-profile" data-id="${esc(student.id)}">Thông tin</button></td></tr>`).join('')}
     <tr data-student-empty ${students.length?'hidden':''}><td colspan="${external?4:3}">Không tìm thấy học viên.</td></tr></tbody></table></div>`;
 }
 export function classesHtml({data,classId=null}){
@@ -46,7 +46,7 @@ export function mountDialog(title,body,{required=false,compact=false}={}){
 
 export function openStudentProfile({data,student,repo,onSaved,required=false}){
   const classes=data.classes||[],current=classes.find(item=>item.id===student.classId);
-  const modal=mountDialog(required?'Hoàn tất thông tin':'Thông tin học viên',`<form class="profile-form"><label>${required?'':'Họ và tên đầy đủ'}<input aria-label="Họ và tên" name="name" required maxlength="120" value="${required?'':esc(student.name||'')}" autocomplete="name" placeholder="Nhập họ và tên đầy đủ"></label>${required?'<input name="confirmationCode" aria-label="Mã xác nhận (không bắt buộc)" placeholder="Mã xác nhận (không bắt buộc)" minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters">':`<label>Mã lớp<select name="classCode">${classes.map(item=>`<option value="${esc(item.code)}" ${current?.id===item.id?'selected':''}>${esc(item.code)}</option>`).join('')}</select></label><p class="phu-de">Trình độ: ${esc(normalizeStudentLevel(student.level)||'A1')} · Cập nhật khi đỗ đề thi.</p>`}<p data-error role="alert"></p><button class="nut chinh" type="submit">Lưu thông tin</button></form>`,{required,compact:true});
+  const modal=mountDialog(required?'Hoàn tất thông tin':'Thông tin học viên',`<form class="profile-form"><label>${required?'':`Trình độ: ${esc(normalizeStudentLevel(student.level)||'A1')}`}<input aria-label="Họ và tên" name="name" required maxlength="120" value="${required?'':esc(student.name||'')}" autocomplete="name" placeholder="Nhập họ và tên đầy đủ"></label>${required?'<input name="confirmationCode" aria-label="Mã xác nhận (không bắt buộc)" placeholder="Mã xác nhận (không bắt buộc)" minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters">':`<label>Mã lớp<select name="classCode">${classes.map(item=>`<option value="${esc(item.code)}" ${current?.id===item.id?'selected':''}>${esc(item.code)}</option>`).join('')}</select></label>`}<p data-error role="alert"></p><button class="nut chinh" type="submit">Lưu thông tin</button></form>`,{required,compact:true});
   modal.querySelector('form').onsubmit=async event=>{
     event.preventDefault();const form=event.currentTarget,button=form.querySelector('[type="submit"]');
     try{
@@ -66,8 +66,11 @@ export function openStudentProfile({data,student,repo,onSaved,required=false}){
 export function bindClasses(root,{data,repo,onSaved,onClassOpen=()=>{}}){
   root.querySelectorAll('[data-copy-confirmation]').forEach(button=>button.onclick=async()=>{
     const status=button.parentElement.querySelector('[data-copy-status]');
+    clearTimeout(button.copyStatusTimer);
     try{await navigator.clipboard.writeText(button.dataset.copyConfirmation);status.textContent='Đã copy';}
-    catch{status.textContent='Chưa copy được. Vui lòng chọn mã để sao chép.';}
+    catch{status.textContent='Chưa copy được. Vui lòng sao chép thủ công.';}
+    status.hidden=false;
+    button.copyStatusTimer=setTimeout(()=>{status.hidden=true;},2200);
   });
   root.querySelectorAll('[data-open-class]').forEach(button=>button.onclick=()=>onClassOpen(button.dataset.openClass));
   root.querySelector('[data-class-back]')?.addEventListener('click',()=>onClassOpen(null));

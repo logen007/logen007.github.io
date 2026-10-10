@@ -67,6 +67,10 @@ import {openClassEnrollment} from '../src/views/class-enrollment.js';
     await active.form.pending;
     assert.equal(active.error.textContent,'Mã không hợp lệ');
     assert.equal(active.choice.hidden,true);
+    openStudentProfile({data,student:{...student,level:'B1'},repo,onSaved:async()=>{}});
+    assert.ok(active.html.includes('Trình độ: B1'));
+    assert.ok(!active.html.includes('Cập nhật khi đỗ đề thi.'));
+    assert.ok(!active.html.includes('<label>Họ và tên đầy đủ'));
   }finally{globalThis.document=previousDocument;}
 }
 
