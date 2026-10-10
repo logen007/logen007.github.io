@@ -105,6 +105,12 @@ test('Bản nháp cũ tách câu bị khóa mà không mở khóa hay sửa đ�
   updateQuestion(s,u.mai,id,{title:'Can edit copy'});
   assert.equal(original.locked,true);assert.notEqual(original.title,'Can edit copy');
   assert.equal(detachLockedDraftQuestions(s,u.mai,draft.id),false);
+  assert.equal(detachLockedDraftQuestions(s,u.master,draft.id),false);
+  const draftQuestion=byId(s.questions,draft.sections[0].questionIds[0]);
+  draftQuestion.locked=true;
+  assert.equal(detachLockedDraftQuestions(s,u.master,draft.id),true);
+  assert.equal(byId(s.questions,draft.sections[0].questionIds[0]).ownerId,u.mai.id);
+  assert.equal(detachLockedDraftQuestions(s,u.mai,draft.id),false);
   assert.equal(detachLockedDraftQuestions(s,u.master,source.id),true);
 });
 

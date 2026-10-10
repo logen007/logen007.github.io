@@ -89,8 +89,8 @@ export function detachLockedDraftQuestions(state,user,examId){
   const copies=new Map();
   for(const section of exam.sections||[])for(const id of section.questionIds||[]){
     const original=byId(state.questions,id);
-    if(!original||copies.has(id)||(!original.locked&&original.ownerId===user.id))continue;
-    const copy={...clone(original),id:uid('q'),ownerId:user.id,ownerName:user.name,locked:false,usedCount:0,correctRate:null,status:'active',createdAt:nowIso(),updatedAt:nowIso()};
+    if(!original||copies.has(id)||(!original.locked&&original.ownerId===exam.ownerId))continue;
+    const copy={...clone(original),id:uid('q'),ownerId:exam.ownerId,ownerName:exam.ownerName||state.users?.find(u=>u.id===exam.ownerId)?.name||'',locked:false,usedCount:0,correctRate:null,status:'active',createdAt:nowIso(),updatedAt:nowIso()};
     delete copy.lockedAt;
     state.questions.push(copy);copies.set(id,copy.id);
   }

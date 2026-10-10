@@ -263,4 +263,8 @@ try{
   await db.exec(await fs.readFile(new URL('../server/schema.sql',import.meta.url),'utf8'));
   assert.ok(!(await query('SELECT data FROM exams WHERE id=$1',[mediaExam.id])).rows[0].data.sections[0].instructionAudioUrl);
   console.log('Thirty-day trash retention, history deletion, repeat safety, references, restore timestamps and retired audio migration passed.');
+  await commitOperations({id:'admin',role:'master'},[{collection:'questions',id:'owner-regression',item:{ownerId:'t2',title:'Owned by teacher',status:'active'}}]);
+  assert.equal((await query("SELECT owner_id FROM questions WHERE id='owner-regression'")).rows[0].owner_id,'t2');
+  await commitOperations(copier,[{collection:'questions',id:'owner-regression',item:{ownerId:'t2',title:'Teacher can edit',status:'active'}}]);
+  await assert.rejects(()=>commitOperations(copier,[{collection:'questions',id:'invalid-owner',item:{ownerId:'t',status:'active'}}]),/quyền tạo/);
 }finally{hook.deregister();await db.close();delete globalThis.__testDb;}

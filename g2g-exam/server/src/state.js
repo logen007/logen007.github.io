@@ -70,7 +70,7 @@ async function applyQuestion(c,user,op){
   }
   const item=op.item||{};
   if(item.writingFormVersion===1){item.rubric=normalizeWritingRows(item.rubric);item.maxScore=writingFormScore(item.rubric);}
-  if(!current.rowCount){if(!isTeacher(user)||item.ownerId!==user.id)throw appError(403,'Không có quyền tạo câu hỏi.');await c.query(`INSERT INTO questions(id,owner_id,status,locked,data) VALUES($1,$2,$3,$4,$5::jsonb)`,[op.id,user.id,item.status||'active',Boolean(item.locked),JSON.stringify(stripId(item))]);return;}
+  if(!current.rowCount){if(!isTeacher(user)||(user.role!=='master'&&item.ownerId!==user.id))throw appError(403,'Không có quyền tạo câu hỏi.');await c.query(`INSERT INTO questions(id,owner_id,status,locked,data) VALUES($1,$2,$3,$4,$5::jsonb)`,[op.id,item.ownerId||user.id,item.status||'active',Boolean(item.locked),JSON.stringify(stripId(item))]);return;}
   const old=current.rows[0];if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa câu hỏi này.');if(old.status==='trash'&&item.status!=='trash'&&user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được khôi phục câu hỏi.');if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu câu hỏi.');
   await c.query(`UPDATE questions SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,ownerId:old.owner_id}))]);
 }
