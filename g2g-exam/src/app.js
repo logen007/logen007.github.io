@@ -44,6 +44,7 @@ import {getProviderLevels} from './exam-specs/index.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec,questionDraftChoices} from './controllers/exam-factory.js';
 import {populateGoetheA1TestFixture} from './controllers/goethe-a1-test-fixture.js';
 import {hasPartTemplate,openPartTemplate,bindPartBuilder} from './part-templates/index.js';
+import {collectReadingBlocks,bindReadingBlocks} from './ui/reading-blocks.js';
 import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
 import {loadPublicSettings,refreshInfrastructure} from './settings/api.js';
@@ -721,8 +722,10 @@ async function persistBuilderDraft({silent=false}={}){
         uploadedInputs.push(sectionImage);
       }
     }
+    const readingBlocks=await collectReadingBlocks(app);
     await repo.transaction(st=>{
       updateExam(st,user,exam.id,{title});
+      if(readingBlocks)updateSection(st,user,exam.id,section.id,{readingBlocks});
       if(sectionAudio)updateSection(st,user,exam.id,section.id,{instructionAudioUrl:sectionAudio.url,instructionAudioName:sectionAudio.name});
       if(section&&app.querySelector('.part-question[data-question-id]')){
         const imageControl=app.querySelector('[data-section-image-control]');
@@ -1182,6 +1185,7 @@ function bindBuilder(){
   });
   const section=exam.sections.find(item=>item.id===ui.builderSectionId)||exam.sections[0];
   bindPartBuilder(section?.templateType,{root:app,data,exam,section,pendingAudioUploads,notify});
+  bindReadingBlocks(app,()=>queueBuilderAutosave());
   bindImageRemoval(app,()=>queueBuilderAutosave(0));
   app.querySelectorAll('[data-rubric-type]').forEach(field=>field.addEventListener('change',async()=>{await saveBuilderDraft({silent:true});render();}));
   app.querySelectorAll('.goethe-builder input,.goethe-builder textarea,.goethe-builder select').forEach(field=>{
