@@ -1,6 +1,7 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
 import {createStartupGate} from './ui/startup-gate.js';
 import {resolveBuilderSection} from './ui/builder-route.js';
+import {startGoogleOneTap,stopGoogleOneTap} from './ui/google-one-tap.js';
 const startupGate=createStartupGate();
 const initialUrl=new URL(window.location.href);
 import {bindTextareaBold} from './ui/textarea-bold.js';
@@ -159,6 +160,7 @@ async function act(fn,success,{rerender=true}={}){
 
 function loginView(){
   app.innerHTML=loginHtml({mode:repo.mode});
+  if(repo.mode!=='local')startGoogleOneTap({onError:message=>notify(message)});
   if(repo.mode==='local'){
     const exams=data.exams.filter(ex=>ex.status==='published');
     const types=[...new Set(exams.map(ex=>[ex.provider,ex.level].filter(Boolean).join(' ')))].filter(Boolean);
@@ -861,7 +863,7 @@ function queueBuilderAutosave(delay=450,markDirty=true){
 }
 
 function bindGlobal(){
-  app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await repo.signOut();user=null;authenticatedUser=null;ui.view='login';render();});
+  app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await repo.signOut();stopGoogleOneTap({logout:true});user=null;authenticatedUser=null;ui.view='login';render();});
   app.querySelectorAll('[data-action="toggle-role-menu"]').forEach(button=>button.onclick=event=>{
     event.stopPropagation();const account=button.closest('.header-account'),menu=account?.querySelector('[data-role-menu]');if(!menu)return;
     menu.hidden=!menu.hidden;account.querySelectorAll('[data-action="toggle-role-menu"]').forEach(trigger=>trigger.setAttribute('aria-expanded',String(!menu.hidden)));

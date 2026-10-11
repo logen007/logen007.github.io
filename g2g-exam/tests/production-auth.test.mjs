@@ -82,7 +82,7 @@ await test('API is authoritative, initial state is ready, and edits are persiste
 function authHarness({existing=null,payload={sub:'new',email:'student@example.test',email_verified:true},master=false}={}){
   const routes=new Map(),writes=[],cookies=[];let exchanges=0;
   const appError=(code,text)=>Object.assign(new Error(text),{statusCode:code});
-  const context={crypto,process:{env:{NODE_ENV:'production',PUBLIC_URL:'https://exam.g2gcareer.com',GOOGLE_CLIENT_ID:'test-id',GOOGLE_CLIENT_SECRET:'test-secret'}},
+  const context={crypto,URL,process:{env:{NODE_ENV:'production',PUBLIC_URL:'https://exam.g2gcareer.com',GOOGLE_CLIENT_ID:'test-id',GOOGLE_CLIENT_SECRET:'test-secret'}},
     loginReturnPath,appError,externalClassId:async()=>'class-extend',now:()=>new Date().toISOString(),normalizeEmail:x=>x.trim().toLowerCase(),isPrimaryMasterEmail:()=>master,
     getSettings:async()=>({auth:{googleLoginEnabled:true,allowNewStudents:true,teacherEmails:[]}}),
     query:async(sql,args)=>{if(sql.startsWith('SELECT'))return {rowCount:existing?1:0,rows:existing?[existing]:[]};writes.push({sql,args});return {rowCount:1};},
@@ -99,6 +99,45 @@ function authHarness({existing=null,payload={sub:'new',email:'student@example.te
   const reply={setCookie:(name,value,options)=>cookies.push({name,value,options}),clearCookie:()=>{},redirect:value=>value};
   return {routes,writes,cookies,request,reply,registered,context,exchanges:()=>exchanges};
 }
+
+await test('One Tap validates origin, signed challenge, nonce and verified identity before sharing the login path',async()=>{
+  const payload={sub:'existing',email:'teacher@example.test',email_verified:true,nonce:'challenge'};
+  const existing={id:'google:existing',email:payload.email,role:'teacher',active:true,data:{name:'Saved name',profileCompletedAt:'2026-01-01'}};
+  const h=authHarness({payload,existing});await h.registered;
+  const route=h.routes.get('/api/auth/google/one-tap');
+  const req={...h.request,headers:{origin:'https://exam.g2gcareer.com'},body:{credential:'token',return:'/teacher?edit=test'},
+    cookies:{g2g_one_tap:JSON.stringify({nonce:'challenge',expires:Date.now()+60000})}};
+  await assert.rejects(route({...req,headers:{origin:'https://evil.test'}},h.reply),/Nguồn/);
+  await assert.rejects(route({...req,cookies:{}},h.reply),/hết hạn/);
+  await assert.rejects(route({...req,cookies:{g2g_one_tap:JSON.stringify({nonce:'wrong',expires:Date.now()+60000})}},h.reply),/không khớp/);
+  payload.email_verified=false;await assert.rejects(route(req,h.reply),/xác minh email/);
+  assert.equal(h.writes.length,0);assert.equal(h.cookies.length,0);
+  payload.email_verified=true;
+  const result=await route(req,h.reply);
+  assert.equal(result.returnTo,'/teacher?edit=test');
+  assert.equal(h.writes.length,1);assert.match(h.writes[0].sql,/^UPDATE users/);
+  assert.equal(JSON.parse(h.writes[0].args[3]).name,'Saved name');
+  assert.equal(h.cookies[0].name,'g2g_session');assert.equal(h.cookies[0].options.httpOnly,true);
+});
+
+await test('One Tap frontend keeps fallback, posts credentials only to our server and suppresses prompt after logout',async()=>{
+  let options,prompts=0,destination='',disabled=0;const calls=[];
+  const context={URL,document:{getElementById:()=>({})},location:{pathname:'/teacher',search:'?edit=test',hash:'',origin:'https://exam.g2gcareer.com',assign:value=>destination=value},
+    google:{accounts:{id:{initialize:value=>options=value,prompt:()=>prompts++,cancel(){},disableAutoSelect:()=>disabled++}}},
+    fetch:async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>options?.method==='POST'?{returnTo:'/teacher?edit=test'}:{enabled:true,clientId:'public-id',nonce:'challenge'}};}};
+  vm.runInNewContext(read('src/ui/google-one-tap.js').replace(/export /g,''),context);
+  await context.startGoogleOneTap();
+  assert.equal(prompts,1);assert.equal(options.nonce,'challenge');assert.equal(options.auto_select,false);
+  await options.callback({credential:'verified-token'});
+  assert.equal(destination,'https://exam.g2gcareer.com/teacher?edit=test');
+  assert.equal(calls[1].url,'/api/auth/google/one-tap');
+  assert.equal(JSON.parse(calls[1].options.body).credential,'verified-token');
+  context.stopGoogleOneTap({logout:true});await context.startGoogleOneTap();
+  assert.equal(prompts,1);assert.equal(disabled,1);
+  const fallback={document:{},fetch:async()=>{throw Error('blocked');}};
+  vm.runInNewContext(read('src/ui/google-one-tap.js').replace(/export /g,''),fallback);
+  await assert.doesNotReject(fallback.startGoogleOneTap());
+});
 
 await test('Google callback verifies state and email before writing an account or session',async()=>{
   const h=authHarness();await h.registered;

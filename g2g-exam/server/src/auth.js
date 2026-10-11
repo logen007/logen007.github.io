@@ -25,7 +25,55 @@ export async function currentUser(request){
 export async function requireUser(request){const user=await currentUser(request);if(!user||user.active===false)throw appError(401,'Bạn cần đăng nhập.');return user;}
 export async function requireRole(request,...roles){const user=await requireUser(request);if(!roles.includes(user.role))throw appError(403,'Bạn không có quyền thực hiện thao tác này.');return user;}
 
+async function finishGoogleLogin(p,reply){
+    if(!p?.sub||!p.email||p.email_verified!==true)throw appError(401,'Tài khoản Google chưa xác minh email.');
+    const email=normalizeEmail(p.email),id=`google:${p.sub}`;
+    const settings=await getSettings(),teacherEmails=teacherEmailSet(settings);
+    const existing=await userById(id),master=isPrimaryMasterEmail(email),preapprovedTeacher=teacherEmails.has(email);
+    if(existing?.active===false)throw appError(403,'Tài khoản đã bị vô hiệu hóa.');
+    const role=master||existing?.role==='master'?'master':preapprovedTeacher?'teacher':existing?.role||'student';
+    if(!existing){
+      if(settings.auth.allowNewStudents===false&&!master&&!preapprovedTeacher)throw appError(403,'Hệ thống hiện không nhận thêm tài khoản học viên mới.');
+      const domain=String(settings.auth.allowedDomain||'').toLowerCase();
+      if(domain&&!email.endsWith(`@${domain}`)&&!master&&!preapprovedTeacher)throw appError(403,`Chỉ email thuộc ${domain} được đăng ký.`);
+      const data={name:p.name||email.split('@')[0],picture:p.picture||'',createdAt:now(),...(role==='student'?{level:'A1',classId:await externalClassId()}:{})};
+      await query(`INSERT INTO users(id,email,role,active,data) VALUES($1,$2,$3,true,$4::jsonb)`,[id,email,role,JSON.stringify(data)]);
+    }else{
+      const data={name:existing.profileCompletedAt?existing.name:p.name||existing.name||email.split('@')[0],picture:p.picture||existing.picture||''};
+      delete data.id;delete data.email;delete data.role;delete data.active;
+      await query(`UPDATE users SET email=$2,role=$3,data=data||$4::jsonb,updated_at=now() WHERE id=$1`,[id,email,role,JSON.stringify(data)]);
+    }
+    reply.setCookie('g2g_session',id,cookieOpts());
+
+    return {id,role};
+}
+
 export async function registerAuthRoutes(fastify){
+  fastify.get('/api/auth/google/one-tap',async(request,reply)=>{
+    const settings=await getSettings();
+    if(settings.auth.googleLoginEnabled===false||!process.env.GOOGLE_CLIENT_ID)return {enabled:false};
+    const nonce=crypto.randomBytes(32).toString('hex');
+    reply.setCookie('g2g_one_tap',JSON.stringify({nonce,expires:Date.now()+600000}),cookieOpts(600));
+    return {enabled:true,clientId:process.env.GOOGLE_CLIENT_ID,nonce};
+  });
+  fastify.post('/api/auth/google/one-tap',async(request,reply)=>{
+    if(request.headers.origin!==new URL(PUBLIC_URL).origin)throw appError(403,'Nguồn đăng nhập không hợp lệ.');
+    const settings=await getSettings();
+    if(settings.auth.googleLoginEnabled===false)throw appError(403,'Đăng nhập Google đang tạm tắt.');
+    if(!process.env.GOOGLE_CLIENT_ID)throw appError(503,'Google Login chưa được cấu hình.');
+    const signed=request.unsignCookie(request.cookies.g2g_one_tap||'');
+    let challenge;try{challenge=signed.valid?JSON.parse(signed.value):null;}catch{}
+    if(!challenge?.nonce||!Number.isFinite(challenge.expires)||challenge.expires<Date.now())throw appError(400,'Phiên đăng nhập đã hết hạn. Vui lòng thử lại.');
+    const credential=request.body?.credential;
+    if(typeof credential!=='string'||credential.length>16384)throw appError(400,'Thông tin đăng nhập không hợp lệ.');
+    let payload;
+    try{payload=(await oauth().verifyIdToken({idToken:credential,audience:process.env.GOOGLE_CLIENT_ID})).getPayload();}
+    catch{throw appError(401,'Không xác minh được tài khoản Google.');}
+    if(payload?.nonce!==challenge.nonce)throw appError(401,'Phiên đăng nhập không khớp.');
+    reply.clearCookie('g2g_one_tap',{path:'/',domain:COOKIE_DOMAIN});
+    const {role}=await finishGoogleLogin(payload,reply);
+    return {returnTo:loginReturnPath(String(request.body?.return||'/'),role)};
+  });
   fastify.get('/api/auth/me',async request=>({user:await currentUser(request)}));
   fastify.post('/api/auth/test-role',async(request,reply)=>{
     const user=await sessionUser(request);if(!user)throw appError(401,'Bạn cần đăng nhập.');
@@ -58,24 +106,7 @@ export async function registerAuthRoutes(fastify){
     if(!tokens.id_token)throw appError(401,'Google không trả về thông tin đăng nhập.');
     const ticket=await client.verifyIdToken({idToken:tokens.id_token,audience:process.env.GOOGLE_CLIENT_ID});
     const p=ticket.getPayload();
-    if(!p?.sub||!p.email||p.email_verified!==true)throw appError(401,'Tài khoản Google chưa xác minh email.');
-    const email=normalizeEmail(p.email),id=`google:${p.sub}`;
-    const settings=await getSettings(),teacherEmails=teacherEmailSet(settings);
-    const existing=await userById(id),master=isPrimaryMasterEmail(email),preapprovedTeacher=teacherEmails.has(email);
-    if(existing?.active===false)throw appError(403,'Tài khoản đã bị vô hiệu hóa.');
-    const role=master||existing?.role==='master'?'master':preapprovedTeacher?'teacher':existing?.role||'student';
-    if(!existing){
-      if(settings.auth.allowNewStudents===false&&!master&&!preapprovedTeacher)throw appError(403,'Hệ thống hiện không nhận thêm tài khoản học viên mới.');
-      const domain=String(settings.auth.allowedDomain||'').toLowerCase();
-      if(domain&&!email.endsWith(`@${domain}`)&&!master&&!preapprovedTeacher)throw appError(403,`Chỉ email thuộc ${domain} được đăng ký.`);
-      const data={name:p.name||email.split('@')[0],picture:p.picture||'',createdAt:now(),...(role==='student'?{level:'A1',classId:await externalClassId()}:{})};
-      await query(`INSERT INTO users(id,email,role,active,data) VALUES($1,$2,$3,true,$4::jsonb)`,[id,email,role,JSON.stringify(data)]);
-    }else{
-      const data={name:existing.profileCompletedAt?existing.name:p.name||existing.name||email.split('@')[0],picture:p.picture||existing.picture||''};
-      delete data.id;delete data.email;delete data.role;delete data.active;
-      await query(`UPDATE users SET email=$2,role=$3,data=data||$4::jsonb,updated_at=now() WHERE id=$1`,[id,email,role,JSON.stringify(data)]);
-    }
-    reply.setCookie('g2g_session',id,cookieOpts());
+    const {role}=await finishGoogleLogin(p,reply);
     return reply.redirect(loginReturnPath(returnCookie.valid?returnCookie.value:'/',role));
   });
   fastify.post('/api/auth/logout',async(_request,reply)=>{reply.clearCookie('g2g_session',{path:'/',domain:COOKIE_DOMAIN});reply.clearCookie('g2g_test_role',{path:'/',domain:COOKIE_DOMAIN});return {ok:true};});
