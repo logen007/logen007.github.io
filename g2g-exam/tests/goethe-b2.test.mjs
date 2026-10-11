@@ -25,6 +25,7 @@ assert.match(readingBlocksHtml(exam.sections[0]),/<b>a<\/b> Holger/);
 assert.match(readingBlocksHtml(exam.sections[0]),/<b>b<\/b> Julia/);
 assert.match(readingBlocksHtml(exam.sections[0]),/Land &lt; Stadt/);
 assert.match(readingBlocksEditor(exam.sections[0]),/data-block-image/);
+assert.match(readingBlocksEditor(exam.sections[0]),/<textarea class="truong" data-block-text/);
 assert.match(readingBlocksEditor(exam.sections[0]),/data-block-add/);
 assert.equal(readingBlocksEditor(exam.sections[1]),'');
 assert.deepEqual(await collectReadingBlocks({querySelector:()=>true,querySelectorAll:()=>exam.sections[0].readingBlocks.map(block=>({dataset:{imageUrl:block.imageUrl},querySelector:selector=>selector==='[data-block-image]'?{files:[]}:{value:selector==='[data-block-title]'?block.title:block.text}}))}),exam.sections[0].readingBlocks);
