@@ -168,7 +168,11 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   it still does not advance the scored-question numbering.
 - Put prompt and audio control together; answer options fill the following row.
   Selecting an answer does not bold its body text; retain normal weight and
-  use the existing fill, border and radio state. Option letters stay bold.
+  use the existing fill and border. Option letters stay bold.
+  Selectable answer cards that already show selection with a border and fill
+  have no visible radio dot and reserve no space for one, including image cards
+  and examples. Keep native radio semantics, keyboard controls and a visible
+  focus outline. This does not remove paper-form check marks or standalone radios.
   Image answers get a readable image area, not a tiny thumbnail beside long text.
 - Current-section answered count lives once in the bottom navigation. Previous
   and next remain in normal flow without background, border or sticky positioning.
