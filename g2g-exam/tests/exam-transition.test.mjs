@@ -25,8 +25,8 @@ try{
   await withExamTransition(async()=>{calls++;});
   await first;
   assert.equal(calls,1);assert.deepEqual(delays,[1100,1100,900,500]);
-  assert.match(overlay.innerHTML,/exam-transition-waves[^]*?<i><\/i><i><\/i><\/div>/);
-  assert.equal((overlay.innerHTML.match(/<i>/g)||[]).length,2);
+  assert.match(overlay.innerHTML,/exam-transition-waves[^]*?<i><\/i><\/div>/);
+  assert.equal((overlay.innerHTML.match(/<i>/g)||[]).length,1);
   assert.equal(overlay.style['--reveal-x'],'120px');
   assert.equal(overlay.style['--wave-color'],'rgb(248, 210, 52)');
   assert.equal(overlay.style['--reveal-y'],'622px');
