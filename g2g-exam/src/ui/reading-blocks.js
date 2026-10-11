@@ -18,11 +18,11 @@ export function readingBlocksHtml(section){
   return (section.readingBlocks||[]).map((block,index)=>`<article class="reading-block">${block.imageUrl?`<img src="${esc(block.imageUrl)}" alt="">`:''}<div><h3><b>${letter(index)}</b> ${textHtml(block.title)}</h3><p>${textHtml(block.text)}</p></div></article>`).join('');
 }
 
-export async function collectReadingBlocks(root){
+export async function collectReadingBlocks(root,position={}){
   if(!root.querySelector('[data-reading-blocks]'))return undefined;
-  return Promise.all([...root.querySelectorAll('[data-reading-block]')].map(async card=>{
+  return Promise.all([...root.querySelectorAll('[data-reading-block]')].map(async (card,index)=>{
     const input=card.querySelector('[data-block-image]'),file=input.files?.[0];
-    if(file){card.dataset.imageUrl=await uploadQuestionImage(file);input.value='';}
+    if(file){card.dataset.imageUrl=await uploadQuestionImage(file,{...position,slot:'person-'+letter(index)});input.value='';}
     return {imageUrl:card.dataset.imageUrl||'',title:card.querySelector('[data-block-title]').value,text:card.querySelector('[data-block-text]').value};
   }));
 }

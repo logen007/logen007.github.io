@@ -78,7 +78,10 @@ async function saveUpload(request,{kind,maxBytes,mimePrefix,defaultExt},user=nul
   if(!part)throw appError(400,`Chưa chọn tệp ${kind}.`);
   if(part.mimetype&&!part.mimetype.startsWith(mimePrefix))throw appError(400,`Tệp tải lên không phải ${kind}.`);
   const ext=path.extname(part.filename||'').replace(/[^.a-zA-Z0-9]/g,'').slice(0,10);
-  const name=`${Date.now()}-${randomUUID()}${ext||defaultExt}`;
+  const imageStem=path.basename(part.filename||'image',ext).toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,60)||'image';
+  const name=mimePrefix==='image/'&&part.mimetype==='image/jpeg'
+    ?`${imageStem}-${randomUUID().slice(0,8)}.jpg`
+    :`${Date.now()}-${randomUUID()}${ext||defaultExt}`;
   const dest=path.join(uploadDir,name);let size=0;
   part.file.on('data',chunk=>{size+=chunk.length;if(size>maxBytes)part.file.destroy(appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`));});
   try{await pipeline(part.file,createWriteStream(dest,{flags:'wx'}));}catch(error){await fs.rm(dest,{force:true});throw error;}

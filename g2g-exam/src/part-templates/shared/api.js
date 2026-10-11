@@ -1,3 +1,4 @@
+import {uploadQuestionImage} from '../../media.js';
 const API=String(globalThis.G2G_API_BASE||'/api').replace(/\/$/,'');
 
 export async function templateRequest(path,{method='GET',body,form}={}){
@@ -10,8 +11,9 @@ export async function templateRequest(path,{method='GET',body,form}={}){
   return data;
 }
 
-export async function uploadTemplateMedia(kind,file){
+export async function uploadTemplateMedia(kind,file,position={}){
   if(!file)return '';
+  if(kind==='image')return uploadQuestionImage(file,position);
   const form=new FormData();form.append('file',file,file.name||kind);
   const data=await templateRequest(`/media/${kind}`,{method:'POST',form});
   return data.url||'';

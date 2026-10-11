@@ -1,4 +1,5 @@
 import {hasApiBackend} from './config.js';
+import {optimizeExamImage} from './ui/image-optimize.js';
 
 const MAX_AUDIO_BYTES=25*1024*1024;
 const MAX_IMAGE_BYTES=8*1024*1024;
@@ -17,10 +18,11 @@ export async function uploadQuestionAudio(file,{onProgress}={}){
   return postAudio('/api/media/audio',file,{onProgress});
 }
 
-export async function uploadQuestionImage(file){
+export async function uploadQuestionImage(file,position={}){
   if(!file)throw new Error('Chưa chọn hình ảnh.');
   if(file.size>MAX_IMAGE_BYTES)throw new Error('Hình ảnh tối đa 8 MB.');
   if(file.type&&!file.type.startsWith('image/'))throw new Error('Tệp đã chọn không phải hình ảnh.');
+  file=await optimizeExamImage(file,position);
   if(globalThis.G2G_DEMO_BYPASS)return postMedia('/api/demo/media/image',file);
   if(!hasApiBackend())throw new Error('Không thể tải hình ảnh khi máy chủ chưa chạy.');
   return postMedia('/api/media/image',file);

@@ -73,7 +73,7 @@ export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved
         if(audioFile)question.audioUrl=await uploadTemplateMedia('audio',audioFile);
         for(let j=0;j<question.choices.length;j++){
           const imageFile=modal.querySelector(`.tpl-image[data-i="${index}"][data-j="${j}"]`)?.files?.[0];
-          if(imageFile)question.choices[j].imageUrl=await uploadTemplateMedia('image',imageFile);
+          if(imageFile)question.choices[j].imageUrl=await uploadTemplateMedia('image',imageFile,{skill:'listening',part:1,question:index+1,slot:String.fromCharCode(97+j)});
         }
       }
       validateA1ListeningPart1({part,questions,spec});

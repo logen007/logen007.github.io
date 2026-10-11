@@ -719,6 +719,7 @@ async function persistBuilderDraft({silent=false}={}){
   try{
     const audioUrls=new Map(),audioNames=new Map(),choiceImageUrls=new Map(),questionInstructionImageUrls=new Map(),questionCardImageUrls=new Map(),rubricImageUrls=new Map();
     let sectionImageUrl;
+    const imagePosition={skill:section.skillKey||section.skill,part:exam.sections.filter(item=>item.skill===section.skill).findIndex(item=>item.id===section.id)+1};
     const sectionAudioUpload=section&&pendingAudioUploads.get('section:'+section.id);
     const sectionAudio=sectionAudioUpload?await sectionAudioUpload.promise:null;
     if(section&&app.querySelector('.part-question[data-question-id]')){
@@ -731,34 +732,35 @@ async function persistBuilderDraft({silent=false}={}){
       }
       for(const card of app.querySelectorAll('.part-question[data-question-id]')){
         const questionId=card.dataset.questionId;
+        const questionPosition={...imagePosition,question:section.questionIds.indexOf(questionId)+1};
         for(const input of card.querySelectorAll('[data-choice-image]')){
           const file=input.files?.[0];
           if(!file)continue;
-          choiceImageUrls.set(`${questionId}:${input.dataset.choiceImage}`,await uploadQuestionImage(file));
+          choiceImageUrls.set(`${questionId}:${input.dataset.choiceImage}`,await uploadQuestionImage(file,{...questionPosition,slot:String.fromCharCode(97+Number(input.dataset.choiceImage))}));
           uploadedInputs.push(input);
         }
         for(const input of card.querySelectorAll('[data-question-instruction-image]')){
           const file=input.files?.[0];
           if(!file)continue;
-          questionInstructionImageUrls.set(`${questionId}:${input.dataset.questionInstructionImage}`,await uploadQuestionImage(file));
+          questionInstructionImageUrls.set(`${questionId}:${input.dataset.questionInstructionImage}`,await uploadQuestionImage(file,{...questionPosition,slot:'prompt-'+(Number(input.dataset.questionInstructionImage)+1)}));
           uploadedInputs.push(input);
         }
         for(const input of card.querySelectorAll('[data-question-card-image]')){
           const file=input.files?.[0];if(!file)continue;
-          questionCardImageUrls.set(questionId,await uploadQuestionImage(file));uploadedInputs.push(input);
+          questionCardImageUrls.set(questionId,await uploadQuestionImage(file,questionPosition));uploadedInputs.push(input);
         }
         for(const row of card.querySelectorAll('[data-rubric-index]')){
           const input=row.querySelector('[data-rubric-image]'),file=input?.files?.[0];if(!file)continue;
-          rubricImageUrls.set(`${questionId}:${row.dataset.rubricIndex}`,await uploadQuestionImage(file));uploadedInputs.push(input);
+          rubricImageUrls.set(`${questionId}:${row.dataset.rubricIndex}`,await uploadQuestionImage(file,{...questionPosition,slot:'form-'+(Number(row.dataset.rubricIndex)+1)}));uploadedInputs.push(input);
         }
       }
       const sectionImage=[...app.querySelectorAll('[data-section-image]')].find(input=>input.files?.[0]);
       if(sectionImage){
-        sectionImageUrl=await uploadQuestionImage(sectionImage.files[0]);
+        sectionImageUrl=await uploadQuestionImage(sectionImage.files[0],imagePosition);
         uploadedInputs.push(sectionImage);
       }
     }
-    const readingBlocks=await collectReadingBlocks(app);
+    const readingBlocks=await collectReadingBlocks(app,imagePosition);
     await repo.transaction(st=>{
       updateExam(st,user,exam.id,{title});
       if(readingBlocks)updateSection(st,user,exam.id,section.id,{readingBlocks});

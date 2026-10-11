@@ -248,6 +248,12 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Brand settings
 
+Exam image uploads are converted before upload to JPEG (quality 85%, maximum
+2400px long edge, no upscaling), with white transparency background. Only the
+optimized file is uploaded; never upload a second original. Use short English
+position names (reading-2-q3-a.jpg), with a short unique suffix on the server.
+Existing referenced uploads are not renamed or deleted as part of new uploads.
+
 Student identity cards use one compact current-level badge, not a level ladder.
 Keep name editing inline and group class confirmation with Share. Statistics start
 with submitted exam count (“Bài đã thi”), including pending grading.

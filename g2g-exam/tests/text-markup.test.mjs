@@ -1,4 +1,21 @@
 import assert from 'node:assert/strict';
+import {imageDimensions,imagePositionName,optimizeExamImage} from '../src/ui/image-optimize.js';
+assert.deepEqual(imageDimensions(4800,2400),{width:2400,height:1200});
+assert.deepEqual(imageDimensions(800,600),{width:800,height:600});
+assert.throws(()=>imageDimensions(20000,20000));
+assert.equal(imagePositionName({skill:'reading',part:2,question:3,slot:'a'}),'reading-2-q3-a.jpg');
+assert.equal(imagePositionName({skill:'Viết',part:1,slot:'form-2'}),'writing-1-form-2.jpg');
+const savedImage=globalThis.Image,savedDocument=globalThis.document;
+const drawOps=[];
+globalThis.Image=class {naturalWidth=3000;naturalHeight=1500;set src(value){this.onload();}};
+globalThis.document={createElement:()=>({getContext:()=>({set fillStyle(value){drawOps.push(value);},fillRect(){drawOps.push('white');},drawImage(){drawOps.push('draw');}}),toBlob(callback,type,quality){assert.equal(type,'image/jpeg');assert.equal(quality,.85);callback(new Blob(['jpg'],{type}));}})};
+try{
+  const output=await optimizeExamImage(new Blob(['original'],{type:'image/png'}),{skill:'reading',part:2});
+  assert.equal(output.type,'image/jpeg');
+  assert.equal(output.name,'reading-2-prompt.jpg');
+  assert.deepEqual(drawOps,['#fff','white','draw']);
+  assert.equal(await output.text(),'jpg');
+}finally{globalThis.Image=savedImage;globalThis.document=savedDocument;}
 import {resolveBuilderSection} from '../src/ui/builder-route.js';
 const routeExam={sections:[{id:'listen-1'},{id:'write-2'}]};
 assert.equal(resolveBuilderSection(routeExam,'write-2'),'write-2');
