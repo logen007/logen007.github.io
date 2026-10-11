@@ -1,4 +1,8 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const transitionCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(transitionCss,/\.exam-transition-waves i \{[^}]*var\(--brand-primary\)/);
+assert.match(transitionCss,/\.exam-transition::before \{[^}]*background:#fff/);
 import {withExamTransition} from '../src/ui/exam-transition.js';
 import {examMessages,pickExamMessages} from '../src/ui/exam-messages.js';
 assert.equal(examMessages('').length,10);
