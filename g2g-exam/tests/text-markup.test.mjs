@@ -1,17 +1,4 @@
 import assert from 'node:assert/strict';
-import {bindHandwriting} from '../src/ui/handwriting.js';
-const handwritingField={dataset:{q:'writing-toggle-test'},value:'Keep my answer',matches:()=>true,classList:{toggle(name,on){this[name]=on;}}};
-const handwritingButton={previousElementSibling:handwritingField,setAttribute(k,v){this[k]=v;},getAttribute(k){return this[k];}};
-const handwritingRoot={querySelectorAll:()=>[handwritingButton]};
-bindHandwriting(handwritingRoot);
-assert.equal(handwritingButton['aria-pressed'],'true');
-handwritingButton.onclick();
-assert.equal(handwritingField.classList['lined-writing-paper'],false);
-assert.equal(handwritingField.value,'Keep my answer');
-bindHandwriting(handwritingRoot);
-assert.equal(handwritingButton['aria-pressed'],'false');
-handwritingButton.onclick();
-assert.equal(handwritingField.classList['lined-writing-paper'],true);
 import {readFileSync} from 'node:fs';
 const confirmationSource=readFileSync(new URL('../src/ui/confirm.js',import.meta.url),'utf8');
 assert.match(confirmationSource,/iconHtml\(cancelIcon\)/);

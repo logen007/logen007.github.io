@@ -111,6 +111,11 @@ assert.deepEqual(writingPointLayout(mixed).markers.filter(Boolean),['(0)','(1)',
 assert.equal(writingFormScore([{type:'text',maxScore:.98}]),.98);
 const state=structuredClone(seedState),teacher=state.users.find(u=>u.role==='teacher');
 const saved=createQuestion(state,teacher,demo.question);
+assert.equal(saved.handwriting,true);
+updateQuestion(state,teacher,saved.id,{handwriting:false});
+assert.equal(saved.handwriting,false);
+updateQuestion(state,teacher,saved.id,{handwriting:true});
+assert.equal(saved.handwriting,true);
 for(let n=0;n<4;n++){updateQuestion(state,teacher,saved.id,{rubric:saved.rubric,maxScore:100});assert.equal(saved.maxScore,12);}
 updateQuestion(state,teacher,saved.id,{rubric:removeWritingRow(saved.rubric,7)});assert.equal(saved.maxScore,11);
 console.log('Writing form: demo, distinct editors, privacy, fractional scores, repeated saves, add/remove passed.');

@@ -121,7 +121,7 @@ function mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile}){
 }
 
 function freeResponseHtml(q,{defaultScore,readOnly}){
-  return `<article class="goethe-free-response ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Câu trả lời textarea" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea>${scoreControls(q,defaultScore,readOnly)}</article>`;
+  return `<article class="goethe-free-response ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Câu trả lời textarea" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea>${scoreControls(q,defaultScore,readOnly)}<label class="writing-style-control">${iconHtml('grading')}<select data-field="handwriting" aria-label="Giao diện ô viết" ${readOnly?'disabled':''}><option value="true" ${q.handwriting!==false?'selected':''}>Viết tay</option><option value="false" ${q.handwriting===false?'selected':''}>Viết thường</option></select></label></article>`;
 }
 
 function instructionHtml(section,choiceProfile,readOnly,question){

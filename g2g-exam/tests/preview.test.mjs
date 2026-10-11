@@ -396,6 +396,17 @@ try{
     assert.match(html,/class="question-number">4\.<\/strong> Later question\./);
   });
 
+  await test('Writing style is owned by the editor, never toggled by students',()=>{
+    const input=fixture();
+    for(const preview of [false,true]){
+      const plain=examHtml({...input,preview,questions:[{id:'style-writing',type:'writing',handwriting:false}]});
+      assert.doesNotMatch(plain,/lined-writing-paper|data-handwriting-toggle/);
+      const handwriting=examHtml({...input,preview,questions:[{id:'style-writing',type:'writing'}]});
+      assert.match(handwriting,/lined-writing-paper/);
+      assert.doesNotMatch(handwriting,/data-handwriting-toggle/);
+    }
+  });
+
   await test('Rerendered preview retains radio, matching and writing input hooks and selected answers',()=>{
     const input=fixture();
     input.questions[0].choices=['First','Second','Nháp',{text:'',imageUrl:''}];

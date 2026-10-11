@@ -1,6 +1,5 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
 import {bindTextareaBold} from './ui/textarea-bold.js';
-import {bindHandwriting} from './ui/handwriting.js';
 bindTextareaBold();
 import {bindLetterAnswers} from './ui/letter-answers.js';
 import {bindSplitReading} from './ui/split-reading.js';
@@ -627,7 +626,6 @@ function render(){
   else adminView();
   bindGlobal();
   bindViewSpecific();
-  bindHandwriting(app);
   if(['student-home','student-results','exam','preview-exam','builder','grading-detail','admin'].includes(ui.view)
     &&!(ui.view==='admin'&&ui.adminTab==='classes'&&ui.classId))window.G2GBootLayout?.schedule(app);
   else window.G2GBootLayout?.clear();
@@ -791,6 +789,8 @@ async function persistBuilderDraft({silent=false}={}){
           const mixedChoiceHidden=card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden==='true';
           const choiceScore=mixedChoiceHidden?0:Math.max(0,Number(scoreField?.value)||0);
           const maxScore=mode==='mixed-form'?writingFormScore(rubric)+choiceScore:choiceScore;
+          const handwritingField=card.querySelector('[data-field="handwriting"]');
+          if(handwritingField)updateQuestion(st,user,id,{handwriting:handwritingField.value!=='false'});
           updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:firstInstruction.text,choices,correctAnswer:Number(correct?.value??0),maxScore,example,audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl,instructionBlocks,mixedChoiceHidden});
         });
       }
