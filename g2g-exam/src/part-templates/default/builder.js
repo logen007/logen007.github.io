@@ -11,7 +11,7 @@ import {inlineGapBuilder} from './inline-gap-builder.js';
 import {readingBlocksEditor} from '../../ui/reading-blocks.js';
 import {letterTableBuilder,bindLetterTableBuilder} from './letter-table-builder.js';
 
-const instructionPlaceholder='Đề bài\n[b]chữ đậm[/b] — Cmd/Ctrl B\n[i]chữ nghiêng[/i] — Cmd/Ctrl I\n[u]gạch chân[/u] — Cmd/Ctrl U\n[a], [b], [text] — chữ đậm trong khung viền\nChọn chữ rồi dùng phím tắt để định dạng.';
+const instructionPlaceholder='Nhập đề bài. Dùng [b]chữ đậm[/b] (Cmd/Ctrl B), [i]chữ nghiêng[/i] (Cmd/Ctrl I), [u]gạch chân[/u] (Cmd/Ctrl U); [a], [b], [text] hiển thị chữ đậm trong khung viền. Chọn chữ rồi dùng phím tắt để định dạng.';
 
 const icons={
   add:iconHtml('plus'),
