@@ -7,10 +7,18 @@ import {oralMaximum} from '../src/domain/gradebook.js';
 import {partAudioSegments,partAudioQuestions} from '../src/domain/part-audio.js';
 import {letterAnswerError} from '../src/domain/letter-answers.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
+import {examHtml} from '../src/views/student.js';
 import {validateExamForPublish,startAttempt,submitAttempt,saveManualScore} from '../src/core.js';
 const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teacher-lan'),student=state.users.find(u=>u.id==='student-a');
 const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'B1',title:'B1 regression'});
 const rows=section=>section.questionIds.map(id=>state.questions.find(q=>q.id===id));
+assert.equal(exam.sections[0].questionProfile.splitLayout,true);
+const legacyExam=structuredClone(exam);
+delete legacyExam.sections[0].questionProfile.splitLayout;
+for(const preview of [true,false]){
+  const html=examHtml({exam:legacyExam,sectionIndex:0,questions:[],attempt:{id:'split-test',answers:{}},online:true,preview});
+  assert.match(html,/class="exam-reading-split"/);
+}
 assert.equal(exam.sections.length,12);
 assert.equal(examDurationSeconds(exam),165*60);
 assert.equal(oralMaximum(exam),100);

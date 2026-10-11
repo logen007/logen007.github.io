@@ -1,4 +1,5 @@
 import {isPrefilledQuestion,imageMaxWidth,shortChoiceColumns} from '../domain/question-display.js';
+import {getExamSpec} from '../exam-specs/index.js';
 import {inlineGapsHtml} from '../ui/inline-gaps.js';
 import {readingBlocksHtml} from '../ui/reading-blocks.js';
 import {letterAnswersHtml} from '../ui/letter-answers.js';
@@ -64,6 +65,9 @@ export function studentAttemptDetailHtml({review}){
 
 export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],online,preview=false,previewSummary=null}){
   const sec=exam.sections[sectionIndex];
+  const configuredPart=getExamSpec(exam.provider,exam.level)?.skills
+    .find(skill=>skill.key===sec.skillKey||skill.label===sec.skill)?.parts.find(part=>part.name===sec.name);
+  const splitLayout=configuredPart?.questionProfile?.splitLayout??sec.questionProfile?.splitLayout;
   const orderedQuestions=questions.map((q,originalIndex)=>({q,originalIndex})).sort((a,b)=>Number(Boolean(isPrefilledQuestion(b.q)))-Number(Boolean(isPrefilledQuestion(a.q))));
   const requiredQuestions=questions.filter(q=>!isPrefilledQuestion(q));
   const answered=requiredQuestions.filter(q=>answerPresent(attempt.answers?.[q.id],q)).length;
@@ -87,7 +91,7 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBl
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sec.name))}</h1></div></div>`
     :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${textHtml(exam.title)}</div><h1>${esc(germanSectionName(sec.name))}</h1></div></div>`;
-const body=`<main class="noi-dung-thi">${context}${preview?'':`<div class="exam-free-navigation"><span>Prüfungszeit: <strong id="examMainTime">--:--</strong></span><button class="nut" data-action="submit-exam">Prüfung abgeben</button></div>`}<div class="exam-paper">${sec.questionProfile?.splitLayout?`<div class="exam-reading-split">${sectionInstruction}<div>${sectionAudio}${questionList}</div></div>`:sectionInstruction+sectionAudio+questionList}</div><nav class="dieu-huong-thi" aria-label="Prüfungsnavigation"><button class="nut section-arrow" aria-label="Vorheriger Teil" title="Vorheriger Teil" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${iconHtml('arrowLeft')}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh ${sectionIndex<exam.sections.length-1?'section-arrow':''}" aria-label="${nextLabel}" title="${nextLabel}" data-action="${nextAction}">${sectionIndex<exam.sections.length-1?iconHtml('arrowRight'):nextLabel}</button></nav></main>`;
+const body=`<main class="noi-dung-thi">${context}${preview?'':`<div class="exam-free-navigation"><span>Prüfungszeit: <strong id="examMainTime">--:--</strong></span><button class="nut" data-action="submit-exam">Prüfung abgeben</button></div>`}<div class="exam-paper">${splitLayout?`<div class="exam-reading-split">${sectionInstruction}<div>${sectionAudio}${questionList}</div></div>`:sectionInstruction+sectionAudio+questionList}</div><nav class="dieu-huong-thi" aria-label="Prüfungsnavigation"><button class="nut section-arrow" aria-label="Vorheriger Teil" title="Vorheriger Teil" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${iconHtml('arrowLeft')}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh ${sectionIndex<exam.sections.length-1?'section-arrow':''}" aria-label="${nextLabel}" title="${nextLabel}" data-action="${nextAction}">${sectionIndex<exam.sections.length-1?iconHtml('arrowRight'):nextLabel}</button></nav></main>`;
   const header=preview
     ?`<header class="thanh-thi thanh-thi--preview"><strong>${textHtml(exam.title)}</strong><div class="preview-header-row"><button class="text-link navigation-arrow" aria-label="Zurück" title="Zurück" data-action="close-preview">${iconHtml('arrowLeft')}</button>${previewOutlineHtml(previewSummary,sectionIndex)}</div></header>`
     :`<header class="thanh-thi"><span class="exam-mobile-brand"><img src="/brand/favicon" alt=""><strong>Deutschprüfung</strong></span><div class="thong-tin-thi"><span>Teil ${sectionIndex+1}/${exam.sections.length}</span></div></header>`;
