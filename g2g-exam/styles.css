@@ -525,8 +525,9 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 .gap-option { display:grid; grid-template-columns:24px minmax(0,1fr); align-items:center; gap:12px; }
 .gap-option .truong { height:var(--editor-control); min-width:0; width:100%; }
 .gap-passage { white-space:pre-wrap; line-height:2; overflow-wrap:anywhere; }
-.inline-gap { display:inline-flex; align-items:center; gap:8px; margin:4px 8px; vertical-align:middle; white-space:nowrap; }
-.inline-gap select { width:76px; background-color:var(--brand-primary); border-color:var(--brand-primary); color:var(--brand-on-primary); font-weight:600; }
+.inline-gap { display:inline-flex; align-items:center; margin:0 4px; vertical-align:middle; white-space:nowrap; }
+.inline-gap select { width:56px; min-width:56px; height:32px; min-height:32px; padding:0 24px 0 8px; border-radius:8px; font-size:14px; line-height:1; background-position:right 6px center; background-size:12px; background-color:var(--brand-primary); border-color:var(--brand-primary); color:var(--brand-on-primary); font-weight:600; }
+@media(pointer:coarse) { .inline-gap select { height:36px; min-height:36px; font-size:16px; } }
 .inline-gap select option { background-color:var(--mat); color:var(--chu); }
 .inline-gap-paper .gap-sentences p { font-weight:400; }
 .inline-gap-paper .gap-sentences b { font-weight:600; }

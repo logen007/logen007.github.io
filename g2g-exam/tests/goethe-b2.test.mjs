@@ -75,7 +75,8 @@ assert.doesNotMatch(html,/<b>10<\/b>|<b>_<\/b>|Beispiel:|<option value="">—/);
 assert.equal((html.match(/<b>0<\/b>/g)||[]).length,2);
 assert.match(letterAnswerControl(qs[0],0,'letter-select',{number:10}),/<option value="0" selected>a<\/option>/);
 assert.match(letterAnswerControl(qs[0],null,'letter-select'),/<option value="">—<\/option>/);
-assert.match(css,/\.inline-gap select \{ width:76px; background-color:var\(--brand-primary\)/);
+assert.match(css,/\.inline-gap select \{ width:56px; min-width:56px; height:32px; min-height:32px;/);
+assert.match(css,/\.inline-gap select \{[^}]*background-color:var\(--brand-primary\)/);
 assert.match(css,/\.inline-gap-paper \.gap-sentences p \{ font-weight:400;/);
 // Both left-shorter and right-shorter layouts react to image/viewport resizing.
 {
