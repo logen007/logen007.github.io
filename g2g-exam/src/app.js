@@ -1,5 +1,6 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
 import {bindTextareaBold} from './ui/textarea-bold.js';
+import {bindHandwriting} from './ui/handwriting.js';
 bindTextareaBold();
 import {bindLetterAnswers} from './ui/letter-answers.js';
 import {bindSplitReading} from './ui/split-reading.js';
@@ -626,6 +627,7 @@ function render(){
   else adminView();
   bindGlobal();
   bindViewSpecific();
+  bindHandwriting(app);
   if(['student-home','student-results','exam','preview-exam','builder','grading-detail','admin'].includes(ui.view)
     &&!(ui.view==='admin'&&ui.adminTab==='classes'&&ui.classId))window.G2GBootLayout?.schedule(app);
   else window.G2GBootLayout?.clear();

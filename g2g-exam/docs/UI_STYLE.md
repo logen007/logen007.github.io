@@ -172,6 +172,11 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Preview layout
 
+- Writing-answer textareas default to notebook ruling and handwriting font.
+  An adjacent pen-icon “giao diện viết tay” toggle switches both off/on with
+  aria-pressed feedback, preserving text, word count and autosave. Keep the
+  per-question preference while navigating in the current page session.
+
 - Signature values in paper forms use a handwriting font stack (Snell Roundhand
   on Apple devices, Segoe Script/Bradley Hand/Segoe Print fallbacks), not the UI
   body font. Labels keep the normal UI font.

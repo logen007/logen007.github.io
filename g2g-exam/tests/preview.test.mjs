@@ -442,7 +442,7 @@ try{
         'Choice &lt;a href=&quot;bad&quot;&gt;text&lt;/a&gt;',
         '&lt;/textarea&gt;&lt;script&gt;answer()&lt;/script&gt;'
       ])assert.ok(html.includes(escaped),`Missing escaped text: ${escaped}`);
-      const content=html.replaceAll(iconHtml('arrowLeft'),'').replaceAll(iconHtml('arrowRight'),'');
+      const content=html.replaceAll(iconHtml('arrowLeft'),'').replaceAll(iconHtml('arrowRight'),'').replaceAll(iconHtml('grading'),'');
       assert.doesNotMatch(content,/<(?:script|svg)\b|<img src=x|<a href="bad"/);
       if(preview)assert.ok(html.includes('Outline &lt;strong&gt;name&lt;/strong&gt;'));
     }
