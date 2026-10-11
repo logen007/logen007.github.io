@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {confirmNameChange} from '../src/ui/confirm.js';
+
+const profileSource=readFileSync(new URL('../src/views/account-profile.js',import.meta.url),'utf8');
+assert.match(profileSource,/mountDialog\('Hồ sơ'/);
+assert.match(profileSource,/aria-describedby="accountNameHint"/);
+assert.ok(profileSource.indexOf('id="accountNameHint"')<profileSource.indexOf('name="code"'),'Name hint belongs before class code');
+assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.account-profile-form \[data-error\]:empty \{ display:none; \}/);
 
 const previousDocument=globalThis.document;
 let overlay,keyHandler;

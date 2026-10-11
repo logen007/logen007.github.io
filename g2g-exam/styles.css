@@ -135,6 +135,13 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .the-de .chan strong { color:var(--chu); font-weight:700; }.exam-latest-result { font-weight:600; }.exam-latest-result.failed { color:#c83b3b; }.exam-latest-result.passed { color:#218a58; }
 .table-wrap { overflow:auto; background:var(--mat); border:1px solid var(--vien); border-radius:var(--r); }
 .profile-form { display:grid; gap:16px; }.profile-form label { display:grid; gap:8px; }.profile-form [data-error] { color:#b42318; margin:0; }
+.account-profile-form { gap:20px; }
+.account-profile-field { min-width:0; }
+.account-profile-form .account-profile-hint { margin:8px 0 0; color:var(--phu); font-size:13px; line-height:1.5; }
+.account-profile-form label { grid-template-columns:1fr auto; align-items:baseline; }
+.account-profile-form label input { grid-column:1 / -1; width:100%; }
+.account-profile-optional { color:var(--phu); font-size:12px; font-weight:400; }
+.account-profile-form [data-error]:empty { display:none; }
 .grade-filters { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:24px; }.grade-filters label { display:grid; gap:8px; flex:1 1 150px; color:var(--phu); font-size:13px; }.grade-filters select { width:100%; }
 @media(max-width:760px) {
   .grade-filters { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.6fr); grid-template-rows:repeat(3,auto); grid-auto-flow:column; gap:12px; }
