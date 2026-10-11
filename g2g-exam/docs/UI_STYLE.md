@@ -162,6 +162,12 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Preview layout
 
+- Paper-style answer forms use the available width with small side gutters.
+  Keep labels and their inputs on the same row on mobile (roughly 32% / 68%);
+  wrap long labels within their own column. Headings, notes and images keep full
+  rows. Reduce nested side padding and disable paper rotation on mobile to avoid
+  wasted space or overflow; keep the paper appearance and score markers.
+
 - In two-column exam content, the shorter column follows the page scroll within
   its own section. Recalculate after image/content resizing; disable this when
   columns stack on mobile. Keep long columns fully readable without nested scroll.
