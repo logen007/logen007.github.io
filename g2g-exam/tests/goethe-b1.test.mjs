@@ -12,25 +12,17 @@ import {validateExamForPublish,startAttempt,submitAttempt,saveManualScore} from 
 const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teacher-lan'),student=state.users.find(u=>u.id==='student-a');
 const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'B1',title:'B1 regression'});
 const rows=section=>section.questionIds.map(id=>state.questions.find(q=>q.id===id));
-assert.equal(exam.sections[0].questionProfile.splitLayout,true);
-const listeningTwoIndex=exam.sections.findIndex(s=>s.name==='Nghe 2');
-assert.equal(exam.sections[listeningTwoIndex].questionProfile.splitLayout,true);
-const listeningThreeIndex=exam.sections.findIndex(s=>s.name==='Nghe 3');
-assert.equal(exam.sections[listeningThreeIndex].questionProfile.splitLayout,true);
 const legacyExam=structuredClone(exam);
-const listeningFourIndex=exam.sections.findIndex(s=>s.name==='Nghe 4');
-assert.equal(exam.sections[listeningFourIndex].questionProfile.splitLayout,true);
-delete legacyExam.sections[listeningFourIndex].questionProfile.splitLayout;
-delete legacyExam.sections[0].questionProfile.splitLayout;
-delete legacyExam.sections[listeningTwoIndex].questionProfile.splitLayout;
-delete legacyExam.sections[listeningThreeIndex].questionProfile.splitLayout;
-for(const preview of [true,false]){
-  assert.match(examHtml({exam:legacyExam,sectionIndex:listeningFourIndex,questions:[],attempt:{id:'split-four-test',answers:{}},online:true,preview}),/class="exam-reading-split"/);
-  assert.match(examHtml({exam:legacyExam,sectionIndex:listeningThreeIndex,questions:[],attempt:{id:'split-three-test',answers:{}},online:true,preview}),/class="exam-reading-split"/);
-  const listeningHtml=examHtml({exam:legacyExam,sectionIndex:listeningTwoIndex,questions:[],attempt:{id:'split-listening-test',answers:{}},online:true,preview});
-  assert.match(listeningHtml,/class="exam-reading-split"/);
-  const html=examHtml({exam:legacyExam,sectionIndex:0,questions:[],attempt:{id:'split-test',answers:{}},online:true,preview});
-  assert.match(html,/class="exam-reading-split"/);
+for(const name of ['Đọc 1','Đọc 2','Đọc 3','Đọc 4','Đọc 5','Nghe 2','Nghe 3','Nghe 4']){
+  const sectionIndex=exam.sections.findIndex(s=>s.name===name),split=name.startsWith('Đọc');
+  assert.equal(exam.sections[sectionIndex].questionProfile.splitLayout,split);
+  // Old exams may have no reading flag, or a previously saved listening split.
+  if(split)delete legacyExam.sections[sectionIndex].questionProfile.splitLayout;
+  else legacyExam.sections[sectionIndex].questionProfile.splitLayout=true;
+  for(const preview of [true,false]){
+    const html=examHtml({exam:legacyExam,sectionIndex,questions:[],attempt:{id:'split-test',answers:{}},online:true,preview});
+    assert.equal(html.includes('class="exam-reading-split"'),split,name);
+  }
 }
 assert.equal(exam.sections.length,12);
 assert.equal(examDurationSeconds(exam),165*60);
