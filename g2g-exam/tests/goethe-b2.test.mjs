@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {seedState} from '../src/seed.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
 import {examDurationSeconds} from '../src/domain/exam-clock.js';
@@ -55,6 +56,10 @@ assert.ok(inlineGapErrors({...gap,gapPassage:[]}).length);
 const builder=renderBuilder({data:state,exam,section:gap});
 assert.match(builder,/data-gap-option="z"/);
 assert.match(builder,/data-gap-title/);
+const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(css,/\.gap-article-editor \{ grid-template-columns:minmax\(0,1fr\) minmax\(0,240px\)/);
+assert.match(css,/\.gap-article-editor \.gap-author-text \{ grid-column:1 \/ -1;/);
+assert.match(css,/\.gap-article-editor \{ grid-template-columns:minmax\(0,1fr\) 120px;/);
 assert.equal((builder.match(/data-section-image accept/g)||[]).length,1);
 assert.doesNotMatch(builder,/Chèn \[a\]–\[h\] tại chỗ trống/);
 assert.equal((builder.match(/data-gap-option=/g)||[]).length,9);

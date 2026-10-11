@@ -52,6 +52,12 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Always arrange controls to optimize space: group related actions beside the
+  field they affect instead of adding unnecessary full-width rows. Preserve
+  readable inputs, explicit gaps and touch targets on mobile. In B2 Reading 2,
+  the image upload, pixel width and remove controls sit to the right of the
+  article title; the passage occupies the full row below.
+
 - Mobile skill/part navigation uses an adaptive 2–5-column grid, not a fixed
   three-column layout. Keep explicit row and column gaps; wrap only when needed
   to preserve readable labels and touch targets.
