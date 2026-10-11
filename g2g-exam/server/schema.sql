@@ -161,13 +161,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS classes_code_idx ON classes(lower(code));
 ALTER TABLE classes ADD COLUMN IF NOT EXISTS description text NOT NULL DEFAULT '';
 ALTER TABLE classes ADD COLUMN IF NOT EXISTS teacher_ids text[] NOT NULL DEFAULT '{}';
 
--- Extend is a system-owned default class, not owned by a teacher account.
+-- Retire the legacy virtual class without deleting class or student records.
 ALTER TABLE classes ALTER COLUMN created_by DROP NOT NULL;
-INSERT INTO classes(id,code,description) VALUES('class-extend','Extend','Học viên ngoài')
+CREATE TABLE IF NOT EXISTS retired_external_memberships (
+  student_id text PRIMARY KEY, class_id text NOT NULL, migrated_at timestamptz NOT NULL DEFAULT now()
+);
+INSERT INTO retired_external_memberships(student_id,class_id)
+  SELECT id,data->>'classId' FROM users
+  WHERE role='student' AND data->>'classId' IN (SELECT id FROM classes WHERE lower(code)='extend')
   ON CONFLICT DO NOTHING;
-UPDATE classes SET active=true,code='Extend' WHERE lower(code)='extend';
-UPDATE users SET data=data||jsonb_build_object('classId',(SELECT id FROM classes WHERE lower(code)='extend'))
-  WHERE role='student' AND NOT EXISTS(SELECT 1 FROM classes WHERE id=users.data->>'classId');
+UPDATE users SET data=data||jsonb_build_object('classId',NULL::text)
+  WHERE role='student' AND data->>'classId' IN (SELECT id FROM classes WHERE lower(code)='extend');
+UPDATE classes SET active=false WHERE lower(code)='extend';
 UPDATE users SET data=data||jsonb_build_object('level',CASE WHEN data->>'level' ~ '^[ABC][12](\.[12])?$' THEN split_part(data->>'level','.',1) ELSE 'A1' END)
   WHERE role='student' AND coalesce(data->>'level','') NOT IN ('A1','A2','B1','B2','C1','C2');
 UPDATE exams SET data=data||jsonb_build_object('learningLevel',split_part(coalesce(nullif(data->>'learningLevel',''),data->>'level'),'.',1))

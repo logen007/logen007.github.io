@@ -1,7 +1,6 @@
 import {withTx,appError,audit,uid,now} from '../db.js';
 import {isTeacher} from './shared.js';
 import {validateStudentProfile,validateStudentName} from '../../../src/domain/student-profile.js';
-import {externalClassId} from './class-enrollment.js';
 
 export async function saveClass(user,{id,code,description,teacherIds}){
   if(!isTeacher(user))throw appError(403,'Chỉ giáo viên được quản lý lớp.');
@@ -43,7 +42,7 @@ export async function saveStudentProfile(user,payload){
     if(own&&row.data?.profileCompletedAt)throw appError(403,'Vui lòng nhờ giáo viên cập nhật hồ sơ.');
     const classes=(await client.query('SELECT id,active FROM classes WHERE active=true FOR SHARE')).rows;
     let profile;
-    try{profile=validateStudentProfile({...payload,classId:own?await externalClassId(client):payload.classId,level:row.data?.level||'A1'},classes);}
+    try{profile=validateStudentProfile({...payload,classId:own?null:payload.classId,level:row.data?.level||'A1'},classes);}
     catch(error){throw appError(400,error.message);}
     const data={...row.data,...profile,profileCompletedAt:row.data?.profileCompletedAt||now()};
     await client.query('UPDATE users SET data=$2::jsonb,updated_at=now() WHERE id=$1',[studentId,JSON.stringify(data)]);

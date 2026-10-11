@@ -50,7 +50,7 @@ export async function loadState(user){
   await ensureClassCodes();
   state.users=(await rows(`SELECT u.id,u.email,u.role,u.active,u.data,k.code AS confirmation_code FROM users u
     LEFT JOIN class_confirmation_codes k ON k.student_id=u.id AND k.used_at IS NULL AND k.email=lower(u.email)
-      AND u.role='student' AND u.data->>'classId'=(SELECT id FROM classes WHERE lower(code)='extend')
+      AND u.role='student' AND coalesce(u.data->>'classId','')=''
     LEFT JOIN classes c ON c.id=u.data->>'classId'
     ORDER BY u.created_at DESC`)).map(r=>({...r.data,id:r.id,email:r.email,role:r.role,active:r.active,confirmationCode:r.role==='student'?r.confirmation_code:null}));
   state.questions=(await rows(`SELECT id,owner_id,status,locked,data FROM questions ORDER BY updated_at DESC`)).map(rowEntity);

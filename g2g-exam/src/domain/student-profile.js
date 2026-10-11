@@ -8,7 +8,8 @@ export function promotionTarget(current,examLevel,passed){
 }
 export function validateStudentProfile({name,classId,level='A1'},classes){
   name=validateStudentName(name);
-  if(!classes.some(item=>item.id===classId&&item.active!==false))throw new Error('Vui lòng chọn mã lớp trong danh sách.');
+  classId=classId||null;
+  if(classId&&!classes.some(item=>item.id===classId&&item.active!==false))throw new Error('Vui lòng chọn mã lớp trong danh sách.');
   if(!STUDENT_LEVELS.includes(level))throw new Error('Trình độ không hợp lệ.');
   return {name,classId,level};
 }

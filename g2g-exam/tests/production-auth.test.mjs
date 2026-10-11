@@ -159,7 +159,7 @@ await test('New Google accounts are students; primary master uses server authori
     assert.equal(h.writes[0].args[2],master?'master':'student');
     if(!master){
       const profile=JSON.parse(h.writes[0].args[3]);
-      assert.equal(profile.level,'A1');assert.equal(profile.classId,'class-extend');
+      assert.equal(profile.level,'A1');assert.equal(profile.classId,null);
       assert.equal(profile.profileCompletedAt,undefined);
     }
     const session=h.cookies.find(c=>c.name==='g2g_session');

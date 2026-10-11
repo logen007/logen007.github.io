@@ -1,17 +1,11 @@
 import crypto from 'node:crypto';
 import {query,withTx,appError,audit} from '../db.js';
 
-export async function externalClassId(client={query}){
-  const row=(await client.query("SELECT id FROM classes WHERE lower(code)='extend' AND active=true")).rows[0];
-  if(!row)throw appError(503,'Chưa khởi tạo lớp Extend.');
-  return row.id;
-}
-
 // Codes remain server-side. Only staff state exposes them to teachers.
 export async function ensureClassCodes(){
-  const students=(await query(`SELECT u.id,u.email FROM users u JOIN classes c ON c.id=u.data->>'classId'
+  const students=(await query(`SELECT u.id,u.email FROM users u
     LEFT JOIN class_confirmation_codes k ON k.student_id=u.id
-    WHERE u.role='student' AND u.active=true AND lower(c.code)='extend'
+    WHERE u.role='student' AND u.active=true AND coalesce(u.data->>'classId','')=''
     AND (k.student_id IS NULL OR k.email<>lower(u.email) OR k.used_at IS NOT NULL)`)).rows;
   const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   for(const student of students){
@@ -38,7 +32,7 @@ async function checkRate(user){
 async function validateCode(client,user,code){
   const student=(await client.query('SELECT email,role,active,data FROM users WHERE id=$1 FOR UPDATE',[user.id])).rows[0];
   if(!student||!student.active||student.role!=='student'||!student.data.profileCompletedAt)throw appError(403,'Vui lòng hoàn tất họ tên trước khi chọn lớp.');
-  if(student.data.classId!==await externalClassId(client))throw appError(409,'Bạn đã được xếp lớp. Vui lòng liên hệ giáo viên để đổi lớp.');
+  if(student.data.classId)throw appError(409,'Bạn đã được xếp lớp. Vui lòng liên hệ giáo viên để đổi lớp.');
   const normalized=String(code||'').trim().toUpperCase();
   const found=(await client.query('SELECT * FROM class_confirmation_codes WHERE student_id=$1 FOR UPDATE',[user.id])).rows[0];
   if(!/^[A-Z0-9]{5}$/.test(normalized)||!found||found.used_at||found.code!==normalized||found.email!==student.email.toLowerCase())

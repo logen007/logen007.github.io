@@ -91,6 +91,14 @@ import {bindClassPickerClear} from '../src/ui/class-picker-clear.js';
     openStudentProfile({data,student:{...student,level:'B1'},repo,onSaved:async()=>{}});
     assert.ok(active.html.includes('Trình độ: B1'));
     assert.ok(active.html.includes('list="profile-class-options"'));
+    assert.ok(!active.html.includes('list="profile-class-options" required'));
+    const emptyProfile=active;
+    emptyProfile.form.elements.name.value='Nguyen Van A';
+    emptyProfile.form.elements.classCode.value='';
+    await emptyProfile.form.onsubmit({preventDefault(){},currentTarget:emptyProfile.form});
+    assert.equal(calls.at(-1).action,'saveStudentProfile');
+    assert.equal(calls.at(-1).payload.classId,null);
+    active=emptyProfile;
     assert.ok(!active.html.includes('Cập nhật khi đỗ đề thi.'));
     assert.ok(!active.html.includes('<label>Họ và tên đầy đủ'));
   }finally{globalThis.document=previousDocument;}

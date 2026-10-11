@@ -25,7 +25,7 @@ export function classesHtml({data,classId=null}){
   const external=classes.find(item=>item.code===EXTERNAL_CLASS);
   return `<div class="tieu-de-trang"><h1>Lớp học</h1><button class="nut chinh" data-action="new-class">+ Thêm lớp</button></div>
     <div class="table-wrap"><table class="bang"><thead><tr><th>Mã lớp</th><th>Mô tả</th><th>Giáo viên</th><th>Học viên</th><th></th></tr></thead><tbody>${classes.filter(item=>item.code!==EXTERNAL_CLASS).map(item=>`<tr><td><button class="text-link" data-open-class="${esc(item.id)}">${esc(item.code)}</button></td><td class="class-description">${textHtml(item.description||'—')}</td><td><div class="class-teacher-chips">${(item.teacherIds||[]).map(id=>data.users.find(user=>user.id===id)).filter(Boolean).map(teacher=>`<span class="class-teacher-chip">${teacherChip(teacher)}</span>`).join('')||'—'}</div></td><td>${students.filter(student=>student.classId===item.id).length}</td><td><button class="nut nho" data-action="edit-class" data-id="${esc(item.id)}">Chỉnh sửa</button></td></tr>`).join('')||'<tr><td colspan="5">Chưa có lớp.</td></tr>'}</tbody></table></div>
-    <h2>Học viên Vãng lai</h2><p class="phu-de">Gửi mã xác nhận cho đúng email để học viên chọn lớp.</p>${studentRosterHtml(data,students.filter(student=>student.classId===external?.id),{external:true})}`;
+    <h2>Học viên Vãng lai</h2><p class="phu-de">Gửi mã xác nhận cho đúng email để học viên chọn lớp.</p>${studentRosterHtml(data,students.filter(student=>!student.classId||student.classId===external?.id),{external:true})}`;
 }
 
 export function mountDialog(title,body,{required=false,compact=false}={}){
@@ -47,7 +47,7 @@ export function mountDialog(title,body,{required=false,compact=false}={}){
 
 export function openStudentProfile({data,student,repo,onSaved,required=false}){
   const classes=data.classes||[],current=classes.find(item=>item.id===student.classId);
-  const modal=mountDialog(required?'Hoàn tất thông tin':'Thông tin học viên',`<form class="profile-form"><label>${required?'':`Trình độ: ${esc(normalizeStudentLevel(student.level)||'A1')}`}<input aria-label="Họ và tên" name="name" required maxlength="120" value="${required?'':esc(student.name||'')}" autocomplete="name" placeholder="Nhập họ và tên đầy đủ"></label>${required?'<input name="confirmationCode" aria-label="Mã xác nhận (không bắt buộc)" placeholder="Mã xác nhận (không bắt buộc)" minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters">':`<label>Mã lớp<input name="classCode" list="profile-class-options" required autocomplete="off" placeholder="Gõ mã lớp để tìm" value="${esc(current?.code||'')}"><datalist id="profile-class-options">${classes.filter(item=>item.code!==EXTERNAL_CLASS).map(item=>`<option value="${esc(item.code)}">${esc(item.description||item.code)}</option>`).join('')}</datalist></label>`}<p data-error role="alert"></p><button class="nut chinh" type="submit">Lưu thông tin</button></form>`,{required,compact:true});
+  const modal=mountDialog(required?'Hoàn tất thông tin':'Thông tin học viên',`<form class="profile-form"><label>${required?'':`Trình độ: ${esc(normalizeStudentLevel(student.level)||'A1')}`}<input aria-label="Họ và tên" name="name" required maxlength="120" value="${required?'':esc(student.name||'')}" autocomplete="name" placeholder="Nhập họ và tên đầy đủ"></label>${required?'<input name="confirmationCode" aria-label="Mã xác nhận (không bắt buộc)" placeholder="Mã xác nhận (không bắt buộc)" minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters">':`<label>Mã lớp<input name="classCode" list="profile-class-options" autocomplete="off" placeholder="Gõ mã lớp để tìm" value="${esc(current?.code===EXTERNAL_CLASS?'':current?.code||'')}"><datalist id="profile-class-options">${classes.filter(item=>item.code!==EXTERNAL_CLASS).map(item=>`<option value="${esc(item.code)}">${esc(item.description||item.code)}</option>`).join('')}</datalist></label>`}<p data-error role="alert"></p><button class="nut chinh" type="submit">Lưu thông tin</button></form>`,{required,compact:true});
   bindClassPickerClear(modal);
   modal.querySelector('form').onsubmit=async event=>{
     event.preventDefault();const form=event.currentTarget,button=form.querySelector('[type="submit"]');
@@ -55,7 +55,9 @@ export function openStudentProfile({data,student,repo,onSaved,required=false}){
       button.disabled=true;
       const code=required?form.elements.confirmationCode.value.trim().toUpperCase():'';
       const enrollment=code?await import('./class-enrollment.js'):null;
-      const selected=classes.find(item=>required?item.code===EXTERNAL_CLASS:item.code===(form.elements.classCode.value==='Học viên Vãng lai'?EXTERNAL_CLASS:form.elements.classCode.value));
+      const classCode=required?'':form.elements.classCode.value.trim();
+      const selected=classes.find(item=>item.code===classCode&&item.code!==EXTERNAL_CLASS);
+      if(classCode&&!selected)throw new Error('Vui lòng chọn mã lớp trong danh sách.');
       const payload=validateStudentProfile({name:form.elements.name.value,classId:selected?.id,level:normalizeStudentLevel(student.level)||'A1'},classes);
       if(repo.mode==='api'){await repo.call('saveStudentProfile',{studentId:student.id,...payload});await repo.reload();}
       else await repo.transaction(state=>Object.assign(state.users.find(item=>item.id===student.id),payload,{profileCompletedAt:new Date().toISOString()}));
