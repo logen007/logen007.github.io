@@ -131,6 +131,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 - User-approved exception: single-letter dropdowns embedded in reading text
   are 56×32px (36px high on touch screens), with 8px corners and compact padding.
   Reuse the same chevron at 12px, positioned 6px from the right.
+  Inline gap menus show the letter plus the full sentence when opened; the
+  closed control shows only the letter (or question number when unanswered).
   Empty inline choices use the brand fill; selected choices use a pale green
   fill. This indicates answered, never correctness. Clearing restores the
   empty state; saved answers retain the selected styling when reopened.

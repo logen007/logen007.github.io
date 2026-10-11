@@ -2,11 +2,11 @@ import {isPrefilledQuestion} from '../domain/question-display.js';
 import {textHtml,esc} from './format.js';
 import {choiceLetter,letterAnswerError} from '../domain/letter-answers.js';
 
-export function letterAnswerControl(q,answer,layout,{number=null}={}){
+export function letterAnswerControl(q,answer,layout,{number=null,optionTexts=null}={}){
   const value=isPrefilledQuestion(q)?q.correctAnswer:answer,letter=value==null||value===''?'':choiceLetter(q.choices?.[Number(value)]);
   if(isPrefilledQuestion(q))return `<span class="letter-example">${esc(letter.toLowerCase())}</span>`;
   const attrs=`data-letter-answer data-q="${esc(q.id)}" aria-label="Antwort: ${esc(number??q.title)}"`;
-  if(layout==='letter-table'||layout==='letter-select')return `<select id="letter-${esc(q.id)}" class="truong" ${attrs}><option value="">${number==null?'—':esc(number)}</option>${(q.choices||[]).map((choice,i)=>`<option value="${i}" ${String(value)===String(i)?'selected':''}>${esc(choiceLetter(choice).toLowerCase())}</option>`).join('')}</select>`;
+  if(layout==='letter-table'||layout==='letter-select')return `<select id="letter-${esc(q.id)}" class="truong" ${attrs} ${optionTexts?'data-full-options':''}><option value="">${number==null?'—':esc(number)}</option>${(q.choices||[]).map((choice,i)=>{const key=choiceLetter(choice).toLowerCase(),text=String(optionTexts?.[i]||'').replace(/\[\/?b\]/gi,'').trim();return `<option value="${i}" data-letter="${esc(key)}" ${String(value)===String(i)?'selected':''}>${esc(text?`${key}. ${text}`:key)}</option>`;}).join('')}</select>${optionTexts?`<span class="inline-gap-value" aria-hidden="true">${esc(letter.toLowerCase()||number||'—')}</span>`:''}`;
   return `<input ${attrs} maxlength="1" autocomplete="off" autocapitalize="characters" value="${esc(letter.toLowerCase())}">`;
 }
 
@@ -24,6 +24,8 @@ export function bindLetterAnswers(root,questions,answers,onSave){
   const controls=[...root.querySelectorAll('[data-letter-answer]')];if(!controls.length)return;
   const section={questionProfile:{uniqueLetters:root.querySelector('[data-letter-section]')?.dataset.uniqueLetters!=='false'},questionIds:questions.map(q=>q.id)};
   const refresh=()=>controls.forEach(el=>{
+    const display=el.parentElement?.querySelector('.inline-gap-value');
+    if(display)display.textContent=el.selectedOptions[0]?.dataset.letter||el.selectedOptions[0]?.textContent||'—';
     for(const option of el.querySelectorAll('option')){
       if(option.value==='')continue;
       option.disabled=Boolean(letterAnswerError(section,questions,{...answers,[el.dataset.q]:Number(option.value)}));
