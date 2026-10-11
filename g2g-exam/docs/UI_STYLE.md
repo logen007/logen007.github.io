@@ -162,6 +162,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Preview layout
 
+- Signature values in paper forms use a handwriting font stack (Snell Roundhand
+  on Apple devices, Segoe Script/Bradley Hand/Segoe Print fallbacks), not the UI
+  body font. Labels keep the normal UI font.
+
 - Paper-style answer forms use the available width with small side gutters.
   Keep mobile inner padding at 20px vertically and 18px horizontally so content
   does not sit against the paper edge.

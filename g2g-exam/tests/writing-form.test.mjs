@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const signatureCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(signatureCss,/\.form-signature \{ font-family:"Snell Roundhand","Segoe Script","Bradley Hand","Segoe Print",cursive;/);
 import {patientWritingDemo} from '../src/controllers/writing-demo.js';
 import {writingFormScore,writingPointLayout,scoreWritingForm,isAutomaticWritingForm,isRequiredWritingField,addWritingRow,removeWritingRow,publicWritingRows} from '../src/domain/writing-form.js';
 import {writingFormEditor,writingFormDisplay,writingSubmission} from '../src/ui/writing-form.js';
