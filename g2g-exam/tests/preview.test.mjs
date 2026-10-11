@@ -228,6 +228,15 @@ try{
     assert.doesNotMatch(readFileSync(new URL('../src/users/bootstrap.js',import.meta.url),'utf8'),/tabLabel/);
   });
   await test('Header account omits role badge while preserving role switching',()=>{
+    const filters=readFileSync(new URL('../src/users/bootstrap.js',import.meta.url),'utf8');
+    assert.match(filters,/\['external','Khách'\]/);
+    assert.doesNotMatch(filters,/\['all','Tất cả'\]/);
+    const handler=filters.match(/button.onclick=\(\)=>\{([^\n]+?)\}\);/)[1];
+    const sandbox={selectedGroup:'all',button:{dataset:{userGroupFilter:'teacher'}},filter:()=>{}};
+    vm.runInNewContext(handler,sandbox);assert.equal(sandbox.selectedGroup,'teacher');
+    vm.runInNewContext(handler,sandbox);assert.equal(sandbox.selectedGroup,'all');
+    sandbox.button.dataset.userGroupFilter='external';
+    vm.runInNewContext(handler,sandbox);assert.equal(sandbox.selectedGroup,'external');
     const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin'},canSwitchRole:true});
     assert.match(html,/<header class="thanh-dau" data-current-role="master">/);
     assert.doesNotMatch(html,/<span class="nhan"/);

@@ -7,13 +7,13 @@ function mount(){
   main.querySelector('.tieu-de-trang p')?.remove();
   if(main.querySelector('#userRolePanel'))return;
   const rows=[...main.querySelectorAll('[data-user-group]')];
-  const groups=[['all','Tất cả'],['teacher','Giáo Viên'],['student','Học Viên'],['external','Học viên Vãng lai']];
+  const groups=[['teacher','Giáo Viên'],['student','Học Viên'],['external','Khách']];
   const panel=document.createElement('section');
   panel.id='userRolePanel';panel.className='user-list-filters';
   panel.innerHTML='<div class="nhom-nut" data-user-groups></div><input class="truong" id="userSearch" type="search" aria-label="Tìm tên hoặc email" placeholder="Tìm theo tên hoặc email" autocomplete="off">';
   const buttons=groups.map(([key,label])=>{
     const button=document.createElement('button');button.type='button';
-    button.textContent=label+' ('+(key==='all'?rows.length:rows.filter(row=>row.dataset.userGroup===key).length)+')';
+    button.textContent=label+' ('+rows.filter(row=>row.dataset.userGroup===key).length+')';
     button.dataset.userGroupFilter=key;
     panel.querySelector('[data-user-groups]').append(button);
     return button;
@@ -28,7 +28,7 @@ function mount(){
     empty.hidden=count>0;
     buttons.forEach(button=>{const active=button.dataset.userGroupFilter===selectedGroup;button.className='nut'+(active?' chinh':'');button.setAttribute('aria-pressed',String(active));});
   }
-  buttons.forEach(button=>button.onclick=()=>{selectedGroup=button.dataset.userGroupFilter;filter();});
+  buttons.forEach(button=>button.onclick=()=>{selectedGroup=selectedGroup===button.dataset.userGroupFilter?'all':button.dataset.userGroupFilter;filter();});
   const search=panel.querySelector('#userSearch');search.value=searchTerm;
   search.oninput=()=>{searchTerm=search.value;filter();};filter();
 }
