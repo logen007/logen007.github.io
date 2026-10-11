@@ -1,4 +1,18 @@
 import assert from 'node:assert/strict';
+import {nameChangePatch,resolveAccountNames} from '../src/domain/account-name.js';
+const nameTime=Date.parse('2026-10-12T00:00:00Z');
+const renamed=nameChangePatch({name:'Old Name'},'New Name',{now:nameTime});
+assert.deepEqual(Object.keys(renamed),['name','nameChangedAt']);
+assert.throws(()=>nameChangePatch(renamed,'Other Name',{now:nameTime+29*86400000}),/30 ngày/);
+assert.deepEqual(nameChangePatch(renamed,'New Name',{now:nameTime}),{});
+assert.equal(nameChangePatch(renamed,'Other Name',{now:nameTime+30*86400000}).name,'Other Name');
+assert.equal(nameChangePatch(renamed,'Admin Name',{now:nameTime,admin:true}).name,'Admin Name');
+const nameState={users:[{id:'u',name:'Current Name'}],exams:[{ownerId:'u',ownerName:'Old Name'}],questions:[{ownerId:'u',ownerName:'Old Name'}],attempts:[{studentId:'u',studentName:'Old Name',reviewerId:'u',reviewerName:'Old Name'}]};
+resolveAccountNames(nameState);
+assert.equal(nameState.exams[0].ownerName,'Current Name');
+assert.equal(nameState.questions[0].ownerName,'Current Name');
+assert.equal(nameState.attempts[0].studentName,'Current Name');
+assert.equal(nameState.attempts[0].reviewerName,'Current Name');
 import {instructionTextHtml} from '../src/ui/format.js';
 assert.equal(instructionTextHtml('[Richtig] oder [Falsch]'),'<strong class="instruction-token">Richtig</strong> oder <strong class="instruction-token">Falsch</strong>');
 assert.equal(instructionTextHtml('[z] [img] [12]'),'[z] [img] [12]');

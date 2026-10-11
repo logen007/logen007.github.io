@@ -1,3 +1,4 @@
+import {resolveAccountNames} from '../../src/domain/account-name.js';
 import {isPrefilledQuestion} from '../../src/domain/question-display.js';
 import {query,withTx,audit,appError} from './db.js';
 import {deleteTrashedExam} from './trash-delete.js';
@@ -45,7 +46,9 @@ export async function loadState(user){
     state.questions=[...new Map(allQuestions.filter(q=>allowed.has(q.id)).map(q=>[q.id,{id:q.id,...publicQuestion(q)}])).values()];
     state.promotions=await rows('SELECT attempt_id AS "attemptId",from_level AS "fromLevel",to_level AS "toLevel" FROM level_promotions WHERE student_id=$1 AND acknowledged_at IS NULL ORDER BY created_at',[user.id]);
     state.notifications=(await rows(`SELECT id,data,status FROM notifications WHERE student_id=$1 ORDER BY created_at DESC LIMIT 200`,[user.id])).map(r=>({id:r.id,status:r.status,...r.data}));
-    return state;
+    const ids=[...new Set([...state.exams,...state.questions,...state.attempts].flatMap(item=>[item.ownerId,item.studentId,item.reviewerId]).filter(Boolean))];
+    const names=ids.length?await rows("SELECT id,data->>'name' AS name FROM users WHERE id=ANY($1::text[])",[ids]):[];
+    return resolveAccountNames(state,names);
   }
   await ensureClassCodes();
   state.users=(await rows(`SELECT u.id,u.email,u.role,u.active,u.data,k.code AS confirmation_code FROM users u
@@ -59,7 +62,7 @@ export async function loadState(user){
   const ars=await rows(`SELECT id,exam_id,public_data,private_data FROM attempts ORDER BY created_at DESC`);
   state.attempts=ars.filter(r=>!allowed||allowed.has(r.exam_id)).map(r=>attemptEntity(r,true));
   if(user.role==='master')state.auditLog=(await rows(`SELECT id,at,user_id,user_name,action,entity_type,entity_id,detail FROM audit_log ORDER BY at DESC LIMIT 1000`)).map(r=>({id:String(r.id),at:r.at,userId:r.user_id,userName:r.user_name,action:r.action,entityType:r.entity_type,entityId:r.entity_id,detail:r.detail}));
-  return state;
+  return resolveAccountNames(state);
 }
 
 async function applyQuestion(c,user,op){
@@ -86,7 +89,7 @@ async function applyExam(c,user,op){
   const old=current.rows[0],oldData=old.data||{};if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa bài thi này.');if(old.status==='trash'&&item.status!=='trash'&&user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được khôi phục bài thi.');if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu bài thi.');
   await c.query(`UPDATE exams SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,hidden:Boolean(oldData.hidden),learningLevel:oldData.learningLevel||null,ownerId:old.owner_id}))]);
 }
-async function applyUser(c,user,op){if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được quản lý tài khoản.');if(op.kind==='delete')throw appError(409,'Không xóa tài khoản trực tiếp; hãy vô hiệu hóa tài khoản.');const item=op.item||{};const cur=await c.query(`SELECT * FROM users WHERE id=$1 FOR UPDATE`,[op.id]);if(!cur.rowCount)throw appError(404,'Không tìm thấy tài khoản.');if(op.id===user.id&&item.role&&item.role!=='master')throw appError(409,'Không thể tự hạ quyền tài khoản Quản trị cấp cao.');const old=cur.rows[0],role=['student','teacher','master'].includes(item.role)?item.role:old.role;const data=stripId(item);delete data.email;delete data.role;delete data.active;delete data.confirmationCode;for(const key of ['level','classId','profileCompletedAt']){delete data[key];if(old.data[key]!==undefined)data[key]=old.data[key];}await c.query(`UPDATE users SET role=$2,active=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,role,item.active!==false,JSON.stringify(data)]);}
+async function applyUser(c,user,op){if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được quản lý tài khoản.');if(op.kind==='delete')throw appError(409,'Không xóa tài khoản trực tiếp; hãy vô hiệu hóa tài khoản.');const item=op.item||{};const cur=await c.query(`SELECT * FROM users WHERE id=$1 FOR UPDATE`,[op.id]);if(!cur.rowCount)throw appError(404,'Không tìm thấy tài khoản.');if(op.id===user.id&&item.role&&item.role!=='master')throw appError(409,'Không thể tự hạ quyền tài khoản Quản trị cấp cao.');const old=cur.rows[0],role=['student','teacher','master'].includes(item.role)?item.role:old.role;const data=stripId(item);delete data.email;delete data.role;delete data.active;delete data.confirmationCode;for(const key of ['level','classId','profileCompletedAt','nameChangedAt']){delete data[key];if(old.data[key]!==undefined)data[key]=old.data[key];}await c.query(`UPDATE users SET role=$2,active=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,role,item.active!==false,JSON.stringify(data)]);}
 
 export async function commitOperations(user,ops=[]){
   if(!Array.isArray(ops)||ops.length>250)throw appError(400,'Danh sách thay đổi không hợp lệ.');

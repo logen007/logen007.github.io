@@ -1,6 +1,7 @@
 import {withTx,appError,audit,uid,now} from '../db.js';
 import {isTeacher} from './shared.js';
 import {validateStudentProfile,validateStudentName} from '../../../src/domain/student-profile.js';
+import {nameChangePatch} from '../../../src/domain/account-name.js';
 
 export async function saveClass(user,{id,code,description,teacherIds}){
   if(!isTeacher(user))throw appError(403,'Chỉ giáo viên được quản lý lớp.');
@@ -44,32 +45,29 @@ export async function saveStudentProfile(user,payload){
     let profile;
     try{profile=validateStudentProfile({...payload,classId:own?null:payload.classId,level:row.data?.level||'A1'},classes);}
     catch(error){throw appError(400,error.message);}
-    const data={...row.data,...profile,profileCompletedAt:row.data?.profileCompletedAt||now()};
+    let namePatch={};
+    try{if(row.data?.profileCompletedAt)namePatch=nameChangePatch(row.data,profile.name,{admin:user.role==='master'});}catch(error){throw appError(400,error.message);}
+    const data={...row.data,...profile,...namePatch,profileCompletedAt:row.data?.profileCompletedAt||now()};
     await client.query('UPDATE users SET data=$2::jsonb,updated_at=now() WHERE id=$1',[studentId,JSON.stringify(data)]);
-    await audit(user,'save_student_profile','user',studentId,profile,client);
+    await audit(user,'save_student_profile','user',studentId,{classId:profile.classId,level:profile.level},client);
     return {id:studentId,...profile};
   });
 }
 
-export async function saveStudentName(user,{name}){
-  if(user.role!=='student'||user.canTestRoles)throw appError(403,'Chỉ học viên được sửa tên của mình.');
-  try{name=validateStudentName(name);}catch(error){throw appError(400,error.message);}
+async function saveName(user,name,studentOnly=false){
   return withTx(async client=>{
     const row=(await client.query('SELECT role,active,data FROM users WHERE id=$1 FOR UPDATE',[user.id])).rows[0];
-    if(!row||row.role!=='student'||!row.active||!row.data.profileCompletedAt)throw appError(403,'Vui lòng hoàn tất hồ sơ trước.');
-    await client.query("UPDATE users SET data=data||jsonb_build_object('name',$2::text),updated_at=now() WHERE id=$1",[user.id,name]);
-    await audit(user,'update_own_name','user',user.id,{},client);
-    return {name};
-  });
-}
-
-export async function saveAccountName(user,{name}){
-  try{name=validateStudentName(name);}catch(error){throw appError(400,error.message);}
-  return withTx(async client=>{
-    const row=(await client.query('SELECT active FROM users WHERE id=$1 FOR UPDATE',[user.id])).rows[0];
     if(!row?.active)throw appError(403,'Tài khoản không hoạt động.');
-    await client.query("UPDATE users SET data=data||jsonb_build_object('name',$2::text),updated_at=now() WHERE id=$1",[user.id,name]);
-    await audit(user,'update_own_name','user',user.id,{},client);
-    return {name};
+    if(studentOnly&&(row.role!=='student'||!row.data.profileCompletedAt))throw appError(403,'Vui lòng hoàn tất hồ sơ trước.');
+    let patch;
+    try{patch=nameChangePatch(row.data||{},name,{admin:row.role==='master'});}
+    catch(error){throw appError(400,error.message);}
+    if(patch.name)await client.query('UPDATE users SET data=data||$2::jsonb,updated_at=now() WHERE id=$1',[user.id,JSON.stringify(patch)]);
+    return {name:patch.name||row.data.name,...patch};
   });
 }
+export async function saveStudentName(user,{name}){
+  if(user.role!=='student'||user.canTestRoles)throw appError(403,'Chỉ học viên được sửa tên của mình.');
+  return saveName(user,name,true);
+}
+export async function saveAccountName(user,{name}){return saveName(user,name);}

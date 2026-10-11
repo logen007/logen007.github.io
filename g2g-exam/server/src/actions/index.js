@@ -35,6 +35,11 @@ export async function handleAction(user,name,data={}){
       const ids=[...new Set((examData.sections||[]).flatMap(section=>section.questionIds||[]))];
       const questions=examData.questionSnapshot?{rows:examData.questionSnapshot.map(q=>({id:q.id,data:q}))}:ids.length?await query(`SELECT id,data FROM questions WHERE id=ANY($1::text[])`,[ids]):{rows:[]};
       const published=row.status==='published';
+      if(published&&row.public_data.reviewerId){
+        const reviewer=(await query("SELECT data->>'name' AS name FROM users WHERE id=$1",[row.public_data.reviewerId])).rows[0];
+        if(reviewer?.name)row.public_data.reviewerName=reviewer.name;
+      }
+      row.public_data.studentName=user.name||row.public_data.studentName;
       return {attempt:row.public_data,sections:(examData.sections||[]).map(section=>({name:section.name,questions:(section.questionIds||[]).map(id=>{
         const question=questions.rows.find(q=>q.id===id);
         if(!question)return null;

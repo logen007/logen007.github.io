@@ -74,7 +74,7 @@ test('Màu giao diện là cấu hình công khai, có kiểm tra định dạng
 test('Học viên không nhận đáp án đúng hoặc điểm riêng tư chưa công bố',()=>{
   const source=read('server/src/state.js');
   assert.ok(source.includes('delete q.correctAnswer'));
-  const studentBlock=source.match(/if\(user\.role==='student'\)\{([\s\S]*?)return state;\s*\}/)?.[1]||'';
+  const studentBlock=source.match(/if\(user\.role==='student'\)\{([\s\S]*?)return resolveAccountNames\(state,names\);\s*\}/)?.[1]||'';
   assert.ok(studentBlock.includes('state.attempts=attempts.map(r=>({id:r.id,...r.public_data}))'));
   assert.ok(studentBlock.includes('const {questionSnapshot,...snapshot}'));
   assert.ok(studentBlock.includes('publicQuestion(q)'));

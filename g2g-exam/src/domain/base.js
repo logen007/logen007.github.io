@@ -1,3 +1,4 @@
+import {resolveAccountNames} from './account-name.js';
 export const ROLES=Object.freeze({STUDENT:'student',TEACHER:'teacher',MASTER:'master'});
 export const ATTEMPT_STATUS=Object.freeze({IN_PROGRESS:'in_progress',SUBMITTED:'submitted',GRADING:'grading',READY:'ready',PUBLISHED:'published',ABANDONED:'abandoned'});
 
@@ -15,7 +16,7 @@ export function normalizeState(input){
   state.schemaVersion||=2;
   state.revision||=1;
   for(const key of ['users','questions','exams','attempts','gradingRequests','notifications','auditLog','classes'])state[key]||=[];
-  return state;
+  return resolveAccountNames(state);
 }
 
 export function audit(state,user,action,entityType,entityId,detail={}){

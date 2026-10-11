@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
+import {nameChangePatch} from '../src/domain/account-name.js';
+import {validateStudentName} from '../src/domain/student-profile.js';
 import {loginReturnPath} from '../server/src/auth-routing.js';
 import {createRepository} from '../src/repository.js';
 import {ApiRepository} from '../src/repositories/api.js';
@@ -149,6 +151,24 @@ await test('Google callback verifies state and email before writing an account o
     await assert.rejects(unverified.routes.get('/api/auth/google/callback')(unverified.request,unverified.reply),/chưa xác minh/);
     assert.equal(unverified.writes.length,0);assert.equal(unverified.cookies.length,0);
   }
+});
+
+await test('Name endpoints enforce one shared cooldown under row lock without name history',async()=>{
+  const row={role:'teacher',active:true,data:{name:'Old Name'}},writes=[];
+  const context={nameChangePatch,validateStudentName,appError:(statusCode,message)=>Object.assign(new Error(message),{statusCode}),
+    withTx:fn=>fn({query:async(sql,args)=>{
+      if(sql.startsWith('SELECT')){assert.match(sql,/FOR UPDATE/);return {rows:[row]};}
+      writes.push(sql);Object.assign(row.data,JSON.parse(args[1]));return {rows:[]};
+    }})};
+  vm.runInNewContext(read('server/src/actions/classes.js').replace(/^import .*;\n/gm,'').replace(/export /g,''),context);
+  await context.saveAccountName({id:'u',role:'teacher'},{name:'New Name'});
+  assert.ok(row.data.nameChangedAt);assert.equal(writes.length,1);
+  await assert.rejects(context.saveAccountName({id:'u',role:'teacher'},{name:'Other Name'}),/30 ngày/);
+  await context.saveAccountName({id:'u',role:'teacher'},{name:'New Name'});
+  assert.equal(writes.length,1);
+  row.role='master';
+  await context.saveAccountName({id:'u',role:'master'},{name:'Admin Name'});
+  assert.equal(writes.length,2);
 });
 
 await test('New Google accounts are students; primary master uses server authorization and preserves deep link',async()=>{

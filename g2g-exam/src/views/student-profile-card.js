@@ -1,3 +1,4 @@
+import {nameChangePatch} from '../domain/account-name.js';
 import {ATTEMPT_STATUS,getStudentResults,getLatestPublishedAttempt} from '../core.js';
 import {normalizeStudentLevel,validateStudentName} from '../domain/student-profile.js';
 import {resultClass} from '../domain/gradebook.js';
@@ -45,7 +46,7 @@ export function bindStudentName(root,{repo,user,onSaved}){
     saving=true;input.disabled=true;status.textContent='Đang lưu…';
     try{
       if(repo.mode==='api'){await repo.call('saveStudentName',{name});await repo.reload();}
-      else await repo.transaction(state=>{state.users.find(item=>item.id===user.id).name=name;});
+      else await repo.transaction(state=>{const account=state.users.find(item=>item.id===user.id);Object.assign(account,nameChangePatch(account,name,{admin:account.role==='master'}));});
       close();await onSaved();
     }catch(error){status.textContent=error.message;}
     finally{saving=false;input.disabled=false;}
