@@ -526,8 +526,11 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 .gap-option .truong { height:var(--editor-control); min-width:0; width:100%; }
 .gap-passage { white-space:pre-wrap; line-height:2; overflow-wrap:anywhere; }
 .inline-gap { display:inline-flex; align-items:center; gap:8px; margin:4px 8px; vertical-align:middle; white-space:nowrap; }
-.inline-gap select { width:112px; background-color:var(--brand-soft); border-color:var(--brand-border); color:var(--brand-text); font-weight:600; }
-.inline-gap select option, .inline-gap-paper .gap-sentences p { font-weight:600; }
+.inline-gap select { width:76px; background-color:var(--brand-primary); border-color:var(--brand-primary); color:var(--brand-on-primary); font-weight:600; }
+.inline-gap select option { background-color:var(--mat); color:var(--chu); }
+.inline-gap-paper .gap-sentences p { font-weight:400; }
+.inline-gap-paper .gap-sentences b { font-weight:600; }
+@media(min-width:761px) { .exam-reading-split > .split-follow { position:sticky; top:var(--split-top,16px); align-self:start; } }
 .gap-demo { background:var(--brand-soft); border-radius:8px; padding:4px 8px; }
 .gap-sentences { margin-top:24px; display:grid; gap:12px; }
 .gap-sentences p { margin:0; display:flex; gap:16px; }

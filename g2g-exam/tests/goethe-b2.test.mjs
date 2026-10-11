@@ -12,6 +12,7 @@ import {saveInlineGapDraft} from '../src/part-templates/default/inline-gap-build
 import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {examHtml} from '../src/views/student.js';
 import {bindLetterAnswers,letterAnswerControl} from '../src/ui/letter-answers.js';
+import {bindSplitReading} from '../src/ui/split-reading.js';
 import {validateExamForPublish,duplicateExam,startAttempt,submitAttempt,saveManualScore} from '../src/core.js';
 
 const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teacher-lan'),student=state.users.find(u=>u.id==='student-a');
@@ -69,12 +70,32 @@ const html=examHtml({exam,attempt:{answers:{}},sectionIndex:1,questions:publicQu
 assert.equal((html.match(/data-letter-answer/g)||[]).length,6);
 assert.match(html,/Gehen wir 200 Jahre zurück/);
 assert.match(html,/<option value="">10<\/option>/);
-assert.match(html,/<option value="0" >10\. a<\/option>/);
+assert.match(html,/<option value="0" >a<\/option>/);
 assert.doesNotMatch(html,/<b>10<\/b>|<b>_<\/b>|Beispiel:|<option value="">—/);
 assert.equal((html.match(/<b>0<\/b>/g)||[]).length,2);
-assert.match(letterAnswerControl(qs[0],0,'letter-select',{number:10}),/<option value="0" selected>10\. a<\/option>/);
+assert.match(letterAnswerControl(qs[0],0,'letter-select',{number:10}),/<option value="0" selected>a<\/option>/);
 assert.match(letterAnswerControl(qs[0],null,'letter-select'),/<option value="">—<\/option>/);
-assert.match(css,/\.inline-gap select \{[^}]*background-color:var\(--brand-soft\)/);
+assert.match(css,/\.inline-gap select \{ width:76px; background-color:var\(--brand-primary\)/);
+assert.match(css,/\.inline-gap-paper \.gap-sentences p \{ font-weight:400;/);
+// Both left-shorter and right-shorter layouts react to image/viewport resizing.
+{
+  const column=height=>({height,classes:new Set(),props:new Map(),getBoundingClientRect(){return {height:this.height};},
+    get classList(){return {add:key=>this.classes.add(key),remove:key=>this.classes.delete(key)};},
+    get style(){return {setProperty:(key,value)=>this.props.set(key,value),removeProperty:key=>this.props.delete(key)};}});
+  const left=column(1200),right=column(300),feedback=column(0);
+  let onResize,disconnected=false,removed=false,observed=[];
+  const view={innerWidth:1200,innerHeight:800,ResizeObserver:class{constructor(fn){onResize=fn;}observe(el){observed.push(el);}disconnect(){disconnected=true;}},
+    addEventListener(){},removeEventListener(){removed=true;}};
+  const dispose=bindSplitReading({querySelectorAll:()=>[{children:[left,right,feedback]}]},view);
+  assert.deepEqual(observed,[left,right]);
+  assert.ok(right.classes.has('split-follow'));assert.equal(right.props.get('--split-top'),'16px');
+  right.height=1600;onResize();
+  assert.ok(left.classes.has('split-follow'));assert.equal(left.props.get('--split-top'),'-416px');
+  assert.equal(right.classes.size,0);
+  view.innerWidth=760;onResize();assert.equal(left.classes.size,0);
+  view.innerWidth=1200;left.height=right.height;onResize();assert.equal(left.classes.size+right.classes.size,0);
+  dispose();assert.ok(disconnected&&removed);assert.equal(left.props.size+right.props.size,0);
+}
 assert.doesNotMatch(html,/\[[a-hz]\]/);
 assert.equal((html.match(/src="\/uploads\/bicycle-test.png"/g)||[]).length,1);
 assert.ok(html.indexOf('<h2>Die Geschichte des Fahrrads</h2>')<html.indexOf('class="gap-article-image"'));

@@ -1,5 +1,7 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
 import {bindLetterAnswers} from './ui/letter-answers.js';
+import {bindSplitReading} from './ui/split-reading.js';
+let clearSplitReading=()=>{};
 import {saveInlineGapDraft} from './part-templates/default/inline-gap-builder.js';
 import {createGradeAutosave} from './ui/grade-autosave.js';
 import {showPublishErrors} from './ui/publish-errors.js';
@@ -602,6 +604,7 @@ function bindModalClose(){app.querySelectorAll('[data-action="close-modal"]').fo
 
 let titleResizeObserver;
 function render(){
+  clearSplitReading();
   titleResizeObserver?.disconnect();
   clearTimer();
   stopActiveAudio();
@@ -619,6 +622,7 @@ function render(){
   else adminView();
   bindGlobal();
   bindViewSpecific();
+  clearSplitReading=bindSplitReading(app);
   const titleField=document.getElementById('examTitle');
   if(titleField){
     const fitTitle=()=>{titleField.style.height='auto';titleField.style.height=titleField.scrollHeight+'px';};

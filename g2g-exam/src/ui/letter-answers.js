@@ -6,8 +6,7 @@ export function letterAnswerControl(q,answer,layout,{number=null}={}){
   const value=isPrefilledQuestion(q)?q.correctAnswer:answer,letter=value==null||value===''?'':choiceLetter(q.choices?.[Number(value)]);
   if(isPrefilledQuestion(q))return `<span class="letter-example">${esc(letter.toLowerCase())}</span>`;
   const attrs=`data-letter-answer data-q="${esc(q.id)}" aria-label="Antwort: ${esc(number??q.title)}"`;
-  const label=choice=>number==null?choice:`${number}. ${choice}`;
-  if(layout==='letter-table'||layout==='letter-select')return `<select id="letter-${esc(q.id)}" class="truong" ${attrs}><option value="">${number==null?'—':esc(number)}</option>${(q.choices||[]).map((choice,i)=>`<option value="${i}" ${String(value)===String(i)?'selected':''}>${esc(label(choiceLetter(choice).toLowerCase()))}</option>`).join('')}</select>`;
+  if(layout==='letter-table'||layout==='letter-select')return `<select id="letter-${esc(q.id)}" class="truong" ${attrs}><option value="">${number==null?'—':esc(number)}</option>${(q.choices||[]).map((choice,i)=>`<option value="${i}" ${String(value)===String(i)?'selected':''}>${esc(choiceLetter(choice).toLowerCase())}</option>`).join('')}</select>`;
   return `<input ${attrs} maxlength="1" autocomplete="off" autocapitalize="characters" value="${esc(letter.toLowerCase())}">`;
 }
 
