@@ -74,7 +74,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   options for authorized admins (Student, Teacher, Admin; omit current role),
   then Log out. No separate role selector or logout icon. Profile edits the
   current user's name; students also have a class confirmation-code field.
-- Admin avatars have a current-role outline icon beside them: Admin purple,
+- Admin avatars have a small current-role outline badge at their top-left edge,
+  absolutely positioned (18px circle, 14px icon) with a surface-colored rim.
+  Role colors: Admin purple,
   Teacher blue, Student green. Reuse the menu role icons and keep the role in
   the avatar's accessible name and title; regular users do not have this icon.
 

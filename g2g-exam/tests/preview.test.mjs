@@ -235,6 +235,9 @@ try{
     assert.match(html,/data-role="teacher"><svg[^]*?<span>Teacher<\/span><\/button>/);
     assert.doesNotMatch(html,/data-action="test-role" data-role="master"|header-logout|account-role-trigger/);
     assert.match(html,/class="account-role-indicator" data-role="master"/);
+    const badgeCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+    assert.match(badgeCss,/\.account-role-indicator \{ position:absolute; top:-3px; left:-3px;[^}]*width:18px; height:18px;/);
+    assert.match(badgeCss,/\.account-role-indicator svg \{ width:14px; height:14px;/);
     assert.match(html,/data-action="account-profile"><svg[^]*?<span>Profile<\/span>/);
     assert.match(html,/data-action="logout"><svg[^]*?<span>Log out<\/span>/);
     const regular=topbarHtml({user:{role:'teacher',name:'Teacher'},mode:'api',online:true});
