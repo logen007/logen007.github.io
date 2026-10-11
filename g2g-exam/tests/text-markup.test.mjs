@@ -68,7 +68,8 @@ assert.match(css,/\.preview-outline \{[^}]*margin-left:auto;/);
 const studentView=readFileSync(new URL('../src/views/student.js',import.meta.url),'utf8');
 assert.match(studentView,/section-arrow" aria-label="Vorheriger Teil"/);
 assert.match(studentView,/iconHtml\('arrowLeft'\)/);
-assert.match(studentView,/iconHtml\('arrowRight'\):preview\?iconHtml\('arrowLeft'\):nextLabel/);
+assert.match(studentView,/iconHtml\('arrowRight'\):nextLabel/);
+assert.match(studentView,/preview\?'Kết thúc':'Abgeben'/);
 for(const path of ['../src/views/student.js','../src/views/builder.js','../src/views/classes.js','../src/ui/publish-errors.js']){
   const source=readFileSync(new URL(path,import.meta.url),'utf8');
   assert.doesNotMatch(source,/>\s*(Quay lại(?: sửa)?|Zurück|← Lớp học)<\/button>/);

@@ -376,6 +376,10 @@ try{
       assert.equal(/\bdisabled(?:\s|>)/.test(previous[0]),sectionIndex===0);
       const nextAction=sectionIndex===2?(preview?'close-preview':'submit-exam'):(preview?'preview-next-section':'next-section');
       assert.ok(actionButtons(html.slice(navigation),nextAction).length===1);
+      if(sectionIndex===2&&preview){
+        assert.match(html.slice(navigation),/data-action="close-preview">Kết thúc<\/button>/);
+        assert.doesNotMatch(actionButtons(html.slice(navigation),'close-preview')[0],/section-arrow/);
+      }
       if(sectionIndex===2)assert.equal(actionButtons(html,preview?'preview-next-section':'next-section').length,0);
     }
   });

@@ -217,6 +217,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   and next remain in normal flow without background, border or sticky positioning.
   Section changes return scroll and keyboard focus to the new heading.
 - Scope preview-only presentation under `.thi--preview`. It uses local answers;
+  The final Preview button reads “Kết thúc” (not an arrow) and returns to the
+  editor of the exam being previewed, including direct-link previews.
   production part runtimes must never attach a live attempt to preview content.
 - Builder return navigation is a compact borderless arrow to the left of provider/level on the same row, without a hover underline.
   The role-appropriate header menu remains visible when editing exams or grading.
