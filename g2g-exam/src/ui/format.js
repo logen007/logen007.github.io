@@ -1,4 +1,4 @@
-import {boldPattern} from '../domain/text-markup.js';
+import {boldPattern,italicPattern,underlinePattern} from '../domain/text-markup.js';
 
 export function esc(v=''){
   return String(v??'').replace(/[&<>'"]/g,c=>({
@@ -8,12 +8,12 @@ export function esc(v=''){
 
 // Only our marker becomes HTML. User-supplied HTML is always escaped first.
 export function textHtml(value=''){
-  return esc(value).replace(boldPattern(),'<strong class="text-bold">$1</strong>');
+  return esc(value).replace(boldPattern(),'<strong class="text-bold">$1</strong>').replace(italicPattern(),'<em>$1</em>').replace(underlinePattern(),'<u>$1</u>');
 }
 
 export function instructionTextHtml(value=''){
   return textHtml(value).replace(/\[([^\[\]\r\n]+)\]/g,(marker,text)=>{
-    if(/^(?:[a-z]|\d+|img|\/b)$/i.test(text.trim()))return marker;
+    if(/^(?:[a-z]|\d+|img|\/[biu])$/i.test(text.trim()))return marker;
     return '<strong class="instruction-token">'+text+'</strong>';
   });
 }

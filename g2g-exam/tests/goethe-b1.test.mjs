@@ -13,9 +13,18 @@ const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teach
 const exam=createExamDraft(state,teacher,{provider:'GOETHE',level:'B1',title:'B1 regression'});
 const rows=section=>section.questionIds.map(id=>state.questions.find(q=>q.id===id));
 assert.equal(exam.sections[0].questionProfile.splitLayout,true);
+const listeningTwoIndex=exam.sections.findIndex(s=>s.name==='Nghe 2');
+assert.equal(exam.sections[listeningTwoIndex].questionProfile.splitLayout,true);
+const listeningThreeIndex=exam.sections.findIndex(s=>s.name==='Nghe 3');
+assert.equal(exam.sections[listeningThreeIndex].questionProfile.splitLayout,true);
 const legacyExam=structuredClone(exam);
 delete legacyExam.sections[0].questionProfile.splitLayout;
+delete legacyExam.sections[listeningTwoIndex].questionProfile.splitLayout;
+delete legacyExam.sections[listeningThreeIndex].questionProfile.splitLayout;
 for(const preview of [true,false]){
+  assert.match(examHtml({exam:legacyExam,sectionIndex:listeningThreeIndex,questions:[],attempt:{id:'split-three-test',answers:{}},online:true,preview}),/class="exam-reading-split"/);
+  const listeningHtml=examHtml({exam:legacyExam,sectionIndex:listeningTwoIndex,questions:[],attempt:{id:'split-listening-test',answers:{}},online:true,preview});
+  assert.match(listeningHtml,/class="exam-reading-split"/);
   const html=examHtml({exam:legacyExam,sectionIndex:0,questions:[],attempt:{id:'split-test',answers:{}},online:true,preview});
   assert.match(html,/class="exam-reading-split"/);
 }

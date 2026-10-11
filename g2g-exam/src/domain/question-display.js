@@ -12,7 +12,7 @@ export function shortChoiceColumns(choices){
   if(!limit)return 0;
   return choices.every(choice=>{
     if(choice?.imageUrl)return false;
-    const text=String(typeof choice==='object'?choice?.text||'':choice||'').replace(/\[\/?b\]/gi,'').trim();
+    const text=String(typeof choice==='object'?choice?.text||'':choice||'').replace(/\[\/?[biu]\]/gi,'').trim();
     return text.length>0&&!/[\r\n]/.test(text)&&[...text].length<=limit;
   })?choices.length:0;
 }

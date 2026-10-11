@@ -74,7 +74,26 @@ import {parseGapText,gapAuthorText,inlineGapErrors} from '../src/domain/inline-g
 import {readingBlocksHtml,readingBlocksEditor} from '../src/ui/reading-blocks.js';
 import {inlineGapsHtml} from '../src/ui/inline-gaps.js';
 import {letterAnswersHtml} from '../src/ui/letter-answers.js';
-import {applyBoldSelection} from '../src/ui/textarea-bold.js';
+import {applyBoldSelection,handleTextareaShortcut} from '../src/ui/textarea-bold.js';
+assert.equal(textHtml('[i]italic[/i] [u]line[/u]'),'<em>italic</em> <u>line</u>');
+assert.equal(instructionTextHtml('[b][i][u]text[/u][/i][/b]'),'<strong class="text-bold"><em><u>text</u></em></strong>');
+assert.equal(textHtml('[i]<script>[/i]'),'<em>&lt;script&gt;</em>');
+assert.equal(instructionTextHtml('[i]unfinished [/u]'),'[i]unfinished [/u]');
+for(const tag of ['b','i','u']){
+  let saves=0,prevented=0;
+  const target={value:'text',selectionStart:0,selectionEnd:4,matches:()=>true,
+    setRangeText(value,start,end){this.value=this.value.slice(0,start)+value+this.value.slice(end);this.selectionEnd=start+value.length;},
+    setSelectionRange(start,end){this.selectionStart=start;this.selectionEnd=end;},
+    focus(){},dispatchEvent(){saves++;}};
+  const event={target,key:tag,metaKey:true,preventDefault(){prevented++;}};
+  handleTextareaShortcut(event);assert.equal(target.value,`[${tag}]text[/${tag}]`);
+  handleTextareaShortcut(event);assert.equal(target.value,'text');
+  target.value='';target.selectionStart=target.selectionEnd=0;
+  handleTextareaShortcut({...event,metaKey:false,ctrlKey:true});
+  assert.equal(target.value,`[${tag}][/${tag}]`);assert.equal(target.selectionStart,3);
+  target.readOnly=true;handleTextareaShortcut(event);assert.equal(saves,3);
+  target.readOnly=false;target.matches=()=>false;handleTextareaShortcut(event);assert.equal(prevented,3);
+}
 import {shortChoiceColumns} from '../src/domain/question-display.js';
 assert.equal(shortChoiceColumns(['Richtig','Falsch']),2);
 assert.equal(shortChoiceColumns(['Ja','Nein','Vielleicht']),3);

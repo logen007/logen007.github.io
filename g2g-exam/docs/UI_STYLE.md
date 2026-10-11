@@ -76,6 +76,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   generic page skeleton. New server content may legitimately change dimensions.
 
 - Textarea content supports paired `[b]text[/b]` bold markup when rendered.
+  Also support `[i]text[/i]` italic and `[u]text[/u]` underline. Cmd/Ctrl B, I,
+  U wraps selected textarea text (or inserts a pair at the caret); selecting the
+  complete marked span and repeating the shortcut removes that formatting.
+  Email HTML/plain-text source fields are excluded. Preserve autosave events.
   The legacy `[b]text[b]` form remains readable. Selecting textarea text exposes
   a compact B action that inserts the new syntax without adding a permanent row.
   Editors preserve the raw markers; renderers escape HTML before formatting.
