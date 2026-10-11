@@ -72,9 +72,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   and connectivity events during startup must not flash the default dashboard.
 - Loading skeletons use measured geometry from the same URL and viewport width,
   including actual text wrapping, controls and card dimensions. Store only numeric
-  geometry in session storage, never content/HTML/account data. Keep branding static.
+  geometry in session storage, never content/HTML/account data. Exclude the header:
+  show neither a temporary brand header nor its skeleton before the real header.
   Discard measurements after one hour, on logout, or when route/width differs.
-  Without matching measurements use the minimal brand fallback, not a guessed
+  Without matching measurements use only the minimal progress line, not a guessed
   generic page skeleton. New server content may legitimately change dimensions.
 
 - Textarea content supports paired `[b]text[/b]` bold markup when rendered.

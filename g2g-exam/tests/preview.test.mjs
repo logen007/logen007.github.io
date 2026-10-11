@@ -19,7 +19,7 @@ assert.match(bootHtml,/id="bootShell" aria-busy="true"/);
 assert.match(bootHtml,/prefers-reduced-motion:reduce/);
 assert.match(bootHtml,/Thử lại/);
 assert.doesNotMatch(bootHtml,/boot-card|boot-mark|boot-avatar/);
-assert.match(bootHtml,/class="thanh-dau"/);
+assert.doesNotMatch(bootHtml,/class="thanh-dau"/);
 assert.match(readFileSync(new URL('../src/exam-specs/goethe.js',import.meta.url),'utf8'),/Promise.all/);
 const touchStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea, \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);

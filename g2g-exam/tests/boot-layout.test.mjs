@@ -9,6 +9,10 @@ const context={window:{scrollY:0},location:{pathname:'/vi.html',search:'?tab=exa
   getComputedStyle:()=>({display:'block',visibility:'visible',opacity:'1',backgroundColor:'rgb(255, 255, 255)',borderTopWidth:'1px',borderRadius:'24px'})};
 vm.runInNewContext(source,context);
 const {valid,capture,clear}=context.window.G2GBootLayout;
+assert.doesNotMatch(readFileSync(new URL('../vi.html',import.meta.url),'utf8'),/<header/);
+const header={hidden:false,matches:selector=>selector.includes('.thanh-dau'),getBoundingClientRect(){throw new Error('Header must not be captured');}};
+capture({querySelector:()=>null,getBoundingClientRect:()=>({left:0,top:0}),children:[header]});
+assert.equal(storage.size,0);
 const snapshot={path:'/vi.html?tab=exams',width:390,time:100,shapes:[{kind:'line',x:12,y:100,w:200,h:16,r:4}]};
 assert.equal(valid(snapshot,390,snapshot.path,110),true);
 assert.equal(valid(snapshot,400,snapshot.path,110),false);
