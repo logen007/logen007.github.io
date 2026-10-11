@@ -215,7 +215,8 @@ try{
     assert.doesNotMatch(html,/THI THỬ|khoảng/);
     assert.match(html,/<span class="the-de-new">Mới<\/span>/);
     assert.doesNotMatch(html,/Chưa từng thi|class="day"|class="chan"|class="hanh-dong"/);
-    assert.match(html,/class="exam-card-footer"[^]*?data-action="start"[^]*?<span>Bắt đầu thi<\/span><svg/);
+    assert.match(html,/class="exam-card-footer"[^]*?data-action="start"[^]*?<span>Bắt đầu thi · 35 phút<\/span><svg/);
+    assert.doesNotMatch(html,/<div class="meta">[^<]*phút/);
     const pending=studentExamCardHtml(exam,[{examId:exam.id,status:'submitted'}],{questions:[]});
     assert.doesNotMatch(pending,/the-de-new|Chưa từng thi/);
     const locked=studentExamCardHtml({...exam,hidden:true,hasActiveCodes:false},[],{questions:[]});

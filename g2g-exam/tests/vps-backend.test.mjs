@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import vm from 'node:vm';
+import {getPublishedExams} from '../src/domain/base.js';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -28,6 +30,25 @@ function checkImports(file){
   }
 }
 checkImports('server/src/index.js');
+// Starting an exam removes duplicated status from JSON; the SQL column owns it.
+const stateContext={
+  structuredClone,Date,Map,Set,expireCodes:async()=>{},resolveAccountNames:state=>state,
+  query:async sql=>{
+    if(sql.includes('FROM exams')){
+      assert.match(sql,/SELECT id,owner_id,status,locked,data FROM exams/);
+      return {rows:[
+        {id:'taken',owner_id:'teacher',status:'published',locked:true,data:{title:'Taken exam',sections:[]}},
+        {id:'new',owner_id:'teacher',status:'published',locked:false,data:{title:'New exam',sections:[]}}
+      ]};
+    }
+    if(sql.includes('FROM attempts'))return {rows:[{id:'attempt',exam_id:'taken',status:'submitted',public_data:{examId:'taken',status:'submitted'}}]};
+    return {rows:[]};
+  }
+};
+vm.runInNewContext(read('server/src/state.js').replace(/^import .*;\n/gm,'').replace(/export /g,''),stateContext);
+const studentState=await stateContext.loadState({id:'student',role:'student'});
+assert.deepEqual(Array.from(getPublishedExams(studentState),exam=>exam.id),['taken','new']);
+assert.equal(studentState.exams[0].locked,true);
 const test=(name,fn)=>{fn();console.log(`✓ ${name}`);passed++;};
 
 test('Có backend VPS, schema PostgreSQL và Docker deployment',()=>{

@@ -131,9 +131,9 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .the-de>.nhan { align-self:flex-start; max-width:calc(100% - 76px); }
 .the-de-new { position:absolute; top:var(--card-padding); right:var(--card-padding); display:inline-flex; align-items:center; min-height:26px; padding:4px 10px; border-radius:var(--pill); background:var(--brand-soft); color:var(--brand-text); font-size:12px; font-weight:600; line-height:1; }
 .the-de h3 { font-size:20px; line-height:1.4; margin:12px 0 8px; font-weight:500; overflow-wrap:anywhere; }.the-de .meta { font-size:14px; color:var(--phu); line-height:1.5; margin-bottom:16px; }
-.exam-card-footer { display:flex; align-items:center; justify-content:flex-end; gap:12px; margin-top:auto; }
+.exam-card-footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:12px; margin-top:auto; }
 .exam-card-status { flex:1; min-width:0; font-size:13px; line-height:1.5; color:var(--phu); }
-.exam-card-footer>.nut { min-height:44px; max-width:65%; white-space:normal; text-align:center; }
+.exam-card-footer>.nut { width:100%; max-width:260px; min-height:44px; white-space:normal; text-align:center; }
 .exam-card-footer>.nut .ui-icon { flex-shrink:0; width:18px; height:18px; }
 .exam-card-status strong { color:var(--chu); font-weight:600; }.exam-latest-result { font-weight:600; }.exam-latest-result.failed { color:#c83b3b; }.exam-latest-result.passed { color:#218a58; }
 .table-wrap { overflow:auto; background:var(--mat); border:1px solid var(--vien); border-radius:var(--r); }

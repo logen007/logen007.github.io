@@ -21,7 +21,7 @@ export async function loadState(user){
   if(user.role==='student'){
     await expireCodes();
     state.users=[user];
-    state.exams=(await rows(`SELECT id,data FROM exams WHERE status='published' ORDER BY updated_at DESC`)).map(rowEntity);
+    state.exams=(await rows(`SELECT id,owner_id,status,locked,data FROM exams WHERE status='published' ORDER BY updated_at DESC`)).map(rowEntity);
     const attempts=await rows(`SELECT id,public_data,private_data,status,exam_id FROM attempts WHERE student_id=$1 ORDER BY created_at DESC`,[user.id]);
     state.attempts=attempts.map(r=>({id:r.id,...r.public_data}));
     const allQuestions=(await rows(`SELECT id,data FROM questions WHERE status<>'trash'`)).map(rowEntity);
