@@ -31,6 +31,11 @@ try{
   assert.match(overlay.innerHTML,/exam-transition-waves[^]*?<i><\/i><\/div>/);
   assert.equal((overlay.innerHTML.match(/<i>/g)||[]).length,1);
   assert.equal(overlay.style['--reveal-x'],'120px');
+  assert.equal(overlay.style['--transition-center-x'],'200px');
+  assert.equal(overlay.style['--transition-center-y'],'400px');
+  assert.match(transitionCss,/grid-template-rows:48px auto/);
+  assert.match(transitionCss,/@keyframes exam-caption-fade \{ from \{ opacity:0; \} to \{ opacity:1; \} \}/);
+  assert.doesNotMatch(transitionCss,/exam-ready|\.exam-transition\.is-leaving \.exam-transition-center/);
   assert.equal(overlay.style['--wave-color'],'rgb(248, 210, 52)');
   assert.equal(overlay.style['--reveal-y'],'622px');
   assert.ok(parseFloat(overlay.style['--reveal-radius'])>Math.hypot(280,622));

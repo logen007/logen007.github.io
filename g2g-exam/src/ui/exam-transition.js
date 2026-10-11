@@ -15,6 +15,10 @@ export async function withExamTransition(start,trigger){
   overlay.style.setProperty('--reveal-x',x+'px');
   overlay.style.setProperty('--reveal-y',y+'px');
   overlay.style.setProperty('--reveal-radius',radius+'px');
+  // Freeze the logo anchor for this transition; browser chrome and text wrapping
+  // must not recenter the group while the destination page renders.
+  overlay.style.setProperty('--transition-center-x',window.innerWidth/2+'px');
+  overlay.style.setProperty('--transition-center-y',window.innerHeight/2+'px');
   const buttonColor=trigger&&window.getComputedStyle?.(trigger).backgroundColor;
   if(buttonColor&&buttonColor!=='transparent'&&buttonColor!=='rgba(0, 0, 0, 0)')overlay.style.setProperty('--wave-color',buttonColor);
   overlay.setAttribute('role','status');overlay.setAttribute('aria-live','polite');
@@ -27,7 +31,7 @@ export async function withExamTransition(start,trigger){
   const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   try{
     if(app)app.inert=true;
-    document.body.append(overlay);overlay.focus();
+    document.body.append(overlay);overlay.focus({preventScroll:true});
     // Fetch immediately; callers await coverage before replacing the visible page.
     const covered=wait(reduced?0:1100);
     const loading=Promise.resolve().then(()=>start(covered)).then(()=>({ok:true}),error=>({ok:false,error}));

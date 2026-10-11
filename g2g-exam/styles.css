@@ -148,18 +148,16 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .exam-card-footer>.nut { min-height:44px; white-space:normal; text-align:center; }
 .exam-transition { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; overflow:hidden; isolation:isolate; opacity:1; transition:opacity 500ms ease; }
 .exam-transition::before { content:''; position:absolute; inset:0; background:#fff; animation:exam-white-fill 1100ms cubic-bezier(.45,0,.25,1) both; }
-.exam-transition-center { z-index:1; display:grid; justify-items:center; gap:8px; animation:exam-ready 400ms 1000ms ease both; transition:transform 500ms ease,opacity 500ms ease; }
-.exam-transition-logo { display:block; object-fit:contain; border-radius:12px; }
-.exam-transition p { margin:0; padding:0 20px; max-width:360px; text-align:center; overflow-wrap:anywhere; font-size:13px; color:var(--phu); letter-spacing:.04em; }
+.exam-transition-center { position:absolute; left:var(--transition-center-x); top:calc(var(--transition-center-y) - 38px); width:min(360px,100%); transform:translateX(-50%); z-index:2; display:grid; grid-template-rows:48px auto; justify-items:center; gap:8px; animation:exam-caption-fade 400ms 1000ms ease both; }
+.exam-transition-logo { display:block; width:48px; height:48px; object-fit:contain; border-radius:12px; }
+.exam-transition p { margin:0; width:100%; box-sizing:border-box; padding:0 20px; text-align:center; overflow-wrap:anywhere; font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif; font-size:13px; line-height:20px; color:var(--phu); letter-spacing:.04em; }
 .exam-transition-waves { position:absolute; inset:0; z-index:1; pointer-events:none; }
 .exam-transition-waves i { position:absolute; left:var(--reveal-x); top:var(--reveal-y); width:calc(var(--reveal-radius) * 2); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle,transparent 8%,var(--wave-color,var(--brand-primary)) 30%,var(--wave-color,var(--brand-primary)) 66%,transparent 96%); animation:exam-power-wave 1500ms cubic-bezier(.22,.61,.36,1) both; }
-.exam-transition.is-leaving .exam-transition-center { transform:scale(.96); opacity:0; }
-.exam-transition.is-ready p { animation:exam-ready 400ms ease both; }
 .exam-transition.is-leaving { opacity:0; }
 @keyframes exam-white-fill { from { opacity:0; } to { opacity:1; } }
 @keyframes exam-power-wave { 0% { transform:translate(-50%,-50%) scale(.04); opacity:0; } 15% { opacity:.35; } 60% { opacity:.18; } 100% { transform:translate(-50%,-50%) scale(1.4); opacity:0; } }
 @media(prefers-reduced-motion:reduce) { .exam-transition-waves { display:none; } }
-@keyframes exam-ready { from { transform:translateY(6px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+@keyframes exam-caption-fade { from { opacity:0; } to { opacity:1; } }
 .exam-card-footer>.nut .ui-icon { flex-shrink:0; width:18px; height:18px; }
 .exam-card-status strong { color:var(--chu); font-weight:600; }.exam-latest-result { font-weight:600; }.exam-latest-result.failed { color:#c83b3b; }.exam-latest-result.passed { color:#218a58; }
 .table-wrap { overflow:auto; background:var(--mat); border:1px solid var(--vien); border-radius:var(--r); }
