@@ -203,7 +203,7 @@ try{
   });
   await test('Starting a retake refreshes state and advancing returns to page top',()=>{
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-    assert.match(source,/async function beginAttempt\(examId,restart\)\{\s*if\(repo\.mode==='api'&&!await act\(\(\)=>repo\.reload\(\)/);
+    assert.match(source,/async function beginAttempt\(examId,restart\)\{\s*return withExamTransition\(async\(\)=>\{\s*if\(repo\.mode==='api'&&!await act\(\(\)=>repo\.reload\(\)/);
     assert.match(source,/async function moveAttemptSection\(delta\)[\s\S]*?if\(result\)\{[^}]*render\(\);window\.scrollTo\(0,0\)/);
     assert.match(source,/function showPreviewSection\(index\)[\s\S]*?window\.scrollTo\(0,0\)/);
   });
@@ -226,7 +226,7 @@ try{
     const cardCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
     assert.match(cardCss,/\.exam-card-footer \{[^}]*justify-content:flex-start/);
     assert.match(cardCss,/\.exam-card-status \{ flex:0 0 100%/);
-    assert.match(cardCss,/\.exam-card-footer>\.nut \{ width:100%; max-width:260px/);
+    assert.doesNotMatch(cardCss.match(/\.exam-card-footer>\.nut \{[^}]*\}/)[0],/(?:max-)?width:/);
     const pending=studentExamCardHtml(exam,[{examId:exam.id,status:'submitted'}],{questions:[]});
     assert.doesNotMatch(pending,/the-de-new|Chưa từng thi/);
     const locked=studentExamCardHtml({...exam,hidden:true,hasActiveCodes:false},[],{questions:[]});

@@ -1,4 +1,5 @@
 import {mountDialog} from './classes.js';
+import {withExamTransition} from '../ui/exam-transition.js';
 import {examLearningLevel,normalizeStudentLevel} from '../domain/student-profile.js';
 import {textHtml,esc} from '../ui/format.js';
 
@@ -11,8 +12,11 @@ export function openCodeEntry({repo,examId,onStarted}){
     event.preventDefault();const form=event.currentTarget,button=form.querySelector('button');button.disabled=true;
     try{
       if(repo.mode!=='api')throw new Error('Mã thi cần kết nối máy chủ; không dùng trong bản demo.');
-      const result=await repo.call('startAttemptSecure',{examId,code:form.elements.code.value.trim().toUpperCase()});
-      await repo.reload();modal.remove();await onStarted(result.attemptId);
+      const code=form.elements.code.value.trim().toUpperCase();
+      await withExamTransition(async()=>{
+        const result=await repo.call('startAttemptSecure',{examId,code});
+        await repo.reload();modal.remove();await onStarted(result.attemptId);
+      });
     }catch(error){form.querySelector('[data-error]').textContent=error.message;button.disabled=false;}
   };
 }

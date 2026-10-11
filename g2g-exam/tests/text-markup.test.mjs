@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import './name-confirm.test.mjs';
+await import('./exam-transition.test.mjs');
 import {nameChangePatch,resolveAccountNames} from '../src/domain/account-name.js';
 const nameTime=Date.parse('2026-10-12T00:00:00Z');
 const renamed=nameChangePatch({name:'Old Name'},'New Name',{now:nameTime});

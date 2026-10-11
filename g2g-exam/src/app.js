@@ -1,4 +1,5 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
+import {withExamTransition} from './ui/exam-transition.js';
 import {createStartupGate} from './ui/startup-gate.js';
 import {resolveBuilderSection} from './ui/builder-route.js';
 import {startGoogleOneTap,stopGoogleOneTap} from './ui/google-one-tap.js';
@@ -1019,9 +1020,11 @@ function bindViewSpecific(){
 }
 
 async function beginAttempt(examId,restart){
+  return withExamTransition(async()=>{
   if(repo.mode==='api'&&!await act(()=>repo.reload(),null,{rerender:false}))return;
   const attempt=await act(()=>repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});
   if(attempt?.status===ATTEMPT_STATUS.IN_PROGRESS){data=await repo.getState();ui.attemptId=attempt.id;ui.view='exam';render();window.scrollTo(0,0);}
+  });
 }
 
 async function moveAttemptSection(delta){
