@@ -296,19 +296,9 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 @media(max-width:850px){.writing-block-content--text { grid-template-columns:minmax(0,1fr) minmax(0,1.5fr); }.writing-block-content--text .writing-block-actions { grid-column:1/-1; justify-content:flex-end; }}
 @media(max-width:520px){.writing-block-content--text { grid-template-columns:1fr; }.writing-block-content--text .writing-block-actions { grid-column:auto; }}
 @media(max-width:700px){.writing-block-content.writing-block-content--note,.writing-block-content.writing-block-content--truefalse { grid-template-columns:minmax(0,1fr) auto; }.writing-block-content--truefalse>.writing-option-setup { grid-template-columns:1fr; }}
-.writing-paper:not(.gap-article) { width:calc(100% - 12px); margin:20px 6px 24px; }
-.writing-paper .form-label { min-width:0; overflow-wrap:anywhere; }
 .writing-paper .form-given { overflow-wrap:anywhere; }
 .writing-paper .form-answer-line:has(>.form-point-column:empty) { grid-template-columns:minmax(0,1fr); }
 .writing-paper .form-point-column:empty { display:none; }
-@media(max-width:700px) {
-  .exam-paper:has(.writing-form-question) { padding-inline:12px; }
-  .writing-form-question .writing-paper { width:100%; margin:12px 0 20px; padding:16px 10px; transform:none; }
-  .writing-paper .form-answer-line { grid-template-columns:minmax(0,1fr) 3ch; gap:4px; }
-  .writing-paper .form-line--full .form-answer-line { grid-template-columns:minmax(0,1fr); }
-  .writing-paper .form-cell h3 { font-size:20px; overflow-wrap:anywhere; }
-  .writing-paper .form-options label>span { min-width:0; overflow-wrap:anywhere; gap:8px; }
-}
 .writing-answer-help { display:block; margin-top:-8px; color:var(--phu); font-size:12px; line-height:1.5; }
 .writing-setup-field input,.writing-setup-field textarea,.writing-option-setup input:not([type=radio]),.writing-score input { min-width:0; width:100%; min-height:var(--control-height); padding:10px var(--control-pad-x); background:var(--mat); border:1px solid var(--control-border); border-radius:var(--r-sm); font:400 14px/1.5 var(--font-ui); }.writing-score input { width:80px; min-height:var(--editor-control); }.writing-setup-field textarea { min-height:96px; resize:vertical; }
 .writing-example-toggle { grid-column:1/-1; display:flex; align-items:center; gap:8px; font-size:13px; }.writing-option-setup { display:grid; gap:12px; }.writing-option-setup>label { display:flex; align-items:center; gap:12px; }
