@@ -35,7 +35,10 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
 ## Shared ownership
 
 Filter dropdowns, profile forms and exam access controls use the shared form rule in styles.css:
-44px height, 12px corner radius, 14px horizontal padding, one native chevron and common focus/hover states.
+44px height, 14px horizontal padding, one native chevron and common focus/hover states.
+All dropdown triggers are pill-shaped (`--pill`) across the site, including
+filters, settings, preview part selection and compact letter controls. Text inputs
+and textareas keep their existing radii; native multiple-selection lists are not dropdowns.
 Filter dropdowns use the field name (e.g. Loại đề, Trình độ, Mã lớp) as the
 unfiltered/default option instead of “Tất cả”, with no visible label above.
 Keep an aria-label even after a value is selected. Preserve the original filter
@@ -129,7 +132,7 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 - Native dropdowns always reserve 42px on the right for one 16px chevron placed
   14px from the edge. Feature modules must not redraw or reposition that icon.
 - User-approved exception: single-letter dropdowns embedded in reading text
-  are 56×32px (36px high on touch screens), with 8px corners and compact padding.
+  are 56×32px (36px high on touch screens), with pill corners and compact padding.
   Reuse the same chevron at 12px, positioned 6px from the right.
   Inline gap menus show the letter plus the full sentence when opened; the
   closed control shows only the letter (or question number when unanswered).
@@ -153,6 +156,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   tooltips. Keep wide pill targets (at least 80px wide and 44px high on mobile),
   not small circular icon buttons. Preserve disabled states. Final submission
   and other non-navigation actions retain clear text labels.
+  Borderless back arrows are the exception: use automatic width with no minimum
+  width or horizontal padding, while preserving 44px height. Preview's part picker
+  aligns to the right edge of its row.
 
 ## Preview layout
 
@@ -190,7 +196,7 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   Section changes return scroll and keyboard focus to the new heading.
 - Scope preview-only presentation under `.thi--preview`. It uses local answers;
   production part runtimes must never attach a live attempt to preview content.
-- Builder return navigation is a wide arrow-only button to the left of provider/level on the same row, without a hover underline.
+- Builder return navigation is a compact borderless arrow to the left of provider/level on the same row, without a hover underline.
   The role-appropriate header menu remains visible when editing exams or grading.
   Preview return navigation remains before the exam title.
   The builder has no draft-save button or successful-save message; retain pending/error feedback.
