@@ -148,6 +148,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   In letter-answer question lists, display the example as "0." instead of "_";
   it still does not advance the scored-question numbering.
 - Put prompt and audio control together; answer options fill the following row.
+  Selecting an answer does not bold its body text; retain normal weight and
+  use the existing fill, border and radio state. Option letters stay bold.
   Image answers get a readable image area, not a tiny thumbnail beside long text.
 - Current-section answered count lives once in the bottom navigation. Previous
   and next remain in normal flow without background, border or sticky positioning.

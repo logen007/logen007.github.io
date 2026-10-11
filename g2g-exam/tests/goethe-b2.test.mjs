@@ -76,6 +76,7 @@ const builder=renderBuilder({data:state,exam,section:gap});
 assert.match(builder,/data-gap-option="z"/);
 assert.match(builder,/data-gap-title/);
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(css,/\.answer-option>input:checked\+\.answer-option-body \{[^}]*font-weight:400;/);
 assert.match(css,/\.gap-article-editor \{ grid-template-columns:minmax\(0,1fr\) minmax\(0,240px\)/);
 assert.match(css,/\.gap-article-editor \.gap-author-text \{ grid-column:1 \/ -1;/);
 assert.match(css,/\.gap-article-editor \{ grid-template-columns:minmax\(0,1fr\) 120px;/);
