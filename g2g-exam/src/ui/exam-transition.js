@@ -16,7 +16,7 @@ export async function withExamTransition(start,trigger){
   overlay.style.setProperty('--reveal-y',y+'px');
   overlay.style.setProperty('--reveal-radius',radius+'px');
   overlay.setAttribute('role','status');overlay.setAttribute('aria-live','polite');
-  overlay.innerHTML='<div class="exam-transition-light" aria-hidden="true"></div><div class="exam-transition-center"><img class="exam-transition-logo" alt="G2G Career" width="48" height="48"><p>Hãy sẵn sàng</p></div>';
+  overlay.innerHTML='<div class="exam-transition-waves" aria-hidden="true"><i></i><i></i><i></i></div><div class="exam-transition-center"><img class="exam-transition-logo" alt="G2G Career" width="48" height="48"><p>Hãy sẵn sàng</p></div>';
   const logo=overlay.querySelector('img');
   logo.src=document.querySelector?.('.thuong-hieu .logo img')?.src||'/brand/logo';
   const messages=pickExamMessages(currentPublicSettings().general?.examMessages);
@@ -27,7 +27,7 @@ export async function withExamTransition(start,trigger){
     if(app)app.inert=true;
     document.body.append(overlay);overlay.focus();
     // Fetch immediately; callers await coverage before replacing the visible page.
-    const covered=wait(reduced?0:750);
+    const covered=wait(reduced?0:1100);
     const loading=Promise.resolve().then(()=>start(covered)).then(()=>({ok:true}),error=>({ok:false,error}));
     await wait(reduced?100:1100);
     const [result]=await Promise.all([loading,wait(reduced?100:900)]);

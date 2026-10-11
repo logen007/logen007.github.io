@@ -17,10 +17,11 @@ globalThis.document={getElementById:()=>app,body:{append(){}},createElement(){
 }};
 try{
   let calls=0;
-  const first=withExamTransition(async covered=>{calls++;assert.equal(app.inert,true);assert.deepEqual(delays,[750,1100],'Loading begins during the reveal');await covered;},{getBoundingClientRect:()=>({left:20,top:600,width:200,height:44})});
+  const first=withExamTransition(async covered=>{calls++;assert.equal(app.inert,true);assert.deepEqual(delays,[1100,1100],'Loading begins during the reveal');await covered;},{getBoundingClientRect:()=>({left:20,top:600,width:200,height:44})});
   await withExamTransition(async()=>{calls++;});
   await first;
-  assert.equal(calls,1);assert.deepEqual(delays,[750,1100,900,500]);
+  assert.equal(calls,1);assert.deepEqual(delays,[1100,1100,900,500]);
+  assert.match(overlay.innerHTML,/exam-transition-waves[^]*?<i><\/i><i><\/i><i><\/i>/);
   assert.equal(overlay.style['--reveal-x'],'120px');
   assert.equal(overlay.style['--reveal-y'],'622px');
   assert.ok(parseFloat(overlay.style['--reveal-radius'])>Math.hypot(280,622));
