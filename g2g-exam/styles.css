@@ -146,14 +146,17 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .exam-card-footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:12px; margin-top:auto; }
 .exam-card-status { flex:0 0 100%; min-width:0; font-size:13px; line-height:1.5; color:var(--phu); }
 .exam-card-footer>.nut { min-height:44px; white-space:normal; text-align:center; }
-.exam-transition { position:fixed; inset:0; z-index:10000; display:grid; place-content:center; justify-items:center; gap:28px; background:var(--mat); opacity:1; transition:opacity 250ms ease; }
-.exam-transition p { margin:0; font-size:14px; color:var(--phu); letter-spacing:.04em; }
-.exam-transition-orbit { width:72px; height:72px; border:1px solid var(--brand-border); border-radius:50%; position:relative; animation:exam-orbit 2.2s ease-in-out both; }
-.exam-transition-orbit::before { content:''; position:absolute; inset:16px; border-radius:50%; background:var(--brand-primary); box-shadow:0 0 0 8px var(--brand-soft); }
-.exam-transition-orbit::after { content:''; position:absolute; width:8px; height:8px; top:-4px; left:calc(50% - 4px); border-radius:50%; background:var(--brand-primary); }
+.exam-transition { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; overflow:hidden; isolation:isolate; background:var(--mat); opacity:1; transition:opacity 500ms ease; }
+.exam-transition-center { z-index:1; display:grid; justify-items:center; gap:20px; transition:transform 500ms ease,opacity 500ms ease; }
+.exam-transition-logo { display:block; object-fit:contain; border-radius:12px; }
+.exam-transition p { margin:0; font-size:13px; color:var(--phu); letter-spacing:.04em; }
+.exam-transition-light { position:absolute; width:min(100vmax,1100px); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle,rgba(255,244,186,.85) 0%,rgba(255,220,90,.32) 25%,rgba(255,225,120,.12) 48%,transparent 70%); animation:exam-light-bloom 2s cubic-bezier(.22,1,.36,1) both; }
+.exam-transition.is-leaving .exam-transition-light { animation:exam-light-retract 500ms ease-in both; }
+.exam-transition.is-leaving .exam-transition-center { transform:scale(.96); opacity:0; }
 .exam-transition.is-ready p { animation:exam-ready 400ms ease both; }
 .exam-transition.is-leaving { opacity:0; }
-@keyframes exam-orbit { from { transform:rotate(-120deg) scale(.8); opacity:0; } 30% { opacity:1; } to { transform:rotate(240deg) scale(1); opacity:1; } }
+@keyframes exam-light-bloom { 0% { transform:scale(.12); opacity:0; } 55% { transform:scale(1); opacity:1; } 100% { transform:scale(.85); opacity:.8; } }
+@keyframes exam-light-retract { from { transform:scale(.85); opacity:.8; } to { transform:scale(.08); opacity:0; } }
 @keyframes exam-ready { from { transform:translateY(6px); opacity:0; } to { transform:translateY(0); opacity:1; } }
 .exam-card-footer>.nut .ui-icon { flex-shrink:0; width:18px; height:18px; }
 .exam-card-status strong { color:var(--chu); font-weight:600; }.exam-latest-result { font-weight:600; }.exam-latest-result.failed { color:#c83b3b; }.exam-latest-result.passed { color:#218a58; }
