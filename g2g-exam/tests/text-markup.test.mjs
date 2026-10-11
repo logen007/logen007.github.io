@@ -32,6 +32,7 @@ assert.equal(initialRenders,0);
 startupGate.finish();backgroundRender();
 assert.equal(initialRenders,1);
 import {readFileSync} from 'node:fs';
+assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.exam-reading-split \.to-thi > \.cau-thi:not\(\.is-example\) \{ padding-block:12px; \}/);
 const tooltipSource=readFileSync(new URL('../src/ui/button-tooltips.js',import.meta.url),'utf8');
 assert.match(tooltipSource,/tip.textContent=label/);
 assert.match(tooltipSource,/setAttribute\('role','tooltip'\)/);
