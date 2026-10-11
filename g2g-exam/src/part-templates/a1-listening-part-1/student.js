@@ -1,3 +1,4 @@
+import {textHtml} from '../../ui/format.js';
 import {templateRequest} from '../shared/api.js';
 import {getA1ListeningPart1Spec,audioPolicyFromSpec} from './spec.js';
 
@@ -24,7 +25,7 @@ export async function mountStudentRuntime({state:initialState=null,examRoot:init
   const sectionSession=attempt.audioSessions?.[section.id];
   const started=sectionSession?.startedAt;
   const instruction=section.instruction||'';
-  intro.innerHTML=`<h3>Beispiel</h3><div>${esc(instruction)}</div><div style="margin-top:12px"><button class="nut chinh tpl-start-listen" ${started?'disabled':''}>${started?'Audio abgespielt':'Audio starten'}</button><div class="qg-listen-status">${started?'Das Audio wurde bereits gestartet und kann nicht erneut abgespielt werden.':`Nach dem Start läuft das Audio ohne Unterbrechung. Jeder Abschnitt wird ${policy.segmentRepeat}-mal abgespielt.`}</div></div>`;
+  intro.innerHTML=`<h3>Beispiel</h3><div>${textHtml(instruction)}</div><div style="margin-top:12px"><button class="nut chinh tpl-start-listen" ${started?'disabled':''}>${started?'Audio abgespielt':'Audio starten'}</button><div class="qg-listen-status">${started?'Das Audio wurde bereits gestartet und kann nicht erneut abgespielt werden.':`Nach dem Start läuft das Audio ohne Unterbrechung. Jeder Abschnitt wird ${policy.segmentRepeat}-mal abgespielt.`}</div></div>`;
   firstNode.insertAdjacentElement('beforebegin',intro);
   const audioElements=[];
   for(const question of partQuestions){
@@ -33,7 +34,7 @@ export async function mountStudentRuntime({state:initialState=null,examRoot:init
     const select=node.querySelector('.answer-one');
     if(select&&Array.isArray(question.choices)&&question.choices.some(choice=>typeof choice==='object')){
       const list=document.createElement('div');list.className='qg-choice-list';
-      question.choices.slice(0,3).forEach((choice,index)=>{const label=document.createElement('label');label.className='qg-answer';const image=choiceImage(choice);label.innerHTML=`<div><input type="radio" name="tpl-${esc(question.id)}" value="${index}" ${String(attempt.answers?.[question.id])===String(index)?'checked':''}><b>${String.fromCharCode(65+index)}.</b> ${esc(choiceText(choice))}</div>${image?`<img src="${esc(image)}" alt="Antwort ${String.fromCharCode(65+index)}">`:''}`;label.querySelector('input').onchange=async()=>{await templateRequest('/actions/saveAnswers',{method:'POST',body:{attemptId:attempt.id,answers:{[question.id]:index}}});const save=document.getElementById('saveState');if(save)save.textContent='Gespeichert';};list.appendChild(label);});
+      question.choices.slice(0,3).forEach((choice,index)=>{const label=document.createElement('label');label.className='qg-answer';const image=choiceImage(choice);label.innerHTML=`<div><input type="radio" name="tpl-${esc(question.id)}" value="${index}" ${String(attempt.answers?.[question.id])===String(index)?'checked':''}><b>${String.fromCharCode(65+index)}.</b> ${textHtml(choiceText(choice))}</div>${image?`<img src="${esc(image)}" alt="Antwort ${String.fromCharCode(65+index)}">`:''}`;label.querySelector('input').onchange=async()=>{await templateRequest('/actions/saveAnswers',{method:'POST',body:{attemptId:attempt.id,answers:{[question.id]:index}}});const save=document.getElementById('saveState');if(save)save.textContent='Gespeichert';};list.appendChild(label);});
       select.replaceWith(list);
     }
   }

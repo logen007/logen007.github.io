@@ -1,4 +1,4 @@
-import {esc} from './format.js';
+import {textHtml,esc} from './format.js';
 import {iconHtml} from './icons.js';
 import {WRITING_FORM_TYPES,isScoredWritingField,writingFormScore,writingOptions,writingPointLayout,normalizeWritingRows} from '../domain/writing-form.js';
 
@@ -45,7 +45,7 @@ export function writingSubmission(q,answer={}){
   return `<dl>${(q.rubric||[]).flatMap((row,index)=>{
     if(!isScoredWritingField(row)||Number(row.maxScore)<=0)return [];
     const expected=['choice','truefalse'].includes(row.type)?writingOptions(row)[row.correctIndex]||'':String(row.answers||'').split('|').map(item=>item.trim()).filter(Boolean).join(' · ');
-    return [`<dt><strong>${esc(row.label||'Ô điền')} · ${Number(row.maxScore)||0} điểm</strong></dt><dd>${esc(answer?.[index]||'(Chưa trả lời)')}${expected?`<br><small>Tham khảo: ${esc(expected)}</small>`:''}</dd>`];
+    return [`<dt><strong>${esc(row.label||'Ô điền')} · ${Number(row.maxScore)||0} điểm</strong></dt><dd>${textHtml(answer?.[index]||'(Chưa trả lời)')}${expected?`<br><small>Tham khảo: ${textHtml(expected)}</small>`:''}</dd>`];
   }).join('')}</dl>`;
 }
 
@@ -61,15 +61,15 @@ export function writingFormDisplay(q,answer={}, {readOnly=false}={}){
     const val=prefilled?preset:answer?.[index]??'',locked=readOnly||prefilled;
     const hook=`class="${locked?'':'answer-form-field'}${prefilled?' form-prefilled':''}" data-q="${esc(q.id)}" data-field-index="${index}" aria-label="${esc(row.label||labels[type])}" ${locked?'disabled':''}`;
     let html;
-    if(type==='heading')html=`<h3>${esc(row.value??row.answers??'')}</h3>`;
-    else if(type==='note')html=`<p>${esc(row.value??row.answers??'')}</p>`;
+    if(type==='heading')html=`<h3>${textHtml(row.value??row.answers??'')}</h3>`;
+    else if(type==='note')html=`<p>${textHtml(row.value??row.answers??'')}</p>`;
     else if(type==='image')html=row.imageUrl?`<img src="${esc(row.imageUrl)}" alt="${esc(row.label||'Abbildung im Formular')}">`:'';
-    else if(type==='static'||type==='signature')html=`<span class="form-given ${type==='signature'?'form-signature':''}">${esc(row.value??row.answers??'')}</span>`;
+    else if(type==='static'||type==='signature')html=`<span class="form-given ${type==='signature'?'form-signature':''}">${textHtml(row.value??row.answers??'')}</span>`;
     else if(type==='choice'||type==='truefalse')html=`<div class="form-options">${writingOptions(row).filter(option=>String(option).trim()).map(option=>`<label><input ${hook} type="radio" name="writing-${esc(q.id)}-${index}" value="${esc(option)}" ${val===option?'checked':''}><span>${esc(option)}</span></label>`).join('')}</div>`;
     else html=`<input ${hook} type="text" value="${esc(val)}" autocomplete="off">`;
     const full=['heading','note','image'].includes(type),last=groups.at(-1),cell=`<div class="form-cell">${html}</div>`;
     if(!full&&row.label&&last&&!last.full&&last.label===row.label){last.cells.push(cell);if(marker)last.markers.push(marker);}
     else groups.push({full,type,label:row.label||'',cells:[cell],markers:marker?[marker]:[]});
   }
-  return `<div class="writing-paper" style="--paper-rotate:${paperAngle(q.id)}deg" aria-label="Formular">${groups.map(group=>`<div class="form-line ${group.full?'form-line--full':''} form-line--${esc(group.type)}">${group.full?'':`<span class="form-label">${esc(group.label)}</span>`}<div class="form-answer-line"><div class="form-cells">${group.cells.join('')}</div>${group.full?'':`<div class="form-point-column">${group.markers.map(marker=>`<span class="form-point">${marker}</span>`).join('')}</div>`}</div></div>`).join('')}</div>`;
+  return `<div class="writing-paper" style="--paper-rotate:${paperAngle(q.id)}deg" aria-label="Formular">${groups.map(group=>`<div class="form-line ${group.full?'form-line--full':''} form-line--${esc(group.type)}">${group.full?'':`<span class="form-label">${textHtml(group.label)}</span>`}<div class="form-answer-line"><div class="form-cells">${group.cells.join('')}</div>${group.full?'':`<div class="form-point-column">${group.markers.map(marker=>`<span class="form-point">${marker}</span>`).join('')}</div>`}</div></div>`).join('')}</div>`;
 }

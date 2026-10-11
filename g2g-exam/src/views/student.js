@@ -8,7 +8,7 @@ import {
   ATTEMPT_STATUS,byId,getPublishedExams,getStudentResults,getLatestPublishedAttempt,
   getBestPublishedAttempt,summarizeExam
 } from '../core.js';
-import {esc,fmtDate,statusClass,statusText,countWords} from '../ui/format.js';
+import {textHtml,esc,fmtDate,statusClass,statusText,countWords} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
 import {writingPointLayout,isScoredWritingField,isRequiredWritingField} from '../domain/writing-form.js';
 import {writingFormDisplay} from '../ui/writing-form.js';
@@ -41,7 +41,7 @@ export function studentExamCardHtml(ex,attempts,data){
   const provider=String(ex.provider||'').trim();
   const latestResult=latest?.result||'Chưa đạt';
   const latestLine=latest?`Lần thi gần nhất <strong>${esc(latest.totalScore??'—')}</strong> điểm - <span class="exam-latest-result ${resultClass(latestResult)}">${esc(latestResult)}</span>`:'Chưa từng thi';
-  return `<article class="the the-de"><span class="nhan">${esc(provider?`${provider.charAt(0).toUpperCase()}${provider.slice(1).toLowerCase()} ${ex.level}`:ex.level)}</span>${published.length?'':'<span class="the-de-new">Mới</span>'}<h3>${esc(ex.title)}</h3><div class="meta">${sum.sections} phần · ${ex.questionCount??sum.questions} câu · ${mins} phút</div><div class="day"></div><div class="chan"><span>${latestLine}</span></div><div class="hanh-dong">${ex.hidden?`<button class="nut chinh" data-action="enter-code" data-exam="${esc(ex.id)}" ${ex.hasActiveCodes&&!ex.allCodesUsed?'':'disabled'}>${ex.allCodesUsed?'Đã sử dụng lượt thi':ex.hasActiveCodes?'Nhập mã':'Không có mã thi'}</button>`:`<button class="nut chinh" data-action="start" data-exam="${ex.id}">Bắt đầu thi</button>`}</div></article>`;
+  return `<article class="the the-de"><span class="nhan">${esc(provider?`${provider.charAt(0).toUpperCase()}${provider.slice(1).toLowerCase()} ${ex.level}`:ex.level)}</span>${published.length?'':'<span class="the-de-new">Mới</span>'}<h3>${textHtml(ex.title)}</h3><div class="meta">${sum.sections} phần · ${ex.questionCount??sum.questions} câu · ${mins} phút</div><div class="day"></div><div class="chan"><span>${latestLine}</span></div><div class="hanh-dong">${ex.hidden?`<button class="nut chinh" data-action="enter-code" data-exam="${esc(ex.id)}" ${ex.hasActiveCodes&&!ex.allCodesUsed?'':'disabled'}>${ex.allCodesUsed?'Đã sử dụng lượt thi':ex.hasActiveCodes?'Nhập mã':'Không có mã thi'}</button>`:`<button class="nut chinh" data-action="start" data-exam="${ex.id}">Bắt đầu thi</button>`}</div></article>`;
 }
 
 export {studentResultsHtml} from './student-results.js';
@@ -57,9 +57,9 @@ export function studentAttemptDetailHtml({review}){
     const given=['single','truefalse','cloze'].includes(q.type)?option(q,q.answer):text(q.answer);
     const expected=score&&q.correct!=null?option(q,q.correct):null;
     const verdict=expected!=null&&q.answer!=null?(String(q.answer)===String(q.correct)?'Đúng':'Sai'):null;
-    return `<span>Bạn trả lời: ${esc(given)} ${verdict?`· ${verdict}`:''}</span>${expected!=null?`<span>Đáp án đúng: ${esc(expected)}</span>`:''}`;
+    return `<span>Bạn trả lời: ${textHtml(given)} ${verdict?`· ${verdict}`:''}</span>${expected!=null?`<span>Đáp án đúng: ${esc(expected)}</span>`:''}`;
   };
-  return `<main class="khung grading-detail"><div class="tieu-de-trang"><div><h1>${esc(attempt.examTitle||'Bài làm')}</h1><p>Lần #${attempt.attemptNo} · ${fmtDate(attempt.submittedAt||attempt.startedAt)}</p></div><button class="nut" data-action="student-results">Quay lại</button></div>${resultSummaryHtml(score?.summary)}${score?.promotion?`<section class="the"><h2>Chúc mừng bạn đã đạt trình độ ${esc(normalizeStudentLevel(score.promotion.toLevel))}!</h2><p>${esc(normalizeStudentLevel(score.promotion.fromLevel))} → ${esc(normalizeStudentLevel(score.promotion.toLevel))}</p></section>`:''}${score?`<section class="the review-summary"><b>Điểm: ${esc(score.total??'—')}</b><span>${esc(score.result==='Chưa đạt'?'Trượt':score.result||'—')}</span><span>Người chấm: ${esc(score.reviewerName||'—')}</span>${score.feedback?`<p>Nhận xét: ${esc(score.feedback)}</p>`:''}</section>`:'<div class="the">Bài đã lưu. Điểm và nhận xét sẽ hiển thị sau khi giáo viên chấm xong.</div>'}${(review.sections||[]).map(section=>`<section class="the review-section"><h2>${esc(section.name)}</h2>${score&&score.sections?.[section.name]!=null?`<p>${esc(score.sections[section.name])} điểm</p>`:''}${section.questions.map(q=>`<div class="grading-answer"><b>${esc(q.title)}</b>${answer(q)}</div>`).join('')}</section>`).join('')}</main>`;
+  return `<main class="khung grading-detail"><div class="tieu-de-trang"><div><h1>${textHtml(attempt.examTitle||'Bài làm')}</h1><p>Lần #${attempt.attemptNo} · ${fmtDate(attempt.submittedAt||attempt.startedAt)}</p></div><button class="nut" data-action="student-results">Quay lại</button></div>${resultSummaryHtml(score?.summary)}${score?.promotion?`<section class="the"><h2>Chúc mừng bạn đã đạt trình độ ${esc(normalizeStudentLevel(score.promotion.toLevel))}!</h2><p>${esc(normalizeStudentLevel(score.promotion.fromLevel))} → ${esc(normalizeStudentLevel(score.promotion.toLevel))}</p></section>`:''}${score?`<section class="the review-summary"><b>Điểm: ${esc(score.total??'—')}</b><span>${esc(score.result==='Chưa đạt'?'Trượt':score.result||'—')}</span><span>Người chấm: ${esc(score.reviewerName||'—')}</span>${score.feedback?`<p>Nhận xét: ${textHtml(score.feedback)}</p>`:''}</section>`:'<div class="the">Bài đã lưu. Điểm và nhận xét sẽ hiển thị sau khi giáo viên chấm xong.</div>'}${(review.sections||[]).map(section=>`<section class="the review-section"><h2>${esc(section.name)}</h2>${score&&score.sections?.[section.name]!=null?`<p>${esc(score.sections[section.name])} điểm</p>`:''}${section.questions.map(q=>`<div class="grading-answer"><b>${textHtml(q.title)}</b>${answer(q)}</div>`).join('')}</section>`).join('')}</main>`;
 }
 
 export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],online,preview=false,previewSummary=null}){
@@ -70,7 +70,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const previousAction=preview?'preview-prev-section':'prev-section';
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Zur Bearbeitung':'Abgeben'):'Weiter';
-const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBlocks?.length?`<section class="exam-instruction">${sec.instruction?`<div><p>${esc(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl&&sec.questionProfile?.layout!=='inline-gaps'?`<img ${imageMaxWidth(sec.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(sec.instructionImageMaxWidth)}px"`:''} src="${esc(sec.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}${readingBlocksHtml(sec)}</section>`:'';
+const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBlocks?.length?`<section class="exam-instruction">${sec.instruction?`<div><p>${textHtml(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl&&sec.questionProfile?.layout!=='inline-gaps'?`<img ${imageMaxWidth(sec.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(sec.instructionImageMaxWidth)}px"`:''} src="${esc(sec.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}${readingBlocksHtml(sec)}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
   const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
@@ -86,10 +86,10 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBl
   }).join('')||'<div class="rong">Dieser Teil enthält noch keine Aufgaben.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sec.name))}</h1></div></div>`
-    :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${esc(exam.title)}</div><h1>${esc(germanSectionName(sec.name))}</h1></div></div>`;
+    :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${textHtml(exam.title)}</div><h1>${esc(germanSectionName(sec.name))}</h1></div></div>`;
   const body=`<main class="noi-dung-thi">${context}${preview?'':`<div class="exam-free-navigation"><span>Prüfungszeit: <strong id="examMainTime">--:--</strong></span><button class="nut" data-action="submit-exam">Prüfung abgeben</button></div>`}<div class="exam-paper">${sec.questionProfile?.splitLayout?`<div class="exam-reading-split">${sectionInstruction}<div>${sectionAudio}${questionList}</div></div>`:sectionInstruction+sectionAudio+questionList}</div><nav class="dieu-huong-thi" aria-label="Prüfungsnavigation"><button class="nut" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${preview?'Vorheriger Teil':'Zurück'}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh" data-action="${nextAction}">${nextLabel}</button></nav></main>`;
   const header=preview
-    ?`<header class="thanh-thi thanh-thi--preview"><strong>${esc(exam.title)}</strong><div class="preview-header-row"><button class="text-link" data-action="close-preview"><span aria-hidden="true">←</span> Zurück</button>${previewOutlineHtml(previewSummary,sectionIndex)}</div></header>`
+    ?`<header class="thanh-thi thanh-thi--preview"><strong>${textHtml(exam.title)}</strong><div class="preview-header-row"><button class="text-link" data-action="close-preview"><span aria-hidden="true">←</span> Zurück</button>${previewOutlineHtml(previewSummary,sectionIndex)}</div></header>`
     :`<header class="thanh-thi"><span class="exam-mobile-brand"><img src="/brand/favicon" alt=""><strong>Deutschprüfung</strong></span><div class="thong-tin-thi"><span>Teil ${sectionIndex+1}/${exam.sections.length}</span></div></header>`;
   const offline=!online?`<div class="offline" role="status">${preview?'Sie sind offline. Vorschauantworten werden nur in dieser Sitzung gespeichert; Audio und Bilder sind möglicherweise nicht verfügbar.':'Sie sind offline. Lassen Sie diese Seite geöffnet; Ihre Antworten werden weiterhin auf diesem Gerät gespeichert.'}</div>`:'';
   return `<div class="thi ${preview?'thi--preview':''}">${header}${offline}${preview?`<div class="preview-shell">${body}</div>`:body}</div>`;
@@ -141,14 +141,14 @@ const questionImageUrl=q=>String((Array.isArray(q.instructionBlocks)?q.instructi
 
 function questionStimulusHtml(q,{hideImage=false}={}){
   const blocks=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length?q.instructionBlocks:[{text:q.prompt||'',imageUrl:q.instructionImageUrl||''}];
-  return blocks.map(block=>{const text=block?.text||'',imageUrl=hideImage?'':String(block?.imageUrl||'').trim();return text||imageUrl?`<section class="question-stimulus">${text?`<div><p>${esc(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';}).join('');
+  return blocks.map(block=>{const text=block?.text||'',imageUrl=hideImage?'':String(block?.imageUrl||'').trim();return text||imageUrl?`<section class="question-stimulus">${text?`<div><p>${textHtml(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';}).join('');
 }
 
 function questionPromptHtml(text,q){
   const imageUrl=questionImageUrl(q);
   return String(text||'').split(/(\[img\])/gi).map(part=>/^\[img\]$/i.test(part)
     ?(imageUrl?`<span class="question-inline-image"><img src="${esc(imageUrl)}" alt="Abbildung zur Aufgabe"></span>`:'')
-    :esc(part)).join('');
+    :textHtml(part)).join('');
 }
 
 function exampleAnswer(q){
@@ -173,13 +173,13 @@ export function renderQuestionHtml(q,answer,attempt,{linedPaper=false,wordRange=
   const isSharedInstruction=normalizedPrompt.length>12&&normalizedSection.includes(normalizedPrompt);
   const questionText=rawPrompt==='Nháp'||isSharedInstruction?'':rawPrompt;
   const questionAriaText=questionText.replace(/\[img\]/gi,' ').replace(/\s+/g,' ').trim();
-  const prompt=`${q.instruction?`<div class="question-instruction">${esc(q.instruction)}</div>`:''}${questionText||questionNumber?`<div class="noi">${questionNumber?`<strong class="question-number">${questionNumber}${questionNumber==='_'?'':'.'}</strong> `:''}${questionPromptHtml(questionText,q)}</div>`:''}`;
+  const prompt=`${q.instruction?`<div class="question-instruction">${textHtml(q.instruction)}</div>`:''}${questionText||questionNumber?`<div class="noi">${questionNumber?`<strong class="question-number">${questionNumber}${questionNumber==='_'?'':'.'}</strong> `:''}${questionPromptHtml(questionText,q)}</div>`:''}`;
   const stimulus=hasStimulus?questionStimulusHtml(q,{hideImage:/\[img\]/i.test(questionText)}):'';
   const head=exampleTitle+stimulus+(prompt||audio?`<div class="preview-question-heading">${prompt?`<div class="preview-question-prompt">${prompt}</div>`:''}${audio}</div>`:'');
   const root=`cau-thi ${isExample?'is-example ':''}${answerPresent(answer,q)?'is-answered':''}`;
   if(['single','cloze','truefalse'].includes(q.type)){
     const choices=(q.choices||[]).map((choice,index)=>({choice,index})).filter(({choice})=>{const text=String(typeof choice==='object'?choice?.text||'':choice||'').trim();return Boolean((text&&text!=='Nháp')||String(typeof choice==='object'?choice?.imageUrl||'':'').trim());});
-    return `<div class="${root}" data-q="${q.id}">${head}<div class="answer-options ${choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}${mobileThreeChoices?' answer-options--mobile-three':''}" role="radiogroup" aria-label="${esc(questionAriaText||'Antwort auswählen')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="${isExample?'':'answer-one'}" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(`${letter}. ${text||''}`)}" value="${index}" ${String(answer)===String(index)?'checked':''} ${isExample?'disabled':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span><strong class="answer-letter">${letter}.</strong> ${esc(text)}</span></span></label>`;}).join('')}</div></div>`;
+    return `<div class="${root}" data-q="${q.id}">${head}<div class="answer-options ${choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}${mobileThreeChoices?' answer-options--mobile-three':''}" role="radiogroup" aria-label="${esc(questionAriaText||'Antwort auswählen')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="${isExample?'':'answer-one'}" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(`${letter}. ${text||''}`)}" value="${index}" ${String(answer)===String(index)?'checked':''} ${isExample?'disabled':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span><strong class="answer-letter">${letter}.</strong> ${textHtml(text)}</span></span></label>`;}).join('')}</div></div>`;
   }
   if(q.type==='matching')return `<div class="${root}" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div class="matching-row"><b>${esc(p[0])}</b><select class="dap-an ${isExample?'':'answer-match'}" data-q="${q.id}" data-i="${i}" ${isExample?'disabled':''}><option value="">Antwort auswählen</option>${[...new Set((q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;
   if(q.type==='writing')return `<div class="${root}" data-q="${q.id}">${head}${wordRange?`<p class="phu-de">Schreiben Sie ${wordRange[0]}–${wordRange[1]} Wörter.</p>`:''}${Array.isArray(q.rubric)&&q.rubric.length?writingFieldsHtml(q,answer,{framed:formFrame}):`<textarea class="viet ${linedPaper?'lined-writing-paper ':''}${isExample?'':'answer-text'}" data-q="${q.id}" placeholder="Schreiben Sie hier..." ${isExample?'disabled':''}>${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> Wörter</div>`}</div>`;
@@ -195,8 +195,8 @@ function writingFieldsHtml(q,answer,{framed=false}={}){
     const marker=markers[row.index];
     const type=row.type||'text',value=values[row.index]??'',options=String(row.answers||'').split('|').map(item=>item.trim()).filter(Boolean);
     let control='';
-    if(type==='heading')control=`<strong class="writing-form-heading">${esc(row.answers||row.label||'')}</strong>`;
-    else if(type==='static')control=`<span class="writing-static-value">${esc(row.answers||'')}</span>`;
+    if(type==='heading')control=`<strong class="writing-form-heading">${textHtml(row.answers||row.label||'')}</strong>`;
+    else if(type==='static')control=`<span class="writing-static-value">${textHtml(row.answers||'')}</span>`;
     else if(type==='image')control=row.imageUrl?`<img class="writing-form-image" src="${esc(row.imageUrl)}" alt="${esc(row.label||'Abbildung')}">`:'';
     else if(type==='truefalse')control=`<div class="writing-binary"><label><input class="${readOnly?'':'answer-form-field'}" type="radio" name="writing-${q.id}-${row.index}" data-q="${q.id}" data-field-index="${row.index}" value="Richtig" ${value==='Richtig'?'checked':''} ${readOnly?'disabled':''}>Richtig</label><label><input class="${readOnly?'':'answer-form-field'}" type="radio" name="writing-${q.id}-${row.index}" data-q="${q.id}" data-field-index="${row.index}" value="Falsch" ${value==='Falsch'?'checked':''} ${readOnly?'disabled':''}>Falsch</label></div>`;
     else if(type==='choice')control=`<select class="${readOnly?'':'answer-form-field '}truong" data-q="${q.id}" data-field-index="${row.index}" ${readOnly?'disabled':''}><option value="">Antwort auswählen</option>${options.map(option=>`<option value="${esc(option)}" ${String(value)===option?'selected':''}>${esc(option)}</option>`).join('')}</select>`;
@@ -206,7 +206,7 @@ function writingFieldsHtml(q,answer,{framed=false}={}){
     if(groups.length&&lastLabel===String(row.label||''))groups[groups.length-1].fields.push(field);
     else{groups.push({label:String(row.label||''),fields:[field]});lastLabel=String(row.label||'');}
   }
-  return `<div class="writing-response-form${framed?' writing-response-form--framed':''}">${groups.map(group=>`<div class="writing-display-group${group.full?' is-full':''}">${group.label?`<span class="writing-display-label">${esc(group.label)}</span>`:''}<div>${group.fields.join('')}</div></div>`).join('')}</div>`;
+  return `<div class="writing-response-form${framed?' writing-response-form--framed':''}">${groups.map(group=>`<div class="writing-display-group${group.full?' is-full':''}">${group.label?`<span class="writing-display-label">${textHtml(group.label)}</span>`:''}<div>${group.fields.join('')}</div></div>`).join('')}</div>`;
 }
 
 export function submittedHtml(attempt={}){

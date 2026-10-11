@@ -1,7 +1,14 @@
+import {boldPattern} from '../domain/text-markup.js';
+
 export function esc(v=''){
   return String(v??'').replace(/[&<>'"]/g,c=>({
     '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'
   }[c]));
+}
+
+// Only our marker becomes HTML. User-supplied HTML is always escaped first.
+export function textHtml(value=''){
+  return esc(value).replace(boldPattern(),'<strong class="text-bold">$1</strong>');
 }
 
 export function fmtDate(v){

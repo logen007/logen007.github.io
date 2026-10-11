@@ -566,9 +566,11 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 .reading-block-heading input { min-width:0; flex:1; }
 .reading-block-heading .icon-btn { flex-shrink:0; }
 .reading-block-fields textarea { height:auto; min-height:120px; min-width:0; width:100%; resize:vertical; }
-.reading-block { display:flex; align-items:flex-start; gap:16px; margin-top:24px; }
-.exam-paper .exam-instruction .reading-block > img { width:88px; height:auto; flex-shrink:0; border-radius:0; }
+.reading-block { display:flow-root; margin-top:24px; }
+.exam-paper .exam-instruction .reading-block > img { float:left; width:88px; height:auto; margin:0 16px 8px 0; border-radius:0; }
 .reading-block > div { min-width:0; }
 .reading-block h3 { margin:0 0 4px; font-size:inherit; font-weight:600; }
+.reading-block h3 > b { display:inline-grid; place-items:center; width:24px; height:24px; margin-right:6px; border:1px solid var(--vien); border-radius:50%; background:var(--surface-muted); font-size:14px; vertical-align:middle; }
+.letter-answers [data-letter-answer], .text-bold { font-weight:600; }
 .reading-block p { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; }
 @media(max-width:600px) { .reading-block-editor { grid-template-columns:64px minmax(0,1fr); gap:8px; } .exam-paper .exam-instruction .reading-block > img { width:64px; } }

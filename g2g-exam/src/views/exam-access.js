@@ -1,6 +1,6 @@
 import {mountDialog} from './classes.js';
 import {examLearningLevel,normalizeStudentLevel} from '../domain/student-profile.js';
-import {esc} from '../ui/format.js';
+import {textHtml,esc} from '../ui/format.js';
 
 export const parseICTDateTime=value=>new Date(value+'+07:00');
 export const formatICTDateTime=value=>new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short',hour12:false}).format(new Date(value));
@@ -18,7 +18,7 @@ export function openCodeEntry({repo,examId,onStarted}){
 }
 
 export function examAccessFormHtml(exam){
-  return `<p class="access-exam-title">${esc(exam.title)}</p>
+  return `<p class="access-exam-title">${textHtml(exam.title)}</p>
     <form class="profile-form access-settings-form">
       <section class="access-section"><h3>Quyền truy cập</h3><label class="access-toggle"><span><strong>Ẩn đề</strong><small>Học viên cần nhập mã để bắt đầu thi.</small></span><input name="hidden" type="checkbox" ${exam.hidden?'checked':''}></label></section>
       <div class="access-save"><span data-settings-status role="status"></span><button class="nut chinh" type="submit">Lưu thay đổi</button></div>

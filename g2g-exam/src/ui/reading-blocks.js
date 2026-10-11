@@ -1,4 +1,4 @@
-import {esc} from './format.js';
+import {textHtml,esc} from './format.js';
 import {iconHtml} from './icons.js';
 import {uploadQuestionImage} from '../media.js';
 
@@ -15,7 +15,7 @@ export function readingBlocksEditor(section,readOnly=false){
 }
 
 export function readingBlocksHtml(section){
-  return (section.readingBlocks||[]).map((block,index)=>`<article class="reading-block">${block.imageUrl?`<img src="${esc(block.imageUrl)}" alt="">`:''}<div><h3><b>${letter(index)}</b> ${esc(block.title)}</h3><p>${esc(block.text)}</p></div></article>`).join('');
+  return (section.readingBlocks||[]).map((block,index)=>`<article class="reading-block">${block.imageUrl?`<img src="${esc(block.imageUrl)}" alt="">`:''}<div><h3><b>${letter(index)}</b> ${textHtml(block.title)}</h3><p>${textHtml(block.text)}</p></div></article>`).join('');
 }
 
 export async function collectReadingBlocks(root){
