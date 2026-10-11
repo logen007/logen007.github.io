@@ -1,0 +1,21 @@
+{
+  "status": "APPROVED",
+  "key": "reading-5",
+  "name": "Đọc 5",
+  "questionLimit": 4,
+  "template": "GENERIC",
+  "questionProfile": {
+    "type": "single",
+    "layout": "choices",
+    "instructionImage": true,
+    "audio": false,
+    "choiceImages": false,
+    "numberWithinSkill": true,
+    "example": true,
+    "choices": [
+      "A",
+      "B",
+      "C"
+    ]
+  }
+}

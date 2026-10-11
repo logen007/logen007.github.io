@@ -323,4 +323,29 @@ try{
   assert.equal((await query('SELECT status FROM attempts WHERE id=$1',[a2Id])).rows[0].status,'published');
   console.log('A2 SQL: 90-minute deadline, unique letters, reserved example, clearing answers, independent writing grades and oral /25 passed.');
   }
+  {
+    const {createExamDraft}=await import('../src/controllers/exam-factory.js');
+    const {saveAnswers}=await import('../server/src/actions/attempts.js');
+    const {saveManualGrade}=await import('../server/src/actions/grading.js');
+    const state={exams:[],questions:[],attempts:[],auditLogs:[]};
+    const b1=createExamDraft(state,teacher,{provider:'GOETHE',level:'B1',title:'B1 integration'});
+    for(const q of state.questions)await query('INSERT INTO questions(id,owner_id,data) VALUES($1,$2,$3)',[q.id,teacher.id,JSON.stringify(q)]);
+    await query("INSERT INTO exams(id,owner_id,status,data) VALUES($1,$2,'published',$3)",[b1.id,teacher.id,JSON.stringify(b1)]);
+    const started=await startAttempt(student,{examId:b1.id}),id=started.attemptId||started.id;
+    const row=(await query('SELECT public_data FROM attempts WHERE id=$1',[id])).rows[0].public_data;
+    assert.equal(row.examDeadlineMs-Date.parse(row.startedAt),9900000);
+    const section=b1.sections.find(s=>s.questionProfile.uniqueLetters);
+    await query('UPDATE attempts SET public_data=public_data||$2::jsonb WHERE id=$1',[id,JSON.stringify({currentSectionId:section.id,currentQuestionIds:section.questionIds})]);
+    const real=section.questionIds.filter(id=>!state.questions.find(q=>q.id===id).example);
+    await saveAnswers(student,{attemptId:id,answers:{[real[0]]:10}});
+    await assert.rejects(()=>saveAnswers(student,{attemptId:id,answers:{[real[1]]:10}}),/einmal/);
+    await submitAttempt(student,{attemptId:id});
+    await assert.rejects(()=>saveManualGrade(teacher,{attemptId:id,scores:{'Viết 3':21}}),/0–20/);
+    await saveManualGrade(teacher,{attemptId:id,scores:{'Viết 1':30,'Viết 2':30,'Viết 3':15}});
+    await saveOralScore(teacher,{attemptId:id,score:80});
+    const marks=(await query('SELECT private_data FROM attempts WHERE id=$1',[id])).rows[0].private_data;
+    assert.equal(marks.oralMax,100);
+    await publishAttemptResult(teacher,{attemptId:id});
+    console.log('B1 SQL: 165 minutes, unique X, writing 40/40/20, oral /100 and result publication passed.');
+  }
 }finally{hook.deregister();await db.close();delete globalThis.__testDb;}

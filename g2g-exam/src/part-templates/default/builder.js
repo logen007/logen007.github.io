@@ -6,6 +6,7 @@ import {iconHtml} from '../../ui/icons.js';
 import {WRITING_FORM_TYPES,isScoredWritingField,writingFormScore} from '../../domain/writing-form.js';
 import {writingFormEditor} from '../../ui/writing-form.js';
 import {partAudioQuestions} from '../../domain/part-audio.js';
+import {questionProfileAt} from '../../domain/question-profile.js';
 import {letterTableBuilder,bindLetterTableBuilder} from './letter-table-builder.js';
 
 const icons={
@@ -147,6 +148,15 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).sort((a,b)=>Number(Boolean(b.example))-Number(Boolean(a.example)));
   const choiceProfile=profileFor(section);
   const audioIds=new Set(partAudioQuestions(section,questions).map(q=>q.id));
+  if(section.questionProfile?.pairedQuestions){
+    const pairs=[];
+    for(let index=0;index<questions.length;index+=2){
+      const pair=questions.slice(index,index+2),example=pair[0]?.example;
+      const cards=pair.map((q,offset)=>choiceQuestionHtml(q,index+offset,{defaultScore,readOnly,choiceProfile:{...profileFor({questionProfile:questionProfileAt(section,offset)}),showAudio:offset===0}})).join('');
+      pairs.push(`<section class="paired-question-group"><h3>${example?'Beispiel':'Text '+(pairs.length)}</h3>${cards}</section>`);
+    }
+    return `<div class="part-editor paired-part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}<div class="goethe-questions">${pairs.join('')}</div></div>`;
+  }
   if(choiceProfile.letterTable)return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${instructionHtml(section,choiceProfile,readOnly,null)}${letterTableBuilder({questions,section,defaultScore,readOnly,audioHtml,choicesHtml:q=>choicesHtml(q,choiceProfile,readOnly)})}</div>`;
   const renderQuestion=(q,index)=>choiceProfile.formFrame
     ?writingFormEditor(q,{readOnly})

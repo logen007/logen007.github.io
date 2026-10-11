@@ -1,0 +1,27 @@
+{
+  "status": "APPROVED",
+  "key": "writing-3",
+  "name": "Viết 3",
+  "questionLimit": 1,
+  "template": "GENERIC",
+  "questionProfile": {
+    "type": "writing",
+    "layout": "free-response",
+    "instructionImage": false,
+    "audio": false,
+    "choiceImages": false,
+    "numberWithinSkill": true,
+    "example": false,
+    "choices": [
+      "A",
+      "B",
+      "C"
+    ],
+    "manualPerPart": true,
+    "defaultScore": 20,
+    "wordRange": [
+      40,
+      40
+    ]
+  }
+}

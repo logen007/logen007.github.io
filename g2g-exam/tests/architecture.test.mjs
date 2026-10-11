@@ -116,9 +116,10 @@ test('App tạo/migrate đề qua exam factory, không hard-code GOETHE_A1_PARTS
   assert.equal(app.includes('GOETHE_A1_PARTS'),false);
 });
 
-test('A2 đã được duyệt; B1/B2 vẫn scaffold cho đến khi duyệt cấu trúc',()=>{
+test('A2/B1 đã được duyệt; các cấp còn lại vẫn scaffold',()=>{
   assert.equal(getExamSpec('GOETHE','A2').configured,true);
-  for(const [provider,level] of [['GOETHE','B1'],['GOETHE','B2'],['TELC','B1'],['TELC','B2']])assert.equal(getExamSpec(provider,level).configured,false);
+  assert.equal(getExamSpec('GOETHE','B1').configured,true);
+  for(const [provider,level] of [['GOETHE','B2'],['TELC','B1'],['TELC','B2']])assert.equal(getExamSpec(provider,level).configured,false);
 });
 
 test('Part template A1 Nghe 1 đã tách module và bỏ legacy question bank',()=>{

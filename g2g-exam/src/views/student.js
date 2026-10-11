@@ -74,10 +74,11 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
   let questionNumber=exam.sections.slice(0,sectionIndex).filter(item=>!sec.questionProfile?.numberWithinSkill||item.skillKey===sec.skillKey).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!isPrefilledQuestion(knownQuestions.get(id))).length,0);
   let exampleTitleShown=false;
-  const questionList=sec.questionProfile?.uniqueLetters?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex})=>{
+  const questionList=sec.questionProfile?.uniqueLetters?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
     const showExampleTitle=Boolean(isPrefilledQuestion(q)&&!exampleTitleShown);if(showExampleTitle)exampleTitleShown=true;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
-    return renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:isPrefilledQuestion(q)?'_':++questionNumber,showExampleTitle,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
+    const pairHeading=sec.questionProfile?.pairedQuestions&&displayIndex%2===0?`<h3 class="paired-text-heading">${isPrefilledQuestion(q)?'Beispiel':'Text '+(Math.floor(displayIndex/2))}</h3>`:'';
+    return pairHeading+renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:isPrefilledQuestion(q)?'_':++questionNumber,showExampleTitle:showExampleTitle&&!sec.questionProfile?.pairedQuestions,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
   }).join('')||'<div class="rong">Dieser Teil enthält noch keine Aufgaben.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sec.name))}</h1></div></div>`

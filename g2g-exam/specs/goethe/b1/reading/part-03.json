@@ -1,0 +1,30 @@
+{
+  "status": "APPROVED",
+  "key": "reading-3",
+  "name": "Đọc 3",
+  "questionLimit": 7,
+  "template": "GENERIC",
+  "questionProfile": {
+    "type": "single",
+    "layout": "letter-select",
+    "instructionImage": true,
+    "audio": false,
+    "choiceImages": false,
+    "numberWithinSkill": true,
+    "example": true,
+    "choices": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "X"
+    ],
+    "uniqueLetters": true
+  }
+}

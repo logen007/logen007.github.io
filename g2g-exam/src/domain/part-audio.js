@@ -2,6 +2,9 @@ import {isPrefilledQuestion} from './question-display.js';
 // Shared-part audio is stored on the first scored question, after the example.
 export function partAudioQuestions(section,questions){
   const ordered=[...questions].sort((a,b)=>Number(Boolean(isPrefilledQuestion(b)))-Number(Boolean(isPrefilledQuestion(a))));
+  if(section.audioPolicy?.questionsPerSegment===2){
+    return [true,false].flatMap(example=>ordered.filter(q=>isPrefilledQuestion(q)===example).filter((_,index)=>index%2===0));
+  }
   if(!section.audioPolicy?.sharedPart)return ordered;
   return [...ordered.filter(q=>isPrefilledQuestion(q)),...ordered.filter(q=>!isPrefilledQuestion(q)).slice(0,1)];
 }

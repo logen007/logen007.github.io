@@ -440,6 +440,9 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 .tieu-de-trang.exam-list-heading > div:first-child { flex:1 1 auto; min-width:0; }
 .exam-list-heading > .nut { flex:0 0 auto; white-space:nowrap; }
 .instruction-content { display:grid; gap:12px; min-width:0; }
+.paired-question-group { display:grid; gap:20px; margin-block:24px; }
+.paired-question-group > h3 { margin:0; font-size:18px; }
+.paired-part-editor [data-action="add-inline-question"],.paired-part-editor [data-action="remove-inline-question"],.paired-part-editor [data-action="toggle-question-example"] { display:none; }
 .instruction-content > textarea { width:100%; }
 .instruction-audio { display:grid; gap:8px; max-width:420px; }
 .instruction-audio > span { font-size:13px; color:var(--phu); }

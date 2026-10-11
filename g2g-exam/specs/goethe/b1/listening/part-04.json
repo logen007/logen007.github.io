@@ -1,0 +1,30 @@
+{
+  "status": "APPROVED",
+  "key": "listening-4",
+  "name": "Nghe 4",
+  "questionLimit": 8,
+  "template": "GENERIC",
+  "questionProfile": {
+    "type": "single",
+    "layout": "choices",
+    "instructionImage": false,
+    "audio": true,
+    "choiceImages": false,
+    "numberWithinSkill": true,
+    "example": false,
+    "choices": [
+      "A",
+      "B",
+      "C"
+    ]
+  },
+  "audio": {
+    "mode": "per_question_segment",
+    "sharedPart": true,
+    "maxSessions": 1,
+    "segmentRepeat": 2,
+    "controls": false,
+    "pauseAllowed": false,
+    "replayAllowed": false
+  }
+}

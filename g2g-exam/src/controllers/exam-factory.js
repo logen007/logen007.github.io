@@ -3,6 +3,7 @@ import {byId,clone,createExam,createQuestion,updateQuestion,updateExam,addQuesti
 import {getExamSpec,buildSectionsFromSpec,buildSkillSettings} from '../exam-specs/index.js';
 import {writingFormScore} from '../domain/writing-form.js';
 import {choiceLetter} from '../domain/letter-answers.js';
+import {questionProfileAt} from '../domain/question-profile.js';
 
 export function questionDraftChoices(profile={}){
   const configured=Array.isArray(profile.choices)&&profile.choices.length>=2?clone(profile.choices):['Nháp','Nháp','Nháp'];
@@ -13,6 +14,18 @@ function populateConfiguredSections(state,user,exam){
   for(const section of exam.sections||[]){
     const required=Math.max(0,Number(section.questionLimit)||0);
     const profile=section.questionProfile||{};
+    if(profile.pairedQuestions){
+      if(section.questionIds.length)continue;
+      const ids=[];
+      for(const example of [true,false]){
+        for(let index=0;index<(example?2:required);index++){
+          const item=questionProfileAt(section,index);
+          ids.push(createQuestion(state,user,{level:exam.level,skill:section.skill,part:section.name,type:item.type,title:'Nháp',choices:questionDraftChoices(item),correctAnswer:0,example,maxScore:example?0:1}).id);
+        }
+      }
+      addQuestionsToSection(state,user,exam.id,section.id,ids);
+      continue;
+    }
     const choices=questionDraftChoices(profile);
     const hasFormRows=['form-fields','mixed-form'].includes(profile.layout)
     const initialRubric=hasFormRows
@@ -50,7 +63,7 @@ function populateConfiguredSections(state,user,exam){
         rubric:clone(initialRubric),
         writingFormVersion:profile.formFrame===true?1:null,
         instructionBlocks:isStimulusStart?[{text:'',imageUrl:''}]:clone(initialInstructionBlocks),
-        maxScore:hasFormRows&&initialRubric.length?writingFormScore(initialRubric)+(profile.layout==='mixed-form'?Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1):0):Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1),
+        maxScore:hasFormRows&&initialRubric.length?writingFormScore(initialRubric)+(profile.layout==='mixed-form'?Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1):0):Number(profile.defaultScore??exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1),
       }).id);
     }
     if(additions.length)addQuestionsToSection(state,user,exam.id,section.id,additions);

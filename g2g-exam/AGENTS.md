@@ -201,3 +201,12 @@ Thứ tự ưu tiên:
 4. Kiến trúc module hóa.
 5. UI/UX.
 6. Tối ưu thêm.
+
+## 14. Commit và triển khai
+
+Người dùng đã cho phép commit và deploy các thay đổi thuộc yêu cầu của họ
+(xác nhận ngày 2026-10-11). Sau khi kiểm thử đạt, chủ động commit và push lên
+main để triển khai website, không cần hỏi lại cho từng lần.
+Chỉ đưa thay đổi thuộc phạm vi công việc vào commit; không gộp thay đổi không
+liên quan của người dùng. Quyền này không bao gồm xóa dữ liệu, phá hủy lịch sử
+Git hoặc bỏ qua kiểm thử và các yêu cầu an toàn.

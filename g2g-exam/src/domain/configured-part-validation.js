@@ -5,10 +5,17 @@ import {partAudioQuestions} from './part-audio.js';
 export function configuredPartErrors(section,questions){
   const profile=section.questionProfile||{},errors=[];
   // A2 approved profiles explicitly request examples; legacy parts stay unchanged.
-  if(!profile.example&&!profile.manualPerPart)return errors;
+  if(!profile.example&&!profile.manualPerPart&&!section.audioPolicy)return errors;
   const map=questions instanceof Map?questions:new Map(questions.map(q=>[q.id,q]));
   const rows=(section.questionIds||[]).map(id=>map.get(id)).filter(Boolean);
   const scoredCount=rows.filter(q=>!isPrefilledQuestion(q)).length;
+  if(profile.pairedQuestions){
+    for(const example of [true,false]){
+      const group=rows.filter(q=>isPrefilledQuestion(q)===example);
+      if(example&&group.length!==2)errors.push(`${section.name}: cần đúng 2 câu ví dụ trong một cặp.`);
+      if(group.length%2||group.some((q,index)=>q.type!==profile.pairProfiles[index%2].type))errors.push(`${section.name}: mỗi Text cần một cặp Đúng/Sai rồi A/B/C.`);
+    }
+  }
   if(scoredCount!==section.questionLimit)errors.push(`${section.name}: cần đúng ${section.questionLimit} câu tính điểm, hiện có ${scoredCount}. Thêm hoặc bỏ câu tính điểm cho đủ số lượng; câu ví dụ không được tính.`);
   if(profile.example&&rows.filter(q=>isPrefilledQuestion(q)).length<1)errors.push(`${section.name}: cần ít nhất một câu ví dụ. Bật lựa chọn Ví dụ ở câu mẫu.`);
   if(profile.uniqueLetters){
