@@ -1,3 +1,5 @@
+import {currentPublicSettings} from '../settings/theme.js';
+import {pickExamMessages} from './exam-messages.js';
 let busy=false;
 export async function withExamTransition(start){
   if(busy)return;
@@ -10,6 +12,8 @@ export async function withExamTransition(start){
   overlay.innerHTML='<div class="exam-transition-light" aria-hidden="true"></div><div class="exam-transition-center"><img class="exam-transition-logo" alt="G2G Career" width="48" height="48"><p>Hãy sẵn sàng</p></div>';
   const logo=overlay.querySelector('img');
   logo.src=document.querySelector?.('.thuong-hieu .logo img')?.src||'/brand/logo';
+  const messages=pickExamMessages(currentPublicSettings().general?.examMessages);
+  overlay.querySelector('p').textContent=messages[0];
   const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   try{
@@ -19,7 +23,7 @@ export async function withExamTransition(start){
     // Capture rejection now so a fast network error never becomes unhandled.
     const loading=Promise.resolve().then(start).then(()=>({ok:true}),error=>({ok:false,error}));
     await wait(reduced?100:1100);
-    overlay.querySelector('p').textContent='Chúc may mắn';
+    overlay.querySelector('p').textContent=messages[1];
     overlay.classList.add('is-ready');
     const [result]=await Promise.all([loading,wait(reduced?100:900)]);
     if(!result.ok)throw result.error;

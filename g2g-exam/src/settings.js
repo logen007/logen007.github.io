@@ -113,7 +113,7 @@ function enhance(){
 function collectForm(){
   return {
     ...settings,
-    general:{...settings.general,systemName:val('sName'),organizationName:val('sOrg'),supportEmail:val('sSupport'),publicUrl:val('sUrl')},
+    general:{...settings.general,systemName:val('sName'),organizationName:val('sOrg'),supportEmail:val('sSupport'),publicUrl:val('sUrl'),examMessages:val('sExamMessages')},
     theme:{...settings.theme,primaryColor:selectedThemeColor()},
     auth:{...settings.auth,googleLoginEnabled:chk('sGoogle'),allowNewStudents:chk('sSignup'),allowedDomain:val('sDomain').replace(/^@/,'').toLowerCase()},
     exam:{...settings.exam,allowRestart:chk('sRestart')},

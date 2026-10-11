@@ -5,7 +5,7 @@ export function settingsTabsHtml(){
 export function bindSettingsTabs(root,selected='general',onSelect=()=>{}){
   const buttons=[...root.querySelectorAll('[data-settings-tab]')];
   if(!buttons.length)return;
-  const groups={general:['sName','sPrimaryColor'],access:['sGoogle','sRestart'],email:['sSmtp','sEmail'],operations:['sMaintenance']};
+  const groups={general:['sName','sPrimaryColor'],access:['sGoogle','sRestart','sExamMessages'],email:['sSmtp','sEmail'],operations:['sMaintenance']};
   const grid=root.querySelector('.cai-dat-grid');
   const panels={};
   for(const [id,fields] of Object.entries(groups)){

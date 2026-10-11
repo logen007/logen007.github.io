@@ -50,6 +50,11 @@ function cleanSettings(input={}){
   settings.general.organizationName=String(settings.general.organizationName||'').trim().slice(0,100);
   settings.general.supportEmail=String(settings.general.supportEmail||'').trim().slice(0,160);
   settings.general.publicUrl=String(settings.general.publicUrl||'').trim().slice(0,300);
+  const messages=settings.general.examMessages??'';
+  if(typeof messages!=='string'||messages.length>17000)throw appError(400,'Danh sách câu nhắn quá dài.');
+  const messageLines=messages.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+  if(messageLines.length>100||messageLines.some(line=>line.length>160))throw appError(400,'Tối đa 100 câu nhắn, mỗi câu 160 ký tự.');
+  settings.general.examMessages=[...new Set(messageLines)].join('\n');
   for(const key of ['logoUrl','faviconUrl']){
     const url=String(settings.general[key]||'').trim();
     if(url&&!/^\/uploads\/[a-zA-Z0-9._-]+$/.test(url))throw appError(400,'Đường dẫn ảnh thương hiệu không hợp lệ.');

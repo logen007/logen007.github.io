@@ -59,7 +59,7 @@ app.get('/api/public-settings',async()=>{
     pool.query(`SELECT count(*)::int AS count FROM attempts WHERE status IN ('grading','ready','published')`),
   ]);
   const examTypes=[...new Set(exams.rows.map(row=>[row.data.provider,row.data.level].filter(Boolean).join(' ')).filter(Boolean))].sort();
-  return {general:{systemName:s.general.systemName,organizationName:s.general.organizationName,publicUrl:s.general.publicUrl,logoUrl:s.general.logoUrl,faviconUrl:s.general.faviconUrl},theme:s.theme,auth:{googleLoginEnabled:s.auth.googleLoginEnabled,allowNewStudents:s.auth.allowNewStudents},operations:{maintenanceMode:s.operations.maintenanceMode,maintenanceMessage:s.operations.maintenanceMessage},stats:{teachers:teachers.rows[0].count,attempts:attempts.rows[0].count,students:students.rows[0].count,graded:graded.rows[0].count,exams:exams.rowCount,examTypes}};
+  return {general:{examMessages:s.general.examMessages||'',systemName:s.general.systemName,organizationName:s.general.organizationName,publicUrl:s.general.publicUrl,logoUrl:s.general.logoUrl,faviconUrl:s.general.faviconUrl},theme:s.theme,auth:{googleLoginEnabled:s.auth.googleLoginEnabled,allowNewStudents:s.auth.allowNewStudents},operations:{maintenanceMode:s.operations.maintenanceMode,maintenanceMessage:s.operations.maintenanceMessage},stats:{teachers:teachers.rows[0].count,attempts:attempts.rows[0].count,students:students.rows[0].count,graded:graded.rows[0].count,exams:exams.rowCount,examTypes}};
 });
 app.get('/api/settings',async request=>{await requireRole(request,'master');return {settings:await getSettings()};});
 app.get('/api/state',async request=>loadState(await requireUser(request)));

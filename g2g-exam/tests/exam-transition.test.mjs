@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
 import {withExamTransition} from '../src/ui/exam-transition.js';
+import {examMessages,pickExamMessages} from '../src/ui/exam-messages.js';
+assert.equal(examMessages('').length,10);
+assert.deepEqual(examMessages(' One\r\n\nTwo\nOne '),['One','Two']);
+assert.deepEqual(pickExamMessages('One\nTwo',()=>0),['One','Two']);
+assert.deepEqual(pickExamMessages('Only',()=>0),['Only','Only']);
+assert.equal(examMessages('x'.repeat(200))[0].length,160);
 const saved={document:globalThis.document,window:globalThis.window,setTimeout:globalThis.setTimeout};
 const app={inert:false,querySelector:()=>null},delays=[];
 let overlay;

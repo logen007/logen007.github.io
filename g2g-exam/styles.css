@@ -149,7 +149,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .exam-transition { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; overflow:hidden; isolation:isolate; background:var(--mat); opacity:1; transition:opacity 500ms ease; }
 .exam-transition-center { z-index:1; display:grid; justify-items:center; gap:20px; transition:transform 500ms ease,opacity 500ms ease; }
 .exam-transition-logo { display:block; object-fit:contain; border-radius:12px; }
-.exam-transition p { margin:0; font-size:13px; color:var(--phu); letter-spacing:.04em; }
+.exam-transition p { margin:0; padding:0 20px; max-width:360px; text-align:center; overflow-wrap:anywhere; font-size:13px; color:var(--phu); letter-spacing:.04em; }
 .exam-transition-light { position:absolute; width:min(100vmax,1100px); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle,rgba(255,244,186,.85) 0%,rgba(255,220,90,.32) 25%,rgba(255,225,120,.12) 48%,transparent 70%); animation:exam-light-bloom 2s cubic-bezier(.22,1,.36,1) both; }
 .exam-transition.is-leaving .exam-transition-light { animation:exam-light-retract 500ms ease-in both; }
 .exam-transition.is-leaving .exam-transition-center { transform:scale(.96); opacity:0; }
