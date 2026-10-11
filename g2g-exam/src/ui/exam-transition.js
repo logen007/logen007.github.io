@@ -30,8 +30,6 @@ export async function withExamTransition(start,trigger){
     const covered=wait(reduced?0:750);
     const loading=Promise.resolve().then(()=>start(covered)).then(()=>({ok:true}),error=>({ok:false,error}));
     await wait(reduced?100:1100);
-    overlay.querySelector('p').textContent=messages[1];
-    overlay.classList.add('is-ready');
     const [result]=await Promise.all([loading,wait(reduced?100:900)]);
     if(!result.ok)throw result.error;
     overlay.classList.add('is-leaving');

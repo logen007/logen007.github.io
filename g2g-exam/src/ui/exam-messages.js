@@ -16,6 +16,6 @@ export function examMessages(value){
   return [...new Set(lines.length?lines:DEFAULT_EXAM_MESSAGES.split('\n'))].slice(0,100);
 }
 export function pickExamMessages(value,random=Math.random){
-  const lines=examMessages(value),first=lines.splice(Math.floor(random()*lines.length),1)[0];
-  return [first,lines.length?lines[Math.floor(random()*lines.length)]:first];
+  const lines=examMessages(value);
+  return [lines[Math.floor(random()*lines.length)]];
 }
