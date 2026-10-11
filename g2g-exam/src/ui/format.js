@@ -13,7 +13,7 @@ export function textHtml(value=''){
 
 export function instructionTextHtml(value=''){
   return textHtml(value).replace(/\[([^\[\]\r\n]+)\]/g,(marker,text)=>{
-    if(/^(?:[a-z]|\d+|img|\/[biu])$/i.test(text.trim()))return marker;
+    if(/^(?:[i-z]|\d+|img|\/[biu])$/i.test(text.trim()))return marker;
     return '<strong class="instruction-token">'+text+'</strong>';
   });
 }

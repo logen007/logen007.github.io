@@ -64,7 +64,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 - Instruction/prompt text wrapped in square brackets, e.g. [Richtig], renders
   bold inside a thin rectangular inline border. Keep raw text in editors.
-  Reserved gap/image/bold markers retain their existing meaning.
+  Instruction letters [a]–[h] use the same frame. This instruction-only rule
+  does not alter dropdown gap parsing or answer text. Paired formatting and
+  reserved image markers retain their existing meaning.
 
 - Resolve the initial URL before allowing any page render. Repository updates
   and connectivity events during startup must not flash the default dashboard.

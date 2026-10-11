@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import {instructionTextHtml} from '../src/ui/format.js';
 assert.equal(instructionTextHtml('[Richtig] oder [Falsch]'),'<strong class="instruction-token">Richtig</strong> oder <strong class="instruction-token">Falsch</strong>');
-assert.equal(instructionTextHtml('[a] [z] [img] [12]'),'[a] [z] [img] [12]');
+assert.equal(instructionTextHtml('[z] [img] [12]'),'[z] [img] [12]');
+assert.equal(instructionTextHtml('[a], [b] oder [c]'),'<strong class="instruction-token">a</strong>, <strong class="instruction-token">b</strong> oder <strong class="instruction-token">c</strong>');
 assert.equal(instructionTextHtml('[b]bold[/b]'),'<strong class="text-bold">bold</strong>');
 assert.equal(instructionTextHtml('[<img src=x>]'),'<strong class="instruction-token">&lt;img src=x&gt;</strong>');
 import {imageDimensions,imagePositionName,optimizeExamImage} from '../src/ui/image-optimize.js';
@@ -70,6 +71,7 @@ assert.match(cancelExamSource,/repo.transaction\(st=>abandonAttempt\(st,user,att
 assert.match(cancelExamSource,/confirmLabel:'Prüfung abbrechen',cancelLabel:'Weiterarbeiten',danger:true/);
 assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.site-confirm-actions \{ display:grid; grid-template-columns:repeat\(2,minmax\(0,1fr\)\); align-items:stretch;/);
 import {textHtml} from '../src/ui/format.js';
+assert.equal(textHtml('[a], [b] oder [c]'),'[a], [b] oder [c]');
 import {parseGapText,gapAuthorText,inlineGapErrors} from '../src/domain/inline-gaps.js';
 import {readingBlocksHtml,readingBlocksEditor} from '../src/ui/reading-blocks.js';
 import {inlineGapsHtml} from '../src/ui/inline-gaps.js';
