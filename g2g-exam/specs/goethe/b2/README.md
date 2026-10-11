@@ -16,6 +16,8 @@ The separate z input holds the demo sentence; [z] is prefilled, unscored, does
 not count as a question and does not reserve any a–h option.
 The article form includes an editable title followed by its image and passage.
 The image retains the shared upload/removal and optional pixel-width controls.
+During the exam, show the article using the same paper surface as A1 Writing 1,
+beside the answer sentences in two equal columns; stack on narrow screens.
 
 Listening 1 follows B1 listening 1 (paired true/false then ABC).
 Listening 2 follows B1 listening 2. Listening 3 follows B1 listening 4.

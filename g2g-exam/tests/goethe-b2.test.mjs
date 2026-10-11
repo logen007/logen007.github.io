@@ -74,6 +74,8 @@ assert.equal((html.match(/src="\/uploads\/bicycle-test.png"/g)||[]).length,1);
 assert.ok(html.indexOf('<h2>Die Geschichte des Fahrrads</h2>')<html.indexOf('class="gap-article-image"'));
 assert.ok(html.indexOf('class="gap-article-image"')<html.indexOf('class="gap-passage"'));
 assert.match(html,/max-width:700px/);
+assert.match(html,/inline-gap-paper exam-reading-split/);
+assert.match(html,/class="gap-article writing-paper"/);
 const r1=exam.sections[0],r4=exam.sections[3],real=rows(r4).filter(q=>!q.example);
 assert.equal(letterAnswerError(r1,rows(r1),Object.fromEntries(rows(r1).map(q=>[q.id,0]))),'');
 assert.match(letterAnswerError(r4,rows(r4),{[real[0].id]:8,[real[1].id]:8}),/einmal/);
