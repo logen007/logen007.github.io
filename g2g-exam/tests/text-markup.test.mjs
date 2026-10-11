@@ -1,4 +1,10 @@
 import assert from 'node:assert/strict';
+import {resolveBuilderSection} from '../src/ui/builder-route.js';
+const routeExam={sections:[{id:'listen-1'},{id:'write-2'}]};
+assert.equal(resolveBuilderSection(routeExam,'write-2'),'write-2');
+assert.equal(resolveBuilderSection(routeExam,'removed'),'listen-1');
+assert.equal(resolveBuilderSection(routeExam,null),'listen-1');
+assert.equal(resolveBuilderSection({sections:[]},'write-2'),null);
 import {createStartupGate} from '../src/ui/startup-gate.js';
 const startupGate=createStartupGate();
 let initialRenders=0;
@@ -34,7 +40,8 @@ const cancelExamSource=readFileSync(new URL('../src/app.js',import.meta.url),'ut
 assert.match(cancelExamSource,/function render\(\)\{\s*if\(!startupGate.isReady\(\)\)return;/);
 assert.match(cancelExamSource,/repo.subscribe\(next=>\{\s*data=next;\s*if\(!startupGate.isReady\(\)\)return;/);
 assert.ok(cancelExamSource.indexOf('const initialUrl=new URL(window.location.href)')<cancelExamSource.indexOf('await createRepository()'));
-assert.match(cancelExamSource,/if\(await openBuilder\(directBuilderId\)\)\{startupGate.finish\(\);render\(\);\}/);
+assert.match(cancelExamSource,/openBuilder\(directBuilderId,initialUrl.searchParams.get\('section'\)\)/);
+assert.match(cancelExamSource,/url.searchParams.set\('section',ui.builderSectionId\)/);
 assert.match(cancelExamSource,/extraAction:\{label:'Prüfung abbrechen',onClick:confirmAbandonExam\}/);
 assert.match(cancelExamSource,/repo.transaction\(st=>abandonAttempt\(st,user,attemptId\)\)/);
 assert.match(cancelExamSource,/confirmLabel:'Prüfung abbrechen',cancelLabel:'Weiterarbeiten',danger:true/);

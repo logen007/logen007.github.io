@@ -1,5 +1,6 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
 import {createStartupGate} from './ui/startup-gate.js';
+import {resolveBuilderSection} from './ui/builder-route.js';
 const startupGate=createStartupGate();
 const initialUrl=new URL(window.location.href);
 import {bindTextareaBold} from './ui/textarea-bold.js';
@@ -129,7 +130,10 @@ function syncViewUrl(){
   if(!user)return;
   const url=new URL(window.location.href);
   for(const key of ['edit','preview','section','view','tab','attempt'])url.searchParams.delete(key);
-  if(ui.view==='builder'&&ui.builderExamId)url.searchParams.set('edit',ui.builderExamId);
+  if(ui.view==='builder'&&ui.builderExamId){
+    url.searchParams.set('edit',ui.builderExamId);
+    if(ui.builderSectionId)url.searchParams.set('section',ui.builderSectionId);
+  }
   else if(ui.view==='preview-exam'&&ui.previewExamId){url.searchParams.set('preview',ui.previewExamId);url.searchParams.set('section',String(ui.previewSectionIndex||0));}
   else if(ui.view==='grading-detail'&&ui.gradeAttemptId){url.searchParams.set('view','grading');url.searchParams.set('attempt',ui.gradeAttemptId);}
   else if(ui.view==='exam'&&ui.attemptId){url.searchParams.set('view','exam');url.searchParams.set('attempt',ui.attemptId);}
@@ -1073,7 +1077,7 @@ function clearBuilderEditUrl(){
   history.replaceState(null,'',url);
 }
 
-async function openBuilder(id){
+async function openBuilder(id,sectionId=null){
   let exam=byId(data.exams,id);
   if(!exam||isStudent(user))return;
   if(repo.mode==='api'&&canEditExam(user,exam)){
@@ -1089,7 +1093,7 @@ async function openBuilder(id){
   }):false;
   if(changed){data=await repo.getState();exam=byId(data.exams,id);}
   ui.builderExamId=id;
-  ui.builderSectionId=exam?.sections?.[0]?.id||null;
+  ui.builderSectionId=resolveBuilderSection(exam,sectionId);
   ui.view='builder';
   history.replaceState(null,'',builderEditUrl(id));
   render();
@@ -1313,7 +1317,7 @@ async function toggleTeacher(id){
 const directBuilderId=initialUrl.searchParams.get('edit');
 const directBuilderExam=directBuilderId&&byId(data.exams,directBuilderId);
 if(directBuilderExam&&user&&!isStudent(user)){
-  if(await openBuilder(directBuilderId)){startupGate.finish();render();}
+  if(await openBuilder(directBuilderId,initialUrl.searchParams.get('section'))){startupGate.finish();render();}
   else window.showBootError?.();
 }
 else{
