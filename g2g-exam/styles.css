@@ -483,6 +483,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .tieu-de-trang.exam-list-heading > div:first-child { flex:1 1 auto; min-width:0; }
 .exam-list-heading > .nut { flex:0 0 auto; white-space:nowrap; }
 .instruction-content { display:grid; gap:12px; min-width:0; }
+.landing-copy p > strong { color:#d4a800; }
 .paired-question-group { display:grid; gap:16px; margin:0; }
 .paired-question-group > .goethe-question + .goethe-question { border-top:0; padding-top:0; }
 .paired-question-group > h3 { margin:0; font-size:18px; }
