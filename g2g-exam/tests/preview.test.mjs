@@ -217,6 +217,10 @@ try{
     assert.doesNotMatch(html,/Chưa từng thi|class="day"|class="chan"|class="hanh-dong"/);
     assert.match(html,/class="exam-card-footer"[^]*?data-action="start"[^]*?<span>Bắt đầu thi · 35 phút<\/span><svg/);
     assert.doesNotMatch(html,/<div class="meta">[^<]*phút/);
+    const cardCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+    assert.match(cardCss,/\.exam-card-footer \{[^}]*justify-content:flex-start/);
+    assert.match(cardCss,/\.exam-card-status \{ flex:0 0 100%/);
+    assert.match(cardCss,/\.exam-card-footer>\.nut \{ width:100%; max-width:260px/);
     const pending=studentExamCardHtml(exam,[{examId:exam.id,status:'submitted'}],{questions:[]});
     assert.doesNotMatch(pending,/the-de-new|Chưa từng thi/);
     const locked=studentExamCardHtml({...exam,hidden:true,hasActiveCodes:false},[],{questions:[]});
