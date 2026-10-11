@@ -30,6 +30,8 @@ assert.match(readingBlocksEditor(exam.sections[0]),/data-block-add/);
 assert.equal(readingBlocksEditor(exam.sections[1]),'');
 assert.deepEqual(await collectReadingBlocks({querySelector:()=>true,querySelectorAll:()=>exam.sections[0].readingBlocks.map(block=>({dataset:{imageUrl:block.imageUrl},querySelector:selector=>selector==='[data-block-image]'?{files:[]}:{value:selector==='[data-block-title]'?block.title:block.text}}))}),exam.sections[0].readingBlocks);
 assert.equal(exam.sections.length,11);
+assert.equal(exam.sections[7].questionProfile.choiceImages,true);
+assert.equal((renderBuilder({data:state,exam,section:exam.sections[7]}).match(/data-choice-image=/g)||[]).length,18);
 const numberedExamples=letterAnswersHtml(exam.sections[4],[{id:'demo',title:'§ 0',example:true,maxScore:0,choices:['A','B'],correctAnswer:0},{id:'scored',title:'§ 28',maxScore:1,choices:['A','B']}],{},27);
 assert.match(numberedExamples,/<b>0\.<\/b> § 0/);
 assert.match(numberedExamples,/<b>28\.<\/b> § 28/);

@@ -9,7 +9,7 @@
     "layout": "choices",
     "instructionImage": false,
     "audio": true,
-    "choiceImages": false,
+    "choiceImages": true,
     "numberWithinSkill": true,
     "example": false,
     "choices": [
