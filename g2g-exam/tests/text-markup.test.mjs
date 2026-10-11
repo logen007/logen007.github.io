@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const writingBuilderSource=readFileSync(new URL('../src/part-templates/default/builder.js',import.meta.url),'utf8');
 assert.match(writingBuilderSource,/data-writing-style-toggle/);
+assert.match(writingBuilderSource,/class="icon-btn writing-style-toggle"/);
+assert.match(writingBuilderSource,/iconHtml\(handwritten\?'grading':'type'\)/);
 assert.doesNotMatch(writingBuilderSource,/<select data-field="handwriting"/);
 assert.match(writingBuilderSource,/field.dispatchEvent\(new Event\('change',\{bubbles:true\}\)\)/);
 assert.ok(writingBuilderSource.indexOf('data-field="maxScore"')<writingBuilderSource.indexOf('data-writing-style-toggle'));
