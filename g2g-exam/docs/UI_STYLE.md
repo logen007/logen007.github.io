@@ -182,6 +182,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   Place this button between the score field and example button. Use the same
   circular icon-only control as its neighbors: pen for handwriting, T for normal
   type, with an accessible name and tooltip. Clicking switches immediately; no dropdown.
+  Both writing-style states retain the standard neutral icon-button surface;
+  distinguish them by icon, not a colored fill.
 
 - Signature values in paper forms use a handwriting font stack (Snell Roundhand
   on Apple devices, Segoe Script/Bradley Hand/Segoe Print fallbacks), not the UI

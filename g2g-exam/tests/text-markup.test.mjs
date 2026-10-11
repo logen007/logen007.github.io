@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+const tooltipSource=readFileSync(new URL('../src/ui/button-tooltips.js',import.meta.url),'utf8');
+assert.match(tooltipSource,/tip.textContent=label/);
+assert.match(tooltipSource,/setAttribute\('role','tooltip'\)/);
+assert.match(tooltipSource,/addEventListener\('focusin'/);
+assert.match(tooltipSource,/event.composedPath\(\)/);
+assert.doesNotMatch(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.writing-style-toggle\[aria-pressed="true"\]/);
 const writingBuilderSource=readFileSync(new URL('../src/part-templates/default/builder.js',import.meta.url),'utf8');
 assert.match(writingBuilderSource,/data-writing-style-toggle/);
 assert.match(writingBuilderSource,/class="icon-btn writing-style-toggle"/);
