@@ -1,5 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {renderBuilder} from '../src/part-templates/default/builder.js';
+
+const audioSection={id:'audio-section',skillKey:'listening',questionIds:[]};
+const emptyAudio=renderBuilder({data:{questions:[]},exam:{},section:audioSection});
+assert.match(emptyAudio,/class="audio-file-select"[^>]*><span>Tải audio lên<\/span>/);
+const uploadedAudio=renderBuilder({data:{questions:[]},exam:{},section:{...audioSection,instructionAudioUrl:'/audio/test.mp3',instructionAudioName:'test.mp3'}});
+assert.match(uploadedAudio,/<span>test.mp3<\/span>/);
+assert.ok(!uploadedAudio.includes('<span>Tải audio lên</span>'));
 import {loadApprovedPartSpec} from '../src/exam-specs/spec-loader.js';
 import {getA1ListeningPart1Spec} from '../src/part-templates/a1-listening-part-1/spec.js';
 import {validateA1ListeningPart1} from '../src/part-templates/a1-listening-part-1/validator.js';

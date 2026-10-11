@@ -56,7 +56,7 @@ const audioName=q=>{
   return decodeURIComponent(String(q.audioUrl||'').split('/').pop().split('?')[0]||'Audio đã tải lên');
 };
 
-function audioHtml(q,readOnly,showAudio,emptyLabel='Upload audio'){
+function audioHtml(q,readOnly,showAudio,emptyLabel='Tải audio lên'){
   if(!showAudio)return '';
   return `<div class="audio-upload ${q.audioUrl?'has-audio':''}"><label class="audio-file-select" title="${q.audioUrl?'Thay audio':'Tải audio'}"><span>${q.audioUrl?esc(audioName(q)):esc(emptyLabel)}</span><input type="file" aria-label="Tải audio" data-field="audio" accept="audio/*" ${readOnly?'disabled':''}></label>${q.audioUrl?`<button type="button" class="audio-preview" data-action="preview-inline-audio" title="Nghe thử audio" aria-label="Nghe thử audio">${icons.play}</button><audio class="inline-audio-preview" preload="metadata" src="${esc(q.audioUrl)}"></audio>`:icons.upload}</div>`;
 }
@@ -129,7 +129,7 @@ function freeResponseHtml(q,{defaultScore,readOnly}){
 function instructionHtml(section,choiceProfile,readOnly,question){
   const listening=section.skillKey==='listening'||/nghe|hören|listening/i.test(section.skill||'');
   const instruction=`<div class="instruction-content"><textarea id="sectionInstruction" aria-label="Đề bài" placeholder="${esc(instructionPlaceholder)}" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea></div>`;
-  const audio=listening?`<div class="instruction-audio" role="group" aria-label="Audio đề bài" data-audio-question-id="section:${esc(section.id)}">${audioHtml({audioUrl:section.instructionAudioUrl,audioName:section.instructionAudioName},readOnly,true,'')}</div>`:'';
+  const audio=listening?`<div class="instruction-audio" role="group" aria-label="Audio đề bài" data-audio-question-id="section:${esc(section.id)}">${audioHtml({audioUrl:section.instructionAudioUrl,audioName:section.instructionAudioName},readOnly,true)}</div>`:'';
   if(!choiceProfile.instructionImage)return `<div class="goethe-instruction ${listening?'goethe-instruction--with-audio':''}">${instruction}${audio}</div>`;
   const imageUrl=section.instructionImageUrl||'';
   const addInstruction=question?`<button type="button" class="icon-btn" data-action="add-question-instruction" data-id="${question.id}" title="Thêm đề bài" aria-label="Thêm đề bài" ${readOnly?'disabled':''}>${icons.add}</button>`:'';

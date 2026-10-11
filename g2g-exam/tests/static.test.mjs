@@ -56,7 +56,7 @@ assert.doesNotMatch(read('src/part-templates/default/builder.js'),/<span>Audio �
 assert.match(read('src/part-templates/default/builder.js'),/role="group" aria-label="Audio đề bài"/);
 assert.match(read('src/ui/publish-errors.js'),/noi-hop noi-hop--compact/);
 assert.match(read('src/part-templates/default/builder.js'),/goethe-instruction--with-audio/);
-assert.match(read('src/part-templates/default/builder.js'),/readOnly,true,''/);
+assert.doesNotMatch(read('src/part-templates/default/builder.js'),/readOnly,true,''/);
 assert.match(read('src/views/builder.js'),/<textarea id="examTitle"/);
 assert.doesNotMatch(read('src/views/builder.js'),/<input id="examTitle"/);
 assert.match(read('src/app.js'),/titleField\.addEventListener\('input',fitTitle\)/);
