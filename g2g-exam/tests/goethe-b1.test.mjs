@@ -44,6 +44,8 @@ for(const section of exam.sections){
 const pairSection=exam.sections.find(s=>s.name==='Nghe 1'),paired=rows(pairSection);
 assert.deepEqual(paired.map(q=>q.type),Array.from({length:6},()=>['truefalse','single']).flat());
 assert.equal((renderBuilder({data:state,exam,section:pairSection}).match(/class="paired-question-group"/g)||[]).length,6);
+assert.doesNotMatch(renderBuilder({data:state,exam,section:pairSection}),/<h3>Text \d+<\/h3>/);
+assert.match(renderBuilder({data:state,exam,section:pairSection}),/<h3>Beispiel<\/h3>/);
 const reading=exam.sections.find(s=>s.name==='Đọc 3'),letters=rows(reading);
 assert.deepEqual(letters[0].choices,[...'ABCDEFGHIJ','X']);
 const answers=Object.fromEntries(letters.filter(q=>!q.example).map((q,i)=>[q.id,i+1]));

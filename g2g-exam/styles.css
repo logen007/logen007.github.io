@@ -480,7 +480,8 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .tieu-de-trang.exam-list-heading > div:first-child { flex:1 1 auto; min-width:0; }
 .exam-list-heading > .nut { flex:0 0 auto; white-space:nowrap; }
 .instruction-content { display:grid; gap:12px; min-width:0; }
-.paired-question-group { display:grid; gap:20px; margin-block:24px; }
+.paired-question-group { display:grid; gap:16px; margin:0; }
+.paired-question-group > .goethe-question + .goethe-question { border-top:0; padding-top:0; }
 .paired-question-group > h3 { margin:0; font-size:18px; }
 .exam-question-pair { display:grid; gap:16px; margin:0 0 40px; min-width:0; }
 .exam-question-pair--example { padding:18px; border:1px solid var(--example-border); border-radius:var(--r); background:var(--example-bg); }
