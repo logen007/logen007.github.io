@@ -145,6 +145,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   Letter-table headings are teacher-editable, not fixed to Person.
   Questions worth zero points show their correct answer read-only, use "_" in
   place of the number, and are excluded from question counts and progress.
+  In letter-answer question lists, display the example as "0." instead of "_";
+  it still does not advance the scored-question numbering.
 - Put prompt and audio control together; answer options fill the following row.
   Image answers get a readable image area, not a tiny thumbnail beside long text.
 - Current-section answered count lives once in the bottom navigation. Previous

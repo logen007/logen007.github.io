@@ -12,8 +12,8 @@ export function letterAnswerControl(q,answer,layout,{number=null}={}){
 
 export function letterAnswersHtml(section,questions,answers,startNumber){
   let number=startNumber;
-  const items=questions.map(q=>({q,number:isPrefilledQuestion(q)?'_':++number}));
   const layout=section.questionProfile.layout;
+  const items=questions.map(q=>({q,number:isPrefilledQuestion(q)?(layout==='letter-table'?'_':0):++number}));
   const body=layout==='letter-table'
     ?`<div class="letter-table-scroll"><table class="letter-table"><thead><tr><th scope="row">${esc(section.tableHeading??'Person')}</th>${items.map(({q,number})=>`<th scope="col">${number}<span>${esc(q.title==='Nháp'?'':q.title)}</span></th>`).join('')}</tr></thead><tbody><tr><th scope="row">Lösung</th>${items.map(({q})=>`<td>${letterAnswerControl(q,answers[q.id],layout)}</td>`).join('')}</tr></tbody></table></div>`
     :items.map(({q,number})=>`<div class="letter-question"><label for="letter-${esc(q.id)}"><b>${number}${number==='_'?'':'.'}</b> ${esc(q.title==='Nháp'?'':q.title)}</label>${letterAnswerControl(q,answers[q.id],layout).replace('<input ','<input id="letter-'+esc(q.id)+'" ')}</div>`).join('');
