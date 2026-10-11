@@ -62,6 +62,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Resolve the initial URL before allowing any page render. Repository updates
+  and connectivity events during startup must not flash the default dashboard.
 - Loading skeletons use measured geometry from the same URL and viewport width,
   including actual text wrapping, controls and card dimensions. Store only numeric
   geometry in session storage, never content/HTML/account data. Keep branding static.

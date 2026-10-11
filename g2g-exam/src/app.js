@@ -1,4 +1,7 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
+import {createStartupGate} from './ui/startup-gate.js';
+const startupGate=createStartupGate();
+const initialUrl=new URL(window.location.href);
 import {bindTextareaBold} from './ui/textarea-bold.js';
 import {bindButtonTooltips} from './ui/button-tooltips.js';
 bindButtonTooltips();
@@ -85,6 +88,7 @@ const ui={
 
 repo.subscribe(next=>{
   data=next;
+  if(!startupGate.isReady())return;
   if(ui.view==='exam'&&byId(next.attempts,ui.attemptId)?.status!==ATTEMPT_STATUS.IN_PROGRESS){
     ui.view='student-home';
     clearTimeout(realtimeRenderTimer);
@@ -629,6 +633,7 @@ function bindModalClose(){app.querySelectorAll('[data-action="close-modal"]').fo
 
 let titleResizeObserver;
 function render(){
+  if(!startupGate.isReady())return;
   clearSplitReading();
   titleResizeObserver?.disconnect();
   clearTimer();
@@ -1073,7 +1078,7 @@ async function openBuilder(id){
   if(!exam||isStudent(user))return;
   if(repo.mode==='api'&&canEditExam(user,exam)){
     const prepared=await act(()=>repo.call('prepareExamForEditing',{examId:id}),null,{rerender:false});
-    if(!prepared)return;
+    if(!prepared)return false;
     await repo.reload();data=await repo.getState();exam=byId(data.exams,id);
   }
   const changed=canEditExam(user,exam)?await repo.transaction(st=>{
@@ -1088,6 +1093,7 @@ async function openBuilder(id){
   ui.view='builder';
   history.replaceState(null,'',builderEditUrl(id));
   render();
+  return true;
 }
 
 function bindBuilder(){
@@ -1304,9 +1310,12 @@ async function toggleTeacher(id){
   }),'Đã cập nhật vai trò tài khoản.');
 }
 
-const initialUrl=new URL(window.location.href),directBuilderId=initialUrl.searchParams.get('edit');
+const directBuilderId=initialUrl.searchParams.get('edit');
 const directBuilderExam=directBuilderId&&byId(data.exams,directBuilderId);
-if(directBuilderExam&&user&&!isStudent(user))await openBuilder(directBuilderId);
+if(directBuilderExam&&user&&!isStudent(user)){
+  if(await openBuilder(directBuilderId)){startupGate.finish();render();}
+  else window.showBootError?.();
+}
 else{
   const previewId=initialUrl.searchParams.get('preview'),previewExam=previewId&&byId(data.exams,previewId);
   const requestedView=initialUrl.searchParams.get('view'),requestedAttempt=initialUrl.searchParams.get('attempt');
@@ -1315,6 +1324,7 @@ else{
   else if(requestedView==='exam'&&isStudent(user)&&byId(data.attempts,requestedAttempt)){ui.attemptId=requestedAttempt;ui.view='exam';}
   else if(requestedView==='grading'&&!isStudent(user)&&byId(data.attempts,requestedAttempt)){ui.gradeAttemptId=requestedAttempt;ui.view='grading-detail';}
   else if(!isStudent(user)&&initialUrl.searchParams.get('tab')){ui.adminTab=initialUrl.searchParams.get('tab');ui.view='admin';}
+  startupGate.finish();
   render();
 }
 import {shareStudentProfile,bindStudentName} from './views/student-profile-card.js';
