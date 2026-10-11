@@ -42,6 +42,8 @@ Keep an aria-label even after a value is selected. Preserve the original filter
 values and behavior; filters with a required selection retain that selection.
 This applies to dropdown filters, not count tabs such as “Tất cả (234)”.
 Student exam filters use two compact dropdowns aligned with the action button.
+On mobile, gradebook filters use two unequal columns (1:1.6): provider, level,
+class on the left; reviewer, student, status on the wider right.
 Compact list actions use 40px height. Exam settings triggers are icon-only gears with accessible labels.
 Exam access layout groups visibility, level and code creation, with feedback beside each form.
 

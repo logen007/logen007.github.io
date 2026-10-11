@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.grade-filters \{ display:grid; grid-template-columns:minmax\(0,1fr\) minmax\(0,1\.6fr\); grid-template-rows:repeat\(3,auto\); grid-auto-flow:column;/);
 import {canonicalSkill,skillScores,skillPassResult,gradeBand,filteredGradebook,telcResult,isStandardTelc} from '../src/domain/gradebook.js';
 import {validateStudentProfile} from '../src/domain/student-profile.js';
 import {gradebookHtml} from '../src/views/gradebook.js';

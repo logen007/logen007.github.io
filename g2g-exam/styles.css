@@ -131,6 +131,10 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .table-wrap { overflow:auto; background:var(--mat); border:1px solid var(--vien); border-radius:var(--r); }
 .profile-form { display:grid; gap:16px; }.profile-form label { display:grid; gap:8px; }.profile-form [data-error] { color:#b42318; margin:0; }
 .grade-filters { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:24px; }.grade-filters label { display:grid; gap:8px; flex:1 1 150px; color:var(--phu); font-size:13px; }.grade-filters select { width:100%; }
+@media(max-width:760px) {
+  .grade-filters { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.6fr); grid-template-rows:repeat(3,auto); grid-auto-flow:column; gap:12px; }
+  .grade-filters label { min-width:0; }
+}
 .score-badge { position:relative; display:inline-flex; padding:4px 10px; border-radius:var(--pill); white-space:nowrap; font-weight:500; }
 .score-excellent { background:#c5ebd7; color:#145c37; }.score-good { background:#c9daf8; color:#244d81; }.score-satisfactory { background:#fff2cc; color:#735700; }.score-sufficient { background:#eef1f3; color:#43515a; }.score-failed { background:#f9d7d3; color:#9b2720; }
 .score-tooltip { position:absolute; z-index:2; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); padding:5px 10px; border-radius:var(--pill); background:inherit; color:inherit; font-size:12px; font-weight:400; pointer-events:none; opacity:0; }
