@@ -5,6 +5,7 @@ export const DEFAULT_PRIMARY_COLOR='#111827';
 const CACHE_KEY='g2g.theme.public.v1';
 const DEMO_KEY='g2g.theme.demo.v1';
 let publicSettings={};
+export function currentPublicSettings(){return publicSettings;}
 let currentColor=DEFAULT_PRIMARY_COLOR;
 let initialization;
 const localThemeEnabled=()=>Boolean(globalThis.G2G_DEMO_BYPASS)||!hasApiBackend();

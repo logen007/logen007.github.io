@@ -17,6 +17,8 @@ assert.doesNotMatch(bootHtml,/Đang tải Luyện thi tiếng Đức/);
 assert.match(bootHtml,/id="bootShell" aria-busy="true"/);
 assert.match(bootHtml,/prefers-reduced-motion:reduce/);
 assert.match(bootHtml,/Thử lại/);
+assert.doesNotMatch(bootHtml,/boot-card|boot-mark|boot-avatar/);
+assert.match(bootHtml,/class="thanh-dau"/);
 assert.match(readFileSync(new URL('../src/exam-specs/goethe.js',import.meta.url),'utf8'),/Promise.all/);
 const touchStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea, \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);
@@ -244,6 +246,7 @@ try{
     sandbox.button.dataset.userGroupFilter='external';
     vm.runInNewContext(handler,sandbox);assert.equal(sandbox.selectedGroup,'external');
     const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin'},canSwitchRole:true});
+    assert.match(html,/<div class="logo"><img src="\/brand\/logo/);
     assert.match(html,/<header class="thanh-dau" data-current-role="master">/);
     assert.doesNotMatch(html,/<span class="nhan"/);
     assert.match(html,/<button class="account-avatar"[^>]*aria-controls="accountRoleMenu"/);
