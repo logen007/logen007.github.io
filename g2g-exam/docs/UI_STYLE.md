@@ -62,6 +62,13 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Loading skeletons use measured geometry from the same URL and viewport width,
+  including actual text wrapping, controls and card dimensions. Store only numeric
+  geometry in session storage, never content/HTML/account data. Keep branding static.
+  Discard measurements after one hour, on logout, or when route/width differs.
+  Without matching measurements use the minimal brand fallback, not a guessed
+  generic page skeleton. New server content may legitimately change dimensions.
+
 - Textarea content supports paired `[b]text[/b]` bold markup when rendered.
   The legacy `[b]text[b]` form remains readable. Selecting textarea text exposes
   a compact B action that inserts the new syntax without adding a permanent row.

@@ -148,6 +148,7 @@ async function act(fn,success,{rerender=true}={}){
 }
 
 function loginView(){
+  window.G2GBootLayout?.clear();
   app.innerHTML=loginHtml({mode:repo.mode});
   if(repo.mode==='local'){
     const exams=data.exams.filter(ex=>ex.status==='published');
@@ -625,6 +626,9 @@ function render(){
   else adminView();
   bindGlobal();
   bindViewSpecific();
+  if(['student-home','student-results','exam','preview-exam','builder','grading-detail','admin'].includes(ui.view)
+    &&!(ui.view==='admin'&&ui.adminTab==='classes'&&ui.classId))window.G2GBootLayout?.schedule(app);
+  else window.G2GBootLayout?.clear();
   clearSplitReading=bindSplitReading(app);
   const titleField=document.getElementById('examTitle');
   if(titleField){
