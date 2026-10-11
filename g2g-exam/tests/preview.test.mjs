@@ -203,7 +203,8 @@ try{
   });
   await test('Starting a retake refreshes state and advancing returns to page top',()=>{
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-    assert.match(source,/async function beginAttempt\(examId,restart\)\{\s*return withExamTransition\(async\(\)=>\{\s*if\(repo\.mode==='api'&&!await act\(\(\)=>repo\.reload\(\)/);
+    assert.match(source,/async function beginAttempt\(examId,restart,trigger\)\{\s*return withExamTransition\(async covered=>\{\s*if\(repo\.mode==='api'&&!await act\(\(\)=>repo\.reload\(\)/);
+    assert.match(source,/await covered;ui.attemptId=attempt.id;ui.view='exam';render\(\)/);
     assert.match(source,/async function moveAttemptSection\(delta\)[\s\S]*?if\(result\)\{[^}]*render\(\);window\.scrollTo\(0,0\)/);
     assert.match(source,/function showPreviewSection\(index\)[\s\S]*?window\.scrollTo\(0,0\)/);
   });

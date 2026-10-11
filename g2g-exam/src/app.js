@@ -920,7 +920,7 @@ function bindViewSpecific(){
     const exam=byId(data.exams,button.dataset.id);
     if(exam)await openExamAccess({repo,exam,onSaved:async()=>{data=await repo.getState();render();}});
   });
-  app.querySelectorAll('[data-action="start"]').forEach(b=>b.onclick=()=>beginAttempt(b.dataset.exam,true));
+  app.querySelectorAll('[data-action="start"]').forEach(b=>b.onclick=()=>beginAttempt(b.dataset.exam,true,b));
   app.querySelectorAll('[data-action="prev-section"]').forEach(b=>b.onclick=()=>moveAttemptSection(-1));
   app.querySelectorAll('[data-action="next-section"]').forEach(b=>b.onclick=()=>moveAttemptSection(1));
   app.querySelectorAll('[data-action="submit-exam"]').forEach(b=>b.onclick=()=>submitCurrentExam());
@@ -1019,12 +1019,12 @@ function bindViewSpecific(){
   bindGrading();
 }
 
-async function beginAttempt(examId,restart){
-  return withExamTransition(async()=>{
+async function beginAttempt(examId,restart,trigger){
+  return withExamTransition(async covered=>{
   if(repo.mode==='api'&&!await act(()=>repo.reload(),null,{rerender:false}))return;
   const attempt=await act(()=>repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});
-  if(attempt?.status===ATTEMPT_STATUS.IN_PROGRESS){data=await repo.getState();ui.attemptId=attempt.id;ui.view='exam';render();window.scrollTo(0,0);}
-  });
+  if(attempt?.status===ATTEMPT_STATUS.IN_PROGRESS){data=await repo.getState();await covered;ui.attemptId=attempt.id;ui.view='exam';render();window.scrollTo(0,0);}
+  },trigger);
 }
 
 async function moveAttemptSection(delta){

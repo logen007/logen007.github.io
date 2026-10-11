@@ -1,13 +1,20 @@
 import {currentPublicSettings} from '../settings/theme.js';
 import {pickExamMessages} from './exam-messages.js';
 let busy=false;
-export async function withExamTransition(start){
+export async function withExamTransition(start,trigger){
   if(busy)return;
   busy=true;
   const previous=document.activeElement,app=document.getElementById('app');
   const wasInert=app?.inert;
   const overlay=document.createElement('div');
   overlay.className='exam-transition';overlay.tabIndex=-1;
+  const rect=trigger?.getBoundingClientRect?.();
+  const x=rect?rect.left+rect.width/2:window.innerWidth/2;
+  const y=rect?rect.top+rect.height/2:window.innerHeight/2;
+  const radius=Math.hypot(Math.max(x,window.innerWidth-x),Math.max(y,window.innerHeight-y))+32;
+  overlay.style.setProperty('--reveal-x',x+'px');
+  overlay.style.setProperty('--reveal-y',y+'px');
+  overlay.style.setProperty('--reveal-radius',radius+'px');
   overlay.setAttribute('role','status');overlay.setAttribute('aria-live','polite');
   overlay.innerHTML='<div class="exam-transition-light" aria-hidden="true"></div><div class="exam-transition-center"><img class="exam-transition-logo" alt="G2G Career" width="48" height="48"><p>Hãy sẵn sàng</p></div>';
   const logo=overlay.querySelector('img');
@@ -19,9 +26,9 @@ export async function withExamTransition(start){
   try{
     if(app)app.inert=true;
     document.body.append(overlay);overlay.focus();
-    // Start the request immediately, while the overlay covers the page render.
-    // Capture rejection now so a fast network error never becomes unhandled.
-    const loading=Promise.resolve().then(start).then(()=>({ok:true}),error=>({ok:false,error}));
+    // Fetch immediately; callers await coverage before replacing the visible page.
+    const covered=wait(reduced?0:750);
+    const loading=Promise.resolve().then(()=>start(covered)).then(()=>({ok:true}),error=>({ok:false,error}));
     await wait(reduced?100:1100);
     overlay.querySelector('p').textContent=messages[1];
     overlay.classList.add('is-ready');

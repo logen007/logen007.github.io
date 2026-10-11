@@ -13,10 +13,10 @@ export function openCodeEntry({repo,examId,onStarted}){
     try{
       if(repo.mode!=='api')throw new Error('Mã thi cần kết nối máy chủ; không dùng trong bản demo.');
       const code=form.elements.code.value.trim().toUpperCase();
-      await withExamTransition(async()=>{
+      await withExamTransition(async covered=>{
         const result=await repo.call('startAttemptSecure',{examId,code});
-        await repo.reload();modal.remove();await onStarted(result.attemptId);
-      });
+        await repo.reload();await covered;modal.remove();await onStarted(result.attemptId);
+      },button);
     }catch(error){form.querySelector('[data-error]').textContent=error.message;button.disabled=false;}
   };
 }

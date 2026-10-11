@@ -9,17 +9,20 @@ assert.equal(examMessages('x'.repeat(200))[0].length,160);
 const saved={document:globalThis.document,window:globalThis.window,setTimeout:globalThis.setTimeout};
 const app={inert:false,querySelector:()=>null},delays=[];
 let overlay;
-globalThis.window={matchMedia:()=>({matches:false})};
+globalThis.window={innerWidth:400,innerHeight:800,matchMedia:()=>({matches:false})};
 globalThis.setTimeout=(fn,ms)=>{delays.push(ms);queueMicrotask(fn);};
 globalThis.document={getElementById:()=>app,body:{append(){}},createElement(){
-  overlay={setAttribute(){},focus(){},classList:{add(){}},querySelector:()=>({textContent:''}),remove(){this.removed=true;}};return overlay;
+  overlay={style:{setProperty(key,value){this[key]=value;}},setAttribute(){},focus(){},classList:{add(){}},querySelector:()=>({textContent:''}),remove(){this.removed=true;}};return overlay;
 }};
 try{
   let calls=0;
-  const first=withExamTransition(async()=>{calls++;assert.equal(app.inert,true);assert.deepEqual(delays,[1100],'Loading begins before the second animation phase');});
+  const first=withExamTransition(async covered=>{calls++;assert.equal(app.inert,true);assert.deepEqual(delays,[750,1100],'Loading begins during the reveal');await covered;},{getBoundingClientRect:()=>({left:20,top:600,width:200,height:44})});
   await withExamTransition(async()=>{calls++;});
   await first;
-  assert.equal(calls,1);assert.deepEqual(delays,[1100,900,500]);
+  assert.equal(calls,1);assert.deepEqual(delays,[750,1100,900,500]);
+  assert.equal(overlay.style['--reveal-x'],'120px');
+  assert.equal(overlay.style['--reveal-y'],'622px');
+  assert.ok(parseFloat(overlay.style['--reveal-radius'])>Math.hypot(280,622));
   assert.match(overlay.innerHTML,/exam-transition-logo/);
   assert.doesNotMatch(overlay.innerHTML,/orbit/);
   assert.equal(app.inert,false);assert.equal(overlay.removed,true);
@@ -34,6 +37,6 @@ try{
   assert.equal(app.inert,false);assert.equal(overlay.removed,true);
   delays.length=0;globalThis.window.matchMedia=()=>({matches:true});
   await withExamTransition(async()=>{});
-  assert.deepEqual(delays,[100,100,0]);
+  assert.deepEqual(delays,[0,100,100,0]);
 }finally{Object.assign(globalThis,saved);}
 console.log('Exam transition timing, duplicate guard, reduced motion and cleanup passed.');
