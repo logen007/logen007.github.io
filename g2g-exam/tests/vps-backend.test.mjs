@@ -7,6 +7,27 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const exists=p=>fs.existsSync(path.join(root,p));
 let passed=0;
+// Every shared domain module imported by the backend must be in the server image.
+const dockerfile=read('server/Dockerfile');
+const copied=new Set();
+for(const line of dockerfile.split('\n')){
+  if(!line.startsWith('COPY '))continue;
+  const parts=line.trim().split(/\s+/),destination=parts.at(-1);
+  if(destination.startsWith('/app/src/'))for(const source of parts.slice(1,-1))copied.add(source);
+}
+const visited=new Set();
+function checkImports(file){
+  if(visited.has(file))return;visited.add(file);
+  const text=read(file);
+  for(const match of text.matchAll(/(?:from\s*|import\s*)['"]([^'"]+)['"]/g)){
+    if(!match[1].startsWith('.'))continue;
+    const target=path.relative(root,path.resolve(root,path.dirname(file),match[1]));
+    if(!target.endsWith('.js')||!exists(target))continue;
+    if(target.startsWith('src/'))assert.ok([...copied].some(source=>target===source||target.startsWith(source+'/')),'Missing Docker COPY: '+target);
+    checkImports(target);
+  }
+}
+checkImports('server/src/index.js');
 const test=(name,fn)=>{fn();console.log(`✓ ${name}`);passed++;};
 
 test('Có backend VPS, schema PostgreSQL và Docker deployment',()=>{

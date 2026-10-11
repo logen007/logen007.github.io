@@ -11,6 +11,7 @@ COPY vi.html styles.css enhancements.css runtime-config.js /app/public/
 RUN cp /app/public/vi.html /app/public/index.html
 COPY src /app/public/src
 COPY src/domain/student-profile.js /app/src/domain/student-profile.js
+COPY src/domain/account-name.js /app/src/domain/account-name.js
 COPY src/domain/gradebook.js /app/src/domain/gradebook.js
 COPY src/domain/result-summary.js /app/src/domain/result-summary.js
 COPY src/domain/exam-clock.js /app/src/domain/exam-clock.js
