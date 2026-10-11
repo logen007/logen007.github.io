@@ -210,7 +210,12 @@ try{
   await test('Student exam card shows provider, exact duration and a corner new badge',()=>{
     const exam={id:'goethe-a1',provider:'GOETHE',level:'A1',title:'Modelltest 1',sections:[{timeMinutes:20,questionIds:[]},{timeMinutes:15,questionIds:[]}]};
     const html=studentExamCardHtml(exam,[],{questions:[]});
-    assert.match(html,/>Goethe A1<\/span>/);
+    assert.match(html,/class="nhan exam-provider" data-provider="GOETHE">Goethe<\/span>/);
+    assert.match(html,/class="nhan exam-level" data-level="A1">A1<\/span>/);
+    assert.doesNotMatch(html,/>Goethe A1<\/span>/);
+    const telc=studentExamCardHtml({...exam,provider:'TELC',level:'B2'},[],{questions:[]});
+    assert.match(telc,/data-provider="TELC">Telc<\/span>/);
+    assert.match(telc,/data-level="B2">B2<\/span>/);
     assert.match(html,/35 phút/);
     assert.doesNotMatch(html,/THI THỬ|khoảng/);
     assert.match(html,/<span class="the-de-new">Mới<\/span>/);

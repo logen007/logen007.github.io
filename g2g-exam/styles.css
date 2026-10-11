@@ -128,7 +128,16 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .tong-quan-hv { display:grid; grid-template-columns:1.7fr repeat(4,1fr); gap:24px; align-items:center; }
 .tong-quan-hv .o span { color:var(--phu); font-size:13px; }.tong-quan-hv .o b { display:block; margin-top:8px; font-size:28px; font-weight:500; }.tong-quan-hv .o:first-child b { font-size:20px; }
 .danh-sach-de { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }.the-de { position:relative; display:flex; flex-direction:column; min-width:0; }
-.the-de>.nhan { align-self:flex-start; max-width:calc(100% - 76px); }
+.exam-card-tags { display:flex; flex-wrap:wrap; gap:8px; align-self:flex-start; max-width:calc(100% - 64px); }
+.exam-card-tags .nhan { background:#f0f1f3; color:#48515e; }
+.exam-provider[data-provider="GOETHE"] { background:#eaf4ed; color:#27633e; }
+.exam-provider[data-provider="TELC"] { background:#eaf0fc; color:#31569b; }
+.exam-level[data-level="A1"] { background:#fff3d6; color:#795400; }
+.exam-level[data-level="A2"] { background:#ffeadc; color:#914615; }
+.exam-level[data-level="B1"] { background:#e4f4f4; color:#216568; }
+.exam-level[data-level="B2"] { background:#ece9fa; color:#5c4595; }
+.exam-level[data-level="C1"] { background:#f9e7ef; color:#963c65; }
+.exam-level[data-level="C2"] { background:#e7edf4; color:#405675; }
 .the-de-new { position:absolute; top:var(--card-padding); right:var(--card-padding); display:inline-flex; align-items:center; min-height:26px; padding:4px 10px; border-radius:var(--pill); background:var(--brand-soft); color:var(--brand-text); font-size:12px; font-weight:600; line-height:1; }
 .the-de h3 { font-size:20px; line-height:1.4; margin:12px 0 8px; font-weight:500; overflow-wrap:anywhere; }.the-de .meta { font-size:14px; color:var(--phu); line-height:1.5; margin-bottom:16px; }
 .exam-card-footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:12px; margin-top:auto; }
