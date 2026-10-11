@@ -14,7 +14,7 @@ assert.equal(examMessages('x'.repeat(200))[0].length,160);
 const saved={document:globalThis.document,window:globalThis.window,setTimeout:globalThis.setTimeout};
 const app={inert:false,querySelector:()=>null},delays=[];
 let overlay;
-globalThis.window={innerWidth:400,innerHeight:800,matchMedia:()=>({matches:false})};
+globalThis.window={innerWidth:400,innerHeight:800,getComputedStyle:()=>({backgroundColor:'rgb(248, 210, 52)'}),matchMedia:()=>({matches:false})};
 globalThis.setTimeout=(fn,ms)=>{delays.push(ms);queueMicrotask(fn);};
 globalThis.document={getElementById:()=>app,body:{append(){}},createElement(){
   overlay={style:{setProperty(key,value){this[key]=value;}},setAttribute(){},focus(){},classList:{add(){}},querySelector:()=>({textContent:''}),remove(){this.removed=true;}};return overlay;
@@ -27,6 +27,7 @@ try{
   assert.equal(calls,1);assert.deepEqual(delays,[1100,1100,900,500]);
   assert.match(overlay.innerHTML,/exam-transition-waves[^]*?<i><\/i><i><\/i><i><\/i>/);
   assert.equal(overlay.style['--reveal-x'],'120px');
+  assert.equal(overlay.style['--wave-color'],'rgb(248, 210, 52)');
   assert.equal(overlay.style['--reveal-y'],'622px');
   assert.ok(parseFloat(overlay.style['--reveal-radius'])>Math.hypot(280,622));
   assert.match(overlay.innerHTML,/exam-transition-logo/);

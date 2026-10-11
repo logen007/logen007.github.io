@@ -151,15 +151,15 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .exam-transition-center { z-index:1; display:grid; justify-items:center; gap:8px; animation:exam-ready 400ms 1000ms ease both; transition:transform 500ms ease,opacity 500ms ease; }
 .exam-transition-logo { display:block; object-fit:contain; border-radius:12px; }
 .exam-transition p { margin:0; padding:0 20px; max-width:360px; text-align:center; overflow-wrap:anywhere; font-size:13px; color:var(--phu); letter-spacing:.04em; }
-.exam-transition-waves { position:absolute; inset:0; pointer-events:none; }
-.exam-transition-waves i { position:absolute; left:var(--reveal-x); top:var(--reveal-y); width:calc(var(--reveal-radius) * 2); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle,transparent 57%,var(--brand-soft) 61%,var(--brand-primary) 65%,var(--brand-soft) 69%,transparent 74%); animation:exam-power-wave 1000ms ease-out both; }
+.exam-transition-waves { position:absolute; inset:0; z-index:1; pointer-events:none; }
+.exam-transition-waves i { position:absolute; left:var(--reveal-x); top:var(--reveal-y); width:calc(var(--reveal-radius) * 2); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle,transparent 54%,var(--wave-color,var(--brand-primary)) 61%,var(--wave-color,var(--brand-primary)) 68%,transparent 76%); animation:exam-power-wave 1000ms ease-out both; }
 .exam-transition-waves i:nth-child(2) { animation-delay:140ms; }
 .exam-transition-waves i:nth-child(3) { animation-delay:280ms; }
 .exam-transition.is-leaving .exam-transition-center { transform:scale(.96); opacity:0; }
 .exam-transition.is-ready p { animation:exam-ready 400ms ease both; }
 .exam-transition.is-leaving { opacity:0; }
 @keyframes exam-reveal { from { clip-path:circle(0 at var(--reveal-x) var(--reveal-y)); } to { clip-path:circle(var(--reveal-radius) at var(--reveal-x) var(--reveal-y)); } }
-@keyframes exam-power-wave { from { transform:translate(-50%,-50%) scale(.02); opacity:.9; } to { transform:translate(-50%,-50%) scale(1.5); opacity:0; } }
+@keyframes exam-power-wave { 0% { transform:translate(-50%,-50%) scale(.02); opacity:.95; } 65% { opacity:.85; } 100% { transform:translate(-50%,-50%) scale(1.5); opacity:0; } }
 @media(prefers-reduced-motion:reduce) { .exam-transition-waves { display:none; } }
 @keyframes exam-ready { from { transform:translateY(6px); opacity:0; } to { transform:translateY(0); opacity:1; } }
 .exam-card-footer>.nut .ui-icon { flex-shrink:0; width:18px; height:18px; }
