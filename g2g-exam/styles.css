@@ -567,6 +567,8 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .inline-gap select:has(option:checked:not([value=""])) { background-color:color-mix(in srgb,var(--xanh) 14%,var(--mat)); border-color:var(--xanh); color:var(--xanh); }
 .inline-gap-paper .gap-sentences p { font-weight:400; }
 .inline-gap-paper .gap-sentences b { font-weight:600; }
+.exam-paper .answer-options--short { grid-template-columns:repeat(var(--answer-columns),minmax(0,1fr)); gap:8px; }
+.exam-paper .answer-options--short .answer-option-body { min-height:44px; padding:10px 8px; }
 @media(min-width:761px) { .exam-reading-split > .split-follow { position:sticky; top:var(--split-top,16px); align-self:start; } }
 .gap-demo { background:var(--brand-soft); border-radius:8px; padding:4px 8px; }
 .gap-sentences { margin-top:24px; display:grid; gap:12px; }

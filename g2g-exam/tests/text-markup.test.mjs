@@ -6,6 +6,14 @@ import {readingBlocksHtml,readingBlocksEditor} from '../src/ui/reading-blocks.js
 import {inlineGapsHtml} from '../src/ui/inline-gaps.js';
 import {letterAnswersHtml} from '../src/ui/letter-answers.js';
 import {applyBoldSelection} from '../src/ui/textarea-bold.js';
+import {shortChoiceColumns} from '../src/domain/question-display.js';
+assert.equal(shortChoiceColumns(['Richtig','Falsch']),2);
+assert.equal(shortChoiceColumns(['Ja','Nein','Vielleicht']),3);
+assert.equal(shortChoiceColumns(['a','b','c','d']),4);
+assert.equal(shortChoiceColumns([{text:'[b]Ja[/b]'},'Nein']),2);
+assert.equal(shortChoiceColumns(['A very long answer that needs space','No']),0);
+assert.equal(shortChoiceColumns([{text:'Yes',imageUrl:'/image.jpg'},'No']),0);
+assert.equal(shortChoiceColumns(['a','b','c','d','e']),0);
 import {letterPickerOptions,syncLetterPicker} from '../src/ui/letter-picker.js';
 
 const pickerHtml=letterPickerOptions({options:[{value:'',selected:false,textContent:'10'},{value:'0',selected:true,textContent:'a. A < B'},{value:'1',selected:false,disabled:true,textContent:'b. Used'}]});

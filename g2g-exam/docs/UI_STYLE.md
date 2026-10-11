@@ -184,6 +184,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   In letter-answer question lists, display the example as "0." instead of "_";
   it still does not advance the scored-question numbering.
 - Put prompt and audio control together; answer options fill the following row.
+  Short text choices share one row with 2, 3 or 4 equal columns matching the
+  visible option count, including mobile and examples. Keep gaps and 44px touch
+  height; long text and image choices retain their readable layouts.
   Selecting an answer does not bold its body text; retain normal weight and
   use the existing fill and border. Option letters stay bold.
   Selectable answer cards that already show selection with a border and fill
