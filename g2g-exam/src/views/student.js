@@ -69,7 +69,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const previousAction=preview?'preview-prev-section':'prev-section';
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Zur Bearbeitung':'Abgeben'):'Weiter';
-  const sectionInstruction=sec.instruction||sec.instructionImageUrl?`<section class="exam-instruction">${sec.instruction?`<div><p>${esc(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl?`<img ${imageMaxWidth(sec.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(sec.instructionImageMaxWidth)}px"`:''} src="${esc(sec.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';
+  const sectionInstruction=sec.instruction||sec.instructionImageUrl?`<section class="exam-instruction">${sec.instruction?`<div><p>${esc(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl&&sec.questionProfile?.layout!=='inline-gaps'?`<img ${imageMaxWidth(sec.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(sec.instructionImageMaxWidth)}px"`:''} src="${esc(sec.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
   const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));

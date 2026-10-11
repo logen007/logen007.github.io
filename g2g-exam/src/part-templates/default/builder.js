@@ -148,7 +148,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
   const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).sort((a,b)=>Number(Boolean(b.example))-Number(Boolean(a.example)));
   const choiceProfile=profileFor(section);
-  if(section.questionProfile?.layout==='inline-gaps')return `<div class="part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}${inlineGapBuilder(section,questions,readOnly)}</div>`;
+  if(section.questionProfile?.layout==='inline-gaps')return `<div class="part-editor">${instructionHtml(section,{...choiceProfile,instructionImage:false},readOnly,null)}${inlineGapBuilder(section,questions,readOnly)}</div>`;
   const audioIds=new Set(partAudioQuestions(section,questions).map(q=>q.id));
   if(section.questionProfile?.pairedQuestions){
     const pairs=[];

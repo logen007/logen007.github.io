@@ -23,6 +23,7 @@ export async function b2BackendScenario({query,teacher,student}){
   const gap=exam.sections[1],parsed=parseGapText('Example [z]. Text [d] [a] [h] [b] [f] [c].',6);
   Object.assign(gap,{gapPassage:parsed.passage,gapExample:'Demo sentence',gapOptions:[...'abcdefgh'].map(k=>'Sentence '+k)});
   rows(gap).forEach((q,i)=>q.correctAnswer=parsed.keys[i]);
+  gap.gapTitle='Die Geschichte des Fahrrads';
   assert.deepEqual(validateExamForPublish(state,exam),[]);
   exam.status='published';
   await commitOperations(teacher,[...state.questions.map(q=>({collection:'questions',id:q.id,item:q})),{collection:'exams',id:exam.id,item:exam}]);
@@ -31,6 +32,7 @@ export async function b2BackendScenario({query,teacher,student}){
   assert.equal(publicData.examDeadlineMs-Date.parse(publicData.startedAt),180*60000);
   const visible=await loadState(student),publicExam=visible.exams.find(e=>e.id===exam.id);
   assert.deepEqual(publicExam.sections[1].gapPassage,parsed.passage);
+  assert.equal(publicExam.sections[1].gapTitle,gap.gapTitle);
   assert.doesNotMatch(JSON.stringify(publicExam),/\[[a-h]\]/);
   for(const q of visible.questions.filter(q=>gap.questionIds.includes(q.id)))assert.equal('correctAnswer' in q,false);
   // Repeats are accepted in reading 1, but not in inline gaps.

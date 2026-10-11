@@ -14,6 +14,8 @@ The teacher types the correct letter in brackets at each gap; the public passage
 stores only gap positions, and the answer keys remain on the private questions.
 The separate z input holds the demo sentence; [z] is prefilled, unscored, does
 not count as a question and does not reserve any a–h option.
+The article form includes an editable title followed by its image and passage.
+The image retains the shared upload/removal and optional pixel-width controls.
 
 Listening 1 follows B1 listening 1 (paired true/false then ABC).
 Listening 2 follows B1 listening 2. Listening 3 follows B1 listening 4.
