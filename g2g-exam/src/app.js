@@ -481,7 +481,7 @@ async function submitCurrentExam(confirmed=false){
     const attempt=byId(data.attempts,ui.attemptId),exam=attempt&&byId(data.exams,attempt.examId);
     if(!attempt||!exam)return;
     const missing=unansweredExamQuestions(exam,data.questions,{...attempt.answers,...readExamAnswers(app)});
-    confirmAction(missing.length?`Noch nicht vollständig beantwortete Aufgaben: ${missing.map(item=>item.number).join(', ')}. Möchten Sie trotzdem abgeben?`:'Möchten Sie die Prüfung jetzt abgeben?',()=>submitCurrentExam(true),{confirmLabel:'Prüfung abgeben',cancelLabel:'Weiterarbeiten',confirmIcon:'upload',cancelIcon:'grading',extraAction:{label:'Prüfung abbrechen',onClick:confirmAbandonExam}});
+    confirmAction(missing.length?`Noch nicht vollständig beantwortete Aufgaben: ${missing.map(item=>item.number).join(', ')}. Möchten Sie trotzdem abgeben?`:'Möchten Sie die Prüfung jetzt abgeben?',()=>submitCurrentExam(true),{confirmLabel:'Prüfung abgeben',cancelLabel:'Weiterarbeiten',confirmIcon:'upload',cancelIcon:'grading',extraAction:{label:'Abbrechen',onClick:confirmAbandonExam}});
     return;
   }
   submitBusy=true;
@@ -508,7 +508,7 @@ function confirmAbandonExam(){
       }
       render();window.scrollTo(0,0);
     }finally{submitBusy=false;}
-  },{confirmLabel:'Prüfung abbrechen',cancelLabel:'Weiterarbeiten',danger:true,confirmIcon:'close',cancelIcon:'grading'});
+  },{confirmLabel:'Abbrechen',cancelLabel:'Weiterarbeiten',danger:true,confirmIcon:'close',cancelIcon:'grading'});
 }
 
 function adminView(){
