@@ -150,7 +150,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .exam-transition-center { z-index:1; display:grid; justify-items:center; gap:20px; animation:exam-ready 400ms 500ms ease both; transition:transform 500ms ease,opacity 500ms ease; }
 .exam-transition-logo { display:block; object-fit:contain; border-radius:12px; }
 .exam-transition p { margin:0; padding:0 20px; max-width:360px; text-align:center; overflow-wrap:anywhere; font-size:13px; color:var(--phu); letter-spacing:.04em; }
-.exam-transition-light { position:absolute; left:var(--reveal-x); top:var(--reveal-y); width:calc(var(--reveal-radius) * 2); aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle,rgba(255,244,186,.9) 0%,rgba(255,220,90,.32) 35%,transparent 72%); }
+.exam-transition-light { position:absolute; left:var(--reveal-x); top:var(--reveal-y); width:calc(var(--reveal-radius) * 2); aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle,rgba(255,255,255,.9) 0%,rgba(255,255,255,.32) 35%,transparent 72%); }
 .exam-transition.is-leaving .exam-transition-center { transform:scale(.96); opacity:0; }
 .exam-transition.is-ready p { animation:exam-ready 400ms ease both; }
 .exam-transition.is-leaving { opacity:0; }
