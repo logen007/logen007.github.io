@@ -12,6 +12,12 @@ import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {writingFormScore} from '../src/domain/writing-form.js';
 
 const originalStorage=globalThis.sessionStorage;
+const bootHtml=readFileSync(new URL('../vi.html',import.meta.url),'utf8');
+assert.doesNotMatch(bootHtml,/Đang tải Luyện thi tiếng Đức/);
+assert.match(bootHtml,/id="bootShell" aria-busy="true"/);
+assert.match(bootHtml,/prefers-reduced-motion:reduce/);
+assert.match(bootHtml,/Thử lại/);
+assert.match(readFileSync(new URL('../src/exam-specs/goethe.js',import.meta.url),'utf8'),/Promise.all/);
 const touchStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea, \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);
 assert.doesNotMatch(readFileSync(new URL('../vi.html',import.meta.url),'utf8'),/user-scalable\s*=\s*no|maximum-scale\s*=/);

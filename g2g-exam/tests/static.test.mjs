@@ -251,7 +251,7 @@ test('Trang có trình xử lý lỗi runtime để tránh màn hình trắng',(
   const html=read('vi.html');
   assert.ok(html.includes('window.addEventListener'));
   assert.ok(html.includes('Hệ thống chưa tải được'));
-  assert.ok(html.includes('Tải lại'));
+  assert.ok(html.includes('Thử lại'));
 });
 
 test('Nộp bài trực tiếp; các xác nhận khác không dùng hộp thoại trình duyệt',()=>{
@@ -290,7 +290,7 @@ test('HTML ban đầu không còn render form đăng nhập cũ trước landing
   const html=read('vi.html');
   assert.doesNotMatch(html,/class="dang-nhap"/);
   assert.doesNotMatch(html,/>Đăng nhập bằng Google</);
-  assert.match(html,/Đang tải Luyện thi tiếng Đức/);
+  assert.match(html,/id="bootShell" aria-busy="true"/);
 });
 
 console.log(`\n${passed} kiểm thử tĩnh đã đạt.`);
