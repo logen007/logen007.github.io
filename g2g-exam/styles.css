@@ -195,8 +195,8 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
   .site-confirm-actions .ui-icon { width:18px; height:18px; }
 }
 .site-confirm-danger { background:var(--do)!important; color:#fff!important; }
-.site-confirm-extra { display:flex; align-items:center; justify-content:center; gap:8px; width:fit-content; margin:24px auto 0; color:var(--do); }
-.site-confirm-extra:hover:not(:disabled) { color:var(--do); }
+.site-confirm-extra { display:flex; align-items:center; justify-content:center; width:fit-content; min-height:44px; margin:12px auto -8px; padding:8px 12px; color:#767676; font-weight:400; }
+.site-confirm-extra:hover:not(:disabled) { color:var(--phu); }
 .dau-hop { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }.dau-hop h2 { margin:8px 0 0; font-size:28px; font-weight:500; }
 .dau-hop>button { width:40px; height:40px; min-height:40px; padding:0; border-radius:50%; font-size:22px; }
 .luoi-chon { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }

@@ -19,7 +19,7 @@ export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',can
   if(extraAction){
     const extra=document.createElement('button');
     extra.type='button';extra.className='text-link site-confirm-extra';
-    extra.innerHTML=iconHtml(extraAction.icon||'close')+'<span>'+esc(extraAction.label)+'</span>';
+    extra.innerHTML=(extraAction.icon?iconHtml(extraAction.icon):'')+'<span>'+esc(extraAction.label)+'</span>';
     extra.onclick=()=>{close();extraAction.onClick();};
     overlay.querySelector('.site-confirm').append(extra);
   }
