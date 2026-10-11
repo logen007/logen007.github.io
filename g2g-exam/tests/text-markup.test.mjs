@@ -60,6 +60,7 @@ assert.match(letterAnswersHtml({questionProfile:{layout:'letter-select'}},[{id:'
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(css,/\.form-line \{ grid-template-columns:minmax\(0,32%\) minmax\(0,1fr\); gap:8px;/);
 assert.match(css,/\.writing-form-question \.writing-paper \{ width:100%;[^}]*transform:none;/);
+assert.match(css,/\.writing-form-question \.writing-paper \{[^}]*padding:20px 18px;/);
 assert.match(css,/\.exam-paper:has\(\.writing-form-question\) \{ padding-inline:12px;/);
 assert.match(css,/\.text-link\.navigation-arrow \{ width:auto; min-width:0; padding-inline:0;/);
 assert.match(css,/select:not\(\[multiple\]\), \.inline-gap-trigger \{ border-radius:var\(--pill\)!important;/);

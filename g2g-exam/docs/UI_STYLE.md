@@ -163,6 +163,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 ## Preview layout
 
 - Paper-style answer forms use the available width with small side gutters.
+  Keep mobile inner padding at 20px vertically and 18px horizontally so content
+  does not sit against the paper edge.
   Keep labels and their inputs on the same row on mobile (roughly 32% / 68%);
   wrap long labels within their own column. Headings, notes and images keep full
   rows. Reduce nested side padding and disable paper rotation on mobile to avoid

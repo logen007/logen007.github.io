@@ -324,7 +324,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .writing-paper .form-label { min-width:0; overflow-wrap:anywhere; }
 @media(max-width:700px) {
   .exam-paper:has(.writing-form-question) { padding-inline:12px; }
-  .writing-form-question .writing-paper { width:100%; margin:12px 0 20px; padding:16px 10px; transform:none; }
+  .writing-form-question .writing-paper { width:100%; margin:12px 0 20px; padding:20px 18px; transform:none; }
   .writing-paper .form-answer-line { grid-template-columns:minmax(0,1fr) 3ch; gap:4px; }
   .writing-paper .form-line--full .form-answer-line { grid-template-columns:minmax(0,1fr); }
   .writing-paper .form-cell h3 { font-size:20px; overflow-wrap:anywhere; }
