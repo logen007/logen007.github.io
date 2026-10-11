@@ -1018,7 +1018,8 @@ async function createNewExam(){
     syncLevels();
     modal.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{modal.remove();resolve(null);});
     modal.querySelector('#confirmNewExam').onclick=()=>{const value=title.value.trim()||`${provider} ${level} – Bản nháp`;modal.remove();resolve({level,provider,title:value});};
-    title.focus();
+    const initialFocus=window.matchMedia('(any-pointer:coarse)').matches?modal.querySelector('[data-close]'):title;
+    initialFocus?.focus({preventScroll:true});
   });
   if(!setup)return;
   const {level,provider,title}=setup;

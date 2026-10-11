@@ -154,6 +154,14 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
   min-width:0; min-height:var(--control-height); border:1px solid var(--control-border); border-radius:var(--r-sm); background:var(--mat); padding:10px var(--control-pad-x); font:400 14px/1.5 var(--font-ui);
 }
 .truong { height:var(--control-height); }.truong.tim { min-width:220px; flex:1; }
+/* Keep editable controls readable before focus on touch devices, including
+   landscape phones and dialogs. Preserve user-controlled viewport zoom. */
+@media (any-pointer:coarse) {
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=button]):not([type=submit]):not([type=reset]):not([type=hidden]),
+  select, textarea, [contenteditable="true"], [contenteditable=""] {
+    font-size:16px !important;
+  }
+}
 .letter-builder-answer .truong { height:var(--editor-control); min-width:88px; flex:none; }
 .part-display-setting { display:grid; gap:8px; font-size:13px; color:var(--phu); margin-bottom:16px; max-width:260px; }
 .part-display-setting .truong { width:100%; min-width:0; height:var(--editor-control); }

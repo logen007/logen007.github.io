@@ -12,6 +12,10 @@ import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {writingFormScore} from '../src/domain/writing-form.js';
 
 const originalStorage=globalThis.sessionStorage;
+const touchStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea, \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);
+assert.doesNotMatch(readFileSync(new URL('../vi.html',import.meta.url),'utf8'),/user-scalable\s*=\s*no|maximum-scale\s*=/);
+assert.match(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/initialFocus\?\.focus\(\{preventScroll:true\}\)/);
 globalThis.sessionStorage={getItem:()=>null};
 let passed=0;
 async function test(name,run){

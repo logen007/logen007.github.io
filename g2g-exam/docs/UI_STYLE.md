@@ -15,6 +15,11 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
   page/card titles or body content: those can wrap naturally.
 - Mobile is a first-class layout: preserve touch targets, explicit gaps, stable
   alignment and local table overflow; avoid page-wide overflow and layout jumps.
+  On touch devices, editable inputs, selects and textareas use 16px text before
+  focus (including landscape and dialogs) to avoid automatic input zoom.
+  This accessibility rule overrides compact-control font sizes. Keep pinch zoom
+  enabled; creating an exam focuses the dialog close button on touch devices
+  instead of opening the keyboard immediately.
 
 - Google Sans Flex, optical sizing enabled. Body 15px/1.5 at weight 400;
   form controls 14px; supporting text 12–13px. Mobile editable text can use 16px.
