@@ -45,6 +45,7 @@
 }
 * { box-sizing:border-box; }
 .sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
+.navigation-arrow.navigation-arrow { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; min-width:80px; min-height:44px; padding:10px 16px; }
 html { background:var(--nen); color-scheme:light; }
 body { margin:0; color:var(--chu); background:var(--nen); font:400 15px/1.5 var(--font-ui); font-optical-sizing:auto; }
 button,input,select,textarea { font:inherit; color:inherit; }

@@ -1,10 +1,11 @@
 import {ATTEMPT_STATUS,getStudentResults} from '../core.js';
+import {iconHtml} from '../ui/icons.js';
 import {resultClass} from '../domain/gradebook.js';
 import {esc,fmtDate,statusText} from '../ui/format.js';
 
 export function studentResultsHtml({data,user}){
   const attempts=getStudentResults(data,user.id);
-  return `<main class="khung student-results"><div class="tieu-de-trang"><div><h1>Kết quả của bạn</h1>${attempts.length?`<p>${attempts.length} bài thi</p>`:''}</div><button class="nut" data-action="student-home">Về danh sách đề</button></div>
+  return `<main class="khung student-results"><div class="tieu-de-trang"><div><h1>Kết quả của bạn</h1>${attempts.length?`<p>${attempts.length} bài thi</p>`:''}</div><button class="nut navigation-arrow" aria-label="Về danh sách đề" title="Về danh sách đề" data-action="student-home">${iconHtml('arrowLeft')}</button></div>
     <div class="student-result-list">${attempts.map(attempt=>{
       const published=attempt.status===ATTEMPT_STATUS.PUBLISHED;
       const result=attempt.result==='Trượt'?'Chưa đạt':attempt.result;

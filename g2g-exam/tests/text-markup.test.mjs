@@ -53,7 +53,12 @@ const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 const studentView=readFileSync(new URL('../src/views/student.js',import.meta.url),'utf8');
 assert.match(studentView,/section-arrow" aria-label="Vorheriger Teil"/);
 assert.match(studentView,/iconHtml\('arrowLeft'\)/);
-assert.match(studentView,/iconHtml\('arrowRight'\):nextLabel/);
+assert.match(studentView,/iconHtml\('arrowRight'\):preview\?iconHtml\('arrowLeft'\):nextLabel/);
+for(const path of ['../src/views/student.js','../src/views/builder.js','../src/views/classes.js','../src/ui/publish-errors.js']){
+  const source=readFileSync(new URL(path,import.meta.url),'utf8');
+  assert.doesNotMatch(source,/>\s*(Quay lại(?: sửa)?|Zurück|← Lớp học)<\/button>/);
+  assert.match(source,/navigation-arrow" aria-label=/);
+}
 assert.match(css,/\.dieu-huong-thi \.nut \{ min-width:80px/);
 assert.match(css,/\.dieu-huong-thi \.nut \{ min-width:112px; min-height:44px/);
 assert.match(css,/\.letter-picker-dialog \{ width:calc\(100% - 24px\); max-width:720px/);

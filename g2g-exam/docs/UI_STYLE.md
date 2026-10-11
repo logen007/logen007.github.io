@@ -147,7 +147,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   as text controls. Shadows remain reserved for overlays and media previews.
 - Exam navigation stays after the questions: no sticky surface/background/border.
   Exam structure navigation is preview-only.
-- Previous/next navigation shows arrow icons only, with accessible names and
+- Site-wide back/previous/next navigation shows arrow icons only, including
+  preview headers, builder, grading, results, class details and return-to-edit
+  dialogs, with accessible names and
   tooltips. Keep wide pill targets (at least 80px wide and 44px high on mobile),
   not small circular icon buttons. Preserve disabled states. Final submission
   and other non-navigation actions retain clear text labels.
@@ -188,7 +190,7 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   Section changes return scroll and keyboard focus to the new heading.
 - Scope preview-only presentation under `.thi--preview`. It uses local answers;
   production part runtimes must never attach a live attempt to preview content.
-- Builder return navigation is a text link to the left of provider/level on the same row, without a hover underline.
+- Builder return navigation is a wide arrow-only button to the left of provider/level on the same row, without a hover underline.
   The role-appropriate header menu remains visible when editing exams or grading.
   Preview return navigation remains before the exam title.
   The builder has no draft-save button or successful-save message; retain pending/error feedback.
