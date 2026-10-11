@@ -469,7 +469,7 @@ async function submitCurrentExam(confirmed=false){
     const attempt=byId(data.attempts,ui.attemptId),exam=attempt&&byId(data.exams,attempt.examId);
     if(!attempt||!exam)return;
     const missing=unansweredExamQuestions(exam,data.questions,{...attempt.answers,...readExamAnswers(app)});
-    confirmAction(missing.length?`Noch nicht vollständig beantwortete Aufgaben: ${missing.map(item=>item.number).join(', ')}. Möchten Sie trotzdem abgeben?`:'Möchten Sie die Prüfung jetzt abgeben?',()=>submitCurrentExam(true),{confirmLabel:'Prüfung abgeben',cancelLabel:'Weiterarbeiten',confirmIcon:'upload',cancelIcon:'grading'});
+    confirmAction(missing.length?`Noch nicht vollständig beantwortete Aufgaben: ${missing.map(item=>item.number).join(', ')}. Möchten Sie trotzdem abgeben?`:'Möchten Sie die Prüfung jetzt abgeben?',()=>submitCurrentExam(true),{confirmLabel:'Prüfung abgeben',cancelLabel:'Weiterarbeiten',confirmIcon:'upload',cancelIcon:'grading',extraAction:{label:'Huỷ bài thi',icon:'close',onClick:confirmAbandonExam}});
     return;
   }
   submitBusy=true;
@@ -478,6 +478,25 @@ async function submitCurrentExam(confirmed=false){
     const result=await act(()=>repo.transaction(st=>submitAttempt(st,user,ui.attemptId)),null,{rerender:false});
     if(result){data=await repo.getState();ui.view='submitted';render();}
   }finally{submitBusy=false;}
+}
+
+function confirmAbandonExam(){
+  const attemptId=ui.attemptId;
+  confirmAction('Huỷ bài thi này? Bài đang làm sẽ bị xoá, không được nộp hoặc chấm điểm. Bạn sẽ trở về danh sách đề.',async()=>{
+    if(submitBusy||timerBusy||ui.view!=='exam'||ui.attemptId!==attemptId)return;
+    submitBusy=true;clearTimer();stopActiveAudio();
+    for(const pending of saveTimers.values())clearTimeout(pending);
+    saveTimers.clear();
+    try{
+      const result=await act(()=>repo.transaction(st=>abandonAttempt(st,user,attemptId)),null,{rerender:false});
+      if(result){
+        ui.attemptId=null;ui.view='student-home';
+        data=await repo.getState();
+        notify('Đã huỷ bài thi. Bài đang làm đã bị xoá và không thể khôi phục.');
+      }
+      render();window.scrollTo(0,0);
+    }finally{submitBusy=false;}
+  },{confirmLabel:'Huỷ bài thi',cancelLabel:'Tiếp tục làm bài',danger:true,confirmIcon:'close',cancelIcon:'grading'});
 }
 
 function adminView(){

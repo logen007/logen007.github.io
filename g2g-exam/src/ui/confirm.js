@@ -1,6 +1,6 @@
 import {iconHtml} from './icons.js';
 import {esc} from './format.js';
-export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',cancelLabel='Hủy',danger=false,confirmIcon= danger?'trash':'arrowRight',cancelIcon='close'}={}){
+export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',cancelLabel='Hủy',danger=false,confirmIcon= danger?'trash':'arrowRight',cancelIcon='close',extraAction=null}={}){
   document.getElementById('site-confirm')?.remove();
   const previousFocus=document.activeElement;
   const overlay=document.createElement('div');
@@ -16,6 +16,13 @@ export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',can
   const onKeydown=event=>{if(event.key==='Escape'){event.preventDefault();close();}};
   overlay.querySelector('[data-confirm-cancel]').onclick=close;
   accept.onclick=()=>{close();onConfirm();};
+  if(extraAction){
+    const extra=document.createElement('button');
+    extra.type='button';extra.className='text-link site-confirm-extra';
+    extra.innerHTML=iconHtml(extraAction.icon||'close')+'<span>'+esc(extraAction.label)+'</span>';
+    extra.onclick=()=>{close();extraAction.onClick();};
+    overlay.querySelector('.site-confirm').append(extra);
+  }
   overlay.onclick=event=>{if(event.target===overlay)close();};
   document.body.append(overlay);
   document.addEventListener('keydown',onKeydown);
