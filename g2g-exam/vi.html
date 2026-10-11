@@ -13,16 +13,8 @@
   <link rel="stylesheet" href="./enhancements.css?v=20261008-26">
   <style>
     .boot-shell{width:100%;position:relative}
-    .boot-layout{position:absolute;pointer-events:none;overflow:hidden}
-    .boot-layout-surface{background:var(--mat);border:1px solid var(--vien)}
-    .boot-layout-line,.boot-layout-media{background:var(--vien);animation:boot-pulse 1.6s ease-in-out infinite alternate}
-    .boot-shape{background:var(--vien);border-radius:12px;height:3px;animation:boot-pulse 1.6s ease-in-out infinite alternate}
-    .boot-progress{margin:24px 0;width:100%}
     .boot-feedback{position:relative;z-index:1;background:var(--mat);border-radius:12px;color:#626870;font-size:14px;line-height:1.5}.boot-feedback:empty{display:none}
     .boot-feedback button{margin-left:8px;padding:8px 16px;border:1px solid #e4e6e9;border-radius:24px;background:#fff;color:#101318;cursor:pointer;font:inherit}
-    @keyframes boot-pulse{to{opacity:.5}}
-    .boot-shell[aria-busy="false"] :is(.boot-shape,.boot-layout-line,.boot-layout-media){animation:none}
-    @media(prefers-reduced-motion:reduce){.boot-shape,.boot-layout-line,.boot-layout-media{animation:none}}
   </style>
   <script>
     function showBootError(){
@@ -40,14 +32,10 @@
 <body>
   <div id="app">
     <div class="boot-shell" id="bootShell" aria-busy="true" aria-label="Đang chuẩn bị giao diện">
-      <div aria-hidden="true" data-boot-fallback>
-        <div class="boot-shape boot-progress"></div>
-      </div>
       <p class="boot-feedback" id="bootStatus" role="status"></p>
       <noscript>Vui lòng bật JavaScript để sử dụng website.</noscript>
     </div>
   </div>
-  <script src="./src/ui/boot-layout.js?v=2"></script>
   <div id="toast" class="thong-bao an"></div>
   <script src="./runtime-config.js?v=20261008-26"></script>
   <script type="module" src="./src/app.js?v=20261009-91"></script>

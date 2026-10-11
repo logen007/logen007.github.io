@@ -158,18 +158,17 @@ async function act(fn,success,{rerender=true}={}){
 }
 
 function loginView(){
-  window.G2GBootLayout?.clear();
   app.innerHTML=loginHtml({mode:repo.mode});
   if(repo.mode==='local'){
     const exams=data.exams.filter(ex=>ex.status==='published');
     const types=[...new Set(exams.map(ex=>[ex.provider,ex.level].filter(Boolean).join(' ')))].filter(Boolean);
     document.getElementById('landingTypes').innerHTML=types.map(type=>`<span>${type.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}</span>`).join('');
-    document.getElementById('landingMetrics').innerHTML=[['Học viên',data.users.filter(u=>u.role==='student').length],['Bài thi đã chấm',data.attempts.filter(a=>a.status==='published').length],['Bộ đề',exams.length]].map(([label,count])=>`<div><b>${count}</b><span>${label}</span></div>`).join('');
+    document.getElementById('landingMetrics').innerHTML=[['Học viên',data.users.filter(u=>u.role==='student').length],['Giáo viên',data.users.filter(u=>u.role==='teacher').length],['Bài thi',data.attempts.filter(a=>['grading','ready','published'].includes(a.status)).length],['Đề thi',exams.length]].map(([label,count])=>`<div><b>${count}</b><span>${label}</span></div>`).join('');
   }
   if(repo.mode!=='local')loadPublicSettings().then(publicData=>{
     const types=document.getElementById('landingTypes'),metrics=document.getElementById('landingMetrics');
     if(types)types.innerHTML=(publicData.stats?.examTypes||[]).map(type=>`<span>${String(type).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}</span>`).join('')||'<span>Đang cập nhật bộ đề</span>';
-    if(metrics)metrics.innerHTML=[['students','Học viên'],['graded','Bài thi đã chấm'],['exams','Bộ đề']].map(([key,label])=>`<div><b>${Number(publicData.stats?.[key]||0).toLocaleString('vi-VN')}</b><span>${label}</span></div>`).join('');
+    if(metrics)metrics.innerHTML=[['students','Học viên'],['teachers','Giáo viên'],['attempts','Bài thi'],['exams','Đề thi']].map(([key,label])=>`<div><b>${Number(publicData.stats?.[key]||0).toLocaleString('vi-VN')}</b><span>${label}</span></div>`).join('');
   }).catch(()=>{const types=document.getElementById('landingTypes');if(types)types.textContent='Chưa tải được danh sách đề.';});
   document.getElementById('googleLogin').onclick=async()=>{
     if(repo.mode==='local'){
@@ -656,9 +655,6 @@ function render(){
   else adminView();
   bindGlobal();
   bindViewSpecific();
-  if(['student-home','student-results','exam','preview-exam','builder','grading-detail','admin'].includes(ui.view)
-    &&!(ui.view==='admin'&&ui.adminTab==='classes'&&ui.classId))window.G2GBootLayout?.schedule(app);
-  else window.G2GBootLayout?.clear();
   clearSplitReading=bindSplitReading(app);
   const titleField=document.getElementById('examTitle');
   if(titleField){

@@ -51,13 +51,15 @@ await registerAuthRoutes(app);
 app.get('/api/health',async()=>{let db=true;try{await pool.query('SELECT 1');}catch{db=false;}return {ok:db,backend:'vps',database:db,time:new Date().toISOString()};});
 app.get('/api/public-settings',async()=>{
   const s=await getSettings();
-  const [students,graded,exams]=await Promise.all([
+  const [students,graded,exams,teachers,attempts]=await Promise.all([
     pool.query(`SELECT count(*)::int AS count FROM users WHERE role='student'`),
     pool.query(`SELECT count(*)::int AS count FROM attempts WHERE status='published'`),
     pool.query(`SELECT data FROM exams WHERE status='published'`),
+    pool.query(`SELECT count(*)::int AS count FROM users WHERE role='teacher'`),
+    pool.query(`SELECT count(*)::int AS count FROM attempts WHERE status IN ('grading','ready','published')`),
   ]);
   const examTypes=[...new Set(exams.rows.map(row=>[row.data.provider,row.data.level].filter(Boolean).join(' ')).filter(Boolean))].sort();
-  return {general:{systemName:s.general.systemName,organizationName:s.general.organizationName,publicUrl:s.general.publicUrl,logoUrl:s.general.logoUrl,faviconUrl:s.general.faviconUrl},theme:s.theme,auth:{googleLoginEnabled:s.auth.googleLoginEnabled,allowNewStudents:s.auth.allowNewStudents},operations:{maintenanceMode:s.operations.maintenanceMode,maintenanceMessage:s.operations.maintenanceMessage},stats:{students:students.rows[0].count,graded:graded.rows[0].count,exams:exams.rowCount,examTypes}};
+  return {general:{systemName:s.general.systemName,organizationName:s.general.organizationName,publicUrl:s.general.publicUrl,logoUrl:s.general.logoUrl,faviconUrl:s.general.faviconUrl},theme:s.theme,auth:{googleLoginEnabled:s.auth.googleLoginEnabled,allowNewStudents:s.auth.allowNewStudents},operations:{maintenanceMode:s.operations.maintenanceMode,maintenanceMessage:s.operations.maintenanceMessage},stats:{teachers:teachers.rows[0].count,attempts:attempts.rows[0].count,students:students.rows[0].count,graded:graded.rows[0].count,exams:exams.rowCount,examTypes}};
 });
 app.get('/api/settings',async request=>{await requireRole(request,'master');return {settings:await getSettings()};});
 app.get('/api/state',async request=>loadState(await requireUser(request)));
