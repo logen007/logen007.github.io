@@ -11,7 +11,7 @@ import {gapAuthorText,parseGapText,inlineGapErrors} from '../src/domain/inline-g
 import {saveInlineGapDraft} from '../src/part-templates/default/inline-gap-builder.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {examHtml} from '../src/views/student.js';
-import {bindLetterAnswers} from '../src/ui/letter-answers.js';
+import {bindLetterAnswers,letterAnswerControl} from '../src/ui/letter-answers.js';
 import {validateExamForPublish,duplicateExam,startAttempt,submitAttempt,saveManualScore} from '../src/core.js';
 
 const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teacher-lan'),student=state.users.find(u=>u.id==='student-a');
@@ -68,7 +68,13 @@ const publicQuestions=qs.map(({correctAnswer,...q})=>q);
 const html=examHtml({exam,attempt:{answers:{}},sectionIndex:1,questions:publicQuestions,allQuestions:state.questions,online:true});
 assert.equal((html.match(/data-letter-answer/g)||[]).length,6);
 assert.match(html,/Gehen wir 200 Jahre zurück/);
-assert.match(html,/<b>10<\/b>/);
+assert.match(html,/<option value="">10<\/option>/);
+assert.match(html,/<option value="0" >10\. a<\/option>/);
+assert.doesNotMatch(html,/<b>10<\/b>|<b>_<\/b>|Beispiel:|<option value="">—/);
+assert.equal((html.match(/<b>0<\/b>/g)||[]).length,2);
+assert.match(letterAnswerControl(qs[0],0,'letter-select',{number:10}),/<option value="0" selected>10\. a<\/option>/);
+assert.match(letterAnswerControl(qs[0],null,'letter-select'),/<option value="">—<\/option>/);
+assert.match(css,/\.inline-gap select \{[^}]*background-color:var\(--brand-soft\)/);
 assert.doesNotMatch(html,/\[[a-hz]\]/);
 assert.equal((html.match(/src="\/uploads\/bicycle-test.png"/g)||[]).length,1);
 assert.ok(html.indexOf('<h2>Die Geschichte des Fahrrads</h2>')<html.indexOf('class="gap-article-image"'));
