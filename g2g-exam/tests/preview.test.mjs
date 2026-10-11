@@ -213,6 +213,7 @@ try{
     assert.match(html,/class="nhan exam-provider" data-provider="GOETHE">Goethe<\/span>/);
     assert.match(html,/class="nhan exam-level" data-level="A1">A1<\/span>/);
     assert.doesNotMatch(html,/>Goethe A1<\/span>/);
+    assert.match(html,/<div class="exam-card-details"><div class="exam-card-tags">[^]*?<\/div><span class="meta">2 phần · 0 câu<\/span><\/div>/);
     const telc=studentExamCardHtml({...exam,provider:'TELC',level:'B2'},[],{questions:[]});
     assert.match(telc,/data-provider="TELC">Telc<\/span>/);
     assert.match(telc,/data-level="B2">B2<\/span>/);
