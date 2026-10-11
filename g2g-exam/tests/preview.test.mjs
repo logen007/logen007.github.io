@@ -188,7 +188,12 @@ try{
     input.allQuestions=input.questions;
     const html=examHtml(input);
     assert.equal((html.match(/question-example-title/g)||[]).length,1);
-    assert.equal((html.match(/Beispiel/g)||[]).length,1);
+    assert.equal((html.match(/>Beispiel</g)||[]).length,1);
+    assert.equal((html.match(/class="exam-question-pair exam-question-pair--example"/g)||[]).length,1);
+    assert.doesNotMatch(html,/class="question-number">_/);
+    const exampleStart=html.indexOf('class="exam-question-pair exam-question-pair--example"');
+    assert.ok(exampleStart<html.indexOf('data-q="choice"'));
+    assert.ok(html.indexOf('data-q="match"')<html.indexOf('data-q="written"'));
   });
   await test('Starting a retake refreshes state and advancing returns to page top',()=>{
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');

@@ -75,14 +75,14 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBl
   const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
   let questionNumber=exam.sections.slice(0,sectionIndex).filter(item=>!sec.questionProfile?.numberWithinSkill||item.skillKey===sec.skillKey).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!isPrefilledQuestion(knownQuestions.get(id))).length,0);
-  let exampleTitleShown=false;
+  const exampleCount=orderedQuestions.length-requiredQuestions.length;
   const questionList=sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
-    const showExampleTitle=Boolean(isPrefilledQuestion(q)&&!exampleTitleShown);if(showExampleTitle)exampleTitleShown=true;
+    const example=isPrefilledQuestion(q),scoredIndex=displayIndex-exampleCount;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
     const paired=sec.questionProfile?.pairedQuestions;
-    const pairStart=paired&&displayIndex%2===0?`<div class="exam-question-pair${isPrefilledQuestion(q)?' exam-question-pair--example':''}" role="group" aria-label="${isPrefilledQuestion(q)?'Beispiel':'Aufgabenpaar '+(Math.floor(displayIndex/2)+1)}">`:'';
-    const pairEnd=paired&&(displayIndex%2===1||displayIndex===orderedQuestions.length-1)?'</div>':'';
-    return pairStart+renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{linedPaper:sec.questionProfile?.linedPaper,wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:isPrefilledQuestion(q)?'_':++questionNumber,showExampleTitle:showExampleTitle&&!paired,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'})+pairEnd;
+    const pairStart=example?(displayIndex===0?'<div class="exam-question-pair exam-question-pair--example" role="group" aria-label="Beispiel"><div class="question-example-title">Beispiel</div>':''):paired&&scoredIndex%2===0?`<div class="exam-question-pair" role="group" aria-label="Aufgabenpaar ${Math.floor(scoredIndex/2)+1}">`:'';
+    const pairEnd=(example?displayIndex===exampleCount-1:paired&&(scoredIndex%2===1||displayIndex===orderedQuestions.length-1))?'</div>':'';
+    return pairStart+renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{linedPaper:sec.questionProfile?.linedPaper,wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:example?null:++questionNumber,showExampleTitle:false,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'})+pairEnd;
   }).join('')||'<div class="rong">Dieser Teil enthält noch keine Aufgaben.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sec.name))}</h1></div></div>`
@@ -164,7 +164,7 @@ function exampleAnswer(q){
 
 export function renderQuestionHtml(q,answer,attempt,{linedPaper=false,wordRange=null,sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null,showExampleTitle=true,formFrame=false,mobileThreeChoices=false}={}){
   const isExample=Boolean(isPrefilledQuestion(q)),exampleTitle=isExample&&showExampleTitle?'<div class="question-example-title">Beispiel</div>':'';
-  if(isExample)answer=exampleAnswer(q);
+  if(isExample){answer=exampleAnswer(q);questionNumber=null;}
   if(q.type==='writing'&&(formFrame||q.writingFormVersion===1))return `<div class="cau-thi writing-form-question ${isExample?'is-example':''}" data-q="${esc(q.id)}">${exampleTitle}${writingFormDisplay(q,answer,{readOnly:isExample})}</div>`;
   const played=sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`);
   const audio=!hideAudio&&q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" title="Das Audio wird gemäß den Prüfungsregeln abgespielt." ${played?'disabled':''}>${played?'Audio abgespielt':'Audio abspielen'}</button>${preview?'':'<span class="phu-de">Das Audio wird gemäß den Prüfungsregeln abgespielt.</span>'}</div>`:'';

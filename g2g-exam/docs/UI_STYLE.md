@@ -198,8 +198,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   Teachers may set an optional image maximum width in px; blank means full
   content-column width. Preserve aspect ratio and viewport responsiveness.
   Letter-table headings are teacher-editable, not fixed to Person.
-  Questions worth zero points show their correct answer read-only, use "_" in
-  place of the number, and are excluded from question counts and progress.
+  Questions worth zero points show their correct answer read-only and are excluded
+  from question counts and progress. Consecutive standard example questions share
+  one “Beispiel” frame and heading with 16px internal gaps; do not prefix them with
+  an underscore or dash. Keep scored question pairs separate.
   In letter-answer question lists, display the example as "0." instead of "_";
   it still does not advance the scored-question numbering.
 - Put prompt and audio control together; answer options fill the following row.

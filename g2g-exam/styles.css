@@ -474,6 +474,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .paired-question-group > h3 { margin:0; font-size:18px; }
 .exam-question-pair { display:grid; gap:16px; margin:0 0 40px; min-width:0; }
 .exam-question-pair--example { padding:18px; border:1px solid var(--example-border); border-radius:var(--r); background:var(--example-bg); }
+.exam-question-pair--example > .question-example-title { margin-bottom:0; }
 .exam-paper .to-thi .exam-question-pair > .cau-thi,
 .exam-paper .to-thi .exam-question-pair > .cau-thi:is(:first-child,:last-child),
 .exam-paper .to-thi .exam-question-pair > .cau-thi.is-example:is(:first-child,:last-child) { margin:0; padding:0; border:0; border-radius:0; background:transparent; }
