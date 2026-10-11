@@ -529,6 +529,7 @@ select:not([multiple]) { appearance:none; -webkit-appearance:none; padding-right
 .inline-gap select { width:56px; min-width:56px; height:32px; min-height:32px; padding:0 24px 0 8px; border-radius:8px; font-size:14px; line-height:1; background-position:right 6px center; background-size:12px; background-color:var(--brand-primary); border-color:var(--brand-primary); color:var(--brand-on-primary); font-weight:600; }
 @media(pointer:coarse) { .inline-gap select { height:36px; min-height:36px; font-size:16px; } }
 .inline-gap select option { background-color:var(--mat); color:var(--chu); }
+.inline-gap select:has(option:checked:not([value=""])) { background-color:color-mix(in srgb,var(--xanh) 14%,var(--mat)); border-color:var(--xanh); color:var(--xanh); }
 .inline-gap-paper .gap-sentences p { font-weight:400; }
 .inline-gap-paper .gap-sentences b { font-weight:600; }
 @media(min-width:761px) { .exam-reading-split > .split-follow { position:sticky; top:var(--split-top,16px); align-self:start; } }

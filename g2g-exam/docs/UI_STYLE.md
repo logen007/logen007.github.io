@@ -112,6 +112,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 - User-approved exception: single-letter dropdowns embedded in reading text
   are 56×32px (36px high on touch screens), with 8px corners and compact padding.
   Reuse the same chevron at 12px, positioned 6px from the right.
+  Empty inline choices use the brand fill; selected choices use a pale green
+  fill. This indicates answered, never correctness. Clearing restores the
+  empty state; saved answers retain the selected styling when reopened.
 - Cards use the shared 24px radius and 24px desktop padding. Compact/mobile
   variants may reduce padding to 18–20px but must not introduce a third radius.
 - Primary, secondary, destructive and icon-only actions reuse `.nut`, `.nguy`

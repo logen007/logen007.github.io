@@ -77,6 +77,8 @@ assert.match(letterAnswerControl(qs[0],0,'letter-select',{number:10}),/<option v
 assert.match(letterAnswerControl(qs[0],null,'letter-select'),/<option value="">—<\/option>/);
 assert.match(css,/\.inline-gap select \{ width:56px; min-width:56px; height:32px; min-height:32px;/);
 assert.match(css,/\.inline-gap select \{[^}]*background-color:var\(--brand-primary\)/);
+assert.ok(css.includes('.inline-gap select:has(option:checked:not([value=""]))'));
+assert.ok(css.includes('background-color:color-mix(in srgb,var(--xanh) 14%,var(--mat))'));
 assert.match(css,/\.inline-gap-paper \.gap-sentences p \{ font-weight:400;/);
 // Both left-shorter and right-shorter layouts react to image/viewport resizing.
 {
