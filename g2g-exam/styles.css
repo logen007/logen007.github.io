@@ -484,6 +484,10 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .exam-list-heading > .nut { flex:0 0 auto; white-space:nowrap; }
 .instruction-content { display:grid; gap:12px; min-width:0; }
 .landing-copy p > strong { color:#d4a800; }
+.class-picker-field { position:relative; display:block; width:100%; }
+.profile-form .class-picker-field > input { width:100%; padding-right:80px; }
+.class-picker-field > .class-picker-clear { position:absolute; right:34px; top:50%; transform:translateY(-50%); width:32px; height:32px; min-height:32px; padding:6px; border:0; background:transparent; }
+.class-picker-field > .class-picker-clear[hidden] { display:none; }
 .paired-question-group { display:grid; gap:16px; margin:0; }
 .paired-question-group > .goethe-question + .goethe-question { border-top:0; padding-top:0; }
 .paired-question-group > h3 { margin:0; font-size:18px; }

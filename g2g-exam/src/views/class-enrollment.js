@@ -1,5 +1,6 @@
 import {mountDialog} from './classes.js';
 import {esc} from '../ui/format.js';
+import {bindClassPickerClear} from '../ui/class-picker-clear.js';
 
 export function openClassEnrollment({repo,user,onSaved,initialCode=''}){
   const modal=mountDialog('Xác nhận lớp',`<form class="profile-form">
@@ -20,6 +21,7 @@ export function openClassEnrollment({repo,user,onSaved,initialCode=''}){
         if(!result.classes.length)throw new Error('Chưa có lớp để chọn. Vui lòng liên hệ giáo viên.');
         verifiedCode=code;availableClasses=result.classes;
         choice.innerHTML=`<label>Lớp học<input name="classCode" list="enrollment-class-options" required autocomplete="off" placeholder="Gõ mã lớp để tìm"><datalist id="enrollment-class-options">${result.classes.map(item=>`<option value="${esc(item.code)}">${esc(item.description||item.code)}</option>`).join('')}</datalist></label><p class="phu-de">Mã chỉ dùng một lần. Kiểm tra đúng lớp trước khi xác nhận.</p>`;
+        bindClassPickerClear(choice);
         choice.hidden=false;button.textContent='Xác nhận chọn lớp';choice.querySelector('input').focus();
       }else{
         const selected=availableClasses.find(item=>item.code.toLocaleLowerCase()===form.elements.classCode.value.trim().toLocaleLowerCase());

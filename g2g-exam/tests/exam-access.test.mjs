@@ -9,6 +9,21 @@ import {examAccessFormHtml} from '../src/views/exam-access.js';
 import {classFormHtml,classesHtml} from '../src/views/classes.js';
 import {openStudentProfile} from '../src/views/classes.js';
 import {openClassEnrollment} from '../src/views/class-enrollment.js';
+import {bindClassPickerClear} from '../src/ui/class-picker-clear.js';
+{
+  const previous=globalThis.document,nodes=[],handlers={},events=[];
+  const input={value:'A1-01',parentElement:{classList:{contains:()=>false}},before(){},
+    addEventListener:(name,fn)=>handlers[name]=fn,dispatchEvent(event){events.push(event.type);handlers[event.type]?.();},focus(){this.focused=true;}};
+  globalThis.document={createElement:()=>{const node={append(){},setAttribute(){},addEventListener(name,fn){this[name]=fn;}};nodes.push(node);return node;}};
+  try{
+    bindClassPickerClear({querySelectorAll:()=>[input]});
+    const button=nodes[1];assert.equal(button.hidden,false);assert.equal(button.type,'button');
+    button.click({preventDefault(){}});
+    assert.equal(input.value,'');assert.equal(button.hidden,true);assert.equal(input.focused,true);
+    assert.deepEqual(events,['input','change']);
+    input.value='B1-02';handlers.input();assert.equal(button.hidden,false);
+  }finally{globalThis.document=previous;}
+}
 
 // Minimal dialog adapter: exercise submit handlers without opening a browser.
 {
@@ -19,11 +34,11 @@ import {openClassEnrollment} from '../src/views/class-enrollment.js';
     getElementById:()=>active,
     body:{append(modal){active=modal;}},
     createElement(){
-      const button=element(),error={textContent:''},choice={hidden:true,innerHTML:'',querySelector:()=>element()};
+      const button=element(),error={textContent:''},choice={hidden:true,innerHTML:'',querySelector:()=>element(),querySelectorAll:()=>[]};
       const form={elements:{name:element(),confirmationCode:element(),code:element(),classCode:{value:'A1-01'}},
         querySelector:selector=>selector==='[data-error]'?error:selector==='[data-class-choice]'?choice:button,
         requestSubmit(){this.pending=this.onsubmit({preventDefault(){},currentTarget:this});}};
-      return {form,button,error,choice,addEventListener(){},remove(){if(active===this)active=null;},
+      return {form,button,error,choice,querySelectorAll:()=>[],addEventListener(){},remove(){if(active===this)active=null;},
         set innerHTML(value){this.html=value;form.elements.code.value=value.match(/value="([^"]*)" name="code"/)?.[1]||'';},
         querySelector:selector=>selector==='form'?form:selector==='[data-dismiss]'?null:element()};
     }

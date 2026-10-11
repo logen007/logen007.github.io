@@ -1,5 +1,6 @@
 import {textHtml,esc} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
+import {bindClassPickerClear} from '../ui/class-picker-clear.js';
 import {EXTERNAL_CLASS,normalizeStudentLevel,validateStudentProfile} from '../domain/student-profile.js';
 
 export function teacherChip(teacher){
@@ -47,6 +48,7 @@ export function mountDialog(title,body,{required=false,compact=false}={}){
 export function openStudentProfile({data,student,repo,onSaved,required=false}){
   const classes=data.classes||[],current=classes.find(item=>item.id===student.classId);
   const modal=mountDialog(required?'Hoàn tất thông tin':'Thông tin học viên',`<form class="profile-form"><label>${required?'':`Trình độ: ${esc(normalizeStudentLevel(student.level)||'A1')}`}<input aria-label="Họ và tên" name="name" required maxlength="120" value="${required?'':esc(student.name||'')}" autocomplete="name" placeholder="Nhập họ và tên đầy đủ"></label>${required?'<input name="confirmationCode" aria-label="Mã xác nhận (không bắt buộc)" placeholder="Mã xác nhận (không bắt buộc)" minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters">':`<label>Mã lớp<input name="classCode" list="profile-class-options" required autocomplete="off" placeholder="Gõ mã lớp để tìm" value="${esc(current?.code||'')}"><datalist id="profile-class-options">${classes.filter(item=>item.code!==EXTERNAL_CLASS).map(item=>`<option value="${esc(item.code)}">${esc(item.description||item.code)}</option>`).join('')}</datalist></label>`}<p data-error role="alert"></p><button class="nut chinh" type="submit">Lưu thông tin</button></form>`,{required,compact:true});
+  bindClassPickerClear(modal);
   modal.querySelector('form').onsubmit=async event=>{
     event.preventDefault();const form=event.currentTarget,button=form.querySelector('[type="submit"]');
     try{
