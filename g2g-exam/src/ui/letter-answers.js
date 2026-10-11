@@ -1,6 +1,7 @@
 import {isPrefilledQuestion} from '../domain/question-display.js';
 import {textHtml,esc} from './format.js';
 import {choiceLetter,letterAnswerError} from '../domain/letter-answers.js';
+import {bindLetterPicker,syncLetterPicker} from './letter-picker.js';
 
 export function letterAnswerControl(q,answer,layout,{number=null,optionTexts=null}={}){
   const value=isPrefilledQuestion(q)?q.correctAnswer:answer,letter=value==null||value===''?'':choiceLetter(q.choices?.[Number(value)]);
@@ -24,6 +25,7 @@ export function bindLetterAnswers(root,questions,answers,onSave){
   const controls=[...root.querySelectorAll('[data-letter-answer]')];if(!controls.length)return;
   const section={questionProfile:{uniqueLetters:root.querySelector('[data-letter-section]')?.dataset.uniqueLetters!=='false'},questionIds:questions.map(q=>q.id)};
   const refresh=()=>controls.forEach(el=>{
+    syncLetterPicker(el);
     const display=el.parentElement?.querySelector('.inline-gap-value');
     if(display)display.textContent=el.selectedOptions[0]?.dataset.letter||el.selectedOptions[0]?.textContent||'—';
     for(const option of el.querySelectorAll('option')){
@@ -39,5 +41,6 @@ export function bindLetterAnswers(root,questions,answers,onSave){
     if(error){const previous=answers[q.id];el.value=previous==null?'':el.tagName==='SELECT'?String(previous):choiceLetter(q.choices[previous]).toLowerCase();return;}
     answers[q.id]=value;onSave(q.id,value);refresh();
   });
+  controls.forEach(bindLetterPicker);
   refresh();
 }

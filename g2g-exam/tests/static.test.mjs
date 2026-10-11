@@ -163,7 +163,7 @@ test('Tạo câu hỏi trong phần không hiển thị bộ chọn loại câu'
 
 test('Mọi dropdown dùng chung khoảng cách và biểu tượng mũi tên',()=>{
   const styles=read('styles.css');
-  assert.match(styles,/select:not\(\[multiple\]\)\s*\{[^}]*appearance:none;[^}]*padding-right:42px;[^}]*background-position:right 14px center;/);
+  assert.match(styles,/select:not\(\[multiple\]\), \.inline-gap-trigger\s*\{[^}]*appearance:none;[^}]*padding-right:42px;[^}]*background-position:right 14px center;/);
   assert.equal(styles.includes('.question-profile-field select { padding:8px 4px; }'),false);
 });
 

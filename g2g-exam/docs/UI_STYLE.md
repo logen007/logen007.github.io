@@ -133,6 +133,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   Reuse the same chevron at 12px, positioned 6px from the right.
   Inline gap menus show the letter plus the full sentence when opened; the
   closed control shows only the letter (or question number when unanswered).
+  Long-sentence choices open in a full-width mobile dialog (12px side gutters),
+  with wrapping text, scrollable choices, clear and close actions; desktop caps
+  the dialog at 720px. Do not rely on the narrow native iPhone select menu.
   Empty inline choices use the brand fill; selected choices use a pale green
   fill. This indicates answered, never correctness. Clearing restores the
   empty state; saved answers retain the selected styling when reopened.

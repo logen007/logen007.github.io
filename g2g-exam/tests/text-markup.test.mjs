@@ -6,6 +6,16 @@ import {readingBlocksHtml,readingBlocksEditor} from '../src/ui/reading-blocks.js
 import {inlineGapsHtml} from '../src/ui/inline-gaps.js';
 import {letterAnswersHtml} from '../src/ui/letter-answers.js';
 import {applyBoldSelection} from '../src/ui/textarea-bold.js';
+import {letterPickerOptions,syncLetterPicker} from '../src/ui/letter-picker.js';
+
+const pickerHtml=letterPickerOptions({options:[{value:'',selected:false,textContent:'10'},{value:'0',selected:true,textContent:'a. A < B'},{value:'1',selected:false,disabled:true,textContent:'b. Used'}]});
+assert.match(pickerHtml,/Auswahl löschen/);
+assert.match(pickerHtml,/aria-pressed="true"[^>]*>a\. A &lt; B/);
+assert.match(pickerHtml,/data-value="1"[^>]*disabled/);
+const trigger={dataset:{},setAttribute(name,value){this[name]=value;}};
+const picker={value:'0',parentElement:{querySelector:()=>trigger},selectedOptions:[{dataset:{letter:'a'},textContent:'a. Full sentence'}],getAttribute:()=> 'Antwort: 10'};
+syncLetterPicker(picker);assert.equal(trigger.textContent,'a');assert.equal(trigger.dataset.answered,'true');
+picker.value='';picker.selectedOptions=[{dataset:{},textContent:'10'}];syncLetterPicker(picker);assert.equal(trigger.textContent,'10');assert.equal(trigger.dataset.answered,'false');
 
 assert.equal(textHtml('[b]New syntax[/b]'),'<strong class="text-bold">New syntax</strong>');
 assert.deepEqual(parseGapText('[b]Important[/b] [b] [a]',2).keys,[1,0]);
@@ -40,6 +50,8 @@ assert.deepEqual(inlineGapErrors(gaps),[]);
 assert.match(inlineGapsHtml(gaps,[{id:'q1',choices:['A','B']},{id:'q2',choices:['A','B']}],{},0),/<strong class="text-bold">Important text<\/strong>/);
 assert.match(letterAnswersHtml({questionProfile:{layout:'letter-select'}},[{id:'q',title:'[b]Question[b]',choices:['A','B'],maxScore:1}],{},0),/<strong class="text-bold">Question<\/strong>/);
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(css,/\.letter-picker-dialog \{ width:calc\(100% - 24px\); max-width:720px/);
+assert.match(css,/\.letter-picker-option \{[^}]*white-space:normal/);
 assert.doesNotMatch(css,/answer-option-body::before/);
 assert.doesNotMatch(css,/grid-template-columns:18px minmax\(0,1fr\)/);
 assert.match(css,/input:focus-visible\+\.answer-option-body \{ outline:2px/);
