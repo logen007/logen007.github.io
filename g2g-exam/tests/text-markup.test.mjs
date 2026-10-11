@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+const confirmationSource=readFileSync(new URL('../src/ui/confirm.js',import.meta.url),'utf8');
+assert.match(confirmationSource,/iconHtml\(cancelIcon\)/);
+assert.match(confirmationSource,/iconHtml\(confirmIcon\)/);
+assert.match(confirmationSource,/esc\(cancelLabel\)/);
+assert.match(confirmationSource,/esc\(confirmLabel\)/);
+assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.site-confirm-actions \{ display:grid; grid-template-columns:repeat\(2,minmax\(0,1fr\)\); align-items:stretch;/);
 import {textHtml} from '../src/ui/format.js';
 import {parseGapText,gapAuthorText,inlineGapErrors} from '../src/domain/inline-gaps.js';
 import {readingBlocksHtml,readingBlocksEditor} from '../src/ui/reading-blocks.js';

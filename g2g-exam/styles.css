@@ -186,7 +186,14 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 .site-confirm-backdrop { position:fixed; inset:0; z-index:120; display:grid; place-items:center; padding:20px; background:rgba(16,20,27,.36); }
 .site-confirm { width:min(420px,100%); padding:28px; border:1px solid var(--vien); border-radius:20px; background:var(--mat); box-shadow:var(--shadow); }
 .site-confirm p { margin:0; color:var(--chu); font-size:16px; line-height:1.55; }
-.site-confirm-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:28px; }
+.site-confirm-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:stretch; gap:10px; margin-top:24px; }
+.site-confirm-actions > .nut { width:100%; min-width:0; padding:10px 12px; }
+.site-confirm-actions > .nut > span { min-width:0; overflow-wrap:anywhere; }
+@media(max-width:480px) {
+  .site-confirm { padding:24px 18px; }
+  .site-confirm-actions > .nut { gap:6px; padding-inline:8px; }
+  .site-confirm-actions .ui-icon { width:18px; height:18px; }
+}
 .site-confirm-danger { background:var(--do)!important; color:#fff!important; }
 .dau-hop { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }.dau-hop h2 { margin:8px 0 0; font-size:28px; font-weight:500; }
 .dau-hop>button { width:40px; height:40px; min-height:40px; padding:0; border-radius:50%; font-size:22px; }

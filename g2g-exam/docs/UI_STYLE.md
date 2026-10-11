@@ -153,6 +153,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   variants may reduce padding to 18–20px but must not introduce a third radius.
 - Primary, secondary, destructive and icon-only actions reuse `.nut`, `.nguy`
   and `.icon-btn`; feature modules own labels and behavior, not button geometry.
+- Prefer a meaningful shared outline icon beside button labels. Keep existing
+  icon-only navigation rules. Confirmation actions use two equal-width columns,
+  matching height and centered icon/label groups; allow long labels to wrap.
 - File/audio/image pickers use the same border, radius, hover and focus language
   as text controls. Shadows remain reserved for overlays and media previews.
 - Exam navigation stays after the questions: no sticky surface/background/border.
