@@ -153,6 +153,10 @@ const usersHtml=teachersAdminHtml({user:{id:'admin',role:'master'},data:{classes
 for(const group of ['teacher','student','external'])assert.equal((usersHtml.match(new RegExp('data-user-group="'+group+'"','g'))||[]).length,1);
 assert.ok(usersHtml.includes('data-user-search="an nguyen an@example.com"'));
 assert.ok(!usersHtml.includes('Học viên cần đăng nhập'));
+assert.ok(!usersHtml.includes('<th>Vai trò</th>'));
+assert.ok(usersHtml.includes('user-role-name--teacher'));
+assert.ok(usersHtml.includes('role="img" aria-label="Giáo viên"'));
+assert.ok(usersHtml.includes('role="img" aria-label="Học viên"'));
 const {examAdminHtml}=await import('../src/views/admin.js');
 const filteredExams=examAdminHtml({user:{role:'master'},filters:{provider:'TELC',level:'B1'},data:{attempts:[],exams:[
   {id:'g',title:'Goethe Only',provider:'GOETHE',level:'A1'},

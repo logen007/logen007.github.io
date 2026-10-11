@@ -488,6 +488,10 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .profile-form .class-picker-field > input { width:100%; padding-right:80px; }
 .class-picker-field > .class-picker-clear { position:absolute; right:34px; top:50%; transform:translateY(-50%); width:32px; height:32px; min-height:32px; padding:6px; border:0; background:transparent; }
 .class-picker-field > .class-picker-clear[hidden] { display:none; }
+.user-role-name { display:inline-flex; align-items:center; gap:8px; }
+.user-role-icon { display:inline-flex; flex:none; }
+.user-role-icon .ui-icon { width:16px; height:16px; }
+.user-role-name--teacher { color:#2563a6; }
 .paired-question-group { display:grid; gap:16px; margin:0; }
 .paired-question-group > .goethe-question + .goethe-question { border-top:0; padding-top:0; }
 .paired-question-group > h3 { margin:0; font-size:18px; }
