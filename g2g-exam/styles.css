@@ -150,7 +150,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .exam-transition::before { content:''; position:absolute; inset:0; background:#fff; animation:exam-white-fill 1100ms cubic-bezier(.45,0,.25,1) both; }
 .exam-transition-center { position:absolute; left:var(--transition-center-x); top:calc(var(--transition-center-y) - 38px); width:min(360px,100%); transform:translateX(-50%); z-index:2; display:grid; grid-template-rows:48px auto; justify-items:center; gap:8px; animation:exam-caption-fade 400ms 1000ms ease both; }
 .exam-transition-logo { display:block; width:48px; height:48px; object-fit:contain; border-radius:12px; }
-.exam-transition p { margin:0; width:100%; box-sizing:border-box; padding:0 20px; text-align:center; overflow-wrap:anywhere; font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif; font-size:13px; line-height:20px; color:var(--phu); letter-spacing:.04em; }
+.exam-transition p { margin:0; width:100%; box-sizing:border-box; padding:0 20px; text-align:center; overflow-wrap:anywhere; font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif; font-size:13px; font-weight:400; line-height:20px; color:var(--phu); letter-spacing:.04em; }
 .exam-transition-waves { position:absolute; inset:0; z-index:1; pointer-events:none; }
 .exam-transition-waves i { position:absolute; left:var(--reveal-x); top:var(--reveal-y); width:calc(var(--reveal-radius) * 2); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle,transparent 8%,var(--wave-color,var(--brand-primary)) 30%,var(--wave-color,var(--brand-primary)) 66%,transparent 96%); animation:exam-power-wave 1500ms cubic-bezier(.22,.61,.36,1) both; }
 .exam-transition.is-leaving { opacity:0; }

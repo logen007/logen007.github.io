@@ -27,7 +27,9 @@ try{
   const first=withExamTransition(async covered=>{calls++;assert.equal(app.inert,true);assert.deepEqual(delays,[1100,1100],'Loading begins during the reveal');await covered;},{getBoundingClientRect:()=>({left:20,top:600,width:200,height:44})});
   await withExamTransition(async()=>{calls++;});
   await first;
-  assert.equal(calls,1);assert.deepEqual(delays,[1100,1100,900,500]);
+  assert.equal(calls,1);assert.deepEqual(delays,[1100,1100,1400,500]);
+  assert.equal(delays.slice(1).reduce((sum,ms)=>sum+ms,0),3000);
+  assert.match(transitionCss,/\.exam-transition p \{[^}]*font-weight:400/);
   assert.match(overlay.innerHTML,/exam-transition-waves[^]*?<i><\/i><\/div>/);
   assert.equal((overlay.innerHTML.match(/<i>/g)||[]).length,1);
   assert.equal(overlay.style['--reveal-x'],'120px');
