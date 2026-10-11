@@ -18,10 +18,14 @@ assert.equal(exam.sections[listeningTwoIndex].questionProfile.splitLayout,true);
 const listeningThreeIndex=exam.sections.findIndex(s=>s.name==='Nghe 3');
 assert.equal(exam.sections[listeningThreeIndex].questionProfile.splitLayout,true);
 const legacyExam=structuredClone(exam);
+const listeningFourIndex=exam.sections.findIndex(s=>s.name==='Nghe 4');
+assert.equal(exam.sections[listeningFourIndex].questionProfile.splitLayout,true);
+delete legacyExam.sections[listeningFourIndex].questionProfile.splitLayout;
 delete legacyExam.sections[0].questionProfile.splitLayout;
 delete legacyExam.sections[listeningTwoIndex].questionProfile.splitLayout;
 delete legacyExam.sections[listeningThreeIndex].questionProfile.splitLayout;
 for(const preview of [true,false]){
+  assert.match(examHtml({exam:legacyExam,sectionIndex:listeningFourIndex,questions:[],attempt:{id:'split-four-test',answers:{}},online:true,preview}),/class="exam-reading-split"/);
   assert.match(examHtml({exam:legacyExam,sectionIndex:listeningThreeIndex,questions:[],attempt:{id:'split-three-test',answers:{}},online:true,preview}),/class="exam-reading-split"/);
   const listeningHtml=examHtml({exam:legacyExam,sectionIndex:listeningTwoIndex,questions:[],attempt:{id:'split-listening-test',answers:{}},online:true,preview});
   assert.match(listeningHtml,/class="exam-reading-split"/);
