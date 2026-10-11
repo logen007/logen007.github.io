@@ -79,8 +79,10 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBl
   const questionList=sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
     const showExampleTitle=Boolean(isPrefilledQuestion(q)&&!exampleTitleShown);if(showExampleTitle)exampleTitleShown=true;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
-    const pairHeading=sec.questionProfile?.pairedQuestions&&displayIndex%2===0?`<h3 class="paired-text-heading">${isPrefilledQuestion(q)?'Beispiel':'Text '+(Math.floor(displayIndex/2))}</h3>`:'';
-    return pairHeading+renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{linedPaper:sec.questionProfile?.linedPaper,wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:isPrefilledQuestion(q)?'_':++questionNumber,showExampleTitle:showExampleTitle&&!sec.questionProfile?.pairedQuestions,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
+    const paired=sec.questionProfile?.pairedQuestions;
+    const pairStart=paired&&displayIndex%2===0?`<div class="exam-question-pair${isPrefilledQuestion(q)?' exam-question-pair--example':''}" role="group" aria-label="${isPrefilledQuestion(q)?'Beispiel':'Aufgabenpaar '+(Math.floor(displayIndex/2)+1)}">`:'';
+    const pairEnd=paired&&(displayIndex%2===1||displayIndex===orderedQuestions.length-1)?'</div>':'';
+    return pairStart+renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{linedPaper:sec.questionProfile?.linedPaper,wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:isPrefilledQuestion(q)?'_':++questionNumber,showExampleTitle:showExampleTitle&&!paired,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'})+pairEnd;
   }).join('')||'<div class="rong">Dieser Teil enthält noch keine Aufgaben.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sec.name))}</h1></div></div>`
