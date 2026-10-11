@@ -65,9 +65,9 @@ function questionImageHtml(q,readOnly,showQuestionImage){
   return `<label class="section-image-upload question-image-upload" title="${imageUrl?'Bấm để thay hình ảnh câu hỏi':'Upload hình'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh câu hỏi">`:`${icons.imageUpload}<span>Upload hình</span>`}</span><input type="file" data-question-card-image accept="image/*" ${readOnly?'disabled':''}></label>`;
 }
 
-function scoreControls(q,defaultScore,readOnly,{mixed=false}={}){
+function scoreControls(q,defaultScore,readOnly,{mixed=false,writingStyle=false}={}){
   const removeAction=mixed?'hide-mixed-choice':'remove-inline-question',addAction=mixed?'restore-mixed-choice':'add-inline-question';
-  return `<div class="goethe-score"><label class="${q.example?'is-disabled':''}"><input data-field="maxScore" type="number" min="0" value="${Number(q.maxScore??defaultScore)}" ${readOnly||q.example?'disabled':''}><span>đ</span></label><div class="goethe-question-actions"><button type="button" class="icon-btn question-example-toggle ${q.example?'active':''}" data-action="toggle-question-example" data-id="${q.id}" title="${q.example?'Chuyển thành câu tính điểm':'Đặt làm câu ví dụ'}" aria-label="${q.example?'Chuyển thành câu tính điểm':'Đặt làm câu ví dụ'}" aria-pressed="${Boolean(q.example)}" ${readOnly?'disabled':''}>${icons.example}</button><button type="button" class="icon-btn" data-action="${removeAction}" data-id="${q.id}" title="Ẩn câu" aria-label="Ẩn câu" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="${addAction}" ${mixed?'data-id':'data-after'}="${q.id}" title="Hiện câu" aria-label="Hiện câu" ${readOnly?'disabled':''}>${icons.add}</button></div></div>`;
+  return `<div class="goethe-score ${writingStyle?'goethe-score--writing':''}"><label class="${q.example?'is-disabled':''}"><input data-field="maxScore" type="number" min="0" value="${Number(q.maxScore??defaultScore)}" ${readOnly||q.example?'disabled':''}><span>đ</span></label>${writingStyle?`<input type="hidden" data-field="handwriting" value="${q.handwriting!==false}"><button type="button" class="nut nho writing-style-toggle" data-writing-style-toggle aria-pressed="${q.handwriting!==false}" ${readOnly?'disabled':''}>${iconHtml('grading')}<span>${q.handwriting!==false?'Viết tay':'Viết thường'}</span></button>`:''}<div class="goethe-question-actions"><button type="button" class="icon-btn question-example-toggle ${q.example?'active':''}" data-action="toggle-question-example" data-id="${q.id}" title="${q.example?'Chuyển thành câu tính điểm':'Đặt làm câu ví dụ'}" aria-label="${q.example?'Chuyển thành câu tính điểm':'Đặt làm câu ví dụ'}" aria-pressed="${Boolean(q.example)}" ${readOnly?'disabled':''}>${icons.example}</button><button type="button" class="icon-btn" data-action="${removeAction}" data-id="${q.id}" title="Ẩn câu" aria-label="Ẩn câu" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="${addAction}" ${mixed?'data-id':'data-after'}="${q.id}" title="Hiện câu" aria-label="Hiện câu" ${readOnly?'disabled':''}>${icons.add}</button></div></div>`;
 }
 
 function choicesHtml(q,choiceProfile,readOnly){
@@ -121,7 +121,7 @@ function mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile}){
 }
 
 function freeResponseHtml(q,{defaultScore,readOnly}){
-  return `<article class="goethe-free-response ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Câu trả lời textarea" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea>${scoreControls(q,defaultScore,readOnly)}<label class="writing-style-control">${iconHtml('grading')}<select data-field="handwriting" aria-label="Giao diện ô viết" ${readOnly?'disabled':''}><option value="true" ${q.handwriting!==false?'selected':''}>Viết tay</option><option value="false" ${q.handwriting===false?'selected':''}>Viết thường</option></select></label></article>`;
+  return `<article class="goethe-free-response ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Câu trả lời textarea" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea>${scoreControls(q,defaultScore,readOnly,{writingStyle:true})}</article>`;
 }
 
 function instructionHtml(section,choiceProfile,readOnly,question){
@@ -177,6 +177,14 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
 }
 
 export function bindBuilder({root=document,data,exam,section,pendingAudioUploads=new Map(),notify=()=>{}}={}){
+  root.querySelectorAll('[data-writing-style-toggle]').forEach(button=>button.onclick=()=>{
+    if(button.disabled)return;
+    const field=button.parentElement.querySelector('[data-field="handwriting"]');
+    field.value=field.value==='false'?'true':'false';
+    button.setAttribute('aria-pressed',field.value);
+    button.querySelector('span').textContent=field.value==='true'?'Viết tay':'Viết thường';
+    field.dispatchEvent(new Event('change',{bubbles:true}));
+  });
   if(!section)return;
   const resetAudioPreview=button=>{button.innerHTML=icons.play;button.title='Nghe thử audio';button.setAttribute('aria-label','Nghe thử audio');};
   const bindInlineAudioPreview=button=>button.onclick=async()=>{

@@ -597,7 +597,10 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .gap-sentences { margin-top:24px; display:grid; gap:12px; }
 .gap-sentences p { margin:0; display:flex; gap:16px; }
 .thi .viet.lined-writing-paper { min-height:400px; line-height:32px; padding:16px 20px; border:1px solid var(--vien,#dfe1e5); border-radius:12px; font-family:"Bradley Hand","Segoe Print","Comic Sans MS",cursive; font-size:18px; background:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,#dfe1e5 31px,#dfe1e5 32px); background-origin:content-box; }
-.writing-style-control { display:flex; align-items:center; gap:8px; grid-column:1/-1; justify-self:end; }
+.goethe-score.goethe-score--writing { grid-template-columns:minmax(56px,1fr) auto repeat(3,var(--editor-control)); }
+.writing-style-toggle { height:var(--editor-control); min-height:var(--editor-control); padding:6px 8px; gap:4px; white-space:nowrap; font-size:12px; }
+.writing-style-toggle .ui-icon { width:16px; height:16px; }
+.writing-style-toggle[aria-pressed="true"] { background:var(--brand-soft); border-color:var(--brand-border); }
 .reading-blocks-editor { display:grid; gap:16px; margin:20px 0; }
 .reading-block-editor { display:grid; grid-template-columns:100px minmax(0,1fr); gap:12px; }
 .reading-block-image { position:relative; border:1px solid var(--vien); border-radius:12px; display:grid; place-items:center; overflow:hidden; cursor:pointer; }

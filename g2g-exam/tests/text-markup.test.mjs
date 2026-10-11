@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+const writingBuilderSource=readFileSync(new URL('../src/part-templates/default/builder.js',import.meta.url),'utf8');
+assert.match(writingBuilderSource,/data-writing-style-toggle/);
+assert.doesNotMatch(writingBuilderSource,/<select data-field="handwriting"/);
+assert.match(writingBuilderSource,/field.dispatchEvent\(new Event\('change',\{bubbles:true\}\)\)/);
+assert.ok(writingBuilderSource.indexOf('data-field="maxScore"')<writingBuilderSource.indexOf('data-writing-style-toggle'));
+assert.ok(writingBuilderSource.indexOf('data-writing-style-toggle')<writingBuilderSource.indexOf('data-action="toggle-question-example"'));
 const confirmationSource=readFileSync(new URL('../src/ui/confirm.js',import.meta.url),'utf8');
 assert.match(confirmationSource,/iconHtml\(cancelIcon\)/);
 assert.match(confirmationSource,/iconHtml\(confirmIcon\)/);
