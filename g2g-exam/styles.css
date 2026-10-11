@@ -333,7 +333,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .form-line--full .form-answer-line { grid-template-columns:minmax(0,1fr); }
 .form-point-column { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
 @media(max-width:700px){.writing-block-content { grid-template-columns:1fr; }.writing-setup-block { padding:16px; }.writing-paper { padding:20px 14px; }.form-line { grid-template-columns:minmax(0,32%) minmax(0,1fr); gap:8px; }.form-line--full { grid-template-columns:1fr; }.form-label { font-size:13px; }.form-cell>input[type=text] { font-size:16px; }.writing-block-actions { gap:6px; }.writing-score input { width:60px; }}
-.writing-paper:not(.gap-article) { width:calc(100% - 12px); margin:20px 6px 24px; }
+.writing-paper:not(.gap-article) { width:min(760px,calc(100% - 12px)); margin:20px auto 24px; }
 .writing-paper .form-label { min-width:0; overflow-wrap:anywhere; }
 @media(max-width:700px) {
   .exam-paper:has(.writing-form-question) { padding-inline:12px; }

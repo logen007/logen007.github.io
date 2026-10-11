@@ -197,6 +197,7 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   body font. Labels keep the normal UI font.
 
 - Paper-style answer forms use the available width with small side gutters.
+  On desktop cap paper forms at 760px and center them; mobile remains full width.
   Keep mobile inner padding at 20px vertically and 18px horizontally so content
   does not sit against the paper edge.
   Keep labels and their inputs on the same row on mobile (roughly 32% / 68%);
