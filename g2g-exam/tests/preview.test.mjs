@@ -214,6 +214,13 @@ try{
     assert.match(html,/35 phút/);
     assert.doesNotMatch(html,/THI THỬ|khoảng/);
     assert.match(html,/<span class="the-de-new">Mới<\/span>/);
+    assert.doesNotMatch(html,/Chưa từng thi|class="day"|class="chan"|class="hanh-dong"/);
+    assert.match(html,/class="exam-card-footer"[^]*?data-action="start"[^]*?<span>Bắt đầu thi<\/span><svg/);
+    const pending=studentExamCardHtml(exam,[{examId:exam.id,status:'submitted'}],{questions:[]});
+    assert.doesNotMatch(pending,/the-de-new|Chưa từng thi/);
+    const locked=studentExamCardHtml({...exam,hidden:true,hasActiveCodes:false},[],{questions:[]});
+    assert.match(locked,/data-action="enter-code"[^>]*disabled/);
+    assert.match(locked,/Không có mã thi/);
     assert.doesNotMatch(html,/<div class="chan">[\s\S]*<b>Mới<\/b>/);
   });
   await test('Student exam card puts the latest result on the left and bolds only its score',()=>{
