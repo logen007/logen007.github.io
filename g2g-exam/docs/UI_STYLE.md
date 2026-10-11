@@ -147,6 +147,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   as text controls. Shadows remain reserved for overlays and media previews.
 - Exam navigation stays after the questions: no sticky surface/background/border.
   Exam structure navigation is preview-only.
+- Previous/next navigation shows arrow icons only, with accessible names and
+  tooltips. Keep wide pill targets (at least 80px wide and 44px high on mobile),
+  not small circular icon buttons. Preserve disabled states. Final submission
+  and other non-navigation actions retain clear text labels.
 
 ## Preview layout
 

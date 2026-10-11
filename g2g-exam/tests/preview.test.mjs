@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {iconHtml} from '../src/ui/icons.js';
 import {examHtml,studentExamCardHtml,submittedHtml,expiredHtml,answerPresent} from '../src/views/student.js';
 import {readExamAnswers} from '../src/ui/exam-answers.js';
 import {examBuilderHtml} from '../src/views/builder.js';
@@ -432,7 +433,8 @@ try{
         'Choice &lt;a href=&quot;bad&quot;&gt;text&lt;/a&gt;',
         '&lt;/textarea&gt;&lt;script&gt;answer()&lt;/script&gt;'
       ])assert.ok(html.includes(escaped),`Missing escaped text: ${escaped}`);
-      assert.doesNotMatch(html,/<(?:script|svg)\b|<img src=x|<a href="bad"/);
+      const content=html.replaceAll(iconHtml('arrowLeft'),'').replaceAll(iconHtml('arrowRight'),'');
+      assert.doesNotMatch(content,/<(?:script|svg)\b|<img src=x|<a href="bad"/);
       if(preview)assert.ok(html.includes('Outline &lt;strong&gt;name&lt;/strong&gt;'));
     }
   });
