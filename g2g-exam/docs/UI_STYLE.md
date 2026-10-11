@@ -62,6 +62,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Instruction/prompt text wrapped in square brackets, e.g. [Richtig], renders
+  bold inside a thin rectangular inline border. Keep raw text in editors.
+  Reserved gap/image/bold markers retain their existing meaning.
+
 - Resolve the initial URL before allowing any page render. Repository updates
   and connectivity events during startup must not flash the default dashboard.
 - Loading skeletons use measured geometry from the same URL and viewport width,

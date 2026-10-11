@@ -11,6 +11,13 @@ export function textHtml(value=''){
   return esc(value).replace(boldPattern(),'<strong class="text-bold">$1</strong>');
 }
 
+export function instructionTextHtml(value=''){
+  return textHtml(value).replace(/\[([^\[\]\r\n]+)\]/g,(marker,text)=>{
+    if(/^(?:[a-z]|\d+|img|\/b)$/i.test(text.trim()))return marker;
+    return '<strong class="instruction-token">'+text+'</strong>';
+  });
+}
+
 export function fmtDate(v){
   if(!v)return '—';
   try{

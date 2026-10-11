@@ -1,4 +1,9 @@
 import assert from 'node:assert/strict';
+import {instructionTextHtml} from '../src/ui/format.js';
+assert.equal(instructionTextHtml('[Richtig] oder [Falsch]'),'<strong class="instruction-token">Richtig</strong> oder <strong class="instruction-token">Falsch</strong>');
+assert.equal(instructionTextHtml('[a] [z] [img] [12]'),'[a] [z] [img] [12]');
+assert.equal(instructionTextHtml('[b]bold[/b]'),'<strong class="text-bold">bold</strong>');
+assert.equal(instructionTextHtml('[<img src=x>]'),'<strong class="instruction-token">&lt;img src=x&gt;</strong>');
 import {imageDimensions,imagePositionName,optimizeExamImage} from '../src/ui/image-optimize.js';
 assert.deepEqual(imageDimensions(4800,2400),{width:2400,height:1200});
 assert.deepEqual(imageDimensions(800,600),{width:800,height:600});

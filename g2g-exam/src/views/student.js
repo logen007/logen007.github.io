@@ -9,7 +9,7 @@ import {
   ATTEMPT_STATUS,byId,getPublishedExams,getStudentResults,getLatestPublishedAttempt,
   getBestPublishedAttempt,summarizeExam
 } from '../core.js';
-import {textHtml,esc,fmtDate,statusClass,statusText,countWords} from '../ui/format.js';
+import {textHtml,instructionTextHtml,esc,fmtDate,statusClass,statusText,countWords} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
 import {writingPointLayout,isScoredWritingField,isRequiredWritingField} from '../domain/writing-form.js';
 import {writingFormDisplay} from '../ui/writing-form.js';
@@ -74,7 +74,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const previousAction=preview?'preview-prev-section':'prev-section';
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Kết thúc':'Abgeben'):'Weiter';
-const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBlocks?.length?`<section class="exam-instruction">${sec.instruction?`<div><p>${textHtml(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl&&sec.questionProfile?.layout!=='inline-gaps'?`<img ${imageMaxWidth(sec.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(sec.instructionImageMaxWidth)}px"`:''} src="${esc(sec.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}${readingBlocksHtml(sec)}</section>`:'';
+const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBlocks?.length?`<section class="exam-instruction">${sec.instruction?`<div><p>${instructionTextHtml(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl&&sec.questionProfile?.layout!=='inline-gaps'?`<img ${imageMaxWidth(sec.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(sec.instructionImageMaxWidth)}px"`:''} src="${esc(sec.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}${readingBlocksHtml(sec)}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
   const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
@@ -145,14 +145,14 @@ const questionImageUrl=q=>String((Array.isArray(q.instructionBlocks)?q.instructi
 
 function questionStimulusHtml(q,{hideImage=false}={}){
   const blocks=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length?q.instructionBlocks:[{text:q.prompt||'',imageUrl:q.instructionImageUrl||''}];
-  return blocks.map(block=>{const text=block?.text||'',imageUrl=hideImage?'':String(block?.imageUrl||'').trim();return text||imageUrl?`<section class="question-stimulus">${text?`<div><p>${textHtml(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';}).join('');
+  return blocks.map(block=>{const text=block?.text||'',imageUrl=hideImage?'':String(block?.imageUrl||'').trim();return text||imageUrl?`<section class="question-stimulus">${text?`<div><p>${instructionTextHtml(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';}).join('');
 }
 
 function questionPromptHtml(text,q){
   const imageUrl=questionImageUrl(q);
   return String(text||'').split(/(\[img\])/gi).map(part=>/^\[img\]$/i.test(part)
     ?(imageUrl?`<span class="question-inline-image"><img src="${esc(imageUrl)}" alt="Abbildung zur Aufgabe"></span>`:'')
-    :textHtml(part)).join('');
+    :instructionTextHtml(part)).join('');
 }
 
 function exampleAnswer(q){
@@ -177,13 +177,13 @@ export function renderQuestionHtml(q,answer,attempt,{linedPaper=false,wordRange=
   const isSharedInstruction=normalizedPrompt.length>12&&normalizedSection.includes(normalizedPrompt);
   const questionText=rawPrompt==='Nháp'||isSharedInstruction?'':rawPrompt;
   const questionAriaText=questionText.replace(/\[img\]/gi,' ').replace(/\s+/g,' ').trim();
-  const prompt=`${q.instruction?`<div class="question-instruction">${textHtml(q.instruction)}</div>`:''}${questionText||questionNumber?`<div class="noi">${questionNumber?`<strong class="question-number">${questionNumber}${questionNumber==='_'?'':'.'}</strong> `:''}${questionPromptHtml(questionText,q)}</div>`:''}`;
+  const prompt=`${q.instruction?`<div class="question-instruction">${instructionTextHtml(q.instruction)}</div>`:''}${questionText||questionNumber?`<div class="noi">${questionNumber?`<strong class="question-number">${questionNumber}${questionNumber==='_'?'':'.'}</strong> `:''}${questionPromptHtml(questionText,q)}</div>`:''}`;
   const stimulus=hasStimulus?questionStimulusHtml(q,{hideImage:/\[img\]/i.test(questionText)}):'';
   const head=exampleTitle+stimulus+(prompt||audio?`<div class="preview-question-heading">${prompt?`<div class="preview-question-prompt">${prompt}</div>`:''}${audio}</div>`:'');
   const root=`cau-thi ${isExample?'is-example ':''}${answerPresent(answer,q)?'is-answered':''}`;
   if(['single','cloze','truefalse'].includes(q.type)){
     const choices=(q.choices||[]).map((choice,index)=>({choice,index})).filter(({choice})=>{const text=String(typeof choice==='object'?choice?.text||'':choice||'').trim();return Boolean((text&&text!=='Nháp')||String(typeof choice==='object'?choice?.imageUrl||'':'').trim());});
-    return `<div class="${root}" data-q="${q.id}">${head}<div style="--answer-columns:${shortChoiceColumns(choices.map(({choice})=>choice))||1}" class="answer-options ${shortChoiceColumns(choices.map(({choice})=>choice))?'answer-options--short ':''}${choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}${mobileThreeChoices?' answer-options--mobile-three':''}" role="radiogroup" aria-label="${esc(questionAriaText||'Antwort auswählen')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="${isExample?'':'answer-one'}" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(`${letter}. ${text||''}`)}" value="${index}" ${String(answer)===String(index)?'checked':''} ${isExample?'disabled':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span><strong class="answer-letter">${letter}.</strong> ${textHtml(text)}</span></span></label>`;}).join('')}</div></div>`;
+    return `<div class="${root}" data-q="${q.id}">${head}<div style="--answer-columns:${shortChoiceColumns(choices.map(({choice})=>choice))||1}" class="answer-options ${shortChoiceColumns(choices.map(({choice})=>choice))?'answer-options--short ':''}${choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}${mobileThreeChoices?' answer-options--mobile-three':''}" role="radiogroup" aria-label="${esc(questionAriaText||'Antwort auswählen')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="${isExample?'':'answer-one'}" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(`${letter}. ${text||''}`)}" value="${index}" ${String(answer)===String(index)?'checked':''} ${isExample?'disabled':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span><strong class="answer-letter">${letter}.</strong> ${instructionTextHtml(text)}</span></span></label>`;}).join('')}</div></div>`;
   }
   if(q.type==='matching')return `<div class="${root}" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div class="matching-row"><b>${esc(p[0])}</b><select class="dap-an ${isExample?'':'answer-match'}" data-q="${q.id}" data-i="${i}" ${isExample?'disabled':''}><option value="">Antwort auswählen</option>${[...new Set((q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;
   if(q.type==='writing')return `<div class="${root}" data-q="${q.id}">${head}${wordRange?`<p class="phu-de">Schreiben Sie ${wordRange[0]}–${wordRange[1]} Wörter.</p>`:''}${Array.isArray(q.rubric)&&q.rubric.length?writingFieldsHtml(q,answer,{framed:formFrame}):`<textarea class="viet ${q.handwriting!==false?'lined-writing-paper ':''}${isExample?'':'answer-text'}" data-q="${q.id}" placeholder="Schreiben Sie hier..." ${isExample?'disabled':''}>${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> Wörter</div>`}</div>`;
