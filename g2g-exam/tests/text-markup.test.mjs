@@ -5,6 +5,22 @@ import {parseGapText,gapAuthorText,inlineGapErrors} from '../src/domain/inline-g
 import {readingBlocksHtml,readingBlocksEditor} from '../src/ui/reading-blocks.js';
 import {inlineGapsHtml} from '../src/ui/inline-gaps.js';
 import {letterAnswersHtml} from '../src/ui/letter-answers.js';
+import {applyBoldSelection} from '../src/ui/textarea-bold.js';
+
+assert.equal(textHtml('[b]New syntax[/b]'),'<strong class="text-bold">New syntax</strong>');
+assert.deepEqual(parseGapText('[b]Important[/b] [b] [a]',2).keys,[1,0]);
+assert.equal(textHtml('[b]x[/b] [b]y[b]'),'<strong class="text-bold">x</strong> <strong class="text-bold">y</strong>');
+let inputs=0;
+const field={value:'one two three',selectionStart:4,selectionEnd:7,
+  setRangeText(value,start,end){this.value=this.value.slice(0,start)+value+this.value.slice(end);this.selectionEnd=start+value.length;},
+  focus(){},dispatchEvent(event){assert.equal(event.type,'input');assert.equal(event.bubbles,true);inputs++;}};
+applyBoldSelection(field);
+assert.equal(field.value,'one [b]two[/b] three');
+applyBoldSelection(field);
+assert.equal(field.value,'one two three');
+assert.equal(inputs,2);
+field.disabled=true;applyBoldSelection(field);assert.equal(inputs,2);
+field.disabled=false;field.selectionEnd=field.selectionStart;applyBoldSelection(field);assert.equal(inputs,2);
 
 assert.equal(textHtml('Before [b]bold[b] after'),'Before <strong class="text-bold">bold</strong> after');
 assert.equal(textHtml('[b]one\ntwo[b] [b]three[b]'),'<strong class="text-bold">one\ntwo</strong> <strong class="text-bold">three</strong>');
@@ -27,5 +43,6 @@ const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(css,/\.reading-block \{ display:flow-root;/);
 assert.match(css,/\.reading-block > img \{ float:left;/);
 assert.match(css,/\.reading-block h3 > b \{[^}]*border-radius:50%/);
+assert.match(css,/\.reading-block h3 > b \{[^}]*background:#f8d438; color:#171717/);
 assert.match(css,/\.letter-answers \[data-letter-answer\], \.text-bold \{ font-weight:600;/);
 console.log('Text markup, safe escaping, gap round-trip and compact reading layout passed.');

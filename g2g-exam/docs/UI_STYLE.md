@@ -59,13 +59,15 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
-- Textarea content supports paired `[b]text[b]` bold markup when rendered.
+- Textarea content supports paired `[b]text[/b]` bold markup when rendered.
+  The legacy `[b]text[b]` form remains readable. Selecting textarea text exposes
+  a compact B action that inserts the new syntax without adding a permanent row.
   Editors preserve the raw markers; renderers escape HTML before formatting.
   In gap passages, a single `[b]` remains an answer marker. Keep formatting
   pairs within text, not across gap markers.
 - Reading portraits float beside the opening text; following lines use the full
   width below the portrait. Each reading block contains its own float. Person
-  letters use small circular badges; letter-answer controls use weight 600.
+  letters use small yellow circular badges; letter-answer controls use weight 600.
 
 - Always arrange controls to optimize space: group related actions beside the
   field they affect instead of adding unnecessary full-width rows. Preserve

@@ -1,4 +1,6 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
+import {bindTextareaBold} from './ui/textarea-bold.js';
+bindTextareaBold();
 import {bindLetterAnswers} from './ui/letter-answers.js';
 import {bindSplitReading} from './ui/split-reading.js';
 let clearSplitReading=()=>{};
