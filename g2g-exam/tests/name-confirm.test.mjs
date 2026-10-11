@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {confirmNameChange} from '../src/ui/confirm.js';
+
+const previousDocument=globalThis.document;
+let overlay,keyHandler;
+globalThis.document={
+  activeElement:{focus(){}},getElementById:()=>null,
+  createElement(){
+    const nodes=new Map();
+    overlay={querySelector(selector){
+      if(!nodes.has(selector))nodes.set(selector,{focus(){},classList:{add(){}}});
+      return nodes.get(selector);
+    },remove(){this.removed=true;}};
+    return overlay;
+  },
+  body:{append(){}},addEventListener(type,handler){keyHandler=handler;},removeEventListener(){}
+};
+try{
+  for(const action of ['accept','cancel','escape','backdrop']){
+    const result=confirmNameChange('New Name',{role:'student'});
+    assert.match(overlay.querySelector('#site-confirm-message').textContent,/New Name.*30 ngày/);
+    if(action==='escape')keyHandler({key:'Escape',preventDefault(){}});
+    else if(action==='backdrop')overlay.onclick({target:overlay});
+    else overlay.querySelector(`[data-confirm-${action}]`).onclick();
+    assert.equal(await result,action==='accept');
+    assert.equal(overlay.removed,true);
+  }
+  const admin=confirmNameChange('Admin Name',{role:'master'});
+  assert.doesNotMatch(overlay.querySelector('#site-confirm-message').textContent,/30 ngày/);
+  overlay.querySelector('[data-confirm-cancel]').onclick();
+  assert.equal(await admin,false);
+}finally{globalThis.document=previousDocument;}
+console.log('Name change confirmation checks passed');

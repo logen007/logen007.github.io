@@ -222,7 +222,18 @@ nameInput.value='Changed Name';nameInput.onkeydown({key:'Escape',preventDefault(
 assert.equal(nameForm.hidden,true);assert.equal(calls.length,0);
 editButton.onclick();nameInput.value='Only';nameInput.onblur();
 assert.ok(nameStatus.textContent.includes('họ và tên'));assert.equal(calls.length,0);
-nameInput.value='  Changed   Name ';await nameInput.onblur();
+const originalDocument=globalThis.document;
+let confirmNodes;
+globalThis.document={getElementById:()=>null,activeElement:null,body:{append(){}},addEventListener(){},removeEventListener(){},createElement(){
+  confirmNodes={};return {remove(){},querySelector(key){return confirmNodes[key]||=( {focus(){},classList:{add(){}}} );}};
+}};
+nameInput.value='  Changed   Name ';const pendingNameSave=nameInput.onblur();
+assert.equal(calls.length,0,'No save before confirmation');
+confirmNodes['[data-confirm-cancel]'].onclick();await pendingNameSave;
+assert.equal(calls.length,0,'Cancel does not save');
+editButton.onclick();nameInput.value='  Changed   Name ';const confirmedNameSave=nameInput.onblur();
+confirmNodes['[data-confirm-accept]'].onclick();await confirmedNameSave;
+globalThis.document=originalDocument;
 assert.deepEqual(calls,[['saveStudentName',{name:'Changed Name'}]]);
 assert.equal(savedCount,1);assert.equal(nameForm.hidden,true);
 console.log('Student profile: real level, class, safe sharing and removed legacy overview passed.');

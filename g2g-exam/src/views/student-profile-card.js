@@ -4,6 +4,7 @@ import {normalizeStudentLevel,validateStudentName} from '../domain/student-profi
 import {resultClass} from '../domain/gradebook.js';
 import {esc} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
+import {confirmNameChange} from '../ui/confirm.js';
 
 export function profileStats(data,user){
   const published=getStudentResults(data,user.id).filter(a=>a.status===ATTEMPT_STATUS.PUBLISHED);
@@ -43,8 +44,10 @@ export function bindStudentName(root,{repo,user,onSaved}){
     let name;
     try{name=validateStudentName(input.value);}catch(error){status.textContent=error.message;return;}
     if(name===user.name){close();return;}
-    saving=true;input.disabled=true;status.textContent='Đang lưu…';
+    saving=true;input.disabled=true;status.textContent='';
     try{
+      if(!await confirmNameChange(name,user)){close();return;}
+      status.textContent='Đang lưu…';
       if(repo.mode==='api'){await repo.call('saveStudentName',{name});await repo.reload();}
       else await repo.transaction(state=>{const account=state.users.find(item=>item.id===user.id);Object.assign(account,nameChangePatch(account,name,{admin:account.role==='master'}));});
       close();await onSaved();

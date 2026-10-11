@@ -1,6 +1,6 @@
 import {iconHtml} from './icons.js';
 import {esc} from './format.js';
-export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',cancelLabel='Hủy',danger=false,confirmIcon= danger?'trash':'arrowRight',cancelIcon='close',extraAction=null}={}){
+export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',cancelLabel='Hủy',danger=false,confirmIcon= danger?'trash':'arrowRight',cancelIcon='close',extraAction=null,onCancel=()=>{}}={}){
   document.getElementById('site-confirm')?.remove();
   const previousFocus=document.activeElement;
   const overlay=document.createElement('div');
@@ -13,8 +13,9 @@ export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',can
   accept.innerHTML=iconHtml(confirmIcon)+'<span>'+esc(confirmLabel)+'</span>';
   if(danger)accept.classList.add('site-confirm-danger');
   const close=()=>{document.removeEventListener('keydown',onKeydown);overlay.remove();previousFocus?.focus?.();};
-  const onKeydown=event=>{if(event.key==='Escape'){event.preventDefault();close();}};
-  overlay.querySelector('[data-confirm-cancel]').onclick=close;
+  const cancel=()=>{close();onCancel();};
+  const onKeydown=event=>{if(event.key==='Escape'){event.preventDefault();cancel();}};
+  overlay.querySelector('[data-confirm-cancel]').onclick=cancel;
   accept.onclick=()=>{close();onConfirm();};
   if(extraAction){
     const extra=document.createElement('button');
@@ -23,8 +24,15 @@ export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',can
     extra.onclick=()=>{close();extraAction.onClick();};
     overlay.querySelector('.site-confirm').append(extra);
   }
-  overlay.onclick=event=>{if(event.target===overlay)close();};
+  overlay.onclick=event=>{if(event.target===overlay)cancel();};
   document.body.append(overlay);
   document.addEventListener('keydown',onKeydown);
   overlay.querySelector('[data-confirm-cancel]').focus();
+}
+
+export function confirmNameChange(name,{role}={}){
+  const warning=role==='master'?'':' Sau khi đổi, bạn phải chờ 30 ngày mới có thể đổi tên tiếp.';
+  return new Promise(resolve=>confirmAction(`Đổi tên thành “${name}”?${warning}`,()=>resolve(true),{
+    confirmLabel:'Xác nhận đổi tên',confirmIcon:'grading',onCancel:()=>resolve(false)
+  }));
 }
