@@ -1,0 +1,52 @@
+{
+  "status": "APPROVED",
+  "key": "listening-1",
+  "name": "Nghe 1",
+  "questionLimit": 10,
+  "template": "GENERIC",
+  "questionProfile": {
+    "type": "single",
+    "layout": "choices",
+    "instructionImage": false,
+    "audio": true,
+    "choiceImages": false,
+    "numberWithinSkill": true,
+    "example": true,
+    "choices": [
+      "A",
+      "B",
+      "C"
+    ],
+    "pairedQuestions": true,
+    "exampleCount": 2,
+    "pairProfiles": [
+      {
+        "type": "truefalse",
+        "layout": "true-false",
+        "choices": [
+          "Richtig",
+          "Falsch"
+        ]
+      },
+      {
+        "type": "single",
+        "layout": "choices",
+        "choices": [
+          "A",
+          "B",
+          "C"
+        ]
+      }
+    ]
+  },
+  "audio": {
+    "mode": "per_question_segment",
+    "sharedPart": false,
+    "maxSessions": 1,
+    "segmentRepeat": 2,
+    "controls": false,
+    "pauseAllowed": false,
+    "replayAllowed": false,
+    "questionsPerSegment": 2
+  }
+}

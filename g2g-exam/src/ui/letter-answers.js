@@ -2,7 +2,7 @@ import {isPrefilledQuestion} from '../domain/question-display.js';
 import {esc} from './format.js';
 import {choiceLetter,letterAnswerError} from '../domain/letter-answers.js';
 
-function control(q,answer,layout){
+export function letterAnswerControl(q,answer,layout){
   const value=isPrefilledQuestion(q)?q.correctAnswer:answer,letter=value==null||value===''?'':choiceLetter(q.choices?.[Number(value)]);
   if(isPrefilledQuestion(q))return `<span class="letter-example">${esc(letter.toLowerCase())}</span>`;
   const attrs=`data-letter-answer data-q="${esc(q.id)}" aria-label="Antwort: ${esc(q.title)}"`;
@@ -15,14 +15,14 @@ export function letterAnswersHtml(section,questions,answers,startNumber){
   const items=questions.map(q=>({q,number:isPrefilledQuestion(q)?'_':++number}));
   const layout=section.questionProfile.layout;
   const body=layout==='letter-table'
-    ?`<div class="letter-table-scroll"><table class="letter-table"><thead><tr><th scope="row">${esc(section.tableHeading??'Person')}</th>${items.map(({q,number})=>`<th scope="col">${number}<span>${esc(q.title==='Nháp'?'':q.title)}</span></th>`).join('')}</tr></thead><tbody><tr><th scope="row">Lösung</th>${items.map(({q})=>`<td>${control(q,answers[q.id],layout)}</td>`).join('')}</tr></tbody></table></div>`
-    :items.map(({q,number})=>`<div class="letter-question"><label for="letter-${esc(q.id)}"><b>${number}${number==='_'?'':'.'}</b> ${esc(q.title==='Nháp'?'':q.title)}</label>${control(q,answers[q.id],layout).replace('<input ','<input id="letter-'+esc(q.id)+'" ')}</div>`).join('');
-  return `<section class="letter-answers" data-letter-section>${body}<p class="letter-answer-error" role="status" aria-live="polite"></p></section>`;
+    ?`<div class="letter-table-scroll"><table class="letter-table"><thead><tr><th scope="row">${esc(section.tableHeading??'Person')}</th>${items.map(({q,number})=>`<th scope="col">${number}<span>${esc(q.title==='Nháp'?'':q.title)}</span></th>`).join('')}</tr></thead><tbody><tr><th scope="row">Lösung</th>${items.map(({q})=>`<td>${letterAnswerControl(q,answers[q.id],layout)}</td>`).join('')}</tr></tbody></table></div>`
+    :items.map(({q,number})=>`<div class="letter-question"><label for="letter-${esc(q.id)}"><b>${number}${number==='_'?'':'.'}</b> ${esc(q.title==='Nháp'?'':q.title)}</label>${letterAnswerControl(q,answers[q.id],layout).replace('<input ','<input id="letter-'+esc(q.id)+'" ')}</div>`).join('');
+  return `<section class="letter-answers" data-letter-section data-unique-letters="${section.questionProfile.uniqueLetters!==false}">${body}<p class="letter-answer-error" role="status" aria-live="polite"></p></section>`;
 }
 
 export function bindLetterAnswers(root,questions,answers,onSave){
   const controls=[...root.querySelectorAll('[data-letter-answer]')];if(!controls.length)return;
-  const section={questionProfile:{uniqueLetters:true},questionIds:questions.map(q=>q.id)};
+  const section={questionProfile:{uniqueLetters:root.querySelector('[data-letter-section]')?.dataset.uniqueLetters!=='false'},questionIds:questions.map(q=>q.id)};
   const refresh=()=>controls.forEach(el=>{
     for(const option of el.querySelectorAll('option')){
       if(option.value==='')continue;

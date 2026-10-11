@@ -1,5 +1,6 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
 import {bindLetterAnswers} from './ui/letter-answers.js';
+import {saveInlineGapDraft} from './part-templates/default/inline-gap-builder.js';
 import {createGradeAutosave} from './ui/grade-autosave.js';
 import {showPublishErrors} from './ui/publish-errors.js';
 import {bindImageRemoval,imageValue} from './ui/image-remove.js';
@@ -726,7 +727,9 @@ async function persistBuilderDraft({silent=false}={}){
           :imageValue(app.querySelector('[data-section-image]'),sectionImageUrl,imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'');
         const questionIds=[...app.querySelectorAll('.part-question[data-question-id]')].map(card=>card.dataset.questionId);
         updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl,instructionImageMaxWidth:document.getElementById('sectionImageMaxWidth')?.value||null,tableHeading:document.getElementById('sectionTableHeading')?.value??section.tableHeading??'Person',questionIds});
+        saveInlineGapDraft(app,st,user,exam,section);
         app.querySelectorAll('.part-question[data-question-id]').forEach(card=>{
+          if(card.dataset.editorMode==='inline-gaps')return;
           const id=card.dataset.questionId;
           const example=card.dataset.example==='true';
           const mode=card.dataset.editorMode||'choices';

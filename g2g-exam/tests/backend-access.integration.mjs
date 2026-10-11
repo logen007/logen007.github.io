@@ -348,4 +348,6 @@ try{
     await publishAttemptResult(teacher,{attemptId:id});
     console.log('B1 SQL: 165 minutes, unique X, writing 40/40/20, oral /100 and result publication passed.');
   }
+  const {b2BackendScenario}=await import('./b2-backend-scenario.mjs');
+  await b2BackendScenario({query,teacher,student});
 }finally{hook.deregister();await db.close();delete globalThis.__testDb;}

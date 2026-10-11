@@ -7,7 +7,7 @@ import {questionProfileAt} from '../domain/question-profile.js';
 
 export function questionDraftChoices(profile={}){
   const configured=Array.isArray(profile.choices)&&profile.choices.length>=2?clone(profile.choices):['Nháp','Nháp','Nháp'];
-  return profile.layout==='true-false'||profile.uniqueLetters?configured:configured.map((_,index)=>index<2?'Nháp':'');
+  return profile.layout==='true-false'||profile.layout==='letter-select'||profile.uniqueLetters?configured:configured.map((_,index)=>index<2?'Nháp':'');
 }
 
 function populateConfiguredSections(state,user,exam){

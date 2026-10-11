@@ -1,4 +1,5 @@
 import {isPrefilledQuestion,imageMaxWidth} from '../domain/question-display.js';
+import {inlineGapsHtml} from '../ui/inline-gaps.js';
 import {letterAnswersHtml} from '../ui/letter-answers.js';
 import {partAudioSegments} from '../domain/part-audio.js';
 import {examDurationSeconds} from '../domain/exam-clock.js';
@@ -74,11 +75,11 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
   let questionNumber=exam.sections.slice(0,sectionIndex).filter(item=>!sec.questionProfile?.numberWithinSkill||item.skillKey===sec.skillKey).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!isPrefilledQuestion(knownQuestions.get(id))).length,0);
   let exampleTitleShown=false;
-  const questionList=sec.questionProfile?.uniqueLetters?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
+  const questionList=sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
     const showExampleTitle=Boolean(isPrefilledQuestion(q)&&!exampleTitleShown);if(showExampleTitle)exampleTitleShown=true;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
     const pairHeading=sec.questionProfile?.pairedQuestions&&displayIndex%2===0?`<h3 class="paired-text-heading">${isPrefilledQuestion(q)?'Beispiel':'Text '+(Math.floor(displayIndex/2))}</h3>`:'';
-    return pairHeading+renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:isPrefilledQuestion(q)?'_':++questionNumber,showExampleTitle:showExampleTitle&&!sec.questionProfile?.pairedQuestions,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
+    return pairHeading+renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{linedPaper:sec.questionProfile?.linedPaper,wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,questionNumber:isPrefilledQuestion(q)?'_':++questionNumber,showExampleTitle:showExampleTitle&&!sec.questionProfile?.pairedQuestions,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'});
   }).join('')||'<div class="rong">Dieser Teil enthält noch keine Aufgaben.</div>'}</section>`;
   const context=preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sec.name))}</h1></div></div>`
@@ -158,7 +159,7 @@ function exampleAnswer(q){
   return '';
 }
 
-export function renderQuestionHtml(q,answer,attempt,{wordRange=null,sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null,showExampleTitle=true,formFrame=false,mobileThreeChoices=false}={}){
+export function renderQuestionHtml(q,answer,attempt,{linedPaper=false,wordRange=null,sectionInstruction='',preview=false,hideAudio=false,hasStimulus=false,questionNumber=null,showExampleTitle=true,formFrame=false,mobileThreeChoices=false}={}){
   const isExample=Boolean(isPrefilledQuestion(q)),exampleTitle=isExample&&showExampleTitle?'<div class="question-example-title">Beispiel</div>':'';
   if(isExample)answer=exampleAnswer(q);
   if(q.type==='writing'&&(formFrame||q.writingFormVersion===1))return `<div class="cau-thi writing-form-question ${isExample?'is-example':''}" data-q="${esc(q.id)}">${exampleTitle}${writingFormDisplay(q,answer,{readOnly:isExample})}</div>`;
@@ -178,7 +179,7 @@ export function renderQuestionHtml(q,answer,attempt,{wordRange=null,sectionInstr
     return `<div class="${root}" data-q="${q.id}">${head}<div class="answer-options ${choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}${mobileThreeChoices?' answer-options--mobile-three':''}" role="radiogroup" aria-label="${esc(questionAriaText||'Antwort auswählen')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="${isExample?'':'answer-one'}" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(`${letter}. ${text||''}`)}" value="${index}" ${String(answer)===String(index)?'checked':''} ${isExample?'disabled':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span><strong class="answer-letter">${letter}.</strong> ${esc(text)}</span></span></label>`;}).join('')}</div></div>`;
   }
   if(q.type==='matching')return `<div class="${root}" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div class="matching-row"><b>${esc(p[0])}</b><select class="dap-an ${isExample?'':'answer-match'}" data-q="${q.id}" data-i="${i}" ${isExample?'disabled':''}><option value="">Antwort auswählen</option>${[...new Set((q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;
-  if(q.type==='writing')return `<div class="${root}" data-q="${q.id}">${head}${wordRange?`<p class="phu-de">Schreiben Sie ${wordRange[0]}–${wordRange[1]} Wörter.</p>`:''}${Array.isArray(q.rubric)&&q.rubric.length?writingFieldsHtml(q,answer,{framed:formFrame}):`<textarea class="viet ${isExample?'':'answer-text'}" data-q="${q.id}" placeholder="Schreiben Sie hier..." ${isExample?'disabled':''}>${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> Wörter</div>`}</div>`;
+  if(q.type==='writing')return `<div class="${root}" data-q="${q.id}">${head}${wordRange?`<p class="phu-de">Schreiben Sie ${wordRange[0]}–${wordRange[1]} Wörter.</p>`:''}${Array.isArray(q.rubric)&&q.rubric.length?writingFieldsHtml(q,answer,{framed:formFrame}):`<textarea class="viet ${linedPaper?'lined-writing-paper ':''}${isExample?'':'answer-text'}" data-q="${q.id}" placeholder="Schreiben Sie hier..." ${isExample?'disabled':''}>${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> Wörter</div>`}</div>`;
   if(q.type==='speaking')return `<div class="cau-thi" data-q="${q.id}">${head}<div class="goi-y">Der mündliche Teil wird nach den Anweisungen der Lehrkraft oder des Prüfungsraums durchgeführt und manuell bewertet.</div></div>`;
   return `<div class="cau-thi">${head}</div>`;
 }

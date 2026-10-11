@@ -1,0 +1,29 @@
+{
+  "status": "APPROVED",
+  "key": "reading-5",
+  "name": "Đọc 5",
+  "questionLimit": 3,
+  "template": "GENERIC",
+  "questionProfile": {
+    "type": "single",
+    "layout": "letter-select",
+    "instructionImage": true,
+    "audio": false,
+    "choiceImages": false,
+    "numberWithinSkill": true,
+    "example": true,
+    "choices": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "X"
+    ],
+    "uniqueLetters": true,
+    "splitLayout": true
+  }
+}

@@ -7,6 +7,7 @@ import {WRITING_FORM_TYPES,isScoredWritingField,writingFormScore} from '../../do
 import {writingFormEditor} from '../../ui/writing-form.js';
 import {partAudioQuestions} from '../../domain/part-audio.js';
 import {questionProfileAt} from '../../domain/question-profile.js';
+import {inlineGapBuilder} from './inline-gap-builder.js';
 import {letterTableBuilder,bindLetterTableBuilder} from './letter-table-builder.js';
 
 const icons={
@@ -26,7 +27,7 @@ function profileFor(section){
   const source=section?.questionProfile||{};
   const isTrueFalse=source.layout==='true-false'&&Array.isArray(source.choices)&&source.choices.length===2;
   return {
-    uniqueLetters:source.uniqueLetters===true,
+    letterSelect:source.uniqueLetters===true||source.layout==='letter-select',
     letterTable:source.layout==='letter-table',
     type:source.type||'single',
     choices:Array.isArray(source.choices)&&source.choices.length>=2?source.choices:(isTrueFalse?['Richtig','Falsch']:['A','B','C']),
@@ -69,7 +70,7 @@ function scoreControls(q,defaultScore,readOnly,{mixed=false}={}){
 }
 
 function choicesHtml(q,choiceProfile,readOnly){
-  if(choiceProfile.uniqueLetters)return `<div class="letter-builder-answer"><label for="correct-${esc(q.id)}">Đáp án đúng</label><select class="truong" id="correct-${esc(q.id)}" data-field="correct" ${readOnly?'disabled':''}>${choiceProfile.choices.map((letter,i)=>`<option value="${i}" ${Number(q.correctAnswer)===i?'selected':''}>${esc(letter.toLowerCase())}</option>`).join('')}</select>${choiceProfile.choices.map((letter,i)=>`<input type="hidden" data-choice="${i}" value="${esc(letter)}">`).join('')}</div>`;
+  if(choiceProfile.letterSelect)return `<div class="letter-builder-answer"><label for="correct-${esc(q.id)}">Đáp án đúng</label><select class="truong" id="correct-${esc(q.id)}" data-field="correct" ${readOnly?'disabled':''}>${choiceProfile.choices.map((letter,i)=>`<option value="${i}" ${Number(q.correctAnswer)===i?'selected':''}>${esc(letter.toLowerCase())}</option>`).join('')}</select>${choiceProfile.choices.map((letter,i)=>`<input type="hidden" data-choice="${i}" value="${esc(letter)}">`).join('')}</div>`;
   const choices=[...(q.choices||[]),...Array(choiceProfile.choices.length).fill('')].slice(0,choiceProfile.choices.length);
   return `<div class="goethe-answer-row"><div class="goethe-choices ${choiceProfile.cssClass}">${choiceProfile.choices.map((label,choiceIndex)=>{
     const choice=choices[choiceIndex],imageUrl=typeof choice==='object'?choice.imageUrl:'',hasImage=Boolean(imageUrl),text=blank(textOf(choice))||'';
@@ -147,6 +148,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
   const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).sort((a,b)=>Number(Boolean(b.example))-Number(Boolean(a.example)));
   const choiceProfile=profileFor(section);
+  if(section.questionProfile?.layout==='inline-gaps')return `<div class="part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}${inlineGapBuilder(section,questions,readOnly)}</div>`;
   const audioIds=new Set(partAudioQuestions(section,questions).map(q=>q.id));
   if(section.questionProfile?.pairedQuestions){
     const pairs=[];
