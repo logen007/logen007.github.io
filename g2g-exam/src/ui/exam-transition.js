@@ -18,7 +18,7 @@ export async function withExamTransition(start,trigger){
   const buttonColor=trigger&&window.getComputedStyle?.(trigger).backgroundColor;
   if(buttonColor&&buttonColor!=='transparent'&&buttonColor!=='rgba(0, 0, 0, 0)')overlay.style.setProperty('--wave-color',buttonColor);
   overlay.setAttribute('role','status');overlay.setAttribute('aria-live','polite');
-  overlay.innerHTML='<div class="exam-transition-waves" aria-hidden="true"><i></i><i></i><i></i></div><div class="exam-transition-center"><img class="exam-transition-logo" alt="G2G Career" width="48" height="48"><p>Hãy sẵn sàng</p></div>';
+  overlay.innerHTML='<div class="exam-transition-waves" aria-hidden="true"><i></i><i></i></div><div class="exam-transition-center"><img class="exam-transition-logo" alt="G2G Career" width="48" height="48"><p>Hãy sẵn sàng</p></div>';
   const logo=overlay.querySelector('img');
   logo.src=document.querySelector?.('.thuong-hieu .logo img')?.src||'/brand/logo';
   const messages=pickExamMessages(currentPublicSettings().general?.examMessages);
