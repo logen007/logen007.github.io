@@ -15,6 +15,7 @@ import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {saveHeadingMatchDraft,resizeHeadingOptions} from '../src/part-templates/default/heading-match-builder.js';
 import {resizeGapOptions,saveInlineGapDraft,bindGapPositions} from '../src/part-templates/default/inline-gap-builder.js';
 import {examHtml} from '../src/views/student.js';
+import {createExamDraft} from '../src/controllers/exam-factory.js';
 import {syncLetterPicker} from '../src/ui/letter-picker.js';
 import {letterAnswerControl} from '../src/ui/letter-answers.js';
 import {ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
@@ -23,7 +24,21 @@ const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teach
 globalThis.sessionStorage={getItem:()=>null};
 const {exam,rows}=telcFixture(state,teacher);
 assert.equal(getExamSpec('TELC','B1').configured,true);
-assert.equal(getExamSpec('TELC','B2').configured,false);
+assert.equal(getExamSpec('TELC','B2').configured,true);
+assert.strictEqual(getExamSpec('TELC','B2').skills,getExamSpec('TELC','B1').skills,'Both levels use the same structure source');
+assert.deepEqual({...getExamSpec('TELC','B2'),level:'B1'},getExamSpec('TELC','B1'));
+{
+  const draftState=structuredClone(seedState);
+  const b2=createExamDraft(draftState,teacher,{provider:'TELC',level:'B2',title:'Shared B2'});
+  assert.equal(b2.level,'B2');
+  assert.deepEqual(b2.sections.map(s=>s.questionLimit),[5,5,10,10,10,5,10,5,1]);
+  assert.equal(examDurationSeconds(b2),150*60);
+  assert.equal(oralMaximum(b2),75);
+  const maxima=skillScores(b2,draftState.questions,{});
+  assert.deepEqual(Object.fromEntries(Object.entries(maxima).map(([key,v])=>[key,v.max])),{reading:75,grammar:30,listening:75,writing:45});
+  for(const section of b2.sections)assert.ok(renderBuilder({data:draftState,exam:b2,section}).length);
+  assert.equal(duplicateExam(draftState,teacher,b2.id).level,'B2');
+}
 assert.deepEqual(exam.sections.map(s=>rows(s).filter(q=>!q.example).length),[5,5,10,10,10,5,10,5,1]);
 assert.deepEqual(exam.sections.map(s=>rows(s).reduce((sum,q)=>sum+q.maxScore,0)),[25,25,25,15,15,25,25,25,45]);
 assert.equal(examDurationSeconds(exam),150*60);
