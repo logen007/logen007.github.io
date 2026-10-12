@@ -1,4 +1,14 @@
 import assert from 'node:assert/strict';
+import {gradingNeighbors} from '../src/domain/grading-navigation.js';
+const navData={classes:[{id:'c',code:'A1'}],users:[{id:'s1',classId:'c'},{id:'s2',classId:'c'},{id:'s3',classId:'other'}],exams:[{id:'e'}],attempts:[{id:'1',studentId:'s1',examId:'e',status:'published',submittedAt:'2026-01-01'},{id:'2',studentId:'s2',examId:'e',status:'grading',submittedAt:'2026-01-02'},{id:'3',studentId:'s3',examId:'e',status:'grading',submittedAt:'2026-01-03'}]};
+const teacher={role:'teacher'};
+assert.equal(gradingNeighbors(navData,teacher,navData.attempts[0]).nextPending.id,'2');
+assert.equal(gradingNeighbors(navData,teacher,navData.attempts[1]).previous.id,'1');
+assert.equal(gradingNeighbors(navData,teacher,navData.attempts[1]).next,undefined);
+assert.equal(gradingNeighbors(navData,teacher,navData.attempts[1]).nextPending,undefined);
+assert.deepEqual(gradingNeighbors(navData,{role:'student'},navData.attempts[0]),{});
+assert.deepEqual(gradingNeighbors({...navData,classes:[]},teacher,navData.attempts[0]),{});
+assert.equal(gradingNeighbors({...navData,attempts:navData.attempts.map(a=>({...a,status:'published'}))},teacher,navData.attempts[0]).nextPending,undefined);
 import {gradingAutomaticHtml,gradingHistory,gradingHistoryHtml,gradingIdentityHtml,gradingOutcomeHtml,gradingPanelsHtml,bindGradingReview} from '../src/views/grading-review.js';
 import {gradingDetailHtml} from '../src/views/builder.js';
 const questions=[{id:'a',type:'single',autoGrade:true,correctAnswer:1,choices:['Nein','Ja'],maxScore:1},{id:'b',type:'single',autoGrade:true,correctAnswer:0,choices:['Berlin','Bonn'],maxScore:1},{id:'c',type:'single',autoGrade:true,correctAnswer:1,choices:['A','B'],maxScore:1}];

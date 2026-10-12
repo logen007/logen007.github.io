@@ -662,6 +662,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .grading-panel .result-tabs { margin-top:0;border-radius:16px; }
 .grading-score-row>div { display:flex;align-items:center;gap:8px; }
 .grading-toolbar { display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px; }
+.grading-navigation { display:flex;justify-content:space-between;gap:16px;margin:24px 0; }
 .grading-toolbar>.result-tabs { margin:0; }
 .grading-toolbar>.nhom-nut { margin-left:auto; }
 .grading-detail>.the { margin-bottom:24px; }

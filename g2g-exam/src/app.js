@@ -1,3 +1,4 @@
+import {gradingNeighbors} from './domain/grading-navigation.js';
 import {isPrefilledQuestion} from './domain/question-display.js';
 import {openSkillSettings} from './ui/skill-settings.js';
 import {registerMediaDelivery} from './ui/media-delivery.js';
@@ -1368,6 +1369,12 @@ function bindGrading(){
     gradeAutosave=createGradeAutosave(()=>saveGrade(false),text=>{const status=app.querySelector('[data-grade-save-status]');if(status)status.textContent=text;});
     app.querySelectorAll('.manual-score,#gradeOralScore,#gradeFeedback').forEach(input=>input.addEventListener('input',()=>gradeAutosave.change()));
   }
+  app.querySelectorAll('[data-action="grading-neighbor"]').forEach(b=>b.onclick=async()=>{
+    if(!await flushBuilderDraft())return;
+    const current=byId(data.attempts,ui.gradeAttemptId),neighbors=gradingNeighbors(data,user,current);
+    if(![neighbors.previous?.id,neighbors.next?.id].includes(b.dataset.id))return;
+    gradeAutosave=null;ui.gradeAttemptId=b.dataset.id;ui.view='grading-detail';render();window.scrollTo(0,0);
+  });
   app.querySelectorAll('[data-action="back-grading"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;gradeAutosave=null;ui.view='admin';ui.adminTab='grades';render();});
   app.querySelectorAll('[data-action="publish-result"]').forEach(b=>b.onclick=async()=>{
     b.disabled=true;
@@ -1408,7 +1415,7 @@ async function saveGrade(andPublish){
   if(andPublish){
     if(fresh.status!==ATTEMPT_STATUS.READY){notify('Cần chấm đủ các phần trước khi công bố.');render();return;}
     const published=await act(()=>repo.transaction(st=>publishAttempt(st,user,attempt.id)),'Đã công bố kết quả và xếp email thông báo.',{rerender:false});
-    if(published){data=await repo.getState();ui.view='grading-detail';render();}
+    if(published){data=await repo.getState();const next=gradingNeighbors(data,user,attempt).nextPending;gradeAutosave=null;if(next)ui.gradeAttemptId=next.id;ui.view='grading-detail';render();if(next)window.scrollTo(0,0);}
   }
   return true;
 }

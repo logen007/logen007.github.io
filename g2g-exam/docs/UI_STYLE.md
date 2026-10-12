@@ -362,7 +362,10 @@ theme application must not wait for a network response to render the page.
   or grouped scoring keys and maxima; navigation never creates new score groups.
 - “Trắc nghiệm” uses skill tabs and two-column answer cards (one on mobile),
   with separate wrong/unanswered filters and visible answer keys for teachers.
-- Reuse the result-page outcome badge after publication and remain on detail.
+- Reuse the result-page outcome badge after publication. Open the next pending
+  attempt from another student in the same real class, ordered by submission;
+  if none remains, stay on the published detail. Bottom previous/next arrows
+  navigate authorized submissions in that class after flushing pending grades.
   Before publication display “Đang chấm”, never a final pass/fail verdict.
 - Plot only published, complete scores for the same student/provider/level;
   normalize differing totals to percentages and expose the native point scales.
