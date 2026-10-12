@@ -316,6 +316,10 @@ theme application must not wait for a network response to render the page.
   Garbage collection has an explicit not-yet-scanned state. Keep failures visible.
 - Use existing theme tokens and actions; no chart library or extra polling.
 - Technical details remain available but must not dominate the default screen.
+- System metrics use compact SVG rings with visible numeric labels; storage
+  comparisons use CSS columns. Keep missing data distinct from zero. Never
+  fabricate line-chart history from a single reading. R2 scan status is not
+  browser delivery success. Reuse theme tokens without a chart dependency.
 
 ## Verification
 

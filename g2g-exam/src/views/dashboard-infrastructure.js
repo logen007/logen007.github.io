@@ -1,4 +1,5 @@
 import {esc} from '../ui/format.js';
+import {resourceRing,resourceColumns} from './resource-charts.js';
 
 const valid=value=>value!=null&&Number.isFinite(Number(value))&&Number(value)>=0;
 const bytes=value=>{if(!valid(value))return '—';const units=['B','KB','MB','GB','TB'];let index=0,current=Number(value);while(current>=1024&&index<units.length-1){current/=1024;index++;}return `${current>=10||index===0?Math.round(current):current.toFixed(1)} ${units[index]}`;};
@@ -10,8 +11,8 @@ export function dashboardR2Html(r2){
   const known=r2&&valid(r2.totalFiles),count=value=>valid(value)?Number(value):'—';
   const state=!r2?'Chưa có dữ liệu':r2.error?'Cần kiểm tra':!r2.enabled?'Đang tắt · dùng VPS':r2.syncing?'Đang đồng bộ':!known?'Đang chờ quét':r2.pendingFiles||r2.skippedFiles?'Chưa đồng bộ hết':'Đã đồng bộ';
   return `<section class="dashboard-details"><div class="dashboard-section-heading"><h3>Ảnh &amp; audio · R2</h3><a class="nut nho" href="/adm?tab=settings&amp;settings=general">Cấu hình R2</a></div><p role="status" class="${r2?.error?'dashboard-warning':'dashboard-caption'}">${state}</p>
-    <div class="dashboard-resource-grid">${meter('Tệp đã đồng bộ',`${count(r2?.syncedFiles)} / ${count(r2?.totalFiles)}`,percent(r2?.syncedFiles,r2?.totalFiles))}<div class="dashboard-resource"><span>Dung lượng bản đồng bộ</span><b>${bytes(r2?.syncedBytes)}</b></div><div class="dashboard-resource"><span>Chờ đồng bộ</span><b>${count(r2?.pendingFiles)} tệp</b></div><div class="dashboard-resource"><span>Vượt giới hạn 25 MB</span><b>${count(r2?.skippedFiles)} tệp</b></div></div>
-    ${r2?.error?`<p class="dashboard-warning">${esc(r2.error)}</p>`:''}<p class="dashboard-caption">Quét gần nhất: ${date(r2?.lastScanAt)} · Hoàn tất gần nhất: ${date(r2?.lastSuccessAt)}</p><p class="dashboard-caption">Số liệu theo lượt quét nền mỗi 5 phút; tải lại Tổng quan để cập nhật. VPS giữ bản gốc dự phòng. Dung lượng này không phải tổng bucket hoặc hạn mức tài khoản Cloudflare.</p><p class="dashboard-caption">Tải thực tế / CORS: chưa có kiểm tra tự động. Đồng bộ thành công không xác nhận lượt tải trên thiết bị học viên.</p></section>`;
+    <div class="r2-visual-summary">${resourceRing('Tệp đã đồng bộ',`${count(r2?.syncedFiles)} / ${count(r2?.totalFiles)}`,percent(r2?.syncedFiles,r2?.totalFiles))}<div class="r2-visual-facts"><div><b>${bytes(r2?.syncedBytes)}</b><span>Bản đồng bộ</span></div><div><b>${count(r2?.pendingFiles)}</b><span>Chờ đồng bộ</span></div><div><b>${count(r2?.skippedFiles)}</b><span>Vượt 25 MB</span></div></div></div>
+    ${r2?.error?`<p class="dashboard-warning">${esc(r2.error)}</p>`:''}<p class="dashboard-caption" title="Hoàn tất gần nhất: ${date(r2?.lastSuccessAt)}">Quét: ${date(r2?.lastScanAt)} · Mỗi 5 phút · VPS dự phòng</p><p class="dashboard-caption">Dung lượng bản đồng bộ, không phải hạn mức R2. CORS: chưa kiểm tra tự động.</p></section>`;
 }
 
 export function dashboardInfrastructureHtml(infrastructure,error=''){
@@ -28,14 +29,14 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
   return `<section class="the dashboard-infrastructure"><div class="dashboard-section-heading"><h2>Hệ thống</h2><span class="dashboard-caption">Tài nguyên hệ thống</span></div>
     ${warnings.length?`<p class="dashboard-warning" role="status">${warnings.join(' · ')}</p>`:''}
     <div class="dashboard-resource-grid">
-      ${meter('Tải CPU · 1 phút',cpu==null?'—':cpu+'%',cpu)}
-      ${meter('RAM',`${bytes(memory.usedBytes)} / ${bytes(memory.totalBytes)}`,memoryPercent)}
-      ${meter('Ổ đĩa',`${bytes(disk?.usedBytes)} / ${bytes(disk?.totalBytes)}`,diskPercent)}
+      ${resourceRing('Tải CPU · 1 phút',cpu==null?'Chưa có dữ liệu':cpu+'%',cpu,{warning:cpu>=85})}
+      ${resourceRing('RAM',`${bytes(memory.usedBytes)} / ${bytes(memory.totalBytes)}`,memoryPercent,{warning:memoryPercent>=85})}
+      ${resourceRing('Ổ đĩa',`${bytes(disk?.usedBytes)} / ${bytes(disk?.totalBytes)}`,diskPercent,{warning:diskPercent>=85})}
       <div class="dashboard-resource dashboard-resource-total"><span>Dữ liệu hệ thống</span><b>${bytes(totalBytes)}</b><small>Dọn tệp: ${gcText}</small></div>
     </div>
     ${dashboardR2Html(infrastructure.r2)}
     <section class="dashboard-details"><h3>Chi tiết tài nguyên <span>Cơ sở dữ liệu, tệp &amp; nhật ký</span></h3>
-      <div class="resource-breakdown">${row('PostgreSQL',usage.databaseBytes)}${row('Audio &amp; hình ảnh',usage.uploadsBytes)}${row('Mã nguồn',usage.applicationBytes)}${row('Bài làm',tables.attempts)}${row('Câu hỏi',tables.questions)}${row('Nhật ký',tables.audit_log)}</div>
+      <div class="resource-breakdown">${resourceColumns([{label:'PostgreSQL',value:usage.databaseBytes},{label:'Ảnh & audio',value:usage.uploadsBytes},{label:'Mã nguồn',value:usage.applicationBytes}],bytes)}<div>${row('Bài làm',tables.attempts)}${row('Câu hỏi',tables.questions)}${row('Nhật ký',tables.audit_log)}<p class="dashboard-caption">Đã nằm trong PostgreSQL</p></div></div>
       <p class="dashboard-caption">${gc.error?`Lỗi dọn tệp: ${esc(gc.error)}`:gc.lastSuccessAt&&Number.isFinite(stamp.getTime())?`Quét gần nhất: ${esc(stamp.toLocaleString('vi-VN'))} · Đã dọn ${Number(gc.deleted)||0} tệp (${bytes(gc.deletedBytes??0)})`:'Đang chờ lượt quét đầu tiên.'}</p>
     </section>
     <section class="dashboard-details"><h3>Dung lượng đề thi <span>${storage.length} đề · lớn nhất trước</span></h3>

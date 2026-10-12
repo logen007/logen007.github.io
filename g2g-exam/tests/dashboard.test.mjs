@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import {dashboardHtml} from '../src/views/admin.js';
 import {dashboardInfrastructureHtml} from '../src/views/dashboard-infrastructure.js';
+import {resourceRing,resourceColumns} from '../src/views/resource-charts.js';
+assert.match(resourceRing('RAM','0 / 10',0),/stroke-dasharray="0 100"/);
+assert.match(resourceRing('RAM','Unknown',null),/>—<\/b>/);
+assert.match(resourceRing('<script>','test',150),/stroke-dasharray="100 100"/);
+assert.doesNotMatch(resourceRing('<script>','test',150),/<script>/);
+assert.match(resourceColumns([{label:'Empty',value:0}],String),/height:0%/);
+assert.doesNotMatch(resourceColumns([{label:'Unknown',value:null}],String),/NaN|Infinity/);
 import {refreshInfrastructure} from '../src/settings/api.js';
 import {readFileSync} from 'node:fs';
 const data={users:[{id:'s',role:'student',createdAt:'2026-10-01'},{id:'t',role:'teacher',name:'Teacher <x>'}],exams:[{title:'A',status:'published',provider:'FID',level:'A1'},{title:'B',status:'draft',provider:'TELC',level:'B2'},{status:'trash',provider:'SECRET'}],attempts:[{status:'submitted'},{status:'grading'},{status:'ready'},{status:'published',reviewerId:'t'},{status:'incomplete'},{status:'abandoned'}]};
