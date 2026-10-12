@@ -108,7 +108,7 @@ try{
     const functionSource=source.slice(source.indexOf('async function moveAttemptSection(delta){'),source.indexOf('async function createNewExam()'));
     const calls=[],answers={first:0};
     const state={attempts:[{id:'attempt',examId:'exam',status:'in_progress',currentSectionIndex:0}],exams:[{id:'exam',sections:[{questionIds:['first','second']},{}]}],questions:[{id:'first',type:'single'},{id:'second',type:'single'}]};
-    const context=vm.createContext({guardExamAudio:()=>false,data:state,ui:{attemptId:'attempt'},app:{querySelectorAll:()=>[]},movingAttemptSection:false,user:{},ATTEMPT_STATUS:{IN_PROGRESS:'in_progress'},byId:(items,id)=>items.find(item=>item.id===id),readExamAnswers:()=>answers,answerPresent,revealUnansweredQuestion:(_,id)=>calls.push(id),flushTextAnswers:async()=>{calls.push('save');return true;},repo:{transaction:fn=>fn(state),getState:async()=>state},setAttemptSection:()=>{calls.push('advance');return true;},act:fn=>fn(),render:()=>calls.push('render'),window:{scrollTo:()=>calls.push('top')},notify:()=>{}});
+    const context=vm.createContext({guardExamAudio:()=>false,data:state,ui:{attemptId:'attempt'},app:{querySelectorAll:()=>[]},movingAttemptSection:false,user:{},ATTEMPT_STATUS:{IN_PROGRESS:'in_progress'},byId:(items,id)=>items.find(item=>item.id===id),readExamAnswers:()=>answers,answerPresent,revealUnansweredQuestion:(_,id)=>calls.push(id),flushTextAnswers:async()=>{calls.push('save');return true;},repo:{transaction:fn=>fn(state),getState:async()=>state},setAttemptSection:()=>{calls.push('advance');return true;},act:fn=>fn(),render:()=>calls.push('render'),scrollExamToTop:()=>calls.push('top'),notify:()=>{}});
     vm.runInContext(functionSource,context);
     await context.moveAttemptSection(1);
     assert.deepEqual(calls,['save','advance','render','top']);
@@ -233,8 +233,8 @@ try{
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
     assert.ok(source.includes("await repo.ensureFull({refresh:true})"),'Starting or retaking fetches fresh full data before starting');
     assert.match(source,/await covered;data=await repo.getState\(\);ui.attemptId=attempt.id;ui.view='exam';startingAttempt=false;render\(\)/);
-    assert.match(source,/async function moveAttemptSection\(delta\)[\s\S]*?if\(result\)\{[^}]*render\(\);window\.scrollTo\(0,0\)/);
-    assert.match(source,/function showPreviewSection\(index\)[\s\S]*?window\.scrollTo\(0,0\)/);
+    assert.match(source,/async function moveAttemptSection\(delta\)[\s\S]*?if\(result\)\{[^}]*render\(\);scrollExamToTop\(\)/);
+    assert.match(source,/function showPreviewSection\(index\)[\s\S]*?scrollExamToTop\(\)/);
   });
   await test('Student exam card shows provider, exact duration and a corner new badge',()=>{
     const exam={id:'goethe-a1',provider:'GOETHE',level:'A1',title:'Modelltest 1',sections:[{timeMinutes:20,questionIds:[]},{timeMinutes:15,questionIds:[]}]};

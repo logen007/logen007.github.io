@@ -1,3 +1,4 @@
+import {scrollExamToTop} from './ui/exam-scroll.js';
 import {gradingNeighbors} from './domain/grading-navigation.js';
 import {isPrefilledQuestion} from './domain/question-display.js';
 import {openSkillSettings} from './ui/skill-settings.js';
@@ -278,7 +279,7 @@ function showPreviewSection(index){
   ui.previewSectionIndex=Math.max(0,Math.min(index,exam.sections.length-1));
   render();
   document.getElementById('preview-section-title')?.focus({preventScroll:true});
-  window.scrollTo(0,0);
+  scrollExamToTop();
 }
 
 function refreshPreviewProgress(){
@@ -1130,7 +1131,7 @@ async function moveAttemptSection(delta){
   if(repo.mode==='api'&&repo.outbox){
     for(const [qid,value] of Object.entries(readExamAnswers(app)))repo.saveDraftAnswer(attempt.id,qid,value);
     repo.outbox.move(next);
-    data=await repo.getState();render();window.scrollTo(0,0);return;
+    data=await repo.getState();render();scrollExamToTop();return;
   }
   if(repo.mode==='api'){notify('Bản lưu trên máy chưa sẵn sàng. Vui lòng thử lại.');return;}
   movingAttemptSection=true;
@@ -1141,7 +1142,7 @@ async function moveAttemptSection(delta){
   try{
     if(!await flushTextAnswers())return;
     const result=await act(()=>repo.transaction(st=>setAttemptSection(st,user,attempt.id,next)),null,{rerender:false});
-    if(result){data=await repo.getState();ui.view='exam';render();window.scrollTo(0,0);}
+    if(result){data=await repo.getState();ui.view='exam';render();scrollExamToTop();}
   }finally{movingAttemptSection=false;if(paper)paper.inert=false;controls.forEach(button=>{button.disabled=false;button.removeAttribute('aria-busy');});}
 }
 

@@ -1,4 +1,10 @@
 import assert from 'node:assert/strict';
+import {scrollExamToTop} from '../src/ui/exam-scroll.js';
+for(const reduced of [false,true]){
+  let options;
+  scrollExamToTop({matchMedia:()=>({matches:reduced}),scrollTo:value=>{options=value;}});
+  assert.deepEqual(options,{top:0,left:0,behavior:reduced?'instant':'smooth'});
+}
 import {ApiRepository} from '../src/repositories/api.js';
 const repo=new ApiRepository();
 repo.state.attempts=[{id:'a',answers:{},status:'in_progress'}];repo.state.scope='full';repo.user={role:'student'};
