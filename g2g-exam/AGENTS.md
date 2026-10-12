@@ -187,6 +187,20 @@ không được tự ý sửa:
 
 trừ khi dependency thực sự yêu cầu.
 
+## 11.1. Tốc độ thực hiện (người dùng duyệt 2026-10-12)
+
+- Khoanh đúng phạm vi, ưu tiên mở rộng module đang sở hữu chức năng và tái sử
+  dụng module đã có; không rà soát hoặc refactor lan rộng khi không cần cho yêu
+  cầu hay dependency thực sự.
+- Không thực hiện thao tác lặp hoặc kiểm tra ngoài phạm vi chỉ để “cho chắc”.
+  Khi có blocker, báo sớm với bằng chứng; không hứa thời gian hoàn thành khi
+  không có cơ sở.
+- Kiểm thử theo mức ảnh hưởng: thay đổi UI nhỏ chạy kiểm tra liên quan; thay đổi
+  logic điểm, lưu bài, phân quyền, kiến trúc hoặc khi CI bắt buộc phải chạy full
+  test theo Mục 10. Tài liệu thuần không chạy full test.
+- Quy tắc này không thay thế Mục 10: luôn chạy syntax check và automated tests
+  liên quan sau khi code; không merge vào main khi các kiểm thử bắt buộc thất bại.
+
 
 ## 12. Quy tắc khi yêu cầu chưa rõ
 
