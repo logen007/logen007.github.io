@@ -89,10 +89,13 @@ for(let i=0;i<exam.sections.length;i++){
   assert.ok(html.length>100);
   if(i===1)assert.match(html,/exam-reading-split/,'Reading 2 uses the shared split layout');
   if(i===0){
-    assert.match(html,/exam-reading-split/);
+    assert.doesNotMatch(html,/exam-reading-split/);
     assert.match(html,/heading-match-question/);
-    assert.equal((html.match(/class="gap-sentences heading-options"/g)||[]).length,1);
-    assert.ok(html.indexOf('heading-options')<html.indexOf('</section><div><section class="letter-answers heading-match"'));
+    assert.equal((html.match(/class="gap-sentences heading-options"/g)||[]).length,0);
+    assert.equal((html.match(/data-letter="j"/g)||[]).length,5,'All choices remain in each answer picker');
+    const b2=examHtml({attempt:{answers:{}},exam:{...exam,level:'B2'},sectionIndex:i,questions:rows(exam.sections[i]),allQuestions:state.questions,online:true,preview:true});
+    assert.match(b2,/exam-reading-split/,'B2 presentation is unchanged');
+    assert.match(b2,/heading-options/);
   }
   if(i===8)assert.match(html,/lined-writing-paper/);
 }
