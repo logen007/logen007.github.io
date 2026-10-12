@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {scrollExamToTop} from '../src/ui/exam-scroll.js';
 for(const reduced of [false,true]){
   let options;
-  scrollExamToTop({matchMedia:()=>({matches:reduced})},{querySelector:selector=>{assert.equal(selector,'.exam-paper');return {scrollIntoView:value=>{options=value;}};}});
+  scrollExamToTop({matchMedia:()=>({matches:reduced})},{querySelector:selector=>{assert.equal(selector,'.noi-dung-thi');return {scrollIntoView:value=>{options=value;}};}});
   assert.deepEqual(options,{block:'start',behavior:reduced?'instant':'smooth'});
 }
 scrollExamToTop({}, {querySelector:()=>null});
