@@ -110,6 +110,14 @@ try{
   const code=await createExamCode(teacher,{examId:'e',expiresAt:new Date(Date.now()+60000).toISOString()});
   assert.match(code.code,/^[A-Z0-9]{5}$/);
   const started=await startAttempt(student,{code:code.code});
+  const {loadAttemptSync}=await import('../server/src/attempt-sync.js');
+  const initialSync=await loadAttemptSync(student,started.attemptId);
+  assert.equal(initialSync.attempt.id,started.attemptId);
+  assert.equal(initialSync.attempt.status,'in_progress');
+  assert.ok(!JSON.stringify(initialSync).includes('correctAnswer'));
+  assert.ok(!JSON.stringify(initialSync).includes('examSnapshot'));
+  await assert.rejects(()=>loadAttemptSync(teacher,started.attemptId),error=>error.statusCode===404);
+  await assert.rejects(()=>loadAttemptSync(student,'missing'),error=>error.statusCode===404);
   assert.equal((await loadState(student)).questions.length,4);
   assert.ok(!JSON.stringify((await loadState(student)).attempts).includes('correctAnswer'));
   assert.ok(!(await loadState(student)).questions.some(q=>'correctAnswer' in q));

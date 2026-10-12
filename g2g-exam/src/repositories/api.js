@@ -46,10 +46,18 @@ export class ApiRepository{
   startPolling(){
     clearInterval(this.poll);
     this.poll=setInterval(async()=>{
-      if(!this.user||document.hidden||this.pollBusy||this.writing||this.fullLoad)return;
+      if(!this.user||document.hidden||this.pollBusy||this.writing||this.fullLoad||this.outbox?.running)return;
       const scope=this.pollScope,generation=this.generation;
       this.pollBusy=true;
       try{
+        if(this.outboxAttempt&&this.pollingAttempt===this.outboxAttempt){
+          const id=this.outboxAttempt;
+          const next=await request(`/attempts/${encodeURIComponent(id)}/sync`,{timeoutMs:10000,headers:this.attemptRevision?{'If-None-Match':'"'+this.attemptRevision+'"'}:{}});
+          if(generation!==this.generation||id!==this.outboxAttempt||id!==this.pollingAttempt||!this.user||!next)return;
+          const attempt=this.state.attempts.find(a=>a.id===id);
+          if(attempt){Object.assign(attempt,next.attempt);this.attemptRevision=next.revision;this.emit();}
+          return;
+        }
         const headers=(this.state.scope||'full')===scope?{'If-None-Match':'"'+this.state.revision+'"'}:{};
         const next=await request(scope==='catalog'?'/exam-catalog':'/state',{timeoutMs:10000,headers});
         if(generation!==this.generation||scope!==this.pollScope||!this.user||!next)return;
@@ -84,7 +92,9 @@ export class ApiRepository{
         this.draftStore=await openExamStore();
         this.outbox=await new ExamOutbox({store:this.draftStore,key:this.user.id+':'+attemptId,onStatus,
           send:async changes=>{
+            ++this.generation;
             const result=await this.call('saveAnswers',{attemptId,changes});
+            ++this.generation;
             const attempt=this.state.attempts.find(a=>a.id===attemptId);
             if(attempt&&result.attempt)Object.assign(attempt,result.attempt);
             return result;
@@ -97,6 +107,7 @@ export class ApiRepository{
     try{await this.preparingDraft;}finally{this.preparingDraft=null;}
   }
   closeExamDraft(){
+    ++this.generation;this.attemptRevision=null;
     const outbox=this.outbox,store=this.draftStore,release=this.releaseDraft;
     outbox?.close();this.outbox=null;this.outboxAttempt=null;
     if(this.onlineDraft)window.removeEventListener('online',this.onlineDraft);
@@ -129,7 +140,9 @@ export class ApiRepository{
     return this.state;
   }
 
-  setPollingScope(scope){
+  setPollingScope(scope,{attemptId=null}={}){
+    if(this.pollScope!==scope||this.pollingAttempt!==attemptId)++this.generation;
+    this.pollingAttempt=attemptId;
     this.pollScope=scope;
   }
 

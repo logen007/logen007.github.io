@@ -13,6 +13,7 @@ import {initDb,getSettings,appError,pool} from './db.js';
 import {registerAuthRoutes,currentUser,requireUser,requireRole} from './auth.js';
 import {loadState,commitOperations} from './state.js';
 import {loadExamCatalog} from './exam-catalog.js';
+import {loadAttemptSync} from './attempt-sync.js';
 import {stateResponse} from './state-response.js';
 import {handleAction} from './actions.js';
 import {startMediaGarbageCollector} from './media-gc.js';
@@ -66,6 +67,7 @@ app.get('/api/public-settings',async()=>{
 app.get('/api/settings',async request=>{await requireRole(request,'master');return {settings:await getSettings()};});
 app.get('/api/state',async (request,reply)=>stateResponse(await loadState(await requireUser(request)),request,reply));
 app.get('/api/exam-catalog',async (request,reply)=>stateResponse(await loadExamCatalog(await requireUser(request)),request,reply));
+app.get('/api/attempts/:id/sync',async(request,reply)=>stateResponse(await loadAttemptSync(await requireUser(request),request.params.id),request,reply));
 app.post('/api/commit',async request=>commitOperations(await requireUser(request),request.body?.operations||[]));
 app.post('/api/actions/:name',async request=>handleAction(await requireUser(request),request.params.name,request.body||{}));
 

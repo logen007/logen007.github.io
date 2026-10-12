@@ -689,7 +689,7 @@ function render(){
   updateFeedbackUser(authenticatedUser||user);
   if(user&&repo.mode==='api'){
     const scope=viewStateScope(ui.view,ui.adminTab);
-    repo.setPollingScope(scope);
+    repo.setPollingScope(scope,{attemptId:ui.view==='exam'?ui.attemptId:null});
     if(scope==='full'&&data.scope==='catalog'){
       if(!viewLoadPromise){
         app.setAttribute('aria-busy','true');
