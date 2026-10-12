@@ -30,6 +30,8 @@ assert.deepEqual(expanded({...section,audioPolicy:{...section.audioPolicy,shared
 assert.deepEqual(partAudioQuestions({...section,audioPolicy:{questionsPerSegment:2},audioFlow:{segmentRepeat:1}},qs).map(q=>q.id),['ex','1','3']);
 assert.throws(()=>normalizeAudioFlow({segmentRepeat:3}));
 assert.equal((audioFlowFields(section).match(/<button/g)||[]).length,1);
+assert.match(audioFlowFields(section),/audio-flow-toggle/);
+assert.doesNotMatch(audioFlowFields(section),/class="[^"]*chinh/);
 assert.doesNotMatch(audioFlowFields(section),/<select|audio-flow-tabs|data-reset/);
 assert.match(audioFlowFields({...section,audioFlow:{segmentRepeat:1}}),/Không lặp/);
 assert.match(audioFlowFields({...section,audioFlow:{segmentRepeat:2}}),/Lặp 1 lần/);
