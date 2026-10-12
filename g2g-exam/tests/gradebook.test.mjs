@@ -105,7 +105,7 @@ const gradingExam={provider:'GOETHE',level:'A1',sections:[{name:'Schreiben Teil 
 const gradingData={questions:[{id:'essay',skill:'Viết',type:'writing',maxScore:10}]};
 const gradingAttempt={status:'grading',manualScores:{},resultSummary:{provider:'GOETHE',level:'A1',skills:{},total:0}};
 const detail=gradingDetailHtml({data:gradingData,exam:gradingExam,attempt:gradingAttempt});
-const labels=['Điểm Viết Bài 2','Điểm nói','Nhận xét','Tổng Điểm'];
+const labels=['Điểm Viết Bài 2','Nhận xét','Điểm nói','Tổng điểm'];
 for(let i=1;i<labels.length;i++)assert.ok(detail.indexOf(labels[i])>detail.indexOf(labels[i-1]));
 assert.ok(detail.includes('min="0" max="10"'));
 assert.ok(detail.includes('min="0" max="15"'));
@@ -117,8 +117,14 @@ assert.ok(html.indexOf('<th>Bài thi</th>')<html.indexOf('<th>Học viên</th>')
 assert.ok(!detail.includes('Lưu tạm'));
 assert.ok(detail.includes('>Công Bố</button>'));
 const timedDetail=gradingDetailHtml({data:gradingData,exam:gradingExam,attempt:{...gradingAttempt,examTitle:'Đề kiểm tra',durationSeconds:750,attemptNo:1}});
-assert.ok(timedDetail.includes('Lần #1 - 12 phút 30s -'));
-assert.ok(timedDetail.includes('<h2>Đề kiểm tra</h2><p class="phu-de">Goethe A1</p>'));
+assert.ok(timedDetail.includes('Lần #1 · 12 phút 30s ·'));
+assert.ok(timedDetail.includes('<p>Đề kiểm tra</p>'));
+assert.ok(detail.indexOf('id="gradeFeedback"')<detail.indexOf('grading-automatic'));
+assert.ok(detail.includes('grading-workspace'));
+assert.equal((detail.match(/id="gradeFeedback"/g)||[]).length,1);
+assert.equal((detail.match(/id="gradeOralScore"/g)||[]).length,1);
+assert.match(reviewed,/id="gradeFeedback"[^>]*disabled/);
+assert.ok(!reviewed.includes('data-action="publish-result"'));
 const formQuestion={id:'form',type:'writing',writingFormVersion:1,autoGrade:true,maxScore:2,rubric:[{type:'text',label:'Họ tên',answers:'Anna',maxScore:1},{type:'text',label:'Địa chỉ',answers:'Berlin',maxScore:1}]};
 const formDetail=gradingDetailHtml({data:{questions:[formQuestion]},exam:{...gradingExam,sections:[{name:'Viết 1',questionIds:['form']}]},attempt:{...gradingAttempt,answers:{form:{0:'Anna',1:''}}}});
 assert.ok(formDetail.includes('Họ tên'));
