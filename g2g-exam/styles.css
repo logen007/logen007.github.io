@@ -440,7 +440,6 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .feedback-attachment { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; }
 .feedback-image-control { display:inline-flex; align-items:center; gap:8px; font-size:13px; white-space:nowrap; }
 .feedback-attachment input[hidden] { display:none; }
-.feedback-paste-hint { font-size:12px; color:var(--phu); }
 .feedback-image-preview { position:relative; padding-right:20px; }
 .feedback-image-preview img { max-width:100%; max-height:150px; object-fit:contain; border-radius:12px; }
 .feedback-image-preview button { position:absolute; right:0; top:0; }

@@ -68,6 +68,12 @@ assert.equal(click(audio.input).prevented,false,'Audio native file picker remain
 const removeButton={closest:selector=>selector==='button'?removeButton:selector==='[data-image-paste-target]'?first.control:null};
 assert.equal(click(removeButton).prevented,false,'Image removal buttons are not intercepted');
 const fresh=createInput('image/png');
+const direct=createInput('image/png');
+direct.input.dataset.imagePickerDirect='';
+observe([{addedNodes:[direct.input]}]);
+direct.input.click();
+assert.equal(direct.input.dialogs,1,'Direct pickers open on the first click');
+assert.equal(direct.control.dataset.imagePasteTarget,undefined);
 observe([{addedNodes:[fresh.input]}]);
 assert.equal(paste(fresh.input),true,'Newly rendered upload controls work');
 assert.equal(fresh.input.changes,1);

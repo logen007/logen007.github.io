@@ -17,6 +17,7 @@ export function bindImagePaste(root=document,{notify=()=>{},confirmReplace=apply
   function prepare(node){
     const inputs=[...(node.matches?.(selector)?[node]:[]),...(node.querySelectorAll?.(selector)||[])];
     for(const input of inputs){
+      if(input.dataset.imagePickerDirect!==undefined)continue;
       if(controls.has(input)||!/(image\/|\.(png|jpe?g|webp|gif|svg|ico)\b)/i.test(input.accept))continue;
       const control=input.closest(wrappers)||input;
       controls.set(input,control);
