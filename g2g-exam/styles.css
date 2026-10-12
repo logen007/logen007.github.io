@@ -689,6 +689,15 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .grading-disclosure-arrow { font-size:24px; }
 .grading-automatic[open] .grading-disclosure-arrow { transform:rotate(180deg); }
 .grading-automatic-content { margin-top:24px;border-top:1px solid var(--vien);padding-top:24px; }
+.grading-automatic-content>[data-grade-tabs] { display:flow-root; }
+.grading-automatic-content .result-tabs { float:left;margin:0 24px 20px 0;padding:4px;gap:4px;background:var(--surface-muted);border-color:transparent; }
+.grading-automatic-content .result-filter { justify-content:flex-end;align-items:center;min-height:54px;margin:0 0 20px;gap:8px; }
+.grading-automatic-content .result-tabs .nut { font-weight:500; }
+.grading-automatic-content .result-tabs small { color:inherit;opacity:.7;font-weight:400; }
+.grading-automatic-content .result-filter .nut { background:transparent;border-color:transparent;color:var(--phu); }
+.grading-automatic-content .result-filter .nut[aria-pressed=true] { background:var(--brand-soft);color:var(--brand-text);border-color:var(--brand-border); }
+.grading-automatic-content .result-part,.grading-automatic-content [data-grade-empty] { clear:both; }
+@media(max-width:1100px){.grading-automatic-content .result-tabs{float:none;width:fit-content;margin:0 0 12px}.grading-automatic-content .result-filter{justify-content:flex-start;min-height:44px;margin-bottom:20px}}
 .grading-automatic .result-answer-image { max-width:min(100%,220px); }
 @media(max-width:900px){.grading-detail .grading-workspace{grid-template-columns:1fr}.grading-detail .grading-review{border-left:0;border-top:1px solid var(--vien)}.grading-detail .grading-hero{padding:20px;gap:16px}.grading-score-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.grading-oral{max-width:none;padding:0}}
 @media(max-width:480px){.grading-score-grid{grid-template-columns:1fr}.grading-detail .grading-hero{align-items:flex-start}.grading-hero .result-outcome{min-width:90px;padding:12px}.grading-hero .result-outcome strong{font-size:18px}}
