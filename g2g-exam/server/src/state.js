@@ -16,7 +16,7 @@ function rowEntity(r){const item={...(r.data||{}),id:r.id,...(r.owner_id?{ownerI
 function attemptEntity(r,includePrivate=false){return {id:r.id,...(r.public_data||{}),...(includePrivate?(r.private_data||{}):{})};}
 
 export async function loadState(user){
-  const state={schemaVersion:6,revision:Date.now(),users:[],questions:[],exams:[],attempts:[],gradingRequests:[],notifications:[],auditLog:[]};
+  const state={schemaVersion:6,revision:1,users:[],questions:[],exams:[],attempts:[],gradingRequests:[],notifications:[],auditLog:[]};
   state.classes=await rows(user.role==='student'?'SELECT id,code,active FROM classes WHERE active=true ORDER BY lower(code)':'SELECT id,code,active,description,teacher_ids AS "teacherIds" FROM classes WHERE active=true ORDER BY lower(code)');
   if(user.role==='student'){
     await expireCodes();

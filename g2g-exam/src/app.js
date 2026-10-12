@@ -22,6 +22,7 @@ import {bindImagePaste} from './ui/image-paste.js';
 let gradeAutosave=null,gradePublishing=false;
 window.addEventListener('beforeunload',event=>{if(gradeAutosave?.pending||gradePublishing){event.preventDefault();event.returnValue='';}});
 import {createRepository} from './repository.js';
+import {viewStateScope} from './repositories/state-scope.js';
 import {unansweredExamQuestions} from './views/student.js';
 import {
   ATTEMPT_STATUS,byId,isMaster,isStudent,canEditExam,canGradeExam,
@@ -650,9 +651,22 @@ function studentGradeModal(studentId){app.insertAdjacentHTML('beforeend',student
 function closeModal(){document.getElementById('modal')?.remove();}
 function bindModalClose(){app.querySelectorAll('[data-action="close-modal"]').forEach(b=>b.onclick=closeModal);}
 
-let titleResizeObserver;
+let titleResizeObserver,viewLoadPromise;
 function render(){
   if(!startupGate.isReady())return;
+  if(user&&repo.mode==='api'){
+    const scope=viewStateScope(ui.view,ui.adminTab);
+    repo.setPollingScope(scope);
+    if(scope==='full'&&data.scope==='catalog'){
+      if(!viewLoadPromise){
+        app.setAttribute('aria-busy','true');
+        viewLoadPromise=repo.ensureFull().then(async()=>{data=await repo.getState();})
+          .catch(error=>{notify(error.message);return false;})
+          .then(result=>{viewLoadPromise=null;app.removeAttribute('aria-busy');if(result!==false)render();});
+      }
+      return;
+    }
+  }
   clearSplitReading();
   titleResizeObserver?.disconnect();
   clearTimer();
@@ -1035,7 +1049,7 @@ function bindViewSpecific(){
 
 async function beginAttempt(examId,restart,trigger){
   return withExamTransition(async covered=>{
-  if(repo.mode==='api'&&!await act(()=>repo.reload(),null,{rerender:false}))return;
+  if(repo.mode==='api'&&!await act(async()=>{await repo.ensureFull({refresh:true});return true;},null,{rerender:false}))return;
   const attempt=await act(()=>repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});
   if(attempt?.status===ATTEMPT_STATUS.IN_PROGRESS){data=await repo.getState();await covered;ui.attemptId=attempt.id;ui.view='exam';render();window.scrollTo(0,0);}
   },trigger);
@@ -1095,6 +1109,7 @@ function clearBuilderEditUrl(){
 }
 
 async function openBuilder(id,sectionId=null){
+  if(repo.mode==='api'&&!await act(async()=>{await repo.ensureFull();return true;},null,{rerender:false}))return false;
   let exam=byId(data.exams,id);
   if(!exam||isStudent(user))return;
   if(repo.mode==='api'&&canEditExam(user,exam)){

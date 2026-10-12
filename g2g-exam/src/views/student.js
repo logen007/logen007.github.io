@@ -40,8 +40,8 @@ export function studentExamCardHtml(ex,attempts,data){
   const mine=attempts.filter(a=>a.examId===ex.id);
   const published=mine.filter(a=>a.status===ATTEMPT_STATUS.PUBLISHED);
   const latest=[...published].sort((a,b)=>String(b.publishedAt||b.submittedAt||b.startedAt).localeCompare(String(a.publishedAt||a.submittedAt||a.startedAt)))[0];
-  const sum=summarizeExam(ex,data);
-  const mins=examDurationSeconds(ex)/60;
+  const sum=ex.questionCount!=null?{sections:ex.sections?.length||0,questions:ex.questionCount}:summarizeExam(ex,data);
+  const mins=(ex.durationSeconds??examDurationSeconds(ex))/60;
   const provider=String(ex.provider||'').trim();
   const latestResult=latest?.result||'Chưa đạt';
   const latestLine=latest?`Lần thi gần nhất <strong>${esc(latest.totalScore??'—')}</strong> điểm - <span class="exam-latest-result ${resultClass(latestResult)}">${esc(latestResult)}</span>`:'';

@@ -47,9 +47,9 @@ await test('API is authoritative, initial state is ready, and edits are persiste
   globalThis.fetch=async(url,options)=>{
     requests.push({url,options});assert.equal(options.credentials,'include');
     if(url.endsWith('/auth/me'))return {ok:true,json:async()=>({user:authenticated?user:null})};
-    if(url.endsWith('/state')){
+    if(url.endsWith('/state')||url.endsWith('/exam-catalog')){
       if(failState)return {ok:false,status:503,json:async()=>({error:'Database unavailable'})};
-      return {ok:true,json:async()=>structuredClone(state)};
+      return {ok:true,json:async()=>({...structuredClone(state),...(url.endsWith('/exam-catalog')?{scope:'catalog'}:{})})};
     }
     if(url.endsWith('/commit')){
       const {operations}=JSON.parse(options.body);
@@ -63,7 +63,7 @@ await test('API is authoritative, initial state is ready, and edits are persiste
     const repo=await createRepository();repos.push(repo);
     assert.ok(repo instanceof ApiRepository);
     assert.equal((await repo.getState()).users[0].id,user.id);
-    assert.deepEqual(requests.map(r=>r.url),['/api/auth/me','/api/state']);
+    assert.deepEqual(requests.map(r=>r.url),['/api/auth/me','/api/exam-catalog']);
     await repo.transaction(next=>{next.exams.push({id:'server-draft',ownerId:user.id,title:'Server draft'});});
     assert.equal((await repo.getState()).exams[0].id,'server-draft');
     const otherDevice=await createRepository();repos.push(otherDevice);

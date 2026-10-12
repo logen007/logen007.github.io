@@ -12,6 +12,8 @@ import fastifyStatic from '@fastify/static';
 import {initDb,getSettings,appError,pool} from './db.js';
 import {registerAuthRoutes,currentUser,requireUser,requireRole} from './auth.js';
 import {loadState,commitOperations} from './state.js';
+import {loadExamCatalog} from './exam-catalog.js';
+import {stateResponse} from './state-response.js';
 import {handleAction} from './actions.js';
 import {startMediaGarbageCollector} from './media-gc.js';
 import {startTrashGarbageCollector} from './trash-gc.js';
@@ -62,7 +64,8 @@ app.get('/api/public-settings',async()=>{
   return {general:{examMessages:s.general.examMessages||'',systemName:s.general.systemName,organizationName:s.general.organizationName,publicUrl:s.general.publicUrl,logoUrl:s.general.logoUrl,faviconUrl:s.general.faviconUrl},theme:s.theme,auth:{googleLoginEnabled:s.auth.googleLoginEnabled,allowNewStudents:s.auth.allowNewStudents},operations:{maintenanceMode:s.operations.maintenanceMode,maintenanceMessage:s.operations.maintenanceMessage},stats:{teachers:teachers.rows[0].count,attempts:attempts.rows[0].count,students:students.rows[0].count,graded:graded.rows[0].count,exams:exams.rowCount,examTypes}};
 });
 app.get('/api/settings',async request=>{await requireRole(request,'master');return {settings:await getSettings()};});
-app.get('/api/state',async request=>loadState(await requireUser(request)));
+app.get('/api/state',async (request,reply)=>stateResponse(await loadState(await requireUser(request)),request,reply));
+app.get('/api/exam-catalog',async (request,reply)=>stateResponse(await loadExamCatalog(await requireUser(request)),request,reply));
 app.post('/api/commit',async request=>commitOperations(await requireUser(request),request.body?.operations||[]));
 app.post('/api/actions/:name',async request=>handleAction(await requireUser(request),request.params.name,request.body||{}));
 

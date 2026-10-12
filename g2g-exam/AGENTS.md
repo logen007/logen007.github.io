@@ -202,7 +202,20 @@ Thứ tự ưu tiên:
 5. UI/UX.
 6. Tối ưu thêm.
 
-## 14. Commit và triển khai
+## 14. Quy tắc tải dữ liệu (người dùng duyệt 2026-10-12)
+
+- Danh sách chỉ tải metadata/thống kê cần hiển thị; không tải kèm nội dung câu hỏi,
+  media, đáp án, câu trả lời hoặc snapshot bài làm.
+- Chỉ tải chi tiết khi mở nghiệp vụ cần dữ liệu đó. Không dùng dữ liệu danh sách
+  thiếu trường để ghi đè bản đầy đủ. Kiểm tra phân quyền ở máy chủ cho mỗi luồng.
+- Phiên bản dữ liệu phải phản ánh nội dung, không dùng thời gian của mỗi request.
+  Dữ liệu không đổi: trả phản hồi có điều kiện, không cập nhật state/vẽ lại trang.
+- Không để polling chồng request, ghi đè thao tác mới bằng response cũ, hoặc chạy
+  khi tab ẩn. Tái sử dụng luồng tải đang chạy; không tải toàn bộ dữ liệu chỉ để lọc.
+- Kiểm thử tải lần đầu, URL trực tiếp/F5, đổi trang, lưu đề, bài thi đang làm,
+  quyền truy cập và dữ liệu lớn trước khi triển khai thay đổi luồng tải.
+
+## 15. Commit và triển khai
 
 Người dùng đã cho phép commit và deploy các thay đổi thuộc yêu cầu của họ
 (xác nhận ngày 2026-10-11). Sau khi kiểm thử đạt, chủ động commit và push lên
