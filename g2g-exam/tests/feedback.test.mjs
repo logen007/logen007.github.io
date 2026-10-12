@@ -8,24 +8,38 @@ vm.createContext(context);
 context.Buffer=Buffer;
 vm.runInContext(source.replace(/^import .*;\n/gm,'').replace(/export /g,''),context);
 await assert.rejects(()=>context.submitFeedback(null,{message:'Feedback'}),e=>e.statusCode===401);
-await assert.rejects(()=>context.submitFeedback({id:'a'},{message:'a'}),e=>e.statusCode===400);
-await context.submitFeedback({id:'a',name:'Name',email:'sender@example.com'},{message:'Website feedback',page:'/student?token=secret',to:'attacker@example.com'});
+await assert.rejects(()=>context.submitFeedback({role:'student',id:'a'},{message:'a'}),e=>e.statusCode===400);
+await context.submitFeedback({role:'student',id:'a',name:'Name',email:'sender@example.com'},{message:'Website feedback',page:'/student?token=secret',to:'attacker@example.com'});
 assert.equal(sent[0].to,'admin@g2gcareer.com');assert.ok(!sent[0].text.includes('secret'));
-await context.submitFeedback({id:'a'},{message:'Another feedback'});
-await context.submitFeedback({id:'a'},{message:'Third feedback'});
-await assert.rejects(()=>context.submitFeedback({id:'a'},{message:'Fourth feedback'}),e=>e.statusCode===429);
+await context.submitFeedback({role:'student',id:'a'},{message:'Another feedback'});
+await context.submitFeedback({role:'student',id:'a'},{message:'Third feedback'});
+await assert.rejects(()=>context.submitFeedback({role:'student',id:'a'},{message:'Fourth feedback'}),e=>e.statusCode===429);
 assert.equal(sent.length,3);
 assert.throws(()=>context.feedbackAttachment('data:image/svg+xml;base64,abcd'),e=>e.statusCode===400);
 assert.throws(()=>context.feedbackAttachment('data:image/jpeg;base64,YWJjZA=='),e=>e.statusCode===400);
 assert.throws(()=>context.feedbackAttachment('data:image/jpeg;base64,'+'A'.repeat(820001)),e=>e.statusCode===400);
 const image='data:image/jpeg;base64,'+Buffer.from([255,216,255,224,255,217]).toString('base64');
-await context.submitFeedback({id:'with-image'},{message:'Screenshot feedback',image});
+await context.submitFeedback({role:'teacher',id:'with-image'},{message:'Screenshot feedback',image});
 assert.equal(sent[3].attachments[0].filename,'feedback.jpg');
 assert.equal(sent[3].attachments[0].contentType,'image/jpeg');
 assert.ok(Buffer.isBuffer(sent[3].attachments[0].content));
 assert.equal(sent[3].attachments[0].path,undefined);
+await assert.rejects(()=>context.submitFeedback({id:'admin',role:'master'},{message:'Admin feedback'}),e=>e.statusCode===403);
+await assert.rejects(()=>context.submitFeedback({id:'admin-test',role:'student',canTestRoles:true},{message:'Admin feedback'}),e=>e.statusCode===403);
+await assert.rejects(()=>context.submitFeedback({id:'unknown',role:'guest'},{message:'Guest feedback'}),e=>e.statusCode===403);
 const ui=readFileSync(new URL('../src/ui/feedback.js',import.meta.url),'utf8');
 assert.ok(!ui.includes('Gửi về quản trị viên.'));
 assert.ok(ui.includes("panel.addEventListener('paste'"));
 assert.ok(ui.includes("send=form.querySelector('[type=submit]')"));
+assert.ok(ui.includes('input type="file" hidden'));
+assert.ok(ui.includes('export function updateFeedbackUser'));
+const roleContext={root:{hidden:true,classList:{remove(){}}},panel:{},trigger:{setAttribute(){}},input:{value:''},clearImage(){},status:{}};
+vm.createContext(roleContext);
+vm.runInContext(ui.match(/export function updateFeedbackUser\(user\)\{[\s\S]*?\n\}/)[0].replace('export ',''),roleContext);
+for(const role of ['student','teacher']){
+  roleContext.updateFeedbackUser({id:'user',role});assert.equal(roleContext.root.hidden,false);
+}
+for(const user of [null,{id:'admin',role:'master'},{id:'admin',role:'teacher',canTestRoles:true}]){
+  roleContext.updateFeedbackUser(user);assert.equal(roleContext.root.hidden,true);assert.equal(roleContext.panel.hidden,true);
+}
 console.log('Feedback recipient, validation, authentication, metadata privacy and rate limit passed.');

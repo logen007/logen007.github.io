@@ -1,4 +1,5 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
+import {updateFeedbackUser} from './ui/feedback.js';
 import {examCompletion,completionMessage} from './domain/exam-completion.js';
 import {withExamTransition} from './ui/exam-transition.js';
 import {createStartupGate} from './ui/startup-gate.js';
@@ -655,6 +656,7 @@ function bindModalClose(){app.querySelectorAll('[data-action="close-modal"]').fo
 let titleResizeObserver,viewLoadPromise;
 function render(){
   if(!startupGate.isReady())return;
+  updateFeedbackUser(authenticatedUser||user);
   if(user&&repo.mode==='api'){
     const scope=viewStateScope(ui.view,ui.adminTab);
     repo.setPollingScope(scope);

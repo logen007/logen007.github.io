@@ -20,6 +20,7 @@ export function feedbackAttachment(image){
 }
 export async function submitFeedback(user,{message,page,image}={}){
   if(!user?.id)throw appError(401,'Vui lòng đăng nhập để gửi góp ý.');
+  if(!['teacher','student'].includes(user.role)||user.canTestRoles)throw appError(403,'Chỉ giáo viên và học viên được gửi góp ý.');
   if(typeof message!=='string'||message.trim().length<5||message.trim().length>2000)throw appError(400,'Góp ý cần từ 5 đến 2.000 ký tự.');
   const attachments=feedbackAttachment(image);
   const settings=await getSettings();

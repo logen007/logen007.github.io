@@ -4,7 +4,8 @@ import {iconHtml} from './icons.js';
 // Mounted outside the application root so navigation preserves the draft.
 const root=document.createElement('aside');
 root.className='web-feedback';
-root.innerHTML='<button class="feedback-tab" aria-label="Góp ý website" type="button" aria-expanded="false" aria-controls="web-feedback-panel"><span class="feedback-question" aria-hidden="true">?</span><span class="feedback-tab-label">Góp ý</span></button><section id="web-feedback-panel" class="feedback-panel" aria-label="Góp ý website" hidden><header><strong>Góp ý website</strong><button class="nut tron" type="button" aria-label="Đóng góp ý" title="Đóng">'+iconHtml('close')+'</button></header><form><textarea class="truong" rows="4" minlength="5" maxlength="2000" required aria-label="Nội dung góp ý" placeholder="Lỗi anh/chị gặp, ý tưởng cải thiện…"></textarea><label class="feedback-image-control"><span>Thêm ảnh</span><input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Ảnh góp ý"></label><div class="feedback-image-preview" hidden><img alt="Ảnh đính kèm"><button class="nut tron" type="button" aria-label="Bỏ ảnh" title="Bỏ ảnh">×</button></div><div role="status" aria-live="polite"></div><button class="nut chinh" type="submit">Gửi góp ý</button></form></section>';
+root.hidden=true;
+root.innerHTML='<button class="feedback-tab" aria-label="Góp ý website" type="button" aria-expanded="false" aria-controls="web-feedback-panel"><span class="feedback-question" aria-hidden="true">?</span><span class="feedback-tab-label">Góp ý</span></button><section id="web-feedback-panel" class="feedback-panel" aria-label="Góp ý website" hidden><header><strong>Góp ý website</strong><button class="icon-btn" type="button" aria-label="Đóng góp ý" title="Đóng">'+iconHtml('close')+'</button></header><form><textarea class="truong" rows="4" minlength="5" maxlength="2000" required aria-label="Nội dung góp ý" placeholder="Lỗi anh/chị gặp, ý tưởng cải thiện…"></textarea><div class="feedback-attachment"><button class="nut feedback-image-control" type="button">'+iconHtml('image')+'<span>Thêm ảnh</span></button><span class="feedback-paste-hint">hoặc dán ảnh bằng Ctrl / ⌘ V</span><input type="file" hidden accept="image/png,image/jpeg,image/webp" aria-label="Ảnh góp ý"></div><div class="feedback-image-preview" hidden><img alt="Ảnh đính kèm"><button class="nut tron" type="button" aria-label="Bỏ ảnh" title="Bỏ ảnh">×</button></div><div role="status" aria-live="polite"></div><button class="nut chinh" type="submit">Gửi góp ý</button></form></section>';
 document.body.append(root);
 const trigger=root.firstElementChild,panel=root.querySelector('section'),form=root.querySelector('form'),input=root.querySelector('textarea'),status=root.querySelector('[role=status]'),send=form.querySelector('[type=submit]');
 let sending=false,processing=false,image=null;
@@ -21,6 +22,12 @@ async function attach(file){
     image=encoded;preview.querySelector('img').src=image;preview.hidden=false;status.textContent='';
   }catch(error){status.textContent=error.message;}
   finally{processing=false;send.disabled=false;fileInput.value='';}
+}
+root.querySelector('.feedback-image-control').onclick=()=>fileInput.click();
+export function updateFeedbackUser(user){
+  const allowed=Boolean(user?.id&&['teacher','student'].includes(user.role)&&!user.canTestRoles);
+  if(!allowed){panel.hidden=true;root.classList.remove('is-open');trigger.setAttribute('aria-expanded','false');input.value='';clearImage();status.textContent='';}
+  root.hidden=!allowed;
 }
 fileInput.addEventListener('change',()=>attach(fileInput.files?.[0]));
 remove.onclick=()=>{if(!sending&&!processing)clearImage();};
