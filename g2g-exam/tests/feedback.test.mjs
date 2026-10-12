@@ -39,7 +39,7 @@ assert.ok(ui.includes('<strong>Báo lỗi</strong>'));
 assert.ok(ui.includes('Bạn gặp vấn đề gì? Chia sẻ với chúng mình nhé…'));
 assert.ok(ui.includes("iconHtml('arrowRight')"));
 assert.ok(ui.includes('export function updateFeedbackUser'));
-const roleContext={root:{hidden:true,classList:{remove(){}}},panel:{},trigger:{setAttribute(){}},input:{value:''},clearImage(){},status:{}};
+const roleContext={root:{hidden:true,classList:{remove(){},contains(){return false;}}},form:{},panel:{},trigger:{setAttribute(){}},input:{value:''},clearImage(){},status:{}};
 vm.createContext(roleContext);
 vm.runInContext(ui.match(/export function updateFeedbackUser\(user\)\{[\s\S]*?\n\}/)[0].replace('export ',''),roleContext);
 for(const role of ['student','teacher']){

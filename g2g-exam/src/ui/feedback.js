@@ -5,9 +5,9 @@ import {iconHtml} from './icons.js';
 const root=document.createElement('aside');
 root.className='web-feedback';
 root.hidden=true;
-root.innerHTML='<button class="feedback-tab" aria-label="Báo lỗi" type="button" aria-expanded="false" aria-controls="web-feedback-panel"><span class="feedback-question" aria-hidden="true">?</span><span class="feedback-tab-label">Góp ý</span></button><section id="web-feedback-panel" class="feedback-panel" aria-label="Báo lỗi" hidden><header><strong>Báo lỗi</strong><button class="icon-btn" type="button" aria-label="Đóng góp ý" title="Đóng">'+iconHtml('close')+'</button></header><form><textarea class="truong" rows="4" minlength="5" maxlength="2000" required aria-label="Nội dung góp ý" placeholder="Bạn gặp vấn đề gì? Chia sẻ với chúng mình nhé…"></textarea><div class="feedback-attachment"><button class="nut feedback-image-control" type="button">'+iconHtml('image')+'<span>Thêm ảnh</span></button><input type="file" hidden data-image-picker-direct accept="image/png,image/jpeg,image/webp" aria-label="Ảnh góp ý"></div><div class="feedback-image-preview" hidden><img alt="Ảnh đính kèm"><button class="nut tron" type="button" aria-label="Bỏ ảnh" title="Bỏ ảnh">×</button></div><div role="status" aria-live="polite"></div><button class="nut chinh" type="submit">'+iconHtml('arrowRight')+'<span>Gửi góp ý</span></button></form></section>';
+root.innerHTML='<section id="web-feedback-panel" class="feedback-panel" aria-label="Báo lỗi"><header><button class="feedback-question" aria-label="Mở báo lỗi" type="button" aria-expanded="false">?</button><strong>Báo lỗi</strong><button class="icon-btn" type="button" aria-label="Đóng góp ý" title="Đóng">'+iconHtml('close')+'</button></header><form><textarea class="truong" rows="4" minlength="5" maxlength="2000" required aria-label="Nội dung góp ý" placeholder="Bạn gặp vấn đề gì? Chia sẻ với chúng mình nhé…"></textarea><div class="feedback-attachment"><button class="nut feedback-image-control" type="button">'+iconHtml('image')+'<span>Thêm ảnh</span></button><input type="file" hidden data-image-picker-direct accept="image/png,image/jpeg,image/webp" aria-label="Ảnh góp ý"></div><div class="feedback-image-preview" hidden><img alt="Ảnh đính kèm"><button class="nut tron" type="button" aria-label="Bỏ ảnh" title="Bỏ ảnh">×</button></div><div role="status" aria-live="polite"></div><button class="nut chinh" type="submit">'+iconHtml('arrowRight')+'<span>Gửi góp ý</span></button></form></section>';
 document.body.append(root);
-const trigger=root.firstElementChild,panel=root.querySelector('section'),form=root.querySelector('form'),input=root.querySelector('textarea'),status=root.querySelector('[role=status]'),send=form.querySelector('[type=submit]');
+const trigger=root.querySelector('.feedback-question'),panel=root.querySelector('section'),form=root.querySelector('form'),input=root.querySelector('textarea'),status=root.querySelector('[role=status]'),send=form.querySelector('[type=submit]');
 let sending=false,processing=false,image=null;
 const fileInput=root.querySelector('[type=file]'),preview=root.querySelector('.feedback-image-preview'),remove=preview.querySelector('button');
 function clearImage(){image=null;fileInput.value='';preview.hidden=true;preview.querySelector('img').removeAttribute('src');}
@@ -28,6 +28,8 @@ export function updateFeedbackUser(user){
   const allowed=Boolean(user?.id&&['teacher','student'].includes(user.role)&&!user.canTestRoles);
   if(!allowed){panel.hidden=true;root.classList.remove('is-open');trigger.setAttribute('aria-expanded','false');input.value='';clearImage();status.textContent='';}
   root.hidden=!allowed;
+  if(allowed)panel.hidden=false;
+  form.inert=!root.classList.contains('is-open');
 }
 fileInput.addEventListener('change',()=>attach(fileInput.files?.[0]));
 remove.onclick=()=>{if(!sending&&!processing)clearImage();};
@@ -35,10 +37,12 @@ panel.addEventListener('paste',event=>{
   const file=[...(event.clipboardData?.items||[])].find(item=>item.kind==='file'&&item.type.startsWith('image/'))?.getAsFile();
   if(file){event.preventDefault();event.stopPropagation();attach(file);}
 });
-function toggle(open){panel.hidden=!open;root.classList.toggle('is-open',open);trigger.setAttribute('aria-expanded',String(open));if(open)input.focus();else trigger.focus();}
-trigger.onclick=()=>toggle(panel.hidden);
-panel.querySelector('header button').onclick=()=>toggle(false);
-root.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden){event.preventDefault();toggle(false);}});
+function toggle(open,{focus=false}={}){root.classList.toggle('is-open',open);trigger.setAttribute('aria-expanded',String(open));form.inert=!open;if(focus){if(open)input.focus();else trigger.focus();}}
+form.inert=true;
+trigger.onpointerenter=event=>{if(event.pointerType==='mouse')toggle(true);};
+trigger.onclick=()=>toggle(true,{focus:true});
+panel.querySelector('header .icon-btn').onclick=()=>toggle(false,{focus:true});
+root.addEventListener('keydown',event=>{if(event.key==='Escape'&&root.classList.contains('is-open')){event.preventDefault();toggle(false,{focus:true});}});
 form.addEventListener('submit',async event=>{
   event.preventDefault();
   if(sending||processing||!form.reportValidity())return;
