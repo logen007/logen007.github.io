@@ -3,6 +3,7 @@ import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {ApiRepository} from '../src/repositories/api.js';
 const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+assert.doesNotMatch(source,/examDraftStatus|showDraftStatus/,'Draft synchronization has no visible status');
 const subscription=source.slice(source.indexOf('repo.subscribe(next=>'),source.indexOf("window.addEventListener('online'"));
 const begin=source.slice(source.indexOf('async function beginAttempt('),source.indexOf('let movingAttemptSection'));
 const original=globalThis.fetch;

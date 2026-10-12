@@ -663,8 +663,6 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .exam-reading-split .to-thi > .cau-thi:not(.is-example):last-child { padding-bottom:0; }
 .exam-reading-split .to-thi > .exam-question-pair--example { margin-bottom:12px; }
 .exam-paper [data-stimulus-order] { min-width:0; }
-#examDraftStatus { display:block; margin:16px 0; color:var(--phu); font-size:12px; }
-#examDraftStatus[hidden] { display:none; }
 .exam-last-edit { white-space:nowrap; font-size:13px; color:var(--phu); font-variant-numeric:tabular-nums; }
 .exam-paper [data-stimulus-order] > .cau-thi:not(.is-example) { padding:12px 0; margin:0; }
 .exam-paper [data-stimulus-order] > .exam-question-pair--example { margin-bottom:16px; }

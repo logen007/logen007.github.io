@@ -230,7 +230,7 @@ function examView(){
   if(!exam){ui.view='student-home';render();return;}
   if(repo.mode==='api'&&repo.outboxAttempt!==attempt.id){
     app.innerHTML='<main class="khung"><p role="status">Đang chuẩn bị bản lưu an toàn trên máy…</p><button class="nut" id="retryExamDraft" hidden>Thử lại</button></main>';
-    repo.prepareExamDraft(attempt.id,showDraftStatus).then(async()=>{data=await repo.getState();if(ui.view==='exam')render();}).catch(error=>{
+    repo.prepareExamDraft(attempt.id).then(async()=>{data=await repo.getState();if(ui.view==='exam')render();}).catch(error=>{
       const status=app.querySelector('[role="status"]');if(status)status.textContent=error.message;
       const retry=app.querySelector('#retryExamDraft');if(retry){retry.hidden=false;retry.onclick=()=>render();}
     });
@@ -240,11 +240,6 @@ function examView(){
   const section=exam.sections[sectionIndex];
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
   app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,allQuestions:data.questions,online:ui.online});
-  if(repo.mode==='api'){
-    const status=document.createElement('small');status.id='examDraftStatus';status.setAttribute('role','status');
-    app.querySelector('.dieu-huong-thi')?.before(status);
-    showDraftStatus(Object.keys(repo.outbox?.draft.pending||{}).length?'pending':'saved');
-  }
   examPreloader.update(attempt.id,examMediaUrls(exam,data.questions,sectionIndex));
   const examBrandIcon=app.querySelector('.exam-mobile-brand img');if(examBrandIcon)examBrandIcon.onerror=()=>examBrandIcon.remove();
   bindExamInputs(attempt,questions);
@@ -459,10 +454,6 @@ function playSectionSegment(audio,onProgress){
   });
 }
 
-function showDraftStatus(state){
-  const messages={pending:'Đã ghi nhận · Đang lưu trên máy',saving:'Đang đồng bộ…',saved:'',offline:'Chưa đồng bộ · Sẽ thử lại khi có mạng',conflict:'Có thay đổi từ nơi khác hoặc đã hết giờ · Bản trên máy được giữ lại. Chưa đồng bộ.', 'storage-error':'Không lưu được trên máy · Đừng đóng trang, hãy kiểm tra dung lượng trống.'};
-  const status=document.getElementById('examDraftStatus');if(status){status.hidden=state==='saved';status.textContent=messages[state]??state;}
-}
 function queueAnswer(attemptId,qid,value,delay){
   if(repo.mode==='api'){repo.saveDraftAnswer(attemptId,qid,value);return;}
   const key=`${attemptId}:${qid}`;
