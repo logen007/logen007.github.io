@@ -1068,7 +1068,7 @@ function bindViewSpecific(){
     if(!await flushBuilderDraft())return;
     const exam=byId(data.exams,ui.builderExamId),skill=b.dataset.skill;
     if(!exam||!skill)return;
-    openSkillSettings({exam,skill,questions:data.questions,onSave:async({timeMinutes,flows})=>{
+    openSkillSettings({exam,skill,onSave:async({timeMinutes,flows})=>{
       await repo.transaction(st=>{
         const current=byId(st.exams,exam.id);
         updateExam(st,user,exam.id,{

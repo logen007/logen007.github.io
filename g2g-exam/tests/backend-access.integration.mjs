@@ -239,7 +239,7 @@ try{
   const activeCopy=await startAttempt(other,{examId:serverExam.id});
   const beforeEdit=(await query('SELECT private_data FROM attempts WHERE id=$1',[activeCopy.attemptId])).rows[0].private_data.examSnapshot;
   const currentExam=(await loadState(copier)).exams.find(e=>e.id===serverExam.id);
-  const customFlow={source:'question',segmentRepeat:3,instructionRepeat:1,exampleRepeat:2,repeatOrder:'round'};
+  const customFlow={segmentRepeat:2};
   const changedSections=currentExam.sections.map((s,i)=>i===0?{...s,instruction:'Edited after publication',timeMinutes:12,audioFlow:customFlow}:s);
   await commitOperations(copier,[{collection:'questions',id:serverQuestion.id,item:{...serverQuestion,title:'Changed after students started'}},{collection:'exams',id:serverExam.id,item:{...currentExam,sections:changedSections}}]);
   assert.deepEqual((await query('SELECT private_data FROM attempts WHERE id=$1',[activeCopy.attemptId])).rows[0].private_data.examSnapshot,beforeEdit);

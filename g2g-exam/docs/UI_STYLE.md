@@ -108,8 +108,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   at the available mobile viewport width. Larger editors retain their own size.
 - Popup close icons sit absolutely at the top-right inset (8px), with 44px
   targets and reserved title space. They do not occupy a separate header row.
-- Listening settings use compact part buttons, source/repeat controls and a live
-  text playback sequence from the shared planner. No default-score field.
+- Listening settings show all parts as compact rows, each with one toggle:
+  “Không lặp” / “Lặp 1 lần”. No tabs, flow diagram, advanced controls or
+  default-score field. Instructions/examples play once; grouping follows the spec.
 
 - Header account controls use one avatar opening a menu: Profile, other role
   options for authorized admins (Student, Teacher, Admin; omit current role),

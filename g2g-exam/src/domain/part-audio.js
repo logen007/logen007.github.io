@@ -1,6 +1,12 @@
 import {isPrefilledQuestion} from './question-display.js';
 export function normalizeAudioFlow(value){
   if(value==null)return null;
+  // Compact settings; keep the legacy format readable for frozen attempts.
+  if(!Object.hasOwn(value,'source')){
+    const segmentRepeat=Number(value.segmentRepeat);
+    if(![1,2].includes(segmentRepeat))throw new Error('Chọn Không lặp hoặc Lặp 1 lần.');
+    return {segmentRepeat};
+  }
   const repeat=(key)=>{const n=Number(value[key]??1);if(!Number.isInteger(n)||n<1||n>3)throw new Error('Số lần phát phải từ 1 đến 3.');return n;};
   if(!['question','pair','part'].includes(value.source))throw new Error('Cách chia audio không hợp lệ.');
   if(!['consecutive','round'].includes(value.repeatOrder))throw new Error('Thứ tự lặp audio không hợp lệ.');
@@ -8,6 +14,7 @@ export function normalizeAudioFlow(value){
 }
 export function effectiveAudioPolicy(section){
   const policy=section.audioPolicy||{},flow=normalizeAudioFlow(section.audioFlow);
+  if(flow&&!flow.source)return {...policy,segmentRepeat:flow.segmentRepeat,instructionRepeat:1,exampleRepeat:1,repeatOrder:'consecutive'};
   return flow?{...policy,...flow,mode:'per_question_segment',sharedPart:flow.source==='part',questionsPerSegment:flow.source==='pair'?2:1}:policy;
 }
 // Shared-part audio is stored on the first scored question, after the example.
