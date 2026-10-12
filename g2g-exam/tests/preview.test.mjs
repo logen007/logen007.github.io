@@ -11,6 +11,8 @@ import {previewExamModalHtml} from '../src/views/modals.js';
 import {mountStudentRuntime} from '../src/part-templates/a1-listening-part-1/student.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {writingFormScore} from '../src/domain/writing-form.js';
+import {compactBinaryChoices} from '../src/domain/question-display.js';
+import {renderQuestionHtml} from '../src/views/student.js';
 
 const originalStorage=globalThis.sessionStorage;
 const bootHtml=readFileSync(new URL('../vi.html',import.meta.url),'utf8');
@@ -455,6 +457,24 @@ try{
     assert.match(html,/class="word-count">2<\/span>/);
     const answered=tags(html,'div').filter(tag=>hasClass(tag,'cau-thi')&&hasClass(tag,'is-answered'));
     assert.deepEqual(answered.map(tag=>attribute(tag,'data-q')),['choice','written']);
+  });
+
+  await test('Compact binary answers share question row without letter prefixes and retain radio behavior',()=>{
+    for(const choices of [['+','-'],['+','−'],['Ja','Nein'],['Falsch','Richtig']]){
+      assert.ok(compactBinaryChoices(choices));
+      for(const example of [false,true]){
+        const html=renderQuestionHtml({id:'binary',type:'single',title:'Aussage',choices,example,correctAnswer:1,maxScore:example?0:1},1,{id:'preview'},{preview:true});
+        assert.match(html,/cau-thi--binary/);
+        assert.doesNotMatch(html,/answer-letter|aria-label="[AB]\./);
+        assert.match(html,/role="radiogroup"/);
+        assert.equal(tags(html,'input').length,2);
+        assert.ok(tags(html,'input')[1].includes('checked'));
+        assert.equal(tags(html,'input')[0].includes('disabled'),example);
+      }
+    }
+    assert.equal(compactBinaryChoices(['A','B']),false);
+    assert.equal(compactBinaryChoices(['Ja','Nein','Vielleicht']),false);
+    assert.equal(compactBinaryChoices([{text:'Ja',imageUrl:'image.jpg'},'Nein']),false);
   });
 
   await test('Question and instruction text remain escaped in both preview and real exam layouts',()=>{

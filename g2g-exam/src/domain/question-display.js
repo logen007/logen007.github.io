@@ -16,3 +16,10 @@ export function shortChoiceColumns(choices){
     return text.length>0&&!/[\r\n]/.test(text)&&[...text].length<=limit;
   })?choices.length:0;
 }
+
+export function compactBinaryChoices(choices){
+  if(choices.length!==2||choices.some(choice=>choice?.imageUrl))return false;
+  const values=choices.map(choice=>String(typeof choice==='object'?choice.text||'':choice||'')
+    .replace(/\[\/?[biu]\]/gi,'').trim().toLowerCase().replace(/[−–]/g,'-')).sort().join('|');
+  return ['+|-','ja|nein','falsch|richtig'].includes(values);
+}
