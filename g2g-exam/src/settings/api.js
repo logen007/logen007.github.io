@@ -1,5 +1,9 @@
 const API=String(globalThis.G2G_API_BASE||'/api').replace(/\/$/,'');
 
+export function r2SettingsAction(action,data={}){
+  return request('/actions/'+action,{method:'POST',body:data});
+}
+
 async function request(path,{method='GET',body}={}){
   const res=await fetch(`${API}${path}`,{
     method,

@@ -20,7 +20,7 @@ const page=settingsPageHtml({settings:DEFAULT_SETTINGS,infra:null});
 assert.match(page,/data-asset-pick="sLogo"/);
 assert.match(page,/data-asset-pick="sFavicon"/);
 assert.equal((page.match(/type="file" hidden data-image-picker-direct/g)||[]).length,2);
-assert.ok(readFileSync(new URL('../src/settings/tabs.js',import.meta.url),'utf8').includes("general:['sName','sPrimaryColor','sMaintenance']"));
+assert.ok(readFileSync(new URL('../src/settings/tabs.js',import.meta.url),'utf8').includes("general:['sName','sR2Enabled','sPrimaryColor','sMaintenance']"));
 assert.ok(!page.includes('sRestart'));
 for(const id of ['sContentWidth','sCardRadius','sBackground'])assert.ok(page.includes(id));
 assert.ok(!page.includes('cai-dat-card-rong'));

@@ -32,7 +32,8 @@ HTML, sessions, API data, answers or submissions.
   one stream recovery; missing range metadata or failed local source is an error.
 - The existing preloader streams files with concurrency 2, current/next sections
   first, and pauses scheduling in hidden tabs. No full-media JS blob cache.
-- Rollback: set `R2_MEDIA_ENABLED=false`, restart app. Already installed browser
+- Rollback: disable R2 in **Cài đặt → Chung → Lưu trữ ảnh & audio (R2)** and save.
+  The runtime switches immediately, without restarting the app. Already installed browser
   workers also receive local files. No DB restoration required.
 - Local GC continues as before. Remote orphan cleanup is deliberately NOT enabled
   in this migration; no remote delete privileges or destructive sweep required.
@@ -44,9 +45,20 @@ HTML, sessions, API data, answers or submissions.
 1. Enable R2 subscription in the user's Cloudflare account. User completes billing
    or contractual acceptance. Create a PRIVATE Standard bucket; keep `r2.dev`
    and public bucket custom domains disabled.
-2. Store bucket-scoped R2 credentials only in server environment/secret storage.
-   Set `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`.
-   Never commit credentials or paste them in chat. Set enabled=true on staging first.
+2. In **Cài đặt → Chung → Lưu trữ ảnh & audio (R2)**, enter Account ID,
+   bucket, Access Key ID and Secret Access Key (bucket-scoped Object Read & Write).
+   **Kiểm tra kết nối** is a read-only HeadBucket probe; it neither saves nor enables R2
+   and does not prove write permission/browser CORS. **Lưu cấu hình R2** saves this
+   card independently from general settings. Enabling repeats the connection check.
+   Keys are encrypted using the existing server SETTINGS_ENCRYPTION_KEY in the secrets
+   table and are never returned by the API. Blank key fields retain both stored keys;
+   changing Account ID requires a new pair. Only master may read/change this configuration.
+   No account, bucket, billing subscription or CORS policy is created automatically.
+   Legacy environment values (`R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`,
+   `R2_SECRET_ACCESS_KEY`, `R2_MEDIA_ENABLED`) are used only until a setting is saved;
+   a saved disabled setting overrides environment activation. Never paste keys in chat.
+   Runtime config is cached in memory; image/audio requests do not read the settings DB.
+   Enable on staging first.
 3. Bucket CORS (replace origin for staging):
 
 ```json

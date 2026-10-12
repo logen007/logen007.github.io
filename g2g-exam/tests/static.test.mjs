@@ -242,7 +242,7 @@ test('Production dùng API, không nạp lại demo bypass',()=>{
 
 test('Secret SMTP không được đưa xuống frontend',()=>{
   const frontend=jsTree('src');
-  const mail=read('server/src/mail.js');
+  const mail=read('server/src/mail.js')+read('server/src/settings-secrets.js');
   assert.equal(frontend.includes('SETTINGS_ENCRYPTION_KEY'),false);
   assert.equal(frontend.includes('GOOGLE_CLIENT_SECRET'),false);
   assert.ok(mail.includes('SETTINGS_ENCRYPTION_KEY'));

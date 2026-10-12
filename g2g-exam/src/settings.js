@@ -1,4 +1,5 @@
 import {hasApiBackend} from './config.js';
+import {bindR2Settings} from './settings/r2.js';
 import {
   loadPrivateSettings,refreshInfrastructure,
   updateSystemSettings,updateSmtpSecret,testSmtp
@@ -216,6 +217,7 @@ async function sendTest(){
 }
 
 function bindSettingsActions(){
+  bindR2Settings();
   document.querySelectorAll('[data-asset-pick]').forEach(button=>{
     const input=document.getElementById(button.dataset.assetPick);
     button.onclick=()=>input.click();

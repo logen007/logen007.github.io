@@ -269,6 +269,12 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Brand settings
 
+General admin settings use the shared two-column card grid on desktop and one
+column at the existing mobile breakpoint. Do not constrain this panel to a single
+left-aligned 760px column. R2 uses the same input/card/button tokens, with masked
+credential inputs, a local live status and independent test/save actions. Its fields
+remain disabled until the protected configuration loads; failed loading offers retry.
+
 Exam image uploads are converted before upload to JPEG (quality 85%, maximum
 2400px long edge, no upscaling), with white transparency background. Only the
 optimized file is uploaded; never upload a second original. Use short English

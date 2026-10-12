@@ -19,7 +19,7 @@ import {handleAction} from './actions.js';
 import {startMediaGarbageCollector} from './media-gc.js';
 import {startTrashGarbageCollector} from './trash-gc.js';
 import {submitExpiredAttempts} from './actions/attempts.js';
-import {configureR2Media} from './r2-media.js';
+import {r2Settings} from './r2-settings.js';
 import {registerMediaDeliveryRoutes} from './media-routes.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
@@ -34,7 +34,7 @@ await fs.mkdir(uploadDir,{recursive:true});
 await initDb();
 
 const app=Fastify({logger:true,trustProxy:process.env.TRUST_PROXY==='true'});
-const r2Media=await configureR2Media({uploadDir,logger:app.log});
+const r2Media=await r2Settings.start({uploadDir,logger:app.log});
 await app.register(cookie,{secret:process.env.COOKIE_SECRET||'development-only-change-me',hook:'onRequest'});
 const origins=String(process.env.CORS_ORIGINS||'').split(',').map(x=>x.trim()).filter(Boolean);
 await app.register(cors,{origin:(origin,cb)=>{if(!origin||!origins.length||origins.includes(origin))cb(null,true);else cb(new Error('Origin không được phép.'),false);},credentials:true});

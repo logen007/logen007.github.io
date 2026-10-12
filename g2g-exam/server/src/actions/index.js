@@ -1,4 +1,5 @@
 import {appError,query} from '../db.js';
+import {r2Settings} from '../r2-settings.js';
 import {submitFeedback} from './feedback.js';
 import {copyExam,prepareExamForEditing} from './exam-copy.js';
 import {emptyTrash} from '../trash-gc.js';
@@ -13,6 +14,9 @@ import {updateSystemSettings,updateSmtpSecret,testSmtp,getInfrastructureStatus,s
 
 export async function handleAction(user,name,data={}){
   switch(name){
+    case 'getR2Settings':
+    case 'saveR2Settings':
+    case 'testR2Settings': return r2Settings.action(user,name,data);
     case 'submitFeedback': return submitFeedback(user,data);
     case 'emptyTrash': return emptyTrash(user);
     case 'copyExam': return copyExam(user,data);

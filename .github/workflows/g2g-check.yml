@@ -20,6 +20,11 @@ jobs:
       - name: Run tests
         working-directory: g2g-exam
         run: npm test
+      - name: Install backend dependencies for R2 regression tests
+        run: npm ci --prefix g2g-exam/server --ignore-scripts
+      - name: Check R2 settings and VPS fallback
+        working-directory: g2g-exam
+        run: npm run test:r2
       - name: Install isolated SQL test runtime
         run: npm install --prefix "$RUNNER_TEMP/g2g-test-db" --no-save --ignore-scripts @electric-sql/pglite@0.5.8
       - name: Check exam codes and promotions against SQL

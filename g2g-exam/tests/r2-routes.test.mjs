@@ -12,7 +12,8 @@ try{
   let sources=0,enabled=true;
   const app=Fastify();
   await app.register(staticFiles,{root,serve:false});
-  registerMediaDeliveryRoutes(app,{uploadDir:root,r2Media:{source:async()=>{sources++;return enabled?'https://private.r2.test/media?signed':null;}},authenticate:async req=>{if(req.headers.authorization!=='test-session')throw Object.assign(new Error('Login required'),{statusCode:401});}});
+  registerMediaDeliveryRoutes(app,{uploadDir:root,r2Media:{get enabled(){return enabled;},source:async()=>{sources++;return enabled?'https://private.r2.test/media?signed':null;}},authenticate:async req=>{if(req.headers.authorization!=='test-session')throw Object.assign(new Error('Login required'),{statusCode:401});}});
+  assert.deepEqual((await app.inject('/api/media/config')).json(),{enabled:true});
   const headers={authorization:'test-session'};
   assert.equal((await app.inject('/uploads/test.mp3?delivery=r2')).statusCode,401);assert.equal(sources,0);
   const remote=await app.inject({url:'/uploads/test.mp3?delivery=r2',headers});
@@ -21,6 +22,7 @@ try{
   const local=await app.inject({url:'/uploads/test.mp3',headers:{...headers,range:'bytes=2-4'}});
   assert.equal(local.statusCode,206);assert.equal(local.body,'234');assert.equal(local.headers['content-range'],'bytes 2-4/10');
   enabled=false;
+  assert.deepEqual((await app.inject('/api/media/config')).json(),{enabled:false});
   assert.equal((await app.inject({url:'/uploads/test.mp3?delivery=r2',headers})).body,'0123456789');
   assert.equal((await app.inject({url:'/uploads/.r2',headers})).statusCode,404);
   assert.equal((await app.inject({url:'/uploads/test.mp3?delivery=r2',method:'HEAD',headers})).statusCode,200);

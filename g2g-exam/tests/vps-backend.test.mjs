@@ -73,7 +73,7 @@ test('Google Login chạy server-side và session dùng cookie ký',()=>{
 });
 
 test('SMTP password được mã hóa phía server và không có trong frontend',()=>{
-  const mail=read('server/src/mail.js');
+  const mail=read('server/src/mail.js')+read('server/src/settings-secrets.js');
   const frontend=[
     'src/repository.js','src/repositories/api.js','src/settings.js','src/settings/api.js','src/media.js','server/runtime/runtime-config.js'
   ].map(read).join('\n');

@@ -1,10 +1,7 @@
-import crypto from 'node:crypto';
+import {encrypt,decrypt} from './settings-secrets.js';
 import nodemailer from 'nodemailer';
 import {query,getSettings,appError} from './db.js';
 
-function key(){const raw=process.env.SETTINGS_ENCRYPTION_KEY;if(!raw)throw appError(503,'SETTINGS_ENCRYPTION_KEY chưa được cấu hình.');return crypto.scryptSync(raw,'g2g-settings-v1',32);}
-function encrypt(value){const iv=crypto.randomBytes(12),cipher=crypto.createCipheriv('aes-256-gcm',key(),iv);const enc=Buffer.concat([cipher.update(String(value),'utf8'),cipher.final()]);const tag=cipher.getAuthTag();return Buffer.concat([iv,tag,enc]).toString('base64');}
-function decrypt(blob){const b=Buffer.from(blob,'base64'),iv=b.subarray(0,12),tag=b.subarray(12,28),enc=b.subarray(28),dec=crypto.createDecipheriv('aes-256-gcm',key(),iv);dec.setAuthTag(tag);return Buffer.concat([dec.update(enc),dec.final()]).toString('utf8');}
 export async function setSmtpSecret(password,userId){if(!String(password||''))throw appError(400,'Mật khẩu SMTP không được để trống.');await query(`INSERT INTO secrets(key,value_enc,updated_by) VALUES('smtp_password',$1,$2) ON CONFLICT(key) DO UPDATE SET value_enc=EXCLUDED.value_enc,updated_at=now(),updated_by=EXCLUDED.updated_by`,[encrypt(password),userId]);return {configured:true};}
 export async function smtpSecretStatus(){const r=await query(`SELECT updated_at FROM secrets WHERE key='smtp_password'`);return {configured:Boolean(r.rowCount),updatedAt:r.rows[0]?.updated_at||null};}
 async function smtpPassword(){const r=await query(`SELECT value_enc FROM secrets WHERE key='smtp_password'`);if(!r.rowCount)return '';return decrypt(r.rows[0].value_enc);}
