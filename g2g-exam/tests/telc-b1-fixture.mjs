@@ -12,7 +12,8 @@ export function telcFixture(state,teacher){
     if(section.audioPolicy)partAudioQuestions(section,rows(section)).forEach(q=>q.audioUrl='/uploads/telc-fixture.mp3');
   }
   const heading=exam.sections[0];
-  const cards=rows(heading).map((q,i)=>({dataset:{questionId:q.id},querySelector:selector=>({value:selector==='[data-heading-answer]'?String(i+5):'Passage '+i})}));
+  rows(exam.sections[1]).forEach(q=>{q.choices=['Answer a','Answer b','Answer c'];});
+  const cards=rows(heading).map((q,i)=>({dataset:{questionId:q.id},querySelector:selector=>({value:selector==='[data-heading-score]'?String(q.maxScore):selector==='[data-heading-answer]'?String(i+5):'Passage '+i})}));
   saveHeadingMatchDraft({querySelectorAll:()=>cards,querySelector:key=>({value:'Heading '+Number(key.split('"')[1])})},state,teacher,exam,heading);
   for(const index of [3,4]){
     const section=exam.sections[index],perQuestion=index===3;

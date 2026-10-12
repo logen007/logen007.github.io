@@ -6,6 +6,8 @@
   "questionLimit": 5,
   "template": "GENERIC",
   "questionProfile": {
+    "layout": "choices",
+    "choices": ["A", "B", "C"],
     "defaultScore": 5
   }
 }

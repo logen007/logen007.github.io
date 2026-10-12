@@ -5,10 +5,13 @@ Source: [user's structure sheet](https://docs.google.com/spreadsheets/d/1kVs4d41
 The JSON exam and part files own the runtime rules. `extends` deliberately
 inherits the existing approved Goethe part referenced in the sheet, with only
 the TELC question count, name and per-question score overridden. This includes
-the true/false format in Reading 2 and Ja/Nein + shared twice-played audio for
+Ja/Nein + shared twice-played audio for
 all three listening parts. Do not substitute external TELC formats.
 
 Two direct clarifications override incomplete/conflicting sheet cells:
+
+- Reading 2 (updated 2026-10-12): the user corrected each question to three
+  choices a/b/c, replacing the inherited true/false format. Count and scores stay unchanged.
 
 - Reading 1 (updated 2026-10-12): five passages, a shared bank of ten
   teacher-entered headings a–j, and an explicit correct-letter selection per
