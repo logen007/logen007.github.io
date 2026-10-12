@@ -655,6 +655,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .heading-match-question .inline-gap { display:inline-flex; align-items:center; flex:1; min-width:0; margin:0; }
 .heading-match-question .inline-gap-trigger { width:100%; min-height:44px; padding:10px 36px 10px 14px; background-position:right 14px center; white-space:normal; overflow-wrap:anywhere; text-align:left; font-weight:400; }
 [data-editor-mode="heading-match"] { display:grid; gap:12px; }
+.heading-option-row { display:grid; grid-template-columns:20px minmax(0,1fr) var(--editor-control) var(--editor-control); gap:8px; align-items:center; }
 [data-editor-mode="heading-match"] textarea { min-height:140px; }
 .gap-options-editor fieldset { min-width:0; border:1px solid var(--vien); border-radius:12px; padding:12px; display:grid; gap:8px; }
 .gap-options-editor [data-gap-options] { min-height:320px; }

@@ -14,7 +14,7 @@ import {bindLetterAnswers} from './ui/letter-answers.js';
 import {bindSplitReading} from './ui/split-reading.js';
 let clearSplitReading=()=>{};
 import {saveInlineGapDraft} from './part-templates/default/inline-gap-builder.js';
-import {saveHeadingMatchDraft} from './part-templates/default/heading-match-builder.js';
+import {saveHeadingMatchDraft,resizeHeadingOptions} from './part-templates/default/heading-match-builder.js';
 import {createGradeAutosave} from './ui/grade-autosave.js';
 import {showPublishErrors} from './ui/publish-errors.js';
 import {bindImageRemoval,imageValue} from './ui/image-remove.js';
@@ -1241,6 +1241,10 @@ function bindBuilder(){
     }));
   });
   const section=exam.sections.find(item=>item.id===ui.builderSectionId)||exam.sections[0];
+  app.querySelectorAll('[data-heading-add],[data-heading-remove]').forEach(button=>button.onclick=async()=>{
+    if(button.disabled||!await flushBuilderDraft())return;
+    act(()=>repo.transaction(st=>resizeHeadingOptions(st,user,exam.id,section.id,button.hasAttribute('data-heading-add')?'add':'remove',Number(button.dataset.headingAdd??button.dataset.headingRemove))));
+  });
   bindPartBuilder(section?.templateType,{root:app,data,exam,section,pendingAudioUploads,notify});
   bindReadingBlocks(app,()=>queueBuilderAutosave());
   bindImageRemoval(app,()=>queueBuilderAutosave(0));

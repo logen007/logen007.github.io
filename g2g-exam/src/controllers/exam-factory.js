@@ -37,8 +37,8 @@ function populateConfiguredSections(state,user,exam){
       if(!question)continue;
       const patch={};
       if(profile.type&&question.type!==profile.type)patch.type=profile.type;
-      if(!profile.dynamicGapOptions&&Array.isArray(profile.choices)&&question.choices?.length>profile.choices.length)patch.choices=question.choices.slice(0,profile.choices.length);
-      if(!profile.dynamicGapOptions&&profile.uniqueLetters&&JSON.stringify((question.choices||[]).map(choiceLetter))!==JSON.stringify(profile.choices)){
+      if(!profile.dynamicGapOptions&&!profile.dynamicHeadingOptions&&Array.isArray(profile.choices)&&question.choices?.length>profile.choices.length)patch.choices=question.choices.slice(0,profile.choices.length);
+      if(!profile.dynamicGapOptions&&!profile.dynamicHeadingOptions&&profile.uniqueLetters&&JSON.stringify((question.choices||[]).map(choiceLetter))!==JSON.stringify(profile.choices)){
         const letter=choiceLetter(question.choices?.[question.correctAnswer]);
         patch.choices=clone(profile.choices);
         patch.correctAnswer=profile.choices.indexOf(letter);

@@ -14,7 +14,12 @@ Two direct clarifications override incomplete/conflicting sheet cells:
   teacher-entered headings a–j, and an explicit correct-letter selection per
   question. The bank's letters remain fixed; the earlier automatic five-heading
   shuffle is superseded. Existing headings and answer keys remain in place when
-  opening older drafts; teachers fill the five additional options before publishing.
+  opening older drafts.
+- The user subsequently requested ×/+ controls per answer. Ten options remain
+  the initial default; the shared bank can contain 5–26 options (a–z). Five is
+  the minimum for five unique answers. Insertion/removal relabels choices while
+  preserving the same answer text; removing a correct answer clears its key
+  and blocks publication until the teacher explicitly selects another answer.
 
 - Writing: user explicitly chose A2 Writing 1 (free-response), despite the
   current cell saying A1. Its 45 points and 30 minutes come from the TELC column.
