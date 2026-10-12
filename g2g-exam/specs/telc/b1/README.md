@@ -28,8 +28,11 @@ Two direct clarifications override incomplete/conflicting sheet cells:
 
 - Writing: user explicitly chose A2 Writing 1 (free-response), despite the
   current cell saying A1. Its 45 points and 30 minutes come from the TELC column.
-- Reading 5: user selected a variable answer bank, minimum ten entries for ten
-  gaps, each answer used once. Letters a–y are available; z remains the example.
+- Reading 4 and 5 (updated 2026-10-12): no example question or required [z].
+- Reading 5 uses the Goethe B2 Reading 2 interface: passage and shared lettered
+  answer bank, with one input per answer. Keep TELC's ten questions and variable
+  bank (10–25 options a–y), each answer used once. Plus/minus changes the bank
+  size without changing existing answer keys; an answer in use cannot be removed.
 
 Reading 4 uses three independent choices per gap; repeating a correct letter
 across different gaps is allowed. Reading 4/5 remain in the 90-minute Reading

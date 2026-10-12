@@ -17,7 +17,7 @@ export function telcFixture(state,teacher){
   saveHeadingMatchDraft({querySelectorAll:()=>cards,querySelector:key=>({value:'Heading '+Number(key.split('"')[1])})},state,teacher,exam,heading);
   for(const index of [3,4]){
     const section=exam.sections[index],perQuestion=index===3;
-    const values={'[data-gap-text]':'Example [z]. '+Array.from({length:10},(_,i)=>`Text [${String.fromCharCode(97+(perQuestion?i%3:i))}]`).join(' '),'[data-gap-option="z"]':'Demo','[data-gap-options]':Array.from({length:12},(_,i)=>'Word '+i).join('\n')};
+    const values={'[data-gap-text]':Array.from({length:10},(_,i)=>`Text [${String.fromCharCode(97+(perQuestion?i%3:i))}]`).join(' '),'[data-gap-option="z"]':'Demo','[data-gap-options]':Array.from({length:12},(_,i)=>'Word '+i).join('\n')};
     for(let i=0;i<10;i++)for(let j=0;j<3;j++)values[`[data-gap-choice="${i}-${j}"]`]=`Gap ${i} choice ${j}`;
     saveInlineGapDraft({querySelector:key=>key in values?{value:values[key]}:null},state,teacher,exam,section);
   }

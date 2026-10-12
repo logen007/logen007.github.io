@@ -1,4 +1,5 @@
 import {boldPattern,italicPattern,underlinePattern,stripTextMarkup} from './text-markup.js';
+export const hasGapExample=section=>section.questionProfile?.inlineExample!==false;
 // Public passage contains positions, never teacher answer letters.
 export function parseGapText(text,limit,letters='abcdefgh'){
   const passage=[],keys=[];let cursor=0;
@@ -16,7 +17,7 @@ export function parseGapText(text,limit,letters='abcdefgh'){
 }
 
 export function gapAuthorText(section,questions){
-  return (section.gapPassage||[]).map(part=>typeof part==='string'?part:part.example?'[z]':`[${String.fromCharCode(97+Number(questions[part.gap]?.correctAnswer??0))}]`).join('');
+  return (section.gapPassage||[]).map(part=>typeof part==='string'?part:part.example?(hasGapExample(section)?'[z]':section.gapExample||''):`[${String.fromCharCode(97+Number(questions[part.gap]?.correctAnswer??0))}]`).join('');
 }
 
 export function inlineGapErrors(section){
@@ -24,13 +25,13 @@ export function inlineGapErrors(section){
   const parts=section.gapPassage||[],gaps=parts.filter(p=>p&&typeof p==='object'&&Number.isInteger(p.gap)),errors=[];
   const lastLetter=section.questionProfile.gapChoicesPerQuestion?'c':section.questionProfile.dynamicGapOptions?'y':'h';
   if(gaps.length!==section.questionLimit||gaps.some((p,i)=>p.gap!==i))errors.push(`Đoạn văn cần đúng ${section.questionLimit} ô [a]–[${lastLetter}], theo thứ tự trong bài.`);
-  if(parts.filter(p=>p?.example).length!==1||!section.gapExample?.trim())errors.push('Thêm một [z] vào đoạn văn và nhập câu ví dụ ở ô z.');
+  if(hasGapExample(section)&&(parts.filter(p=>p?.example).length!==1||!section.gapExample?.trim()))errors.push('Thêm một [z] vào đoạn văn và nhập câu ví dụ ở ô z.');
   if(section.questionProfile.gapChoicesPerQuestion){
     if((section.gapOptions||[]).length!==section.questionLimit||section.gapOptions.some(row=>!Array.isArray(row)||row.length!==3||row.some(value=>!String(value||'').trim())))errors.push('Mỗi vị trí [a], [b] hoặc [c] trong đoạn văn cần đủ 3 lựa chọn a, b, c.');
   }else{
     const count=section.questionProfile.dynamicGapOptions?section.questionLimit:8;
     if((section.gapOptions||[]).length<count||(!section.questionProfile.dynamicGapOptions&&section.gapOptions.length!==count)||section.gapOptions.length>25||section.gapOptions.some(value=>!String(value||'').trim()))errors.push(`Nhập ${section.questionProfile.dynamicGapOptions?'ít nhất ':''}${count} câu lựa chọn, tối đa 25; không để trống.`);
   }
-  if(parts.some(p=>typeof p==='string'&&/[\[\]]/.test(stripTextMarkup(p))))errors.push(`Hoàn thành ký hiệu [a]–[${lastLetter}] cho đáp án hoặc [z] cho ví dụ; không để dấu ngoặc bị thiếu.`);
+  if(parts.some(p=>typeof p==='string'&&/[\[\]]/.test(stripTextMarkup(p))))errors.push(`Hoàn thành ký hiệu [a]–[${lastLetter}] cho đáp án${hasGapExample(section)?' hoặc [z] cho ví dụ':''}; không để dấu ngoặc bị thiếu.`);
   return errors.map(error=>section.name+': '+error);
 }

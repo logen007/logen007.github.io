@@ -13,6 +13,7 @@ import {headingMatchHtml} from '../src/ui/heading-match.js';
 import {inlineGapsHtml} from '../src/ui/inline-gaps.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {saveHeadingMatchDraft,resizeHeadingOptions} from '../src/part-templates/default/heading-match-builder.js';
+import {resizeGapOptions} from '../src/part-templates/default/inline-gap-builder.js';
 import {examHtml} from '../src/views/student.js';
 import {syncLetterPicker} from '../src/ui/letter-picker.js';
 import {ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
@@ -80,6 +81,22 @@ for(let i=0;i<exam.sections.length;i++){
   if(i===8)assert.match(html,/lined-writing-paper/);
 }
 assert.match(renderBuilder({data:state,exam,section:gapBank}),/data-gap-options/);
+for(const section of [gap3,gapBank]){
+  const editor=renderBuilder({data:state,exam,section});
+  assert.doesNotMatch(editor,/data-gap-option="z"|Nhập đoạn văn có \[z\]/);
+  assert.doesNotMatch(inlineGapsHtml(section,rows(section),{},20),/gap-demo|<b>0<\/b>/);
+  assert.deepEqual(inlineGapErrors(section),[]);
+}
+assert.equal((renderBuilder({data:state,exam,section:gapBank}).match(/data-gap-option="/g)||[]).length,12);
+const previousKeys=rows(gapBank).map(q=>q.correctAnswer);
+resizeGapOptions(state,teacher,exam.id,gapBank.id,'add');
+assert.equal(gapBank.gapOptions.length,13);
+resizeGapOptions(state,teacher,exam.id,gapBank.id,'remove');
+assert.equal(gapBank.gapOptions.length,12);
+assert.deepEqual(rows(gapBank).map(q=>q.correctAnswer),previousKeys);
+const legacyGap={...gapBank,gapExample:'Old text',gapPassage:[{example:true},...gapBank.gapPassage]};
+assert.ok(gapAuthorText(legacyGap,rows(gapBank)).startsWith('Old text'));
+assert.doesNotMatch(gapAuthorText(legacyGap,rows(gapBank)),/\[z\]/);
 const gapHtml=inlineGapsHtml(gap3,rows(gap3),{},20);
 assert.equal((gapHtml.match(/class="gap-choice-group"/g)||[]).length,10);
 assert.match(gapHtml,/<b>21\.<\/b>/);
