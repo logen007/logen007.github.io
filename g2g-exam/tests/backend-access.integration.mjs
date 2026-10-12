@@ -1,6 +1,7 @@
 // Run with G2G_PGLITE_PATH pointing to a temporary @electric-sql/pglite module.
 // Executes production action/state code and real SQL in an isolated database.
 import assert from 'node:assert/strict';
+import {completeStoredWrongAnswers} from './answer-fixture.mjs';
 import fs from 'node:fs/promises';
 import {registerHooks} from 'node:module';
 import {AsyncLocalStorage} from 'node:async_hooks';
@@ -40,8 +41,8 @@ try{
   await saveClass(teacher,{id:classroom.id,code:'A1-02',description:'Updated',teacherIds:[]});
   assert.deepEqual((await loadState(teacher)).classes.find(c=>c.id===classroom.id).teacherIds,[]);
   const {verifyClassCode,enrollInClass}=await import('../server/src/actions/class-enrollment.js');
-  const external=(await query("SELECT id FROM classes WHERE code='Extend'")).rows[0].id;
-  await assert.rejects(()=>saveClass(teacher,{id:external,code:'Other'}),/Extend/);
+  const external=null;
+  assert.equal((await query("SELECT id FROM classes WHERE code='Extend' AND active=true")).rowCount,0);
   const newcomer={id:'new',email:'new@example.test',role:'student',level:'A1',classId:external};
   const another={...newcomer,id:'new2',email:'new2@example.test'};
   for(const u of [newcomer,another])await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4)',[u.id,u.email,u.role,JSON.stringify(u)]);
@@ -77,7 +78,7 @@ try{
   assert.equal((await query("SELECT data FROM users WHERE id='new'")).rows[0].data.classId,classroom.id);
   await assert.rejects(()=>enrollInClass(newcomer,{code:ownCode,classId:classroom.id}),/đã được xếp lớp/);
   assert.equal((await loadState(teacher)).users.find(u=>u.id==='new').confirmationCode,null);
-  await saveStudentProfile(teacher,{studentId:'new',name:'Nguyen New',classId:classroom.id,level:'C2'});
+  await saveStudentProfile(teacher,{studentId:'new',name:'Nguyen Renamed',classId:classroom.id,level:'C2'});
   assert.equal((await query("SELECT data FROM users WHERE id='new'")).rows[0].data.level,'A1');
   for(let i=0;i<11;i++)try{await verifyClassCode(another,{code:'!!!!!'});}catch{}
   await assert.rejects(()=>verifyClassCode(another,{code:otherCode}),/quá nhiều/);
@@ -86,8 +87,8 @@ try{
   await db.exec(await fs.readFile(new URL('../server/schema.sql',import.meta.url),'utf8'));
   saved=(await query("SELECT data FROM users WHERE id='new'")).rows[0].data;
   assert.equal(saved.level,'B2');assert.equal(saved.classId,classroom.id);
-  assert.equal((await query("SELECT data FROM users WHERE id='s'")).rows[0].data.classId,external);
-  console.log('Registration, Extend defaults, email-bound one-time enrollment, privacy, rate limiting and migration passed.');
+  assert.equal((await query("SELECT data FROM users WHERE id='s'")).rows[0].data.classId??null,external);
+  console.log('Registration, empty class defaults, email-bound one-time enrollment, privacy, rate limiting and migration passed.');
   const sections=[];
   for(const [skill,max] of Object.entries({reading:75,grammar:30,listening:75,writing:45})){
     sections.push({id:skill,name:skill,skillKey:skill,questionIds:[skill],timeMinutes:10});
@@ -115,6 +116,7 @@ try{
   // Active attempt remains accessible after expiry, and snapshot beats later edits.
   await query("UPDATE questions SET data=jsonb_set(data,'{maxScore}','1'::jsonb)");
   assert.equal((await loadState(student)).questions.find(q=>q.id==='reading').maxScore,75);
+  await completeStoredWrongAnswers(query,attempt.attemptId);
   await submitAttempt(student,{attemptId:attempt.attemptId});
   const marks={autoScore:135,sectionScores:{reading:75,grammar:30,listening:30,writing:0},manualScores:{},scoringVersion:2,totalScore:135};
   await query("UPDATE attempts SET status='ready',private_data=private_data||$2::jsonb WHERE id=$1",[attempt.attemptId,JSON.stringify(marks)]);
@@ -135,6 +137,7 @@ try{
   const race=await Promise.allSettled([startAttempt(other,{code:code.code}),startAttempt(other,{code:code.code})]);
   assert.equal(race.filter(r=>r.status==='fulfilled').length,1);
   const late=race.find(r=>r.status==='fulfilled').value;
+  await completeStoredWrongAnswers(query,late.attemptId);
   await submitAttempt(other,{attemptId:late.attemptId});
   await query("UPDATE attempts SET status='ready',private_data=private_data||$2::jsonb WHERE id=$1",[late.attemptId,JSON.stringify(marks)]);
   await publishAttemptResult(teacher,{attemptId:late.attemptId});
@@ -158,7 +161,8 @@ try{
   await assert.rejects(()=>saveAnswers(other,{attemptId:timed.attemptId,answers:{grammar:0}}),/hết thời gian/);
   await submitExpiredAttempts();
   const expired=(await query('SELECT status,public_data FROM attempts WHERE id=$1',[timed.attemptId])).rows[0];
-  assert.equal(expired.status,'ready');
+  assert.equal(expired.status,'incomplete');
+  assert.equal(expired.public_data.completion.percent,80);
   assert.equal(expired.public_data.timedOut,true);
   assert.equal(expired.public_data.durationSeconds,2400);
   await submitExpiredAttempts();
@@ -311,6 +315,7 @@ try{
   await saveAnswers(student,{attemptId:a2Id,answers:{[real[0]]:1}});
   await assert.rejects(()=>saveAnswers(student,{attemptId:a2Id,answers:{[real[1]]:1}}),/einmal/);
   await saveAnswers(student,{attemptId:a2Id,answers:{[real[0]]:null,[real[1]]:1}});
+  await completeStoredWrongAnswers(query,a2Id);
   await submitAttempt(student,{attemptId:a2Id});
   assert.equal((await saveManualGrade(teacher,{attemptId:a2Id,scores:{'Viết 1':6}})).status,'grading');
   await assert.rejects(()=>saveManualGrade(teacher,{attemptId:a2Id,scores:{'Viết 2':11}}),/0–10/);
@@ -339,7 +344,8 @@ try{
     const real=section.questionIds.filter(id=>!state.questions.find(q=>q.id===id).example);
     await saveAnswers(student,{attemptId:id,answers:{[real[0]]:10}});
     await assert.rejects(()=>saveAnswers(student,{attemptId:id,answers:{[real[1]]:10}}),/einmal/);
-    await submitAttempt(student,{attemptId:id});
+    await completeStoredWrongAnswers(query,id);
+  await submitAttempt(student,{attemptId:id});
     await assert.rejects(()=>saveManualGrade(teacher,{attemptId:id,scores:{'Viết 3':21}}),/0–20/);
     await saveManualGrade(teacher,{attemptId:id,scores:{'Viết 1':30,'Viết 2':30,'Viết 3':15}});
     await saveOralScore(teacher,{attemptId:id,score:80});

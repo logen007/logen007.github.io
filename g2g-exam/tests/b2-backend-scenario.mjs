@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {completeStoredWrongAnswers} from './answer-fixture.mjs';
 import {createExamDraft} from '../src/controllers/exam-factory.js';
 import {parseGapText} from '../src/domain/inline-gaps.js';
 import {partAudioQuestions} from '../src/domain/part-audio.js';
@@ -54,6 +55,7 @@ export async function b2BackendScenario({query,teacher,student}){
   const matching=rows(exam.sections[3]).filter(q=>!q.example);
   await saveAnswers(student,{attemptId:id,answers:{[matching[0].id]:8}});
   await assert.rejects(()=>saveAnswers(student,{attemptId:id,answers:{[matching[1].id]:8}}),/einmal/);
+  await completeStoredWrongAnswers(query,id);
   await submitAttempt(student,{attemptId:id});
   const score=(await query('SELECT private_data FROM attempts WHERE id=$1',[id])).rows[0].private_data;
   assert.equal(score.autoScore,8); // 2 repeated reading-1 answers + all 6 inline gaps.

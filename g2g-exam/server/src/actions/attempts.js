@@ -1,4 +1,5 @@
 import {isPrefilledQuestion} from '../../../src/domain/question-display.js';
+import {examCompletion,completionMessage} from '../../../src/domain/exam-completion.js';
 import {query,withTx,getSettings,audit,uid,now,appError} from '../db.js';
 import {examById,attemptExam,questionMap,scoreQuestion,resultFor,sectionMeta} from './shared.js';
 import {codeHash,checkCodeRate} from './exam-access.js';
@@ -179,6 +180,15 @@ export async function submitAttempt(user,{attemptId}){
 
   const exam=await attemptExam(attempt);
   const questions=await questionMap(exam);
+  const completion=examCompletion(exam,questions,attempt.public_data.answers);
+  const timing=submissionTiming(attempt.public_data,exam);
+  if(!completion.eligible){
+    if(!timing.timedOut)throw appError(409,completionMessage(completion));
+    const publicData={...attempt.public_data,status:'incomplete',completion,...timing,updatedAt:now()};
+    await client.query('UPDATE attempts SET status=$2,public_data=$3::jsonb,updated_at=now() WHERE id=$1',[attemptId,'incomplete',JSON.stringify(publicData)]);
+    await audit(user,'incomplete_attempt','attempt',attemptId,{completion},client);
+    return {status:'incomplete',completion};
+  }
   const sectionScores={};
   let autoScore=0,hasManual=false;
   for(const section of exam.sections||[]){
@@ -200,7 +210,7 @@ export async function submitAttempt(user,{attemptId}){
   const totalScore=hasManual?null:autoScore;
   const resultText=hasManual?null:resultFor(exam,questions,sectionScores,{});
   const at=now();
-  const publicData={...attempt.public_data,status,...submissionTiming(attempt.public_data,exam),updatedAt:at};
+  const publicData={...attempt.public_data,status,completion,...timing,updatedAt:at};
   const privateData={...attempt.private_data,autoScore,sectionScores,scoringVersion:2,manualScores:{},totalScore,result:resultText,feedback:'',updatedAt:at};
   await client.query(`UPDATE attempts SET status=$2,public_data=$3::jsonb,private_data=$4::jsonb,updated_at=now() WHERE id=$1`,[attemptId,status,JSON.stringify(publicData),JSON.stringify(privateData)]);
   await audit(user,'submit_attempt','attempt',attemptId,{status},client);

@@ -36,6 +36,7 @@ export function statusText(s){
     ready:'Đang chờ chấm',
     published:'Đã chấm',
     abandoned:'Bỏ dở',
+    incomplete:'Không hoàn thành',
     draft:'Bản nháp',
     trash:'Thùng rác',
   })[s]||s;

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {completeWrongAnswers} from './answer-fixture.mjs';
 import { seedState } from '../src/seed.js';
 import {
   clone, byId, canEditQuestion, canEditExam, canGradeExam, canSeeTrash, canPublishExamResult, getQuestionMaxScore,
@@ -140,7 +141,7 @@ test('Chủ động bỏ bài xóa lượt thi qua core barrel',()=>{
 test('Thi lại sau khi nộp tạo lượt mới và chuyển phần bình thường',()=>{
   const s=fresh(),u=users(s),exam=byId(s.exams,'exam-b1-03');
   const first=startAttempt(s,u.student,exam.id);
-  submitAttempt(s,u.student,first.id);
+  completeWrongAnswers(s,first);submitAttempt(s,u.student,first.id);
   const second=startAttempt(s,u.student,exam.id);
   assert.notEqual(second.id,first.id);
   assert.equal(second.attemptNo,first.attemptNo+1);
@@ -157,25 +158,25 @@ test('Mỗi lần bắt đầu thi có đồng hồ mới',()=>{
 });
 
 test('Nộp bài có phần Viết/Nói chuyển sang chờ chấm và học viên chưa thấy điểm',()=>{
-  const s=fresh(),u=users(s);const a=startAttempt(s,u.student,'exam-b1-03');saveAnswer(s,u.student,a.id,'q-read-1',1);submitAttempt(s,u.student,a.id);
+  const s=fresh(),u=users(s);const a=startAttempt(s,u.student,'exam-b1-03');saveAnswer(s,u.student,a.id,'q-read-1',1);completeWrongAnswers(s,a);submitAttempt(s,u.student,a.id);
   assert.equal(a.status,ATTEMPT_STATUS.GRADING);assert.equal(a.totalScore,null);
   const visible=getStudentResults(s,u.student.id).find(x=>x.id===a.id);assert.equal(visible.totalScore,null);assert.equal(visible.autoScore,null);assert.deepEqual(visible.sectionScores,{});
 });
 
 test('Điểm chấm tay bị chặn nếu vượt điểm tối đa',()=>{
-  const s=fresh(),u=users(s);const a=startAttempt(s,u.student,'exam-b1-03');submitAttempt(s,u.student,a.id);
+  const s=fresh(),u=users(s);const a=startAttempt(s,u.student,'exam-b1-03');completeWrongAnswers(s,a);submitAttempt(s,u.student,a.id);
   assert.throws(()=>saveManualScore(s,u.lan,a.id,{scores:{'Viết':999,'Nói':60}}));
 });
 
 test('Chấm đủ Viết/Nói -> sẵn sàng; chủ bài công bố -> có điểm và notification email',()=>{
-  const s=fresh(),u=users(s);const a=startAttempt(s,u.student,'exam-b1-03');submitAttempt(s,u.student,a.id);
+  const s=fresh(),u=users(s);const a=startAttempt(s,u.student,'exam-b1-03');completeWrongAnswers(s,a);submitAttempt(s,u.student,a.id);
   saveManualScore(s,u.lan,a.id,{scores:{'Viết':35,'Nói':60},feedback:'Ổn'});assert.equal(a.status,ATTEMPT_STATUS.READY);assert.equal(typeof a.totalScore,'number');
   publishAttempt(s,u.lan,a.id);assert.equal(a.status,ATTEMPT_STATUS.PUBLISHED);assert.equal(s.notifications.at(-1).type,'result_published');assert.equal(s.notifications.at(-1).to,u.student.email);
 });
 
 test('Người công bố được ghi là người chấm',()=>{
   const s=fresh(),u=users(s),exam=byId(s.exams,'exam-b1-01');
-  const a=startAttempt(s,u.student,exam.id);submitAttempt(s,u.student,a.id);saveManualScore(s,u.mai,a.id,{scores:{'Viết':35,'Nói':60}});assert.equal(a.status,ATTEMPT_STATUS.READY);publishAttempt(s,u.mai,a.id);assert.equal(a.status,ATTEMPT_STATUS.PUBLISHED);assert.equal(a.reviewerId,u.mai.id);
+  const a=startAttempt(s,u.student,exam.id);completeWrongAnswers(s,a);submitAttempt(s,u.student,a.id);saveManualScore(s,u.mai,a.id,{scores:{'Viết':35,'Nói':60}});assert.equal(a.status,ATTEMPT_STATUS.READY);publishAttempt(s,u.mai,a.id);assert.equal(a.status,ATTEMPT_STATUS.PUBLISHED);assert.equal(a.reviewerId,u.mai.id);
 });
 
 test('Bài thi cho phép thêm/bớt/sắp xếp phần trước khi có lượt thi',()=>{

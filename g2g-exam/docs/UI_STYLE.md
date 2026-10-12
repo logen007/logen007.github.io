@@ -45,6 +45,9 @@ Keep an aria-label even after a value is selected. Preserve the original filter
 values and behavior; filters with a required selection retain that selection.
 This applies to dropdown filters, not count tabs such as “Tất cả (234)”.
 Student exam filters use two compact dropdowns aligned with the action button.
+The student exam grid has four equal columns above 960px, two on tablets and one
+on mobile. Card titles reserve exactly two lines and clamp overflow; the complete
+title remains in the accessible text and title tooltip.
 On mobile, gradebook filters use two unequal columns (1:1.6): provider, level,
 class on the left; reviewer, student, status on the wider right.
 Compact list actions use 40px height. Exam settings triggers are icon-only gears with accessible labels.
@@ -259,6 +262,10 @@ Exam image uploads are converted before upload to JPEG (quality 85%, maximum
 optimized file is uploaded; never upload a second original. Use short English
 position names (reading-2-q3-a.jpg), with a short unique suffix on the server.
 Existing referenced uploads are not renamed or deleted as part of new uploads.
+All image pickers accept native Cmd/Ctrl+V while focused or hovered, without an
+extra paste button. Mark the target with a subtle outline; keep text paste in
+editable fields untouched. Confirm image replacement and reuse the normal
+file validation, compression and save path. Logo/favicon retain their formats.
 
 Student identity cards use one compact current-level badge, not a level ladder.
 Keep name editing inline and group class confirmation with Share. Statistics start

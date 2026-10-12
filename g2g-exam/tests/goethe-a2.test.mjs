@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import {calculateAutomaticScores} from '../src/domain/attempts.js';
+import {completeWrongAnswers} from './answer-fixture.mjs';
 import {seedState} from '../src/seed.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
 import {examDurationSeconds} from '../src/domain/exam-clock.js';
@@ -47,7 +49,8 @@ const url=missing.audioUrl;missing.audioUrl='';assert.ok(validateExamForPublish(
 exam.status='published';
 const attempt=startAttempt(state,student,exam.id);
 attempt.answers=Object.fromEntries(exam.sections.flatMap(s=>s.questionIds.map(id=>[id,null])));
-submitAttempt(state,student,attempt.id);
+assert.equal(calculateAutomaticScores(state,attempt).autoScore,0,'Blank answers must not score as option A');
+completeWrongAnswers(state,attempt);submitAttempt(state,student,attempt.id);
 assert.equal(attempt.autoScore,0,'Blank answers must not score as option A');
 saveManualScore(state,teacher,attempt.id,{scores:{'Viết 1':6}});
 assert.equal(attempt.status,'grading');

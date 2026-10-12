@@ -1,4 +1,5 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
+import {examCompletion,completionMessage} from './domain/exam-completion.js';
 import {withExamTransition} from './ui/exam-transition.js';
 import {createStartupGate} from './ui/startup-gate.js';
 import {resolveBuilderSection} from './ui/builder-route.js';
@@ -16,6 +17,7 @@ import {saveInlineGapDraft} from './part-templates/default/inline-gap-builder.js
 import {createGradeAutosave} from './ui/grade-autosave.js';
 import {showPublishErrors} from './ui/publish-errors.js';
 import {bindImageRemoval,imageValue} from './ui/image-remove.js';
+import {bindImagePaste} from './ui/image-paste.js';
 let gradeAutosave=null,gradePublishing=false;
 window.addEventListener('beforeunload',event=>{if(gradeAutosave?.pending||gradePublishing){event.preventDefault();event.returnValue='';}});
 import {createRepository} from './repository.js';
@@ -65,6 +67,7 @@ import {readExamAnswers,revealUnansweredQuestion} from './ui/exam-answers.js';
 initializeTheme();
 const app=document.getElementById('app');
 const toast=document.getElementById('toast');
+bindImagePaste(document,{notify,confirmReplace:apply=>new Promise(resolve=>confirmAction('Thay ảnh hiện tại bằng ảnh vừa dán?',()=>{apply();resolve();},{confirmLabel:'Thay ảnh',onCancel:resolve}))});
 const repo=await createRepository();
 let data=await repo.getState();
 let user=await repo.getCurrentUser();
@@ -204,6 +207,7 @@ function submittedView(){app.innerHTML=layout(submittedHtml(byId(data.attempts,u
 function examView(){
   clearTimer();
   const attempt=byId(data.attempts,ui.attemptId);
+  if(attempt?.studentId===user.id&&attempt.status===ATTEMPT_STATUS.INCOMPLETE){ui.view='submitted';render();return;}
   if(!attempt||attempt.studentId!==user.id||attempt.status!==ATTEMPT_STATUS.IN_PROGRESS){ui.view='student-home';render();return;}
   const exam=byId(data.exams,attempt.examId);
   if(!exam){ui.view='student-home';render();return;}
@@ -274,6 +278,8 @@ function bindExamInputs(attempt,questions){
     attempt.answers={...(attempt.answers||{}),[qid]:value};
     const required=questions.filter(question=>!isPrefilledQuestion(question)),answered=required.filter(question=>answerPresent(attempt.answers[question.id],question)).length;
     app.querySelectorAll('[data-current-answer-count]').forEach(item=>{item.textContent=`${answered}/${required.length}`;});
+    const completionNode=app.querySelector('[data-exam-completion]');
+    if(completionNode)completionNode.textContent=completionMessage(examCompletion(byId(data.exams,attempt.examId),data.questions,attempt.answers));
     const question=questions.find(item=>item.id===qid),card=app.querySelector(`.cau-thi[data-q="${qid}"]`);
     if(card&&question)card.classList.toggle('is-answered',answerPresent(value,question));
   };
@@ -464,6 +470,7 @@ function startExamTimer(attempt,exam,sectionIndex){
       const result=await act(()=>repo.mode==='api'?repo.submitAttemptSecure(attempt.id):repo.transaction(st=>submitAttempt(st,user,attempt.id)),null,{rerender:false});
       if(result){
         data=await repo.getState();ui.view='submitted';render();
+        if(byId(data.attempts,attempt.id)?.status===ATTEMPT_STATUS.INCOMPLETE){timerBusy=false;return;}
         const modal=document.createElement('div');modal.className='hop-chon';
         modal.innerHTML='<div class="noi-hop ket-qua-cho" role="dialog" aria-modal="true" aria-labelledby="timeoutTitle"><div class="vong">⌛</div><h2 id="timeoutTitle">Die Prüfungszeit ist abgelaufen</h2><p>Leider ist die Zeit um. Ihre gespeicherten Antworten wurden automatisch abgegeben.</p><button class="nut chinh" data-close>Ergebnisübersicht</button></div>';
         document.body.append(modal);modal.querySelector('button').focus();modal.querySelector('[data-close]').onclick=()=>modal.remove();
@@ -480,6 +487,11 @@ async function submitCurrentExam(confirmed=false){
   if(!confirmed){
     const attempt=byId(data.attempts,ui.attemptId),exam=attempt&&byId(data.exams,attempt.examId);
     if(!attempt||!exam)return;
+    const completion=examCompletion(exam,data.questions,{...attempt.answers,...readExamAnswers(app)});
+    if(!completion.eligible&&Date.now()<Number(attempt.examDeadlineMs||Infinity)){
+      confirmAction(completionMessage(completion),()=>{},{confirmLabel:'Weiterarbeiten',cancelLabel:'Schließen',confirmIcon:'grading',extraAction:{label:'Abbrechen',onClick:confirmAbandonExam}});
+      return;
+    }
     const missing=unansweredExamQuestions(exam,data.questions,{...attempt.answers,...readExamAnswers(app)});
     confirmAction(missing.length?`Noch nicht vollständig beantwortete Aufgaben: ${missing.map(item=>item.number).join(', ')}. Möchten Sie trotzdem abgeben?`:'Möchten Sie die Prüfung jetzt abgeben?',()=>submitCurrentExam(true),{confirmLabel:'Prüfung abgeben',cancelLabel:'Weiterarbeiten',confirmIcon:'upload',cancelIcon:'grading',extraAction:{label:'Abbrechen',onClick:confirmAbandonExam}});
     return;

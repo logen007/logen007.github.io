@@ -1,4 +1,5 @@
 import {isPrefilledQuestion} from './question-display.js';
+import {examCompletion,completionMessage} from './exam-completion.js';
 import {
   ATTEMPT_STATUS,clone,uid,nowIso,byId,isStudent,audit,
   canGradeExam,canPublishExamResult
@@ -132,7 +133,16 @@ export function submitAttempt(state,user,attemptId){
   if(!isStudent(user)||attempt.studentId!==user.id)throw new Error('Bạn không có quyền nộp lượt thi này.');
   if(attempt.status!==ATTEMPT_STATUS.IN_PROGRESS)return attempt;
   const exam=byId(state.exams,attempt.examId);
+  const completion=examCompletion(exam,state.questions,attempt.answers);
+  const timing=submissionTiming(attempt,exam);
+  if(!completion.eligible){
+    if(!timing.timedOut)throw new Error(completionMessage(completion));
+    Object.assign(attempt,{status:ATTEMPT_STATUS.INCOMPLETE,completion,...timing,updatedAt:nowIso()});
+    audit(state,user,'incomplete_attempt','attempt',attempt.id);
+    return attempt;
+  }
   const score=calculateAutomaticScores(state,attempt);
+  attempt.completion=completion;
   attempt.autoScore=score.autoScore;
   attempt.sectionScores=score.sectionScores;
   attempt.scoringVersion=2;

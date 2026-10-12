@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {completeWrongAnswers} from './answer-fixture.mjs';
 import {seedState} from '../src/seed.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
 import {examDurationSeconds} from '../src/domain/exam-clock.js';
@@ -55,7 +56,7 @@ assert.deepEqual(validateExamForPublish(state,exam),[]);
 const before=JSON.stringify(exam);assert.equal(ensureExamMatchesConfiguredSpec(state,teacher,exam.id),false);assert.equal(JSON.stringify(exam),before);
 exam.status='published';
 const attempt=startAttempt(state,student,exam.id);
-submitAttempt(state,student,attempt.id);
+completeWrongAnswers(state,attempt);submitAttempt(state,student,attempt.id);
 assert.equal(attempt.autoScore,0);
 assert.throws(()=>saveManualScore(state,teacher,attempt.id,{scores:{'Viết 3':21}}),/0–20/);
 saveManualScore(state,teacher,attempt.id,{scores:{'Viết 1':30,'Viết 2':30,'Viết 3':15}});

@@ -1,6 +1,6 @@
 import {resolveAccountNames} from './account-name.js';
 export const ROLES=Object.freeze({STUDENT:'student',TEACHER:'teacher',MASTER:'master'});
-export const ATTEMPT_STATUS=Object.freeze({IN_PROGRESS:'in_progress',SUBMITTED:'submitted',GRADING:'grading',READY:'ready',PUBLISHED:'published',ABANDONED:'abandoned'});
+export const ATTEMPT_STATUS=Object.freeze({IN_PROGRESS:'in_progress',SUBMITTED:'submitted',GRADING:'grading',READY:'ready',PUBLISHED:'published',ABANDONED:'abandoned',INCOMPLETE:'incomplete'});
 
 export const clone=value=>value==null?value:JSON.parse(JSON.stringify(value));
 export const nowIso=()=>new Date().toISOString();

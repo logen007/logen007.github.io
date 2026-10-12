@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {completeWrongAnswers} from './answer-fixture.mjs';
 import {readFileSync} from 'node:fs';
 import {seedState} from '../src/seed.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
@@ -179,7 +180,7 @@ const writingHtml=examHtml({exam,attempt:{answers:{}},sectionIndex:10,questions:
 assert.match(writingHtml,/lined-writing-paper/);
 exam.status='published';
 const attempt=startAttempt(state,student,exam.id);
-submitAttempt(state,student,attempt.id);
+completeWrongAnswers(state,attempt);submitAttempt(state,student,attempt.id);
 assert.equal(attempt.autoScore,0);
 assert.throws(()=>saveManualScore(state,teacher,attempt.id,{scores:{'Viết 2':41}}),/0–40/);
 saveManualScore(state,teacher,attempt.id,{scores:{'Viết 1':50,'Viết 2':30}});

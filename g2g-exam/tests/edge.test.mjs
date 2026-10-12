@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {completeWrongAnswers} from './answer-fixture.mjs';
 import { seedState } from '../src/seed.js';
 import {
   clone, byId, createQuestion, createExam, addSection, removeSection,
@@ -30,14 +31,14 @@ test('Học viên không thể sửa câu trả lời sau khi đã nộp', () =>
   const s = fresh(), u = users(s);
   const a = startAttempt(s, u.student, 'exam-b1-03');
   saveAnswer(s, u.student, a.id, 'q-read-1', 1);
-  submitAttempt(s, u.student, a.id);
+  completeWrongAnswers(s,a);submitAttempt(s, u.student, a.id);
   assert.throws(() => saveAnswer(s, u.student, a.id, 'q-read-1', 0));
 });
 
 test('Điểm chấm tay vượt điểm tối đa bị từ chối', () => {
   const s = fresh(), u = users(s);
   const a = startAttempt(s, u.student, 'exam-b1-03');
-  submitAttempt(s, u.student, a.id);
+  completeWrongAnswers(s,a);submitAttempt(s, u.student, a.id);
   assert.equal(a.status, ATTEMPT_STATUS.GRADING);
   assert.throws(() => saveManualScore(s, u.lan, a.id, { scores: { 'Viết': 999 } }));
 });
@@ -45,7 +46,7 @@ test('Điểm chấm tay vượt điểm tối đa bị từ chối', () => {
 test('Không thể công bố khi phần chấm tay chưa hoàn tất', () => {
   const s = fresh(), u = users(s);
   const a = startAttempt(s, u.student, 'exam-b1-03');
-  submitAttempt(s, u.student, a.id);
+  completeWrongAnswers(s,a);submitAttempt(s, u.student, a.id);
   saveManualScore(s, u.lan, a.id, { scores: { 'Viết': 30 } });
   assert.equal(a.status, ATTEMPT_STATUS.GRADING);
   assert.throws(() => publishAttempt(s, u.lan, a.id));
@@ -110,7 +111,7 @@ test('Bài chỉ có câu tự chấm chuyển sang sẵn sàng công bố', () 
   ex.status = 'published';
   const a = startAttempt(s, u.student, ex.id);
   saveAnswer(s, u.student, a.id, 'q-read-1', 1);
-  submitAttempt(s, u.student, a.id);
+  completeWrongAnswers(s,a);submitAttempt(s, u.student, a.id);
   assert.equal(a.status, ATTEMPT_STATUS.READY);
   assert.equal(a.totalScore, 5);
   assert.equal(a.result, 'Đạt');
@@ -128,13 +129,13 @@ test('Kết quả chỉ đạt khi từng kỹ năng đạt ít nhất 60 phần
   const failed=startAttempt(s,u.student,ex.id);
   saveAnswer(s,u.student,failed.id,'q-listen-1',0);
   saveAnswer(s,u.student,failed.id,'q-read-1',0);
-  submitAttempt(s,u.student,failed.id);
+  completeWrongAnswers(s,failed);submitAttempt(s,u.student,failed.id);
   assert.equal(failed.totalScore,5);
   assert.equal(failed.result,'Chưa đạt');
   const passed=startAttempt(s,u.student,ex.id);
   saveAnswer(s,u.student,passed.id,'q-listen-1',0);
   saveAnswer(s,u.student,passed.id,'q-read-1',1);
-  submitAttempt(s,u.student,passed.id);
+  completeWrongAnswers(s,passed);submitAttempt(s,u.student,passed.id);
   assert.equal(passed.result,'Đạt');
 });
 
