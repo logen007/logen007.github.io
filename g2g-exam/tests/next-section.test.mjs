@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 import {scrollExamToTop} from '../src/ui/exam-scroll.js';
 for(const reduced of [false,true]){
   let options;
-  scrollExamToTop({matchMedia:()=>({matches:reduced}),scrollTo:value=>{options=value;}});
-  assert.deepEqual(options,{top:0,left:0,behavior:reduced?'instant':'smooth'});
+  scrollExamToTop({matchMedia:()=>({matches:reduced})},{querySelector:selector=>{assert.equal(selector,'.exam-paper');return {scrollIntoView:value=>{options=value;}};}});
+  assert.deepEqual(options,{block:'start',behavior:reduced?'instant':'smooth'});
 }
+scrollExamToTop({}, {querySelector:()=>null});
 import {ApiRepository} from '../src/repositories/api.js';
 const repo=new ApiRepository();
 repo.state.attempts=[{id:'a',answers:{},status:'in_progress'}];repo.state.scope='full';repo.user={role:'student'};

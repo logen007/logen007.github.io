@@ -1,3 +1,5 @@
-export function scrollExamToTop(target=window){
-  target.scrollTo({top:0,left:0,behavior:target.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+export function scrollExamToTop(target=window,root=document){
+  const paper=root.querySelector('.exam-paper');
+  if(!paper)return;
+  paper.scrollIntoView({block:'start',behavior:target.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
 }
