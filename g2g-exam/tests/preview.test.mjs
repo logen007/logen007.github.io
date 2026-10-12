@@ -3,6 +3,8 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {iconHtml} from '../src/ui/icons.js';
 import {examHtml,studentExamCardHtml,submittedHtml,expiredHtml,answerPresent} from '../src/views/student.js';
+const originalStorage=globalThis.sessionStorage;
+globalThis.sessionStorage={getItem:()=>null};
 const longChoices=['geben die Deutschen mehr Geld für Bio-Produkte aus.','gibt es viele Probleme mit schlechten Lebensmitteln.','wester mag südamerikanische Tänze und möchte gern'];
 const optionQuestion={id:'long-layout',type:'single',maxScore:1,title:'Question',choices:longChoices};
 for(const preview of [false,true]){
@@ -24,7 +26,6 @@ import {writingFormScore} from '../src/domain/writing-form.js';
 import {compactBinaryChoices} from '../src/domain/question-display.js';
 import {renderQuestionHtml} from '../src/views/student.js';
 
-const originalStorage=globalThis.sessionStorage;
 for(const preview of [false,true]){
   const q={id:'reading-one',type:'single',title:'Aussage',choices:['Richtig','Falsch'],maxScore:1};
   const section={id:'read1',name:'Đọc 1',skillKey:'reading',skill:'Đọc',instructionImageUrl:'/uploads/reading-one.jpg',questionIds:[q.id],questionProfile:{layout:'true-false'}};
@@ -52,7 +53,6 @@ const touchStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea, \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);
 assert.doesNotMatch(readFileSync(new URL('../vi.html',import.meta.url),'utf8'),/user-scalable\s*=\s*no|maximum-scale\s*=/);
 assert.match(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/initialFocus\?\.focus\(\{preventScroll:true\}\)/);
-globalThis.sessionStorage={getItem:()=>null};
 let passed=0;
 async function test(name,run){
   try{await run();passed++;console.log(`✓ ${name}`);}
