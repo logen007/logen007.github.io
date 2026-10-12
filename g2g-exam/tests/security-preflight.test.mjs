@@ -84,9 +84,11 @@ test('Học viên không nhận đáp án đúng hoặc điểm riêng tư chưa
 test('Xem lại bài làm chỉ mở cho đúng học viên; đáp án chuẩn đợi công bố',()=>{
   const actions=read('server/src/actions/index.js');
   assert.ok(actions.includes("case 'getAttemptReview'"));
-  assert.ok(actions.includes('found.rows[0].student_id!==user.id'));
-  assert.ok(actions.includes("const published=row.status==='published'"));
-  assert.ok(actions.includes('return buildAttemptReview('));
+  assert.ok(actions.includes('return getAttemptReview(user,data)'));
+  const review=read('server/src/actions/attempt-review.js');
+  assert.ok(review.includes('found.rows[0].student_id!==user.id'));
+  assert.ok(review.includes("row.status==='published'"));
+  assert.ok(review.includes('return buildAttemptReview('));
   const projection=read('src/domain/attempt-review.js');
   assert.ok(projection.includes("const published=attempt.status==='published'"));
   assert.ok(projection.includes('correct:published&&'));

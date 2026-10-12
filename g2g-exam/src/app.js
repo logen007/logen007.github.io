@@ -933,11 +933,7 @@ function queueBuilderAutosave(delay=450,markDirty=true){
 }
 
 async function loadStudentReview(attemptId){
-  if(repo.mode==='api')return repo.call('getAttemptReview',{attemptId});
-  const attempt=byId(data.attempts,attemptId);
-  if(!attempt||attempt.studentId!==user.id)throw new Error('Không tìm thấy bài làm.');
-  const exam=attempt.examSnapshot||byId(data.exams,attempt.examId)||{};
-  return buildAttemptReview({exam,questions:exam.questionSnapshot||data.questions,attempt,student:user});
+  return loadStudentReviewData({repo,data,user,attemptId});
 }
 
 function bindGlobal(){
@@ -1454,5 +1450,5 @@ else{
   render();
 }
 import {shareStudentProfile,bindStudentName} from './views/student-profile-card.js';
-import {buildAttemptReview} from './domain/attempt-review.js';
+import {loadStudentReview as loadStudentReviewData} from './controllers/student-review.js';
 import {bindAttemptResult} from './views/attempt-result.js';

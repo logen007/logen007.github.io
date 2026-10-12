@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import './audio-flow.test.mjs';
+import './maintainability.test.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
