@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './grading-review.test.mjs';
 import {readFileSync} from 'node:fs';
 assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.grade-filters \{ display:grid; grid-template-columns:minmax\(0,1fr\) minmax\(0,1\.6fr\); grid-template-rows:repeat\(3,auto\); grid-auto-flow:column;/);
 import {canonicalSkill,skillScores,skillPassResult,gradeBand,filteredGradebook,telcResult,isStandardTelc} from '../src/domain/gradebook.js';
@@ -129,7 +130,7 @@ const formQuestion={id:'form',type:'writing',writingFormVersion:1,autoGrade:true
 const formDetail=gradingDetailHtml({data:{questions:[formQuestion]},exam:{...gradingExam,sections:[{name:'Viết 1',questionIds:['form']}]},attempt:{...gradingAttempt,answers:{form:{0:'Anna',1:''}}}});
 assert.ok(formDetail.includes('Họ tên'));
 assert.ok(formDetail.includes('Anna'));
-assert.ok(formDetail.includes('(Chưa trả lời)'));
+assert.ok(formDetail.includes('Chưa trả lời'));
 assert.ok(!formDetail.includes('Đã chọn: {'));
 
 const {createGradeAutosave}=await import('../src/ui/grade-autosave.js');

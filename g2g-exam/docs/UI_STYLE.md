@@ -347,6 +347,19 @@ theme application must not wait for a network response to render the page.
   review link, private feedback, student email or answer keys. Result deep links
   remain authenticated and owner-only. Keep mobile layouts within the viewport.
 
+## Teacher grading
+
+- Show the student's real avatar/name and current class, or “Chưa có lớp”.
+- Use writing tabs without unmounting score inputs. Keep the approved per-part
+  or grouped scoring keys and maxima; navigation never creates new score groups.
+- “Trắc nghiệm” uses skill tabs and two-column answer cards (one on mobile),
+  with separate wrong/unanswered filters and visible answer keys for teachers.
+- Reuse the result-page outcome badge after publication and remain on detail.
+  Before publication display “Đang chấm”, never a final pass/fail verdict.
+- Plot only published, complete scores for the same student/provider/level;
+  normalize differing totals to percentages and expose the native point scales.
+  No extra polling or fabricated historical values.
+
 ## Verification
 
 Run syntax checks, automated tests and G2G Exam Check before updating main.

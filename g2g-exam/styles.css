@@ -642,7 +642,27 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 @media(max-width:760px) { .dashboard-grid { grid-template-columns:minmax(0,1fr); }.admin-dashboard .dashboard-heading { flex-wrap:nowrap; }.dashboard-heading>div { min-width:0; }.dashboard-heading h1 { font-size:28px; }.dashboard-heading .nut { flex-shrink:0; }.dashboard-bars { gap:8px; }.dashboard-metric { padding:18px; }.dashboard-details h3>span { display:block; margin:4px 0 0; } }
 @media(max-width:380px) { .dashboard-resource-grid { grid-template-columns:1fr; } }
 .grading-detail { max-width:var(--max); }.grading-workspace { display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:24px;align-items:start;margin-bottom:24px; }.grading-workspace>.the { min-width:0;margin:0; }.grading-panel { padding:24px; }.grading-submissions { overflow-wrap:anywhere; }.grading-automatic { margin-bottom:24px; }.grading-panel h2 { font-size:18px; margin:0 0 14px; }.grading-panel h2:not(:first-child) { margin-top:30px; }.grading-section { border:1px solid var(--vien); border-radius:12px; margin:9px 0; }.grading-section summary { display:flex; justify-content:space-between; gap:12px; cursor:pointer; padding:16px 18px; }.grading-section summary span { color:var(--phu); }.grading-section>div { padding:0 18px 12px; }.grading-answer { display:grid; gap:5px; padding:10px 0; border-top:1px solid var(--vien); }.grading-answer span { color:var(--phu); overflow-wrap:anywhere; }.grading-writing .bai-lam { margin:12px 0; }.grading-score-row { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:12px 0; }.grading-score-row input { width:100px; padding:10px; border:1px solid var(--vien); border-radius:9px; }.grading-feedback { display:grid; gap:12px; margin:0 0 20px; }.grading-feedback>span { font-size:18px;font-weight:500; }.grading-feedback textarea { min-height:180px; width:100%;resize:vertical; }
+.grading-identity { display:flex;align-items:center;gap:14px;margin:12px 0; }
+.grading-class { display:inline-block;font-size:13px;color:var(--phu); }
+.grading-detail>.tieu-de-trang>.nhom-nut { display:grid;justify-items:end;grid-template-columns:auto auto; }
+.grading-detail .nhom-nut>.result-outcome { grid-column:1/-1;justify-self:end; }
+.grading-question-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start; }
+.grading-question-grid .result-question { border:1px solid var(--vien);border-radius:16px;padding:18px;min-width:0;overflow-wrap:anywhere; }
+.grading-question-grid [data-result-verdict=wrong] { border-color:color-mix(in srgb,var(--do) 35%,var(--vien)); }
+.grading-question-grid [hidden] { display:none; }
+.grading-panel .result-tabs { margin-top:0;border-radius:16px; }
+.grading-score-row>div { display:flex;align-items:center;gap:8px; }
+.grading-history { margin:0 0 24px; }
+.grading-history h2 { font-size:18px;margin:0 0 8px; }
+.grading-history svg { width:100%;max-width:700px;display:block;height:auto;overflow:visible; }
+.grading-history text { fill:var(--phu);font-size:12px; }
+.history-axis { stroke:var(--vien); }
+.history-line { fill:none;stroke:var(--brand-text);stroke-width:2; }
+.history-point { fill:var(--brand-text); }
+.grading-history-values { display:flex;gap:8px 20px;flex-wrap:wrap;font-size:12px;color:var(--phu); }
+.grading-history-values b { font-weight:500;color:var(--chu);margin-left:4px; }
 @media(max-width:900px) { .grading-workspace { grid-template-columns:minmax(0,1fr);gap:20px; }.grading-panel { padding:20px; } }
+@media(max-width:680px) { .grading-question-grid { grid-template-columns:minmax(0,1fr); }.grading-detail>.tieu-de-trang>.nhom-nut { display:flex;flex-wrap:wrap;justify-content:flex-end; }.grading-history svg { min-height:120px; }.grading-identity .result-avatar { flex-shrink:0; } }
 .exam-filter { display:flex; align-items:flex-end; flex-wrap:wrap; gap:16px; margin:24px 0; }
 .exam-filter .filter-field { display:grid; gap:8px; min-width:180px; flex:1 1 180px; max-width:280px; font-size:13px; color:var(--phu); }
 .exam-filter select,.grade-filters select,.profile-form select,.access-code-create input,.exam-free-navigation select { height:var(--control-height); width:100%; }

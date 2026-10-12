@@ -61,6 +61,7 @@ import {
   teachersAdminHtml,trashAdminHtml
 } from './views/admin.js';
 import {examBuilderHtml,gradingDetailHtml} from './views/builder.js';
+import {bindGradingReview} from './views/grading-review.js';
 import {
   questionModalHtml,previewExamModalHtml,previewQuestionModalHtml,
   studentGradeModalHtml
@@ -596,6 +597,7 @@ function gradingDetailView(){
   if(!attempt||!exam||isMaster(user)||!canGradeExam(data,user,exam)){ui.view='admin';ui.adminTab=isMaster(user)?'dashboard':'grades';render();return;}
   app.innerHTML=layout(gradingDetailHtml({data,user,attempt,exam}));
   bindGradeCalculator(attempt);
+  bindGradingReview(app);
 }
 
 function bindGradeCalculator(attempt){
@@ -1406,7 +1408,7 @@ async function saveGrade(andPublish){
   if(andPublish){
     if(fresh.status!==ATTEMPT_STATUS.READY){notify('Cần chấm đủ các phần trước khi công bố.');render();return;}
     const published=await act(()=>repo.transaction(st=>publishAttempt(st,user,attempt.id)),'Đã công bố kết quả và xếp email thông báo.',{rerender:false});
-    if(published){data=await repo.getState();ui.view='admin';ui.adminTab='grades';render();}
+    if(published){data=await repo.getState();ui.view='grading-detail';render();}
   }
   return true;
 }
