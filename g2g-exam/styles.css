@@ -666,7 +666,10 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .grading-toolbar>.nhom-nut { margin-left:auto; }
 .grading-detail>.the { margin-bottom:24px; }
 .grading-detail>.tieu-de-trang { align-items:flex-start; }
-.grading-submissions .bai-lam { line-height:1.85;padding:20px 0;margin:0; }
+.grading-submissions .bai-lam { line-height:1.85;padding:20px;margin:0; }
+.grading-submissions .bai-lam.lined-writing-paper { min-height:240px;background-color:var(--mat);white-space:pre-wrap; }
+.grading-writing-empty { display:block;color:var(--phu);font-family:var(--font,Arial,sans-serif);font-size:14px;font-style:italic; }
+.grading-submissions .grading-typed-paper { background:var(--mat);min-height:240px; }
 .grading-detail { max-width:1240px; }
 .grading-detail .grading-hero { padding:24px 28px;margin-bottom:24px;align-items:center;border-top:3px solid var(--brand-primary); }
 .grading-hero p { margin:6px 0 0; }
@@ -990,7 +993,8 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .gap-choice-edit > input[type="radio"] { flex:0 0 auto; }
 .gap-choice-edit > .truong { flex:1; min-width:0; }
 .gap-options-editor [data-gap-options] { min-height:320px; }
-.thi .viet.lined-writing-paper { min-height:400px; line-height:32px; padding:16px 20px; border:1px solid var(--vien,#dfe1e5); border-radius:12px; font-family:"Bradley Hand","Segoe Print","Comic Sans MS",cursive; font-size:18px; background:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,#dfe1e5 31px,#dfe1e5 32px); background-origin:content-box; }
+.thi .viet.lined-writing-paper,.grading-submissions .bai-lam.lined-writing-paper { line-height:32px; padding:16px 20px; border:1px solid var(--vien,#dfe1e5); border-radius:12px; font-family:"Bradley Hand","Segoe Print","Comic Sans MS",cursive; font-size:18px; background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,var(--vien,#dfe1e5) 31px,var(--vien,#dfe1e5) 32px); background-origin:content-box; }
+.thi .viet.lined-writing-paper { min-height:400px; }
 .goethe-score.goethe-score--writing { grid-template-columns:minmax(80px,1fr) repeat(4,var(--editor-control)); }
 .button-tooltip { position:fixed; z-index:1000; width:max-content; max-width:calc(100vw - 16px); padding:6px 10px; border-radius:8px; background:var(--chu); color:var(--mat); font-size:12px; line-height:1.4; text-align:center; pointer-events:none; }
 .button-tooltip--image { white-space:pre-line; }

@@ -29,6 +29,12 @@ for(let i=1;i<=3;i++)assert.match(detail,new RegExp('data-skill="Viết '+i+'"')
 assert.match(detail,/id="grade-manual-panel-1"[^>]*hidden/);
 assert.equal((detail.match(/id="gradeFeedback"/g)||[]).length,1);
 assert.doesNotMatch(detail,/Tự chấm/);
+assert.match(detail,/bai-lam lined-writing-paper/);
+assert.match(detail,/Chưa có bài viết/);
+assert.doesNotMatch(detail,/Học viên chưa nhập nội dung/);
+const typedDetail=gradingDetailHtml({data:{questions:writingQuestions.map(q=>({...q,handwriting:false}))},attempt,exam:writingExam});
+assert.match(typedDetail,/bai-lam grading-typed-paper/);
+assert.doesNotMatch(typedDetail,/lined-writing-paper/);
 assert.ok(detail.indexOf('grading-toolbar')<detail.indexOf('grading-workspace'));
 assert.ok(detail.indexOf('data-action="publish-result"')<detail.indexOf('grading-workspace'));
 assert.ok(detail.indexOf('Điểm từng phần')>detail.indexOf('gradeFeedback'));
