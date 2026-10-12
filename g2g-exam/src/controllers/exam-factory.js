@@ -48,7 +48,8 @@ function populateConfiguredSections(state,user,exam){
       if(hasFormRows&&(!Array.isArray(question.rubric)||!question.rubric.length))patch.rubric=clone(initialRubric);
       if(profile.formFrame===true&&question.writingFormVersion!==1)patch.writingFormVersion=1;
       if(profile.layout==='mixed-form'&&!Array.isArray(question.instructionBlocks))patch.instructionBlocks=clone(initialInstructionBlocks);
-      if((profile.stimulusStarts||[]).map(Number).includes(questionIndex)&&(!Array.isArray(question.instructionBlocks)||!question.instructionBlocks.length))patch.instructionBlocks=[{text:'',imageUrl:''}];
+      // An empty array is an intentional deletion, not an uninitialized legacy field.
+      if((profile.stimulusStarts||[]).map(Number).includes(questionIndex)&&!Array.isArray(question.instructionBlocks))patch.instructionBlocks=[{text:'',imageUrl:''}];
       if(Object.keys(patch).length)updateQuestion(state,user,questionId,patch);
     }
     const additions=[];

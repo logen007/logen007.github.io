@@ -31,6 +31,23 @@ import {validateExamForPublish,duplicateExam,startAttempt,submitAttempt,saveManu
 const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teacher-lan'),student=state.users.find(u=>u.id==='student-a');
 globalThis.sessionStorage={getItem:()=>null};
 const {exam,rows}=telcFixture(state,teacher);
+{
+  const local=structuredClone(state),localExam=local.exams.find(e=>e.id===exam.id);
+  const question=local.questions.find(q=>q.id===localExam.sections[1].questionIds[2]);
+  assert.ok(question.instructionBlocks.length,'New reading part 2 has its initial second stimulus');
+  question.instructionBlocks=[];question.prompt='';question.instructionImageUrl='';
+  const saved=JSON.stringify(question);
+  localExam.sections[1].questionProfile={...localExam.sections[1].questionProfile,staleLayout:true};
+  for(let i=0;i<2;i++)ensureExamMatchesConfiguredSpec(local,teacher,exam.id);
+  assert.equal(JSON.stringify(local.questions.find(q=>q.id===question.id)),saved,'Deleted stimulus must not be recreated during normalization');
+  const reloaded=JSON.parse(JSON.stringify(local));
+  ensureExamMatchesConfiguredSpec(reloaded,teacher,exam.id);
+  assert.deepEqual(reloaded.questions.find(q=>q.id===question.id).instructionBlocks,[]);
+  delete local.questions.find(q=>q.id===question.id).instructionBlocks;
+  local.exams.find(e=>e.id===exam.id).sections[1].questionProfile.staleLayout=true;
+  ensureExamMatchesConfiguredSpec(local,teacher,exam.id);
+  assert.equal(local.questions.find(q=>q.id===question.id).instructionBlocks.length,1,'Legacy missing field still initializes');
+}
 assert.equal(getExamSpec('TELC','B1').configured,true);
 assert.equal(getExamSpec('TELC','B2').configured,true);
 assert.strictEqual(getExamSpec('TELC','B2').skills,getExamSpec('TELC','B1').skills,'Both levels use the same structure source');
