@@ -531,10 +531,10 @@ function adminView(){
   if(isMaster(user)&&['grading','grades'].includes(ui.adminTab))ui.adminTab='dashboard';
   let content='';
   if(ui.adminTab==='dashboard'&&isMaster(user)){
-    content=dashboardHtml({data,infrastructure:ui.infrastructure});
-    if(!ui.infrastructure&&!infrastructureLoading){
+    content=dashboardHtml({data,infrastructure:ui.infrastructure,infrastructureError:ui.infrastructureError||''});
+    if(!ui.infrastructure&&!ui.infrastructureError&&!infrastructureLoading){
       infrastructureLoading=true;
-      refreshInfrastructure().then(result=>{ui.infrastructure=result;if(ui.view==='admin'&&ui.adminTab==='dashboard')render();}).catch(error=>notify(error.message||'Không tải được thông tin hạ tầng.')).finally(()=>{infrastructureLoading=false;});
+      refreshInfrastructure().then(result=>{ui.infrastructure=result;}).catch(error=>{ui.infrastructureError=error.message||'Không tải được thông tin hạ tầng.';}).finally(()=>{infrastructureLoading=false;if(ui.view==='admin'&&ui.adminTab==='dashboard')render();});
     }
   }
   else if(ui.adminTab==='exams')content=examAdminHtml({data,user,filters:ui.adminExamFilters});
