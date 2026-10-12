@@ -521,11 +521,11 @@ async function submitCurrentExam(confirmed=false){
     if(!attempt||!exam)return;
     const completion=examCompletion(exam,data.questions,{...attempt.answers,...readExamAnswers(app)});
     if(!completion.eligible&&Date.now()<Number(attempt.examDeadlineMs||Infinity)){
-      confirmAction(completionMessage(completion),()=>{},{confirmLabel:'Weiterarbeiten',cancelLabel:'Schließen',confirmIcon:'grading',extraAction:{label:'Abbrechen',onClick:confirmAbandonExam}});
+      confirmAction(completionMessage(completion),()=>{},{confirmLabel:'Tiếp tục làm bài',cancelLabel:'Đóng',confirmIcon:'grading',extraAction:{label:'Hủy bài thi',onClick:confirmAbandonExam}});
       return;
     }
     const missing=unansweredExamQuestions(exam,data.questions,{...attempt.answers,...readExamAnswers(app)});
-    confirmAction(missing.length?`Noch nicht vollständig beantwortete Aufgaben: ${missing.map(item=>item.number).join(', ')}. Möchten Sie trotzdem abgeben?`:'Möchten Sie die Prüfung jetzt abgeben?',()=>submitCurrentExam(true),{confirmLabel:'Prüfung abgeben',cancelLabel:'Weiterarbeiten',confirmIcon:'upload',cancelIcon:'grading',extraAction:{label:'Abbrechen',onClick:confirmAbandonExam}});
+    confirmAction(missing.length?`Các câu chưa hoàn thành: ${missing.map(item=>item.number).join(', ')}. Bạn vẫn muốn nộp bài?`:'Bạn muốn nộp bài ngay?',()=>submitCurrentExam(true),{confirmLabel:'Nộp bài',cancelLabel:'Tiếp tục làm bài',confirmIcon:'upload',cancelIcon:'grading',extraAction:{label:'Hủy bài thi',onClick:confirmAbandonExam}});
     return;
   }
   submitBusy=true;
@@ -538,7 +538,7 @@ async function submitCurrentExam(confirmed=false){
 
 function confirmAbandonExam(){
   const attemptId=ui.attemptId;
-  confirmAction('Möchten Sie die Prüfung wirklich abbrechen? Ihre bisherigen Antworten werden unwiderruflich gelöscht und nicht bewertet. Sie kehren zur Prüfungsübersicht zurück.',async()=>{
+  confirmAction('Bạn có chắc muốn hủy bài thi? Các câu trả lời sẽ bị xóa vĩnh viễn và không được chấm điểm. Bạn sẽ quay về danh sách đề thi.',async()=>{
     if(submitBusy||timerBusy||ui.view!=='exam'||ui.attemptId!==attemptId)return;
     submitBusy=true;clearTimer();stopActiveAudio();
     for(const pending of saveTimers.values())clearTimeout(pending);
@@ -548,11 +548,11 @@ function confirmAbandonExam(){
       if(result){
         ui.attemptId=null;ui.view='student-home';
         data=await repo.getState();
-        notify('Prüfung abgebrochen. Ihre Antworten wurden unwiderruflich gelöscht.');
+        notify('Đã hủy bài thi. Các câu trả lời đã được xóa vĩnh viễn.');
       }
       render();window.scrollTo(0,0);
     }finally{submitBusy=false;}
-  },{confirmLabel:'Abbrechen',cancelLabel:'Weiterarbeiten',danger:true,confirmIcon:'close',cancelIcon:'grading'});
+  },{confirmLabel:'Hủy bài thi',cancelLabel:'Tiếp tục làm bài',danger:true,confirmIcon:'close',cancelIcon:'grading'});
 }
 
 function adminView(){

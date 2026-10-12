@@ -169,8 +169,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   icon-only navigation rules. Confirmation actions use two equal-width columns,
   matching height and centered icon/label groups; allow long labels to wrap.
   Exception: the exam cancellation link is centered, muted gray and text-only,
-  labelled “Abbrechen”, with 12px separation below the primary actions.
-  Its confirmation and completion feedback are in German.
+  labelled “Hủy bài thi”, with 12px separation below the primary actions.
+  Submission and cancellation dialogs, buttons and completion feedback are in Vietnamese.
 - File/audio/image pickers use the same border, radius, hover and focus language
   as text controls. Shadows remain reserved for overlays and media previews.
 - Exam navigation stays after the questions: no sticky surface/background/border.

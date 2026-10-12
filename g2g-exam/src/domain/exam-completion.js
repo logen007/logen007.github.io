@@ -22,5 +22,5 @@ export function examCompletion(exam,questions,answers={}){
   return {total,answered,minimum,percent:MIN_COMPLETION_PERCENT,eligible:answered>=minimum};
 }
 export function completionMessage(progress){
-  return `Sie haben ${progress.answered} von ${progress.total} Aufgaben beantwortet. Für die Abgabe sind mindestens ${progress.minimum} Aufgaben (${progress.percent} %) erforderlich.`;
+  return `Bạn đã trả lời ${progress.answered}/${progress.total} câu. Cần hoàn thành ít nhất ${progress.minimum} câu (${progress.percent} %) để nộp bài.`;
 }

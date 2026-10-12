@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import {dashboardHtml} from '../src/views/admin.js';
 import {dashboardInfrastructureHtml} from '../src/views/dashboard-infrastructure.js';
-import {resourceRing,resourceColumns} from '../src/views/resource-charts.js';
+import {resourceRing,resourceColumns,distributionChart} from '../src/views/resource-charts.js';
+assert.match(distributionChart([]),/Chưa có đề thi/);
+assert.match(distributionChart([['A',3],['B',1]]),/stroke-dasharray="75 25"/);
+assert.match(distributionChart([['<script>',1]]),/&lt;script&gt;/);
 assert.match(resourceRing('RAM','0 / 10',0),/stroke-dasharray="0 100"/);
 assert.match(resourceRing('RAM','Unknown',null),/>—<\/b>/);
 assert.match(resourceRing('<script>','test',150),/stroke-dasharray="100 100"/);

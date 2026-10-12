@@ -3,6 +3,7 @@ import {ATTEMPT_STATUS} from '../core.js';
 import {esc} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
 import {dashboardInfrastructureHtml} from './dashboard-infrastructure.js';
+import {distributionChart} from './resource-charts.js';
 
 const total=value=>Number(value||0).toLocaleString('vi-VN');
 export function dashboardHtml({data,infrastructure=null,infrastructureError='',now=new Date(),activityFilter={}}){
@@ -30,7 +31,7 @@ export function dashboardHtml({data,infrastructure=null,infrastructureError='',n
       <section class="the dashboard-panel"><header><h2>Học viên mới</h2><select class="truong dashboard-period-select" data-dashboard-range aria-label="Thời gian học viên mới">${[['7','Tuần'],['30','Tháng'],['365','Năm']].map(([id,label])=>`<option value="${id}" ${activity.mode===id?'selected':''}>${label}</option>`).join('')}</select></header><div class="dashboard-growth-total"><b>${total(months.reduce((sum,m)=>sum+m.count,0))}</b><span>học viên</span></div>
         <div class="dashboard-bars" style="--bars:${months.length}" role="list" aria-label="Học viên mới ${activity.unitLabel.toLowerCase()}">${months.map(item=>`<div role="listitem" aria-label="${item.label}: ${item.count} học viên"><b aria-hidden="true">${total(item.count)}</b><div class="dashboard-bar-track" aria-hidden="true"><span style="height:${item.count/biggest*100}%"></span></div><small aria-hidden="true">${item.label}</small></div>`).join('')}</div>
       </section>
-      <section class="the dashboard-panel"><header><h2>Cơ cấu đề thi</h2><button class="text-link" data-action="admin-tab" data-tab="exams">Xem tất cả ${iconHtml('arrowRight')}</button></header><ul class="dashboard-types">${types.map(([name,count])=>`<li><span>${esc(name)}</span><b>${total(count)}</b><span class="dashboard-type-track" aria-hidden="true"><i style="width:${count/Math.max(1,exams.length)*100}%"></i></span></li>`).join('')||'<li class="dashboard-empty">Chưa có đề thi.</li>'}</ul></section>
+      <section class="the dashboard-panel"><header><h2>Cơ cấu đề thi</h2><button class="text-link" data-action="admin-tab" data-tab="exams">Xem tất cả ${iconHtml('arrowRight')}</button></header>${distributionChart(types)}</section>
       <section class="the dashboard-panel"><header><h2>Học viên tích cực</h2><span>Top 5</span></header><p class="dashboard-caption">Theo tổng số bài đã nộp</p><ol class="dashboard-graders">${active.slice(0,5).map(grader).join('')||'<li class="dashboard-empty">Chưa có bài nộp.</li>'}</ol></section>
     </div>
     ${dashboardInfrastructureHtml(infrastructure,infrastructureError)}

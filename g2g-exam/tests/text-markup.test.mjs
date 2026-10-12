@@ -88,9 +88,9 @@ assert.match(cancelExamSource,/repo.subscribe\(next=>\{\s*data=next;\s*if\(!star
 assert.ok(cancelExamSource.indexOf('const initialUrl=new URL(window.location.href)')<cancelExamSource.indexOf('await createRepository()'));
 assert.match(cancelExamSource,/openBuilder\(directBuilderId,initialUrl.searchParams.get\('section'\)\)/);
 assert.match(cancelExamSource,/url.searchParams.set\('section',ui.builderSectionId\)/);
-assert.match(cancelExamSource,/extraAction:\{label:'Abbrechen',onClick:confirmAbandonExam\}/);
+assert.match(cancelExamSource,/extraAction:\{label:'Hủy bài thi',onClick:confirmAbandonExam\}/);
 assert.match(cancelExamSource,/repo.transaction\(st=>abandonAttempt\(st,user,attemptId\)\)/);
-assert.match(cancelExamSource,/confirmLabel:'Abbrechen',cancelLabel:'Weiterarbeiten',danger:true/);
+assert.match(cancelExamSource,/confirmLabel:'Hủy bài thi',cancelLabel:'Tiếp tục làm bài',danger:true/);
 assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.site-confirm-actions \{ display:grid; grid-template-columns:repeat\(2,minmax\(0,1fr\)\); align-items:stretch;/);
 import {textHtml} from '../src/ui/format.js';
 assert.equal(textHtml('[a], [b] oder [c]'),'[a], [b] oder [c]');
