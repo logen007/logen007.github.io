@@ -1,8 +1,9 @@
 import {GOETHE_SPECS,GOETHE_LEVELS} from './goethe.js';
 import {TELC_SPECS,TELC_LEVELS} from './telc.js';
+import {FID_SPECS,FID_LEVELS} from './fid.js';
 
-const PROVIDERS={GOETHE:GOETHE_SPECS,TELC:TELC_SPECS};
-const LEVELS={GOETHE:GOETHE_LEVELS,TELC:TELC_LEVELS};
+const PROVIDERS={GOETHE:GOETHE_SPECS,TELC:TELC_SPECS,FID:FID_SPECS};
+const LEVELS={GOETHE:GOETHE_LEVELS,TELC:TELC_LEVELS,FID:FID_LEVELS};
 
 export function getExamSpec(provider,level){
   return PROVIDERS[String(provider||'').toUpperCase()]?.[String(level||'').toUpperCase()]||null;

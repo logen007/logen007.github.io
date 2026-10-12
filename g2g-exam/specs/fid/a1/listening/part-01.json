@@ -1,0 +1,11 @@
+{
+  "status": "APPROVED",
+  "extends": "../../../goethe/a1/listening/part-01.json",
+  "id": "FID.A1.LISTENING.PART_01",
+  "template": "GENERIC",
+  "questionProfile": {
+    "defaultScore": 1.5,
+    "example": true,
+    "instructionImage": true
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "status": "APPROVED",
+  "extends": "../../../goethe/a1/writing/part-02.json",
+  "id": "FID.A1.WRITING.PART_01",
+  "key": "writing-1",
+  "name": "Viết 1",
+  "questionProfile": {
+    "defaultScore": 12,
+    "wordRange": [
+      30,
+      30
+    ],
+    "linedPaper": true
+  }
+}

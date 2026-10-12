@@ -1,0 +1,16 @@
+{
+  "status": "APPROVED",
+  "extends": "../../../goethe/a1/reading/part-01.json",
+  "id": "FID.A1.READING.PART_01",
+  "questionLimit": 6,
+  "questionProfile": {
+    "layout": "choices",
+    "choices": [
+      "A",
+      "B",
+      "C"
+    ],
+    "defaultScore": 1,
+    "example": true
+  }
+}

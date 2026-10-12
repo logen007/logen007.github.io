@@ -133,6 +133,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .exam-card-tags .nhan { background:#f0f1f3; color:#48515e; }
 .exam-provider[data-provider="GOETHE"] { background:#eaf4ed; color:#27633e; }
 .exam-provider[data-provider="TELC"] { background:#eaf0fc; color:#31569b; }
+.exam-provider[data-provider="FID"] { background:#f4ecfa; color:#75418f; }
 .exam-level[data-level="A1"] { background:#fff3d6; color:#795400; }
 .exam-level[data-level="A2"] { background:#ffeadc; color:#914615; }
 .exam-level[data-level="B1"] { background:#e4f4f4; color:#216568; }

@@ -1,0 +1,37 @@
+{
+  "provider": "FID",
+  "level": "A1",
+  "status": "APPROVED",
+  "oralMax": 18,
+  "skills": [
+    {
+      "key": "listening",
+      "label": "Nghe",
+      "defaultTimeMinutes": 20,
+      "defaultQuestionScore": 1.5,
+      "parts": [
+        "listening/part-01.json",
+        "listening/part-02.json"
+      ]
+    },
+    {
+      "key": "reading",
+      "label": "Đọc",
+      "defaultTimeMinutes": 20,
+      "defaultQuestionScore": 1,
+      "parts": [
+        "reading/part-01.json",
+        "reading/part-02.json"
+      ]
+    },
+    {
+      "key": "writing",
+      "label": "Viết",
+      "defaultTimeMinutes": 20,
+      "defaultQuestionScore": 12,
+      "parts": [
+        "writing/part-01.json"
+      ]
+    }
+  ]
+}
