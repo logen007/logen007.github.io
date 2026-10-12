@@ -652,6 +652,12 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .grading-question-grid [hidden] { display:none; }
 .grading-panel .result-tabs { margin-top:0;border-radius:16px; }
 .grading-score-row>div { display:flex;align-items:center;gap:8px; }
+.grading-toolbar { display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px; }
+.grading-toolbar>.result-tabs { margin:0; }
+.grading-toolbar>.nhom-nut { margin-left:auto; }
+.grading-detail>.the { margin-bottom:24px; }
+.grading-detail>.tieu-de-trang { align-items:flex-start; }
+.grading-submissions .bai-lam { line-height:1.85; }
 .grading-history { margin:0 0 24px; }
 .grading-history h2 { font-size:18px;margin:0 0 8px; }
 .grading-history svg { width:100%;max-width:700px;display:block;height:auto;overflow:visible; }

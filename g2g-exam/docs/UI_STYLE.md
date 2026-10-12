@@ -349,6 +349,10 @@ theme application must not wait for a network response to render the page.
 
 ## Teacher grading
 
+- Place manual grading tabs first, with Back and Publish on the same toolbar.
+  Oral grading belongs in a tab too. Keep the outcome badge at the header right.
+  Show Result's shared skill score bars below the workspace, then automatic
+  answers and published history. Reuse Result tokens and controls.
 - Show the student's real avatar/name and current class, or “Chưa có lớp”.
 - Use writing tabs without unmounting score inputs. Keep the approved per-part
   or grouped scoring keys and maxima; navigation never creates new score groups.

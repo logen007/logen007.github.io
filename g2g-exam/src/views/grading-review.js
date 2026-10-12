@@ -1,7 +1,7 @@
 import {esc,fmtDate} from '../ui/format.js';
 import {buildAttemptReview,reviewCounts} from '../domain/attempt-review.js';
 import {isAutomaticWritingForm} from '../domain/writing-form.js';
-import {questionHtml,resultOutcomeHtml} from './attempt-result.js';
+import {questionHtml,resultOutcomeHtml,bar} from './attempt-result.js';
 import {SKILL_LABELS} from '../domain/result-summary.js';
 
 // Teacher-only presentation: the caller already loaded the authorized grading detail.
@@ -32,7 +32,12 @@ export function gradingIdentityHtml(data,attempt){
 
 export function gradingOutcomeHtml(summary,attempt){return resultOutcomeHtml(summary,attempt.status,'Đang chấm');}
 
-export function gradingPanelsHtml(items,prefix){
+export function gradingScoreBarsHtml(summary){
+  return `<section class="the grading-panel"><h2>Điểm từng phần</h2>${Object.entries(summary.skills||{}).map(([key,entry])=>bar(SKILL_LABELS[key]||key,entry)).join('')}<p class="phu-de">${esc(summary.condition||'')}</p></section>`;
+}
+
+export function gradingPanelsHtml(items,prefix,{actions='',wrap=html=>html}={}){
+  if(actions)return `<div data-grade-tabs><div class="grading-toolbar"><div class="result-tabs" role="tablist" aria-label="Bài cần chấm">${items.map((item,i)=>`<button class="nut" role="tab" id="${prefix}-tab-${i}" aria-controls="${prefix}-panel-${i}" aria-selected="${i===0}" tabindex="${i===0?0:-1}">${esc(item.label)}</button>`).join('')}</div><div class="nhom-nut">${actions}</div></div>${wrap(items.map((item,i)=>`<section role="tabpanel" id="${prefix}-panel-${i}" aria-labelledby="${prefix}-tab-${i}" ${i?'hidden':''}>${item.html}</section>`).join(''))}</div>`;
   if(items.length<2)return items.map(item=>item.html).join('');
   return `<div data-grade-tabs><div class="result-tabs" role="tablist" aria-label="Bài cần chấm">${items.map((item,i)=>`<button class="nut" role="tab" id="${prefix}-tab-${i}" aria-controls="${prefix}-panel-${i}" aria-selected="${i===0}" tabindex="${i===0?0:-1}">${esc(item.label)}</button>`).join('')}</div>${items.map((item,i)=>`<section role="tabpanel" id="${prefix}-panel-${i}" aria-labelledby="${prefix}-tab-${i}" ${i?'hidden':''}>${item.html}</section>`).join('')}</div>`;
 }

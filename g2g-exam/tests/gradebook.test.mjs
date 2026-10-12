@@ -106,7 +106,7 @@ const gradingExam={provider:'GOETHE',level:'A1',sections:[{name:'Schreiben Teil 
 const gradingData={questions:[{id:'essay',skill:'Viết',type:'writing',maxScore:10}]};
 const gradingAttempt={status:'grading',manualScores:{},resultSummary:{provider:'GOETHE',level:'A1',skills:{},total:0}};
 const detail=gradingDetailHtml({data:gradingData,exam:gradingExam,attempt:gradingAttempt});
-const labels=['Điểm Viết Bài 2','Nhận xét','Điểm nói','Tổng điểm'];
+const labels=['Điểm Viết Bài 2','Điểm nói','Nhận xét','Tổng điểm'];
 for(let i=1;i<labels.length;i++)assert.ok(detail.indexOf(labels[i])>detail.indexOf(labels[i-1]));
 assert.ok(detail.includes('min="0" max="10"'));
 assert.ok(detail.includes('min="0" max="15"'));
@@ -116,7 +116,7 @@ assert.ok(!reviewed.includes('data-action="save-grade"'));
 assert.match(reviewed,/id="gradeOralScore"[^>]*disabled/);
 assert.ok(html.indexOf('<th>Bài thi</th>')<html.indexOf('<th>Học viên</th>'));
 assert.ok(!detail.includes('Lưu tạm'));
-assert.ok(detail.includes('>Công Bố</button>'));
+assert.ok(detail.includes('>Công bố</button>'));
 const timedDetail=gradingDetailHtml({data:gradingData,exam:gradingExam,attempt:{...gradingAttempt,examTitle:'Đề kiểm tra',durationSeconds:750,attemptNo:1}});
 assert.ok(timedDetail.includes('Lần #1 · 12 phút 30s ·'));
 assert.ok(timedDetail.includes('<p>Đề kiểm tra</p>'));

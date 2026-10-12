@@ -29,6 +29,17 @@ for(let i=1;i<=3;i++)assert.match(detail,new RegExp('data-skill="Viết '+i+'"')
 assert.match(detail,/id="grade-manual-panel-1"[^>]*hidden/);
 assert.equal((detail.match(/id="gradeFeedback"/g)||[]).length,1);
 assert.doesNotMatch(detail,/Tự chấm/);
+assert.ok(detail.indexOf('grading-toolbar')<detail.indexOf('grading-workspace'));
+assert.ok(detail.indexOf('data-action="publish-result"')<detail.indexOf('grading-workspace'));
+assert.ok(detail.indexOf('Điểm từng phần')>detail.indexOf('gradeFeedback'));
+assert.ok(detail.indexOf('grading-history')>detail.indexOf('grading-automatic'));
+assert.match(detail,/result-track/);
+assert.match(detail,/>Nói<\/button>/);
+assert.equal((detail.match(/id="gradeOralScore"/g)||[]).length,1);
+const publishedDetail=gradingDetailHtml({data:{questions:writingQuestions},attempt:{...attempt,status:'published',resultSummary:summary},exam:writingExam});
+assert.doesNotMatch(publishedDetail,/data-action="publish-result"/);
+assert.match(publishedDetail,/result-outcome passed/);
+assert.match(publishedDetail,/id="gradeOralScore"[^>]*disabled/);
 const grouped=gradingDetailHtml({data:{questions:writingQuestions},attempt,exam:{...writingExam,sections:writingExam.sections.map(s=>({...s,questionProfile:{}}))}});
 assert.equal((grouped.match(/class="manual-score"/g)||[]).length,1);
 assert.match(grouped,/grade-question-0-tab-2/);

@@ -10,7 +10,7 @@ const display=value=>value==null||value===''?'Chưa trả lời':typeof value===
 const safePicture=value=>/^https?:\/\//i.test(String(value||''))?value:'';
 const safeImage=value=>safePicture(value)||(/^\/(?!\/)/.test(String(value||''))?value:'');
 const keys=['reading','grammar','listening','writing','speaking'];
-function bar(label,entry){
+export function bar(label,entry){
   if(!entry)return `<div class="result-bar-label"><span>${esc(label)}</span><span class="phu-de">Chờ điểm</span></div>`;
   const percent=entry.max>0?Math.max(0,Math.min(100,entry.score/entry.max*100)):0;
   return `<div class="result-bar"><div class="result-bar-label"><span>${esc(label)}</span><strong>${esc(entry.score)}<small> / ${esc(entry.max)}</small></strong></div><div class="result-track" role="img" aria-label="${esc(label)}: ${esc(entry.score)}/${esc(entry.max)} điểm"><span style="width:${percent}%"></span></div></div>`;
