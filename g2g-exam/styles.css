@@ -28,6 +28,10 @@
 .result-stats span{font-size:13px;color:var(--phu)}
 .result-tabs{display:flex;flex-wrap:wrap;gap:8px;padding:6px;background:var(--mat);border:1px solid var(--vien);border-radius:var(--pill);width:fit-content;max-width:100%;margin:24px 0 20px}
 .result-tabs .nut{border-color:transparent}
+@media(max-width:700px){
+  .result-page>.result-tabs{flex-wrap:nowrap;width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scroll-padding-inline:6px}
+  .result-page>.result-tabs .nut{flex:0 0 auto;white-space:nowrap;padding-inline:14px;min-height:44px}
+}
 .result-tabs [aria-selected=true],.result-filter [aria-pressed=true]{background:var(--brand-primary);color:var(--brand-on-primary);border-color:var(--brand-primary)}
 .result-columns{display:grid;grid-template-columns:1.2fr 1fr;gap:20px;align-items:stretch}
 .result-columns>*{min-width:0}
