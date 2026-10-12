@@ -1,0 +1,19 @@
+{
+  "status": "APPROVED",
+  "extends": "../../../goethe/b2/reading/part-02.json",
+  "key": "reading-4",
+  "name": "Đọc 4",
+  "questionLimit": 10,
+  "template": "GENERIC",
+  "questionProfile": {
+    "defaultScore": 1.5,
+    "scoringSkill": "grammar",
+    "gapChoicesPerQuestion": true,
+    "uniqueLetters": false,
+    "choices": [
+      "A",
+      "B",
+      "C"
+    ]
+  }
+}

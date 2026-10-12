@@ -37,8 +37,8 @@ function populateConfiguredSections(state,user,exam){
       if(!question)continue;
       const patch={};
       if(profile.type&&question.type!==profile.type)patch.type=profile.type;
-      if(Array.isArray(profile.choices)&&question.choices?.length>profile.choices.length)patch.choices=question.choices.slice(0,profile.choices.length);
-      if(profile.uniqueLetters&&JSON.stringify((question.choices||[]).map(choiceLetter))!==JSON.stringify(profile.choices)){
+      if(!profile.dynamicGapOptions&&Array.isArray(profile.choices)&&question.choices?.length>profile.choices.length)patch.choices=question.choices.slice(0,profile.choices.length);
+      if(!profile.dynamicGapOptions&&profile.uniqueLetters&&JSON.stringify((question.choices||[]).map(choiceLetter))!==JSON.stringify(profile.choices)){
         const letter=choiceLetter(question.choices?.[question.correctAnswer]);
         patch.choices=clone(profile.choices);
         patch.correctAnswer=profile.choices.indexOf(letter);
@@ -91,6 +91,9 @@ export function ensureExamMatchesConfiguredSpec(state,user,examId,{stamp=Date.no
   const expectedSections=buildSectionsFromSpec(spec,{idFactory:index=>`spec-${stamp}-${index+1}`});
   const expected=expectedSections.map(section=>section.name);
   const hasAllParts=expected.every(name=>(exam.sections||[]).some(section=>section.name===name));
+  // Previously unconfigured TELC exams may contain custom authored sections.
+  // Do not reinterpret or discard their questions when enabling the new template.
+  if(spec.provider==='TELC'&&!hasAllParts&&(exam.sections||[]).some(section=>section.questionIds?.length||section.instruction||section.instructionImageUrl))return false;
   const hasStaleProfile=hasAllParts&&expectedSections.some(expectedSection=>{
     const existing=(exam.sections||[]).find(section=>section.name===expectedSection.name);
     return JSON.stringify(existing?.questionProfile||null)!==JSON.stringify(expectedSection.questionProfile||null)

@@ -6,7 +6,8 @@ import {inlineGapErrors} from './inline-gaps.js';
 export function configuredPartErrors(section,questions){
   const profile=section.questionProfile||{},errors=[];
   // A2 approved profiles explicitly request examples; legacy parts stay unchanged.
-  if(!profile.example&&!profile.manualPerPart&&!section.audioPolicy&&profile.layout!=='inline-gaps')return errors;
+  if(!profile.example&&!profile.manualPerPart&&!section.audioPolicy&&!['inline-gaps','heading-match'].includes(profile.layout))return errors;
+  if(profile.layout==='heading-match'&&((section.headingOptions||[]).length!==section.questionLimit||section.headingOptions.some(text=>!String(text||'').trim())))errors.push(`${section.name}: nhập đủ tiêu đề đúng cho từng đoạn văn.`);
   errors.push(...inlineGapErrors(section));
   const map=questions instanceof Map?questions:new Map(questions.map(q=>[q.id,q]));
   const rows=(section.questionIds||[]).map(id=>map.get(id)).filter(Boolean);
@@ -22,7 +23,7 @@ export function configuredPartErrors(section,questions){
   if(profile.example&&rows.filter(q=>isPrefilledQuestion(q)).length<1)errors.push(`${section.name}: cần ít nhất một câu ví dụ. Bật lựa chọn Ví dụ ở câu mẫu.`);
   if(profile.uniqueLetters){
     const error=letterAnswerError(section,map,Object.fromEntries(rows.map(q=>[q.id,q.correctAnswer])));
-    if(error)errors.push(profile.layout==='inline-gaps'?`${section.name}: mỗi ký hiệu [a]–[h] chỉ dùng một lần. Kiểm tra các chỗ trống trong đoạn văn.`:`${section.name}: kiểm tra dropdown Đáp án đúng. Chọn một chữ cái hợp lệ cho mỗi câu; các đáp án đúng không được trùng nhau, kể cả câu ví dụ (Beispiel).`);
+    if(error)errors.push(profile.layout==='inline-gaps'?`${section.name}: mỗi ký hiệu đáp án chỉ dùng một lần. Kiểm tra các chỗ trống trong đoạn văn.`:`${section.name}: kiểm tra đáp án đúng. Chọn một chữ cái hợp lệ cho mỗi câu; các đáp án đúng không được trùng nhau, kể cả câu ví dụ (Beispiel).`);
   }
   if(section.audioPolicy&&partAudioQuestions(section,rows).some(q=>!String(q.audioUrl||'').trim()))errors.push(`${section.name}: hãy tải đủ audio cho Beispiel và ${section.audioPolicy.sharedPart?'audio toàn bài':'từng câu hỏi'}.`);
   return errors;

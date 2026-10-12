@@ -25,6 +25,7 @@ function normalizeSection(input={},index=0){
     gapOptions:clone(input.gapOptions||[]),
     gapExample:String(input.gapExample||''),
     gapTitle:String(input.gapTitle||''),
+    headingOptions:clone(input.headingOptions||[]),
     readingBlocks:clone(input.readingBlocks||[]),
     questionLimit:Math.max(0,Number(input.questionLimit||0)),
     timeMinutes:Math.max(1,Number(input.timeMinutes||30)),

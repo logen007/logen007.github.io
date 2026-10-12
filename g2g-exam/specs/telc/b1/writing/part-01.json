@@ -1,0 +1,11 @@
+{
+  "status": "APPROVED",
+  "extends": "../../../goethe/a2/writing/part-01.json",
+  "key": "writing-1",
+  "name": "Viết 1",
+  "questionLimit": 1,
+  "template": "GENERIC",
+  "questionProfile": {
+    "defaultScore": 45
+  }
+}

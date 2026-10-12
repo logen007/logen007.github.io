@@ -1,0 +1,11 @@
+{
+  "status": "APPROVED",
+  "extends": "../../../goethe/b1/reading/part-03.json",
+  "key": "reading-3",
+  "name": "Đọc 3",
+  "questionLimit": 10,
+  "template": "GENERIC",
+  "questionProfile": {
+    "defaultScore": 2.5
+  }
+}

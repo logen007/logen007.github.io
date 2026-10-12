@@ -120,7 +120,8 @@ test('A2/B1/B2 đã được duyệt; các cấp còn lại vẫn scaffold',()=>
   assert.equal(getExamSpec('GOETHE','A2').configured,true);
   assert.equal(getExamSpec('GOETHE','B1').configured,true);
   assert.equal(getExamSpec('GOETHE','B2').configured,true);
-  for(const [provider,level] of [['TELC','B1'],['TELC','B2']])assert.equal(getExamSpec(provider,level).configured,false);
+  assert.equal(getExamSpec('TELC','B1').configured,true);
+  assert.equal(getExamSpec('TELC','B2').configured,false);
 });
 
 test('Part template A1 Nghe 1 đã tách module và bỏ legacy question bank',()=>{

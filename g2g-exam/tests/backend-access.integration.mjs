@@ -356,4 +356,6 @@ try{
   }
   const {b2BackendScenario}=await import('./b2-backend-scenario.mjs');
   await b2BackendScenario({query,teacher,student});
+  const {telcB1BackendScenario}=await import('./telc-b1-backend-scenario.mjs');
+  await telcB1BackendScenario({query,teacher,student});
 }finally{hook.deregister();await db.close();delete globalThis.__testDb;}

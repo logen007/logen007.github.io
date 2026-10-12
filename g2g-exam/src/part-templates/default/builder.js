@@ -8,6 +8,7 @@ import {writingFormEditor} from '../../ui/writing-form.js';
 import {partAudioQuestions} from '../../domain/part-audio.js';
 import {questionProfileAt} from '../../domain/question-profile.js';
 import {inlineGapBuilder} from './inline-gap-builder.js';
+import {headingMatchBuilder} from './heading-match-builder.js';
 import {readingBlocksEditor} from '../../ui/reading-blocks.js';
 import {letterTableBuilder,bindLetterTableBuilder} from './letter-table-builder.js';
 
@@ -151,6 +152,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
   const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).sort((a,b)=>Number(Boolean(b.example))-Number(Boolean(a.example)));
   const choiceProfile=profileFor(section);
+  if(section.questionProfile?.layout==='heading-match')return `<div class="part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}${headingMatchBuilder(section,questions,readOnly)}</div>`;
   if(section.questionProfile?.readingBlocks){
     return `<div class="part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}${readingBlocksEditor(section,readOnly)}<div class="goethe-questions">${questions.map((q,index)=>choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile})).join('')}</div></div>`;
   }

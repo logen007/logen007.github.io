@@ -43,7 +43,7 @@ export function skillScores(exam,questions,attempt){
   const map=questions instanceof Map?questions:new Map(questions.map(item=>[item.id,item]));
   const skills={};
   for(const section of exam.sections||[]){
-    const key=canonicalSkill(section.skillKey||section.skill||section.name);
+    const key=canonicalSkill(section.questionProfile?.scoringSkill||section.skillKey||section.skill||section.name);
     const entry=skills[key]||={score:0,max:0};
     entry.score+=Number(attempt.sectionScores?.[section.name]||0);
     for(const id of section.questionIds||[]){

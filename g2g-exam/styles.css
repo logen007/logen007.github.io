@@ -649,6 +649,13 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .gap-demo { background:var(--brand-soft); border-radius:8px; padding:4px 8px; }
 .gap-sentences { margin-top:24px; display:grid; gap:12px; }
 .gap-sentences p { margin:0; display:flex; gap:16px; }
+.heading-match-question { margin-top:24px; }
+.heading-match-question p { white-space:pre-wrap; }
+.heading-match-question .inline-gap { display:inline-flex; align-items:center; gap:8px; }
+[data-editor-mode="heading-match"] { display:grid; gap:12px; }
+[data-editor-mode="heading-match"] textarea { min-height:140px; }
+.gap-options-editor fieldset { min-width:0; border:1px solid var(--vien); border-radius:12px; padding:12px; display:grid; gap:8px; }
+.gap-options-editor [data-gap-options] { min-height:320px; }
 .thi .viet.lined-writing-paper { min-height:400px; line-height:32px; padding:16px 20px; border:1px solid var(--vien,#dfe1e5); border-radius:12px; font-family:"Bradley Hand","Segoe Print","Comic Sans MS",cursive; font-size:18px; background:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,#dfe1e5 31px,#dfe1e5 32px); background-origin:content-box; }
 .goethe-score.goethe-score--writing { grid-template-columns:minmax(80px,1fr) repeat(4,var(--editor-control)); }
 .button-tooltip { position:fixed; z-index:1000; width:max-content; max-width:calc(100vw - 16px); padding:6px 10px; border-radius:8px; background:var(--chu); color:var(--mat); font-size:12px; line-height:1.4; text-align:center; pointer-events:none; }

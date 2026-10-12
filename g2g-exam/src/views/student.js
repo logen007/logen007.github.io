@@ -3,6 +3,7 @@ import {answerPresent,examCompletion,completionMessage,MIN_COMPLETION_PERCENT} f
 export {answerPresent} from '../domain/exam-completion.js';
 import {getExamSpec} from '../exam-specs/index.js';
 import {inlineGapsHtml} from '../ui/inline-gaps.js';
+import {headingMatchHtml} from '../ui/heading-match.js';
 import {readingBlocksHtml} from '../ui/reading-blocks.js';
 import {letterAnswersHtml} from '../ui/letter-answers.js';
 import {partAudioSegments} from '../domain/part-audio.js';
@@ -82,7 +83,7 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBl
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
   let questionNumber=exam.sections.slice(0,sectionIndex).filter(item=>!sec.questionProfile?.numberWithinSkill||item.skillKey===sec.skillKey).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!isPrefilledQuestion(knownQuestions.get(id))).length,0);
   const exampleCount=orderedQuestions.length-requiredQuestions.length;
-  const questionList=sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
+  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
     const example=isPrefilledQuestion(q),scoredIndex=displayIndex-exampleCount;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
     const paired=sec.questionProfile?.pairedQuestions;

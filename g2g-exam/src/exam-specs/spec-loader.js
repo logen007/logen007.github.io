@@ -13,12 +13,21 @@ function requireApproved(spec,label){
   return spec;
 }
 
+async function resolvedPart(url,seen=new Set()){
+  if(seen.has(url.href))throw new Error('Specification inheritance cycle.');
+  seen.add(url.href);
+  const part=requireApproved(await readJson(url),`Part spec ${url.pathname}`);
+  if(!part.extends)return part;
+  const base=await resolvedPart(new URL(part.extends,url),seen);
+  return {...base,...part,questionProfile:{...base.questionProfile,...part.questionProfile}};
+}
+
 export async function loadApprovedExamSpec(relativePath){
   const examUrl=new URL(relativePath,import.meta.url);
   const source=requireApproved(await readJson(examUrl),`Exam spec ${examUrl.pathname}`);
   const skills=await Promise.all((source.skills||[]).map(async skill=>{
     const parts=await Promise.all((skill.parts||[]).map(async partPath=>{
-      const part=requireApproved(await readJson(new URL(partPath,examUrl)),`Part spec ${partPath}`);
+      const part=await resolvedPart(new URL(partPath,examUrl));
       return {
         key:String(part.key||part.id),
         name:String(part.name||part.id),

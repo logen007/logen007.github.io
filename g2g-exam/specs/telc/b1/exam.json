@@ -1,0 +1,61 @@
+{
+  "status": "APPROVED",
+  "provider": "TELC",
+  "level": "B1",
+  "source": "https://docs.google.com/spreadsheets/d/1kVs4d41B6_XmqQYBsyO3EuBsGZh2yJdLrMpWWZjwu3M/edit?gid=0#gid=0",
+  "approval": "User approved sheet-only implementation, A2 Writing 1 override and dynamic Reading 5 options on 2026-10-12.",
+  "oralMax": 75,
+  "oral": {
+    "timeMinutes": 15,
+    "parts": [
+      {
+        "name": "Làm quen",
+        "maxScore": 15
+      },
+      {
+        "name": "Tóm tắt văn bản và trình bày về một chủ đề",
+        "maxScore": 30
+      },
+      {
+        "name": "Lên kế hoạch làm gì đó cùng bạn",
+        "maxScore": 30
+      }
+    ],
+    "mode": "teacher-recorded"
+  },
+  "skills": [
+    {
+      "key": "reading",
+      "label": "Đọc",
+      "defaultTimeMinutes": 90,
+      "defaultQuestionScore": 1,
+      "parts": [
+        "reading/part-01.json",
+        "reading/part-02.json",
+        "reading/part-03.json",
+        "reading/part-04.json",
+        "reading/part-05.json"
+      ]
+    },
+    {
+      "key": "listening",
+      "label": "Nghe",
+      "defaultTimeMinutes": 30,
+      "defaultQuestionScore": 1,
+      "parts": [
+        "listening/part-01.json",
+        "listening/part-02.json",
+        "listening/part-03.json"
+      ]
+    },
+    {
+      "key": "writing",
+      "label": "Viết",
+      "defaultTimeMinutes": 30,
+      "defaultQuestionScore": 1,
+      "parts": [
+        "writing/part-01.json"
+      ]
+    }
+  ]
+}

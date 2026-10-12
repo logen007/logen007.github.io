@@ -1,0 +1,11 @@
+{
+  "status": "APPROVED",
+  "extends": "../../../goethe/a2/listening/part-04.json",
+  "key": "listening-1",
+  "name": "Nghe 1",
+  "questionLimit": 5,
+  "template": "GENERIC",
+  "questionProfile": {
+    "defaultScore": 5
+  }
+}
