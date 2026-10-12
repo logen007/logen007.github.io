@@ -8,7 +8,7 @@ import {dashboardR2Html} from '../src/views/dashboard-infrastructure.js';
 assert.match(dashboardR2Html(),/Chưa có dữ liệu/);
 assert.match(dashboardR2Html({enabled:false}),/Đang tắt/);
 assert.match(dashboardR2Html({enabled:true,totalFiles:null}),/Đang chờ quét/);
-assert.match(dashboardR2Html({enabled:true,totalFiles:1,syncedFiles:1,syncedBytes:5,pendingFiles:0,skippedFiles:0}),/Đã đồng bộ/);
+assert.doesNotMatch(dashboardR2Html({enabled:true,totalFiles:1,syncedFiles:1,syncedBytes:5,pendingFiles:0,skippedFiles:0}),/Đã đồng bộ/);
 assert.match(dashboardR2Html({enabled:true,error:'<script>'}),/&lt;script&gt;/);
 
 const root=await fs.mkdtemp(path.join(os.tmpdir(),'g2g-r2-test-'));

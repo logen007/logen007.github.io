@@ -10,9 +10,9 @@ const date=value=>value&&Number.isFinite(new Date(value).getTime())?esc(new Date
 export function dashboardR2Html(r2){
   const known=r2&&valid(r2.totalFiles),count=value=>valid(value)?Number(value):'—';
   const state=!r2?'Chưa có dữ liệu':r2.error?'Cần kiểm tra':!r2.enabled?'Đang tắt · dùng VPS':r2.syncing?'Đang đồng bộ':!known?'Đang chờ quét':r2.pendingFiles||r2.skippedFiles?'Chưa đồng bộ hết':'Đã đồng bộ';
-  return `<section class="dashboard-details"><div class="dashboard-section-heading"><h3>Ảnh &amp; audio · R2</h3><a class="nut nho" href="/adm?tab=settings&amp;settings=general">Cấu hình R2</a></div><p role="status" class="${r2?.error?'dashboard-warning':'dashboard-caption'}">${state}</p>
+  return `<section class="dashboard-details"><div class="dashboard-section-heading"><h3>Ảnh &amp; audio · R2</h3><a class="nut nho" href="/adm?tab=settings&amp;settings=general">Cấu hình R2</a></div>${state==='Đã đồng bộ'?'':`<p role="status" class="${r2?.error?'dashboard-warning':'dashboard-caption'}">${state}</p>`}
     <div class="r2-visual-summary">${resourceRing('Tệp đã đồng bộ',`${count(r2?.syncedFiles)} / ${count(r2?.totalFiles)}`,percent(r2?.syncedFiles,r2?.totalFiles))}<div class="r2-visual-facts"><div><b>${bytes(r2?.syncedBytes)}</b><span>Bản đồng bộ</span></div><div><b>${count(r2?.pendingFiles)}</b><span>Chờ đồng bộ</span></div><div><b>${count(r2?.skippedFiles)}</b><span>Vượt 25 MB</span></div></div></div>
-    ${r2?.error?`<p class="dashboard-warning">${esc(r2.error)}</p>`:''}<p class="dashboard-caption" title="Hoàn tất gần nhất: ${date(r2?.lastSuccessAt)}">Quét: ${date(r2?.lastScanAt)} · Mỗi 5 phút · VPS dự phòng</p><p class="dashboard-caption">Dung lượng bản đồng bộ, không phải hạn mức R2. CORS: chưa kiểm tra tự động.</p></section>`;
+    ${r2?.error?`<p class="dashboard-warning">${esc(r2.error)}</p>`:''}<p class="dashboard-caption" title="Hoàn tất gần nhất: ${date(r2?.lastSuccessAt)}">Quét: ${date(r2?.lastScanAt)} · Mỗi 5 phút · VPS dự phòng</p></section>`;
 }
 
 export function dashboardInfrastructureHtml(infrastructure,error=''){
@@ -26,7 +26,7 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
   const gcText=gc.error?'Quét lỗi':gc.lastSuccessAt&&Number.isFinite(stamp.getTime())?'Đã quét':'Chưa có lần quét';
   const warnings=[memoryPercent>=85?'RAM từ 85%':null,diskPercent>=85?'Ổ đĩa từ 85%':null,gc.error?'Dọn tệp gặp lỗi':null].filter(Boolean);
   const storage=[...(infrastructure.examStorage||[])].sort((a,b)=>Number(b.totalBytes||0)-Number(a.totalBytes||0));
-  return `<section class="the dashboard-infrastructure"><div class="dashboard-section-heading"><h2>Hệ thống</h2><span class="dashboard-caption">Tài nguyên hệ thống</span></div>
+  return `<section class="the dashboard-infrastructure"><div class="dashboard-section-heading"><h2>Hệ thống</h2></div>
     ${warnings.length?`<p class="dashboard-warning" role="status">${warnings.join(' · ')}</p>`:''}
     <div class="dashboard-resource-grid">
       ${resourceRing('Tải CPU · 1 phút',cpu==null?'Chưa có dữ liệu':cpu+'%',cpu,{warning:cpu>=85})}
@@ -35,8 +35,8 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
       <div class="dashboard-resource dashboard-resource-total"><span>Dữ liệu hệ thống</span><b>${bytes(totalBytes)}</b><small>Dọn tệp: ${gcText}</small></div>
     </div>
     ${dashboardR2Html(infrastructure.r2)}
-    <section class="dashboard-details"><h3>Chi tiết tài nguyên <span>Cơ sở dữ liệu, tệp &amp; nhật ký</span></h3>
-      <div class="resource-breakdown">${resourceColumns([{label:'PostgreSQL',value:usage.databaseBytes},{label:'Ảnh & audio',value:usage.uploadsBytes},{label:'Mã nguồn',value:usage.applicationBytes}],bytes)}<div>${row('Bài làm',tables.attempts)}${row('Câu hỏi',tables.questions)}${row('Nhật ký',tables.audit_log)}<p class="dashboard-caption">Đã nằm trong PostgreSQL</p></div></div>
+    <section class="dashboard-details">
+      <div class="resource-breakdown">${resourceColumns([{label:'PostgreSQL',value:usage.databaseBytes},{label:'Ảnh & audio',value:usage.uploadsBytes},{label:'Mã nguồn',value:usage.applicationBytes}],bytes)}<div>${row('Bài làm',tables.attempts)}${row('Câu hỏi',tables.questions)}${row('Nhật ký',tables.audit_log)}</div></div>
       <p class="dashboard-caption">${gc.error?`Lỗi dọn tệp: ${esc(gc.error)}`:gc.lastSuccessAt&&Number.isFinite(stamp.getTime())?`Quét gần nhất: ${esc(stamp.toLocaleString('vi-VN'))} · Đã dọn ${Number(gc.deleted)||0} tệp (${bytes(gc.deletedBytes??0)})`:'Đang chờ lượt quét đầu tiên.'}</p>
     </section>
     <section class="dashboard-details"><h3>Dung lượng đề thi <span>${storage.length} đề · lớn nhất trước</span></h3>

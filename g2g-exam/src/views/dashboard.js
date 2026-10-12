@@ -32,7 +32,7 @@ export function dashboardHtml({data,infrastructure=null,infrastructureError='',n
         <div class="dashboard-bars" style="--bars:${months.length}" role="list" aria-label="Học viên mới ${activity.unitLabel.toLowerCase()}">${months.map(item=>`<div role="listitem" aria-label="${item.label}: ${item.count} học viên"><b aria-hidden="true">${total(item.count)}</b><div class="dashboard-bar-track" aria-hidden="true"><span style="height:${item.count/biggest*100}%"></span></div><small aria-hidden="true">${item.label}</small></div>`).join('')}</div>
       </section>
       <section class="the dashboard-panel"><header><h2>Cơ cấu đề thi</h2><button class="text-link" data-action="admin-tab" data-tab="exams">Xem tất cả ${iconHtml('arrowRight')}</button></header>${distributionChart(types)}</section>
-      <section class="the dashboard-panel"><header><h2>Học viên tích cực</h2><span>Top 5</span></header><p class="dashboard-caption">Theo tổng số bài đã nộp</p><ol class="dashboard-graders">${active.slice(0,5).map(grader).join('')||'<li class="dashboard-empty">Chưa có bài nộp.</li>'}</ol></section>
+      <section class="the dashboard-panel"><header><h2>Học viên tích cực</h2><span>Top 5</span></header><ol class="dashboard-graders">${active.slice(0,5).map(grader).join('')||'<li class="dashboard-empty">Chưa có bài nộp.</li>'}</ol></section>
     </div>
     ${dashboardInfrastructureHtml(infrastructure,infrastructureError)}
   </div>`;

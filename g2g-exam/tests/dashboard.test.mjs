@@ -40,6 +40,8 @@ assert.match(failed,/Không tải được dữ liệu/);
 assert.doesNotMatch(failed,/Đang tải/);
 const infrastructure={resources:{cpu:{loadPercent:5},memory:{usedBytes:900,totalBytes:1000},disk:{usedBytes:95,totalBytes:100},usage:{databaseBytes:100,uploadsBytes:200,applicationBytes:50},databaseTables:{attempts:10,questions:20,audit_log:5},mediaGarbageCollection:{error:'<script>error</script>'}},examStorage:[{title:'Small',totalBytes:10},{title:'Large',totalBytes:100}]};
 const system=dashboardInfrastructureHtml(infrastructure);
+for(const text of ['Chi tiết tài nguyên','Cơ sở dữ liệu, tệp','Đã nằm trong PostgreSQL','Dung lượng bản đồng bộ, không phải','Tài nguyên hệ thống'])assert.ok(!system.includes(text));
+assert.doesNotMatch(html,/Theo tổng số bài đã nộp/);
 assert.ok(system.indexOf('Large')<system.indexOf('Small'));
 assert.match(system,/350 B/);
 assert.match(system,/RAM từ 85%/);
