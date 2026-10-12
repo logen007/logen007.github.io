@@ -11,7 +11,7 @@ export function inlineGapBuilder(section,questions,readOnly){
   const perQuestion=section.questionProfile?.gapChoicesPerQuestion,dynamic=section.questionProfile?.dynamicGapOptions;
   const optionFields=perQuestion?questions.map((q,index)=>`<fieldset data-gap-position="${index}" ${(section.gapPassage||[]).some(part=>part?.gap===index)?'':'hidden'}><legend>[${String.fromCharCode(97+index)}]</legend>${[...'ABC'].map((key,i)=>`<label class="gap-choice-edit"><input type="radio" name="gap-correct-${index}" data-gap-correct="${index}" value="${i}" aria-label="Chọn ${key} làm đáp án đúng cho [${String.fromCharCode(97+index)}]" ${q.correctAnswer!=null&&q.correctAnswer!==''&&Number(q.correctAnswer)===i?'checked':''} ${disabled}><b>${key}</b><input class="truong" data-gap-choice="${index}-${i}" aria-label="Câu ${index+1}, lựa chọn ${key}" placeholder="Lựa chọn ${key}" value="${esc(section.gapOptions?.[index]?.[i]||'')}" ${disabled}></label>`).join('')}</fieldset>`).join(''):[...'abcdefgh'].map((key,i)=>input(key,section.gapOptions?.[i])).join('');
   const bankCount=Math.max(section.questionLimit,section.gapOptions?.length||0);
-  const bankFields=dynamic?`<div data-gap-options-count="${bankCount}">${Array.from({length:bankCount},(_,i)=>input(String.fromCharCode(97+i),section.gapOptions?.[i])).join('')}</div><div class="nhom-nut"><button type="button" class="icon-btn" data-gap-resize="remove" title="Bỏ đáp án cuối" aria-label="Bỏ đáp án cuối" ${readOnly||bankCount<=section.questionLimit?'disabled':''}>${iconHtml('close')}</button><button type="button" class="icon-btn" data-gap-resize="add" title="Thêm đáp án" aria-label="Thêm đáp án" ${readOnly||bankCount>=25?'disabled':''}>${iconHtml('plus')}</button></div>`:'';
+  const bankFields=dynamic?`<div data-gap-options-count="${bankCount}">${Array.from({length:bankCount},(_,i)=>`<div class="gap-option-row">${input(String.fromCharCode(97+i),section.gapOptions?.[i])}<button type="button" class="icon-btn" data-gap-resize="remove" data-gap-index="${i}" title="Xóa đáp án ${String.fromCharCode(97+i)}" aria-label="Xóa đáp án ${String.fromCharCode(97+i)}" ${readOnly||bankCount<=section.questionLimit?'disabled':''}>${iconHtml('close')}</button><button type="button" class="icon-btn" data-gap-resize="add" data-gap-index="${i}" title="Thêm đáp án bên dưới" aria-label="Thêm đáp án bên dưới ${String.fromCharCode(97+i)}" ${readOnly||bankCount>=25?'disabled':''}>${iconHtml('plus')}</button></div>`).join('')}</div>`:'';
   const helpId='gap-help-'+section.id;
   const help=perQuestion?'Nhập [a], [b]… theo thứ tự vị trí trong đoạn văn. Điền 3 lựa chọn A/B/C cho mỗi nhóm bên dưới và tích chọn đáp án đúng.':'Ký hiệu [a], [b]… trong đoạn văn là đáp án đúng tương ứng trong danh sách bên cạnh. Ví dụ: [b] chọn nội dung ở ô b; mỗi đáp án chỉ dùng một lần.';
   const header=`<textarea class="truong gap-title-input" data-gap-title aria-label="Tiêu đề bài đọc" placeholder="Tiêu đề bài đọc" rows="2" ${disabled}>${esc(section.gapTitle||'')}</textarea><div class="gap-image-editor" data-section-image-control data-has-image="${Boolean(image)}"><div class="goethe-instruction-icons"><input class="truong instruction-image-width" id="sectionImageMaxWidth" type="number" min="1" step="1" aria-label="img width (px)" placeholder="img width (px)" value="${imageMaxWidth(section.instructionImageMaxWidth)??''}" ${disabled}><button type="button" class="icon-btn" data-action="clear-section-image" title="Xóa hình ảnh bài đọc" aria-label="Xóa hình ảnh bài đọc" ${disabled}>${iconHtml('close')}</button></div><label class="section-image-upload" title="Tải hình ảnh bài đọc"><span class="section-image-label">${image?`<img src="${esc(image)}" alt="Hình ảnh bài đọc">`:iconHtml('image')}</span><input type="file" data-section-image accept="image/*" aria-label="Tải hình ảnh bài đọc" ${disabled}></label></div>`;
@@ -33,19 +33,26 @@ export function saveInlineGapDraft(root,state,user,exam,section){
   section.questionIds.forEach((id,index)=>updateQuestion(state,user,id,{title:'Lücke '+(index+1),choices,correctAnswer:perQuestion?Number(root.querySelector(`[data-gap-correct="${index}"]:checked`)?.value??-1):keys[index]??-1,maxScore:state.questions.find(q=>q.id===id)?.maxScore??Number(profile.defaultScore??1),example:false}));
 }
 
-export function resizeGapOptions(state,user,examId,sectionId,action){
+export function resizeGapOptions(state,user,examId,sectionId,action,rowIndex){
   const section=state.exams.find(exam=>exam.id===examId)?.sections.find(section=>section.id===sectionId);
   if(!section?.questionProfile?.dynamicGapOptions)return;
   const options=[...(section.gapOptions||[])];
-  if(action==='add'){if(options.length>=25)return;options.push('');}
+  const index=rowIndex==null?options.length-1:Number(rowIndex);
+  if(!Number.isInteger(index)||index<0||index>=options.length)return;
+  if(action==='add'){if(options.length>=25)return;options.splice(index+1,0,'');}
   else if(action==='remove'){
     if(options.length<=section.questionLimit)return;
-    if(section.questionIds.some(id=>Number(state.questions.find(q=>q.id===id)?.correctAnswer)===options.length-1))throw new Error('Đáp án cuối đang được dùng trong đoạn văn. Đổi đáp án đúng trước khi bỏ.');
-    options.pop();
+    if(section.questionIds.some(id=>Number(state.questions.find(q=>q.id===id)?.correctAnswer)===index))throw new Error('Đáp án này đang được dùng trong đoạn văn. Đổi đáp án đúng trước khi bỏ.');
+    options.splice(index,1);
   }else return;
   updateSection(state,user,examId,sectionId,{gapOptions:options});
   const choices=options.map((_,i)=>String.fromCharCode(65+i));
-  section.questionIds.forEach(id=>updateQuestion(state,user,id,{choices}));
+  section.questionIds.forEach(id=>{
+    const previous=state.questions.find(q=>q.id===id)?.correctAnswer;
+    const correct=previous==null||previous===''?-1:Number(previous);
+    const correctAnswer=correct>index?correct+(action==='add'?1:-1):correct;
+    updateQuestion(state,user,id,{choices,correctAnswer});
+  });
 }
 
 export function bindGapPositions(root,section){

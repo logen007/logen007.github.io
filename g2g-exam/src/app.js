@@ -1270,7 +1270,7 @@ function bindBuilder(){
   const section=exam.sections.find(item=>item.id===ui.builderSectionId)||exam.sections[0];
   app.querySelectorAll('[data-gap-resize]').forEach(button=>button.onclick=async()=>{
     if(button.disabled||!await flushBuilderDraft())return;
-    act(()=>repo.transaction(st=>resizeGapOptions(st,user,exam.id,section.id,button.dataset.gapResize)));
+    act(()=>repo.transaction(st=>resizeGapOptions(st,user,exam.id,section.id,button.dataset.gapResize,button.dataset.gapIndex)));
   });
   app.querySelectorAll('[data-heading-add],[data-heading-remove]').forEach(button=>button.onclick=async()=>{
     if(button.disabled||!await flushBuilderDraft())return;

@@ -143,6 +143,23 @@ for(const section of [gap3,gapBank]){
 assert.equal((renderBuilder({data:state,exam,section:gapBank}).match(/data-gap-option="/g)||[]).length,12);
 const previousKeys=rows(gapBank).map(q=>q.correctAnswer);
 resizeGapOptions(state,teacher,exam.id,gapBank.id,'add');
+{
+  const local=structuredClone(state);
+  const section=()=>local.exams.find(e=>e.id===exam.id).sections.find(s=>s.id===gapBank.id);
+  const mapped=()=>section().questionIds.map(id=>{const q=local.questions.find(q=>q.id===id);return section().gapOptions[q.correctAnswer];});
+  const before=mapped(),originalOptions=[...section().gapOptions];
+  resizeGapOptions(local,teacher,exam.id,gapBank.id,'add',1);
+  assert.equal(section().gapOptions[2],'');
+  assert.deepEqual(mapped(),before,'Insert in the middle preserves correct answer content');
+  resizeGapOptions(local,teacher,exam.id,gapBank.id,'remove',2);
+  assert.deepEqual(section().gapOptions,originalOptions);
+  assert.deepEqual(mapped(),before,'Removing the inserted row restores original answer mapping');
+  const used=local.questions.find(q=>q.id===section().questionIds[0]).correctAnswer;
+  assert.throws(()=>resizeGapOptions(local,teacher,exam.id,gapBank.id,'remove',used),/đang được dùng/);
+  const markup=renderBuilder({data:local,exam:local.exams.find(e=>e.id===exam.id),section:section()});
+  assert.equal((markup.match(/data-gap-resize="add"/g)||[]).length,originalOptions.length);
+  assert.equal((markup.match(/data-gap-resize="remove"/g)||[]).length,originalOptions.length);
+}
 assert.equal(gapBank.gapOptions.length,13);
 resizeGapOptions(state,teacher,exam.id,gapBank.id,'remove');
 assert.equal(gapBank.gapOptions.length,12);
