@@ -44,7 +44,7 @@ export function resultOutcomeHtml(summary,status='published',pendingLabel='Chờ
 function feedback(score){return `<div class="result-feedback"><h3>Nhận xét của cô</h3><p>${textHtml(score.feedback||'Chưa có nhận xét.')}</p>${score.reviewerName?`<div class="result-reviewer">${iconHtml('teacher')}<span>${esc(score.reviewerName)}</span></div>`:''}</div>`;}
 export function resultStatsHtml({counts,total,max,visible=true,totalId=''}){
   const stat=(n,label)=>`<div><strong>${n}</strong><span>${label}</span></div>`;
-  return `<div class="result-stats">${stat(visible?`${totalId?`<span id="${esc(totalId)}">${esc(total)}</span>`:esc(total)}${max?`<small>/${esc(max)}</small>`:''}`:'—','Tổng điểm')}${stat(counts.total,'Câu / bài viết')}${stat(visible?`${counts.correct}<small>/${counts.objective}</small>`:'—','Trắc nghiệm đúng')}${stat(visible?counts.wrong:'—','Câu sai')}${stat(visible?counts.blank:'—','Trắc nghiệm bỏ trống')}</div>`;
+  return `<div class="result-stats">${stat(visible?`${totalId?`<span id="${esc(totalId)}">${esc(total)}</span>`:esc(total)}${max?`<small>/${esc(max)}</small>`:''}`:'—','Tổng điểm')}${stat(visible?`${counts.correct}<small>/${counts.objective}</small>`:'—','Câu đúng')}${stat(visible?counts.wrong:'—','Câu sai')}${stat(visible?counts.blank:'—','Bỏ trống')}</div>`;
 }
 export function attemptResultHtml({review,user={}}){
   const a=review.attempt||{},score=a.status==='published'?review.score:null,summary=score?.summary;
