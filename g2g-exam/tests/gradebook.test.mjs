@@ -107,7 +107,7 @@ const gradingData={questions:[{id:'essay',skill:'Viết',type:'writing',maxScore
 const gradingAttempt={status:'grading',manualScores:{},resultSummary:{provider:'GOETHE',level:'A1',skills:{},total:0}};
 const detail=gradingDetailHtml({data:gradingData,exam:gradingExam,attempt:gradingAttempt});
 const labels=['Điểm Viết Bài 2','Điểm nói','Nhận xét','Tổng điểm'];
-for(let i=1;i<labels.length;i++)assert.ok(detail.indexOf(labels[i])>detail.indexOf(labels[i-1]));
+for(let i=1;i<labels.length;i++)assert.ok(detail.indexOf(labels[i],detail.indexOf(labels[i-1]))>detail.indexOf(labels[i-1]));
 assert.ok(detail.includes('min="0" max="10"'));
 assert.ok(detail.includes('min="0" max="15"'));
 assert.ok(!detail.includes('Điểm phần này'));

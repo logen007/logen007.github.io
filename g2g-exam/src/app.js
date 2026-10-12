@@ -607,6 +607,8 @@ function bindGradeCalculator(attempt){
     app.querySelectorAll('.manual-score').forEach(x=>total+=Number(x.value)||0);
     total+=Number(document.getElementById('gradeOralScore')?.value||0);
     document.getElementById('gradeTotal').textContent=total;
+    const headerTotal=document.getElementById('gradeHeaderTotal');
+    if(headerTotal)headerTotal.textContent=total;
   });
 }
 

@@ -674,6 +674,9 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .grading-detail { max-width:1240px; }
 .grading-detail .grading-hero { padding:24px 28px;margin-bottom:24px;align-items:center;border-top:3px solid var(--brand-primary); }
 .grading-hero p { margin:6px 0 0; }
+.grading-detail .grading-hero { flex-wrap:wrap; }
+.grading-hero .result-stats { flex-basis:100%;width:100%; }
+.result-stats strong>#gradeHeaderTotal { font:inherit;color:inherit; }
 .grading-detail .grading-workspace { gap:0;background:var(--mat);border:1px solid var(--vien);border-radius:var(--r);overflow:hidden;align-items:stretch;grid-template-columns:minmax(0,1.65fr) minmax(280px,1fr); }
 .grading-detail .grading-review { border-left:1px solid var(--vien);background:color-mix(in srgb,var(--surface-muted) 35%,var(--mat));display:flex;flex-direction:column; }
 .grading-review .grading-feedback { flex:1; }

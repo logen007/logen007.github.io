@@ -1,7 +1,7 @@
 import {esc,fmtDate} from '../ui/format.js';
 import {buildAttemptReview,reviewCounts} from '../domain/attempt-review.js';
 import {isAutomaticWritingForm} from '../domain/writing-form.js';
-import {questionHtml,resultOutcomeHtml,bar} from './attempt-result.js';
+import {questionHtml,resultOutcomeHtml,bar,resultStatsHtml} from './attempt-result.js';
 import {SKILL_LABELS} from '../domain/result-summary.js';
 
 // Teacher-only presentation: the caller already loaded the authorized grading detail.
@@ -31,6 +31,13 @@ export function gradingIdentityHtml(data,attempt){
 }
 
 export function gradingOutcomeHtml(summary,attempt){return resultOutcomeHtml(summary,attempt.status,'Đang chấm');}
+
+export function gradingStatsHtml(exam,questions,attempt,summary){
+  const review=buildAttemptReview({exam,questions,attempt:{...attempt,status:'published'}});
+  const counts=reviewCounts(review.sections.flatMap(s=>s.questions));
+  const max=summary.complete?Object.values(summary.skills||{}).reduce((sum,s)=>sum+Number(s.max||0),0):null;
+  return resultStatsHtml({counts,total:summary.total,max,totalId:'gradeHeaderTotal'});
+}
 
 export function gradingScoreBarsHtml(summary){
   return `<section class="the grading-panel grading-scores"><h2>Điểm từng phần</h2><div class="grading-score-grid">${['reading','grammar','listening','writing','speaking'].filter(key=>summary.skills?.[key]).map(key=>bar(SKILL_LABELS[key],summary.skills[key],{showBand:true})).join('')}</div></section>`;
