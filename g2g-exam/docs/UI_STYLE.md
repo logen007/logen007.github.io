@@ -274,6 +274,9 @@ below the icon/control. No extra toolbar or buttons.
 Tab selects the file input, Enter opens its picker, and Escape dismisses selection.
 Keep text paste in editable fields untouched. Confirm image replacement and reuse the normal
 file validation, compression and save path. Logo/favicon retain their formats.
+Image removal buttons sit slightly outside the thumbnail's upper-right corner,
+with reserved right spacing and visible overflow so they do not obscure the
+thumbnail or overlap the next input. Preserve their existing touch target.
 
 Student identity cards use one compact current-level badge, not a level ladder.
 Keep name editing inline and group class confirmation with Share. Statistics start

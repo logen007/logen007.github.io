@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {imageValue,EDITOR_IMAGE_INPUTS} from '../src/ui/image-remove.js';
 const input={dataset:{}};
 assert.equal(imageValue(input,undefined,'old.png'),'old.png');
@@ -9,4 +10,7 @@ assert.equal(imageValue(input,'upload-finished-after-removal.png','old.png'),'')
 input.dataset.imageRemoved='false';
 assert.equal(imageValue(input,'replacement.png','old.png'),'replacement.png');
 for(const selector of ['section-image','question-card-image','question-instruction-image','choice-image','rubric-image'])assert.ok(EDITOR_IMAGE_INPUTS.includes('[data-'+selector+']'));
+const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(css,/\.image-remove-control\s*\{[^}]*overflow:visible;[^}]*margin-right:12px;/,'Reserve space so the offset remove button is neither clipped nor over its neighbor');
+assert.match(css,/\.image-remove-button\s*\{[^}]*top:-8px; right:-10px;[^}]*width:28px; height:28px;/,'Move removal outside the thumbnail corner without shrinking its target');
 console.log('Image removal covers instructions, questions, answers and writing forms; removal wins over pending uploads.');
