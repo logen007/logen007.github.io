@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {completeWrongAnswers} from './answer-fixture.mjs';
+globalThis.sessionStorage={getItem:()=>null};
 import {seedState} from '../src/seed.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
 import {examDurationSeconds} from '../src/domain/exam-clock.js';
