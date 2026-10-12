@@ -14,7 +14,7 @@ export function createGradeAutosave(save,onStatus=()=>{},delay=600){
           saved=current;
         }catch(error){onStatus(error.message);return false;}
       }
-      onStatus('Đã lưu');
+      onStatus('');
       return true;
     })();
     try{return await running;}finally{running=null;}
