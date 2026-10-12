@@ -648,6 +648,13 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 @media(min-width:761px) { .exam-reading-split > .split-follow { position:sticky; top:var(--split-top,16px); align-self:start; } }
 .gap-demo { background:var(--brand-soft); border-radius:8px; padding:4px 8px; }
 .gap-sentences { margin-top:24px; display:grid; gap:12px; }
+.gap-choice-bank { columns:4; column-gap:24px; margin-top:24px; }
+.gap-choice-group { display:grid; grid-template-columns:auto minmax(0,1fr); gap:8px; break-inside:avoid; margin-bottom:20px; }
+.gap-choice-group>b { color:var(--brand-text); font-weight:500; }
+.gap-choice-group p { display:flex; gap:8px; margin:0 0 4px; font-weight:400; }
+.gap-choice-group p>span:last-child { min-width:0; overflow-wrap:anywhere; }
+@media(max-width:960px){ .gap-choice-bank { columns:2; column-gap:16px; } }
+@media(max-width:380px){ .gap-choice-bank { columns:1; } }
 .gap-sentences p { margin:0; display:flex; gap:16px; }
 .heading-match-question { margin-top:24px; }
 .heading-match-question p { white-space:pre-wrap; }

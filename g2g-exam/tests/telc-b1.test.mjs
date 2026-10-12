@@ -81,6 +81,16 @@ for(let i=0;i<exam.sections.length;i++){
 }
 assert.match(renderBuilder({data:state,exam,section:gapBank}),/data-gap-options/);
 const gapHtml=inlineGapsHtml(gap3,rows(gap3),{},20);
+assert.equal((gapHtml.match(/class="gap-choice-group"/g)||[]).length,10);
+assert.match(gapHtml,/<b>21\.<\/b>/);
+assert.match(gapHtml,/<b>30\.<\/b>/);
+assert.ok(gapHtml.indexOf('gap-choice-bank')>gapHtml.indexOf('gap-passage'));
+assert.match(gapHtml,/Gap 0 choice 0/);
+const gapBuilder=renderBuilder({data:state,exam,section:gap3});
+assert.doesNotMatch(gapBuilder,/Chỗ trống/);
+assert.ok(gapBuilder.includes('<legend>[a] · Câu 1</legend>'));
+assert.ok(gapBuilder.includes('<legend>[b] · Câu 2</legend>'));
+assert.ok(gapBuilder.includes('<legend>[a] · Câu 4</legend>'),'Repeated marker keeps its actual answer letter');
 assert.equal((gapHtml.match(/<select /g)||[]).length,10);
 assert.match(gapHtml,/data-unique-letters="false"/);
 assert.equal(letterAnswerError(gap3,rows(gap3),Object.fromEntries(rows(gap3).map(q=>[q.id,0]))),'');
