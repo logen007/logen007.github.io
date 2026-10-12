@@ -37,8 +37,6 @@ export function dashboardActivity(data,filter={},now=new Date()){
   const counts=new Map();
   for(const a of data.attempts){
     if(!['submitted','grading','ready','published'].includes(a.status))continue;
-    const n=stamp(a.submittedAt||a.finishedAt||a.updatedAt||a.createdAt);
-    if(n===null||n<start||n>=end+DAY)continue;
     counts.set(a.studentId,(counts.get(a.studentId)||0)+1);
   }
   const active=students.map(u=>({...u,count:counts.get(u.id)||0})).filter(u=>u.count).sort((a,b)=>b.count-a.count||String(a.name).localeCompare(String(b.name),'vi'));

@@ -12,7 +12,7 @@ export function dashboardHtml({data,infrastructure=null,infrastructureError='',n
   const ready=data.attempts.filter(a=>a.status===ATTEMPT_STATUS.READY).length;
   const published=data.attempts.filter(a=>a.status===ATTEMPT_STATUS.PUBLISHED);
   const live=exams.filter(ex=>ex.status==='published').length;
-  const activity=dashboardActivity(data,activityFilter,now),months=activity.bins;
+  const activity=dashboardActivity(data,{range:['7','30','365'].includes(activityFilter.range)?activityFilter.range:'30'},now),months=activity.bins;
   const biggest=Math.max(1,...months.map(item=>item.count));
   const active=activity.active;
   const thisMonth=students.filter(u=>String(u.createdAt||'').startsWith(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'))).length;
@@ -26,12 +26,12 @@ export function dashboardHtml({data,infrastructure=null,infrastructureError='',n
       ${metric('Học viên',students.length,`+${total(thisMonth)} trong tháng này`,'student')}
       ${metric('Giáo viên',teachers.length,'Tài khoản giảng dạy','teacher')}
     </div>
-    <div class="dashboard-period"><label>Thời gian <select class="truong" data-dashboard-range>${[['auto','Theo dữ liệu'],['7','7 ngày'],['30','30 ngày'],['90','90 ngày'],['365','1 năm'],['custom','Tuỳ chọn']].map(([id,label])=>`<option value="${id}" ${activity.mode===id?'selected':''}>${label}</option>`).join('')}</select></label><label>Từ <input class="truong" type="date" data-dashboard-from value="${activity.from}"></label><label>Đến <input class="truong" type="date" data-dashboard-to value="${activity.to}"></label></div><div class="dashboard-grid">
-      <section class="the dashboard-panel"><header><h2>Học viên mới</h2><span>${activity.unitLabel}</span></header><div class="dashboard-growth-total"><b>${total(months.reduce((sum,m)=>sum+m.count,0))}</b><span>học viên</span></div>
+    <div class="dashboard-grid">
+      <section class="the dashboard-panel"><header><h2>Học viên mới</h2><select class="truong dashboard-period-select" data-dashboard-range aria-label="Thời gian học viên mới">${[['7','Tuần'],['30','Tháng'],['365','Năm']].map(([id,label])=>`<option value="${id}" ${activity.mode===id?'selected':''}>${label}</option>`).join('')}</select></header><div class="dashboard-growth-total"><b>${total(months.reduce((sum,m)=>sum+m.count,0))}</b><span>học viên</span></div>
         <div class="dashboard-bars" style="--bars:${months.length}" role="list" aria-label="Học viên mới ${activity.unitLabel.toLowerCase()}">${months.map(item=>`<div role="listitem" aria-label="${item.label}: ${item.count} học viên"><b aria-hidden="true">${total(item.count)}</b><div class="dashboard-bar-track" aria-hidden="true"><span style="height:${item.count/biggest*100}%"></span></div><small aria-hidden="true">${item.label}</small></div>`).join('')}</div>
       </section>
       <section class="the dashboard-panel"><header><h2>Cơ cấu đề thi</h2><button class="text-link" data-action="admin-tab" data-tab="exams">Xem tất cả ${iconHtml('arrowRight')}</button></header><ul class="dashboard-types">${types.map(([name,count])=>`<li><span>${esc(name)}</span><b>${total(count)}</b><span class="dashboard-type-track" aria-hidden="true"><i style="width:${count/Math.max(1,exams.length)*100}%"></i></span></li>`).join('')||'<li class="dashboard-empty">Chưa có đề thi.</li>'}</ul></section>
-      <section class="the dashboard-panel"><header><h2>Học viên tích cực</h2><span>Top 5</span></header><p class="dashboard-caption">Theo số bài đã nộp trong thời gian chọn</p><ol class="dashboard-graders">${active.slice(0,5).map(grader).join('')||'<li class="dashboard-empty">Chưa có bài nộp trong thời gian này.</li>'}</ol></section>
+      <section class="the dashboard-panel"><header><h2>Học viên tích cực</h2><span>Top 5</span></header><p class="dashboard-caption">Theo tổng số bài đã nộp</p><ol class="dashboard-graders">${active.slice(0,5).map(grader).join('')||'<li class="dashboard-empty">Chưa có bài nộp.</li>'}</ol></section>
     </div>
     ${dashboardInfrastructureHtml(infrastructure,infrastructureError)}
   </div>`;

@@ -457,9 +457,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .feedback-panel small,.feedback-panel [role=status] { font-size:12px; color:var(--phu); }
 @media(max-width:760px),(hover:none) and (pointer:coarse) { .web-feedback { display:none; } }
 .dashboard-grid { display:grid; grid-template-columns:1.1fr 1fr 1fr; gap:20px; align-items:stretch; }
-.dashboard-period { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
-.dashboard-period label { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--phu); }
-.dashboard-period .truong { width:auto; min-width:0; }
+.dashboard-panel .dashboard-period-select { width:112px; min-width:112px; height:40px; font-size:13px; }
 .admin-dashboard .dashboard-heading { align-items:center; gap:16px; }
 .dashboard-heading p { margin:4px 0 0; color:var(--phu); font-size:13px; }
 .dashboard-stats { margin-bottom:20px; }

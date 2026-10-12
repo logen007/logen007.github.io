@@ -31,8 +31,8 @@ async function readPrivateSettings(){
   return {settings:settings.settings,infra};
 }
 
-export async function refreshInfrastructure(){
-  return request('/actions/getInfrastructureStatus',{method:'POST',body:{summaryOnly:true}});
+export async function refreshInfrastructure({summaryOnly=true}={}){
+  return request('/actions/getInfrastructureStatus',{method:'POST',body:{summaryOnly}});
 }
 
 export async function updateSystemSettings(settings){

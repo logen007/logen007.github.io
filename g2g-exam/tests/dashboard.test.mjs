@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {dashboardHtml} from '../src/views/admin.js';
 import {dashboardInfrastructureHtml} from '../src/views/dashboard-infrastructure.js';
+import {refreshInfrastructure} from '../src/settings/api.js';
+import {readFileSync} from 'node:fs';
 const data={users:[{id:'s',role:'student',createdAt:'2026-10-01'},{id:'t',role:'teacher',name:'Teacher <x>'}],exams:[{title:'A',status:'published',provider:'FID',level:'A1'},{title:'B',status:'draft',provider:'TELC',level:'B2'},{status:'trash',provider:'SECRET'}],attempts:[{status:'submitted'},{status:'grading'},{status:'ready'},{status:'published',reviewerId:'t'},{status:'incomplete'},{status:'abandoned'}]};
 const html=dashboardHtml({data,now:new Date(2026,9,12)});
 assert.match(html,/2 chờ chấm · 1 chờ công bố/);
@@ -9,10 +11,16 @@ assert.doesNotMatch(html,/Teacher &lt;x&gt;/);
 assert.match(html,/Học viên tích cực/);
 assert.doesNotMatch(html,/SECRET/);
 assert.match(html,/height:0%/,'Zero months must not have fake positive bars');
-assert.match(html,/01\/10: 1 học viên/);
+assert.match(html,/: 1 học viên/);
 assert.match(html,/data-action="new-exam"/);
 assert.match(html,/data-tab="exams"/);
 assert.match(html,/data-dashboard-range/);
+assert.doesNotMatch(html,/data-dashboard-from|data-dashboard-to|Tuỳ chọn|Theo dữ liệu/);
+assert.match(html,/>Tuần<.*>Tháng<.*>Năm</);
+assert.ok(html.indexOf('data-dashboard-range')>html.indexOf('<h2>Học viên mới</h2>'));
+const week=dashboardHtml({data,now:new Date(2026,9,12),activityFilter:{range:'7'}});
+const year=dashboardHtml({data,now:new Date(2026,9,12),activityFilter:{range:'365'}});
+assert.equal(week.slice(week.indexOf('<h2>Cơ cấu đề thi')),year.slice(year.indexOf('<h2>Cơ cấu đề thi')),'Period changes only the new-student panel');
 const unknown=dashboardInfrastructureHtml({resources:{}});
 assert.doesNotMatch(unknown,/undefined|NaN|Sạch/);
 assert.match(unknown,/Chưa có lần quét/);
@@ -32,3 +40,12 @@ assert.match(system,/<details class="dashboard-details"><summary>Dung lượng �
 assert.equal(infrastructure.examStorage[0].title,'Small','Rendering must not sort shared state in place');
 assert.doesNotThrow(()=>dashboardHtml({data:{users:[],exams:[],attempts:[]}}));
 console.log('Dashboard hierarchy, counts, safe metrics, empty/error states and disclosures passed.');
+const originalFetch=globalThis.fetch,requests=[];
+try{
+  globalThis.fetch=async(url,options)=>{requests.push(JSON.parse(options.body));return {ok:true,json:async()=>({resources:{cpu:{loadPercent:5}}})};};
+  await refreshInfrastructure();
+  const full=await refreshInfrastructure({summaryOnly:false});
+  assert.deepEqual(requests,[{summaryOnly:true},{summaryOnly:false}]);
+  assert.equal(full.resources.cpu.loadPercent,5);
+  assert.ok(readFileSync(new URL('../src/app.js',import.meta.url),'utf8').includes('refreshInfrastructure({summaryOnly:false})'));
+}finally{globalThis.fetch=originalFetch;}
