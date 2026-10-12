@@ -1,4 +1,7 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
+import {createExamPreloader,examMediaUrls} from './ui/exam-preload.js';
+const examPreloader=createExamPreloader();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)examPreloader.resume();});
 import {updateFeedbackUser} from './ui/feedback.js';
 import {examCompletion,completionMessage} from './domain/exam-completion.js';
 import {withExamTransition} from './ui/exam-transition.js';
@@ -221,6 +224,7 @@ function examView(){
   const section=exam.sections[sectionIndex];
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
   app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,allQuestions:data.questions,online:ui.online});
+  examPreloader.update(attempt.id,examMediaUrls(exam,data.questions,sectionIndex));
   const examBrandIcon=app.querySelector('.exam-mobile-brand img');if(examBrandIcon)examBrandIcon.onerror=()=>examBrandIcon.remove();
   bindExamInputs(attempt,questions);
   bindSectionAudio(attempt,{preview:false});
@@ -656,6 +660,7 @@ function bindModalClose(){app.querySelectorAll('[data-action="close-modal"]').fo
 let titleResizeObserver,viewLoadPromise;
 function render(){
   if(!startupGate.isReady())return;
+  if(!user||ui.view!=='exam')examPreloader.stop();
   updateFeedbackUser(authenticatedUser||user);
   if(user&&repo.mode==='api'){
     const scope=viewStateScope(ui.view,ui.adminTab);

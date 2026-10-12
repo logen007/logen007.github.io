@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {examMediaUrls,createExamPreloader} from '../src/ui/exam-preload.js';
+const exam={sections:[{questionIds:['a'],audioUrl:'/uploads/first.mp3'},{questionIds:['b'],imageUrl:'/uploads/next.jpg'}]};
+const questions=[{id:'a',imageUrl:'/uploads/one.jpg'},{id:'b',choices:[{imageUrl:'/uploads/next.jpg'}],audioUrl:'https://other.test/audio.mp3'},{id:'unrelated',imageUrl:'/uploads/private.jpg'}];
+const urls=examMediaUrls(exam,questions,1,'https://exam.test');
+assert.deepEqual(urls,['https://exam.test/uploads/next.jpg','https://exam.test/uploads/first.mp3','https://exam.test/uploads/one.jpg']);
+let hidden=false;const calls=[],pending=[];
+const loader=createExamPreloader({isHidden:()=>hidden,fetchMedia:(url,options)=>new Promise((resolve,reject)=>{
+  calls.push({url,options});pending.push(()=>resolve({ok:true,body:{getReader:()=>({read:async()=>({done:true}),releaseLock(){}})}}));
+  options.signal.addEventListener('abort',()=>reject(new Error('aborted')));
+})});
+loader.update('attempt',urls);assert.equal(calls.length,2);
+loader.update('attempt',urls);assert.equal(calls.length,2);
+hidden=true;pending.shift()();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(calls.length,2);
+hidden=false;loader.resume();assert.equal(calls.length,3);
+assert.equal(calls[0].options.cache,'force-cache');
+loader.stop();assert.equal(calls[1].options.signal.aborted,true);
+await new Promise(resolve=>setTimeout(resolve,0));
+assert.equal(calls.length,3);
+console.log('Exam media preload: scoped URLs, priority, deduplication, concurrency, hidden tab and cancellation passed.');

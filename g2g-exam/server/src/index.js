@@ -98,7 +98,7 @@ app.post('/api/media/audio',async request=>saveUpload(request,{kind:'âm thanh',
 app.post('/api/media/image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:8*1024*1024,mimePrefix:'image/',defaultExt:'.img'}));
 app.post('/api/demo/media/audio',async request=>saveUpload(request,{kind:'âm thanh',maxBytes:25*1024*1024,mimePrefix:'audio/',defaultExt:'.audio'},demoUploadUser(request)));
 app.post('/api/demo/media/image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:8*1024*1024,mimePrefix:'image/',defaultExt:'.img'},demoUploadUser(request)));
-app.get('/uploads/:name',async(request,reply)=>{if(!demoMediaUploadsEnabled)await requireUser(request);const name=path.basename(request.params.name);return reply.sendFile(name,uploadDir);});
+app.get('/uploads/:name',async(request,reply)=>{if(!demoMediaUploadsEnabled)await requireUser(request);const name=path.basename(request.params.name);reply.header('Cache-Control','private, max-age=3600');return reply.sendFile(name,uploadDir);});
 app.get('/brand/:kind',async(request,reply)=>{
   const key=request.params.kind==='logo'?'logoUrl':request.params.kind==='favicon'?'faviconUrl':null;
   if(!key)throw appError(404,'Ảnh không tồn tại.');
