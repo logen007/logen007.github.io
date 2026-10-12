@@ -124,7 +124,7 @@ assert.match(css,/\.inline-gap-paper \.gap-sentences p \{ font-weight:400;/);
   let onResize,disconnected=false,removed=false,observed=[];
   const view={innerWidth:1200,innerHeight:800,ResizeObserver:class{constructor(fn){onResize=fn;}observe(el){observed.push(el);}disconnect(){disconnected=true;}},
     addEventListener(){},removeEventListener(){removed=true;}};
-  const dispose=bindSplitReading({querySelectorAll:()=>[{children:[left,right,feedback]}]},view);
+  const dispose=bindSplitReading({querySelectorAll:selector=>selector==='[data-responsive-stimuli]'?[]:[{children:[left,right,feedback]}]},view);
   assert.deepEqual(observed,[left,right]);
   assert.ok(right.classes.has('split-follow'));assert.equal(right.props.get('--split-top'),'16px');
   right.height=1600;onResize();
