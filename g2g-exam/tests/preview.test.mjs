@@ -367,6 +367,7 @@ try{
     assert.doesNotMatch(real,/\bdata-preview-/);
     assert.doesNotMatch(real,/data-action="(?:preview-[^"]*|reset-preview|close-preview)"/);
     assert.doesNotMatch(header(real),/\bid="examTimer"/);
+    assert.doesNotMatch(real,/data-exam-completion|Für die Abgabe sind mindestens/);
     assert.equal((real.match(/id="examMainTime"/g)||[]).length,1);
     assert.match(real,/\bid="examTimeSummary"/);
     assert.match(real,/\bid="saveState"/);

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './navigation-loading.test.mjs';
 import {ApiRepository} from '../src/repositories/api.js';
 import {initialStateScope,viewStateScope} from '../src/repositories/state-scope.js';
 import {stateResponse} from '../server/src/state-response.js';

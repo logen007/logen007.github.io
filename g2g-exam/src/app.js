@@ -2,6 +2,9 @@ import {isPrefilledQuestion} from './domain/question-display.js';
 import {examCompletion,completionMessage} from './domain/exam-completion.js';
 import {withExamTransition} from './ui/exam-transition.js';
 import {createStartupGate} from './ui/startup-gate.js';
+import {createNavigationLoading} from './ui/navigation-loading.js';
+const withNavigationLoading=createNavigationLoading();
+let openingBuilder=false;
 import {resolveBuilderSection} from './ui/builder-route.js';
 import {startGoogleOneTap,stopGoogleOneTap} from './ui/google-one-tap.js';
 const startupGate=createStartupGate();
@@ -280,8 +283,6 @@ function bindExamInputs(attempt,questions){
     attempt.answers={...(attempt.answers||{}),[qid]:value};
     const required=questions.filter(question=>!isPrefilledQuestion(question)),answered=required.filter(question=>answerPresent(attempt.answers[question.id],question)).length;
     app.querySelectorAll('[data-current-answer-count]').forEach(item=>{item.textContent=`${answered}/${required.length}`;});
-    const completionNode=app.querySelector('[data-exam-completion]');
-    if(completionNode)completionNode.textContent=completionMessage(examCompletion(byId(data.exams,attempt.examId),data.questions,attempt.answers));
     const question=questions.find(item=>item.id===qid),card=app.querySelector(`.cau-thi[data-q="${qid}"]`);
     if(card&&question)card.classList.toggle('is-answered',answerPresent(value,question));
   };
@@ -980,7 +981,12 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="preview-question"]').forEach(b=>b.onclick=()=>previewQuestionModal(byId(data.questions,b.dataset.id)));
   app.querySelectorAll('[data-action="delete-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>softDeleteQuestion(st,user,b.dataset.id)),'Đã chuyển câu hỏi vào Thùng rác.'));
   app.querySelectorAll('[data-action="new-exam"]').forEach(b=>b.onclick=()=>createNewExam());
-  app.querySelectorAll('[data-action="edit-exam"]').forEach(b=>b.onclick=()=>openBuilder(b.dataset.id));
+  app.querySelectorAll('[data-action="edit-exam"]').forEach(b=>b.onclick=async()=>{
+    if(openingBuilder)return;
+    openingBuilder=true;b.disabled=true;
+    try{await act(()=>withNavigationLoading(()=>openBuilder(b.dataset.id)),null,{rerender:false});}
+    finally{openingBuilder=false;b.disabled=false;}
+  });
   app.querySelectorAll('[data-action="duplicate-exam"]').forEach(b=>b.onclick=async()=>{
     const copy=await act(()=>repo.mode==='api'?repo.call('copyExam',{examId:b.dataset.id}):repo.transaction(st=>duplicateExam(st,user,b.dataset.id)),'Đã nhân bản bài thi.',{rerender:false});
     if(copy&&repo.mode==='api')await repo.reload();
