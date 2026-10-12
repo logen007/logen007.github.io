@@ -10,10 +10,11 @@ export function bindButtonTooltips(){
     tip?.remove();tip=null;active=null;
   };
   const show=target=>{
-    const button=target?.closest?.('button,.icon-btn,.gear');
+    const button=target?.closest?.('button,.icon-btn,.gear,[data-image-paste-target]');
     if(!button||button.disabled)return;
-    const iconOnly=button.matches('.icon-btn,.gear,.navigation-arrow,.section-arrow')||(!button.textContent.trim()&&button.querySelector('svg,img'));
-    const label=button.getAttribute('aria-label')||button.getAttribute('title');
+    const imageTarget=button.matches('[data-image-paste-target]');
+    const iconOnly=imageTarget||button.matches('.icon-btn,.gear,.navigation-arrow,.section-arrow')||(!button.textContent.trim()&&button.querySelector('svg,img'));
+    const label=imageTarget?button.getAttribute('title'):button.getAttribute('aria-label')||button.getAttribute('title');
     if(!iconOnly||!label)return;
     hide();active=button;
     tip=document.createElement('div');tip.className='button-tooltip';tip.id='button-action-tooltip';tip.setAttribute('role','tooltip');tip.textContent=label;

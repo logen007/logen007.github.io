@@ -7,15 +7,11 @@ assert.equal(acceptsImage({accept:'.png'},image),true);
 assert.equal(acceptsImage({accept:'image/jpeg'},image),false);
 assert.equal(acceptsImage({accept:'audio/*'},image),false);
 
-const listeners={},inputs=[],messages=[],panels=[];
+const listeners={},inputs=[],messages=[];
 let observe,disconnected=false,replace,confirmCount=0;
 globalThis.MutationObserver=class{constructor(fn){observe=fn;}observe(){}disconnect(){disconnected=true;}};
 globalThis.DataTransfer=class{constructor(){this.files=[];this.items={add:file=>this.files.push(file)};}};
-const root={querySelectorAll:()=>inputs,addEventListener:(type,fn,capture)=>{listeners[type]=fn;if(type==='click')assert.equal(capture,true);},removeEventListener:type=>delete listeners[type],
-  defaultView:{innerWidth:1024,innerHeight:768,addEventListener(){},removeEventListener(){}},
-  body:{append:node=>panels.push(node)},
-  createElement:tag=>({tag,style:{},children:[],events:{},setAttribute(){},append(...nodes){this.children.push(...nodes);},addEventListener(type,fn){this.events[type]=fn;},
-    contains(node){return node===this||this.children.includes(node);},getBoundingClientRect:()=>({width:180,height:48}),remove(){this.removed=true;}})};
+const root={querySelectorAll:()=>inputs,addEventListener:(type,fn,capture)=>{listeners[type]=fn;if(type==='click'||type==='pointerdown')assert.equal(capture,true);},removeEventListener:type=>delete listeners[type]};
 function createInput(accept='image/*',existing=false){
   const classes=new Set();
   const control={dataset:{},title:'Upload',textContent:'Upload',classList:{add:name=>classes.add(name),remove:name=>classes.delete(name)},
@@ -33,28 +29,34 @@ const first=createInput(),second=createInput('image/*',true),audio=createInput('
 inputs.push(first.input,second.input,audio.input);
 const cleanup=bindImagePaste(root,{notify:message=>messages.push(message),confirmReplace:apply=>{confirmCount++;replace=apply;}});
 function click(target){const state={prevented:false,stopped:false};listeners.click({target,preventDefault:()=>state.prevented=true,stopPropagation:()=>state.stopped=true});return state;}
-assert.ok(first.control.title.includes('⌘V / Ctrl+V'));
+function press(target,input){listeners.pointerdown({target});input?.focus();return click(target);}
+assert.equal(first.control.title,'Bấm chọn ô · ⌘V/Ctrl+V để dán · Bấm lại chọn ảnh.');
 assert.equal(audio.control.dataset.imagePasteTarget,undefined);
 const paste=(target,files=[image])=>{let prevented=false;listeners.paste({target,clipboardData:{items:files.map(file=>({kind:'file',getAsFile:()=>file}))},preventDefault:()=>prevented=true});return prevented;};
 assert.equal(paste(root),false,'No destination must not guess');
-assert.deepEqual(click(first.input),{prevented:true,stopped:true},'Click must block transparent input and parent label activation');
+assert.deepEqual(press(first.input,first.input),{prevented:true,stopped:true},'First click must not open the picker even though pointerdown focuses the input first');
 assert.equal(first.input.dialogs,undefined,'Selecting never opens the file picker');
 assert.equal(root.activeElement,first.input);
 assert.ok(first.classes.has('image-paste-active'));
-assert.equal(panels.length,1);assert.equal(panels[0].hidden,false);
-assert.equal(panels[0].children[1].title,'Chọn ảnh từ máy');
 assert.equal(listeners.pointerover,undefined,'Moving the mouse cannot change selection');
 assert.equal(paste(root),true);assert.equal(first.input.files[0],image);assert.equal(first.input.changes,1);
 const textInput={closest:selector=>selector.startsWith('textarea')?{}:null};
 assert.equal(paste(textInput),false,'Text inputs keep their native paste');
-panels[0].children[1].events.click();
-assert.equal(first.input.dialogs,1,'Only the browse icon opens the native picker');
+const firstIcon={closest:selector=>selector==='[data-image-paste-target]'?first.control:null};
+press(firstIcon);
+assert.equal(first.input.dialogs,1,'Second click anywhere, including the icon, opens the picker');
 listeners.keydown({target:first.input,key:'Enter',preventDefault(){}});
 assert.equal(first.input.dialogs,2,'Keyboard users can open the native picker');
 listeners.keydown({target:first.input,key:'Escape'});
-assert.equal(panels[0].hidden,true);assert.equal(root.activeElement,null);
+assert.equal(first.classes.has('image-paste-active'),false);assert.equal(root.activeElement,null);
 listeners.keydown({target:root,key:'Escape'});
 assert.equal(paste(root),false);
+press(firstIcon);
+assert.equal(first.input.dialogs,2,'First icon click after deselection only selects');
+assert.equal(first.classes.has('image-paste-active'),true);
+press(second.input,second.input);
+assert.equal(second.input.dialogs,undefined,'Switching to another image requires its own first click');
+assert.equal(first.classes.has('image-paste-active'),false);
 assert.equal(paste(second.input),true,'Focused image input is a destination');
 assert.equal(confirmCount,1);assert.equal(second.input.changes,undefined,'Replacement waits for confirmation');
 replace();assert.equal(second.input.changes,1);
@@ -77,11 +79,13 @@ assert.equal(paste(fresh.input,[{type:'text/plain',name:'text.txt'}]),false);
 click(fresh.input);click(root);assert.equal(paste(root),false,'Outside click clears the target');
 assert.equal(root.activeElement,null,'Outside click removes native file focus too');
 click(fresh.input);listeners.focusin({target:textInput});assert.equal(paste(root),false,'Editing a different field clears the target');
-click(fresh.input);fresh.input.isConnected=false;observe([{addedNodes:[]}]);assert.equal(panels[0].hidden,true,'Navigation hides stale selection');
+click(fresh.input);fresh.input.isConnected=false;observe([{addedNodes:[]}]);assert.equal(fresh.classes.has('image-paste-active'),false,'Navigation clears stale selection');
 cleanup();assert.equal(disconnected,true);assert.equal(Object.keys(listeners).length,0);
-assert.equal(panels[0].removed,true);
 
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.doesNotMatch(css,/image-paste-toolbar/);
+assert.match(css,/\[data-image-paste-target\]\.image-paste-active\s*\{\s*border-color:var\(--brand-primary\)/);
+assert.match(readFileSync(new URL('../src/ui/button-tooltips.js',import.meta.url),'utf8'),/imageTarget\?button.getAttribute\('title'\)/);
 assert.match(css,/\.danh-sach-de\s*\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 assert.match(css,/\.the-de h3\s*\{[^}]*line-height:1\.4;[^}]*height:2\.8em;[^}]*-webkit-line-clamp:2/);
 assert.match(css,/@media\(max-width:960px\)[\s\S]*?\.danh-sach-de\s*\{\s*grid-template-columns:repeat\(2/);

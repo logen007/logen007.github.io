@@ -263,10 +263,11 @@ optimized file is uploaded; never upload a second original. Use short English
 position names (reading-2-q3-a.jpg), with a short unique suffix on the server.
 Existing referenced uploads are not renamed or deleted as part of new uploads.
 Clicking an image picker selects and focuses it for native Cmd/Ctrl+V; it must
-not open the file dialog. Keep the selected target outlined until focus/click
-moves away; hovering another image never changes the destination. A small anchored
-toolbar shows the shortcut hint and an upload icon that opens the file dialog.
-No paste button and no permanent extra row; preserve the compact image layout.
+not open the file dialog on the first click, including clicks on its icon.
+The border changes to the brand color; clicking the selected picker again opens
+the file dialog. Keep selection until focus/click moves away; hovering another
+image never changes the destination. Use the shared tooltip with a short hint:
+“Bấm chọn ô · ⌘V/Ctrl+V để dán · Bấm lại chọn ảnh.” No extra toolbar or buttons.
 Tab selects the file input, Enter opens its picker, and Escape dismisses selection.
 Keep text paste in editable fields untouched. Confirm image replacement and reuse the normal
 file validation, compression and save path. Logo/favicon retain their formats.
