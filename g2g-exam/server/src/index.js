@@ -19,6 +19,8 @@ import {handleAction} from './actions.js';
 import {startMediaGarbageCollector} from './media-gc.js';
 import {startTrashGarbageCollector} from './trash-gc.js';
 import {submitExpiredAttempts} from './actions/attempts.js';
+import {configureR2Media} from './r2-media.js';
+import {registerMediaDeliveryRoutes} from './media-routes.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const publicDir=path.resolve(here,'../../public');
@@ -32,6 +34,7 @@ await fs.mkdir(uploadDir,{recursive:true});
 await initDb();
 
 const app=Fastify({logger:true,trustProxy:process.env.TRUST_PROXY==='true'});
+const r2Media=await configureR2Media({uploadDir,logger:app.log});
 await app.register(cookie,{secret:process.env.COOKIE_SECRET||'development-only-change-me',hook:'onRequest'});
 const origins=String(process.env.CORS_ORIGINS||'').split(',').map(x=>x.trim()).filter(Boolean);
 await app.register(cors,{origin:(origin,cb)=>{if(!origin||!origins.length||origins.includes(origin))cb(null,true);else cb(new Error('Origin không được phép.'),false);},credentials:true});
@@ -100,7 +103,7 @@ app.post('/api/media/audio',async request=>saveUpload(request,{kind:'âm thanh',
 app.post('/api/media/image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:8*1024*1024,mimePrefix:'image/',defaultExt:'.img'}));
 app.post('/api/demo/media/audio',async request=>saveUpload(request,{kind:'âm thanh',maxBytes:25*1024*1024,mimePrefix:'audio/',defaultExt:'.audio'},demoUploadUser(request)));
 app.post('/api/demo/media/image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:8*1024*1024,mimePrefix:'image/',defaultExt:'.img'},demoUploadUser(request)));
-app.get('/uploads/:name',async(request,reply)=>{if(!demoMediaUploadsEnabled)await requireUser(request);const name=path.basename(request.params.name);reply.header('Cache-Control','private, max-age=3600');return reply.sendFile(name,uploadDir);});
+registerMediaDeliveryRoutes(app,{uploadDir,r2Media,authenticate:async request=>{if(!demoMediaUploadsEnabled)await requireUser(request);}});
 app.get('/brand/:kind',async(request,reply)=>{
   const key=request.params.kind==='logo'?'logoUrl':request.params.kind==='favicon'?'faviconUrl':null;
   if(!key)throw appError(404,'Ảnh không tồn tại.');
@@ -121,5 +124,5 @@ const stopTrashGc=startTrashGarbageCollector({uploadDir,logger:app.log});
 let expiryBusy=false;
 const expiryTimer=setInterval(async()=>{if(expiryBusy)return;expiryBusy=true;try{await submitExpiredAttempts();}catch(error){app.log.error(error);}finally{expiryBusy=false;}},1000);
 expiryTimer.unref();
-const stop=async()=>{try{stopMediaGc();stopTrashGc();clearInterval(expiryTimer);await app.close();await pool.end();}finally{process.exit(0);}};
+const stop=async()=>{try{r2Media?.stop();stopMediaGc();stopTrashGc();clearInterval(expiryTimer);await app.close();await pool.end();}finally{process.exit(0);}};
 process.on('SIGTERM',stop);process.on('SIGINT',stop);

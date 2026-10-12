@@ -1,13 +1,14 @@
 FROM node:22-alpine
 
 WORKDIR /app/server
-COPY server/package.json ./package.json
-RUN npm install --omit=dev
+COPY server/package.json server/package-lock.json ./
+RUN npm ci --omit=dev
 
 WORKDIR /app
 COPY package.json /app/package.json
 RUN mkdir -p /app/public/src /data/uploads
 COPY vi.html styles.css enhancements.css runtime-config.js /app/public/
+COPY media-worker.js /app/public/media-worker.js
 RUN cp /app/public/vi.html /app/public/index.html
 COPY src /app/public/src
 COPY src/domain/student-profile.js /app/src/domain/student-profile.js

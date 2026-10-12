@@ -1,4 +1,6 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
+import {registerMediaDelivery} from './ui/media-delivery.js';
+void registerMediaDelivery();
 import {createExamPreloader,examMediaUrls} from './ui/exam-preload.js';
 const examPreloader=createExamPreloader();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)examPreloader.resume();});

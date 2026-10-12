@@ -1,0 +1,29 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {registerMediaDeliveryRoutes} from '../server/src/media-routes.js';
+const require=createRequire(new URL('../server/package.json',import.meta.url));
+const Fastify=require('fastify'),staticFiles=require('@fastify/static');
+const root=await fs.mkdtemp(path.join(os.tmpdir(),'g2g-r2-route-'));
+try{
+  await fs.writeFile(path.join(root,'test.mp3'),'0123456789');
+  let sources=0,enabled=true;
+  const app=Fastify();
+  await app.register(staticFiles,{root,serve:false});
+  registerMediaDeliveryRoutes(app,{uploadDir:root,r2Media:{source:async()=>{sources++;return enabled?'https://private.r2.test/media?signed':null;}},authenticate:async req=>{if(req.headers.authorization!=='test-session')throw Object.assign(new Error('Login required'),{statusCode:401});}});
+  const headers={authorization:'test-session'};
+  assert.equal((await app.inject('/uploads/test.mp3?delivery=r2')).statusCode,401);assert.equal(sources,0);
+  const remote=await app.inject({url:'/uploads/test.mp3?delivery=r2',headers});
+  assert.equal(remote.statusCode,302);assert.equal(remote.headers['cache-control'],'private, no-store');
+  assert.match(remote.headers.location,/private.r2.test/);
+  const local=await app.inject({url:'/uploads/test.mp3',headers:{...headers,range:'bytes=2-4'}});
+  assert.equal(local.statusCode,206);assert.equal(local.body,'234');assert.equal(local.headers['content-range'],'bytes 2-4/10');
+  enabled=false;
+  assert.equal((await app.inject({url:'/uploads/test.mp3?delivery=r2',headers})).body,'0123456789');
+  assert.equal((await app.inject({url:'/uploads/.r2',headers})).statusCode,404);
+  assert.equal((await app.inject({url:'/uploads/test.mp3?delivery=r2',method:'HEAD',headers})).statusCode,200);
+  await app.close();
+  console.log('R2 routes: authentication before signing, non-cacheable redirect, VPS range fallback, rollback and hidden manifest protection passed.');
+}finally{await fs.rm(root,{recursive:true,force:true});}
