@@ -262,9 +262,13 @@ Exam image uploads are converted before upload to JPEG (quality 85%, maximum
 optimized file is uploaded; never upload a second original. Use short English
 position names (reading-2-q3-a.jpg), with a short unique suffix on the server.
 Existing referenced uploads are not renamed or deleted as part of new uploads.
-All image pickers accept native Cmd/Ctrl+V while focused or hovered, without an
-extra paste button. Mark the target with a subtle outline; keep text paste in
-editable fields untouched. Confirm image replacement and reuse the normal
+Clicking an image picker selects and focuses it for native Cmd/Ctrl+V; it must
+not open the file dialog. Keep the selected target outlined until focus/click
+moves away; hovering another image never changes the destination. A small anchored
+toolbar shows the shortcut hint and an upload icon that opens the file dialog.
+No paste button and no permanent extra row; preserve the compact image layout.
+Tab selects the file input, Enter opens its picker, and Escape dismisses selection.
+Keep text paste in editable fields untouched. Confirm image replacement and reuse the normal
 file validation, compression and save path. Logo/favicon retain their formats.
 
 Student identity cards use one compact current-level badge, not a level ladder.
