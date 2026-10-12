@@ -33,7 +33,7 @@ export function gradingIdentityHtml(data,attempt){
 export function gradingOutcomeHtml(summary,attempt){return resultOutcomeHtml(summary,attempt.status,'Đang chấm');}
 
 export function gradingScoreBarsHtml(summary){
-  return `<section class="the grading-panel"><h2>Điểm từng phần</h2>${Object.entries(summary.skills||{}).map(([key,entry])=>bar(SKILL_LABELS[key]||key,entry,{showBand:true})).join('')}<p class="phu-de">${esc(summary.condition||'')}</p></section>`;
+  return `<section class="the grading-panel grading-scores"><h2>Điểm từng phần</h2><div class="grading-score-grid">${['reading','grammar','listening','writing','speaking'].filter(key=>summary.skills?.[key]).map(key=>bar(SKILL_LABELS[key],summary.skills[key],{showBand:true})).join('')}</div><p class="phu-de">${esc(summary.condition||'')}</p></section>`;
 }
 
 export function gradingPanelsHtml(items,prefix,{actions='',wrap=html=>html}={}){

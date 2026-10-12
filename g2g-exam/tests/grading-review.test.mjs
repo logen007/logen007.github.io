@@ -34,6 +34,10 @@ assert.ok(detail.indexOf('data-action="publish-result"')<detail.indexOf('grading
 assert.ok(detail.indexOf('Điểm từng phần')>detail.indexOf('gradeFeedback'));
 assert.ok(detail.indexOf('grading-history')>detail.indexOf('grading-automatic'));
 assert.match(detail,/result-track/);
+assert.match(detail,/<details class="the grading-panel grading-automatic">/);
+assert.match(detail,/grading-score-grid/);
+assert.match(detail,/grading-hero/);
+assert.match(detail,/Đánh giá phần Nói/);
 assert.match(detail,/>Nói<\/button>/);
 assert.equal((detail.match(/id="gradeOralScore"/g)||[]).length,1);
 const publishedDetail=gradingDetailHtml({data:{questions:writingQuestions},attempt:{...attempt,status:'published',resultSummary:summary},exam:writingExam});
