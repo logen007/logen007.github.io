@@ -25,13 +25,13 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
       ${meter('Ổ đĩa',`${bytes(disk?.usedBytes)} / ${bytes(disk?.totalBytes)}`,diskPercent)}
       <div class="dashboard-resource dashboard-resource-total"><span>Dữ liệu hệ thống</span><b>${bytes(totalBytes)}</b><small>Dọn tệp: ${gcText}</small></div>
     </div>
-    <details class="dashboard-details" ${gc.error?'open':''}><summary>Chi tiết tài nguyên <span>Cơ sở dữ liệu, tệp &amp; nhật ký</span></summary>
+    <section class="dashboard-details"><h3>Chi tiết tài nguyên <span>Cơ sở dữ liệu, tệp &amp; nhật ký</span></h3>
       <div class="resource-breakdown">${row('PostgreSQL',usage.databaseBytes)}${row('Audio &amp; hình ảnh',usage.uploadsBytes)}${row('Mã nguồn',usage.applicationBytes)}${row('Bài làm · trong PostgreSQL',tables.attempts)}${row('Câu hỏi · trong PostgreSQL',tables.questions)}${row('Nhật ký · trong PostgreSQL',tables.audit_log)}</div>
       <p class="dashboard-caption">${gc.error?`Lỗi dọn tệp: ${esc(gc.error)}`:gc.lastSuccessAt&&Number.isFinite(stamp.getTime())?`Quét gần nhất: ${esc(stamp.toLocaleString('vi-VN'))} · Đã dọn ${Number(gc.deleted)||0} tệp (${bytes(gc.deletedBytes??0)})`:'Đang chờ lượt quét đầu tiên.'}</p>
-    </details>
-    <details class="dashboard-details"><summary>Dung lượng đề thi <span>${storage.length} đề · lớn nhất trước</span></summary>
+    </section>
+    <section class="dashboard-details"><h3>Dung lượng đề thi <span>${storage.length} đề · lớn nhất trước</span></h3>
       <div class="dashboard-exam-storage"><div class="table-wrap"><table class="bang"><thead><tr><th scope="col">Đề thi</th><th scope="col">Câu</th><th scope="col">Media</th><th scope="col">Dữ liệu</th><th scope="col">Tổng</th></tr></thead><tbody>${storage.map(item=>`<tr><td><b>${esc(item.title)}</b><span class="phu">${esc([item.provider,item.level].filter(Boolean).join(' '))}</span></td><td>${Number(item.questions)||0}</td><td>${Number(item.mediaFiles)||0} tệp · ${bytes(item.mediaBytes)}</td><td>${bytes(item.dataBytes)}</td><td><b>${bytes(item.totalBytes)}</b></td></tr>`).join('')||'<tr><td colspan="5" class="rong">Chưa có đề thi.</td></tr>'}</tbody></table></div>
       </div>
-    </details>
+    </section>
   </section>`;
 }

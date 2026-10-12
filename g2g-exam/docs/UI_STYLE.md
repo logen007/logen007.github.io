@@ -298,7 +298,7 @@ theme application must not wait for a network response to render the page.
   Do not show grader rankings. Zero values
   have zero-height bars. Counts and labels remain readable without interpreting color.
 - Surface CPU load, RAM, disk and overall data size; keep resource breakdown and
-  per-exam storage in native keyboard-accessible disclosures. Sort storage largest first.
+  per-exam storage expanded in ordinary sections, without expand/collapse controls. Sort storage largest first.
 - Show missing metrics as unavailable, never as zero or a successful health check.
   Garbage collection has an explicit not-yet-scanned state. Keep failures visible.
 - Use existing theme tokens and actions; no chart library or extra polling.
