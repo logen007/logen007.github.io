@@ -14,7 +14,7 @@ export function bar(label,entry,{showBand=false}={}){
   if(!entry)return `<div class="result-bar-label"><span>${esc(label)}</span><span class="phu-de">Chờ điểm</span></div>`;
   const percent=entry.max>0?Math.max(0,Math.min(100,entry.score/entry.max*100)):0;
   const band=showBand?gradeBand(entry.score,entry.max):null;
-  return `<div class="result-bar"><div class="result-bar-label"><span>${esc(label)}</span><strong>${esc(entry.score)}<small> / ${esc(entry.max)}</small></strong></div>${band?`<span class="score-badge score-${band.key}">${esc(band.label)}</span>`:''}<div class="result-track${band?' result-track--'+band.key:''}" role="img" aria-label="${esc(label)}: ${esc(entry.score)}/${esc(entry.max)} điểm${band?' · '+esc(band.label):''}"><span style="width:${percent}%"></span></div></div>`;
+  return `<div class="result-bar"><div class="result-bar-label"><span>${esc(label)}</span><span class="result-bar-score"><strong>${esc(entry.score)}<small> / ${esc(entry.max)}</small></strong>${band?`<span class="score-badge score-${band.key}">${esc(band.label)}</span>`:''}</span></div><div class="result-track${band?' result-track--'+band.key:''}" role="img" aria-label="${esc(label)}: ${esc(entry.score)}/${esc(entry.max)} điểm${band?' · '+esc(band.label):''}"><span style="width:${percent}%"></span></div></div>`;
 }
 function option(q,index){
   if(index==null||index==='')return 'Chưa trả lời';
