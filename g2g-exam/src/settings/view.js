@@ -27,14 +27,7 @@ function card(title,desc,body,extra=''){
   return `<section class="the cai-dat-card ${extra}"><div class="cai-dat-card-head"><h2>${esc(title)}</h2><p>${esc(desc)}</p></div><div class="cai-dat-fields">${body}</div></section>`;
 }
 
-export function connectionStatusHtml(infra){
-  if(!infra)return '<span class="phu-de">Chưa kiểm tra kết nối. Bấm “Kiểm tra kết nối” để thử lại.</span>';
-  return `<div><b>Backend</b>${status(infra?.backend==='VPS','VPS hoạt động','Chưa kết nối')}</div><div><b>PostgreSQL</b>${status(Boolean(infra?.postgresql),'Hoạt động','Lỗi')}</div><div><b>Google Login</b>${status(Boolean(infra?.googleLoginConfigured),'Đã cấu hình','Thiếu Client ID/Secret')}</div><div><b>SMTP</b>${status(Boolean(infra?.smtp?.configured),'Sẵn sàng','Chưa hoàn tất')}</div>`;
-}
-
-function status(ok,a,b){
-  return `<span class="tich-hop-status ${ok?'ok':'off'}">${ok?'●':'○'} ${esc(ok?a:b)}</span>`;
-}
+export {connectionStatusHtml} from '../views/connection-status.js';
 
 function themeCard(theme={}){
   const color=normalizeThemeColor(theme.primaryColor)||DEFAULT_PRIMARY_COLOR;
@@ -50,7 +43,7 @@ function themeCard(theme={}){
 export function settingsPageHtml({settings,infra,localOnly=false}){
   const s=settings;
   if(localOnly)return `<div class="g2g-settings-page"><div class="tieu-de-trang"><div><h1>Cài đặt giao diện</h1><p>Bản demo · Giao diện được lưu riêng trên trình duyệt này.</p></div><button class="nut chinh" id="sSave">Lưu giao diện</button></div><div class="cai-dat-grid">${themeCard(s.theme)}</div><div class="cai-dat-footer"><span id="sState" class="phu-de" role="status">Áp dụng cho các trang demo trên trình duyệt này.</span></div></div>`;
-  return `<div class="g2g-settings-page"><div class="tieu-de-trang"><div><h1>Cài đặt hệ thống</h1></div><div class="nhom-nut"><button class="nut" id="sRefresh">Kiểm tra kết nối</button><button class="nut chinh" id="sSave">Lưu cài đặt</button></div></div>${settingsTabsHtml()}<div class="tich-hop-tong-quan">${connectionStatusHtml(infra)}</div><div class="cai-dat-grid">
+  return `<div class="g2g-settings-page"><div class="tieu-de-trang"><div><h1>Cài đặt hệ thống</h1></div></div>${settingsTabsHtml()}<div class="cai-dat-grid">
 ${card('Thông tin hệ thống','Tên hiển thị và địa chỉ truy cập.',field('sName','Tên hệ thống',s.general.systemName)+field('sOrg','Đơn vị vận hành',s.general.organizationName)+field('sSupport','Email hỗ trợ',s.general.supportEmail,'email')+field('sFeedbackEmail','Email nhận góp ý',s.general.feedbackEmail||'admin@g2gcareer.com','email')+field('sUrl','Địa chỉ hệ thống',s.general.publicUrl,'url')+assetPicker('sLogo','Logo',s.general.logoUrl,'image/*')+assetPicker('sFavicon','Favicon',s.general.faviconUrl,'image/png,image/svg+xml,image/x-icon,image/vnd.microsoft.icon'))}
 ${themeCard(s.theme)}
 ${r2SettingsCardHtml()}

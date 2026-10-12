@@ -34,6 +34,8 @@ assert.equal(normalizeLayout({background:'warm'}).background,'#F7F5F0');
 for(const input of [{contentWidth:0},{contentWidth:1600.5},{contentWidth:'1600'},{background:'toString'},{background:'url(evil)'}])assert.throws(()=>validateLayout(input));
 for(const input of [{secondaryColor:'red'},{selectionStrength:100},{selectionStrength:7.5}])assert.throws(()=>validateButtonTheme(input));
 const page=settingsPageHtml({settings:DEFAULT_SETTINGS,infra:null});
+assert.doesNotMatch(page,/id="sRefresh"|id="sSave"|class="tich-hop-tong-quan"/);
+assert.match(page,/id="sSaveBottom"/);
 assert.match(page,/data-asset-pick="sLogo"/);
 assert.match(page,/data-asset-pick="sFavicon"/);
 assert.equal((page.match(/type="file" hidden data-image-picker-direct/g)||[]).length,2);

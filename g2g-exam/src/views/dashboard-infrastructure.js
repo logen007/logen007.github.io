@@ -1,4 +1,5 @@
 import {esc} from '../ui/format.js';
+import {connectionStatusHtml} from './connection-status.js';
 import {resourceRing,resourceColumns} from './resource-charts.js';
 
 const valid=value=>value!=null&&Number.isFinite(Number(value))&&Number(value)>=0;
@@ -27,6 +28,7 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
   const warnings=[memoryPercent>=85?'RAM từ 85%':null,diskPercent>=85?'Ổ đĩa từ 85%':null,gc.error?'Dọn tệp gặp lỗi':null].filter(Boolean);
   const storage=[...(infrastructure.examStorage||[])].sort((a,b)=>Number(b.totalBytes||0)-Number(a.totalBytes||0));
   return `<section class="the dashboard-infrastructure"><div class="dashboard-section-heading"><h2>Hệ thống</h2></div>
+    <div class="tich-hop-tong-quan">${connectionStatusHtml(infrastructure)}</div>
     ${warnings.length?`<p class="dashboard-warning" role="status">${warnings.join(' · ')}</p>`:''}
     <div class="dashboard-resource-grid">
       ${resourceRing('Tải CPU · 1 phút',cpu==null?'Chưa có dữ liệu':cpu+'%',cpu,{warning:cpu>=85})}
