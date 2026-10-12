@@ -232,7 +232,7 @@ try{
   await test('Starting a retake refreshes state and advancing returns to page top',()=>{
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
     assert.ok(source.includes("await repo.ensureFull({refresh:true})"),'Starting or retaking fetches fresh full data before starting');
-    assert.match(source,/await covered;ui.attemptId=attempt.id;ui.view='exam';render\(\)/);
+    assert.match(source,/await covered;data=await repo.getState\(\);ui.attemptId=attempt.id;ui.view='exam';startingAttempt=false;render\(\)/);
     assert.match(source,/async function moveAttemptSection\(delta\)[\s\S]*?if\(result\)\{[^}]*render\(\);window\.scrollTo\(0,0\)/);
     assert.match(source,/function showPreviewSection\(index\)[\s\S]*?window\.scrollTo\(0,0\)/);
   });

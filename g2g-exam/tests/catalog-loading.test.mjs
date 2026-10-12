@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import './exam-outbox.test.mjs';
 import './next-section.test.mjs';
+import './start-transition.test.mjs';
 import './split-reading.test.mjs';
 import './exam-preload.test.mjs';
 import './navigation-loading.test.mjs';

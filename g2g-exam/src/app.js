@@ -88,6 +88,7 @@ let timerHandle=null;
 let timerBusy=false;
 let submitBusy=false;
 let realtimeRenderTimer=null;
+let startingAttempt=false;
 let builderAutosaveTimer=null;
 let builderAutosaveBusy=false;
 let builderAutosaveQueued=false;
@@ -107,6 +108,7 @@ const ui={
 repo.subscribe(next=>{
   data=next;
   if(!startupGate.isReady())return;
+  if(startingAttempt)return;
   if(ui.view==='exam'&&byId(next.attempts,ui.attemptId)?.status!==ATTEMPT_STATUS.IN_PROGRESS){
     ui.view='student-home';
     clearTimeout(realtimeRenderTimer);
@@ -698,6 +700,7 @@ function bindModalClose(){app.querySelectorAll('[data-action="close-modal"]').fo
 let titleResizeObserver,viewLoadPromise;
 function render(){
   if(!startupGate.isReady())return;
+  if(startingAttempt)return;
   if(!user||ui.view!=='exam')examPreloader.stop();
   updateFeedbackUser(authenticatedUser||user);
   if(user&&repo.mode==='api'){
@@ -1100,11 +1103,17 @@ function bindViewSpecific(){
 }
 
 async function beginAttempt(examId,restart,trigger){
-  return withExamTransition(async covered=>{
+  if(startingAttempt)return;
+  startingAttempt=true;
+  clearTimeout(realtimeRenderTimer);
+  try{
+  return await withExamTransition(async covered=>{
   if(repo.mode==='api'&&!await act(async()=>{await repo.ensureFull({refresh:true});return true;},null,{rerender:false}))return;
   const attempt=await act(()=>repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});
-  if(attempt?.status===ATTEMPT_STATUS.IN_PROGRESS){data=await repo.getState();await covered;ui.attemptId=attempt.id;ui.view='exam';render();window.scrollTo(0,0);}
+  if(attempt?.status===ATTEMPT_STATUS.IN_PROGRESS){await covered;data=await repo.getState();ui.attemptId=attempt.id;ui.view='exam';startingAttempt=false;render();window.scrollTo(0,0);}
+  else if(attempt)notify('Không thể mở lượt thi này. Vui lòng tải lại và thử lại.');
   },trigger);
+  }finally{startingAttempt=false;}
 }
 
 let movingAttemptSection=false;
