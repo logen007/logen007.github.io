@@ -3,11 +3,12 @@ import {textHtml,esc} from './format.js';
 import {choiceLetter,letterAnswerError} from '../domain/letter-answers.js';
 import {bindLetterPicker,syncLetterPicker} from './letter-picker.js';
 
-export function letterAnswerControl(q,answer,layout,{number=null,optionTexts=null,fullSelection=false}={}){
+export function letterAnswerControl(q,answer,layout,{number=null,optionTexts=null,fullSelection=false,nativeText=false}={}){
   const value=isPrefilledQuestion(q)?q.correctAnswer:answer,letter=value==null||value===''?'':choiceLetter(q.choices?.[Number(value)]);
   if(isPrefilledQuestion(q))return `<span class="letter-example">${esc(letter.toLowerCase())}</span>`;
+  const textWidth=Math.max(5,...(optionTexts||[]).map(text=>Math.min(32,[...String(text||'')].length+5)));
   const attrs=`data-letter-answer ${fullSelection?'data-full-selection="true" ':''}data-q="${esc(q.id)}" aria-label="Antwort: ${esc(number??q.title)}"`;
-  if(layout==='letter-table'||layout==='letter-select')return `<select id="letter-${esc(q.id)}" class="truong" ${attrs} ${optionTexts?'data-option-texts':''} ${optionTexts&&(fullSelection||optionTexts.some(text=>String(text||'').trim().length>40))?'data-full-options':''}><option value="">${fullSelection?'Überschrift wählen':number==null?'—':esc(number)}</option>${(q.choices||[]).map((choice,i)=>{const key=choiceLetter(choice).toLowerCase(),text=String(optionTexts?.[i]||'').replace(/\[\/?b\]/gi,'').trim();return `<option value="${i}" data-letter="${esc(key)}" ${String(value)===String(i)?'selected':''}>${esc(text?`${key}. ${text}`:key)}</option>`;}).join('')}</select>${optionTexts?`<span class="inline-gap-value" aria-hidden="true">${esc(letter.toLowerCase()||(fullSelection?'Überschrift wählen':number)||'—')}</span>`:''}`;
+  if(layout==='letter-table'||layout==='letter-select')return `<select id="letter-${esc(q.id)}" class="truong${nativeText?' inline-gap-native-text':''}" ${nativeText?`style="width:${textWidth}ch;max-width:100%"`:''} ${attrs} ${optionTexts&&!nativeText?'data-option-texts':''} ${!nativeText&&optionTexts&&(fullSelection||optionTexts.some(text=>String(text||'').trim().length>40))?'data-full-options':''}><option value="">${fullSelection?'Überschrift wählen':number==null?'—':esc(number)}</option>${(q.choices||[]).map((choice,i)=>{const key=choiceLetter(choice).toLowerCase(),text=String(optionTexts?.[i]||'').replace(/\[\/?b\]/gi,'').trim();return `<option value="${i}" data-letter="${esc(key)}" ${String(value)===String(i)?'selected':''}>${esc(text?`${key}. ${text}`:key)}</option>`;}).join('')}</select>${optionTexts&&!nativeText?`<span class="inline-gap-value" aria-hidden="true">${esc(letter.toLowerCase()||(fullSelection?'Überschrift wählen':number)||'—')}</span>`:''}`;
   return `<input ${attrs} maxlength="1" autocomplete="off" autocapitalize="characters" value="${esc(letter.toLowerCase())}">`;
 }
 

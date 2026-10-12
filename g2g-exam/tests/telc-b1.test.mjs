@@ -113,6 +113,13 @@ for(let i=0;i<exam.sections.length;i++){
   const html=examHtml({attempt:{answers:{}},exam,sectionIndex:i,questions:rows(exam.sections[i]),allQuestions:state.questions,online:true,preview:true});
   assert.ok(html.length>100);
   if(i===3)assert.match(html,/>SB 1<\/h1>/);
+  if(i===3){
+    assert.doesNotMatch(html,/exam-reading-split|gap-choice-bank|data-full-options/);
+    assert.match(html,/inline-gap-native-text/);
+    const b2=examHtml({attempt:{answers:{}},exam:{...exam,level:'B2'},sectionIndex:i,questions:rows(exam.sections[i]),allQuestions:state.questions,online:true,preview:true});
+    assert.match(b2,/gap-choice-bank/);
+    assert.match(b2,/exam-reading-split/);
+  }
   if(i===4)assert.match(html,/>SB 2<\/h1>/);
   if(i===1)assert.match(html,/exam-reading-split/,'Reading 2 uses the shared split layout');
   if(i===0){
@@ -167,7 +174,8 @@ const oldLayoutExam=structuredClone(exam);
 delete oldLayoutExam.sections[3].questionProfile.gapSplitLayout;
 for(const preview of [false,true]){
   const html=examHtml({attempt:{answers:{}},exam:oldLayoutExam,sectionIndex:3,questions:rows(gap3),allQuestions:state.questions,online:true,preview});
-  assert.match(html,/inline-gap-paper exam-reading-split/,'Existing Reading 4 uses current approved two-column layout');
+  assert.doesNotMatch(html,/exam-reading-split|gap-choice-bank/,'Existing B1 Reading 4 uses the compact layout');
+  assert.match(html,/inline-gap-native-text/);
 }
 assert.equal(oldLayoutExam.sections[3].questionProfile.gapSplitLayout,undefined,'Rendering must not mutate saved exam data');
 const bankHtml=inlineGapsHtml(gapBank,rows(gapBank),{},30);

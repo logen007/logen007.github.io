@@ -71,8 +71,9 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const sec=exam.sections[sectionIndex];
   const configuredPart=getExamSpec(exam.provider,exam.level)?.skills
     .find(skill=>skill.key===sec.skillKey||skill.label===sec.skill)?.parts.find(part=>part.name===sec.name);
+  const compactGaps=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&sec.name==='Đọc 4';
   const compactHeadings=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&sec.questionProfile?.layout==='heading-match';
-  const splitLayout=!compactHeadings&&(configuredPart?.questionProfile?.splitLayout??sec.questionProfile?.splitLayout);
+  const splitLayout=!compactHeadings&&!compactGaps&&(configuredPart?.questionProfile?.splitLayout??sec.questionProfile?.splitLayout);
   const orderedQuestions=questions.map((q,originalIndex)=>({q,originalIndex})).sort((a,b)=>Number(Boolean(isPrefilledQuestion(b.q)))-Number(Boolean(isPrefilledQuestion(a.q))));
   const requiredQuestions=questions.filter(q=>!isPrefilledQuestion(q));
   const answered=requiredQuestions.filter(q=>answerPresent(attempt.answers?.[q.id],q)).length;
@@ -88,7 +89,7 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBl
   const exampleCount=orderedQuestions.length-requiredQuestions.length;
   const stimulusGroups=[{left:sectionInstruction,right:sectionAudio}];
   const groupStimuli=splitLayout&&!['heading-match','inline-gaps','letter-select'].includes(sec.questionProfile?.layout)&&!sec.questionProfile?.uniqueLetters&&questions.some(q=>q.instructionBlocks?.length);
-  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber,{separateOptions:splitHeadings||compactHeadings}):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber,{splitLayout:configuredPart?.questionProfile?.gapSplitLayout??sec.questionProfile?.gapSplitLayout}):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
+  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber,{separateOptions:splitHeadings||compactHeadings}):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber,{compact:compactGaps,splitLayout:configuredPart?.questionProfile?.gapSplitLayout??sec.questionProfile?.gapSplitLayout}):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
     const example=isPrefilledQuestion(q),scoredIndex=displayIndex-exampleCount;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
     const paired=sec.questionProfile?.pairedQuestions;
