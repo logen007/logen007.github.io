@@ -305,7 +305,8 @@ theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
 
-- Keep operational totals first; distinguish awaiting grading from awaiting publication.
+- Overview starts with charts; omit the four summary cards for pending work,
+  exams, students and teachers (user request, 12 October 2026).
 - Use aligned equal-height panels, adaptive day/week/month/year bars with editable
   date ranges, exam distribution and top students by submitted attempts in the range.
   Do not show grader rankings. Zero values
