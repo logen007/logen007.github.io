@@ -682,6 +682,8 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 [data-editor-mode="heading-match"] textarea { min-height:140px; }
 .gap-options-editor fieldset { min-width:0; border:1px solid var(--vien); border-radius:12px; padding:12px; display:grid; gap:8px; }
 .inline-gap-editor--positions { grid-template-columns:minmax(0,1fr); }
+.inline-gap-editor--positions fieldset { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.inline-gap-editor--positions .gap-choice-edit { min-width:0; gap:8px; }
 .gap-options-editor fieldset[hidden] { display:none; }
 .gap-choice-edit { display:flex; align-items:center; gap:12px; min-height:44px; }
 .gap-choice-edit > input[type="radio"] { flex:0 0 auto; }

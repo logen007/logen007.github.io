@@ -15,7 +15,7 @@ export function inlineGapBuilder(section,questions,readOnly){
   const helpId='gap-help-'+section.id;
   const help=perQuestion?'Nhập [a], [b]… theo thứ tự vị trí trong đoạn văn. Điền 3 lựa chọn A/B/C cho mỗi nhóm bên dưới và tích chọn đáp án đúng.':'Ký hiệu [a], [b]… trong đoạn văn là đáp án đúng tương ứng trong danh sách bên cạnh. Ví dụ: [b] chọn nội dung ở ô b; mỗi đáp án chỉ dùng một lần.';
   const header=`<textarea class="truong gap-title-input" data-gap-title aria-label="Tiêu đề bài đọc" placeholder="Tiêu đề bài đọc" rows="2" ${disabled}>${esc(section.gapTitle||'')}</textarea><div class="gap-image-editor" data-section-image-control data-has-image="${Boolean(image)}"><div class="goethe-instruction-icons"><input class="truong instruction-image-width" id="sectionImageMaxWidth" type="number" min="1" step="1" aria-label="img width (px)" placeholder="img width (px)" value="${imageMaxWidth(section.instructionImageMaxWidth)??''}" ${disabled}><button type="button" class="icon-btn" data-action="clear-section-image" title="Xóa hình ảnh bài đọc" aria-label="Xóa hình ảnh bài đọc" ${disabled}>${iconHtml('close')}</button></div><label class="section-image-upload" title="Tải hình ảnh bài đọc"><span class="section-image-label">${image?`<img src="${esc(image)}" alt="Hình ảnh bài đọc">`:iconHtml('image')}</span><input type="file" data-section-image accept="image/*" aria-label="Tải hình ảnh bài đọc" ${disabled}></label></div>`;
-  return `<div class="inline-gap-editor ${perQuestion?'inline-gap-editor--positions':''}"><div class="gap-article-editor">${perQuestion?'':header}<textarea class="truong gap-author-text" data-gap-text aria-describedby="${esc(helpId)}" aria-label="Đoạn văn điền khuyết" placeholder="Nhập đoạn văn có ${hasGapExample(section)?'[z], ':''}[a], [b]…" ${disabled}>${esc(gapAuthorText(section,questions))}</textarea><p class="gap-author-help" id="${esc(helpId)}">${esc(help)}</p></div><div class="gap-options-editor">${hasGapExample(section)?input('z',section.gapExample):''}${dynamic?bankFields:optionFields}</div>${questions.map(q=>`<div hidden class="part-question" data-editor-mode="inline-gaps" data-question-id="${esc(q.id)}"><input data-field="maxScore" value="${q.maxScore??1}"></div>`).join('')}</div>`;
+  return `<div class="inline-gap-editor ${perQuestion?'inline-gap-editor--positions':''}"><div class="gap-article-editor">${perQuestion?'':header}<textarea class="truong gap-author-text" data-gap-text aria-describedby="${esc(helpId)}" aria-label="Đoạn văn điền khuyết" placeholder="Nhập đoạn văn có ${hasGapExample(section)?'[z], ':''}[a], [b]…" ${disabled}>${esc(gapAuthorText(section,questions))}</textarea><p class="gap-author-help" id="${esc(helpId)}">${esc(help)}</p></div><div class="gap-options-editor">${hasGapExample(section)?input('z',section.gapExample):''}${dynamic?bankFields:optionFields}${perQuestion?`<div class="nhom-nut"><button type="button" class="icon-btn" data-gap-position-action="remove" title="Bỏ vị trí cuối" aria-label="Bỏ vị trí cuối" ${disabled}>${iconHtml('close')}</button><button type="button" class="icon-btn" data-gap-position-action="add" title="Thêm vị trí" aria-label="Thêm vị trí" ${disabled}>${iconHtml('plus')}</button></div>`:''}</div>${questions.map(q=>`<div hidden class="part-question" data-editor-mode="inline-gaps" data-question-id="${esc(q.id)}"><input data-field="maxScore" value="${q.maxScore??1}"></div>`).join('')}</div>`;
 }
 
 export function saveInlineGapDraft(root,state,user,exam,section){
@@ -51,11 +51,29 @@ export function resizeGapOptions(state,user,examId,sectionId,action){
 export function bindGapPositions(root,section){
   if(!section?.questionProfile?.gapChoicesPerQuestion)return;
   const field=root.querySelector('[data-gap-text]');
-  field?.addEventListener('input',()=>{
+  if(!field)return;
+  const letters=Array.from({length:section.questionLimit},(_,i)=>String.fromCharCode(97+i)).join('');
+  const buttons=[...root.querySelectorAll('[data-gap-position-action]')];
+  const refresh=()=>{
     try{
-      const letters=Array.from({length:section.questionLimit},(_,i)=>String.fromCharCode(97+i)).join('');
       const {keys}=parseGapText(field.value,section.questionLimit,letters);
       root.querySelectorAll('[data-gap-position]').forEach(group=>{group.hidden=!keys.includes(Number(group.dataset.gapPosition));});
+      buttons.forEach(button=>{button.disabled=field.disabled||(button.dataset.gapPositionAction==='add'?keys.length>=section.questionLimit:!keys.length);});
     }catch{/* Keep the current groups while a marker is incomplete. */}
-  });
+  };
+  field.addEventListener('input',refresh);
+  buttons.forEach(button=>button.addEventListener('click',()=>{
+    if(button.disabled)return;
+    const {passage,keys}=parseGapText(field.value,section.questionLimit,letters);
+    if(button.dataset.gapPositionAction==='add'){
+      const next=letters.split('').find((_,index)=>!keys.includes(index));
+      if(next)field.value+=` [${next}]`;
+    }else{
+      field.value=passage.map(part=>typeof part==='string'?part:part.example?'[z]':part.gap===keys.length-1?'':`[${letters[keys[part.gap]]}]`).join('');
+    }
+    field.dispatchEvent(new Event('input',{bubbles:true}));
+    field.dispatchEvent(new Event('change',{bubbles:true}));
+    field.focus();
+  }));
+  refresh();
 }
