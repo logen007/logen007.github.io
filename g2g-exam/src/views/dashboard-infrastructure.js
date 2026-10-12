@@ -1,4 +1,4 @@
-import {esc} from '../ui/format.js';
+import {esc,fmtDate} from '../ui/format.js';
 import {connectionStatusHtml} from './connection-status.js';
 import {resourceRing,resourceColumns} from './resource-charts.js';
 
@@ -36,14 +36,14 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
       ${resourceRing('Ổ đĩa',`${bytes(disk?.usedBytes)} / ${bytes(disk?.totalBytes)}`,diskPercent,{warning:diskPercent>=85})}
       <div class="dashboard-resource dashboard-resource-total"><span>Dữ liệu hệ thống</span><b>${bytes(totalBytes)}</b><small>Dọn tệp: ${gcText}</small></div>
     </div>
-    ${dashboardR2Html(infrastructure.r2)}
-    <section class="dashboard-details">
+    <div class="dashboard-system-panels">${dashboardR2Html(infrastructure.r2)}
+    <section class="dashboard-details dashboard-storage-breakdown">
       <div class="resource-breakdown">${resourceColumns([{label:'PostgreSQL',value:usage.databaseBytes},{label:'Ảnh & audio',value:usage.uploadsBytes},{label:'Mã nguồn',value:usage.applicationBytes}],bytes)}<div>${row('Bài làm',tables.attempts)}${row('Câu hỏi',tables.questions)}${row('Nhật ký',tables.audit_log)}</div></div>
       <p class="dashboard-caption">${gc.error?`Lỗi dọn tệp: ${esc(gc.error)}`:gc.lastSuccessAt&&Number.isFinite(stamp.getTime())?`Quét gần nhất: ${esc(stamp.toLocaleString('vi-VN'))} · Đã dọn ${Number(gc.deleted)||0} tệp (${bytes(gc.deletedBytes??0)})`:'Đang chờ lượt quét đầu tiên.'}</p>
-    </section>
-    <section class="dashboard-details"><h3>Dung lượng đề thi <span>${storage.length} đề · lớn nhất trước</span></h3>
-      <div class="dashboard-exam-storage"><div class="table-wrap"><table class="bang"><thead><tr><th scope="col">Đề thi</th><th scope="col">Câu</th><th scope="col">Media</th><th scope="col">Dữ liệu</th><th scope="col">Tổng</th></tr></thead><tbody>${storage.map(item=>`<tr><td><b>${esc(item.title)}</b><span class="phu">${esc([item.provider,item.level].filter(Boolean).join(' '))}</span></td><td>${Number(item.questions)||0}</td><td>${Number(item.mediaFiles)||0} tệp · ${bytes(item.mediaBytes)}</td><td>${bytes(item.dataBytes)}</td><td><b>${bytes(item.totalBytes)}</b></td></tr>`).join('')||'<tr><td colspan="5" class="rong">Chưa có đề thi.</td></tr>'}</tbody></table></div>
+    </section></div>
+  </section>
+    <section class="the dashboard-storage-card"><div class="dashboard-section-heading"><h2>Dung lượng đề thi</h2><span class="dashboard-caption">${storage.length} đề · lớn nhất trước</span></div>
+      <div class="dashboard-exam-storage"><div class="table-wrap"><table class="bang"><thead><tr><th scope="col">Đề thi</th><th scope="col">Last edit</th><th scope="col">Câu</th><th scope="col">Media</th><th scope="col">Dữ liệu</th><th scope="col">Tổng</th></tr></thead><tbody>${storage.map(item=>`<tr><td><b>${esc(item.title)}</b><span class="phu">${esc([item.provider,item.level].filter(Boolean).join(' '))}</span></td><td>${fmtDate(item.updatedAt)}</td><td>${Number(item.questions)||0}</td><td>${Number(item.mediaFiles)||0} tệp · ${bytes(item.mediaBytes)}</td><td>${bytes(item.dataBytes)}</td><td><b>${bytes(item.totalBytes)}</b></td></tr>`).join('')||'<tr><td colspan="6" class="rong">Chưa có đề thi.</td></tr>'}</tbody></table></div>
       </div>
-    </section>
-  </section>`;
+    </section>`;
 }

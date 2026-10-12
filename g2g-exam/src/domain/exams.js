@@ -5,6 +5,7 @@ import {
 import {getQuestionChoiceError} from './questions.js';
 import {imageMaxWidth,isPrefilledQuestion} from './question-display.js';
 import {configuredPartErrors} from './configured-part-validation.js';
+import {normalizeAudioFlow} from './part-audio.js';
 
 function normalizeSection(input={},index=0){
   return {
@@ -15,6 +16,7 @@ function normalizeSection(input={},index=0){
     templateType:String(input.templateType||'GENERIC'),
     questionProfile:clone(input.questionProfile||null),
     audioPolicy:clone(input.audioPolicy||null),
+    audioFlow:normalizeAudioFlow(input.audioFlow),
     instruction:String(input.instruction||''),
     instructionImageUrl:String(input.instructionImageUrl||''),
     instructionAudioUrl:String(input.instructionAudioUrl||''),

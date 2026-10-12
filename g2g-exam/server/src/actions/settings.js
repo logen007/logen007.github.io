@@ -1,4 +1,5 @@
 import {query,getSettings,audit,appError} from '../db.js';
+import {examLastEdit} from '../../../src/domain/exam-last-edit.js';
 import {setSmtpSecret,smtpSecretStatus,sendConfiguredMail} from '../mail.js';
 import {mergeSettings} from '../defaults.js';
 import {isPrimaryMasterEmail,normalizeEmail} from '../roles.js';
@@ -119,19 +120,20 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
   const [databaseSize,tableSizes,examRows,questionRows,uploadBytes,applicationBytes,disk]=await Promise.all([
     query(`SELECT pg_database_size(current_database())::bigint AS bytes`),
     query(`SELECT relname AS name,pg_total_relation_size(oid)::bigint AS bytes FROM pg_class WHERE relname=ANY($1::text[])`,[['users','exams','questions','attempts','notifications','audit_log','settings']]),
-    query(`SELECT id,data FROM exams WHERE status<>'trash' ORDER BY updated_at DESC`),
-    query(`SELECT id,data FROM questions WHERE status<>'trash'`),
+    query(`SELECT id,data,updated_at FROM exams WHERE status<>'trash' ORDER BY updated_at DESC`),
+    query(`SELECT id,data,updated_at FROM questions WHERE status<>'trash'`),
     directoryBytes(uploadDir),
     directoryBytes(process.cwd(),{skip:new Set(['node_modules','.git','uploads'])}),
     fs.statfs(uploadDir).catch(()=>null),
   ]);
   const questions=new Map(questionRows.rows.map(row=>[row.id,row.data||{}]));
+  const questionEdits=new Map(questionRows.rows.map(row=>[row.id,new Date(row.updated_at).getTime()||0]));
   const examStorage=await Promise.all(examRows.rows.map(async row=>{
     const exam=row.data||{},questionIds=[...new Set((exam.sections||[]).flatMap(section=>section.questionIds||[]))];
     const questionData=questionIds.map(id=>questions.get(id)).filter(Boolean),media=uploadNames([exam,...questionData]);
     let mediaBytes=0;for(const name of media)mediaBytes+=await fileBytes(path.join(uploadDir,name));
     const dataBytes=Buffer.byteLength(JSON.stringify(exam))+questionData.reduce((sum,item)=>sum+Buffer.byteLength(JSON.stringify(item)),0);
-    return {id:row.id,title:exam.title||row.id,provider:exam.provider||'',level:exam.level||'',dataBytes,mediaBytes,totalBytes:dataBytes+mediaBytes,questions:questionData.filter(item=>!item.example).length,mediaFiles:media.size};
+    return {id:row.id,title:exam.title||row.id,updatedAt:examLastEdit(exam,row.updated_at,questionEdits),provider:exam.provider||'',level:exam.level||'',dataBytes,mediaBytes,totalBytes:dataBytes+mediaBytes,questions:questionData.filter(item=>!item.example).length,mediaFiles:media.size};
   }));
   const memoryTotal=os.totalmem(),memoryFree=os.freemem(),cpuCores=os.cpus().length||1,cpuUsage=process.cpuUsage(),uptimeSeconds=Math.max(1,process.uptime());
   return {

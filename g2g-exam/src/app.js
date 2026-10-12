@@ -1,4 +1,5 @@
 import {isPrefilledQuestion} from './domain/question-display.js';
+import {openSkillSettings} from './ui/skill-settings.js';
 import {registerMediaDelivery} from './ui/media-delivery.js';
 void registerMediaDelivery();
 import {createExamPreloader,examMediaUrls} from './ui/exam-preload.js';
@@ -1063,16 +1064,20 @@ function bindViewSpecific(){
     const sectionIndex=Math.max(0,(exam?.sections||[]).findIndex(section=>section.id===ui.builderSectionId));
     ui.previewExamId=b.dataset.id;ui.previewSectionIndex=sectionIndex;ui.previewAnswers={};ui.view='preview-exam';render();
   });
-  app.querySelectorAll('[data-action="open-exam-settings"]').forEach(b=>b.onclick=()=>{
-    const exam=byId(data.exams,ui.builderExamId);if(!exam)return;
-    const skill=b.dataset.skill;
-    if(!skill)return;
-    const setting=exam.settings?.skillSettings?.[skill]||{};
-    const sectionDefaultTime=(exam.sections||[]).find(item=>item.skill===skill)?.timeMinutes??20;
-    const modal=document.createElement('div');modal.className='hop-chon';
-    modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><div class="nhan-muc">CÀI ĐẶT</div><button class="nut nho" data-close aria-label="Đóng">×</button></div><div class="exam-setup-grid"><label>Thời gian (phút)<input id="skillTimeMinutes" type="number" min="1" value="${Number(setting.timeMinutes??sectionDefaultTime)}"></label><label>Điểm mặc định mỗi câu<input id="defaultQuestionScore" type="number" min="0" value="${Number(setting.defaultQuestionScore??exam.settings?.defaultQuestionScore??1)}"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="saveExamSettings">Lưu</button></div></div></div>`;
-    document.body.append(modal);modal.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>modal.remove());
-    modal.querySelector('#saveExamSettings').onclick=()=>{const time=Math.max(1,Number(modal.querySelector('#skillTimeMinutes').value)||1),score=Math.max(0,Number(modal.querySelector('#defaultQuestionScore').value)||0);act(()=>repo.transaction(st=>updateExam(st,user,exam.id,{settings:{skillSettings:{...(exam.settings?.skillSettings||{}),[skill]:{timeMinutes:time,defaultQuestionScore:score}}}})),'Đã lưu cài đặt phần.');modal.remove();};
+  app.querySelectorAll('[data-action="open-exam-settings"]').forEach(b=>b.onclick=async()=>{
+    if(!await flushBuilderDraft())return;
+    const exam=byId(data.exams,ui.builderExamId),skill=b.dataset.skill;
+    if(!exam||!skill)return;
+    openSkillSettings({exam,skill,questions:data.questions,onSave:async({timeMinutes,flows})=>{
+      await repo.transaction(st=>{
+        const current=byId(st.exams,exam.id);
+        updateExam(st,user,exam.id,{
+          settings:{skillSettings:{...(current.settings?.skillSettings||{}),[skill]:{...(current.settings?.skillSettings?.[skill]||{}),timeMinutes}}},
+          ...(flows.size?{sections:current.sections.map(section=>flows.has(section.id)?{...section,audioFlow:flows.get(section.id)}:section)}:{})
+        });
+      });
+      data=await repo.getState();render();
+    }});
   });
   app.querySelectorAll('[data-action="grade-attempt"]').forEach(b=>b.onclick=()=>{ui.gradeAttemptId=b.dataset.id;ui.view='grading-detail';render();});
   app.querySelectorAll('[data-action="grade-mode"]').forEach(b=>b.onclick=()=>{ui.gradeMode=b.dataset.mode;render();});

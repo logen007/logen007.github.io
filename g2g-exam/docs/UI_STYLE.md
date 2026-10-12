@@ -106,6 +106,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 - Simple message/error dialogs use the shared compact width of 500px, capped
   at the available mobile viewport width. Larger editors retain their own size.
+- Popup close icons sit absolutely at the top-right inset (8px), with 44px
+  targets and reserved title space. They do not occupy a separate header row.
+- Listening settings use compact part buttons, source/repeat controls and a live
+  text playback sequence from the shared planner. No default-score field.
 
 - Header account controls use one avatar opening a menu: Profile, other role
   options for authorized admins (Student, Teacher, Admin; omit current role),
@@ -317,6 +321,10 @@ theme application must not wait for a network response to render the page.
   Garbage collection has an explicit not-yet-scanned state. Keep failures visible.
 - Use existing theme tokens and actions; no chart library or extra polling.
 - Technical details remain available but must not dominate the default screen.
+- System connection statuses use a compact strip, not nested cards. Align R2
+  and storage breakdown in two columns, stacking on mobile. Exam storage is a
+  separate full-width card with Last edit, using the same authoring timestamp
+  calculation as the exam catalog.
 - System metrics use compact SVG rings with visible numeric labels; storage
   comparisons use CSS columns. Keep missing data distinct from zero. Never
   fabricate line-chart history from a single reading. R2 scan status is not

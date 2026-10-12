@@ -20,7 +20,7 @@
 .loi { color:var(--do)!important; }
 .canh-bao-bao-tri { padding:12px 18px; text-align:center; border:1px solid #f0dfb6; border-radius:12px; margin-top:12px; font-size:13px; background:#fff8e8; color:var(--vang); }
 .tich-hop-tong-quan { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin-bottom:24px; }
-.tich-hop-tong-quan>div { display:flex; flex-direction:column; gap:12px; padding:20px; border:1px solid var(--vien); border-radius:var(--r); background:var(--mat); min-width:0; }
+.tich-hop-tong-quan>div { display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:12px 0; min-width:0; }
 .tich-hop-tong-quan b { font-size:14px; font-weight:500; color:var(--chu); }
 .tich-hop-status { display:inline-flex; align-items:center; width:max-content; max-width:100%; gap:5px; border-radius:var(--pill); padding:5px 10px; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .tich-hop-status.ok { background:#e9f6ef; color:var(--xanh); }.tich-hop-status.off { background:var(--surface-muted); color:var(--phu); }
@@ -70,7 +70,7 @@
 @media(max-width:960px) { .tich-hop-tong-quan { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:680px) {
   .cai-dat-grid { grid-template-columns:1fr; }.cai-dat-card-rong,.cai-dat-wide { grid-column:auto; }.the.cai-dat-card { padding:0; }.cai-dat-card-head { padding:20px 20px 0; }.cai-dat-fields { padding:20px; }.cai-dat-footer { align-items:stretch; flex-direction:column; }.cai-dat-footer .nut { width:100%; }
-  .email-test,.secret-row { grid-template-columns:1fr; }.email-test .nut,.secret-row .nut { width:100%; }.infra-list>div { grid-template-columns:1fr; gap:4px; }.infra-list b { text-align:left; }.tich-hop-tong-quan>div { padding:16px; border-radius:20px; }
+  .email-test,.secret-row { grid-template-columns:1fr; }.email-test .nut,.secret-row .nut { width:100%; }.infra-list>div { grid-template-columns:1fr; gap:4px; }.infra-list b { text-align:left; }.tich-hop-tong-quan>div { padding:8px 0; }
   .tpl-a1-grid,.tpl-a1-question-grid { grid-template-columns:1fr; }.tpl-a1-choice { grid-template-columns:36px 1fr; }.tpl-a1-choice input:nth-of-type(2) { grid-column:2; }
 }
 /* A2: shared reading stimulus and compact letter answers. */

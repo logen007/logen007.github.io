@@ -162,7 +162,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
     const pairs=[];
     for(let index=0;index<questions.length;index+=2){
       const pair=questions.slice(index,index+2),example=pair[0]?.example;
-      const cards=pair.map((q,offset)=>choiceQuestionHtml(q,index+offset,{defaultScore,readOnly,choiceProfile:{...profileFor({questionProfile:questionProfileAt(section,offset)}),showAudio:offset===0}})).join('');
+      const cards=pair.map((q,offset)=>choiceQuestionHtml(q,index+offset,{defaultScore,readOnly,choiceProfile:{...profileFor({questionProfile:questionProfileAt(section,offset)}),showAudio:audioIds.has(q.id)}})).join('');
       pairs.push(`<section class="paired-question-group">${example?'<h3>Beispiel</h3>':''}${cards}</section>`);
     }
     return `<div class="part-editor paired-part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}<div class="goethe-questions">${pairs.join('')}</div></div>`;

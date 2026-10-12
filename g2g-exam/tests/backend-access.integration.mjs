@@ -239,10 +239,13 @@ try{
   const activeCopy=await startAttempt(other,{examId:serverExam.id});
   const beforeEdit=(await query('SELECT private_data FROM attempts WHERE id=$1',[activeCopy.attemptId])).rows[0].private_data.examSnapshot;
   const currentExam=(await loadState(copier)).exams.find(e=>e.id===serverExam.id);
-  const changedSections=currentExam.sections.map((s,i)=>i===0?{...s,instruction:'Edited after publication',timeMinutes:12}:s);
+  const customFlow={source:'question',segmentRepeat:3,instructionRepeat:1,exampleRepeat:2,repeatOrder:'round'};
+  const changedSections=currentExam.sections.map((s,i)=>i===0?{...s,instruction:'Edited after publication',timeMinutes:12,audioFlow:customFlow}:s);
   await commitOperations(copier,[{collection:'questions',id:serverQuestion.id,item:{...serverQuestion,title:'Changed after students started'}},{collection:'exams',id:serverExam.id,item:{...currentExam,sections:changedSections}}]);
   assert.deepEqual((await query('SELECT private_data FROM attempts WHERE id=$1',[activeCopy.attemptId])).rows[0].private_data.examSnapshot,beforeEdit);
   assert.equal((await loadState(copier)).exams.find(e=>e.id===serverExam.id).sections[0].instruction,'Edited after publication');
+  assert.deepEqual((await loadState(copier)).exams.find(e=>e.id===serverExam.id).sections[0].audioFlow,customFlow);
+  await assert.rejects(()=>commitOperations(copier,[{collection:'exams',id:serverExam.id,item:{...currentExam,sections:changedSections.map(s=>({...s,audioFlow:{...customFlow,segmentRepeat:1000}}))}}]),error=>error.statusCode===400);
   // Legacy rows get frozen before their first post-upgrade edit.
   await query("UPDATE attempts SET private_data=private_data-'examSnapshot' WHERE id=$1",[activeCopy.attemptId]);
   await commitOperations(copier,[{collection:'questions',id:serverQuestion.id,item:{...serverQuestion,title:'Second edit'}}]);

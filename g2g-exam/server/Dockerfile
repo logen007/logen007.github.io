@@ -16,9 +16,11 @@ COPY src/domain/account-name.js /app/src/domain/account-name.js
 COPY src/domain/gradebook.js /app/src/domain/gradebook.js
 COPY src/domain/result-summary.js /app/src/domain/result-summary.js
 COPY src/domain/exam-clock.js /app/src/domain/exam-clock.js
+COPY src/domain/exam-last-edit.js /app/src/domain/exam-last-edit.js
 COPY src/domain/exam-completion.js /app/src/domain/exam-completion.js
 COPY src/domain/manual-grading.js src/domain/writing-form.js src/domain/letter-answers.js /app/src/domain/
 COPY src/domain/question-display.js /app/src/domain/question-display.js
+COPY src/domain/part-audio.js /app/src/domain/part-audio.js
 COPY src/exam-specs /app/src/exam-specs
 COPY src/settings/layout.js /app/src/settings/layout.js
 COPY src/settings/palette.js /app/src/settings/palette.js

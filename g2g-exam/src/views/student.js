@@ -7,7 +7,7 @@ import {inlineGapsHtml} from '../ui/inline-gaps.js';
 import {headingMatchHtml,headingOptionsHtml} from '../ui/heading-match.js';
 import {readingBlocksHtml} from '../ui/reading-blocks.js';
 import {letterAnswersHtml} from '../ui/letter-answers.js';
-import {partAudioSegments} from '../domain/part-audio.js';
+import {partAudioSegments,effectiveAudioPolicy} from '../domain/part-audio.js';
 import {examDurationSeconds} from '../domain/exam-clock.js';
 import {
   ATTEMPT_STATUS,byId,getPublishedExams,getStudentResults,getLatestPublishedAttempt,
@@ -137,7 +137,7 @@ export function unansweredExamQuestions(exam,questions,answers){
 }
 
 function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
-  const policy=section.audioPolicy||{},audioQuestions=questions.filter(question=>String(question.audioUrl||'').trim());
+  const policy=effectiveAudioPolicy(section),audioQuestions=questions.filter(question=>String(question.audioUrl||'').trim());
   const policyEnabled=section.skillKey==='listening'&&policy.mode==='per_question_segment';
   const hasSpecialAudio=audioQuestions.some(question=>question.example);
   if(!section.instructionAudioUrl&&(!audioQuestions.length||(!policyEnabled&&!hasSpecialAudio)))return '';

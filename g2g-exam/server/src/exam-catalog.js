@@ -1,4 +1,5 @@
 import {query} from './db.js';
+import {examLastEdit} from '../../src/domain/exam-last-edit.js';
 import {examDurationSeconds} from '../../src/domain/exam-clock.js';
 import {isPrefilledQuestion} from '../../src/domain/question-display.js';
 
@@ -40,10 +41,7 @@ export async function loadExamCatalog(user){
     exams:exams.rows.map(r=>{
       const exam={...r.data,id:r.id,ownerId:r.owner_id,ownerName:r.owner_name,status:r.status,locked:r.locked};
       if(!student){
-        // Starting an attempt also touches e.updated_at; prefer its authoring timestamp.
-        let edited=new Date(exam.updatedAt||r.updated_at).getTime()||0;
-        for(const section of exam.sections)for(const id of section.questionIds||[])edited=Math.max(edited,questionEdits.get(id)||0);
-        exam.updatedAt=edited?new Date(edited).toISOString():null;
+        exam.updatedAt=examLastEdit(exam,r.updated_at,questionEdits);
       }else delete exam.updatedAt;
       exam.questionCount=exam.sections.reduce((count,s)=>count+(s.questionIds||[]).filter(id=>scored.has(id)).length,0);
       exam.durationSeconds=examDurationSeconds(exam);

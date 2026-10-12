@@ -1,4 +1,8 @@
 import assert from 'node:assert/strict';
+import {examLastEdit} from '../src/domain/exam-last-edit.js';
+
+assert.equal(examLastEdit({updatedAt:'2026-10-01',sections:[{questionIds:['q1']}]},'2026-10-12',new Map([['q1',Date.parse('2026-10-05')]])),'2026-10-05T00:00:00.000Z');
+assert.equal(examLastEdit({},null,new Map()),null);
 import {dashboardHtml} from '../src/views/admin.js';
 import {dashboardInfrastructureHtml} from '../src/views/dashboard-infrastructure.js';
 import {resourceRing,resourceColumns,distributionChart} from '../src/views/resource-charts.js';
@@ -48,7 +52,8 @@ assert.match(system,/RAM từ 85%/);
 assert.match(system,/Ổ đĩa từ 85%/);
 assert.match(system,/&lt;script&gt;error&lt;\/script&gt;/);
 assert.doesNotMatch(system,/<details|<summary/);
-assert.match(system,/<section class="dashboard-details"><h3>Dung lượng đề thi/,'Storage is always visible');
+assert.match(system,/<\/section>\s*<section class="the dashboard-storage-card"><div class="dashboard-section-heading"><h2>Dung lượng đề thi/,'Storage is outside the system card and always visible');
+assert.match(system,/<th scope="col">Last edit<\/th>/);
 assert.equal(infrastructure.examStorage[0].title,'Small','Rendering must not sort shared state in place');
 assert.doesNotThrow(()=>dashboardHtml({data:{users:[],exams:[],attempts:[]}}));
 console.log('Dashboard hierarchy, counts, safe metrics, empty/error states and disclosures passed.');
