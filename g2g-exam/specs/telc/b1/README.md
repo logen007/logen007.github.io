@@ -12,6 +12,8 @@ Two direct clarifications override incomplete/conflicting sheet cells:
 
 - Reading 2 (updated 2026-10-12): the user corrected each question to three
   choices a/b/c, replacing the inherited true/false format. Count and scores stay unchanged.
+  The user also requested a two-column reading layout: instructions on the left,
+  questions on the right; mobile stacks the columns.
 
 - Reading 1 (updated 2026-10-12): five passages, a shared bank of ten
   teacher-entered headings a–j, and an explicit correct-letter selection per

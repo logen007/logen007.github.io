@@ -70,6 +70,7 @@ assert.equal((renderBuilder({data:state,exam,section:gap3}).match(/data-gap-choi
 for(let i=0;i<exam.sections.length;i++){
   const html=examHtml({attempt:{answers:{}},exam,sectionIndex:i,questions:rows(exam.sections[i]),allQuestions:state.questions,online:true,preview:true});
   assert.ok(html.length>100);
+  if(i===1)assert.match(html,/exam-reading-split/,'Reading 2 uses the shared split layout');
   if(i===0){
     assert.match(html,/exam-reading-split/);
     assert.match(html,/heading-match-question/);
