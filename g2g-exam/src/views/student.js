@@ -1,3 +1,4 @@
+import {sectionLabel} from '../ui/section-label.js';
 import {isPrefilledQuestion,imageMaxWidth,shortChoiceColumns,compactBinaryChoices} from '../domain/question-display.js';
 import {answerPresent,MIN_COMPLETION_PERCENT} from '../domain/exam-completion.js';
 export {answerPresent} from '../domain/exam-completion.js';
@@ -103,19 +104,19 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBl
     return rendered;
   }).join('')||'<div class="rong">Dieser Teil enthält noch keine Aufgaben.</div>'}</section>`;
   const context=preview
-    ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sec.name))}</h1></div></div>`
-    :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${textHtml(exam.title)}</div><h1>${esc(germanSectionName(sec.name))}</h1></div></div>`;
+    ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sectionLabel(exam,sec)))}</h1></div></div>`
+    :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${textHtml(exam.title)}</div><h1>${esc(germanSectionName(sectionLabel(exam,sec)))}</h1></div></div>`;
 const body=`<main class="noi-dung-thi">${context}${preview?'':`<div class="exam-free-navigation"><span>Prüfungszeit: <strong id="examMainTime">--:--</strong></span><button class="nut" data-action="submit-exam">Prüfung abgeben</button></div>`}<div class="exam-paper">${groupStimuli?stimulusGroups.map(group=>`<div class="exam-reading-split exam-stimulus-group"><div>${group.left}</div><section class="to-thi" aria-label="Aufgaben">${group.right}</section></div>`).join(''):splitLayout?`<div class="exam-reading-split">${sectionInstruction}<div>${sectionAudio}${questionList}</div></div>`:sectionInstruction+sectionAudio+questionList}</div><nav class="dieu-huong-thi" aria-label="Prüfungsnavigation"><button class="nut section-arrow" aria-label="Vorheriger Teil" title="Vorheriger Teil" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${iconHtml('arrowLeft')}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh ${sectionIndex<exam.sections.length-1?'section-arrow':''}" aria-label="${nextLabel}" title="${nextLabel}" data-action="${nextAction}">${sectionIndex<exam.sections.length-1?iconHtml('arrowRight'):nextLabel}</button></nav></main>`;
   const header=preview
-    ?`<header class="thanh-thi thanh-thi--preview"><div class="preview-header-row"><button class="text-link navigation-arrow" aria-label="Zurück" title="Zurück" data-action="close-preview">${iconHtml('arrowLeft')}</button><strong class="preview-exam-title" title="${esc(exam.title)}">${textHtml(exam.title)}</strong>${previewOutlineHtml(previewSummary,sectionIndex)}</div></header>`
+    ?`<header class="thanh-thi thanh-thi--preview"><div class="preview-header-row"><button class="text-link navigation-arrow" aria-label="Zurück" title="Zurück" data-action="close-preview">${iconHtml('arrowLeft')}</button><strong class="preview-exam-title" title="${esc(exam.title)}">${textHtml(exam.title)}</strong>${previewOutlineHtml(previewSummary,sectionIndex,exam)}</div></header>`
     :`<header class="thanh-thi"><span class="exam-mobile-brand"><img src="/brand/favicon" alt=""><strong>Deutschprüfung</strong></span><div class="thong-tin-thi"><span>Teil ${sectionIndex+1}/${exam.sections.length}</span></div></header>`;
   const offline=!online?`<div class="offline" role="status">${preview?'Sie sind offline. Vorschauantworten werden nur in dieser Sitzung gespeichert; Audio und Bilder sind möglicherweise nicht verfügbar.':'Sie sind offline. Lassen Sie diese Seite geöffnet; Ihre Antworten werden weiterhin auf diesem Gerät gespeichert.'}</div>`:'';
   return `<div class="thi ${preview?'thi--preview':''}">${header}${offline}${preview?`<div class="preview-shell">${body}</div>`:body}</div>`;
 }
 
-function previewOutlineHtml(summary,sectionIndex){
+function previewOutlineHtml(summary,sectionIndex,exam){
   const {sections=[]}=summary||{};
-  return `<div class="preview-outline"><label class="preview-section-picker" for="previewSectionSelect"><span class="sr-only">Teil auswählen</span><select id="previewSectionSelect" class="truong" style="--picker-width:18ch" aria-label="Teil auswählen" data-action="preview-select-section" ${sections.length?'':'disabled'}>${sections.map((item,index)=>`<option value="${index}" ${index===sectionIndex?'selected':''}>${esc(germanSectionName(item.name))}</option>`).join('')}</select></label></div>`;
+  return `<div class="preview-outline"><label class="preview-section-picker" for="previewSectionSelect"><span class="sr-only">Teil auswählen</span><select id="previewSectionSelect" class="truong" style="--picker-width:18ch" aria-label="Teil auswählen" data-action="preview-select-section" ${sections.length?'':'disabled'}>${sections.map((item,index)=>`<option value="${index}" ${index===sectionIndex?'selected':''}>${esc(germanSectionName(sectionLabel(exam,item)))}</option>`).join('')}</select></label></div>`;
 }
 
 const germanSectionName=name=>String(name||'')

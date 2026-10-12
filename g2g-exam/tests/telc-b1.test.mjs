@@ -10,6 +10,14 @@ import {partAudioSegments} from '../src/domain/part-audio.js';
 import {parseGapText,gapAuthorText,inlineGapErrors} from '../src/domain/inline-gaps.js';
 import {letterAnswerError} from '../src/domain/letter-answers.js';
 import {headingMatchHtml} from '../src/ui/heading-match.js';
+import {sectionLabel} from '../src/ui/section-label.js';
+for(const level of ['B1','B2']){
+  const section={name:'Đọc 4',id:'unchanged'};
+  assert.equal(sectionLabel({provider:'TELC',level},section),'SB 1');
+  assert.equal(sectionLabel({provider:'TELC',level},{name:'Đọc 5'}),'SB 2');
+  assert.deepEqual(section,{name:'Đọc 4',id:'unchanged'});
+}
+assert.equal(sectionLabel({provider:'GOETHE',level:'B1'},{name:'Đọc 4'}),'Đọc 4');
 import {inlineGapsHtml} from '../src/ui/inline-gaps.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {saveHeadingMatchDraft,resizeHeadingOptions} from '../src/part-templates/default/heading-match-builder.js';
@@ -87,6 +95,8 @@ assert.equal((renderBuilder({data:state,exam,section:gap3}).match(/data-gap-choi
 for(let i=0;i<exam.sections.length;i++){
   const html=examHtml({attempt:{answers:{}},exam,sectionIndex:i,questions:rows(exam.sections[i]),allQuestions:state.questions,online:true,preview:true});
   assert.ok(html.length>100);
+  if(i===3)assert.match(html,/>SB 1<\/h1>/);
+  if(i===4)assert.match(html,/>SB 2<\/h1>/);
   if(i===1)assert.match(html,/exam-reading-split/,'Reading 2 uses the shared split layout');
   if(i===0){
     assert.doesNotMatch(html,/exam-reading-split/);
