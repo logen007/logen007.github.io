@@ -216,6 +216,19 @@ async function sendTest(){
 }
 
 function bindSettingsActions(){
+  document.querySelectorAll('[data-asset-pick]').forEach(button=>{
+    const input=document.getElementById(button.dataset.assetPick);
+    button.onclick=()=>input.click();
+    input.onchange=()=>{
+      const file=input.files?.[0];if(!file)return;
+      const name=document.querySelector('[data-asset-name="'+input.id+'"]');
+      if(!file.type.startsWith('image/')){input.value='';name.textContent='Vui lòng chọn tệp hình ảnh.';return;}
+      name.textContent=file.name+' · Chưa lưu';
+      const reader=new FileReader();
+      reader.onload=()=>{if(input.files?.[0]!==file)return;const preview=document.querySelector('[data-asset-preview="'+input.id+'"]');if(!preview)return;const image=document.createElement('img');image.src=reader.result;image.alt='Ảnh đã chọn';preview.replaceChildren(image);};
+      reader.readAsDataURL(file);
+    };
+  });
   document.getElementById('sSave')?.addEventListener('click',save);
   document.getElementById('sSaveBottom')?.addEventListener('click',save);
   document.getElementById('sSecret')?.addEventListener('click',saveSecret);

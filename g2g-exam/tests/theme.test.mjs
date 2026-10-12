@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import {settingsTabs,settingsTabsHtml} from '../src/settings/tabs.js';
-assert.equal(settingsTabs.length,5);
+assert.equal(settingsTabs.length,3);
+assert.deepEqual(settingsTabs.map(([id])=>id),['general','access','email']);
 const settingsTabMarkup=settingsTabsHtml();
-assert.equal((settingsTabMarkup.match(/role="tab"/g)||[]).length,5);
+assert.equal((settingsTabMarkup.match(/role="tab"/g)||[]).length,3);
 assert.equal((settingsTabMarkup.match(/aria-selected="true"/g)||[]).length,1);
-assert.match(settingsTabMarkup,/aria-controls="settings-panel-operations"/);
+assert.doesNotMatch(settingsTabMarkup,/settings-panel-operations|settings-panel-appearance/);
 import {readFileSync} from 'node:fs';
 import {normalizeThemeColor,themePalette,colorContrast,initializeTheme,acceptPublicSettings,currentTheme,saveLocalTheme} from '../src/settings/theme.js';
 
@@ -16,6 +17,10 @@ assert.equal(normalizeLayout({contentWidth:99999}).contentWidth,1600);
 assert.equal(layoutVariables({cardRadius:16,background:'warm'})['--r'],'16px');
 assert.equal(layoutVariables({background:'url(invalid)'})['--nen'],'#f4f5f6');
 const page=settingsPageHtml({settings:DEFAULT_SETTINGS,infra:null});
+assert.match(page,/data-asset-pick="sLogo"/);
+assert.match(page,/data-asset-pick="sFavicon"/);
+assert.equal((page.match(/type="file" hidden data-image-picker-direct/g)||[]).length,2);
+assert.ok(readFileSync(new URL('../src/settings/tabs.js',import.meta.url),'utf8').includes("general:['sName','sPrimaryColor','sMaintenance']"));
 assert.ok(!page.includes('sRestart'));
 for(const id of ['sContentWidth','sCardRadius','sBackground'])assert.ok(page.includes(id));
 assert.ok(!page.includes('cai-dat-card-rong'));
