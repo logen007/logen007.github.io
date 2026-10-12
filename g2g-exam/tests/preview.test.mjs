@@ -343,6 +343,10 @@ try{
 
   await test('Only preview exposes a native section dropdown above the paper',()=>{
     const input=fixture(),html=examHtml({...input,sectionIndex:1});
+    const previewHeader=html.slice(html.indexOf('<header'),html.indexOf('</header>'));
+    assert.ok(previewHeader.indexOf('data-action="close-preview"')<previewHeader.indexOf('class="preview-exam-title"'));
+    assert.ok(previewHeader.indexOf('class="preview-exam-title"')<previewHeader.indexOf('class="preview-outline"'));
+    assert.match(previewHeader,/<header[^>]*><div class="preview-header-row">/,'All header controls share one row');
     const outline=tags(html,'div').filter(tag=>hasClass(tag,'preview-outline'));
     assert.equal(outline.length,1);
     const outlineStart=html.indexOf(outline[0]),mainStart=html.indexOf('<main');
@@ -388,7 +392,7 @@ try{
     const previewHeader=header(examHtml(input));
     const previewBack=actionButtons(previewHeader,'close-preview')[0];
     assert.ok(hasClass(previewBack,'text-link'));
-    assert.ok(previewHeader.indexOf(previewBack)>previewHeader.indexOf(input.exam.title));
+    assert.ok(previewHeader.indexOf(previewBack)<previewHeader.indexOf(input.exam.title));
   });
 
   await test('Navigation follows all questions and respects first, middle and last section boundaries',()=>{
