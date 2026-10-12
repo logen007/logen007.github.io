@@ -10,7 +10,7 @@ const display=value=>value==null||value===''?'Chưa trả lời':typeof value===
 const safePicture=value=>/^https?:\/\//i.test(String(value||''))?value:'';
 const safeImage=value=>safePicture(value)||(/^\/(?!\/)/.test(String(value||''))?value:'');
 const keys=['reading','grammar','listening','writing','speaking'];
-export function bar(label,entry,{showBand=false}={}){
+export function bar(label,entry,{showBand=true}={}){
   if(!entry)return `<div class="result-bar-label"><span>${esc(label)}</span><span class="phu-de">Chờ điểm</span></div>`;
   const percent=entry.max>0?Math.max(0,Math.min(100,entry.score/entry.max*100)):0;
   const band=showBand?gradeBand(entry.score,entry.max):null;
