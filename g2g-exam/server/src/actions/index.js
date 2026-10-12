@@ -1,4 +1,5 @@
 import {appError,query} from '../db.js';
+import {buildAttemptReview} from '../../../src/domain/attempt-review.js';
 import {r2Settings} from '../r2-settings.js';
 import {submitFeedback} from './feedback.js';
 import {copyExam,prepareExamForEditing} from './exam-copy.js';
@@ -46,12 +47,7 @@ export async function handleAction(user,name,data={}){
         if(reviewer?.name)row.public_data.reviewerName=reviewer.name;
       }
       row.public_data.studentName=user.name||row.public_data.studentName;
-      return {attempt:row.public_data,sections:(examData.sections||[]).map(section=>({name:section.name,questions:(section.questionIds||[]).map(id=>{
-        const question=questions.rows.find(q=>q.id===id);
-        if(!question)return null;
-        const q=question.data||{};
-        return {id,title:q.title||q.prompt||'',type:q.type||'',answer:row.public_data.answers?.[id],correct:published?(q.writingFormVersion===1?null:q.correctAnswer):null,choices:(q.choices||[]).map(choice=>({text:typeof choice==='object'?String(choice.text||''):String(choice||'')})),fields:q.writingFormVersion===1?(q.rubric||[]).map((field,index)=>({index,label:field.label||'',type:field.type||'text',expected:published?field.answers||field.options?.[field.correctIndex]||'':null})):[]};
-      }).filter(Boolean)})),score:published?{summary:row.private_data.resultSummary,promotion:row.private_data.promotion,total:row.private_data.totalScore,sections:row.private_data.sectionScores,feedback:row.private_data.feedback,result:row.private_data.result,reviewerName:row.public_data.reviewerName}:null};
+      return buildAttemptReview({exam:examData,questions:questions.rows.map(q=>({...q.data,id:q.id})),attempt:{...row.public_data,id:data.attemptId,status:row.status},privateData:row.private_data,student:user});
     }
     case 'startAttemptSecure': return startAttempt(user,data);
     case 'saveAnswers': return saveAnswers(user,data);

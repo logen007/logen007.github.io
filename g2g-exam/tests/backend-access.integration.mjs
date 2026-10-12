@@ -392,4 +392,19 @@ try{
   await telcB1BackendScenario({query,teacher,student});
   const {catalogBackendScenario}=await import('./catalog-backend-scenario.mjs');
   await catalogBackendScenario({query,teacher,student});
+  const {handleAction}=await import('../server/src/actions/index.js');
+  const resultRow=(await query("SELECT id FROM attempts WHERE student_id=$1 AND status='published' LIMIT 1",[student.id])).rows[0];
+  assert.ok(resultRow);
+  const resultReview=await handleAction(student,'getAttemptReview',{attemptId:resultRow.id});
+  assert.equal(resultReview.attempt.id,resultRow.id);
+  assert.equal(resultReview.attempt.studentName,student.name);
+  assert.ok(resultReview.score.summary);
+  assert.ok(resultReview.sections.every(s=>s.skill));
+  assert.equal(resultReview.attempt.studentEmail,undefined);
+  await assert.rejects(()=>handleAction({...student,id:'different'},'getAttemptReview',{attemptId:resultRow.id}),e=>e.statusCode===404);
+  await query("UPDATE attempts SET status='grading' WHERE id=$1",[resultRow.id]);
+  const hiddenReview=await handleAction(student,'getAttemptReview',{attemptId:resultRow.id});
+  assert.equal(hiddenReview.score,null);
+  assert.ok(hiddenReview.sections.flatMap(s=>s.questions).every(q=>q.correct===null&&q.fields.every(f=>f.expected===null)));
+  console.log('Result review SQL: owner-only access, real published summary and hidden unpublished answers passed.');
 }finally{hook.deregister();await db.close();delete globalThis.__testDb;}

@@ -158,7 +158,7 @@ function syncViewUrl(){
   else if(ui.view==='grading-detail'&&ui.gradeAttemptId){url.searchParams.set('view','grading');url.searchParams.set('attempt',ui.gradeAttemptId);}
   else if(ui.view==='exam'&&ui.attemptId){url.searchParams.set('view','exam');url.searchParams.set('attempt',ui.attemptId);}
   else if(ui.view==='student-results')url.searchParams.set('view','results');
-  else if(ui.view==='student-attempt-detail')url.searchParams.set('view','results');
+  else if(ui.view==='student-attempt-detail'){url.searchParams.set('view','results');if(ui.review?.attempt?.id)url.searchParams.set('attempt',ui.review.attempt.id);}
   else if(ui.view==='admin'){
     if(ui.adminTab==='settings'&&isMaster(user))writeSettingsRoute(url,ui.settingsTab);
     else url.searchParams.set('tab',ui.adminTab);
@@ -716,7 +716,7 @@ function render(){
   syncViewUrl();
   if(ui.view==='student-home')studentHomeView();
   else if(ui.view==='student-results')studentResultsView();
-  else if(ui.view==='student-attempt-detail')app.innerHTML=layout(studentAttemptDetailHtml({review:ui.review}));
+  else if(ui.view==='student-attempt-detail')app.innerHTML=layout(studentAttemptDetailHtml({review:ui.review,user}));
   else if(ui.view==='exam')examView();
   else if(ui.view==='preview-exam')previewExamView();
   else if(ui.view==='submitted')submittedView();
@@ -932,6 +932,14 @@ function queueBuilderAutosave(delay=450,markDirty=true){
   },delay);
 }
 
+async function loadStudentReview(attemptId){
+  if(repo.mode==='api')return repo.call('getAttemptReview',{attemptId});
+  const attempt=byId(data.attempts,attemptId);
+  if(!attempt||attempt.studentId!==user.id)throw new Error('Không tìm thấy bài làm.');
+  const exam=attempt.examSnapshot||byId(data.exams,attempt.examId)||{};
+  return buildAttemptReview({exam,questions:exam.questionSnapshot||data.questions,attempt,student:user});
+}
+
 function bindGlobal(){
   app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await repo.signOut();stopGoogleOneTap({logout:true});user=null;authenticatedUser=null;ui.view='login';render();});
   app.querySelectorAll('[data-action="toggle-role-menu"]').forEach(button=>button.onclick=event=>{
@@ -960,10 +968,7 @@ function bindGlobal(){
     const attempt=byId(data.attempts,b.dataset.id);
     if(!attempt||attempt.studentId!==user.id)return;
     try{
-      const review=repo.mode==='api'?await repo.call('getAttemptReview',{attemptId:attempt.id}):{
-        attempt,score:attempt.status===ATTEMPT_STATUS.PUBLISHED?{total:attempt.totalScore,sections:attempt.sectionScores,feedback:attempt.feedback,result:attempt.result,reviewerName:attempt.reviewerName}:null,
-        sections:(byId(data.exams,attempt.examId)?.sections||[]).map(section=>({name:section.name,questions:(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).map(q=>({id:q.id,title:q.title||q.prompt,answer:attempt.answers?.[q.id],correct:attempt.status===ATTEMPT_STATUS.PUBLISHED?q.correctAnswer:null,choices:q.choices||[]}))})),
-      };
+      const review=await loadStudentReview(attempt.id);
       ui.review=review;ui.view='student-attempt-detail';render();
     }catch(error){notify(error.message||'Không mở được bài làm.');}
   });
@@ -971,6 +976,7 @@ function bindGlobal(){
 }
 
 function bindViewSpecific(){
+  if(ui.view==='student-attempt-detail')bindAttemptResult(app,{review:ui.review,user,notify});
   app.querySelectorAll('[data-admin-exam-filter]').forEach(select=>select.onchange=()=>{ui.adminExamFilters={...ui.adminExamFilters,[select.dataset.adminExamFilter]:select.value};render();});
   app.querySelectorAll('[data-exam-provider-filter]').forEach(select=>select.onchange=()=>{ui.examFilter=select.value;render();});
   app.querySelectorAll('[data-action="exam-select-section"]').forEach(select=>select.onchange=()=>{
@@ -1437,7 +1443,10 @@ else{
   const previewId=initialUrl.searchParams.get('preview'),previewExam=previewId&&byId(data.exams,previewId);
   const requestedView=initialUrl.searchParams.get('view'),requestedAttempt=initialUrl.searchParams.get('attempt');
   if(previewExam&&user&&!isStudent(user)){ui.previewExamId=previewId;ui.previewSectionIndex=Math.max(0,Number(initialUrl.searchParams.get('section'))||0);ui.view='preview-exam';}
-  else if(requestedView==='results'&&isStudent(user))ui.view='student-results';
+  else if(requestedView==='results'&&isStudent(user)){
+    ui.view='student-results';
+    if(requestedAttempt)try{ui.review=await loadStudentReview(requestedAttempt);ui.view='student-attempt-detail';}catch(error){notify(error.message||'Không mở được kết quả.');}
+  }
   else if(requestedView==='exam'&&isStudent(user)&&byId(data.attempts,requestedAttempt)){ui.attemptId=requestedAttempt;ui.view='exam';}
   else if(requestedView==='grading'&&!isStudent(user)&&byId(data.attempts,requestedAttempt)){ui.gradeAttemptId=requestedAttempt;ui.view='grading-detail';}
   else if(!isStudent(user)&&initialUrl.searchParams.get('tab')){ui.adminTab=initialUrl.searchParams.get('tab');ui.settingsTab=settingsRouteTab(initialUrl.href)||'general';ui.view='admin';}
@@ -1445,3 +1454,5 @@ else{
   render();
 }
 import {shareStudentProfile,bindStudentName} from './views/student-profile-card.js';
+import {buildAttemptReview} from './domain/attempt-review.js';
+import {bindAttemptResult} from './views/attempt-result.js';

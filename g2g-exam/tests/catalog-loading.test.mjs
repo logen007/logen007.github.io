@@ -66,3 +66,4 @@ try{
   assert.equal(operations[0].kind,'upsert');
   console.log('Catalog loading: conditional reads, deep links, deduplication, stale responses and safe hydration passed.');
 }finally{Object.assign(globalThis,saved);}
+import './attempt-result.test.mjs';

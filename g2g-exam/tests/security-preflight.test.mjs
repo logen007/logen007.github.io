@@ -86,7 +86,11 @@ test('Xem lại bài làm chỉ mở cho đúng học viên; đáp án chuẩn �
   assert.ok(actions.includes("case 'getAttemptReview'"));
   assert.ok(actions.includes('found.rows[0].student_id!==user.id'));
   assert.ok(actions.includes("const published=row.status==='published'"));
-  assert.ok(actions.includes('correct:published?'));
+  assert.ok(actions.includes('return buildAttemptReview('));
+  const projection=read('src/domain/attempt-review.js');
+  assert.ok(projection.includes("const published=attempt.status==='published'"));
+  assert.ok(projection.includes('correct:published&&'));
+  assert.ok(projection.includes('score:published?'));
 });
 
 test('Cấu hình công khai không trả danh sách email giáo viên',()=>{

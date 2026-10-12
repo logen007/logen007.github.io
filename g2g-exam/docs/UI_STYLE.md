@@ -331,6 +331,22 @@ theme application must not wait for a network response to render the page.
   fabricate line-chart history from a single reading. R2 scan status is not
   browser delivery success. Reuse theme tokens without a chart dependency.
 
+## Student result detail
+
+- Header groups the student avatar, “Kết quả thi” with the actual exam level,
+  student name and an icon-only Share button immediately beside the name.
+  Exam provider/title/date remain below; the large result badge sits top-right.
+- Use skill tabs, native point scales, a compact answer-distribution ring and
+  labeled score bars. Counts exclude examples and oral grading; objective
+  correct/wrong counts exclude manually graded answers. Never substitute answer
+  accuracy for weighted examination score. Unpublished scores stay unavailable.
+- Skill tabs expose submitted answers, published correct answers and an optional
+  wrong/unanswered filter. Teacher identity and general feedback are real saved
+  values, not generated commentary. Pending oral scores are not zero.
+- Sharing uses the native share sheet or copies a text summary only; no public
+  review link, private feedback, student email or answer keys. Result deep links
+  remain authenticated and owner-only. Keep mobile layouts within the viewport.
+
 ## Verification
 
 Run syntax checks, automated tests and G2G Exam Check before updating main.

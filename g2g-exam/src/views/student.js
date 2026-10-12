@@ -18,8 +18,7 @@ import {iconHtml} from '../ui/icons.js';
 import {writingPointLayout,isScoredWritingField,isRequiredWritingField} from '../domain/writing-form.js';
 import {writingFormDisplay} from '../ui/writing-form.js';
 import {resultClass} from '../domain/gradebook.js';
-import {STUDENT_LEVELS,examLearningLevel,normalizeStudentLevel} from '../domain/student-profile.js';
-import {resultSummaryHtml} from './result-summary.js';
+import {STUDENT_LEVELS,examLearningLevel} from '../domain/student-profile.js';
 import {studentProfileCardHtml} from './student-profile-card.js';
 
 export function loginHtml({mode}){
@@ -51,21 +50,7 @@ export function studentExamCardHtml(ex,attempts,data){
 
 export {studentResultsHtml} from './student-results.js';
 
-export function studentAttemptDetailHtml({review}){
-  const attempt=review.attempt||{},score=review.score;
-  const text=value=>value&&typeof value==='object'?JSON.stringify(value):String(value??'Chưa trả lời');
-  const option=(q,index)=>{if(index==null||index==='')return 'Chưa trả lời';const value=q.choices?.[Number(index)];return typeof value==='object'?value.text||String(index):value||String(index);};
-  const answer=q=>{
-    if(q.fields?.length){
-      return q.fields.filter(field=>!['heading','note','image','signature'].includes(field.type)).map(field=>`<div class="review-field"><b>${esc(field.label||'Ô trả lời')}</b><span>${esc(text(q.answer?.[field.index]))}</span>${score&&field.expected?`<small>Đáp án: ${esc(field.expected)}</small>`:''}</div>`).join('');
-    }
-    const given=['single','truefalse','cloze'].includes(q.type)?option(q,q.answer):text(q.answer);
-    const expected=score&&q.correct!=null?option(q,q.correct):null;
-    const verdict=expected!=null&&q.answer!=null?(String(q.answer)===String(q.correct)?'Đúng':'Sai'):null;
-    return `<span>Bạn trả lời: ${textHtml(given)} ${verdict?`· ${verdict}`:''}</span>${expected!=null?`<span>Đáp án đúng: ${esc(expected)}</span>`:''}`;
-  };
-  return `<main class="khung grading-detail"><div class="tieu-de-trang"><div><h1>${textHtml(attempt.examTitle||'Bài làm')}</h1><p>Lần #${attempt.attemptNo} · ${fmtDate(attempt.submittedAt||attempt.startedAt)}</p></div><button class="nut navigation-arrow" aria-label="Quay lại" title="Quay lại" data-action="student-results">${iconHtml('arrowLeft')}</button></div>${attempt.status===ATTEMPT_STATUS.INCOMPLETE?`<section class="the"><h2>Không hoàn thành</h2><p>Hết giờ khi chưa trả lời đủ ${MIN_COMPLETION_PERCENT}% số câu. Đã trả lời ${esc(attempt.completion?.answered??0)}/${esc(attempt.completion?.total??0)} câu; cần ${esc(attempt.completion?.minimum??0)} câu. Bài này không được chấm điểm.</p></section>`:''}${resultSummaryHtml(score?.summary)}${score?.promotion?`<section class="the"><h2>Chúc mừng bạn đã đạt trình độ ${esc(normalizeStudentLevel(score.promotion.toLevel))}!</h2><p>${esc(normalizeStudentLevel(score.promotion.fromLevel))} → ${esc(normalizeStudentLevel(score.promotion.toLevel))}</p></section>`:''}${score?`<section class="the review-summary"><b>Điểm: ${esc(score.total??'—')}</b><span>${esc(score.result==='Chưa đạt'?'Trượt':score.result||'—')}</span><span>Người chấm: ${esc(score.reviewerName||'—')}</span>${score.feedback?`<p>Nhận xét: ${textHtml(score.feedback)}</p>`:''}</section>`:attempt.status===ATTEMPT_STATUS.INCOMPLETE?'':'<div class="the">Bài đã lưu. Điểm và nhận xét sẽ hiển thị sau khi giáo viên chấm xong.</div>'}${(review.sections||[]).map(section=>`<section class="the review-section"><h2>${esc(section.name)}</h2>${score&&score.sections?.[section.name]!=null?`<p>${esc(score.sections[section.name])} điểm</p>`:''}${section.questions.map(q=>`<div class="grading-answer"><b>${textHtml(q.title)}</b>${answer(q)}</div>`).join('')}</section>`).join('')}</main>`;
-}
+export {attemptResultHtml as studentAttemptDetailHtml} from './attempt-result.js';
 
 export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],online,preview=false,previewSummary=null}){
   const sec=exam.sections[sectionIndex];

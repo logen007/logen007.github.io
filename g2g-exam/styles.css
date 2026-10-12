@@ -1,4 +1,72 @@
 /* G2G design system. Shared visual rules live here; operational settings in enhancements.css. */
+/* Published student results; shared tokens and controls, no grading-rule overrides. */
+.result-page{padding-bottom:32px}
+.result-page [hidden]{display:none!important}
+.result-back{margin-bottom:16px}
+.result-page .the{margin:0;padding:24px}
+.result-page .result-hero{border-top:3px solid var(--brand-primary)}
+.result-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+.result-heading>div:first-child{min-width:0}
+.result-identity{display:flex;align-items:center;gap:16px;margin-bottom:24px}
+.result-avatar{width:64px;height:64px;flex-shrink:0;display:grid;place-items:center;border-radius:20px;background:var(--brand-soft);color:var(--brand-text);font-size:22px;font-weight:500;overflow:hidden}
+.result-avatar img{width:100%;height:100%;object-fit:cover}
+.result-name{display:flex;gap:8px;align-items:center}
+.result-name h1{font-size:clamp(20px,2.5vw,28px);margin:0;overflow-wrap:anywhere}
+.result-name .icon-btn{flex-shrink:0}
+.result-provider{color:var(--phu);font-size:12px;letter-spacing:.07em}
+.result-heading h2{margin:6px 0;font-size:22px;overflow-wrap:anywhere}
+.result-heading p{margin:0}
+.result-outcome{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;border-radius:20px;background:var(--surface-muted);color:var(--phu);padding:20px 24px;min-width:144px;max-width:240px;text-align:center}
+.result-outcome strong{font-size:clamp(20px,2.8vw,32px);font-weight:500;line-height:1.25}
+.result-outcome.passed{background:color-mix(in srgb,var(--xanh) 9%,var(--mat));color:var(--xanh)}
+.result-outcome.failed{background:color-mix(in srgb,var(--do) 8%,var(--mat));color:var(--do)}
+.result-stats{display:grid;grid-template-columns:1.3fr repeat(4,1fr);gap:20px;margin-top:24px;padding-top:24px;border-top:1px solid var(--vien)}
+.result-stats>div{display:flex;flex-direction:column;min-width:0;gap:4px}
+.result-stats>div+div{border-left:1px solid var(--vien);padding-left:20px}
+.result-stats strong{font-size:30px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.2}
+.result-stats small,.result-bar-label small{font-size:14px;color:var(--phu);font-weight:400}
+.result-stats span{font-size:13px;color:var(--phu)}
+.result-tabs{display:flex;flex-wrap:wrap;gap:8px;padding:6px;background:var(--mat);border:1px solid var(--vien);border-radius:var(--pill);width:fit-content;max-width:100%;margin:24px 0 20px}
+.result-tabs .nut{border-color:transparent}
+.result-tabs [aria-selected=true],.result-filter [aria-pressed=true]{background:var(--brand-primary);color:var(--brand-on-primary);border-color:var(--brand-primary)}
+.result-columns{display:grid;grid-template-columns:1.2fr 1fr;gap:20px;align-items:stretch}
+.result-columns>*{min-width:0}
+.result-page h2{font-size:22px;font-weight:500}
+.result-columns h2{margin:0 0 24px}
+.result-bar{margin-bottom:20px}
+.result-bar-label,.result-pass-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.result-bar-label{margin-bottom:8px}
+.result-bar-label strong{font-weight:500;font-variant-numeric:tabular-nums}
+.result-track{height:9px;border-radius:var(--pill);background:var(--surface-muted);overflow:hidden}
+.result-track>span{display:block;height:100%;border-radius:inherit;background:var(--brand-primary)}
+.result-pass-row{border-top:1px solid var(--vien);padding-top:16px;margin-top:16px;font-size:14px;flex-wrap:wrap}
+.result-donut{width:156px;height:156px;margin:8px auto 24px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--xanh) 0 var(--correct-angle),var(--do) var(--correct-angle) var(--wrong-angle),var(--vien) var(--wrong-angle) 360deg)}
+.result-donut>div{width:124px;height:124px;border-radius:50%;background:var(--mat);display:flex;align-items:center;justify-content:center;flex-direction:column}
+.result-donut strong{font-size:30px;font-weight:500}
+.result-donut span{font-size:12px;color:var(--phu)}
+.result-legend{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--phu)}
+.result-correct{color:var(--xanh)}
+.result-wrong{color:var(--do)}
+.result-blank{color:var(--phu)}
+.result-feedback{margin-top:24px;border-top:1px solid var(--vien);padding-top:20px}
+.result-reviewer{display:flex;align-items:center;gap:12px}
+.result-reviewer>div{display:flex;flex-direction:column}
+.result-reviewer strong{font-weight:500}
+.result-feedback h3{font-size:15px;margin:20px 0 8px}
+.result-feedback p{white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.result-filter{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}
+.result-part{margin-top:24px}
+.result-part h3{font-size:17px;font-weight:500}
+.result-question{border-top:1px solid var(--vien);padding:20px 0}
+.result-question-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.result-question-heading strong{font-weight:500;overflow-wrap:anywhere}
+.result-question-heading>span{flex-shrink:0;font-size:13px}
+.result-answer{padding:12px 16px;background:var(--surface-muted);border-radius:var(--r-sm);margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere}
+.result-answer>span{font-size:12px}
+.result-answer--correct{background:color-mix(in srgb,var(--xanh) 7%,var(--mat));color:var(--xanh)}
+.result-answer-image{display:block;max-width:min(100%,360px);height:auto;margin-top:8px}
+@media(max-width:700px){.result-columns{grid-template-columns:1fr}.result-page .the{padding:20px}.result-heading{gap:12px}.result-avatar{width:48px;height:48px;border-radius:16px;font-size:18px}.result-identity{gap:10px}.result-outcome{padding:14px;min-width:100px;max-width:140px}.result-stats{grid-template-columns:repeat(3,1fr);gap:20px 12px}.result-stats>div+div{border:0;padding:0}.result-stats strong{font-size:26px}.result-tabs{border-radius:24px}.result-name{gap:2px}.result-heading h2{font-size:20px}.result-question-heading{flex-wrap:wrap}}
+@media(max-width:420px){.result-stats{grid-template-columns:repeat(2,1fr)}.result-identity{align-items:flex-start;flex-direction:column}.result-name h1{font-size:19px}.result-outcome{min-width:90px;max-width:110px;padding:12px}.result-name{flex-wrap:wrap}}
 :root {
   --brand-primary:#111827;
   --brand-on-primary:#fff;
