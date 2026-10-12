@@ -715,7 +715,14 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .grading-automatic .result-answer-image { max-width:min(100%,220px); }
 @media(max-width:900px){.grading-detail .grading-workspace{grid-template-columns:1fr}.grading-detail .grading-review{border-left:0;border-top:1px solid var(--vien)}.grading-detail .grading-hero{padding:20px;gap:16px}.grading-score-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.grading-oral{max-width:none;padding:0}}
 @media(max-width:480px){.grading-score-grid{grid-template-columns:1fr}.grading-detail .grading-hero{align-items:flex-start}.grading-hero .result-outcome{min-width:90px;padding:12px}.grading-hero .result-outcome strong{font-size:18px}}
-@media(max-width:600px){.grading-hero .grading-identity{align-items:flex-start;flex-direction:column;gap:10px}.grading-hero .grading-identity h1{font-size:22px}.grading-hero .result-avatar{width:48px;height:48px;font-size:20px}.grading-hero>.result-outcome{min-width:80px;max-width:110px;padding:12px}.grading-hero>.result-outcome strong{font-size:18px}}
+@media(max-width:600px){.grading-hero .grading-identity{align-items:center;flex-direction:row;gap:10px}.grading-hero .grading-identity>div{min-width:0}.grading-hero .grading-identity h1{font-size:22px}.grading-hero .result-avatar{width:44px;height:44px;font-size:20px}.grading-hero>.result-outcome{min-width:72px;max-width:100px;padding:10px}.grading-hero>.result-outcome strong{font-size:18px}}
+@media(max-width:700px){
+  .grading-hero .result-stats,.result-hero .result-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .grading-hero .result-stats strong,.result-hero .result-stats strong{font-size:24px}
+  .grading-hero .result-stats small,.result-hero .result-stats small{font-size:12px}
+  .grading-hero .result-stats>div>span,.result-hero .result-stats>div>span{font-size:12px}
+  .result-hero .result-identity{flex-direction:row;align-items:center;gap:10px}
+}
 .grading-history { margin:0 0 24px; }
 .grading-history h2 { font-size:18px;margin:0 0 8px; }
 .grading-history svg { width:100%;max-width:700px;display:block;height:auto;overflow:visible; }
