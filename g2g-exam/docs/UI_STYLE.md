@@ -213,6 +213,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 - In two-column exam content, the shorter column follows the page scroll within
   its own section. Recalculate after image/content resizing; disable this when
   columns stack on mobile. Keep long columns fully readable without nested scroll.
+  Global rule (2026-10-12): all content inside a floating column must stay
+  together in one wrapper and move as a single unit. Never float individual
+  images, paragraphs, cards, or successive passage groups independently within
+  the same column. Apply this to every multi-column floating layout.
 
 - Keep the preview header and reading content on the same 1600px maximum column.
   Show exam title, a small preview badge, a short no-results notice and return to

@@ -179,9 +179,9 @@ stimulusQuestions[2].instructionBlocks=[{text:'Second passage',imageUrl:'second-
 for(const preview of [false,true]){
   const html=examHtml({attempt:{answers:{}},exam,sectionIndex:1,questions:stimulusQuestions,allQuestions:state.questions,online:true,preview});
   const groups=html.split('<div class="exam-reading-split exam-stimulus-group">').slice(1);
-  assert.equal(groups.length,2);
+  assert.equal(groups.length,1,'All passages and questions float as two whole columns');
   for(const [index,image] of ['first-stimulus.jpg','second-stimulus.jpg'].entries()){
-    assert.ok(groups[index].indexOf(image)<groups[index].indexOf('<section class="to-thi"'));
+    assert.ok(groups[0].indexOf(image)<groups[0].indexOf('<section class="to-thi"'));
     assert.equal(html.split(image).length-1,1,'Stimulus image is not duplicated');
   }
   for(const q of stimulusQuestions)assert.equal(html.split('name="answer-'+q.id+'"').length-1,3,'All answer controls preserved');

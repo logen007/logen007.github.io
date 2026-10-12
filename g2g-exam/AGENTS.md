@@ -3,6 +3,10 @@
 Giao diện dùng quy chuẩn đã chốt trong `docs/UI_STYLE.md`. Khi sửa UI, đọc tài liệu
 này và dùng token/component chung; không chồng thêm các lớp style toàn site.
 
+Rule floating: tại mọi bố cục nhiều cột, toàn bộ nội dung trong mỗi cột phải
+được gom thành một khối và di chuyển cùng nhau; không floating riêng từng phần
+trong cùng cột. Chi tiết trình bày theo `docs/UI_STYLE.md`.
+
 ## 1. Mục tiêu
 
 G2G Exam là hệ thống thi thử tiếng Đức.
