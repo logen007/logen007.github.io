@@ -8,6 +8,7 @@
     "type": "single",
     "choices": ["Richtig", "Falsch"],
     "layout": "true-false",
+    "splitLayout": true,
     "instructionImage": true,
     "stimulusStarts": [2],
     "audio": true,

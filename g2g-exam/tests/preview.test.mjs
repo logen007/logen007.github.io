@@ -25,6 +25,15 @@ import {compactBinaryChoices} from '../src/domain/question-display.js';
 import {renderQuestionHtml} from '../src/views/student.js';
 
 const originalStorage=globalThis.sessionStorage;
+for(const preview of [false,true]){
+  const q={id:'reading-one',type:'single',title:'Aussage',choices:['Richtig','Falsch'],maxScore:1};
+  const section={id:'read1',name:'Đọc 1',skillKey:'reading',skill:'Đọc',instructionImageUrl:'/uploads/reading-one.jpg',questionIds:[q.id],questionProfile:{layout:'true-false'}};
+  const html=examHtml({attempt:{id:'a',answers:{}},exam:{id:'e',title:'A1',provider:'GOETHE',level:'A1',sections:[section]},sectionIndex:0,questions:[q],allQuestions:[q],online:true,preview});
+  assert.match(html,/class="exam-reading-split"/);
+  assert.ok(html.indexOf('/uploads/reading-one.jpg')<html.indexOf('aria-label="Aufgaben"'));
+  const other=examHtml({attempt:{id:'a',answers:{}},exam:{id:'e',title:'A1',provider:'GOETHE',level:'A1',sections:[{...section,name:'Đọc 3'}]},sectionIndex:0,questions:[q],allQuestions:[q],online:true,preview});
+  assert.doesNotMatch(other,/class="exam-reading-split"/);
+}
 const bootHtml=readFileSync(new URL('../vi.html',import.meta.url),'utf8');
 assert.doesNotMatch(bootHtml,/Đang tải Luyện thi tiếng Đức/);
 assert.match(bootHtml,/id="bootShell" aria-busy="true"/);
