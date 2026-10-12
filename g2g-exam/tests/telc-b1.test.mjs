@@ -16,6 +16,7 @@ import {saveHeadingMatchDraft,resizeHeadingOptions} from '../src/part-templates/
 import {resizeGapOptions} from '../src/part-templates/default/inline-gap-builder.js';
 import {examHtml} from '../src/views/student.js';
 import {syncLetterPicker} from '../src/ui/letter-picker.js';
+import {letterAnswerControl} from '../src/ui/letter-answers.js';
 import {ensureExamMatchesConfiguredSpec} from '../src/controllers/exam-factory.js';
 import {validateExamForPublish,duplicateExam,startAttempt,submitAttempt,saveManualScore,createExam} from '../src/core.js';
 const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teacher-lan'),student=state.users.find(u=>u.id==='student-a');
@@ -98,7 +99,32 @@ const legacyGap={...gapBank,gapExample:'Old text',gapPassage:[{example:true},...
 assert.ok(gapAuthorText(legacyGap,rows(gapBank)).startsWith('Old text'));
 assert.doesNotMatch(gapAuthorText(legacyGap,rows(gapBank)),/\[z\]/);
 const gapHtml=inlineGapsHtml(gap3,rows(gap3),{},20);
+const shortPicker=letterAnswerControl(rows(gap3)[0],1,'letter-select',{number:21,optionTexts:['FÜR','NACH','c']});
+assert.doesNotMatch(shortPicker,/data-full-options/);
+assert.match(shortPicker,/data-option-texts/);
+assert.match(shortPicker,/>b\. NACH<\/option>/);
+assert.match(letterAnswerControl(rows(gap3)[0],null,'letter-select',{optionTexts:['A very long sentence that must still wrap inside the existing accessible dialog.']}),/data-full-options/);
+const stimulusQuestions=structuredClone(rows(exam.sections[1]));
+stimulusQuestions[0].instructionBlocks=[{text:'First passage',imageUrl:'first-stimulus.jpg'}];
+stimulusQuestions[2].instructionBlocks=[{text:'Second passage',imageUrl:'second-stimulus.jpg'}];
+for(const preview of [false,true]){
+  const html=examHtml({attempt:{answers:{}},exam,sectionIndex:1,questions:stimulusQuestions,allQuestions:state.questions,online:true,preview});
+  const groups=html.split('<div class="exam-reading-split exam-stimulus-group">').slice(1);
+  assert.equal(groups.length,2);
+  for(const [index,image] of ['first-stimulus.jpg','second-stimulus.jpg'].entries()){
+    assert.ok(groups[index].indexOf(image)<groups[index].indexOf('<section class="to-thi"'));
+    assert.equal(html.split(image).length-1,1,'Stimulus image is not duplicated');
+  }
+  for(const q of stimulusQuestions)assert.equal(html.split('name="answer-'+q.id+'"').length-1,3,'All answer controls preserved');
+}
 assert.match(gapHtml,/inline-gap-paper exam-reading-split/);
+const oldLayoutExam=structuredClone(exam);
+delete oldLayoutExam.sections[3].questionProfile.gapSplitLayout;
+for(const preview of [false,true]){
+  const html=examHtml({attempt:{answers:{}},exam:oldLayoutExam,sectionIndex:3,questions:rows(gap3),allQuestions:state.questions,online:true,preview});
+  assert.match(html,/inline-gap-paper exam-reading-split/,'Existing Reading 4 uses current approved two-column layout');
+}
+assert.equal(oldLayoutExam.sections[3].questionProfile.gapSplitLayout,undefined,'Rendering must not mutate saved exam data');
 const bankHtml=inlineGapsHtml(gapBank,rows(gapBank),{},30);
 assert.match(bankHtml,/<b>a<\/b><span>Word 0<\/span>/);
 for(const section of [gap3,gapBank]){
@@ -117,6 +143,13 @@ assert.doesNotMatch(gapBuilder,/Chỗ trống/);
 assert.ok(gapBuilder.includes('<legend>[a] · Câu 1</legend>'));
 assert.ok(gapBuilder.includes('<legend>[b] · Câu 2</legend>'));
 assert.ok(gapBuilder.includes('<legend>[a] · Câu 4</legend>'),'Repeated marker keeps its actual answer letter');
+for(const invalid of [-1,undefined,null,'',1.5,3]){
+  const incomplete=structuredClone(state);
+  incomplete.questions.find(q=>q.id===gap3.questionIds[3]).correctAnswer=invalid;
+  const html=renderBuilder({data:incomplete,exam,section:gap3});
+  assert.ok(html.includes('<legend>Câu 4 · Chưa xác định đáp án</legend>'));
+  assert.doesNotMatch(html,/\[a\/b\/c\]/);
+}
 assert.equal((gapHtml.match(/<select /g)||[]).length,10);
 assert.match(gapHtml,/data-unique-letters="false"/);
 assert.equal(letterAnswerError(gap3,rows(gap3),Object.fromEntries(rows(gap3).map(q=>[q.id,0]))),'');

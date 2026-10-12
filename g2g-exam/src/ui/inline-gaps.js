@@ -3,9 +3,9 @@ import {imageMaxWidth} from '../domain/question-display.js';
 import {textHtml,esc} from './format.js';
 import {letterAnswerControl} from './letter-answers.js';
 
-export function inlineGapsHtml(section,questions,answers,startNumber){
+export function inlineGapsHtml(section,questions,answers,startNumber,{splitLayout=section.questionProfile?.gapSplitLayout}={}){
   const perQuestion=section.questionProfile?.gapChoicesPerQuestion;
-  const split=!perQuestion||section.questionProfile?.gapSplitLayout;
+  const split=!perQuestion||splitLayout;
   const options=perQuestion?`<section class="gap-choice-bank" aria-label="Antwortmöglichkeiten">${questions.map((q,index)=>`<div class="gap-choice-group"><b>${startNumber+index+1}.</b><div>${[0,1,2].map(i=>`<p><span>${String.fromCharCode(97+i)})</span><span>${textHtml(section.gapOptions?.[index]?.[i]||'')}</span></p>`).join('')}</div></div>`).join('')}</section>`:'';
   const passage=(section.gapPassage||[]).map(part=>{
     if(typeof part==='string')return textHtml(part);
