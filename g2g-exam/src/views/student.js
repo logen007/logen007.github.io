@@ -3,7 +3,7 @@ import {answerPresent,examCompletion,completionMessage,MIN_COMPLETION_PERCENT} f
 export {answerPresent} from '../domain/exam-completion.js';
 import {getExamSpec} from '../exam-specs/index.js';
 import {inlineGapsHtml} from '../ui/inline-gaps.js';
-import {headingMatchHtml} from '../ui/heading-match.js';
+import {headingMatchHtml,headingOptionsHtml} from '../ui/heading-match.js';
 import {readingBlocksHtml} from '../ui/reading-blocks.js';
 import {letterAnswersHtml} from '../ui/letter-answers.js';
 import {partAudioSegments} from '../domain/part-audio.js';
@@ -77,13 +77,14 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const previousAction=preview?'preview-prev-section':'prev-section';
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Kết thúc':'Abgeben'):'Weiter';
-const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBlocks?.length?`<section class="exam-instruction">${sec.instruction?`<div><p>${instructionTextHtml(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl&&sec.questionProfile?.layout!=='inline-gaps'?`<img ${imageMaxWidth(sec.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(sec.instructionImageMaxWidth)}px"`:''} src="${esc(sec.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}${readingBlocksHtml(sec)}</section>`:'';
+  const splitHeadings=splitLayout&&sec.questionProfile?.layout==='heading-match';
+const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBlocks?.length||splitHeadings?`<section class="exam-instruction">${sec.instruction?`<div><p>${instructionTextHtml(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl&&sec.questionProfile?.layout!=='inline-gaps'?`<img ${imageMaxWidth(sec.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(sec.instructionImageMaxWidth)}px"`:''} src="${esc(sec.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}${readingBlocksHtml(sec)}${splitHeadings?headingOptionsHtml(sec):''}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
   const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
   let questionNumber=exam.sections.slice(0,sectionIndex).filter(item=>!sec.questionProfile?.numberWithinSkill||item.skillKey===sec.skillKey).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!isPrefilledQuestion(knownQuestions.get(id))).length,0);
   const exampleCount=orderedQuestions.length-requiredQuestions.length;
-  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
+  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber,{separateOptions:splitHeadings}):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
     const example=isPrefilledQuestion(q),scoredIndex=displayIndex-exampleCount;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
     const paired=sec.questionProfile?.pairedQuestions;

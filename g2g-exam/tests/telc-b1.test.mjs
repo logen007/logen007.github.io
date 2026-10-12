@@ -55,7 +55,12 @@ assert.equal((renderBuilder({data:state,exam,section:gap3}).match(/data-gap-choi
 for(let i=0;i<exam.sections.length;i++){
   const html=examHtml({attempt:{answers:{}},exam,sectionIndex:i,questions:rows(exam.sections[i]),allQuestions:state.questions,online:true,preview:true});
   assert.ok(html.length>100);
-  if(i===0)assert.match(html,/heading-match-question/);
+  if(i===0){
+    assert.match(html,/exam-reading-split/);
+    assert.match(html,/heading-match-question/);
+    assert.equal((html.match(/class="gap-sentences heading-options"/g)||[]).length,1);
+    assert.ok(html.indexOf('heading-options')<html.indexOf('</section><div><section class="letter-answers heading-match"'));
+  }
   if(i===8)assert.match(html,/lined-writing-paper/);
 }
 assert.match(renderBuilder({data:state,exam,section:gapBank}),/data-gap-options/);
