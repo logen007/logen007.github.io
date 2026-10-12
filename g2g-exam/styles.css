@@ -637,6 +637,11 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .exam-reading-split .to-thi > .cau-thi:not(.is-example):first-child { padding-top:0; }
 .exam-reading-split .to-thi > .cau-thi:not(.is-example):last-child { padding-bottom:0; }
 .exam-reading-split .to-thi > .exam-question-pair--example { margin-bottom:12px; }
+.exam-paper [data-stimulus-order] { min-width:0; }
+#examDraftStatus { display:block; margin:16px 0; color:var(--phu); font-size:12px; }
+.exam-paper [data-stimulus-order] > .cau-thi:not(.is-example) { padding:12px 0; margin:0; }
+.exam-paper [data-stimulus-order] > .exam-question-pair--example { margin-bottom:16px; }
+.exam-paper .to-thi > [data-stimulus-order] + [data-stimulus-order] { margin-top:16px; }
 .paired-part-editor [data-action="add-inline-question"],.paired-part-editor [data-action="remove-inline-question"],.paired-part-editor [data-action="toggle-question-example"] { display:none; }
 .instruction-content > textarea { width:100%; }
 .instruction-audio { display:grid; gap:8px; max-width:420px; }

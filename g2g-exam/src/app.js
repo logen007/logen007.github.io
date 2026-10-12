@@ -220,10 +220,23 @@ function examView(){
   if(!attempt||attempt.studentId!==user.id||attempt.status!==ATTEMPT_STATUS.IN_PROGRESS){ui.view='student-home';render();return;}
   const exam=byId(data.exams,attempt.examId);
   if(!exam){ui.view='student-home';render();return;}
+  if(repo.mode==='api'&&repo.outboxAttempt!==attempt.id){
+    app.innerHTML='<main class="khung"><p role="status">Đang chuẩn bị bản lưu an toàn trên máy…</p><button class="nut" id="retryExamDraft" hidden>Thử lại</button></main>';
+    repo.prepareExamDraft(attempt.id,showDraftStatus).then(async()=>{data=await repo.getState();if(ui.view==='exam')render();}).catch(error=>{
+      const status=app.querySelector('[role="status"]');if(status)status.textContent=error.message;
+      const retry=app.querySelector('#retryExamDraft');if(retry){retry.hidden=false;retry.onclick=()=>render();}
+    });
+    return;
+  }
   const sectionIndex=Math.min(attempt.currentSectionIndex||0,Math.max(0,exam.sections.length-1));
   const section=exam.sections[sectionIndex];
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
   app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,allQuestions:data.questions,online:ui.online});
+  if(repo.mode==='api'){
+    const status=document.createElement('small');status.id='examDraftStatus';status.setAttribute('role','status');
+    app.querySelector('.dieu-huong-thi')?.before(status);
+    showDraftStatus(Object.keys(repo.outbox?.draft.pending||{}).length?'pending':'saved');
+  }
   examPreloader.update(attempt.id,examMediaUrls(exam,data.questions,sectionIndex));
   const examBrandIcon=app.querySelector('.exam-mobile-brand img');if(examBrandIcon)examBrandIcon.onerror=()=>examBrandIcon.remove();
   bindExamInputs(attempt,questions);
@@ -438,7 +451,12 @@ function playSectionSegment(audio,onProgress){
   });
 }
 
+function showDraftStatus(state){
+  const messages={pending:'Đã ghi nhận · Đang lưu trên máy',saving:'Đang đồng bộ…',saved:'Đã đồng bộ',offline:'Chưa đồng bộ · Sẽ thử lại khi có mạng',conflict:'Có thay đổi từ nơi khác hoặc đã hết giờ · Bản trên máy được giữ lại. Chưa đồng bộ.', 'storage-error':'Không lưu được trên máy · Đừng đóng trang, hãy kiểm tra dung lượng trống.'};
+  const status=document.getElementById('examDraftStatus');if(status)status.textContent=messages[state]||state;
+}
 function queueAnswer(attemptId,qid,value,delay){
+  if(repo.mode==='api'){repo.saveDraftAnswer(attemptId,qid,value);return;}
   const key=`${attemptId}:${qid}`;
   clearTimeout(saveTimers.get(key));
   saveTimers.set(key,setTimeout(async()=>{
@@ -452,7 +470,12 @@ async function flushTextAnswers(){
   for(const timer of pending)clearTimeout(timer);
   saveTimers.clear();
   const answers=readExamAnswers(app),attemptId=ui.attemptId;
-  if(!attemptId||!Object.keys(answers).length)return true;
+  if(!attemptId)return true;
+  if(repo.mode==='api'){
+    for(const [qid,value] of Object.entries(answers))repo.saveDraftAnswer(attemptId,qid,value);
+    return Boolean(await act(async()=>{await repo.flushDraft();return true;},null,{rerender:false}));
+  }
+  if(!Object.keys(answers).length)return true;
   return Boolean(await act(()=>repo.transaction(st=>{
     for(const [qid,value] of Object.entries(answers))saveAnswer(st,user,attemptId,qid,value);
     return true;
@@ -475,9 +498,11 @@ function startExamTimer(attempt,exam,sectionIndex){
       document.querySelectorAll('.answer-one,.answer-match,.answer-text,.play-audio').forEach(x=>x.disabled=true);
       for(const pending of saveTimers.values())clearTimeout(pending);
       saveTimers.clear();
+      const unsynced=Object.keys(repo.outbox?.draft.pending||{}).length>0;
       const result=await act(()=>repo.mode==='api'?repo.submitAttemptSecure(attempt.id):repo.transaction(st=>submitAttempt(st,user,attempt.id)),null,{rerender:false});
       if(result){
         data=await repo.getState();ui.view='submitted';render();
+        if(unsynced)notify('Hết giờ khi còn đáp án chưa đồng bộ. Máy chủ chỉ nhận các đáp án đã lưu đúng hạn; bản trên máy vẫn được giữ lại.');
         if(byId(data.attempts,attempt.id)?.status===ATTEMPT_STATUS.INCOMPLETE){timerBusy=false;return;}
         const modal=document.createElement('div');modal.className='hop-chon';
         modal.innerHTML='<div class="noi-hop ket-qua-cho" role="dialog" aria-modal="true" aria-labelledby="timeoutTitle"><div class="vong">⌛</div><h2 id="timeoutTitle">Die Prüfungszeit ist abgelaufen</h2><p>Leider ist die Zeit um. Ihre gespeicherten Antworten wurden automatisch abgegeben.</p><button class="nut chinh" data-close>Ergebnisübersicht</button></div>';
@@ -1069,15 +1094,30 @@ async function beginAttempt(examId,restart,trigger){
   },trigger);
 }
 
+let movingAttemptSection=false;
 async function moveAttemptSection(delta){
+  if(movingAttemptSection)return;
   if(guardExamAudio())return;
   const attempt=byId(data.attempts,ui.attemptId),exam=attempt&&byId(data.exams,attempt.examId);
   if(!attempt||!exam)return;
   if(attempt.status!==ATTEMPT_STATUS.IN_PROGRESS){ui.view='student-home';render();notify('Dieser Prüfungsversuch ist bereits beendet. Starten Sie einen neuen Versuch.');return;}
-  if(!await flushTextAnswers())return;
   const next=Math.max(0,Math.min(exam.sections.length-1,(attempt.currentSectionIndex||0)+delta));
-  const result=await act(()=>repo.transaction(st=>setAttemptSection(st,user,attempt.id,next)),null,{rerender:false});
-  if(result){data=await repo.getState();ui.view='exam';render();window.scrollTo(0,0);}
+  if(repo.mode==='api'&&repo.outbox){
+    for(const [qid,value] of Object.entries(readExamAnswers(app)))repo.saveDraftAnswer(attempt.id,qid,value);
+    repo.outbox.move(next);
+    data=await repo.getState();render();window.scrollTo(0,0);return;
+  }
+  if(repo.mode==='api'){notify('Bản lưu trên máy chưa sẵn sàng. Vui lòng thử lại.');return;}
+  movingAttemptSection=true;
+  const paper=app.querySelector?.('.exam-paper');
+  if(paper)paper.inert=true;
+  const controls=[...app.querySelectorAll('[data-action="next-section"],[data-action="prev-section"]')];
+  controls.forEach(button=>{button.disabled=true;button.setAttribute('aria-busy','true');});
+  try{
+    if(!await flushTextAnswers())return;
+    const result=await act(()=>repo.transaction(st=>setAttemptSection(st,user,attempt.id,next)),null,{rerender:false});
+    if(result){data=await repo.getState();ui.view='exam';render();window.scrollTo(0,0);}
+  }finally{movingAttemptSection=false;if(paper)paper.inert=false;controls.forEach(button=>{button.disabled=false;button.removeAttribute('aria-busy');});}
 }
 
 async function createNewExam(){

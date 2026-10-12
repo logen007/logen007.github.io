@@ -61,7 +61,7 @@ export async function startAttempt(user,{examId,restart=false,code}){
   });
 }
 
-export async function saveAnswers(user,{attemptId,answers={}}){
+export async function saveAnswers(user,{attemptId,answers={},changes}){
   return withTx(async client=>{
     const result=await client.query(`SELECT * FROM attempts WHERE id=$1 FOR UPDATE`,[attemptId]);
     if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
@@ -70,16 +70,28 @@ export async function saveAnswers(user,{attemptId,answers={}}){
     if(attempt.status!=='in_progress')throw appError(409,'Lượt thi đã kết thúc.');
     const exam=await attemptExam(attempt,client),deadline=examDeadlineMs(publicData,exam);
     if(Date.now()>=deadline)throw appError(409,'Phần thi đã hết thời gian.');
-    const allowed=new Set(publicData.currentQuestionIds||[]),next={...(publicData.answers||{})};
+    const versioned=changes!=null,versions={...(publicData.answerVersions||{})};
+    const allowed=new Set(versioned?(exam.sections||[]).flatMap(s=>s.questionIds||[]):publicData.currentQuestionIds||[]),next={...(publicData.answers||{})};
+    if(versioned){
+      if(typeof changes!=='object'||Array.isArray(changes))throw appError(400,'Bản lưu không hợp lệ.');
+      answers={};
+      for(const [id,change] of Object.entries(changes)){
+        if(!allowed.has(id))throw appError(403,'Câu hỏi không thuộc lượt thi.');
+        if(!change||typeof change.operation!=='string'||change.operation.length>80)throw appError(400,'Phiên bản không hợp lệ.');
+        if(versions[id]===change.operation)continue;
+        if((versions[id]??null)!==(change.base??null))throw appError(409,'Đáp án đã được thay đổi ở nơi khác. Bản trên máy vẫn được giữ lại.');
+        answers[id]=change.value;versions[id]=change.operation;
+      }
+    }else if(Object.keys(versions).length)throw appError(409,'Vui lòng tải lại trang để tiếp tục lưu bài.');
     for(const [key,value] of Object.entries(answers||{}))if(allowed.has(key))next[key]=value;
-    const section=exam.sections?.find(s=>s.id===publicData.currentSectionId);
-    if(section?.questionProfile?.uniqueLetters){
+    const sections=versioned?(exam.sections||[]).filter(s=>s.questionIds?.some(id=>Object.hasOwn(answers,id))):[exam.sections?.find(s=>s.id===publicData.currentSectionId)];
+    for(const section of sections)if(section?.questionProfile?.uniqueLetters){
       const error=letterAnswerError(section,await questionMap(exam),next);
       if(error)throw appError(400,error);
     }
-    const out={...publicData,answers:next,updatedAt:now()};
+    const out={...publicData,answers:next,answerVersions:versions,updatedAt:now()};
     await client.query(`UPDATE attempts SET public_data=$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify(out)]);
-    return {ok:true};
+    return {ok:true,attempt:out,versions};
   });
 }
 
@@ -87,9 +99,8 @@ async function partAudioContext(client,attempt,sectionId){
   const exam=await attemptExam(attempt,client);
   const section=(exam.sections||[]).find(item=>item.id===sectionId);
   if(!section)throw appError(404,'Không tìm thấy Part audio.');
-  if(attempt.public_data?.currentSectionId!==section.id)throw appError(409,'Part audio không thuộc phần thi hiện tại.');
   const policy=section.audioPolicy||{};
-  const allowed=new Set(attempt.public_data.currentQuestionIds||[]);
+  const allowed=new Set(section.questionIds||[]);
   const ids=(section.questionIds||[]).filter(id=>allowed.has(id));
   const questionRows=exam.questionSnapshot?exam.questionSnapshot.filter(q=>ids.includes(q.id)).map(q=>({data:q})):ids.length?(await client.query(`SELECT data FROM questions WHERE id=ANY($1::text[])`,[ids])).rows:[];
   const hasQuestionAudio=questionRows.some(row=>String(row.data?.audioUrl||'').trim());
@@ -139,21 +150,29 @@ export async function completePartAudio(user,{attemptId,sectionId}){
   });
 }
 
-export async function setAttemptSection(user,{attemptId,index}){
+export async function setAttemptSection(user,{attemptId,index,answers={}}){
   return withTx(async client=>{
     const result=await client.query(`SELECT * FROM attempts WHERE id=$1 FOR UPDATE`,[attemptId]);
     if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
     const attempt=result.rows[0],publicData=attempt.public_data;
     if(attempt.student_id!==user.id||attempt.status!=='in_progress')throw appError(403,'Không có quyền chuyển phần thi.');
+    if(Object.keys(publicData.answerVersions||{}).length&&Object.keys(answers||{}).length)throw appError(409,'Vui lòng tải lại trang để tiếp tục lưu bài.');
+    const allowed=new Set(publicData.currentQuestionIds||[]),nextAnswers={...(publicData.answers||{})};
+    for(const [key,value] of Object.entries(answers||{}))if(allowed.has(key))nextAnswers[key]=value;
     const exam=await attemptExam(attempt,client);
+    const current=exam.sections?.find(s=>s.id===publicData.currentSectionId);
+    if(current?.questionProfile?.uniqueLetters){
+      const error=letterAnswerError(current,await questionMap(exam),nextAnswers);
+      if(error)throw appError(400,error);
+    }
     const safe=Math.max(0,Math.min(Number(index)||0,Math.max(0,(exam.sections||[]).length-1)));
     const meta=sectionMeta(exam,safe,publicData.sectionStates||{});
     meta.currentDeadlineMs=examDeadlineMs(publicData,exam);
     for(const state of Object.values(meta.sectionStates))state.deadlineAt=new Date(meta.currentDeadlineMs).toISOString();
     if(Date.now()>=meta.currentDeadlineMs)throw appError(409,'Die Prüfungszeit ist abgelaufen.');
-    const out={...publicData,examDeadlineMs:meta.currentDeadlineMs,currentSectionIndex:safe,...meta,updatedAt:now()};
+    const out={...publicData,answers:nextAnswers,examDeadlineMs:meta.currentDeadlineMs,currentSectionIndex:safe,...meta,updatedAt:now()};
     await client.query(`UPDATE attempts SET public_data=$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify(out)]);
-    return {attemptId,index:safe};
+    return {attemptId,index:safe,attempt:out};
   });
 }
 

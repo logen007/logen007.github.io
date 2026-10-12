@@ -1,4 +1,5 @@
 import {clone,normalizeState} from '../core.js';
+import {ExamOutbox,openExamStore} from './exam-outbox.js';
 import {initialStateScope} from './state-scope.js';
 
 const API=String(globalThis.G2G_API_BASE||'/api').replace(/\/$/,'');
@@ -14,7 +15,7 @@ async function request(path,{method='GET',body,form,timeoutMs=15000,headers={}}=
     if(res.status===304)return null;
     let data={};
     try{data=await res.json();}catch{}
-    if(!res.ok)throw new Error(data?.error||`Máy chủ trả về lỗi ${res.status}.`);
+    if(!res.ok)throw Object.assign(new Error(data?.error||`Máy chủ trả về lỗi ${res.status}.`),{status:res.status});
     return data;
   }catch(error){
     if(error?.name==='AbortError')throw new Error('Máy chủ phản hồi quá chậm. Vui lòng tải lại trang.');
@@ -60,9 +61,55 @@ export class ApiRepository{
     },15000);
   }
 
-  emit(){for(const fn of this.listeners)fn(clone(this.state));}
+  snapshot(){const state=clone(this.state);this.outbox?.overlay(state.attempts.find(a=>a.id===this.outboxAttempt));return state;}
+  emit(){for(const fn of this.listeners)fn(this.snapshot());}
   subscribe(fn){this.listeners.add(fn);return()=>this.listeners.delete(fn);}
-  async getState(){return clone(this.state);}
+  async getState(){return this.snapshot();}
+
+  async prepareExamDraft(attemptId,onStatus){
+    if(this.outboxAttempt===attemptId&&this.outbox)return;
+    if(this.preparingDraft)return this.preparingDraft;
+    this.preparingDraft=(async()=>{
+      this.closeExamDraft();
+      if(!navigator.locks)throw new Error('Trình duyệt chưa hỗ trợ lưu bài an toàn. Hãy cập nhật trình duyệt.');
+      let release;
+      const held=new Promise(resolve=>release=resolve);
+      await new Promise((resolve,reject)=>{
+        navigator.locks.request('g2g-exam-'+this.user.id+'-'+attemptId,{ifAvailable:true},async lock=>{
+          if(!lock){reject(new Error('Bài thi đang mở ở tab khác. Hãy đóng tab đó rồi thử lại.'));return;}
+          this.releaseDraft=release;resolve();await held;
+        }).catch(reject);
+      });
+      try{
+        this.draftStore=await openExamStore();
+        this.outbox=await new ExamOutbox({store:this.draftStore,key:this.user.id+':'+attemptId,onStatus,
+          send:async changes=>{
+            const result=await this.call('saveAnswers',{attemptId,changes});
+            const attempt=this.state.attempts.find(a=>a.id===attemptId);
+            if(attempt&&result.attempt)Object.assign(attempt,result.attempt);
+            return result;
+          }}).init();
+        this.outboxAttempt=attemptId;this.outbox.schedule();
+        this.onlineDraft=()=>this.outbox?.flush().catch(()=>{});
+        window.addEventListener('online',this.onlineDraft);
+      }catch(error){this.closeExamDraft();throw error;}
+    })();
+    try{await this.preparingDraft;}finally{this.preparingDraft=null;}
+  }
+  closeExamDraft(){
+    const outbox=this.outbox,store=this.draftStore,release=this.releaseDraft;
+    outbox?.close();this.outbox=null;this.outboxAttempt=null;
+    if(this.onlineDraft)window.removeEventListener('online',this.onlineDraft);
+    Promise.resolve(outbox?.persisted).catch(()=>{}).finally(()=>{store?.close();release?.();});this.releaseDraft=null;this.draftStore=null;
+  }
+  saveDraftAnswer(attemptId,qid,value){
+    if(this.outboxAttempt!==attemptId||!this.outbox)throw new Error('Bản lưu trên máy chưa sẵn sàng.');
+    const attempt=this.state.attempts.find(a=>a.id===attemptId);
+    const current=Object.hasOwn(this.outbox.draft.pending,qid)?this.outbox.draft.pending[qid].value:attempt?.answers?.[qid];
+    if(JSON.stringify(current)===JSON.stringify(value))return;
+    this.outbox.edit(qid,value,attempt?.answerVersions?.[qid]??null);
+  }
+  async flushDraft(){await this.outbox?.flush();}
 
   async getCurrentUser(){
     if(this.user)return clone(this.user);
@@ -103,6 +150,7 @@ export class ApiRepository{
   async signOut(){
     ++this.generation;
     await request('/auth/logout',{method:'POST',timeoutMs:7000});
+    this.closeExamDraft();
     this.user=null;
     this.state=normalizeState({});
     this.emit();
@@ -121,6 +169,12 @@ export class ApiRepository{
   }
 
   async transaction(mutator){
+    const task=(this.writeQueue||Promise.resolve()).then(()=>this.runTransaction(mutator));
+    this.writeQueue=task.catch(()=>{});
+    return task;
+  }
+
+  async runTransaction(mutator){
     await this.ensureFull();
     this.writing=true;
     ++this.generation;
@@ -174,11 +228,19 @@ export class ApiRepository{
       if(prev.status==='ready'&&changed.status==='published'){secure.push({type:'publish',id:changed.id});handled.add(changed.id);}
     }
 
+    if(!ops.length&&!secure.length)return result;
+    const answerOnly=!ops.length&&secure.every(op=>op.type==='answers');
+    let patchedAnswers=answerOnly;
     for(const op of secure){
       if(op.type==='start'){
         const x=await this.call('startAttemptSecure',{examId:op.examId,restart:op.restart});
         if(x?.attemptId)localMap.set(op.localId,x.attemptId);
-      }else if(op.type==='answers')await this.call('saveAnswers',{attemptId:op.id,answers:op.answers});
+      }else if(op.type==='answers'){
+        const saved=await this.call('saveAnswers',{attemptId:op.id,answers:op.answers});
+        const attempt=this.state.attempts.find(a=>a.id===op.id);
+        if(answerOnly&&saved?.attempt&&attempt)Object.assign(attempt,saved.attempt);
+        else patchedAnswers=false;
+      }
       else if(op.type==='section')await this.call('setAttemptSectionSecure',{attemptId:op.id,index:op.index});
       else if(op.type==='abandon')await this.call('abandonAttemptSecure',{attemptId:op.id});
       else if(op.type==='submit')await this.call('submitAttempt',{attemptId:op.id});
@@ -186,6 +248,7 @@ export class ApiRepository{
       else if(op.type==='publish')await this.call('publishAttemptResult',{attemptId:op.id});
     }
 
+    if(answerOnly&&patchedAnswers)return result?.id?this.state.attempts.find(a=>a.id===result.id)||result:result;
     this.setPollingScope('full');
     await this.reload();
     if(result?.id&&localMap.has(result.id))return this.state.attempts.find(a=>a.id===localMap.get(result.id))||null;
