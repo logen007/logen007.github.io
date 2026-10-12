@@ -5,18 +5,19 @@ import {
   updateSystemSettings,updateSmtpSecret,testSmtp
 } from './settings/api.js';
 import {settingsPageHtml,connectionStatusHtml} from './settings/view.js';
-import {normalizeLayout} from './settings/layout.js';
+import {normalizeLayout,validateLayout} from './settings/layout.js';
+import {normalizeButtonTheme,validateButtonTheme} from './settings/palette.js';
 import {applyLayout} from './settings/theme.js';
 import {bindSettingsTabs} from './settings/tabs.js';
+import {normalizeSettingsTab} from './settings/route.js';
 let selectedSettingsTab='general';
 import {initializeTheme,acceptPublicSettings,currentTheme,saveLocalTheme,normalizeThemeColor,applyTheme} from './settings/theme.js';
-import {iconHtml} from './ui/icons.js';
 
 const localOnly=Boolean(globalThis.G2G_DEMO_BYPASS)||!hasApiBackend();
 let pub={general:{systemName:'Luyện thi tiếng Đức'},auth:{googleLoginEnabled:true},operations:{}};
 let settings=null;
 let infra=null;
-let open=false;
+let settingsTarget=null,onSettingsTab=()=>{};
 let queued=false;
 let saving=false;
 
@@ -26,7 +27,14 @@ function master(){
 function student(){return document.querySelector('.thanh-dau')?.dataset.currentRole==='student';}
 function val(id){return document.getElementById(id)?.value?.trim()||'';}
 function chk(id){return Boolean(document.getElementById(id)?.checked);}
-function selectedLayout(){return normalizeLayout({contentWidth:Number(val('sContentWidth')),cardRadius:Number(val('sCardRadius')),background:val('sBackground')});}
+function selectedLayout(){
+  const input={contentWidth:Number(val('sContentWidth')),cardRadius:Number(val('sCardRadius')),background:val('sBackground')};
+  validateLayout(input);return normalizeLayout(input);
+}
+function selectedButtons(){
+  const input={secondaryColor:val('sSecondaryColorText'),selectionStrength:Number(val('sSelectionStrength'))};
+  validateButtonTheme(input);return normalizeButtonTheme(input);
+}
 function updateConnectionStatus(){
   const target=document.querySelector('.tich-hop-tong-quan');
   if(target)target.innerHTML=connectionStatusHtml(infra);
@@ -92,40 +100,17 @@ function applyMaintenance(){
   header.insertAdjacentElement('afterend',banner);
 }
 
-function injectSettingsButton(){
-  const side=document.querySelector('.thanh-ben');
-  if(!side||!master())return;
-  let button=side.querySelector('[data-action="g2g-settings"]');
-  if(!button){
-    button=document.createElement('button');
-    button.className='muc-ben muc-ben--icon';
-    button.dataset.action='g2g-settings';
-    button.title='Cài đặt';
-    button.setAttribute('aria-label','Cài đặt');
-    button.innerHTML=iconHtml('settings');
-    side.appendChild(button);
-  }
-  if(open){
-    side.querySelectorAll('.muc-ben').forEach(x=>{x.classList.remove('active');x.removeAttribute('aria-current');});
-    button.classList.add('active');
-    button.setAttribute('aria-current','page');
-  }
-}
-
 function enhance(){
   applyBrand();
   applyLogin();
   applyMaintenance();
-  injectSettingsButton();
-  if(open&&master())renderSettings(false);
-  if(open&&!master())open=false;
 }
 
 function collectForm(){
   return {
     ...settings,
     general:{...settings.general,systemName:val('sName'),organizationName:val('sOrg'),supportEmail:val('sSupport'),feedbackEmail:val('sFeedbackEmail'),publicUrl:val('sUrl'),examMessages:val('sExamMessages')},
-    theme:{...settings.theme,...selectedLayout(),primaryColor:selectedThemeColor()},
+    theme:{...settings.theme,...selectedLayout(),...selectedButtons(),primaryColor:selectedThemeColor()},
     auth:{...settings.auth,googleLoginEnabled:chk('sGoogle'),allowNewStudents:chk('sSignup'),allowedDomain:val('sDomain').replace(/^@/,'').toLowerCase()},
     exam:{...settings.exam},
     smtp:{...settings.smtp,enabled:chk('sSmtp'),host:val('sHost'),port:Number(val('sPort')||587),security:val('sSecurity'),username:val('sUser'),fromName:val('sFromName'),fromEmail:val('sFrom'),replyTo:val('sReply'),timeoutMs:Number(val('sTimeout')||20000),rejectUnauthorized:chk('sTlsVerify')},
@@ -141,14 +126,28 @@ function setState(message,bad=false){
   el.classList.toggle('loi',bad);
 }
 
-function renderSettings(force=true){
-  const target=document.querySelector('.noi-dung-quan-tri');
-  if(!target||!master()||!settings)return;
-  injectSettingsButton();
-  if(!force&&target.querySelector('.g2g-settings-page'))return;
+function renderSettings(){
+  const target=settingsTarget;
+  if(!target?.isConnected||!master()||!settings)return;
   target.innerHTML=settingsPageHtml({settings,infra,localOnly});
-  bindSettingsTabs(target,selectedSettingsTab,tab=>{selectedSettingsTab=tab;});
+  bindSettingsTabs(target,selectedSettingsTab,tab=>{selectedSettingsTab=tab;onSettingsTab(tab);});
   bindSettingsActions();
+}
+
+export async function mountSettingsPage(target,tab='general',onTab=()=>{}){
+  if(!target?.isConnected||!master())return;
+  settingsTarget=target;selectedSettingsTab=normalizeSettingsTab(tab);onSettingsTab=onTab;
+  try{
+    const loaded=localOnly?{settings:{theme:currentTheme()},infra:null}:await loadPrivateSettings();
+    if(settingsTarget!==target||!target.isConnected||!master())return;
+    settings=loaded.settings;infra=loaded.infra;renderSettings();
+  }catch(error){
+    if(settingsTarget!==target||!target.isConnected)return;
+    target.replaceChildren();
+    const message=document.createElement('p');message.setAttribute('role','status');message.textContent=error.message||'Không tải được cài đặt.';
+    const retry=document.createElement('button');retry.className='nut';retry.textContent='Thử lại';retry.onclick=()=>mountSettingsPage(target,tab,onTab);
+    target.append(message,retry);
+  }
 }
 
 async function save(){
@@ -158,7 +157,7 @@ async function save(){
   buttons.forEach(button=>button.disabled=true);
   try{
     if(localOnly){
-      saveLocalTheme(selectedThemeColor(),selectedLayout());
+      saveLocalTheme(selectedThemeColor(),{...selectedLayout(),...selectedButtons()});
       settings={theme:currentTheme()};
       setState('Đã lưu giao diện demo trên trình duyệt này.');
       return;
@@ -241,50 +240,32 @@ function bindSettingsActions(){
     try{infra=await refreshInfrastructure();updateConnectionStatus();setState('Đã kiểm tra kết nối.');}catch(error){setState(error.message,true);}
     finally{button.disabled=false;}
   });
-  const picker=document.getElementById('sPrimaryColor'),text=document.getElementById('sPrimaryColorText');
+  const pairs=[['sPrimaryColor','sPrimaryColorText'],['sSecondaryColorPicker','sSecondaryColorText'],['sBackgroundPicker','sBackground']];
   const updatePreview=()=>{
-    const color=normalizeThemeColor(text?.value),error=document.getElementById('sThemeError');
-    text?.setAttribute('aria-invalid',String(!color));
-    if(error){
-      error.textContent=color?'Chữ và nền được cân chỉnh tương phản tự động.':'Nhập mã màu gồm # và 6 ký tự, ví dụ #111827.';
-      error.classList.toggle('loi',!color);
+    const error=document.getElementById('sThemeError');
+    for(const [pickerId,textId] of pairs){
+      const text=document.getElementById(textId),color=normalizeThemeColor(text?.value);
+      text?.setAttribute('aria-invalid',String(!color));
+      if(color)document.getElementById(pickerId).value=color;
     }
-    document.querySelectorAll('[data-theme-preset]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themePreset===color)));
-    if(!color)return;
-    if(picker)picker.value=color;
-    applyTheme(color,document.getElementById('sThemePreview'));
-    applyLayout(selectedLayout(),document.getElementById('sThemePreview'));
+    document.getElementById('sSelectionValue').textContent=val('sSelectionStrength')+'%';
+    try{
+      const color=normalizeThemeColor(val('sPrimaryColorText'));
+      if(!color)throw new Error('Nhập mã màu gồm # và 6 ký tự, ví dụ #111827.');
+      const layout=selectedLayout(),buttons=selectedButtons(),preview=document.getElementById('sThemePreview');
+      applyTheme(color,preview,buttons);applyLayout(layout,preview);
+      error.textContent='Màu chữ trên nút được cân chỉnh tương phản tự động.';error.classList.remove('loi');
+    }catch(issue){error.textContent=issue.message;error.classList.add('loi');}
   };
-  picker?.addEventListener('input',()=>{if(text)text.value=picker.value.toUpperCase();updatePreview();});
-  text?.addEventListener('input',updatePreview);
-  for(const id of ['sContentWidth','sCardRadius','sBackground'])document.getElementById(id)?.addEventListener('change',updatePreview);
-  document.querySelectorAll('[data-theme-preset]').forEach(button=>button.addEventListener('click',()=>{
-    if(text)text.value=button.dataset.themePreset;
-    updatePreview();
-  }));
+  for(const [pickerId,textId] of pairs){
+    const picker=document.getElementById(pickerId),text=document.getElementById(textId);
+    picker?.addEventListener('input',()=>{text.value=picker.value.toUpperCase();updatePreview();});
+    text?.addEventListener('input',updatePreview);
+  }
+  for(const id of ['sContentWidth','sCardRadius','sSelectionStrength'])document.getElementById(id)?.addEventListener('input',updatePreview);
 }
 
 {
-  document.addEventListener('click',async event=>{
-    const settingsButton=event.target.closest?.('[data-action="g2g-settings"]');
-    if(settingsButton){
-      event.preventDefault();
-      event.stopPropagation();
-      open=true;
-      try{
-        if(localOnly){settings={theme:currentTheme()};infra=null;}
-        else{
-          const loaded=await loadPrivateSettings();
-          settings=loaded.settings;
-          infra=loaded.infra;
-        }
-        if(open&&master())renderSettings(true);
-      }catch(error){console.error(error);}
-      return;
-    }
-    if(event.target.closest?.('[data-action="admin-tab"]'))open=false;
-  },true);
-
   const app=document.getElementById('app');
   if(app)new MutationObserver(queue).observe(app,{childList:true});
   queue();

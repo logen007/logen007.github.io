@@ -1,6 +1,8 @@
+import {settingsHref} from './route.js';
+import {esc} from '../ui/format.js';
 export const settingsTabs=[['general','Chung'],['access','Đăng nhập & thi'],['email','Email']];
 export function settingsTabsHtml(){
-  return '<div class="settings-tabs" role="tablist" aria-label="Nhóm cài đặt">'+settingsTabs.map(([id,label],i)=>`<button type="button" class="nut ${i?'':'chinh'}" role="tab" id="settings-tab-${id}" data-settings-tab="${id}" aria-selected="${!i}" aria-controls="settings-panel-${id}" tabindex="${i?-1:0}">${label}</button>`).join('')+'</div>';
+  return '<div class="settings-tabs" role="tablist" aria-label="Nhóm cài đặt">'+settingsTabs.map(([id,label],i)=>`<a href="${esc(settingsHref(id))}" class="nut ${i?'':'chinh'}" role="tab" id="settings-tab-${id}" data-settings-tab="${id}" aria-selected="${!i}" aria-controls="settings-panel-${id}" tabindex="${i?-1:0}">${label}</a>`).join('')+'</div>';
 }
 export function bindSettingsTabs(root,selected='general',onSelect=()=>{}){
   const buttons=[...root.querySelectorAll('[data-settings-tab]')];
@@ -21,7 +23,7 @@ export function bindSettingsTabs(root,selected='general',onSelect=()=>{}){
     Object.entries(panels).forEach(([key,panel])=>panel.hidden=key!==id);onSelect(id);
   };
   buttons.forEach((button,index)=>{
-    button.onclick=()=>select(button.dataset.settingsTab);
+    button.onclick=event=>{if(event?.ctrlKey||event?.metaKey||event?.shiftKey||event?.altKey)return;event?.preventDefault();select(button.dataset.settingsTab);};
     button.onkeydown=event=>{const keys={ArrowRight:(index+1)%buttons.length,ArrowLeft:(index+buttons.length-1)%buttons.length,Home:0,End:buttons.length-1};if(!(event.key in keys))return;event.preventDefault();const next=buttons[keys[event.key]];select(next.dataset.settingsTab);next.focus();};
   });
   select(selected);

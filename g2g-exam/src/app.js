@@ -32,6 +32,7 @@ let gradeAutosave=null,gradePublishing=false;
 window.addEventListener('beforeunload',event=>{if(gradeAutosave?.pending||gradePublishing){event.preventDefault();event.returnValue='';}});
 import {createRepository} from './repository.js';
 import {viewStateScope} from './repositories/state-scope.js';
+import {settingsRouteTab,writeSettingsRoute} from './settings/route.js';
 import {unansweredExamQuestions} from './views/student.js';
 import {
   ATTEMPT_STATUS,byId,isMaster,isStudent,canEditExam,canGradeExam,
@@ -112,7 +113,7 @@ repo.subscribe(next=>{
     realtimeRenderTimer=setTimeout(()=>render(),80);
     return;
   }
-  if(['exam','preview-exam','builder','grading-detail'].includes(ui.view)||document.getElementById('modal')||document.querySelector('.g2g-settings-page')||document.querySelector('[data-name-form]:not([hidden])')||document.activeElement?.matches('[data-student-search]'))return;
+  if(['exam','preview-exam','builder','grading-detail'].includes(ui.view)||(ui.view==='admin'&&ui.adminTab==='settings')||document.getElementById('modal')||document.querySelector('.g2g-settings-page')||document.querySelector('[data-name-form]:not([hidden])')||document.activeElement?.matches('[data-student-search]'))return;
   clearTimeout(realtimeRenderTimer);
   realtimeRenderTimer=setTimeout(()=>render(),80);
 });
@@ -145,7 +146,7 @@ function stopActiveAudio(){
 function syncViewUrl(){
   if(!user)return;
   const url=new URL(window.location.href);
-  for(const key of ['edit','preview','section','view','tab','attempt'])url.searchParams.delete(key);
+  for(const key of ['edit','preview','section','view','tab','attempt','settings'])url.searchParams.delete(key);
   if(ui.view==='builder'&&ui.builderExamId){
     url.searchParams.set('edit',ui.builderExamId);
     if(ui.builderSectionId)url.searchParams.set('section',ui.builderSectionId);
@@ -155,7 +156,10 @@ function syncViewUrl(){
   else if(ui.view==='exam'&&ui.attemptId){url.searchParams.set('view','exam');url.searchParams.set('attempt',ui.attemptId);}
   else if(ui.view==='student-results')url.searchParams.set('view','results');
   else if(ui.view==='student-attempt-detail')url.searchParams.set('view','results');
-  else if(ui.view==='admin')url.searchParams.set('tab',ui.adminTab);
+  else if(ui.view==='admin'){
+    if(ui.adminTab==='settings'&&isMaster(user))writeSettingsRoute(url,ui.settingsTab);
+    else url.searchParams.set('tab',ui.adminTab);
+  }
   history.replaceState(null,'',url.pathname+url.search+url.hash);
 }
 
@@ -454,8 +458,8 @@ function playSectionSegment(audio,onProgress){
 }
 
 function showDraftStatus(state){
-  const messages={pending:'Đã ghi nhận · Đang lưu trên máy',saving:'Đang đồng bộ…',saved:'Đã đồng bộ',offline:'Chưa đồng bộ · Sẽ thử lại khi có mạng',conflict:'Có thay đổi từ nơi khác hoặc đã hết giờ · Bản trên máy được giữ lại. Chưa đồng bộ.', 'storage-error':'Không lưu được trên máy · Đừng đóng trang, hãy kiểm tra dung lượng trống.'};
-  const status=document.getElementById('examDraftStatus');if(status)status.textContent=messages[state]||state;
+  const messages={pending:'Đã ghi nhận · Đang lưu trên máy',saving:'Đang đồng bộ…',saved:'',offline:'Chưa đồng bộ · Sẽ thử lại khi có mạng',conflict:'Có thay đổi từ nơi khác hoặc đã hết giờ · Bản trên máy được giữ lại. Chưa đồng bộ.', 'storage-error':'Không lưu được trên máy · Đừng đóng trang, hãy kiểm tra dung lượng trống.'};
+  const status=document.getElementById('examDraftStatus');if(status){status.hidden=state==='saved';status.textContent=messages[state]??state;}
 }
 function queueAnswer(attemptId,qid,value,delay){
   if(repo.mode==='api'){repo.saveDraftAnswer(attemptId,qid,value);return;}
@@ -559,6 +563,7 @@ function confirmAbandonExam(){
 }
 
 function adminView(){
+  if(ui.adminTab==='settings'&&!isMaster(user))ui.adminTab='exams';
   if(ui.adminTab==='grading')ui.adminTab='grades';
   if(isMaster(user)&&['grading','grades'].includes(ui.adminTab))ui.adminTab='dashboard';
   let content='';
@@ -574,7 +579,13 @@ function adminView(){
   else if(ui.adminTab==='teachers')content=teachersAdminHtml({data,user});
   else if(ui.adminTab==='classes')content=classesHtml({data,classId:ui.classId});
   else if(ui.adminTab==='trash')content=trashAdminHtml({data});
+  else if(ui.adminTab==='settings'&&isMaster(user))content='<div data-settings-route><p role="status">Đang tải cài đặt…</p></div>';
   app.innerHTML=layout(adminShellHtml({content,user,ui}));
+  if(ui.adminTab==='settings'&&isMaster(user)){
+    const target=app.querySelector('[data-settings-route]');
+    import('./settings.js').then(({mountSettingsPage})=>mountSettingsPage(target,ui.settingsTab,tab=>{ui.settingsTab=tab;syncViewUrl();}))
+      .catch(()=>{if(target.isConnected)target.textContent='Không tải được cài đặt. Hãy tải lại trang.';});
+  }
 }
 
 function examBuilderView(){
@@ -1424,7 +1435,7 @@ else{
   else if(requestedView==='results'&&isStudent(user))ui.view='student-results';
   else if(requestedView==='exam'&&isStudent(user)&&byId(data.attempts,requestedAttempt)){ui.attemptId=requestedAttempt;ui.view='exam';}
   else if(requestedView==='grading'&&!isStudent(user)&&byId(data.attempts,requestedAttempt)){ui.gradeAttemptId=requestedAttempt;ui.view='grading-detail';}
-  else if(!isStudent(user)&&initialUrl.searchParams.get('tab')){ui.adminTab=initialUrl.searchParams.get('tab');ui.view='admin';}
+  else if(!isStudent(user)&&initialUrl.searchParams.get('tab')){ui.adminTab=initialUrl.searchParams.get('tab');ui.settingsTab=settingsRouteTab(initialUrl.href)||'general';ui.view='admin';}
   startupGate.finish();
   render();
 }

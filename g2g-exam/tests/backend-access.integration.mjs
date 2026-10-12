@@ -25,7 +25,7 @@ try{
   assert.equal(lightStatus.examStorage,undefined);
   assert.equal(lightStatus.resources,undefined);
   assert.equal(lightStatus.smtp.secretConfigured,false);
-  await assert.rejects(()=>updateSystemSettings({role:'master'},{settings:{...structuredClone(DEFAULT_SETTINGS),theme:{primaryColor:'#123456',contentWidth:99999}}}),/giao diện/);
+  await assert.rejects(()=>updateSystemSettings({role:'master'},{settings:{...structuredClone(DEFAULT_SETTINGS),theme:{primaryColor:'#123456',contentWidth:99999}}}),error=>error.statusCode===400&&/Chiều rộng/.test(error.message));
   const {createExamCode,saveExamAccess,expireCodes}=await import('../server/src/actions/exam-access.js');
   const {startAttempt,abandonAttempt,submitAttempt}=await import('../server/src/actions/attempts.js');
   const {publishAttemptResult}=await import('../server/src/actions/grading.js');

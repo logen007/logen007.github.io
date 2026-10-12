@@ -26,7 +26,7 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
       <div class="dashboard-resource dashboard-resource-total"><span>Dữ liệu hệ thống</span><b>${bytes(totalBytes)}</b><small>Dọn tệp: ${gcText}</small></div>
     </div>
     <section class="dashboard-details"><h3>Chi tiết tài nguyên <span>Cơ sở dữ liệu, tệp &amp; nhật ký</span></h3>
-      <div class="resource-breakdown">${row('PostgreSQL',usage.databaseBytes)}${row('Audio &amp; hình ảnh',usage.uploadsBytes)}${row('Mã nguồn',usage.applicationBytes)}${row('Bài làm · trong PostgreSQL',tables.attempts)}${row('Câu hỏi · trong PostgreSQL',tables.questions)}${row('Nhật ký · trong PostgreSQL',tables.audit_log)}</div>
+      <div class="resource-breakdown">${row('PostgreSQL',usage.databaseBytes)}${row('Audio &amp; hình ảnh',usage.uploadsBytes)}${row('Mã nguồn',usage.applicationBytes)}${row('Bài làm',tables.attempts)}${row('Câu hỏi',tables.questions)}${row('Nhật ký',tables.audit_log)}</div>
       <p class="dashboard-caption">${gc.error?`Lỗi dọn tệp: ${esc(gc.error)}`:gc.lastSuccessAt&&Number.isFinite(stamp.getTime())?`Quét gần nhất: ${esc(stamp.toLocaleString('vi-VN'))} · Đã dọn ${Number(gc.deleted)||0} tệp (${bytes(gc.deletedBytes??0)})`:'Đang chờ lượt quét đầu tiên.'}</p>
     </section>
     <section class="dashboard-details"><h3>Dung lượng đề thi <span>${storage.length} đề · lớn nhất trước</span></h3>

@@ -207,12 +207,12 @@ test('Trang Quản trị có module Cài đặt Google, SMTP, email và vận h�
   assert.ok(loader.includes("load('./settings.js')"));
   assert.ok(!view.includes('Quyền làm bài'));
   assert.ok(!controller.includes("allowRestart:chk('sRestart')"));
-  for(const text of ['Cài đặt hệ thống','Thông tin hệ thống','Giao diện thương hiệu','Màu chủ đạo','Đăng nhập Google','Máy chủ SMTP','Email kết quả','Vận hành / bảo trì']){
+  for(const text of ['Cài đặt hệ thống','Thông tin hệ thống','Giao diện thương hiệu','Nút chính','Đăng nhập Google','Máy chủ SMTP','Email kết quả','Vận hành / bảo trì']){
     assert.ok(view.includes(text),`Thiếu nội dung Cài đặt: ${text}`);
   }
   for(const text of ['updateSystemSettings','updateSmtpSecret','testSmtp'])assert.ok(api.includes(text),`Thiếu API Cài đặt: ${text}`);
   assert.ok(controller.includes('loadPrivateSettings'));
-  assert.ok(read('src/settings/theme.js').includes('--brand-primary'));
+  assert.ok(read('src/settings/palette.js').includes('--brand-primary'));
   assert.ok(html.includes('Google+Sans+Flex'));
 });
 
@@ -274,7 +274,8 @@ test('Chuyển vào thùng rác trực tiếp và vẫn xác nhận xóa vĩnh v
 
 test('Trang Đề Thi giữ tab rõ ràng trên URL',()=>{
   const app=read('src/app.js');
-  assert.ok(app.includes("else if(ui.view==='admin')url.searchParams.set('tab',ui.adminTab)"));
+  assert.ok(app.includes("url.searchParams.set('tab',ui.adminTab)"));
+  assert.ok(app.includes('writeSettingsRoute(url,ui.settingsTab)'));
   assert.ok(!app.includes("ui.view==='admin'&&ui.adminTab!=='exams'"));
 });
 

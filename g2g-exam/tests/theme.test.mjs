@@ -1,4 +1,15 @@
 import assert from 'node:assert/strict';
+import {settingsRouteTab,settingsHref} from '../src/settings/route.js';
+import {initialStateScope,viewStateScope} from '../src/repositories/state-scope.js';
+for(const tab of ['general','access','email']){
+  const href=settingsHref(tab,'https://example.com/adm?preview=old&section=2');
+  assert.equal(settingsRouteTab(new URL(href,'https://example.com').href),tab);
+  assert.equal(initialStateScope({role:'master'},new URL(href,'https://example.com').href),'catalog');
+  assert.doesNotMatch(href,/preview=|section=/);
+}
+assert.equal(settingsRouteTab('https://example.com/adm?tab=settings&settings=invalid'),'general');
+assert.equal(settingsRouteTab('https://example.com/adm?tab=exams'),null);
+assert.equal(viewStateScope('admin','settings'),'catalog');
 import {settingsTabs,settingsTabsHtml} from '../src/settings/tabs.js';
 assert.equal(settingsTabs.length,3);
 assert.deepEqual(settingsTabs.map(([id])=>id),['general','access','email']);
@@ -10,12 +21,18 @@ import {readFileSync} from 'node:fs';
 import {normalizeThemeColor,themePalette,colorContrast,initializeTheme,acceptPublicSettings,currentTheme,saveLocalTheme} from '../src/settings/theme.js';
 
 let passed=0;
-import {normalizeLayout,layoutVariables} from '../src/settings/layout.js';
+import {normalizeLayout,layoutVariables,validateLayout} from '../src/settings/layout.js';
+import {validateButtonTheme} from '../src/settings/palette.js';
 import {settingsPageHtml} from '../src/settings/view.js';
 import {DEFAULT_SETTINGS} from '../server/src/defaults.js';
 assert.equal(normalizeLayout({contentWidth:99999}).contentWidth,1600);
 assert.equal(layoutVariables({cardRadius:16,background:'warm'})['--r'],'16px');
-assert.equal(layoutVariables({background:'url(invalid)'})['--nen'],'#f4f5f6');
+assert.equal(layoutVariables({background:'url(invalid)'})['--nen'],'#F4F5F6');
+assert.equal(normalizeLayout({contentWidth:1537,background:'#aabbcc'}).contentWidth,1537);
+assert.equal(layoutVariables({background:'#aabbcc'})['--nen'],'#AABBCC');
+assert.equal(normalizeLayout({background:'warm'}).background,'#F7F5F0');
+for(const input of [{contentWidth:0},{contentWidth:1600.5},{contentWidth:'1600'},{background:'toString'},{background:'url(evil)'}])assert.throws(()=>validateLayout(input));
+for(const input of [{secondaryColor:'red'},{selectionStrength:100},{selectionStrength:7.5}])assert.throws(()=>validateButtonTheme(input));
 const page=settingsPageHtml({settings:DEFAULT_SETTINGS,infra:null});
 assert.match(page,/data-asset-pick="sLogo"/);
 assert.match(page,/data-asset-pick="sFavicon"/);
@@ -24,6 +41,10 @@ assert.ok(readFileSync(new URL('../src/settings/tabs.js',import.meta.url),'utf8'
 assert.ok(!page.includes('sRestart'));
 for(const id of ['sContentWidth','sCardRadius','sBackground'])assert.ok(page.includes(id));
 assert.ok(!page.includes('cai-dat-card-rong'));
+assert.match(page,/id="sContentWidth" type="number"/);
+assert.match(page,/id="sBackground"[^>]*maxlength="7"/);
+assert.match(page,/id="sSelectionStrength" type="range"/);
+assert.doesNotMatch(page,/data-theme-preset|Than đậm|Xanh dương|Xanh lá/);
 const layoutCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(layoutCss,/\.exam-instruction img \{[^}]*width:100%; max-width:100%; height:auto; max-height:none;/);
 assert.match(layoutCss,/\.question-stimulus img \{[^}]*width:100%; max-width:100%; height:auto; max-height:none;/);
@@ -45,12 +66,16 @@ await test('Màu rất sáng, tối và bão hòa đều có chữ đạt tươn
   const channel=[0,51,102,153,204,255];
   for(const red of channel)for(const green of channel)for(const blue of channel){
     const color='#'+[red,green,blue].map(value=>value.toString(16).padStart(2,'0')).join('');
-    const palette=themePalette(color);
+    for(const selectionStrength of [5,7,20,35]){
+    const palette=themePalette(color,{selectionStrength,secondaryColor:color});
     assert.equal(palette['--brand-primary'],color.toUpperCase());
     assert.ok(colorContrast(palette['--brand-primary'],palette['--brand-on-primary'])>=4.5,`Nút chính ${color}`);
     assert.ok(colorContrast(palette['--brand-hover'],palette['--brand-on-primary'])>=4.5,`Nút hover ${color}`);
     assert.ok(colorContrast(palette['--brand-soft'],palette['--brand-text'])>=4.5,`Trạng thái chọn ${color}`);
     assert.ok(colorContrast('#FFFFFF',palette['--brand-text'])>=4.5,`Chữ trên nền trắng ${color}`);
+    assert.ok(colorContrast(palette['--button-secondary'],palette['--button-secondary-text'])>=4.5);
+    assert.ok(colorContrast(palette['--button-secondary-hover'],palette['--button-secondary-text'])>=4.5);
+    }
   }
 });
 
@@ -73,6 +98,11 @@ await test('Demo áp dụng màu đã lưu trước khi đọc cấu hình; khô
   assert.equal(storage.get('g2g.theme.demo.v1'),'#6D3DF5');
   assert.equal(variables.get('--brand-primary'),'#6D3DF5');
   assert.deepEqual(requests,[{url:'/api/public-settings',method:'GET'}]);
+  saveLocalTheme('#175CD3',{contentWidth:1537,background:'#ABCDEf',secondaryColor:'#111827',selectionStrength:25});
+  assert.equal(currentTheme().selectionStrength,25);
+  assert.equal(currentTheme().secondaryColor,'#111827');
+  assert.equal(variables.get('--nen'),'#ABCDEF');
+  assert.equal(JSON.parse(storage.get('g2g.theme.demo.v1.layout')).contentWidth,1537);
 });
 
 await test('Chế độ thật dùng màu server, không dùng màu riêng của demo',()=>{

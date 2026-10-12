@@ -58,7 +58,7 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   Do not append another global visual override block here.
 - `src/ui/icons.js` owns outline icons. Buttons own the frame; do not use an icon
   asset with a second embedded border. Existing unframed Figma assets may be reused.
-- `src/settings/theme.js` owns brand colors and contrast. Use `--brand-primary`
+- `src/settings/palette.js` owns brand colors and contrast; `theme.js` applies and caches them. Use `--brand-primary`
   with `--brand-on-primary` for filled buttons; `--brand-soft`, `--brand-text` and
   `--brand-border` for selected answers/light states. Keep warning/success/error
   semantics fixed. Do not hard-code purple or blue selection states.

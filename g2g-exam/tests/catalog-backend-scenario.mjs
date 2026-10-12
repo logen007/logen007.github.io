@@ -16,6 +16,8 @@ export async function catalogBackendScenario({query,teacher,student}){
   assert.ok(!JSON.stringify(catalog).includes('PRIVATE_CONTENT_'));
   assert.ok(!JSON.stringify(catalog).includes('questionSnapshot'));
   assert.ok(examAdminHtml({data:catalog,user:teacher}).includes('Catalog regression'));
+  assert.match(examAdminHtml({data:catalog,user:teacher}),/<th>Last edit<\/th>/);
+  assert.ok(Number.isFinite(Date.parse(catalog.exams.find(e=>e.id==='catalog-large').updatedAt)));
   const studentCatalog=await loadExamCatalog(student);
   assert.ok(studentCatalog.attempts.every(a=>a.studentId===student.id));
   assert.ok(studentCatalog.exams.every(e=>e.status==='published'));
@@ -25,6 +27,9 @@ export async function catalogBackendScenario({query,teacher,student}){
   assert.equal(stateResponse(await loadExamCatalog(teacher),{headers:{}},reply).revision,revision);
   await query("UPDATE exams SET data=jsonb_set(data,'{title}','\"Changed catalog title\"') WHERE id='catalog-large'");
   assert.notEqual(stateResponse(await loadExamCatalog(teacher),{headers:{}},reply).revision,revision);
+  await query("UPDATE questions SET updated_at='2030-01-02T03:04:00Z' WHERE id='catalog-large-q'");
+  const afterQuestionEdit=await loadExamCatalog(teacher);
+  assert.equal(afterQuestionEdit.exams.find(e=>e.id==='catalog-large').updatedAt,'2030-01-02T03:04:00.000Z');
   const bytes=x=>Buffer.byteLength(JSON.stringify(x));
   assert.ok(bytes(catalog)<bytes(full)/4,'Catalog should be materially smaller than full content');
   console.log('Catalog SQL: permissions, counts, rendering, stable revisions and payload reduction passed ('+bytes(catalog)+' / '+bytes(full)+' bytes).');
