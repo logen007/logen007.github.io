@@ -1,14 +1,24 @@
 import assert from 'node:assert/strict';
 import {settingsTabs,settingsTabsHtml} from '../src/settings/tabs.js';
-assert.equal(settingsTabs.length,4);
+assert.equal(settingsTabs.length,5);
 const settingsTabMarkup=settingsTabsHtml();
-assert.equal((settingsTabMarkup.match(/role="tab"/g)||[]).length,4);
+assert.equal((settingsTabMarkup.match(/role="tab"/g)||[]).length,5);
 assert.equal((settingsTabMarkup.match(/aria-selected="true"/g)||[]).length,1);
 assert.match(settingsTabMarkup,/aria-controls="settings-panel-operations"/);
 import {readFileSync} from 'node:fs';
 import {normalizeThemeColor,themePalette,colorContrast,initializeTheme,acceptPublicSettings,currentTheme,saveLocalTheme} from '../src/settings/theme.js';
 
 let passed=0;
+import {normalizeLayout,layoutVariables} from '../src/settings/layout.js';
+import {settingsPageHtml} from '../src/settings/view.js';
+import {DEFAULT_SETTINGS} from '../server/src/defaults.js';
+assert.equal(normalizeLayout({contentWidth:99999}).contentWidth,1600);
+assert.equal(layoutVariables({cardRadius:16,background:'warm'})['--r'],'16px');
+assert.equal(layoutVariables({background:'url(invalid)'})['--nen'],'#f4f5f6');
+const page=settingsPageHtml({settings:DEFAULT_SETTINGS,infra:null});
+assert.ok(!page.includes('sRestart'));
+for(const id of ['sContentWidth','sCardRadius','sBackground'])assert.ok(page.includes(id));
+assert.ok(!page.includes('cai-dat-card-rong'));
 const layoutCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(layoutCss,/\.exam-instruction img \{[^}]*width:100%; max-width:100%; height:auto; max-height:none;/);
 assert.match(layoutCss,/\.question-stimulus img \{[^}]*width:100%; max-width:100%; height:auto; max-height:none;/);
@@ -64,6 +74,9 @@ await test('Chế độ thật dùng màu server, không dùng màu riêng của
   globalThis.G2G_DEMO_BYPASS=false;
   acceptPublicSettings({theme:{primaryColor:'#175CD3'}});
   assert.equal(currentTheme().primaryColor,'#175CD3');
+  acceptPublicSettings({theme:{primaryColor:'#175CD3',contentWidth:1400,cardRadius:16,background:'warm'}});
+  assert.equal(currentTheme().contentWidth,1400);
+  assert.equal(currentTheme().cardRadius,16);
 });
 
 await test('Lưu demo báo lỗi khi trình duyệt chặn lưu trữ',()=>{

@@ -62,7 +62,7 @@ export async function handleAction(user,name,data={}){
     case 'updateSystemSettings': return updateSystemSettings(user,data);
     case 'updateSmtpSecret': return updateSmtpSecret(user,data);
     case 'testSmtp': return testSmtp(user,data);
-    case 'getInfrastructureStatus': return getInfrastructureStatus(user);
+    case 'getInfrastructureStatus': return getInfrastructureStatus(user,data);
     case 'setUserRole': return setUserRole(user,data);
     case 'setTeacherByEmail': return setTeacherByEmail(user,data);
     default: throw appError(404,'Thao tác máy chủ không tồn tại.');

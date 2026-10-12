@@ -41,7 +41,8 @@
 .brand-color-preset { display:inline-flex; gap:7px; align-items:center; min-height:36px; padding:8px 12px; border:1px solid var(--vien); border-radius:var(--pill); background:var(--mat); font-size:12px; }
 .brand-color-preset>span { width:14px; height:14px; border-radius:50%; flex:none; }
 .brand-color-preset[aria-pressed=true] { border-color:var(--brand-text); background:var(--brand-soft); color:var(--brand-text); }
-.brand-theme-preview { border:1px solid var(--vien); border-radius:16px; padding:20px; background:var(--surface-muted); }
+.brand-theme-preview { border:1px solid var(--vien); border-radius:var(--r); padding:20px; background:var(--nen); }
+#settings-panel-general,#settings-panel-appearance { grid-template-columns:minmax(0,760px); }
 .brand-preview-caption { display:block; color:var(--phu); font-size:12px; margin-bottom:16px; }
 .brand-preview-controls { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
 .brand-preview-controls>span { display:inline-flex; align-items:center; min-height:40px; padding:10px 16px; border-radius:var(--pill); font-size:13px; font-weight:500; }

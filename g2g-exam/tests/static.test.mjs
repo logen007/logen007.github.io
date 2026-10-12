@@ -205,7 +205,9 @@ test('Trang Quản trị có module Cài đặt Google, SMTP, email và vận h�
   const api=read('src/settings/api.js');
   assert.match(html,/src=["']\.\/src\/feature-loader\.js/);
   assert.ok(loader.includes("load('./settings.js')"));
-  for(const text of ['Cài đặt hệ thống','Thông tin hệ thống','Giao diện thương hiệu','Màu chủ đạo','Đăng nhập Google','Máy chủ SMTP','Email kết quả','Quyền làm bài','Vận hành / bảo trì']){
+  assert.ok(!view.includes('Quyền làm bài'));
+  assert.ok(!controller.includes("allowRestart:chk('sRestart')"));
+  for(const text of ['Cài đặt hệ thống','Thông tin hệ thống','Giao diện thương hiệu','Màu chủ đạo','Đăng nhập Google','Máy chủ SMTP','Email kết quả','Vận hành / bảo trì']){
     assert.ok(view.includes(text),`Thiếu nội dung Cài đặt: ${text}`);
   }
   for(const text of ['updateSystemSettings','updateSmtpSecret','testSmtp'])assert.ok(api.includes(text),`Thiếu API Cài đặt: ${text}`);

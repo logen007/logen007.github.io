@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import {getMediaGarbageCollectionStatus} from '../media-gc.js';
+import {normalizeLayout,LAYOUT_CHOICES} from '../../../src/settings/layout.js';
 
 const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||''));
 const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||''));
@@ -61,6 +62,8 @@ function cleanSettings(input={}){
     settings.general[key]=url;
   }
   settings.theme.primaryColor=String(settings.theme.primaryColor||'').trim();
+  for(const [key,choices] of Object.entries(LAYOUT_CHOICES))if(settings.theme[key]!==undefined&&!choices.includes(settings.theme[key]))throw appError(400,'Tuỳ chỉnh giao diện không hợp lệ.');
+  Object.assign(settings.theme,normalizeLayout(settings.theme));
   settings.auth.allowedDomain=String(settings.auth.allowedDomain||'').trim().toLowerCase().replace(/^@/,'').slice(0,160);
   settings.auth.teacherEmails=normalizeTeacherEmails(settings.auth.teacherEmails);
   settings.smtp.port=Math.max(1,Math.min(65535,Number(settings.smtp.port||587)));
@@ -100,12 +103,15 @@ export async function testSmtp(user,{to}){
   return {ok:true,messageId:sent.messageId};
 }
 
-export async function getInfrastructureStatus(user){
+export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
   if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được xem trạng thái hạ tầng.');
   const settings=await getSettings();
   const secret=await smtpSecretStatus();
   let database=true;
   try{await query('SELECT 1');}catch{database=false;}
+  const connectionStatus={backend:'VPS',postgresql:database,googleLoginConfigured:Boolean(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET),smtp:{enabled:Boolean(settings.smtp.enabled),configured:Boolean(settings.smtp.host&&settings.smtp.fromEmail&&(!settings.smtp.username||secret.configured)),secretConfigured:secret.configured,secretUpdatedAt:secret.updatedAt}};
+  // Settings needs connection status, not a scan of every exam and uploaded file.
+  if(summaryOnly===true)return connectionStatus;
   const [databaseSize,tableSizes,examRows,questionRows,uploadBytes,applicationBytes,disk]=await Promise.all([
     query(`SELECT pg_database_size(current_database())::bigint AS bytes`),
     query(`SELECT relname AS name,pg_total_relation_size(oid)::bigint AS bytes FROM pg_class WHERE relname=ANY($1::text[])`,[['users','exams','questions','attempts','notifications','audit_log','settings']]),

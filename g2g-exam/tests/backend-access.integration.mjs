@@ -18,6 +18,14 @@ const hook=registerHooks({resolve(specifier,ctx,next){
 }});
 try{
   await db.exec(await fs.readFile(new URL('../server/schema.sql',import.meta.url),'utf8'));
+  const {getInfrastructureStatus,updateSystemSettings}=await import('../server/src/actions/settings.js');
+  await assert.rejects(()=>getInfrastructureStatus({role:'student'},{summaryOnly:true}),/Quản trị/);
+  const lightStatus=await getInfrastructureStatus({role:'master'},{summaryOnly:true});
+  assert.equal(lightStatus.postgresql,true);
+  assert.equal(lightStatus.examStorage,undefined);
+  assert.equal(lightStatus.resources,undefined);
+  assert.equal(lightStatus.smtp.secretConfigured,false);
+  await assert.rejects(()=>updateSystemSettings({role:'master'},{settings:{...structuredClone(DEFAULT_SETTINGS),theme:{primaryColor:'#123456',contentWidth:99999}}}),/giao diện/);
   const {createExamCode,saveExamAccess,expireCodes}=await import('../server/src/actions/exam-access.js');
   const {startAttempt,abandonAttempt,submitAttempt}=await import('../server/src/actions/attempts.js');
   const {publishAttemptResult}=await import('../server/src/actions/grading.js');

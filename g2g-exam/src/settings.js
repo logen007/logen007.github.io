@@ -3,7 +3,9 @@ import {
   loadPrivateSettings,refreshInfrastructure,
   updateSystemSettings,updateSmtpSecret,testSmtp
 } from './settings/api.js';
-import {settingsPageHtml} from './settings/view.js';
+import {settingsPageHtml,connectionStatusHtml} from './settings/view.js';
+import {normalizeLayout} from './settings/layout.js';
+import {applyLayout} from './settings/theme.js';
 import {bindSettingsTabs} from './settings/tabs.js';
 let selectedSettingsTab='general';
 import {initializeTheme,acceptPublicSettings,currentTheme,saveLocalTheme,normalizeThemeColor,applyTheme} from './settings/theme.js';
@@ -15,6 +17,7 @@ let settings=null;
 let infra=null;
 let open=false;
 let queued=false;
+let saving=false;
 
 function master(){
   return document.querySelector('.thanh-dau')?.dataset.currentRole==='master'&&Boolean(document.querySelector('.thanh-ben'));
@@ -22,6 +25,13 @@ function master(){
 function student(){return document.querySelector('.thanh-dau')?.dataset.currentRole==='student';}
 function val(id){return document.getElementById(id)?.value?.trim()||'';}
 function chk(id){return Boolean(document.getElementById(id)?.checked);}
+function selectedLayout(){return normalizeLayout({contentWidth:Number(val('sContentWidth')),cardRadius:Number(val('sCardRadius')),background:val('sBackground')});}
+function updateConnectionStatus(){
+  const target=document.querySelector('.tich-hop-tong-quan');
+  if(target)target.innerHTML=connectionStatusHtml(infra);
+  const hint=document.getElementById('sSecretHint');
+  if(hint)hint.textContent=infra?.smtp?.secretConfigured?'Đã lưu mật khẩu an toàn.':'Chưa lưu mật khẩu SMTP.';
+}
 function selectedThemeColor(){
   const input=document.getElementById('sPrimaryColorText');
   const color=normalizeThemeColor(input?.value);
@@ -114,9 +124,9 @@ function collectForm(){
   return {
     ...settings,
     general:{...settings.general,systemName:val('sName'),organizationName:val('sOrg'),supportEmail:val('sSupport'),publicUrl:val('sUrl'),examMessages:val('sExamMessages')},
-    theme:{...settings.theme,primaryColor:selectedThemeColor()},
+    theme:{...settings.theme,...selectedLayout(),primaryColor:selectedThemeColor()},
     auth:{...settings.auth,googleLoginEnabled:chk('sGoogle'),allowNewStudents:chk('sSignup'),allowedDomain:val('sDomain').replace(/^@/,'').toLowerCase()},
-    exam:{...settings.exam,allowRestart:chk('sRestart')},
+    exam:{...settings.exam},
     smtp:{...settings.smtp,enabled:chk('sSmtp'),host:val('sHost'),port:Number(val('sPort')||587),security:val('sSecurity'),username:val('sUser'),fromName:val('sFromName'),fromEmail:val('sFrom'),replyTo:val('sReply'),timeoutMs:Number(val('sTimeout')||20000),rejectUnauthorized:chk('sTlsVerify')},
     email:{...settings.email,enabled:chk('sEmail'),resultSubject:val('sSubject'),resultText:document.getElementById('sText')?.value||'',resultHtml:document.getElementById('sHtml')?.value||''},
     operations:{...settings.operations,trashRetentionDays:Number(val('sTrashDays')),maintenanceMode:chk('sMaintenance'),maintenanceMessage:val('sMaintenanceText')},
@@ -141,9 +151,13 @@ function renderSettings(force=true){
 }
 
 async function save(){
+  if(saving)return;
+  saving=true;
+  const buttons=[document.getElementById('sSave'),document.getElementById('sSaveBottom')].filter(Boolean);
+  buttons.forEach(button=>button.disabled=true);
   try{
     if(localOnly){
-      saveLocalTheme(selectedThemeColor());
+      saveLocalTheme(selectedThemeColor(),selectedLayout());
       settings={theme:currentTheme()};
       setState('Đã lưu giao diện demo trên trình duyệt này.');
       return;
@@ -168,19 +182,24 @@ async function save(){
     applyBrand();
     applyLogin();
   }catch(error){setState(error.message,true);}
+  finally{saving=false;buttons.forEach(button=>button.disabled=false);}
 }
 
 async function saveSecret(){
+  const button=document.getElementById('sSecret');
+  if(button?.disabled)return;
   const password=document.getElementById('sPassword')?.value||'';
   if(!password)return setState('Hãy nhập mật khẩu SMTP mới.',true);
+  if(button)button.disabled=true;
   try{
     setState('Đang mã hóa và lưu mật khẩu...');
     await updateSmtpSecret(password);
     document.getElementById('sPassword').value='';
     infra=await refreshInfrastructure();
     setState('Đã cập nhật mật khẩu SMTP.');
-    renderSettings(true);
+    updateConnectionStatus();
   }catch(error){setState(error.message,true);}
+  finally{if(button)button.disabled=false;}
 }
 
 async function sendTest(){
@@ -202,7 +221,10 @@ function bindSettingsActions(){
   document.getElementById('sSecret')?.addEventListener('click',saveSecret);
   document.getElementById('sTest')?.addEventListener('click',sendTest);
   document.getElementById('sRefresh')?.addEventListener('click',async()=>{
-    try{infra=await refreshInfrastructure();renderSettings(true);}catch(error){setState(error.message,true);}
+    const button=document.getElementById('sRefresh');
+    button.disabled=true;
+    try{infra=await refreshInfrastructure();updateConnectionStatus();setState('Đã kiểm tra kết nối.');}catch(error){setState(error.message,true);}
+    finally{button.disabled=false;}
   });
   const picker=document.getElementById('sPrimaryColor'),text=document.getElementById('sPrimaryColorText');
   const updatePreview=()=>{
@@ -216,9 +238,11 @@ function bindSettingsActions(){
     if(!color)return;
     if(picker)picker.value=color;
     applyTheme(color,document.getElementById('sThemePreview'));
+    applyLayout(selectedLayout(),document.getElementById('sThemePreview'));
   };
   picker?.addEventListener('input',()=>{if(text)text.value=picker.value.toUpperCase();updatePreview();});
   text?.addEventListener('input',updatePreview);
+  for(const id of ['sContentWidth','sCardRadius','sBackground'])document.getElementById(id)?.addEventListener('change',updatePreview);
   document.querySelectorAll('[data-theme-preset]').forEach(button=>button.addEventListener('click',()=>{
     if(text)text.value=button.dataset.themePreset;
     updatePreview();
@@ -239,7 +263,7 @@ function bindSettingsActions(){
           settings=loaded.settings;
           infra=loaded.infra;
         }
-        renderSettings(true);
+        if(open&&master())renderSettings(true);
       }catch(error){console.error(error);}
       return;
     }

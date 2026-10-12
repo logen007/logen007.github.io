@@ -1,5 +1,12 @@
 import {hasApiBackend} from '../config.js';
 import {loadPublicSettings} from './api.js';
+import {normalizeLayout,layoutVariables} from './layout.js';
+let currentLayout=normalizeLayout();
+function readLayout(key){try{return JSON.parse(globalThis.localStorage?.getItem(key+'.layout')||'null');}catch{return null;}}
+function storeLayout(key,value){try{globalThis.localStorage?.setItem(key+'.layout',JSON.stringify(value));}catch{}}
+export function applyLayout(value,target=globalThis.document?.documentElement){
+  if(target?.style)for(const [key,item] of Object.entries(layoutVariables(value)))target.style.setProperty(key,item);
+}
 
 export const DEFAULT_PRIMARY_COLOR='#111827';
 const CACHE_KEY='g2g.theme.public.v1';
@@ -61,26 +68,30 @@ export function applyTheme(value,target=globalThis.document?.documentElement){
   if(target?.style)for(const [name,color] of Object.entries(palette))target.style.setProperty(name,color);
   return palette;
 }
-function applyCurrentTheme(color){
+function applyCurrentTheme(color,layout={}){
+  currentLayout=normalizeLayout(layout);
+  applyLayout(currentLayout);
   currentColor=normalizeThemeColor(color)||DEFAULT_PRIMARY_COLOR;
   applyTheme(currentColor);
   globalThis.document?.querySelector('meta[name="theme-color"]')?.setAttribute('content',currentColor);
 }
-export function currentTheme(){return {primaryColor:currentColor};}
-export function saveLocalTheme(value){
+export function currentTheme(){return {primaryColor:currentColor,...currentLayout};}
+export function saveLocalTheme(value,layout={}){
   const color=normalizeThemeColor(value);
   if(!color)throw new Error('Nhập mã màu gồm # và 6 ký tự, ví dụ #111827.');
   try{
     if(!globalThis.localStorage)throw new Error('Storage unavailable');
     globalThis.localStorage.setItem(DEMO_KEY,color);
+    globalThis.localStorage.setItem(DEMO_KEY+'.layout',JSON.stringify(normalizeLayout(layout)));
   }catch{throw new Error('Trình duyệt chưa cho phép lưu giao diện. Hãy bật bộ nhớ trang web rồi thử lại.');}
-  applyCurrentTheme(color);
+  applyCurrentTheme(color,layout);
 }
 export function acceptPublicSettings(settings){
   publicSettings=settings||{};
   const color=normalizeThemeColor(publicSettings.theme?.primaryColor)||DEFAULT_PRIMARY_COLOR;
   storeColor(CACHE_KEY,color);
-  applyCurrentTheme(localThemeEnabled()?readColor(DEMO_KEY)||color:color);
+  storeLayout(CACHE_KEY,normalizeLayout(publicSettings.theme));
+  applyCurrentTheme(localThemeEnabled()?readColor(DEMO_KEY)||color:color,localThemeEnabled()?readLayout(DEMO_KEY)||publicSettings.theme:publicSettings.theme);
   return publicSettings;
 }
 
@@ -88,7 +99,7 @@ export function acceptPublicSettings(settings){
 export function initializeTheme(){
   if(initialization)return initialization;
   const cached=readColor(CACHE_KEY)||DEFAULT_PRIMARY_COLOR;
-  applyCurrentTheme(localThemeEnabled()?readColor(DEMO_KEY)||cached:cached);
+  applyCurrentTheme(localThemeEnabled()?readColor(DEMO_KEY)||cached:cached,localThemeEnabled()?readLayout(DEMO_KEY)||readLayout(CACHE_KEY)||{}:readLayout(CACHE_KEY)||{});
   initialization=hasApiBackend()
     ? loadPublicSettings().then(acceptPublicSettings).catch(()=>publicSettings)
     : Promise.resolve(publicSettings);

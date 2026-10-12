@@ -17,16 +17,22 @@ export async function loadPublicSettings(){
   return request('/public-settings');
 }
 
-export async function loadPrivateSettings(){
+let settingsLoad;
+export function loadPrivateSettings(){
+  if(settingsLoad)return settingsLoad;
+  settingsLoad=readPrivateSettings().finally(()=>{settingsLoad=null;});
+  return settingsLoad;
+}
+async function readPrivateSettings(){
   const [settings,infra]=await Promise.all([
     request('/settings'),
-    request('/actions/getInfrastructureStatus',{method:'POST',body:{}}),
+    refreshInfrastructure().catch(()=>null),
   ]);
   return {settings:settings.settings,infra};
 }
 
 export async function refreshInfrastructure(){
-  return request('/actions/getInfrastructureStatus',{method:'POST',body:{}});
+  return request('/actions/getInfrastructureStatus',{method:'POST',body:{summaryOnly:true}});
 }
 
 export async function updateSystemSettings(settings){

@@ -1,11 +1,11 @@
-export const settingsTabs=[['general','Chung'],['access','Đăng nhập & thi'],['email','Email'],['operations','Vận hành']];
+export const settingsTabs=[['general','Chung'],['appearance','Giao diện'],['access','Đăng nhập & thi'],['email','Email'],['operations','Vận hành']];
 export function settingsTabsHtml(){
   return '<div class="settings-tabs" role="tablist" aria-label="Nhóm cài đặt">'+settingsTabs.map(([id,label],i)=>`<button type="button" class="nut ${i?'':'chinh'}" role="tab" id="settings-tab-${id}" data-settings-tab="${id}" aria-selected="${!i}" aria-controls="settings-panel-${id}" tabindex="${i?-1:0}">${label}</button>`).join('')+'</div>';
 }
 export function bindSettingsTabs(root,selected='general',onSelect=()=>{}){
   const buttons=[...root.querySelectorAll('[data-settings-tab]')];
   if(!buttons.length)return;
-  const groups={general:['sName','sPrimaryColor'],access:['sGoogle','sRestart','sExamMessages'],email:['sSmtp','sEmail'],operations:['sMaintenance']};
+  const groups={general:['sName'],appearance:['sPrimaryColor'],access:['sGoogle','sExamMessages'],email:['sSmtp','sEmail'],operations:['sMaintenance']};
   const grid=root.querySelector('.cai-dat-grid');
   const panels={};
   for(const [id,fields] of Object.entries(groups)){
