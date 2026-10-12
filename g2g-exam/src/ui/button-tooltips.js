@@ -17,12 +17,12 @@ export function bindButtonTooltips(){
     const label=imageTarget?button.getAttribute('title'):button.getAttribute('aria-label')||button.getAttribute('title');
     if(!iconOnly||!label)return;
     hide();active=button;
-    tip=document.createElement('div');tip.className='button-tooltip';tip.id='button-action-tooltip';tip.setAttribute('role','tooltip');tip.textContent=label;
+    tip=document.createElement('div');tip.className=imageTarget?'button-tooltip button-tooltip--image':'button-tooltip';tip.id='button-action-tooltip';tip.setAttribute('role','tooltip');tip.textContent=label;
     document.body.append(tip);
     button.setAttribute('aria-describedby',[button.getAttribute('aria-describedby'),tip.id].filter(Boolean).join(' '));
     const rect=button.getBoundingClientRect(),size=tip.getBoundingClientRect();
     tip.style.left=Math.max(8,Math.min(innerWidth-size.width-8,rect.left+rect.width/2-size.width/2))+'px';
-    tip.style.top=Math.max(8,rect.top-size.height-8)+'px';
+    tip.style.top=(imageTarget?rect.bottom+8:Math.max(8,rect.top-size.height-8))+'px';
     timer=setTimeout(hide,2000);
   };
   document.addEventListener('pointerover',event=>{if(event.pointerType!=='touch')show(event.target);});

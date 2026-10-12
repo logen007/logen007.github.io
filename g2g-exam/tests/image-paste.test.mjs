@@ -30,7 +30,7 @@ inputs.push(first.input,second.input,audio.input);
 const cleanup=bindImagePaste(root,{notify:message=>messages.push(message),confirmReplace:apply=>{confirmCount++;replace=apply;}});
 function click(target){const state={prevented:false,stopped:false};listeners.click({target,preventDefault:()=>state.prevented=true,stopPropagation:()=>state.stopped=true});return state;}
 function press(target,input){listeners.pointerdown({target});input?.focus();return click(target);}
-assert.equal(first.control.title,'Bấm chọn ô · ⌘V/Ctrl+V để dán · Bấm lại chọn ảnh.');
+assert.equal(first.control.title,'Bấm lần 1 để chọn vùng dán\nBấm lần 2 để chọn ảnh');
 assert.equal(audio.control.dataset.imagePasteTarget,undefined);
 const paste=(target,files=[image])=>{let prevented=false;listeners.paste({target,clipboardData:{items:files.map(file=>({kind:'file',getAsFile:()=>file}))},preventDefault:()=>prevented=true});return prevented;};
 assert.equal(paste(root),false,'No destination must not guess');
@@ -91,3 +91,27 @@ assert.match(css,/\.the-de h3\s*\{[^}]*line-height:1\.4;[^}]*height:2\.8em;[^}]*
 assert.match(css,/@media\(max-width:960px\)[\s\S]*?\.danh-sach-de\s*\{\s*grid-template-columns:repeat\(2/);
 assert.match(css,/@media\(max-width:680px\)[\s\S]*?\.danh-sach-de\s*\{\s*grid-template-columns:1fr/);
 console.log('Clipboard: destination, native text paste, validation, replacement, dynamic controls and 4-column cards passed.');
+
+// Measure the real tooltip renderer: image hints below, other actions above.
+const tooltipEvents={};let tooltip;
+globalThis.document={addEventListener:(type,fn)=>tooltipEvents[type]=fn,
+  body:{append:node=>tooltip=node},
+  createElement:()=>({style:{},setAttribute(){},remove(){},getBoundingClientRect:()=>({width:220,height:46})})};
+globalThis.window={addEventListener(){}};globalThis.innerWidth=1000;
+const {bindButtonTooltips}=await import('../src/ui/button-tooltips.js');
+bindButtonTooltips();
+function tooltipTarget(imageTarget){
+  const attrs={title:'Bấm lần 1 để chọn vùng dán\nBấm lần 2 để chọn ảnh','aria-label':'Upload'};
+  const target={textContent:'',closest:()=>target,matches:selector=>selector==='[data-image-paste-target]'?imageTarget:true,
+    getAttribute:name=>attrs[name],setAttribute:(name,value)=>attrs[name]=value,removeAttribute:name=>delete attrs[name],
+    getBoundingClientRect:()=>({left:100,top:200,bottom:240,width:40})};
+  return target;
+}
+tooltipEvents.focusin({target:tooltipTarget(true)});
+assert.equal(tooltip.style.top,'248px');assert.equal(tooltip.style.left,'10px');
+assert.equal(tooltip.textContent,'Bấm lần 1 để chọn vùng dán\nBấm lần 2 để chọn ảnh');
+assert.equal(tooltip.className,'button-tooltip button-tooltip--image');
+assert.match(css,/\.button-tooltip--image\s*\{\s*white-space:pre-line/);
+tooltipEvents.focusin({target:tooltipTarget(false)});
+assert.equal(tooltip.style.top,'146px');assert.equal(tooltip.className,'button-tooltip');
+tooltipEvents.keydown({key:'Escape'});

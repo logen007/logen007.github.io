@@ -1,6 +1,6 @@
 const selector='input[type="file"]';
 const wrappers='.section-image-upload,.choice-image-upload,.rubric-image-upload,.writing-image-picker,.reading-block-image';
-const hint='Bấm chọn ô · ⌘V/Ctrl+V để dán · Bấm lại chọn ảnh.';
+const hint='Bấm lần 1 để chọn vùng dán\nBấm lần 2 để chọn ảnh';
 
 export function acceptsImage(input,file){
   const accept=String(input.accept||'').toLowerCase().split(',').map(value=>value.trim());

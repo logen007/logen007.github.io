@@ -130,6 +130,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 - Tooltips always appear above and horizontally centered on their triggering
   button/control, never anchored to a table cell or full-width action row.
+  Exception: image-paste hints appear below their upload control, centered,
+  preserving the two instruction lines.
   Copy feedback follows this same rule and must not shift the layout.
 - Student class selection supports typing a class code to filter suggestions.
   Confirm only an existing class; never accept an arbitrary class code.
@@ -267,7 +269,8 @@ not open the file dialog on the first click, including clicks on its icon.
 The border changes to the brand color; clicking the selected picker again opens
 the file dialog. Keep selection until focus/click moves away; hovering another
 image never changes the destination. Use the shared tooltip with a short hint:
-“Bấm chọn ô · ⌘V/Ctrl+V để dán · Bấm lại chọn ảnh.” No extra toolbar or buttons.
+“Bấm lần 1 để chọn vùng dán” then “Bấm lần 2 để chọn ảnh” on a new line,
+below the icon/control. No extra toolbar or buttons.
 Tab selects the file input, Enter opens its picker, and Escape dismisses selection.
 Keep text paste in editable fields untouched. Confirm image replacement and reuse the normal
 file validation, compression and save path. Logo/favicon retain their formats.
