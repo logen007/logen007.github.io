@@ -10,6 +10,12 @@ all three listening parts. Do not substitute external TELC formats.
 
 Two direct clarifications override incomplete/conflicting sheet cells:
 
+- Reading 1 (updated 2026-10-12): five passages, a shared bank of ten
+  teacher-entered headings a–j, and an explicit correct-letter selection per
+  question. The bank's letters remain fixed; the earlier automatic five-heading
+  shuffle is superseded. Existing headings and answer keys remain in place when
+  opening older drafts; teachers fill the five additional options before publishing.
+
 - Writing: user explicitly chose A2 Writing 1 (free-response), despite the
   current cell saying A1. Its 45 points and 30 minutes come from the TELC column.
 - Reading 5: user selected a variable answer bank, minimum ten entries for ten

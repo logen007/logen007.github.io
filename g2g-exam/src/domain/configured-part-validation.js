@@ -7,7 +7,7 @@ export function configuredPartErrors(section,questions){
   const profile=section.questionProfile||{},errors=[];
   // A2 approved profiles explicitly request examples; legacy parts stay unchanged.
   if(!profile.example&&!profile.manualPerPart&&!section.audioPolicy&&!['inline-gaps','heading-match'].includes(profile.layout))return errors;
-  if(profile.layout==='heading-match'&&((section.headingOptions||[]).length!==section.questionLimit||section.headingOptions.some(text=>!String(text||'').trim())))errors.push(`${section.name}: nhập đủ tiêu đề đúng cho từng đoạn văn.`);
+  if(profile.layout==='heading-match'&&((section.headingOptions||[]).length!==profile.choices.length||section.headingOptions.some(text=>!String(text||'').trim())))errors.push(`${section.name}: nhập đủ ${profile.choices.length} đáp án chung a–j.`);
   errors.push(...inlineGapErrors(section));
   const map=questions instanceof Map?questions:new Map(questions.map(q=>[q.id,q]));
   const rows=(section.questionIds||[]).map(id=>map.get(id)).filter(Boolean);

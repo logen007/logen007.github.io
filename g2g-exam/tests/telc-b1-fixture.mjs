@@ -12,8 +12,8 @@ export function telcFixture(state,teacher){
     if(section.audioPolicy)partAudioQuestions(section,rows(section)).forEach(q=>q.audioUrl='/uploads/telc-fixture.mp3');
   }
   const heading=exam.sections[0];
-  const cards=rows(heading).map((q,i)=>({dataset:{questionId:q.id},querySelector:selector=>({value:selector==='[data-heading-answer]'?'Heading '+i:'Passage '+i})}));
-  saveHeadingMatchDraft({querySelectorAll:()=>cards},state,teacher,exam,heading);
+  const cards=rows(heading).map((q,i)=>({dataset:{questionId:q.id},querySelector:selector=>({value:selector==='[data-heading-answer]'?String(i+5):'Passage '+i})}));
+  saveHeadingMatchDraft({querySelectorAll:()=>cards,querySelector:key=>({value:'Heading '+Number(key.split('"')[1])})},state,teacher,exam,heading);
   for(const index of [3,4]){
     const section=exam.sections[index],perQuestion=index===3;
     const values={'[data-gap-text]':'Example [z]. '+Array.from({length:10},(_,i)=>`Text [${String.fromCharCode(97+(perQuestion?i%3:i))}]`).join(' '),'[data-gap-option="z"]':'Demo','[data-gap-options]':Array.from({length:12},(_,i)=>'Word '+i).join('\n')};
