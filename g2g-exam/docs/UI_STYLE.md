@@ -293,7 +293,9 @@ theme application must not wait for a network response to render the page.
 ## Admin dashboard
 
 - Keep operational totals first; distinguish awaiting grading from awaiting publication.
-- Use compact six-month bars, exam distribution and grader summaries. Zero values
+- Use aligned equal-height panels, adaptive day/week/month/year bars with editable
+  date ranges, exam distribution and top students by submitted attempts in the range.
+  Do not show grader rankings. Zero values
   have zero-height bars. Counts and labels remain readable without interpreting color.
 - Surface CPU load, RAM, disk and overall data size; keep resource breakdown and
   per-exam storage in native keyboard-accessible disclosures. Sort storage largest first.

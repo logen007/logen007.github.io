@@ -217,6 +217,10 @@ Thứ tự ưu tiên:
 
 ## 15. Commit và triển khai
 
+Xác nhận thêm ngày 2026-10-12: người dùng yêu cầu đẩy cả bản Cài đặt trước và
+bản dashboard/feedback lên main. Không hỏi lại xác nhận cho các bước triển khai
+thông thường đã được cho phép; vẫn tuân thủ giới hạn an toàn và quyền hệ thống.
+
 Người dùng đã cho phép commit và deploy các thay đổi thuộc yêu cầu của họ
 (xác nhận ngày 2026-10-11). Sau khi kiểm thử đạt, chủ động commit và push lên
 main để triển khai website, không cần hỏi lại cho từng lần.

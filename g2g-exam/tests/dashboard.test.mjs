@@ -5,13 +5,14 @@ const data={users:[{id:'s',role:'student',createdAt:'2026-10-01'},{id:'t',role:'
 const html=dashboardHtml({data,now:new Date(2026,9,12)});
 assert.match(html,/2 chờ chấm · 1 chờ công bố/);
 assert.match(html,/1 đã xuất bản · 1 bản nháp/);
-assert.match(html,/Teacher &lt;x&gt;/);
+assert.doesNotMatch(html,/Teacher &lt;x&gt;/);
+assert.match(html,/Học viên tích cực/);
 assert.doesNotMatch(html,/SECRET/);
 assert.match(html,/height:0%/,'Zero months must not have fake positive bars');
-assert.match(html,/10\/2026: 1 học viên/);
+assert.match(html,/01\/10: 1 học viên/);
 assert.match(html,/data-action="new-exam"/);
 assert.match(html,/data-tab="exams"/);
-assert.match(html,/data-tab="teachers"/);
+assert.match(html,/data-dashboard-range/);
 const unknown=dashboardInfrastructureHtml({resources:{}});
 assert.doesNotMatch(unknown,/undefined|NaN|Sạch/);
 assert.match(unknown,/Chưa có lần quét/);

@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {dashboardActivity} from '../src/views/dashboard-activity.js';
+const now=new Date(2026,9,12);
+const data={users:[{id:'a',name:'A',role:'student',createdAt:'2026-10-11'},{id:'b',name:'B',role:'student',createdAt:'2026-10-12'}],attempts:[{studentId:'a',status:'submitted',submittedAt:'2026-10-12'},{studentId:'a',status:'published',submittedAt:'2026-10-11'},{studentId:'b',status:'abandoned',submittedAt:'2026-10-12'}]};
+const daily=dashboardActivity(data,{},now);
+assert.equal(daily.unit,'day');assert.equal(daily.bins.length,2);
+assert.equal(daily.active[0].count,2);assert.equal(daily.active.length,1);
+for(const [range,unit] of [['7','day'],['30','week'],['365','month']])assert.equal(dashboardActivity(data,{range},now).unit,unit);
+assert.equal(dashboardActivity(data,{range:'custom',from:'2020-01-01',to:'2026-10-12'},now).unit,'year');
+const one=dashboardActivity(data,{range:'custom',from:'2026-10-12',to:'2026-10-12'},now);
+assert.equal(one.bins[0].count,1);assert.equal(one.active[0].count,1);
+assert.equal(dashboardActivity({users:[],attempts:[]},{},now).bins.length,7);
+assert.equal(dashboardActivity(data,{range:'custom',from:'bad',to:'bad'},now).bins.length,7);
+console.log('Adaptive dashboard periods, inclusive boundaries and student activity passed.');

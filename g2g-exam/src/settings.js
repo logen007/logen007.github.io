@@ -123,7 +123,7 @@ function enhance(){
 function collectForm(){
   return {
     ...settings,
-    general:{...settings.general,systemName:val('sName'),organizationName:val('sOrg'),supportEmail:val('sSupport'),publicUrl:val('sUrl'),examMessages:val('sExamMessages')},
+    general:{...settings.general,systemName:val('sName'),organizationName:val('sOrg'),supportEmail:val('sSupport'),feedbackEmail:val('sFeedbackEmail'),publicUrl:val('sUrl'),examMessages:val('sExamMessages')},
     theme:{...settings.theme,...selectedLayout(),primaryColor:selectedThemeColor()},
     auth:{...settings.auth,googleLoginEnabled:chk('sGoogle'),allowNewStudents:chk('sSignup'),allowedDomain:val('sDomain').replace(/^@/,'').toLowerCase()},
     exam:{...settings.exam},

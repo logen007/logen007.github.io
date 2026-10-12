@@ -50,6 +50,8 @@ function cleanSettings(input={}){
   settings.general.systemName=String(settings.general.systemName||'').trim().slice(0,80);
   settings.general.organizationName=String(settings.general.organizationName||'').trim().slice(0,100);
   settings.general.supportEmail=String(settings.general.supportEmail||'').trim().slice(0,160);
+  settings.general.feedbackEmail=String(settings.general.feedbackEmail||'admin@g2gcareer.com').trim();
+  if(!validEmail(settings.general.feedbackEmail)||settings.general.feedbackEmail.length>160)throw appError(400,'Email nhận góp ý không hợp lệ.');
   settings.general.publicUrl=String(settings.general.publicUrl||'').trim().slice(0,300);
   const messages=settings.general.examMessages??'';
   if(typeof messages!=='string'||messages.length>17000)throw appError(400,'Danh sách câu nhắn quá dài.');

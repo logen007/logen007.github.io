@@ -309,8 +309,8 @@ try{
       assert.match(roleHtml,new RegExp(`data-current-role="${role}"`));
     }
   });
-  await test('Top grader uses the teacher Google avatar',()=>{
-    const html=dashboardHtml({data:{users:[{id:'teacher',role:'teacher',name:'Dương Phan',picture:'https://lh3.googleusercontent.com/teacher.jpg'}],exams:[],attempts:[{status:'published',reviewerId:'teacher'}]}});
+  await test('Active student uses the Google avatar',()=>{
+    const html=dashboardHtml({data:{users:[{id:'student',role:'student',name:'Dương Phan',picture:'https://lh3.googleusercontent.com/teacher.jpg',createdAt:new Date().toISOString()}],exams:[],attempts:[{status:'published',studentId:'student',submittedAt:new Date().toISOString()}]}});
     assert.match(html,/class="dashboard-person"/);
     assert.match(html,/<img src="https:\/\/lh3\.googleusercontent\.com\/teacher\.jpg" alt="" referrerpolicy="no-referrer">/);
     assert.match(html,/Dương Phan/);

@@ -1,4 +1,5 @@
 import {appError,query} from '../db.js';
+import {submitFeedback} from './feedback.js';
 import {copyExam,prepareExamForEditing} from './exam-copy.js';
 import {emptyTrash} from '../trash-gc.js';
 import {isTeacher} from './shared.js';
@@ -12,6 +13,7 @@ import {updateSystemSettings,updateSmtpSecret,testSmtp,getInfrastructureStatus,s
 
 export async function handleAction(user,name,data={}){
   switch(name){
+    case 'submitFeedback': return submitFeedback(user,data);
     case 'emptyTrash': return emptyTrash(user);
     case 'copyExam': return copyExam(user,data);
     case 'prepareExamForEditing': return prepareExamForEditing(user,data);

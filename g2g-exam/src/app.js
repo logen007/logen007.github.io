@@ -531,7 +531,7 @@ function adminView(){
   if(isMaster(user)&&['grading','grades'].includes(ui.adminTab))ui.adminTab='dashboard';
   let content='';
   if(ui.adminTab==='dashboard'&&isMaster(user)){
-    content=dashboardHtml({data,infrastructure:ui.infrastructure,infrastructureError:ui.infrastructureError||''});
+    content=dashboardHtml({data,infrastructure:ui.infrastructure,infrastructureError:ui.infrastructureError||'',activityFilter:ui.dashboardPeriod||{}});
     if(!ui.infrastructure&&!ui.infrastructureError&&!infrastructureLoading){
       infrastructureLoading=true;
       refreshInfrastructure().then(result=>{ui.infrastructure=result;}).catch(error=>{ui.infrastructureError=error.message||'Không tải được thông tin hạ tầng.';}).finally(()=>{infrastructureLoading=false;if(ui.view==='admin'&&ui.adminTab==='dashboard')render();});
@@ -959,6 +959,12 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="reset-preview"]').forEach(b=>b.onclick=()=>{ui.previewAnswers={};ui.previewSectionIndex=0;window.scrollTo(0,0);render();notify('Đã làm lại phần xem trước.');});
   app.querySelectorAll('[data-action="close-preview"]').forEach(b=>b.onclick=()=>{ui.builderExamId=ui.previewExamId;ui.previewAnswers={};ui.view='builder';render();window.scrollTo(0,0);});
   app.querySelectorAll('[data-action="admin-tab"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;clearBuilderEditUrl();ui.adminTab=b.dataset.tab;ui.view='admin';render();});
+  app.querySelector('[data-dashboard-range]')?.addEventListener('change',event=>{ui.dashboardPeriod={range:event.target.value};render();});
+  for(const key of ['from','to'])app.querySelector('[data-dashboard-'+key+']')?.addEventListener('change',()=>{
+    const from=app.querySelector('[data-dashboard-from]').value,to=app.querySelector('[data-dashboard-to]').value;
+    if(!from||!to)return;
+    ui.dashboardPeriod={range:'custom',from,to};render();
+  });
   app.querySelectorAll('[data-action="new-question"]').forEach(b=>b.onclick=()=>questionModal(null,ui.view==='builder'?async q=>{const ex=byId(data.exams,ui.builderExamId),sec=ex?.sections.find(s=>s.id===ui.builderSectionId);if(ex&&sec)await act(()=>repo.transaction(st=>addQuestionsToSection(st,user,ex.id,sec.id,[q.id])),'Đã thêm câu vào phần.');}:null));
   app.querySelectorAll('[data-action="edit-part-template"]').forEach(b=>b.onclick=async()=>{
     const exam=byId(data.exams,ui.builderExamId),section=exam?.sections.find(s=>s.id===ui.builderSectionId);

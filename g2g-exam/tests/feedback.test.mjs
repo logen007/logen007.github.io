@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+const sent=[];
+const source=readFileSync(new URL('../server/src/actions/feedback.js',import.meta.url),'utf8');
+const context={Map,Date,appError:(statusCode,message)=>Object.assign(new Error(message),{statusCode}),getSettings:async()=>({general:{feedbackEmail:'admin@g2gcareer.com'},smtp:{enabled:true}}),sendConfiguredMail:async message=>sent.push(message)};
+vm.createContext(context);
+vm.runInContext(source.replace(/^import .*;\n/gm,'').replace(/export /g,''),context);
+await assert.rejects(()=>context.submitFeedback(null,{message:'Feedback'}),e=>e.statusCode===401);
+await assert.rejects(()=>context.submitFeedback({id:'a'},{message:'a'}),e=>e.statusCode===400);
+await context.submitFeedback({id:'a',name:'Name',email:'sender@example.com'},{message:'Website feedback',page:'/student?token=secret',to:'attacker@example.com'});
+assert.equal(sent[0].to,'admin@g2gcareer.com');assert.ok(!sent[0].text.includes('secret'));
+await context.submitFeedback({id:'a'},{message:'Another feedback'});
+await context.submitFeedback({id:'a'},{message:'Third feedback'});
+await assert.rejects(()=>context.submitFeedback({id:'a'},{message:'Fourth feedback'}),e=>e.statusCode===429);
+assert.equal(sent.length,3);
+console.log('Feedback recipient, validation, authentication, metadata privacy and rate limit passed.');

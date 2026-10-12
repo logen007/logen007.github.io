@@ -1,4 +1,5 @@
 import {initializeTheme} from './settings/theme.js';
+import './ui/feedback.js';
 
 initializeTheme();
 const app=document.getElementById('app');
