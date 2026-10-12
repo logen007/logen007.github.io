@@ -13,7 +13,7 @@ import {headingMatchHtml} from '../src/ui/heading-match.js';
 import {inlineGapsHtml} from '../src/ui/inline-gaps.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {saveHeadingMatchDraft,resizeHeadingOptions} from '../src/part-templates/default/heading-match-builder.js';
-import {resizeGapOptions} from '../src/part-templates/default/inline-gap-builder.js';
+import {resizeGapOptions,saveInlineGapDraft} from '../src/part-templates/default/inline-gap-builder.js';
 import {examHtml} from '../src/views/student.js';
 import {syncLetterPicker} from '../src/ui/letter-picker.js';
 import {letterAnswerControl} from '../src/ui/letter-answers.js';
@@ -140,15 +140,34 @@ assert.ok(gapHtml.indexOf('gap-choice-bank')>gapHtml.indexOf('gap-passage'));
 assert.match(gapHtml,/Gap 0 choice 0/);
 const gapBuilder=renderBuilder({data:state,exam,section:gap3});
 assert.doesNotMatch(gapBuilder,/Chỗ trống/);
-assert.ok(gapBuilder.includes('<legend>[a] · Câu 1</legend>'));
-assert.ok(gapBuilder.includes('<legend>[b] · Câu 2</legend>'));
-assert.ok(gapBuilder.includes('<legend>[a] · Câu 4</legend>'),'Repeated marker keeps its actual answer letter');
+assert.ok(gapBuilder.includes('<legend>[a]</legend>'));
+assert.ok(gapBuilder.includes('<legend>[b]</legend>'));
+assert.ok(gapBuilder.includes('<legend>[d]</legend>'),'Position label is independent of correct answer');
+assert.equal((gapBuilder.match(/data-gap-correct=/g)||[]).length,30);
+assert.ok(gapAuthorText(gap3,rows(gap3)).includes('[j]'));
 for(const invalid of [-1,undefined,null,'',1.5,3]){
   const incomplete=structuredClone(state);
   incomplete.questions.find(q=>q.id===gap3.questionIds[3]).correctAnswer=invalid;
   const html=renderBuilder({data:incomplete,exam,section:gap3});
-  assert.ok(html.includes('<legend>Câu 4 · Chưa xác định đáp án</legend>'));
+  assert.ok(html.includes('<legend>[d]</legend>'));
   assert.doesNotMatch(html,/\[a\/b\/c\]/);
+}
+{
+  const draft=structuredClone(state),draftExam=draft.exams.find(e=>e.id===exam.id),section=draftExam.sections[3];
+  const text=gapAuthorText(section,rows(gap3));
+  const root={querySelector(selector){
+    if(selector==='[data-gap-text]')return {value:text};
+    const choice=selector.match(/data-gap-choice="(\d+)-(\d+)"/);
+    if(choice)return {value:section.gapOptions[Number(choice[1])][Number(choice[2])]};
+    const correct=selector.match(/data-gap-correct="(\d+)"/);
+    if(correct)return Number(correct[1])===9?null:{value:'2'};
+    return null;
+  }};
+  saveInlineGapDraft(root,draft,teacher,draftExam,section);
+  const saved=section.questionIds.map(id=>draft.questions.find(q=>q.id===id));
+  assert.deepEqual(saved.map(q=>q.correctAnswer),[2,2,2,2,2,2,2,2,2,-1]);
+  assert.equal(gapAuthorText(section,saved),text,'Changing correct option must not rewrite position markers');
+  assert.ok(validateExamForPublish(draft,draftExam).length,'Missing correct answer must block publishing');
 }
 assert.equal((gapHtml.match(/<select /g)||[]).length,10);
 assert.match(gapHtml,/data-unique-letters="false"/);

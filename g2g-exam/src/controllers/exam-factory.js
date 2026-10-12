@@ -67,6 +67,7 @@ function populateConfiguredSections(state,user,exam){
         maxScore:hasFormRows&&initialRubric.length?writingFormScore(initialRubric)+(profile.layout==='mixed-form'?Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1):0):Number(profile.defaultScore??exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??1),
       }).id);
     }
+    if(profile.gapChoicesPerQuestion)for(const id of additions)updateQuestion(state,user,id,{correctAnswer:-1});
     if(additions.length)addQuestionsToSection(state,user,exam.id,section.id,additions);
   }
 }

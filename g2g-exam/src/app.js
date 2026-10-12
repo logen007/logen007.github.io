@@ -13,7 +13,7 @@ bindTextareaBold();
 import {bindLetterAnswers} from './ui/letter-answers.js';
 import {bindSplitReading} from './ui/split-reading.js';
 let clearSplitReading=()=>{};
-import {saveInlineGapDraft,resizeGapOptions} from './part-templates/default/inline-gap-builder.js';
+import {saveInlineGapDraft,resizeGapOptions,bindGapPositions} from './part-templates/default/inline-gap-builder.js';
 import {saveHeadingMatchDraft,resizeHeadingOptions} from './part-templates/default/heading-match-builder.js';
 import {createGradeAutosave} from './ui/grade-autosave.js';
 import {showPublishErrors} from './ui/publish-errors.js';
@@ -1266,6 +1266,7 @@ function bindBuilder(){
   });
   bindPartBuilder(section?.templateType,{root:app,data,exam,section,pendingAudioUploads,notify});
   bindReadingBlocks(app,()=>queueBuilderAutosave());
+  bindGapPositions(app,section);
   bindImageRemoval(app,()=>queueBuilderAutosave(0));
   app.querySelectorAll('[data-rubric-type]').forEach(field=>field.addEventListener('change',async()=>{await saveBuilderDraft({silent:true});render();}));
   app.querySelectorAll('.goethe-builder input,.goethe-builder textarea,.goethe-builder select').forEach(field=>{

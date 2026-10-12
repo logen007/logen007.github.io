@@ -1,5 +1,6 @@
 {
   "status": "APPROVED",
+  "notes": "Các ký hiệu [a]–[j] xác định vị trí theo thứ tự, không phải đáp án. Mỗi nhóm có 3 lựa chọn A/B/C và giáo viên chọn riêng một đáp án đúng.",
   "extends": "../../../goethe/b2/reading/part-02.json",
   "key": "reading-4",
   "name": "Đọc 4",
