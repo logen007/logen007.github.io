@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import {getMediaGarbageCollectionStatus} from '../media-gc.js';
+import {r2Settings} from '../r2-settings.js';
 import {normalizeLayout,validateLayout} from '../../../src/settings/layout.js';
 import {normalizeButtonTheme,validateButtonTheme} from '../../../src/settings/palette.js';
 
@@ -135,6 +136,7 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
   const memoryTotal=os.totalmem(),memoryFree=os.freemem(),cpuCores=os.cpus().length||1,cpuUsage=process.cpuUsage(),uptimeSeconds=Math.max(1,process.uptime());
   return {
     backend:'VPS',
+    r2:r2Settings.status(),
     postgresql:database,
     googleLoginConfigured:Boolean(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET),
     smtp:{

@@ -5,6 +5,14 @@ const bytes=value=>{if(!valid(value))return '—';const units=['B','KB','MB','GB
 const percent=(used,total)=>valid(used)&&valid(total)&&Number(total)>0?Math.min(100,Number(used)/Number(total)*100):null;
 const meter=(label,value,ratio)=>`<div class="dashboard-resource"><div><span>${label}</span><b>${value}</b></div>${ratio==null?'<span class="dashboard-resource-unavailable">Chưa có dữ liệu</span>':`<meter min="0" max="100" value="${ratio}" aria-label="${label}">${Math.round(ratio)}%</meter>`}</div>`;
 const row=(label,value)=>`<div class="dashboard-row"><span>${label}</span><b>${bytes(value)}</b></div>`;
+const date=value=>value&&Number.isFinite(new Date(value).getTime())?esc(new Date(value).toLocaleString('vi-VN')):'Chưa có';
+export function dashboardR2Html(r2){
+  const known=r2&&valid(r2.totalFiles),count=value=>valid(value)?Number(value):'—';
+  const state=!r2?'Chưa có dữ liệu':r2.error?'Cần kiểm tra':!r2.enabled?'Đang tắt · dùng VPS':r2.syncing?'Đang đồng bộ':!known?'Đang chờ quét':r2.pendingFiles||r2.skippedFiles?'Chưa đồng bộ hết':'Đã đồng bộ';
+  return `<section class="dashboard-details"><div class="dashboard-section-heading"><h3>Ảnh &amp; audio · R2</h3><a class="nut nho" href="/adm?tab=settings&amp;settings=general">Cấu hình R2</a></div><p role="status" class="${r2?.error?'dashboard-warning':'dashboard-caption'}">${state}</p>
+    <div class="dashboard-resource-grid">${meter('Tệp đã đồng bộ',`${count(r2?.syncedFiles)} / ${count(r2?.totalFiles)}`,percent(r2?.syncedFiles,r2?.totalFiles))}<div class="dashboard-resource"><span>Dung lượng bản đồng bộ</span><b>${bytes(r2?.syncedBytes)}</b></div><div class="dashboard-resource"><span>Chờ đồng bộ</span><b>${count(r2?.pendingFiles)} tệp</b></div><div class="dashboard-resource"><span>Vượt giới hạn 25 MB</span><b>${count(r2?.skippedFiles)} tệp</b></div></div>
+    ${r2?.error?`<p class="dashboard-warning">${esc(r2.error)}</p>`:''}<p class="dashboard-caption">Quét gần nhất: ${date(r2?.lastScanAt)} · Hoàn tất gần nhất: ${date(r2?.lastSuccessAt)}</p><p class="dashboard-caption">Số liệu theo lượt quét nền mỗi 5 phút; tải lại Tổng quan để cập nhật. VPS giữ bản gốc dự phòng. Dung lượng này không phải tổng bucket hoặc hạn mức tài khoản Cloudflare.</p><p class="dashboard-caption">Tải thực tế / CORS: chưa có kiểm tra tự động. Đồng bộ thành công không xác nhận lượt tải trên thiết bị học viên.</p></section>`;
+}
 
 export function dashboardInfrastructureHtml(infrastructure,error=''){
   if(!infrastructure)return `<section class="the dashboard-infrastructure"><div class="dashboard-section-heading"><h2>Hệ thống</h2><span role="status">${error?'Không tải được dữ liệu':'Đang tải…'}</span></div>${error?'<p class="dashboard-caption">Tải lại trang để thử lại.</p>':''}</section>`;
@@ -25,6 +33,7 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
       ${meter('Ổ đĩa',`${bytes(disk?.usedBytes)} / ${bytes(disk?.totalBytes)}`,diskPercent)}
       <div class="dashboard-resource dashboard-resource-total"><span>Dữ liệu hệ thống</span><b>${bytes(totalBytes)}</b><small>Dọn tệp: ${gcText}</small></div>
     </div>
+    ${dashboardR2Html(infrastructure.r2)}
     <section class="dashboard-details"><h3>Chi tiết tài nguyên <span>Cơ sở dữ liệu, tệp &amp; nhật ký</span></h3>
       <div class="resource-breakdown">${row('PostgreSQL',usage.databaseBytes)}${row('Audio &amp; hình ảnh',usage.uploadsBytes)}${row('Mã nguồn',usage.applicationBytes)}${row('Bài làm',tables.attempts)}${row('Câu hỏi',tables.questions)}${row('Nhật ký',tables.audit_log)}</div>
       <p class="dashboard-caption">${gc.error?`Lỗi dọn tệp: ${esc(gc.error)}`:gc.lastSuccessAt&&Number.isFinite(stamp.getTime())?`Quét gần nhất: ${esc(stamp.toLocaleString('vi-VN'))} · Đã dọn ${Number(gc.deleted)||0} tệp (${bytes(gc.deletedBytes??0)})`:'Đang chờ lượt quét đầu tiên.'}</p>

@@ -32,7 +32,7 @@ export async function checkR2Connection(c){
 }
 
 export function createR2Settings({db=query,env=process.env,check=checkR2Connection,configure=configureR2Media}={}){
-  let active=null,options=null,queue=Promise.resolve();
+  let active=null,options=null,queue=Promise.resolve(),runtimeError=null;
   const runtime={get enabled(){return Boolean(active);},source:name=>active?.source(name)??null,stop(){active?.stop();active=null;}};
   async function read(){
     const result=await db("SELECT value_enc FROM secrets WHERE key='r2_media_config'");
@@ -41,7 +41,7 @@ export function createR2Settings({db=query,env=process.env,check=checkR2Connecti
   async function apply(c){
     if(!options)return;
     const next=await configure({...options,env:asEnv(c)});
-    const previous=active;active=next;previous?.stop();
+    const previous=active;active=next;previous?.stop();runtimeError=null;
   }
   function admin(user){if(user?.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được cấu hình R2.');}
   async function action(user,name,input={}){
@@ -53,12 +53,12 @@ export function createR2Settings({db=query,env=process.env,check=checkR2Connecti
       if(name==='testR2Settings'||config.enabled)await check({...config,enabled:true});
       if(name==='testR2Settings')return {message:'Kết nối bucket thành công. Cần quyền Object Read & Write và CORS để tải ảnh/audio trên web.'};
       await db("INSERT INTO secrets(key,value_enc,updated_by) VALUES('r2_media_config',$1,$2) ON CONFLICT(key) DO UPDATE SET value_enc=EXCLUDED.value_enc,updated_at=now(),updated_by=EXCLUDED.updated_by",[encrypt(JSON.stringify(config)),user.id]);
-      try{await apply(config);}catch{runtime.stop();throw appError(503,'Đã lưu cấu hình nhưng chưa khởi chạy được R2. VPS vẫn hoạt động; hãy lưu lại để thử lại.');}
+      try{await apply(config);}catch{runtime.stop();runtimeError='Đã lưu cấu hình nhưng chưa khởi chạy được R2; đang dùng VPS.';throw appError(503,'Đã lưu cấu hình nhưng chưa khởi chạy được R2. VPS vẫn hoạt động; hãy lưu lại để thử lại.');}
       return publicConfig(config);
     };
     // Serializes credential rotation and runtime replacement; media requests never read SQL.
     const pending=queue.then(run);queue=pending.catch(()=>{});return pending;
   }
-  return {runtime,action,async start(opts){options=opts;try{await apply(await read());}catch{opts.logger?.warn('R2 settings unavailable; serving VPS media.');}return runtime;}};
+  return {runtime,action,status:()=>({enabled:Boolean(active),...active?.status?.(),error:runtimeError||active?.status?.().error||null}),async start(opts){options=opts;try{await apply(await read());}catch{runtimeError='Không khởi chạy được R2; đang dùng VPS.';opts.logger?.warn('R2 settings unavailable; serving VPS media.');}return runtime;}};
 }
 export const r2Settings=createR2Settings();

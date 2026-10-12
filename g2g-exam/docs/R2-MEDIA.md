@@ -74,6 +74,12 @@ HTML, sessions, API data, answers or submissions.
 
 ## Validation status
 
+Master Overview includes an in-memory R2 scan snapshot: enabled/running/error,
+verified current local files/bytes, pending/oversized counts and scan timestamps.
+The snapshot resets to unknown on process restart until the next background scan.
+Dashboard reads never initiate another scan or Cloudflare request. These are not
+account quota, bucket billing, browser delivery or CORS success metrics.
+
 Automated tests mock storage/HTTP failures; they do not establish real R2 CORS,
 browser media behavior, or 500-student capacity. Live activation requires account
 access and an actual bucket. No load test against the production website.

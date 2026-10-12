@@ -4,18 +4,28 @@ import os from 'node:os';
 import path from 'node:path';
 import {createMediaMirror,configureR2Media,validMediaName} from '../server/src/r2-media.js';
 import {createMediaDelivery} from '../src/ui/media-fallback.js';
+import {dashboardR2Html} from '../src/views/dashboard-infrastructure.js';
+assert.match(dashboardR2Html(),/Chưa có dữ liệu/);
+assert.match(dashboardR2Html({enabled:false}),/Đang tắt/);
+assert.match(dashboardR2Html({enabled:true,totalFiles:null}),/Đang chờ quét/);
+assert.match(dashboardR2Html({enabled:true,totalFiles:1,syncedFiles:1,syncedBytes:5,pendingFiles:0,skippedFiles:0}),/Đã đồng bộ/);
+assert.match(dashboardR2Html({enabled:true,error:'<script>'}),/&lt;script&gt;/);
 
 const root=await fs.mkdtemp(path.join(os.tmpdir(),'g2g-r2-test-'));
 try{
   const objects=new Map();let puts=0,signs=0,offline=false;
   const store={put:async(key,body,type,hash)=>{if(offline)throw new Error('offline');puts++;objects.set(key,{size:body.length,hash});},head:async key=>objects.get(key),sign:async key=>{signs++;return `https://r2.test/${key}?signed`;}};
   const mirror=createMediaMirror({uploadDir:root,store,logger:{warn(){}}});
+  assert.equal(mirror.status().totalFiles,null);
   assert.equal(await configureR2Media({uploadDir:root,env:{}}),null);
   assert.equal(await configureR2Media({uploadDir:root,env:{R2_MEDIA_ENABLED:'true'},logger:{warn(){}}}),null);
   for(const bad of ['../secret','..','.r2','x/y','%2f',''])assert.equal(validMediaName(bad),false);
   await fs.writeFile(path.join(root,'a.mp3'),'sound');
   assert.equal(await mirror.source('a.mp3'),null);
   await mirror.sync();assert.equal(puts,1);
+  assert.equal(mirror.status().syncedFiles,1);assert.equal(mirror.status().syncedBytes,5);
+  assert.equal(mirror.status().pendingFiles,0);assert.ok(mirror.status().lastSuccessAt);
+  const snapshot=mirror.status();snapshot.syncedFiles=999;assert.equal(mirror.status().syncedFiles,1);
   const url=await mirror.source('a.mp3');assert.match(url,/r2.test\/media\//);
   assert.equal(await mirror.source('a.mp3'),url);assert.equal(signs,1);
   await mirror.sync();assert.equal(puts,1);
@@ -26,7 +36,9 @@ try{
   await fs.writeFile(path.join(root,'a.mp3'),'changed audio');
   assert.equal(await mirror.source('a.mp3'),null);
   offline=true;await mirror.sync();assert.equal(await mirror.source('a.mp3'),null);
+  assert.ok(mirror.status().error);assert.equal(mirror.status().pendingFiles,1);assert.equal(mirror.status().syncedFiles,0);
   offline=false;await mirror.sync();assert.notEqual(await mirror.source('a.mp3'),url);
+  assert.equal(mirror.status().error,null);
   await fs.unlink(path.join(root,'a.mp3'));assert.equal(await mirror.source('a.mp3'),null);
   // A bad HEAD result must never promote the remote object.
   await fs.writeFile(path.join(root,'b.jpg'),'image');
