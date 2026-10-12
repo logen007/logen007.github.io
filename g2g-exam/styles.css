@@ -49,10 +49,8 @@
 .result-wrong{color:var(--do)}
 .result-blank{color:var(--phu)}
 .result-feedback{margin-top:24px;border-top:1px solid var(--vien);padding-top:20px}
-.result-reviewer{display:flex;align-items:center;gap:12px}
-.result-reviewer>div{display:flex;flex-direction:column}
-.result-reviewer strong{font-weight:500}
-.result-feedback h3{font-size:15px;margin:20px 0 8px}
+.result-reviewer{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--phu)}
+.result-feedback h3{font-size:15px;margin:0 0 8px}
 .result-feedback p{white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
 .result-filter{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}
 .result-part{margin-top:24px}

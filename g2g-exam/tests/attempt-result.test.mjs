@@ -22,6 +22,10 @@ assert.equal(numbered.sections[2].questions[0].number,1);
 const html=attemptResultHtml({review});
 assert.match(html,/Kết quả thi A1/);assert.match(html,/An &lt;x&gt;/);assert.doesNotMatch(html,/<script>|javascript:/);
 assert.match(html,/Cô Lan/);assert.match(html,/Nhận xét riêng/);assert.match(html,/Đáp án đúng/);
+assert.doesNotMatch(html,/Người chấm|Chưa có thông tin người chấm/);
+for(const block of html.matchAll(/<div class="result-feedback">([\s\S]*?)<div class="result-reviewer">/g)){
+  assert.match(block[1],/<h3>Nhận xét của cô<\/h3><p>Nhận xét riêng<\/p>/);
+}
 assert.match(html,/data-result-share aria-label="Chia sẻ kết quả"/);assert.match(html,/result-tab-speaking/);
 assert.match(html,/role="tabpanel"/);assert.match(html,/data-result-verdict="blank"/);
 const share=resultShareText(review);assert.doesNotMatch(share,/Nhận xét riêng|Bài viết riêng|Đáp án|mine|https?:/);

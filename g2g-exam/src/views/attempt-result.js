@@ -34,7 +34,7 @@ function questionHtml(q,published){
   }
   return `<article class="result-question" data-result-verdict="${verdict||'manual'}"><div class="result-question-heading"><strong>Câu ${esc(q.number||'')} ${q.title?`· ${textHtml(q.title)}`:''}</strong>${verdict?`<span class="result-${verdict}">${labels[verdict]}</span>`:''}</div>${body}</article>`;
 }
-function feedback(score){return `<div class="result-feedback"><div class="result-reviewer">${iconHtml('teacher')}<div><strong>${esc(score.reviewerName||'Chưa có thông tin người chấm')}</strong><span class="phu-de">Người chấm</span></div></div><h3>Nhận xét của cô</h3><p>${textHtml(score.feedback||'Chưa có nhận xét.')}</p></div>`;}
+function feedback(score){return `<div class="result-feedback"><h3>Nhận xét của cô</h3><p>${textHtml(score.feedback||'Chưa có nhận xét.')}</p>${score.reviewerName?`<div class="result-reviewer">${iconHtml('teacher')}<span>${esc(score.reviewerName)}</span></div>`:''}</div>`;}
 export function attemptResultHtml({review,user={}}){
   const a=review.attempt||{},score=a.status==='published'?review.score:null,summary=score?.summary;
   const sections=review.sections||[],questions=sections.flatMap(s=>s.questions||[]),counts=reviewCounts(questions);
