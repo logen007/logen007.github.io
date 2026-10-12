@@ -1455,7 +1455,9 @@ else{
     if(requestedAttempt)try{ui.review=await loadStudentReview(requestedAttempt);ui.view='student-attempt-detail';}catch(error){notify(error.message||'Không mở được kết quả.');}
   }
   else if(requestedView==='exam'&&isStudent(user)&&byId(data.attempts,requestedAttempt)){ui.attemptId=requestedAttempt;ui.view='exam';}
-  else if(requestedView==='grading'&&!isStudent(user)&&byId(data.attempts,requestedAttempt)){ui.gradeAttemptId=requestedAttempt;ui.view='grading-detail';}
+  // Catalog bootstrap does not contain attempts: preserve the route until
+  // render() hydrates the full authorized state and gradingDetailView checks it.
+  else if(requestedView==='grading'&&user&&!isStudent(user)&&requestedAttempt){ui.gradeAttemptId=requestedAttempt;ui.view='grading-detail';ui.adminTab='grades';}
   else if(!isStudent(user)&&initialUrl.searchParams.get('tab')){ui.adminTab=initialUrl.searchParams.get('tab');ui.settingsTab=settingsRouteTab(initialUrl.href)||'general';ui.view='admin';}
   startupGate.finish();
   render();

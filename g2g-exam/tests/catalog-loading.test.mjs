@@ -15,10 +15,16 @@ import {stateResponse} from '../server/src/state-response.js';
 
 assert.equal(initialStateScope({role:'student'},'https://test/'),'catalog');
 assert.equal(initialStateScope({role:'teacher'},'https://test/'),'catalog');
-for(const query of ['?edit=e&section=s','?preview=e','?view=exam&attempt=a','?tab=grades'])
+for(const query of ['?edit=e&section=s','?preview=e','?view=exam&attempt=a','?view=grading&attempt=a','?tab=grades'])
   assert.equal(initialStateScope({role:'teacher'},'https://test/'+query),'full');
 assert.equal(viewStateScope('admin','exams'),'catalog');
 assert.equal(viewStateScope('builder'),'full');
+assert.equal(viewStateScope('grading-detail'),'full');
+const appSource=await (await import('node:fs/promises')).readFile(new URL('../src/app.js',import.meta.url),'utf8');
+const gradingRoute=appSource.match(/else if\(requestedView==='grading'[^\n]+/)[0].replace(/^else /,'');
+const restoreGrading=new Function('requestedView','requestedAttempt','user','isStudent','ui',gradingRoute+';return ui;');
+assert.deepEqual(restoreGrading('grading','attempt-a',{role:'teacher'},u=>u.role==='student',{}),{gradeAttemptId:'attempt-a',view:'grading-detail',adminTab:'grades'});
+assert.deepEqual(restoreGrading('grading','attempt-a',{role:'student'},u=>u.role==='student',{}),{});
 const reply={headers:{},header(k,v){this.headers[k]=v;return this;},code(n){this.status=n;return this;},send(){return null;}};
 const first=stateResponse({revision:1,exams:[{id:'e'}]},{headers:{}},reply),etag=reply.headers.ETag;
 assert.equal(stateResponse({revision:999,exams:[{id:'e'}]},{headers:{'if-none-match':etag}},reply),null);

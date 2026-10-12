@@ -671,7 +671,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .grading-submissions .bai-lam.lined-writing-paper { min-height:240px;background-color:var(--mat);white-space:pre-wrap; }
 .grading-writing-empty { display:block;color:var(--phu);font-family:var(--font,Arial,sans-serif);font-size:14px;font-style:italic; }
 .grading-submissions .grading-typed-paper { background:var(--mat);min-height:240px; }
-.grading-detail { max-width:1240px; }
+.grading-detail,.result-page { max-width:1240px; }
 .grading-detail .grading-hero { padding:24px 28px;margin-bottom:24px;align-items:center;border-top:3px solid var(--brand-primary); }
 .grading-hero p { margin:6px 0 0; }
 .grading-detail .grading-hero { flex-wrap:wrap; }
