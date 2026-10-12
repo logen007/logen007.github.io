@@ -9,6 +9,7 @@
     "defaultScore": 1.5,
     "scoringSkill": "grammar",
     "gapChoicesPerQuestion": true,
+    "gapSplitLayout": true,
     "inlineExample": false,
     "uniqueLetters": false,
     "choices": [

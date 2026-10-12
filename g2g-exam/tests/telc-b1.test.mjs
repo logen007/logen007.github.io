@@ -98,6 +98,15 @@ const legacyGap={...gapBank,gapExample:'Old text',gapPassage:[{example:true},...
 assert.ok(gapAuthorText(legacyGap,rows(gapBank)).startsWith('Old text'));
 assert.doesNotMatch(gapAuthorText(legacyGap,rows(gapBank)),/\[z\]/);
 const gapHtml=inlineGapsHtml(gap3,rows(gap3),{},20);
+assert.match(gapHtml,/inline-gap-paper exam-reading-split/);
+const bankHtml=inlineGapsHtml(gapBank,rows(gapBank),{},30);
+assert.match(bankHtml,/<b>a<\/b><span>Word 0<\/span>/);
+for(const section of [gap3,gapBank]){
+  const editor=renderBuilder({data:state,exam,section});
+  assert.match(editor,/aria-describedby="gap-help-/);
+  assert.match(editor,/class="gap-author-help"/);
+  assert.ok(editor.indexOf('gap-author-help')>editor.indexOf('data-gap-text'));
+}
 assert.equal((gapHtml.match(/class="gap-choice-group"/g)||[]).length,10);
 assert.match(gapHtml,/<b>21\.<\/b>/);
 assert.match(gapHtml,/<b>30\.<\/b>/);

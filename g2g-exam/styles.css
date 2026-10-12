@@ -657,6 +657,10 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 @media(max-width:960px){ .gap-choice-bank { columns:2; column-gap:16px; } }
 @media(max-width:380px){ .gap-choice-bank { columns:1; } }
 .gap-sentences p { margin:0; display:flex; gap:16px; }
+.inline-gap-paper .gap-sentences p { display:grid; grid-template-columns:20px minmax(0,1fr); align-items:baseline; gap:12px; }
+.inline-gap-paper .gap-sentences p>span { min-width:0; overflow-wrap:anywhere; }
+.inline-gap-paper.exam-reading-split>.gap-choice-bank { columns:2; margin-top:8px; }
+.gap-author-help { grid-column:1 / -1; margin:0; color:var(--phu); font-size:12px; line-height:1.5; }
 .heading-match-question { margin-top:24px; }
 .heading-match-question p { white-space:pre-wrap; }
 .heading-match-question > div { display:flex; align-items:center; gap:8px; }

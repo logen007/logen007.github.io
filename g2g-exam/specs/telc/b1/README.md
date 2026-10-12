@@ -35,7 +35,8 @@ Two direct clarifications override incomplete/conflicting sheet cells:
   size without changing existing answer keys; an answer in use cannot be removed.
 
 Reading 4 uses three independent choices per gap; repeating a correct letter
-across different gaps is allowed. Reading 4/5 remain in the 90-minute Reading
+across different gaps is allowed. Its passage and choice groups share a two-column
+layout on desktop and stack on mobile. Reading 4/5 remain in the 90-minute Reading
 block while their marks are classified as grammar for the existing TELC result.
 Speaking remains teacher-recorded, as in the existing application; its three
 parts and 15-minute allocation are recorded in exam.json, not added to the
