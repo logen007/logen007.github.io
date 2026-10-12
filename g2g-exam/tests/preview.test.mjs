@@ -3,6 +3,16 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {iconHtml} from '../src/ui/icons.js';
 import {examHtml,studentExamCardHtml,submittedHtml,expiredHtml,answerPresent} from '../src/views/student.js';
+const longChoices=['geben die Deutschen mehr Geld für Bio-Produkte aus.','gibt es viele Probleme mit schlechten Lebensmitteln.','wester mag südamerikanische Tänze und möchte gern'];
+const optionQuestion={id:'long-layout',type:'single',maxScore:1,title:'Question',choices:longChoices};
+for(const preview of [false,true]){
+  const markup=renderQuestionHtml(optionQuestion,1,{},{preview,mobileThreeChoices:true});
+  assert.match(markup,/answer-options--long/);
+  assert.equal((markup.match(/type="radio"/g)||[]).length,3);
+  assert.match(markup,/value="1" checked/);
+}
+assert.match(renderQuestionHtml({...optionQuestion,choices:['Ja','Nein']},null,{}),/answer-options--short/);
+assert.doesNotMatch(renderQuestionHtml({...optionQuestion,choices:[{text:longChoices[0],imageUrl:'/uploads/a.jpg'},'B','C']},null,{}),/answer-options--long/);
 import {readExamAnswers} from '../src/ui/exam-answers.js';
 import {examBuilderHtml} from '../src/views/builder.js';
 import {topbarHtml} from '../src/ui/layout.js';
