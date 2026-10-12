@@ -549,7 +549,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .feedback-panel textarea:focus-visible { outline:2px solid var(--brand-border); outline-offset:2px; }
 .feedback-panel [role=status]:empty { display:none; }
 .feedback-panel small,.feedback-panel [role=status] { font-size:12px; color:var(--phu); }
-@media(max-width:760px) { .feedback-panel textarea { font-size:16px; } }
+@media(max-width:900px) { .web-feedback { display:none; } }
 .dashboard-grid { display:grid; grid-template-columns:1.1fr 1fr 1fr; gap:20px; align-items:stretch; }
 .dashboard-panel .dashboard-period-select { width:112px; min-width:112px; height:40px; font-size:13px; }
 .admin-dashboard .dashboard-heading { align-items:center; gap:16px; }
