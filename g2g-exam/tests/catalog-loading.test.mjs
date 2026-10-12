@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './split-reading.test.mjs';
 import './exam-preload.test.mjs';
 import './navigation-loading.test.mjs';
 import './fid.test.mjs';

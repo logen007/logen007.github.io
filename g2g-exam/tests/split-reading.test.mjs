@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {responsiveStimuli} from '../src/ui/split-reading.js';
+const node=(order)=>({dataset:{stimulusOrder:String(order)},answer:'saved'});
+const passage1=node(0),questions1=node(1),passage2=node(2),questions2=node(3);
+const element=children=>({children,replaceChildren(...nodes){this.children=nodes;}});
+const left=element([passage1,passage2]),right=element([questions1,questions2]);
+const container=element([left,right]),arrange=responsiveStimuli(container);
+arrange(true);
+assert.deepEqual(container.children,[passage1,questions1,passage2,questions2]);
+questions1.answer='changed on mobile';
+arrange(false);
+assert.deepEqual(container.children,[left,right]);
+assert.deepEqual(left.children,[passage1,passage2]);
+assert.deepEqual(right.children,[questions1,questions2]);
+assert.equal(right.children[0].answer,'changed on mobile');
+arrange(true);arrange(true);
+assert.deepEqual(container.children,[passage1,questions1,passage2,questions2]);
+console.log('Responsive passages: mobile order, desktop grouping and node identity passed.');

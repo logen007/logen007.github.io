@@ -178,7 +178,7 @@ stimulusQuestions[0].instructionBlocks=[{text:'First passage',imageUrl:'first-st
 stimulusQuestions[2].instructionBlocks=[{text:'Second passage',imageUrl:'second-stimulus.jpg'}];
 for(const preview of [false,true]){
   const html=examHtml({attempt:{answers:{}},exam,sectionIndex:1,questions:stimulusQuestions,allQuestions:state.questions,online:true,preview});
-  const groups=html.split('<div class="exam-reading-split exam-stimulus-group">').slice(1);
+  const groups=html.split('<div class="exam-reading-split exam-stimulus-group" data-responsive-stimuli>').slice(1);
   assert.equal(groups.length,1,'All passages and questions float as two whole columns');
   for(const [index,image] of ['first-stimulus.jpg','second-stimulus.jpg'].entries()){
     assert.ok(groups[0].indexOf(image)<groups[0].indexOf('<section class="to-thi"'));
