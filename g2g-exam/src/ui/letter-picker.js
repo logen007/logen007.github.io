@@ -8,7 +8,7 @@ export function syncLetterPicker(select){
   const trigger=select.parentElement?.querySelector('[data-letter-picker]');
   if(!trigger)return;
   const selected=select.selectedOptions[0];
-  trigger.textContent=selected?.dataset.letter||selected?.textContent||'—';
+  trigger.textContent=(select.dataset?.fullSelection==='true'?selected?.textContent:selected?.dataset.letter||selected?.textContent)||'—';
   trigger.dataset.answered=String(select.value!=='');
   trigger.setAttribute('aria-label',`${select.getAttribute('aria-label')}: ${selected?.textContent||'—'}`);
 }
