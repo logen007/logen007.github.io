@@ -1,5 +1,5 @@
 import {hasApiBackend} from './config.js';
-import {AI_PROVIDER_IDS,aiProviderLabel,normalizeAiProvider} from './domain/ai-providers.js';
+import {AI_PROVIDER_IDS,aiProviderLabel} from './domain/ai-providers.js';
 import {bindR2Settings} from './settings/r2.js';
 import {
   loadPrivateSettings,refreshInfrastructure,
@@ -117,7 +117,6 @@ function collectForm(){
     general:{...settings.general,systemName:val('sName'),organizationName:val('sOrg'),supportEmail:val('sSupport'),feedbackEmail:val('sFeedbackEmail'),publicUrl:val('sUrl'),examMessages:val('sExamMessages')},
     theme:{...settings.theme,...selectedLayout(),...selectedButtons(),primaryColor:selectedThemeColor()},
     auth:{...settings.auth,googleLoginEnabled:chk('sGoogle'),allowNewStudents:chk('sSignup'),allowedDomain:val('sDomain').replace(/^@/,'').toLowerCase()},
-    ai:{...settings.ai,providerPreference:normalizeAiProvider(val('sAiProvider'))},
     exam:{...settings.exam},
     smtp:{...settings.smtp,enabled:chk('sSmtp'),host:val('sHost'),port:Number(val('sPort')||587),security:val('sSecurity'),username:val('sUser'),fromName:val('sFromName'),fromEmail:val('sFrom'),replyTo:val('sReply'),timeoutMs:Number(val('sTimeout')||20000),rejectUnauthorized:chk('sTlsVerify')},
     email:{...settings.email,enabled:chk('sEmail'),resultSubject:val('sSubject'),resultText:document.getElementById('sText')?.value||'',resultHtml:document.getElementById('sHtml')?.value||''},

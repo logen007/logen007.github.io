@@ -1,13 +1,13 @@
 import {settingsHref} from './route.js';
 import {esc} from '../ui/format.js';
-export const settingsTabs=[['general','Chung'],['access','Đăng nhập & thi'],['email','Email'],['advanced','Nâng cao']];
+export const settingsTabs=[['general','Chung'],['access','Thi'],['email','Email'],['advanced','Nâng cao']];
 export function settingsTabsHtml(){
   return '<div class="settings-tabs" role="tablist" aria-label="Nhóm cài đặt">'+settingsTabs.map(([id,label],i)=>`<a href="${esc(settingsHref(id))}" class="nut ${i?'':'chinh'}" role="tab" id="settings-tab-${id}" data-settings-tab="${id}" aria-selected="${!i}" aria-controls="settings-panel-${id}" tabindex="${i?-1:0}">${label}</a>`).join('')+'</div>';
 }
 export function bindSettingsTabs(root,selected='general',onSelect=()=>{}){
   const buttons=[...root.querySelectorAll('[data-settings-tab]')];
   if(!buttons.length)return;
-  const groups={general:['sName','sPrimaryColor','sMaintenance'],access:['sGoogle','sExamMessages'],email:['sSmtp','sEmail'],advanced:['sR2Enabled','sAiGroq']};
+  const groups={general:['sName','sPrimaryColor','sMaintenance'],access:['sExamMessages'],email:['sSmtp','sEmail'],advanced:['sGoogle','sR2Enabled','sAiGroq']};
   const grid=root.querySelector('.cai-dat-grid');
   const panels={};
   for(const [id,fields] of Object.entries(groups)){

@@ -429,7 +429,9 @@ theme application must not wait for a network response to render the page.
 - AI grading omits the suggested/waiting count cards. Replace the healthy
   status badge with one horizontal row of provider pills, each showing
   its completed-job count. Give Groq yellow, Gemini blue, Grok purple and Mistral
-  orange backgrounds with dark text; outline processing providers (preferred when idle).
+  orange backgrounds with dark text and no outline. Provider pills have a 26px minimum
+  height. Settings tabs stay on one line; Google login lives in Advanced and the
+  remaining access tab is labelled Thi. Do not show an AI preference selector.
   Accuracy rows aggregate providers by exam and writing part; omit provider badges
   and keep the linked exam name truncated alongside the part and matched/total count.
   The list grows naturally without a nested scroll area. The pills

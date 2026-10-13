@@ -1,9 +1,8 @@
 import {normalizeLayout,layoutVariables,CONTENT_WIDTH_RANGE} from './layout.js';
-import {AI_PROVIDERS,normalizeAiProvider} from '../domain/ai-providers.js';
+import {AI_PROVIDERS} from '../domain/ai-providers.js';
 
 function aiSettingsFields(settings,infra){
-  const preference=normalizeAiProvider(settings.ai?.providerPreference);
-  return `<label class="cai-dat-field"><span>AI ưu tiên</span><select class="truong" id="sAiProvider">${AI_PROVIDERS.map(({id,settingsLabel})=>`<option value="${id}" ${preference===id?'selected':''}>${settingsLabel}</option>`).join('')}</select><small>Các AI có khóa chấm song song, mỗi AI một bài. AI ưu tiên nhận lượt trước khi các luồng cùng sẵn sàng.</small></label>${AI_PROVIDERS.map(({id,label})=>{
+  return `${AI_PROVIDERS.map(({id,label})=>{
     const suffix=id[0].toUpperCase()+id.slice(1);
     return `<label class="cai-dat-field"><span>${label} API key</span><div class="email-test"><input class="truong" id="sAi${suffix}" type="password" autocomplete="new-password" placeholder="Nhập khi cần cập nhật"><button class="nut" id="sAi${suffix}Save">Cập nhật ${label}</button></div><small id="sAi${suffix}Hint">${infra?.ai?.[id]?.configured?'Đã cấu hình.':'Chưa cấu hình.'}</small></label>`;
   }).join('')}`;

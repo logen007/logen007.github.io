@@ -1,6 +1,8 @@
 /* Operational forms use the shared tokens and controls from styles.css. */
 .cai-dat-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; align-items:start; }
-.settings-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
+.settings-tabs { display:flex; gap:8px; flex-wrap:nowrap; margin-bottom:24px; }
+.settings-tabs .nut { min-width:0; white-space:nowrap; }
+@media(max-width:700px){.settings-tabs { gap:6px; }.settings-tabs .nut { flex:1; padding-inline:8px; font-size:14px; }}
 .settings-tab-panel[hidden] { display:none!important; }
 .settings-tab-panel > .tich-hop-tong-quan { grid-column:1/-1; margin:0; }
 .cai-dat-card { padding:0; overflow:hidden; }
