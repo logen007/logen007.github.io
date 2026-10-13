@@ -1028,6 +1028,13 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .thi .viet.lined-writing-paper,.grading-submissions .bai-lam.lined-writing-paper { line-height:32px; padding:16px 20px; border:1px solid var(--vien,#dfe1e5); border-radius:12px; font-family:"Bradley Hand","Segoe Print","Comic Sans MS",cursive; font-size:18px; background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,var(--vien,#dfe1e5) 31px,var(--vien,#dfe1e5) 32px); background-origin:content-box; }
 .thi .viet.lined-writing-paper { min-height:400px; }
 .goethe-score.goethe-score--writing { grid-template-columns:minmax(80px,1fr) repeat(4,var(--editor-control)); }
+.goethe-question-row:has(.goethe-score--audio) { grid-template-columns:minmax(0,1fr); }
+.goethe-question-side:has(.goethe-score--audio) { grid-template-rows:auto; }
+.goethe-score.goethe-score--audio { grid-template-columns:44px minmax(0,1fr) repeat(3,var(--editor-control)); gap:6px; align-items:center; }
+.goethe-score--audio>label:first-child { padding:0 8px; justify-content:center; }
+.goethe-score--audio>label:first-child>span { display:none; }
+.goethe-score--audio input[type=number] { width:2ch; min-width:2ch; text-align:center; }
+.goethe-score--audio .audio-upload { min-width:0; width:100%; }
 .button-tooltip { position:fixed; z-index:1000; width:max-content; max-width:calc(100vw - 16px); padding:6px 10px; border-radius:8px; background:var(--chu); color:var(--mat); font-size:12px; line-height:1.4; text-align:center; pointer-events:none; }
 .button-tooltip--image { white-space:pre-line; }
 .reading-blocks-editor { display:grid; gap:16px; margin:20px 0; }

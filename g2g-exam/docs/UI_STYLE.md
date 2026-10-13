@@ -65,6 +65,12 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Question audio controls share one row in this order: compact score, flexible
+  audio upload/play, example, remove, add. Keep score input wide enough for two
+  digits, with an accessible score label; do not let it consume spare row space.
+  Audio filename truncates within its area. Keep all actions on the same row on
+  mobile, with the question text above. Do not put audio on a separate row.
+
 - Approved syntax (13 October 2026): {a}, {b}, … are ordered answer positions,
   {z} is the example. Correct answers are edited separately for both shared-bank
   and per-question choices. Existing structured passages are presented in this
