@@ -356,6 +356,11 @@ theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
 
+- CPU percentage uses differences in host CPU busy/total counters sampled over
+  approximately one second, with concurrent requests sharing the sample and a
+  five-second cache. Display load averages separately as 1/5/15-minute numbers
+  with core count, never as a percentage. Missing measurements remain unavailable.
+
 - Overview starts with charts; omit the four summary cards for pending work,
   exams, students and teachers (user request, 12 October 2026).
 - Use aligned equal-height panels, adaptive day/week/month/year bars with editable

@@ -4,6 +4,7 @@ import {setSmtpSecret,smtpSecretStatus,sendConfiguredMail} from '../mail.js';
 import {mergeSettings} from '../defaults.js';
 import {isPrimaryMasterEmail,normalizeEmail} from '../roles.js';
 import os from 'node:os';
+import {sampleCpu} from '../cpu-metrics.js';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import {getMediaGarbageCollectionStatus} from '../media-gc.js';
@@ -135,7 +136,7 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
     const dataBytes=Buffer.byteLength(JSON.stringify(exam))+questionData.reduce((sum,item)=>sum+Buffer.byteLength(JSON.stringify(item)),0);
     return {id:row.id,title:exam.title||row.id,updatedAt:examLastEdit(exam,row.updated_at,questionEdits),provider:exam.provider||'',level:exam.level||'',dataBytes,mediaBytes,totalBytes:dataBytes+mediaBytes,questions:questionData.filter(item=>!item.example).length,mediaFiles:media.size};
   }));
-  const memoryTotal=os.totalmem(),memoryFree=os.freemem(),cpuCores=os.cpus().length||1,cpuUsage=process.cpuUsage(),uptimeSeconds=Math.max(1,process.uptime());
+  const memoryTotal=os.totalmem(),memoryFree=os.freemem(),uptimeSeconds=Math.max(1,process.uptime());
   return {
     backend:'VPS',
     r2:r2Settings.status(),
@@ -149,7 +150,7 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
     },
     storage:true,
     resources:{
-      cpu:{cores:cpuCores,loadPercent:Math.min(100,Math.round(os.loadavg()[0]/cpuCores*1000)/10),applicationAveragePercent:Math.round((cpuUsage.user+cpuUsage.system)/1e6/uptimeSeconds/cpuCores*1000)/10,loadAverage:os.loadavg().map(value=>Math.round(value*100)/100)},
+      cpu:await sampleCpu(),
       memory:{totalBytes:memoryTotal,usedBytes:memoryTotal-memoryFree,freeBytes:memoryFree,processBytes:process.memoryUsage().rss,heapBytes:process.memoryUsage().heapUsed},
       disk:disk?{totalBytes:Number(disk.blocks)*Number(disk.bsize),freeBytes:Number(disk.bfree)*Number(disk.bsize),usedBytes:(Number(disk.blocks)-Number(disk.bfree))*Number(disk.bsize)}:null,
       usage:{databaseBytes:Number(databaseSize.rows[0]?.bytes||0),uploadsBytes:uploadBytes,applicationBytes},

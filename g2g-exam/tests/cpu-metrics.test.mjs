@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {cpuUsagePercent} from '../server/src/cpu-metrics.js';
+const cpu=(user,idle)=>({times:{user,idle,nice:0,sys:0,irq:0}});
+assert.equal(cpuUsagePercent([cpu(0,0)],[cpu(25,75)]),25);
+assert.equal(cpuUsagePercent([cpu(0,0),cpu(0,0)],[cpu(100,0),cpu(0,100)]),50);
+assert.equal(cpuUsagePercent([cpu(0,0)],[cpu(0,100)]),0);
+assert.equal(cpuUsagePercent([cpu(0,0)],[cpu(100,0)]),100);
+assert.equal(cpuUsagePercent([],[]),null);
+assert.equal(cpuUsagePercent([cpu(1,1)],[cpu(1,1)]),null);
+assert.equal(cpuUsagePercent([cpu(10,0)],[cpu(1,0)]),null);
+console.log('CPU interval measurements passed.');

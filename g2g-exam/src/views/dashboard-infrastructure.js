@@ -21,7 +21,9 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
   const resources=infrastructure.resources||{},memory=resources.memory||{},disk=resources.disk,usage=resources.usage||{},tables=resources.databaseTables||{};
   const gc=resources.mediaGarbageCollection||{};
   const memoryPercent=percent(memory.usedBytes,memory.totalBytes),diskPercent=percent(disk?.usedBytes,disk?.totalBytes);
-  const cpu=valid(resources.cpu?.loadPercent)?Math.min(100,Number(resources.cpu.loadPercent)):null;
+  const cpu=valid(resources.cpu?.usagePercent)?Math.min(100,Number(resources.cpu.usagePercent)):null;
+  const loads=[0,1,2].map(index=>valid(resources.cpu?.loadAverage?.[index])?Number(resources.cpu.loadAverage[index]).toFixed(2):'—');
+  const cores=valid(resources.cpu?.cores)?Number(resources.cpu.cores):'—';
   const totalBytes=['databaseBytes','uploadsBytes','applicationBytes'].every(key=>valid(usage[key]))?Number(usage.databaseBytes)+Number(usage.uploadsBytes)+Number(usage.applicationBytes):null;
   const stamp=new Date(gc.lastSuccessAt);
   const gcText=gc.error?'Quét lỗi':gc.lastSuccessAt&&Number.isFinite(stamp.getTime())?'Đã quét':'Chưa có lần quét';
@@ -31,7 +33,7 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
     <div class="tich-hop-tong-quan">${connectionStatusHtml(infrastructure)}</div>
     ${warnings.length?`<p class="dashboard-warning" role="status">${warnings.join(' · ')}</p>`:''}
     <div class="dashboard-resource-grid">
-      ${resourceRing('Tải CPU · 1 phút',cpu==null?'Chưa có dữ liệu':cpu+'%',cpu,{warning:cpu>=85})}
+      <div class="dashboard-resource-total">${resourceRing('CPU máy chủ · mẫu ~1 giây',cpu==null?'Chưa có dữ liệu':cpu+'%',cpu,{warning:cpu!=null&&cpu>=85})}<p class="dashboard-caption">Tải trung bình: ${loads.join(' / ')}<br>1 / 5 / 15 phút · ${cores} lõi<br><small>Load gồm tác vụ chạy và chờ I/O, không phải % CPU.</small></p></div>
       ${resourceRing('RAM',`${bytes(memory.usedBytes)} / ${bytes(memory.totalBytes)}`,memoryPercent,{warning:memoryPercent>=85})}
       ${resourceRing('Ổ đĩa',`${bytes(disk?.usedBytes)} / ${bytes(disk?.totalBytes)}`,diskPercent,{warning:diskPercent>=85})}
       <div class="dashboard-resource dashboard-resource-total"><span>Dữ liệu hệ thống</span><b>${bytes(totalBytes)}</b><small>Dọn tệp: ${gcText}</small></div>
