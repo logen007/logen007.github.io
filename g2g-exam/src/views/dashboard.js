@@ -1,5 +1,4 @@
 import {dashboardActivity} from './dashboard-activity.js';
-import {aiProviderLabel} from '../domain/ai-providers.js';
 import {esc} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
 import {dashboardInfrastructureHtml} from './dashboard-infrastructure.js';
@@ -15,12 +14,11 @@ export function dashboardHtml({data,infrastructure=null,infrastructureError='',n
   for(const attempt of data.attempts)for(const item of Object.values(attempt.aiWritingAccuracy||{})){
     if(typeof item?.accurate!=='boolean')continue;
     const exam=examById.get(attempt.examId)||{};
-    const provider=aiProviderLabel(item.provider);
     const section=(exam.sections||[]).find(section=>(section.questionIds||[]).includes(item.questionId));
     const part=writingPart(section?.name||questionById.get(item.questionId)?.title||item.part);
     const examName=exam.title||attempt.examTitle||'Đề thi',level=[exam.provider,exam.level].filter(Boolean).join(' ');
-    const key=[examName,level,part,provider].join('\u0000');
-    const group=accuracyGroups.get(key)||{examId:exam.id||attempt.examId||'',examName,level,part,provider,correct:0,total:0};
+    const key=[exam.id||attempt.examId||examName,level,part].join('\u0000');
+    const group=accuracyGroups.get(key)||{examId:exam.id||attempt.examId||'',examName,level,part,correct:0,total:0};
     group.total++;if(item.accurate)group.correct++;
     accuracyGroups.set(key,group);
   }

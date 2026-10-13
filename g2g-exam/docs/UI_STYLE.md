@@ -428,8 +428,11 @@ theme application must not wait for a network response to render the page.
 - Use existing theme tokens and actions; no chart library or extra polling.
 - AI grading has two count cards: suggested and waiting. Replace the healthy
   status badge with one horizontal row of provider pills, each showing
-  its completed-job count, with processing providers yellow/black (the preferred
-  provider when idle). The pills
+  its completed-job count. Give Groq yellow, Gemini blue, Grok purple and Mistral
+  orange backgrounds with dark text; outline processing providers (preferred when idle).
+  Accuracy rows aggregate providers by exam and writing part; omit provider badges
+  and keep the linked exam name truncated alongside the part and matched/total count.
+  The list grows naturally without a nested scroll area. The pills
   may move together below the heading on narrow phones, never scroll sideways.
   On phones distribute all four providers equally across the available width;
   their counts may wrap within a pill while provider names stay on one row.
