@@ -1438,7 +1438,12 @@ async function saveGrade(andPublish){
   data=await repo.getState();
   const fresh=byId(data.attempts,attempt.id);
   if(andPublish){
-    if(fresh.status!==ATTEMPT_STATUS.READY){notify('Cần chấm đủ các phần trước khi công bố.');render();return;}
+    if(![ATTEMPT_STATUS.READY,ATTEMPT_STATUS.PUBLISHED].includes(fresh.status)){notify('Cần chấm đủ các phần trước khi công bố.');render();return;}
+    if(fresh.status===ATTEMPT_STATUS.PUBLISHED){
+      notify('Đã cập nhật kết quả đã công bố.');
+      render();
+      return true;
+    }
     const published=await act(()=>repo.transaction(st=>publishAttempt(st,user,attempt.id)),'Đã công bố kết quả và xếp email thông báo.',{rerender:false});
     if(published){data=await repo.getState();const next=gradingNeighbors(data,user,attempt).nextPending;gradeAutosave=null;if(next)ui.gradeAttemptId=next.id;ui.view='grading-detail';render();if(next)window.scrollTo(0,0);}
   }
