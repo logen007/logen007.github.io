@@ -7,7 +7,18 @@ import {distributionChart} from './resource-charts.js';
 const total=value=>Number(value||0).toLocaleString('vi-VN');
 export function dashboardHtml({data,infrastructure=null,infrastructureError='',now=new Date(),activityFilter={}}){
   const exams=data.exams.filter(ex=>ex.status!=='trash');
-  const gradingOverview={needsGrading:data.attempts.filter(attempt=>attempt.status==='grading').length,graded:data.attempts.filter(attempt=>['ready','published'].includes(attempt.status)).length};
+  const examById=new Map(exams.map(exam=>[exam.id,exam]));
+  const accuracyGroups=new Map();
+  for(const attempt of data.attempts)for(const item of Object.values(attempt.aiWritingAccuracy||{})){
+    if(typeof item?.accurate!=='boolean')continue;
+    const exam=examById.get(attempt.examId)||{};
+    const provider=item.provider==='groq'?'Groq':item.provider==='gemini'?'Gemini':'AI';
+    const label=[exam.title||attempt.examTitle||'Đề thi',[exam.provider,exam.level].filter(Boolean).join(' '),item.part||'Bài viết',provider].filter(Boolean).join(' · ');
+    const group=accuracyGroups.get(label)||{label,correct:0,total:0};
+    group.total++;if(item.accurate)group.correct++;
+    accuracyGroups.set(label,group);
+  }
+  const gradingOverview={needsGrading:data.attempts.filter(attempt=>attempt.status==='grading').length,graded:data.attempts.filter(attempt=>['ready','published'].includes(attempt.status)).length,aiAccuracy:[...accuracyGroups.values()].sort((a,b)=>b.total-a.total||a.label.localeCompare(b.label))};
   const activity=dashboardActivity(data,{range:['7','30','365'].includes(activityFilter.range)?activityFilter.range:'30'},now),months=activity.bins;
   const biggest=Math.max(1,...months.map(item=>item.count));
   const active=activity.active;

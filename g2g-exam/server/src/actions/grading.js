@@ -39,13 +39,22 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
     }
 
     const complete=Object.keys(limits).every(skill=>Number.isFinite(Number(clean[skill])));
+    const aiWritingAccuracy={};
+    const suggestions=previous.aiWritingSuggestions||{};
+    for(const group of manualGroups(exam,questions)){
+      if(group.questions.length!==1)continue;
+      const question=group.questions[0],suggestion=suggestions[question.id],teacherScore=Number(clean[group.key]);
+      if(suggestion?.status!=='completed'||!Number.isFinite(Number(suggestion.suggestedScore))||!Number.isFinite(teacherScore))continue;
+      const suggestedScore=Number(suggestion.suggestedScore);
+      aiWritingAccuracy[question.id]={questionId:question.id,part:group.key,provider:String(suggestion.model||'unknown'),suggestedScore,teacherScore,accurate:Math.abs(suggestedScore-teacherScore)<0.000001,comparedAt:now()};
+    }
     const summary=resultSummary(exam,questions,{...previous,sectionScores,manualScores:clean,scoringVersion:2});
     const totalScore=complete?summary.total:null;
     const resultText=complete?summary.result:null;
     const status=attempt.status==='published'?'published':complete?'ready':'grading';
     const at=now();
     const privateData={
-      ...previous,autoScore,sectionScores,scoringVersion:2,manualScores:clean,feedback:String(feedback||''),
+      ...previous,autoScore,sectionScores,scoringVersion:2,manualScores:clean,aiWritingAccuracy,feedback:String(feedback||''),
       reviewerId:user.id,reviewerName:user.name||'',totalScore,result:resultText,updatedAt:at,
     };
     const publicData={...attempt.public_data,status,updatedAt:at,...(status==='published'?{totalScore,manualScores:clean,sectionScores,result:resultText,feedback:String(feedback||'')}:{})};
