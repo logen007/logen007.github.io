@@ -1,6 +1,12 @@
 # G2G visual system
 
 Approved direction: the user's neutral, rounded dashboard reference (8 October 2026).
+Dashboard update approved 13 October 2026: warm neutral cards with 28px corners,
+light large numerals, capsule activity bars, CPU line chart, RAM/disk arc gauges
+and one charcoal R2 card. Keep the activity/system/storage layout from the approved
+demo; technical details remain in disclosures. Scope this styling to the dashboard.
+At tablet widths CPU spans both resource columns; on phones cards stack and the
+exam table scrolls inside its own wrapper. Display real values and zero bars only.
 This document governs presentation only. Exam rules remain in approved `specs/`.
 
 ## Visual hierarchy

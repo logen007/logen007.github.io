@@ -20,3 +20,8 @@ export function resourceColumns(items,format){
   const max=Math.max(1,...items.map(item=>known(item.value)?Number(item.value):0));
   return `<div class="resource-columns">${items.map(item=>`<div class="resource-column"><b>${esc(format(item.value))}</b><div class="resource-column-track" aria-hidden="true"><i style="height:${known(item.value)?Number(item.value)/max*100:0}%"></i></div><span>${esc(item.label)}</span></div>`).join('')}</div>`;
 }
+
+export function resourceGauge(label,value,ratio,{warning=false}={}){
+  const known=Number.isFinite(ratio),progress=known?Math.max(0,Math.min(100,ratio)):0;
+  return `<div class="resource-gauge ${warning?'resource-gauge--warning':''}"><div class="resource-gauge-plot"><svg viewBox="0 0 120 90" aria-hidden="true"><path class="resource-gauge-track" d="M12 70 A48 48 0 1 1 108 70"/><path class="resource-gauge-fill" d="M12 70 A48 48 0 1 1 108 70" pathLength="100" stroke-dasharray="${progress} 100"/></svg><div><span>${esc(label)}</span><b>${known?Math.round(progress)+'%':'—'}</b></div></div><strong>${esc(value)}</strong></div>`;
+}

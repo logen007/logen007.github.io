@@ -2,7 +2,7 @@ import {esc,fmtDate} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
 import {connectionStatusHtml} from './connection-status.js';
 import {monitorChart,monitorRangePicker} from './monitor-chart.js';
-import {resourceRing} from './resource-charts.js';
+import {resourceRing,resourceGauge} from './resource-charts.js';
 
 const valid=value=>value!=null&&Number.isFinite(Number(value))&&Number(value)>=0;
 const bytes=value=>{if(!valid(value))return '—';const units=['B','KB','MB','GB','TB'];let index=0,current=Number(value);while(current>=1024&&index<units.length-1){current/=1024;index++;}return `${current>=10||index===0?Math.round(current):current.toFixed(1)} ${units[index]}`;};
@@ -43,8 +43,8 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
         ${monitorChart('CPU','cpu',resources.history,cpu==null?'—':cpu+'%',value=>value+'%',{hideLabel:true,detailsLabel:'Chi tiết CPU',detailsContent:`<p>Tải trung bình: ${loads.join(' / ')} · 1 / 5 / 15 phút · ${cores} lõi</p>`})}
       </div></section>
       <section class="the dashboard-capacity-card"><header class="dashboard-section-heading"><h3>Tài nguyên</h3></header><div class="dashboard-capacity-rings">
-        ${resourceRing('RAM',`${bytes(memory.usedBytes)} / ${bytes(memory.totalBytes)}`,memoryPercent,{warning:memoryPercent>=85})}
-        ${resourceRing('Ổ đĩa',`${bytes(disk?.usedBytes)} / ${bytes(disk?.totalBytes)}`,diskPercent,{warning:diskPercent>=85})}
+        ${resourceGauge('RAM',`${bytes(memory.usedBytes)} / ${bytes(memory.totalBytes)}`,memoryPercent,{warning:memoryPercent>=85})}
+        ${resourceGauge('Ổ đĩa',`${bytes(disk?.usedBytes)} / ${bytes(disk?.totalBytes)}`,diskPercent,{warning:diskPercent>=85})}
       </div><div class="dashboard-data-total"><span>Dữ liệu hệ thống</span><strong>${bytes(totalBytes)}</strong></div>
       <div class="dashboard-storage-strip" role="img" aria-label="${esc(parts.map(([label,value])=>label+': '+bytes(value)).join(', '))}">${parts.map(([label,value],index)=>`<i class="dashboard-storage-segment dashboard-storage-segment--${index}" style="width:${totalBytes>0&&valid(value)?Number(value)/totalBytes*100:0}%" title="${label}: ${bytes(value)}"></i>`).join('')}</div>
       <details class="dashboard-disclosure"><summary>Chi tiết dung lượng</summary><div class="dashboard-detail-content">${parts.map(([label,value])=>row(label,value)).join('')}${row('Bài làm',tables.attempts)}${row('Câu hỏi',tables.questions)}${row('Nhật ký',tables.audit_log)}<p>Dọn tệp: ${gcText}</p>${gcKnown?`<p>Quét: ${date(gc.lastSuccessAt)} · Đã dọn ${Number(gc.deleted)||0} tệp (${bytes(gc.deletedBytes??0)})</p>`:''}${gc.error?`<p class="dashboard-warning">${esc(gc.error)}</p>`:''}</div></details>
