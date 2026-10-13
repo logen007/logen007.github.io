@@ -3,6 +3,7 @@ import {aiApiKeys} from './ai-settings.js';
 
 const groqEndpoint='https://api.groq.com/openai/v1/chat/completions';
 const geminiEndpoint='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
+const grokEndpoint='https://api.x.ai/v1/chat/completions';
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,Number(value)||0));
 
 function cleanFindings(value){
@@ -56,18 +57,29 @@ async function fromGemini({prompt,maximum,apiKey,fetchImpl}){
   return {...parseWritingSuggestion(body?.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join(''),maximum),model:'gemini'};
 }
 
-export async function suggestWritingGrade({task='',level='',rule,answer,maxScore,groqApiKey,geminiApiKey,providerPreference,fetchImpl=fetch}={}){
+async function fromGrok({prompt,maximum,apiKey,fetchImpl}){
+  if(!apiKey)return null;
+  const {response,body}=await requestJson(fetchImpl,grokEndpoint,{method:'POST',headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/json'},body:JSON.stringify({model:'grok-4.7',temperature:0.2,max_tokens:900,messages:[{role:'user',content:prompt}]})});
+  if(response.status===429)return null;
+  if(!response.ok){
+    const detail=String(body?.error?.message||'').replace(/\s+/g,' ').trim().slice(0,180);
+    if(response.status===401||response.status===403)throw appError(503,`Grok từ chối API key${detail?`: ${detail}`:'. Kiểm tra lại khóa Grok trong Cài đặt nâng cao.'}`);
+    throw appError(503,`Grok không thể chấm bài${detail?`: ${detail}`:'.'}`);
+  }
+  return {...parseWritingSuggestion(body?.choices?.[0]?.message?.content,maximum),model:'grok'};
+}
+
+export async function suggestWritingGrade({task='',level='',rule,answer,maxScore,groqApiKey,geminiApiKey,grokApiKey,providerPreference,fetchImpl=fetch}={}){
   const rubric=String(rule||'').trim(),submission=String(answer||'').trim(),maximum=Math.max(0,Number(maxScore)||0);
   if(!rubric)throw appError(409,'Bài này chưa có quy tắc chấm AI.');
   if(!submission)throw appError(409,'Học viên chưa có bài viết để AI xem.');
-  const loadConfiguredKeys=groqApiKey===undefined&&geminiApiKey===undefined;
-  if(loadConfiguredKeys)({groqApiKey,geminiApiKey}=await aiApiKeys());
-  if(!groqApiKey&&!geminiApiKey)throw appError(503,'AI chấm bài chưa được cấu hình.');
+  const loadConfiguredKeys=groqApiKey===undefined&&geminiApiKey===undefined&&grokApiKey===undefined;
+  if(loadConfiguredKeys)({groqApiKey,geminiApiKey,grokApiKey}=await aiApiKeys());
+  if(!groqApiKey&&!geminiApiKey&&!grokApiKey)throw appError(503,'AI chấm bài chưa được cấu hình.');
   const prompt=promptFor({task:String(task||''),level,rubric,submission,maximum});
   const preferred=providerPreference||(loadConfiguredKeys?(await getSettings()).ai?.providerPreference:null)||'groq';
-  const providers=preferred==='gemini'
-    ?[()=>fromGemini({prompt,maximum,apiKey:geminiApiKey,fetchImpl}),()=>fromGroq({prompt,maximum,apiKey:groqApiKey,fetchImpl})]
-    :[()=>fromGroq({prompt,maximum,apiKey:groqApiKey,fetchImpl}),()=>fromGemini({prompt,maximum,apiKey:geminiApiKey,fetchImpl})];
+  const providersById={groq:()=>fromGroq({prompt,maximum,apiKey:groqApiKey,fetchImpl}),gemini:()=>fromGemini({prompt,maximum,apiKey:geminiApiKey,fetchImpl}),grok:()=>fromGrok({prompt,maximum,apiKey:grokApiKey,fetchImpl})};
+  const providers=[preferred,...['groq','gemini','grok'].filter(id=>id!==preferred)].filter(id=>providersById[id]).map(id=>providersById[id]);
   for(const provider of providers){const result=await provider();if(result)return result;}
   throw appError(429,'Các AI đã đạt giới hạn miễn phí hoặc chưa được cấu hình. Vui lòng thử lại sau.');
 }

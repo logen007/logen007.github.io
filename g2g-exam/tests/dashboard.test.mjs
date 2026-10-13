@@ -34,6 +34,8 @@ assert.match(html,/>Tuần<.*>Tháng<.*>Năm</);
 assert.ok(html.indexOf('data-dashboard-range')>html.indexOf('<h2>Học viên mới</h2>'));
 const accuracyHtml=dashboardHtml({data:{users:[],exams:[{id:'a1',title:'Đề mẫu',provider:'GOETHE',level:'A1',status:'published'}],attempts:[{examId:'a1',aiWritingAccuracy:{w1:{part:'Viết 1',provider:'groq',accurate:true},w2:{part:'Viết 1',provider:'groq',accurate:false}}}]},infrastructure:{resources:{}}});
 assert.match(accuracyHtml,/Độ chính xác AI/);
+assert.match(accuracyHtml,/Chấm bài AI/);
+assert.match(accuracyHtml,/>Grok<\/i>/);
 assert.match(accuracyHtml,/data-action="edit-exam" data-id="a1"/);
 assert.match(accuracyHtml,/>Đề mẫu<\/button>/);
 assert.doesNotMatch(accuracyHtml.slice(accuracyHtml.indexOf('dashboard-ai-accuracy'),accuracyHtml.indexOf('dashboard-infrastructure')),/GOETHE A1/);

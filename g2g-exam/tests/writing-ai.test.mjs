@@ -25,4 +25,9 @@ const preferredGemini=await suggestWritingGrade({rule:'Lời chào 1đ',answer:'
   return {ok:true,status:200,json:async()=>({candidates:[{content:{parts:[{text:'{"suggestedScore":1,"findings":[]}' }]}}]})};
 }});
 assert.equal(preferredGemini.model,'gemini');assert.equal(preferredCalls,1);
+const preferredGrok=await suggestWritingGrade({rule:'Lời chào 1đ',answer:'Hallo',maxScore:10,grokApiKey:'grok',providerPreference:'grok',fetchImpl:async(url)=>{
+  assert.match(url,/api\.x\.ai\/v1\/chat\/completions/);
+  return {ok:true,status:200,json:async()=>({choices:[{message:{content:'{"suggestedScore":1,"findings":[]}'}}]})};
+}});
+assert.equal(preferredGrok.model,'grok');
 console.log('Writing AI: rubric required, bounded structured suggestions and configurable provider fallback passed.');

@@ -1,7 +1,8 @@
 import {query,appError} from './db.js';
 import {encrypt,decrypt} from './settings-secrets.js';
 
-const keyFor=provider=>provider==='groq'?'ai_groq_api_key':provider==='gemini'?'ai_gemini_api_key':null;
+const keyFor=provider=>provider==='groq'?'ai_groq_api_key':provider==='gemini'?'ai_gemini_api_key':provider==='grok'?'ai_grok_api_key':null;
+const envFor=provider=>provider==='groq'?'GROQ_API_KEY':provider==='gemini'?'GEMINI_API_KEY':'XAI_API_KEY';
 
 export async function setAiApiKey(provider,value,userId){
   const key=keyFor(provider),secret=String(value||'').trim();
@@ -12,11 +13,11 @@ export async function setAiApiKey(provider,value,userId){
 }
 
 export async function aiApiKeyStatus(){
-  const result=await query(`SELECT key,updated_at FROM secrets WHERE key=ANY($1::text[])`,[['ai_groq_api_key','ai_gemini_api_key']]);
+  const result=await query(`SELECT key,updated_at FROM secrets WHERE key=ANY($1::text[])`,[['ai_groq_api_key','ai_gemini_api_key','ai_grok_api_key']]);
   const saved=new Map(result.rows.map(row=>[row.key,row.updated_at]));
-  return Object.fromEntries(['groq','gemini'].map(provider=>{
+  return Object.fromEntries(['groq','gemini','grok'].map(provider=>{
     const key=keyFor(provider),updatedAt=saved.get(key)||null;
-    return [provider,{configured:Boolean(updatedAt||process.env[provider==='groq'?'GROQ_API_KEY':'GEMINI_API_KEY']),stored:Boolean(updatedAt),updatedAt,source:updatedAt?'settings':process.env[provider==='groq'?'GROQ_API_KEY':'GEMINI_API_KEY']?'environment':null}];
+    return [provider,{configured:Boolean(updatedAt||process.env[envFor(provider)]),stored:Boolean(updatedAt),updatedAt,source:updatedAt?'settings':process.env[envFor(provider)]?'environment':null}];
   }));
 }
 
@@ -26,6 +27,6 @@ async function savedSecret(key){
 }
 
 export async function aiApiKeys(){
-  const [groqSaved,geminiSaved]=await Promise.all([savedSecret('ai_groq_api_key'),savedSecret('ai_gemini_api_key')]);
-  return {groqApiKey:groqSaved||process.env.GROQ_API_KEY||'',geminiApiKey:geminiSaved||process.env.GEMINI_API_KEY||''};
+  const [groqSaved,geminiSaved,grokSaved]=await Promise.all([savedSecret('ai_groq_api_key'),savedSecret('ai_gemini_api_key'),savedSecret('ai_grok_api_key')]);
+  return {groqApiKey:groqSaved||process.env.GROQ_API_KEY||'',geminiApiKey:geminiSaved||process.env.GEMINI_API_KEY||'',grokApiKey:grokSaved||process.env.XAI_API_KEY||''};
 }

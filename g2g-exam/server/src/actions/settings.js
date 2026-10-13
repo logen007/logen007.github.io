@@ -74,7 +74,7 @@ function cleanSettings(input={}){
   Object.assign(settings.theme,normalizeLayout(settings.theme),normalizeButtonTheme(settings.theme));
   settings.auth.allowedDomain=String(settings.auth.allowedDomain||'').trim().toLowerCase().replace(/^@/,'').slice(0,160);
   settings.auth.teacherEmails=normalizeTeacherEmails(settings.auth.teacherEmails);
-  settings.ai.providerPreference=settings.ai.providerPreference==='gemini'?'gemini':'groq';
+  settings.ai.providerPreference=['groq','gemini','grok'].includes(settings.ai.providerPreference)?settings.ai.providerPreference:'groq';
   settings.smtp.port=Math.max(1,Math.min(65535,Number(settings.smtp.port||587)));
   settings.smtp.timeoutMs=Math.max(3000,Math.min(120000,Number(settings.smtp.timeoutMs||20000)));
   if(!settings.general.systemName||!/^https?:\/\//.test(settings.general.publicUrl))throw appError(400,'Thông tin hệ thống không hợp lệ.');
@@ -174,8 +174,8 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
     writingAi:{
       jobs:Object.fromEntries(aiJobs.rows.map(row=>[row.status,{count:Number(row.count||0),models:row.models||[]}])),
       failures:aiFailures.rows.map(row=>({id:String(row.id),attemptId:row.attempt_id,error:row.last_error||'AI chấm bài thất bại.',at:row.updated_at})),
-      providerPreference:settings.ai?.providerPreference==='gemini'?'gemini':'groq',
-      providers:{groq:Boolean(ai.groq?.configured),gemini:Boolean(ai.gemini?.configured)},
+      providerPreference:['groq','gemini','grok'].includes(settings.ai?.providerPreference)?settings.ai.providerPreference:'groq',
+      providers:{groq:Boolean(ai.groq?.configured),gemini:Boolean(ai.gemini?.configured),grok:Boolean(ai.grok?.configured)},
     },
     storage:true,
     resources:{

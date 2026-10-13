@@ -14,7 +14,7 @@ export function dashboardHtml({data,infrastructure=null,infrastructureError='',n
   for(const attempt of data.attempts)for(const item of Object.values(attempt.aiWritingAccuracy||{})){
     if(typeof item?.accurate!=='boolean')continue;
     const exam=examById.get(attempt.examId)||{};
-    const provider=item.provider==='groq'?'Groq':item.provider==='gemini'?'Gemini':'AI';
+    const provider=item.provider==='groq'?'Groq':item.provider==='gemini'?'Gemini':item.provider==='grok'?'Grok':'AI';
     const section=(exam.sections||[]).find(section=>(section.questionIds||[]).includes(item.questionId));
     const part=writingPart(section?.name||questionById.get(item.questionId)?.title||item.part);
     const examName=exam.title||attempt.examTitle||'Đề thi',level=[exam.provider,exam.level].filter(Boolean).join(' ');

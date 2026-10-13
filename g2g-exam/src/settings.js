@@ -40,7 +40,7 @@ function updateConnectionStatus(){
   if(target)target.innerHTML=connectionStatusHtml(infra);
   const hint=document.getElementById('sSecretHint');
   if(hint)hint.textContent=infra?.smtp?.secretConfigured?'Đã lưu mật khẩu an toàn.':'Chưa lưu mật khẩu SMTP.';
-  for(const provider of ['groq','gemini']){
+  for(const provider of ['groq','gemini','grok']){
     const hint=document.getElementById(`sAi${provider[0].toUpperCase()+provider.slice(1)}Hint`),state=infra?.ai?.[provider];
     if(hint)hint.textContent=state?.configured?`Đã cấu hình${state.source==='settings'?' trong Cài đặt':' từ biến môi trường'}.`:'Chưa cấu hình.';
   }
@@ -116,7 +116,7 @@ function collectForm(){
     general:{...settings.general,systemName:val('sName'),organizationName:val('sOrg'),supportEmail:val('sSupport'),feedbackEmail:val('sFeedbackEmail'),publicUrl:val('sUrl'),examMessages:val('sExamMessages')},
     theme:{...settings.theme,...selectedLayout(),...selectedButtons(),primaryColor:selectedThemeColor()},
     auth:{...settings.auth,googleLoginEnabled:chk('sGoogle'),allowNewStudents:chk('sSignup'),allowedDomain:val('sDomain').replace(/^@/,'').toLowerCase()},
-    ai:{...settings.ai,providerPreference:val('sAiProvider')==='gemini'?'gemini':'groq'},
+    ai:{...settings.ai,providerPreference:['groq','gemini','grok'].includes(val('sAiProvider'))?val('sAiProvider'):'groq'},
     exam:{...settings.exam},
     smtp:{...settings.smtp,enabled:chk('sSmtp'),host:val('sHost'),port:Number(val('sPort')||587),security:val('sSecurity'),username:val('sUser'),fromName:val('sFromName'),fromEmail:val('sFrom'),replyTo:val('sReply'),timeoutMs:Number(val('sTimeout')||20000),rejectUnauthorized:chk('sTlsVerify')},
     email:{...settings.email,enabled:chk('sEmail'),resultSubject:val('sSubject'),resultText:document.getElementById('sText')?.value||'',resultHtml:document.getElementById('sHtml')?.value||''},
@@ -215,7 +215,7 @@ async function saveAiKey(provider){
   try{
     setState('Đang mã hóa và lưu API key AI...');
     await updateAiApiKey(provider,apiKey);input.value='';infra=await refreshInfrastructure();
-    setState(`Đã cập nhật API key ${provider==='groq'?'Groq':'Gemini'}.`);updateConnectionStatus();
+    setState(`Đã cập nhật API key ${provider==='groq'?'Groq':provider==='gemini'?'Gemini':'Grok'}.`);updateConnectionStatus();
   }catch(error){setState(error.message,true);}
   finally{if(button)button.disabled=false;}
 }
@@ -253,6 +253,7 @@ function bindSettingsActions(){
   document.getElementById('sSecret')?.addEventListener('click',saveSecret);
   document.getElementById('sAiGroqSave')?.addEventListener('click',()=>saveAiKey('groq'));
   document.getElementById('sAiGeminiSave')?.addEventListener('click',()=>saveAiKey('gemini'));
+  document.getElementById('sAiGrokSave')?.addEventListener('click',()=>saveAiKey('grok'));
   document.getElementById('sTest')?.addEventListener('click',sendTest);
   document.getElementById('sRefresh')?.addEventListener('click',async()=>{
     const button=document.getElementById('sRefresh');
