@@ -99,7 +99,12 @@ export async function updateSmtpSecret(user,{password}){
 
 export async function updateAiApiKey(user,{provider,apiKey}){
   if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được cập nhật API key AI.');
-  return setAiApiKey(provider,apiKey,user.id);
+  const result=await setAiApiKey(provider,apiKey,user.id);
+  // A new key can resolve a terminal provider failure.  Retry those papers now,
+  // rather than making teachers wait for the scheduled recovery window.
+  const retried=await query(`UPDATE writing_ai_jobs SET status='queued',tries=0,last_error=NULL,available_at=now(),finished_at=NULL,updated_at=now() WHERE status='failed'`);
+  await audit(user,'update_ai_api_key','settings',provider,{retriedJobs:retried.rowCount});
+  return {...result,retriedJobs:retried.rowCount};
 }
 
 export async function testSmtp(user,{to}){
