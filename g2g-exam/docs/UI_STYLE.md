@@ -536,6 +536,8 @@ theme application must not wait for a network response to render the page.
 - Animate result counters, skill bars and answer distribution once per opened
   review over 900ms, with a subtle card entrance. Preserve exact final values,
   skip reduced motion, and stop updates when hidden or detached. No new requests.
+  Skill labels and bar colors follow the animated displayed score through the
+  shared gradeBand thresholds, then restore the exact final assessment.
 
 - Header groups the student avatar, “Kết quả thi” with the actual exam level,
   student name and an icon-only Share button immediately beside the name.

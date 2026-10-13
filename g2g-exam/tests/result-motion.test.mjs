@@ -7,16 +7,27 @@ globalThis.document={hidden:false};
 globalThis.matchMedia=()=>({matches:false});
 const number={nodeType:3,textContent:'39'};
 const style={removeProperty(key){delete this[key];}};
+const badge={textContent:'sehr gut',className:'score-badge score-excellent'},track={className:'result-track result-track--excellent'};
+const row={querySelector(selector){
+  if(selector==='.score-badge')return badge;
+  if(selector==='.result-track')return track;
+  return {firstChild:{textContent:'15'},querySelector:()=>({textContent:' / 15'})};
+}};
 const page={isConnected:true,querySelectorAll(selector){
   if(selector.includes('strong'))return [{firstChild:number}];
   if(selector==='.result-track>span')return [{style}];
+  if(selector==='.result-bar')return [row];
   return [];
 }};
 const root={querySelector:()=>page},review={};
 animateResult(root,review);assert.equal(number.textContent,'0');
+assert.equal(badge.textContent,'nicht bestanden');
+assert.equal(track.className,'result-track result-track--failed');
 queue.shift()(0);queue.shift()(450);
 assert.ok(Number(number.textContent)>0&&Number(number.textContent)<39);
 queue.shift()(900);assert.equal(number.textContent,'39');
+assert.equal(badge.textContent,'sehr gut');
+assert.equal(track.className,'result-track result-track--excellent');
 assert.equal(style.transform,undefined);
 animateResult(root,review);assert.equal(queue.length,0,'No replay on rebind');
 globalThis.matchMedia=()=>({matches:true});

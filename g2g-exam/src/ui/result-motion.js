@@ -1,3 +1,4 @@
+import {gradeBand} from '../domain/gradebook.js';
 const seen=new WeakSet();
 export function animateResult(root,review){
   if(!review||seen.has(review))return;
@@ -15,13 +16,28 @@ export function animateResult(root,review){
     numbers.push({node,original,value:Number(match[1]),suffix:match[2],decimals});
   });
   const bars=[...page.querySelectorAll('.result-track>span')];
+  const grades=[...page.querySelectorAll('.result-bar')].flatMap(row=>{
+    const badge=row.querySelector('.score-badge'),track=row.querySelector('.result-track');
+    const score=row.querySelector('.result-bar-score strong');
+    const raw=score?.firstChild?.textContent||'',max=Number(score?.querySelector('small')?.textContent.replace('/', '').trim());
+    if(!badge||!track||!raw.trim()||!Number.isFinite(Number(raw))||!(max>0))return [];
+    return [{badge,track,value:Number(raw),max,decimals:(raw.split('.')[1]||'').length,label:badge.textContent,badgeClass:badge.className,trackClass:track.className}];
+  });
   const donuts=[...page.querySelectorAll('.result-donut')].map(node=>({node,correct:node.style.getPropertyValue('--correct-angle'),wrong:node.style.getPropertyValue('--wrong-angle')}));
   const restore=()=>{
+    grades.forEach(item=>{item.badge.textContent=item.label;item.badge.className=item.badgeClass;item.track.className=item.trackClass;});
     numbers.forEach(item=>item.node.textContent=item.original);
     bars.forEach(node=>{node.style.removeProperty('transform');node.style.removeProperty('transform-origin');});
     donuts.forEach(item=>{item.node.style.setProperty('--correct-angle',item.correct);item.node.style.setProperty('--wrong-angle',item.wrong);});
   };
   const paint=p=>{
+    grades.forEach(item=>{
+      const band=gradeBand(Number((item.value*p).toFixed(item.decimals)),item.max);
+      if(!band)return;
+      item.badge.textContent=band.label;
+      item.badge.className='score-badge score-'+band.key;
+      item.track.className='result-track result-track--'+band.key;
+    });
     numbers.forEach(item=>item.node.textContent=(item.value*p).toFixed(item.decimals)+item.suffix);
     bars.forEach(node=>{node.style.transformOrigin='left';node.style.transform='scaleX('+p+')';});
     donuts.forEach(item=>{item.node.style.setProperty('--correct-angle',parseFloat(item.correct)*p+'deg');item.node.style.setProperty('--wrong-angle',parseFloat(item.wrong)*p+'deg');});
