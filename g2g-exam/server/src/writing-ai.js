@@ -38,7 +38,7 @@ async function fromGroq({prompt,maximum,apiKey,fetchImpl}){
   if(response.status===429)return null;
   if(!response.ok){
     const detail=String(body?.error?.message||'').replace(/\s+/g,' ').trim().slice(0,180);
-    if(response.status===401||response.status===403)throw appError(503,'Groq từ chối API key. Kiểm tra lại khóa Groq trong Cài đặt nâng cao.');
+    if(response.status===401||response.status===403)throw appError(503,`Groq từ chối API key${detail?`: ${detail}`:'. Kiểm tra lại khóa Groq trong Cài đặt nâng cao.'}`);
     throw appError(503,`Groq không thể chấm bài${detail?`: ${detail}`:'.'}`);
   }
   return {...parseWritingSuggestion(body?.choices?.[0]?.message?.content,maximum),model:'groq'};
@@ -50,7 +50,7 @@ async function fromGemini({prompt,maximum,apiKey,fetchImpl}){
   if(response.status===429)return null;
   if(!response.ok){
     const detail=String(body?.error?.message||'').replace(/\s+/g,' ').trim().slice(0,180);
-    if(response.status===401||response.status===403)throw appError(503,'Gemini từ chối API key. Kiểm tra lại khóa Gemini trong Cài đặt nâng cao.');
+    if(response.status===401||response.status===403)throw appError(503,`Gemini từ chối API key${detail?`: ${detail}`:'. Kiểm tra lại khóa Gemini trong Cài đặt nâng cao.'}`);
     throw appError(503,`Gemini không thể chấm bài${detail?`: ${detail}`:'.'}`);
   }
   return {...parseWritingSuggestion(body?.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join(''),maximum),model:'gemini'};

@@ -7,6 +7,7 @@ assert.deepEqual(parsed.findings,[{met:true,text:'Có lời chào'},{met:false,t
 assert.throws(()=>parseWritingSuggestion('không phải JSON',10),error=>error.statusCode===502);
 await assert.rejects(suggestWritingGrade({rule:'',answer:'Hallo',maxScore:10,groqApiKey:'key'}),error=>error.statusCode===409);
 await assert.rejects(suggestWritingGrade({rule:'Chấm lời chào',answer:'Hallo',maxScore:10,groqApiKey:'',geminiApiKey:'',fetchImpl:async()=>null}),error=>error.statusCode===503);
+await assert.rejects(suggestWritingGrade({rule:'Chấm lời chào',answer:'Hallo',maxScore:10,groqApiKey:'key',fetchImpl:async()=>({ok:false,status:401,json:async()=>({error:{message:'Invalid API Key'}})})}),error=>error.statusCode===503&&/Invalid API Key/.test(error.message));
 let groqBody;
 const groq=await suggestWritingGrade({task:'Viết thư hỏi Touristinformation.',level:'A1',rule:'Lời chào 1đ',answer:'Hallo',maxScore:10,groqApiKey:'key',fetchImpl:async(_url,options)=>{groqBody=JSON.parse(options.body);return {ok:true,json:async()=>({choices:[{message:{content:'{"suggestedScore":1,"findings":[{"met":true,"text":"Có lời chào"}]}'}}]})};}});
 assert.deepEqual(groq,{suggestedScore:1,findings:[{met:true,text:'Có lời chào'}],model:'groq'});
