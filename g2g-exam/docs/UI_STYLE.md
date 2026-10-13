@@ -546,9 +546,11 @@ theme application must not wait for a network response to render the page.
   tab. Missing component marks keep the skill pending; a writing estimate marks
   its aggregate temporary too. Speaking retains its position before publication.
 
-- Standard TELC results use two separate cards: Khối thi viết (with four nested
+- Standard TELC results use one shared card: Khối thi viết (with four nested
   skill rows) and Khối thi nói. Use shared bars without grade badges on children;
-  show block thresholds and only published block verdicts. Missing written
+  hide threshold text and show only published block verdicts. Both blocks retain
+  progress even while pending. Give the total statistic 1.8 shares of width
+  versus 1 for each remaining statistic, including mobile. Missing written
   components leave the total pending; estimated writing makes the block total
   explicitly temporary. Keep this hierarchy during background updates.
 
