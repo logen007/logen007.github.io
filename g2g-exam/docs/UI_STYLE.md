@@ -538,6 +538,7 @@ theme application must not wait for a network response to render the page.
 
 - TELC block titles are the left label in the score row, with score and badge
   on the right and the track directly below. No separate heading above that row.
+  Block labels use 18px/600; child skill labels keep their normal body size.
 
 - Published TELC block verdicts are shared rounded badges immediately to the
   right of their score, above the track; never a separate line below it.

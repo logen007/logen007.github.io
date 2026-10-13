@@ -6,6 +6,7 @@ const childStyle=readFileSync(new URL('../styles.css',import.meta.url),'utf8').m
 assert.match(childStyle,/border:1px solid var\(--vien\)/);
 assert.match(childStyle,/border-radius:20px/);
 assert.doesNotMatch(childStyle,/border-left/);
+assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.telc-result-block>\.result-bar>\.result-bar-label>span:first-child\{font-size:18px;font-weight:600\}/);
 const parts=[
   ...[0,15,0].map(score=>({skill:'reading',score,max:25,source:'automatic'})),
   ...[6,1.5].map(score=>({skill:'grammar',score,max:15,source:'automatic'})),

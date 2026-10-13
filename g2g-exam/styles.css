@@ -6,7 +6,7 @@
 .temporary-badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;background:#eef0f2;color:#59616b;font-size:13px;font-weight:500;line-height:1.4;white-space:nowrap}
 .telc-result-groups{display:grid;gap:20px;min-width:0}
 .telc-result-card{display:grid;gap:24px;min-width:0}
-.telc-result-block>.result-bar>.result-bar-label>span:first-child{font-weight:600}
+.telc-result-block>.result-bar>.result-bar-label>span:first-child{font-size:18px;font-weight:600}
 .telc-result-children{display:grid;gap:16px;margin-top:20px;padding:16px;border:1px solid var(--vien);border-radius:20px;min-width:0}
 .telc-result-children .result-bar{margin:0}
 .result-page [hidden]{display:none!important}
