@@ -1,7 +1,7 @@
 import {esc,textHtml,fmtDate} from '../ui/format.js';
 import {animateResult} from '../ui/result-motion.js';
 import {iconHtml} from '../ui/icons.js';
-import {resultClass,isStandardTelc,gradeBand} from '../domain/gradebook.js';
+import {resultClass,isStandardTelc,gradeBand,resultLabel} from '../domain/gradebook.js';
 import {SKILL_LABELS} from '../domain/result-summary.js';
 import {reviewCounts,questionVerdict} from '../domain/attempt-review.js';
 import {TELC_SCORING} from '../../specs/telc/scoring.js';
@@ -37,9 +37,9 @@ export function questionHtml(q,published,answerLabel='Bạn trả lời'){
   return `<article class="result-question" data-result-verdict="${verdict||'manual'}"><div class="result-question-heading"><strong>Câu ${esc(q.number||'')} ${q.title?`· ${textHtml(q.title)}`:''}</strong>${verdict?`<span class="result-${verdict}">${labels[verdict]}</span>`:''}</div>${body}</article>`;
 }
 export function resultOutcomeHtml(summary,status='published',pendingLabel='Chờ chấm'){
-  const result=status==='published'?summary?.result:null,tone=resultClass(result);
+  const result=status==='published'?resultLabel(summary?.result):null,tone=resultClass(result);
   const outcome=status!=='published'?pendingLabel:tone==='passed'?'Đạt':tone==='failed'?'Chưa đạt':result||'Chờ điểm';
-  const band={'sehr gut':'Xuất sắc','gut':'Giỏi','befriedigend':'Khá','ausreichend':'Đạt'}[result];
+  const band=['Xuất sắc','Giỏi','Khá','Đạt'].includes(result)?result:null;
   return `<div class="result-outcome ${tone}">${iconHtml(tone==='passed'?'example':tone==='failed'?'close':'grading')}<strong>${esc(outcome)}</strong>${band?`<span>${esc(band)}</span>`:''}</div>`;
 }
 function feedback(score){return `<div class="result-feedback"><h3>Nhận xét của cô</h3><p>${textHtml(score.feedback||'Chưa có nhận xét.')}</p>${score.reviewerName?`<div class="result-reviewer">${iconHtml('teacher')}<span>${esc(score.reviewerName)}</span></div>`:''}</div>`;}
@@ -71,7 +71,7 @@ export function resultShareText(review,user={}){
   const a=review.attempt,s=review.score,summary=s.summary;
   return [`${a.studentName||user.name||'Học viên'} · Kết quả thi ${a.level||summary?.level||''}`,
     `${a.provider||summary?.provider||''} · ${a.examTitle||'Bài thi'}`,
-    `${summary?.total??s.total??'—'} điểm · ${summary?.result||s.result||'Đã chấm'}`,
+    `${summary?.total??s.total??'—'} điểm · ${resultLabel(summary?.result||s.result)||'Đã chấm'}`,
     ...Object.entries(summary?.skills||{}).map(([k,v])=>`${SKILL_LABELS[k]||k}: ${v.score}/${v.max}`),'G2G Career'].join('\n');
 }
 export function bindAttemptResult(root,{review,user,notify=()=>{}}){

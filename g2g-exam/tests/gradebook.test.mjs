@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import './grading-review.test.mjs';
 import {readFileSync} from 'node:fs';
 assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.grade-filters \{ display:grid; grid-template-columns:minmax\(0,1fr\) minmax\(0,1\.6fr\); grid-template-rows:repeat\(3,auto\); grid-auto-flow:column;/);
-import {canonicalSkill,skillScores,skillPassResult,gradeBand,filteredGradebook,telcResult,isStandardTelc} from '../src/domain/gradebook.js';
+import {resultLabel,resultClass,canonicalSkill,skillScores,skillPassResult,gradeBand,filteredGradebook,telcResult,isStandardTelc} from '../src/domain/gradebook.js';
 import {validateStudentProfile} from '../src/domain/student-profile.js';
 import {gradebookHtml} from '../src/views/gradebook.js';
 
@@ -22,7 +22,7 @@ assert.deepEqual(scores.writing,{score:9,max:15});
 assert.equal(skillPassResult(scores),'Đạt');
 assert.equal(skillPassResult({...scores,listening:{score:8.99,max:15}}),'Chưa đạt');
 assert.deepEqual(skillScores(exam,questions,{...attempt,oralScore:0,oralMax:15}).speaking,{score:0,max:15});
-for(const [score,label] of [[90,'sehr gut'],[89.99,'gut'],[80,'gut'],[70,'befriedigend'],[60,'ausreichend'],[59.99,'nicht bestanden']])assert.equal(gradeBand(score,100).label,label);
+for(const [score,label] of [[90,'Xuất sắc'],[89.99,'Giỏi'],[80,'Giỏi'],[70,'Khá'],[60,'Đạt'],[59.99,'Chưa đạt']])assert.equal(gradeBand(score,100).label,label);
 assert.equal(gradeBand(null,15),null);
 
 const data={questions,classes:[{id:'class',code:'i1026'}],users:[{id:'s',role:'student',name:'Nguyen A',classId:'class',level:'A1.2'}],exams:[exam,{id:'t',provider:'TELC',sections:[]}],attempts:[
@@ -49,15 +49,15 @@ assert.throws(()=>validateStudentProfile({name:'Nguyen A',classId:'class',level:
 console.log('Gradebook: skill aggregation, boundary grades, filters, profile validation passed.');
 
 const telcSkills=(written,oral)=>({reading:{score:Math.min(written,75),max:75},grammar:{score:Math.max(0,Math.min(written-75,30)),max:30},listening:{score:Math.max(0,Math.min(written-105,75)),max:75},writing:{score:Math.max(0,written-180),max:45},...(oral==null?{}:{speaking:{score:oral,max:75}})});
-assert.equal(telcResult(telcSkills(135,45)),'ausreichend');
-assert.equal(telcResult(telcSkills(150,40)),'nicht bestanden');
-assert.equal(telcResult(telcSkills(134.5,75)),'nicht bestanden');
-assert.equal(telcResult(telcSkills(200,60)),'gut');
+assert.equal(telcResult(telcSkills(135,45)),'Đạt');
+assert.equal(telcResult(telcSkills(150,40)),'Chưa đạt');
+assert.equal(telcResult(telcSkills(134.5,75)),'Chưa đạt');
+assert.equal(telcResult(telcSkills(200,60)),'Giỏi');
 assert.equal(telcResult(telcSkills(225,null)),'Chờ điểm Nói');
 assert.equal(telcResult({...telcSkills(135,45),reading:{score:30,max:45}}),'Chưa đủ cấu trúc điểm TELC');
 assert.equal(isStandardTelc({provider:'TELC',level:'B1'}),true);
 assert.equal(isStandardTelc({provider:'TELC',level:'C1'}),false);
-for(const [written,oral,label] of [[225,45,'sehr gut'],[195,45,'gut'],[165,45,'befriedigend'],[164.5,45,'ausreichend']])assert.equal(telcResult(telcSkills(written,oral)),label);
+for(const [written,oral,label] of [[225,45,'Xuất sắc'],[195,45,'Giỏi'],[165,45,'Khá'],[164.5,45,'Đạt']])assert.equal(telcResult(telcSkills(written,oral)),label);
 console.log('TELC B1/B2: independent 135/225 and 45/75 gates, grades, missing oral and format scope passed.');
 
 const html=gradebookHtml({data,ui:{}});
@@ -96,7 +96,7 @@ assert.ok(nav.includes('<span>Bài Thi</span>'));
 assert.ok(!nav.includes('data-tab="grading"'));
 assert.ok(!nav.includes('Bảng điểm'));
 const {resultSummaryHtml}=await import('../src/views/result-summary.js');
-for(const [score,label,key] of [[90,'sehr gut','excellent'],[80,'gut','good'],[70,'befriedigend','satisfactory'],[60,'ausreichend','sufficient'],[59,'nicht bestanden','failed']]){
+for(const [score,label,key] of [[90,'Xuất sắc','excellent'],[80,'Giỏi','good'],[70,'Khá','satisfactory'],[60,'Đạt','sufficient'],[59,'Chưa đạt','failed']]){
   const summaryHtml=resultSummaryHtml({provider:'GOETHE',skills:{reading:{score,max:100}},total:score});
   assert.ok(summaryHtml.includes('<th>Kết quả</th>'));
   assert.ok(summaryHtml.includes(`score-${key}">${label}</span>`));
@@ -176,3 +176,13 @@ assert.ok(!filteredExams.includes('Goethe Only'));
 assert.ok(!filteredExams.includes('Other Level'));
 assert.ok(filteredExams.includes('data-admin-exam-filter="provider"'));
 assert.ok(filteredExams.includes('data-admin-exam-filter="level"'));
+
+// Historical saved labels and new results share the same Vietnamese presentation.
+for(const [old,label] of [["sehr gut","Xuất sắc"],["gut","Giỏi"],["befriedigend","Khá"],["ausreichend","Đạt"],["nicht bestanden","Chưa đạt"]]){
+  assert.equal(resultLabel(old),label);
+  assert.equal(resultLabel(label),label);
+  assert.equal(resultClass(old),resultClass(label));
+  assert.equal(resultClass(label),label==='Chưa đạt'?'failed':'passed');
+}
+assert.equal(resultLabel('Chờ điểm Nói'),'Chờ điểm Nói');
+assert.equal(resultLabel(null),null);

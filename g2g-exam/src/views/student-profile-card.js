@@ -1,7 +1,7 @@
 import {nameChangePatch} from '../domain/account-name.js';
 import {ATTEMPT_STATUS,getStudentResults,getLatestPublishedAttempt} from '../core.js';
 import {normalizeStudentLevel,validateStudentName} from '../domain/student-profile.js';
-import {resultClass} from '../domain/gradebook.js';
+import {resultClass,resultLabel} from '../domain/gradebook.js';
 import {esc} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
 import {confirmNameChange} from '../ui/confirm.js';
@@ -21,7 +21,7 @@ export function studentProfileCardHtml(data,user){
   const initials=String(user.name||'HV').trim().split(/\s+/).slice(-2).map(word=>word[0]).join('');
   return `<section class="the learner-card" aria-label="Hồ sơ và thành tích học viên">
     <div class="learner-identity"><span class="learner-avatar">${user.picture?`<img src="${esc(user.picture)}" alt="" referrerpolicy="no-referrer">`:esc(initials)}</span><div class="learner-details"><div class="learner-name"><h1 data-student-name>${esc(user.name)}</h1><form class="profile-form learner-name-editor" data-name-form hidden><label class="sr-only" for="studentNameEdit">Họ và tên đầy đủ</label><input id="studentNameEdit" name="name" required maxlength="120" autocomplete="name" value="${esc(user.name)}" aria-describedby="studentNameStatus"></form><button class="icon-btn" data-edit-student-name title="Sửa họ tên" aria-label="Sửa họ tên">${iconHtml('grading')}</button></div><span class="phu-de">${esc(classCode==='Extend'?'Học viên Vãng lai':classCode)}</span><p id="studentNameStatus" class="learner-share-status phu-de" data-name-status role="status"></p></div><div class="learner-emblem" aria-label="Trình độ ${esc(stats.level)}">${esc(stats.level)}</div><div class="learner-actions">${classCode==='Extend'?'<button class="nut" data-action="class-enrollment">Nhập mã xác nhận</button>':''}<button class="nut" data-action="share-profile">↗ Chia sẻ</button></div></div>
-    <div class="learner-stats"><div><span>Bài đã thi</span><strong>${stats.taken}</strong></div><div><span>Bài đạt</span><strong>${stats.passed}</strong></div><div><span>Điểm gần nhất</span><strong>${esc(stats.latest?.totalScore??'—')}</strong></div><div><span>Kết quả gần nhất</span><strong class="exam-latest-result ${resultClass(stats.latest?.result)}">${esc(stats.latest?.result||'Chưa có')}</strong></div></div>
+    <div class="learner-stats"><div><span>Bài đã thi</span><strong>${stats.taken}</strong></div><div><span>Bài đạt</span><strong>${stats.passed}</strong></div><div><span>Điểm gần nhất</span><strong>${esc(stats.latest?.totalScore??'—')}</strong></div><div><span>Kết quả gần nhất</span><strong class="exam-latest-result ${resultClass(stats.latest?.result)}">${esc(resultLabel(stats.latest?.result)||'Chưa có')}</strong></div></div>
     <p class="learner-share-status phu-de" data-share-status role="status" aria-live="polite"></p>
   </section>`;
 }

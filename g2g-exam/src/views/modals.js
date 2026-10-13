@@ -1,3 +1,4 @@
+import {resultLabel} from '../domain/gradebook.js';
 import {isPrefilledQuestion} from '../domain/question-display.js';
 import {ATTEMPT_STATUS,byId} from '../core.js';
 import {textHtml,esc,fmtDate,statusText,typeLabel} from '../ui/format.js';
@@ -20,5 +21,5 @@ export function previewQuestionModalHtml(q){
 export function studentGradeModalHtml({data,studentId}){
   const st=byId(data.users,studentId);
   const attempts=data.attempts.filter(a=>a.studentId===studentId).sort((a,b)=>String(b.startedAt).localeCompare(String(a.startedAt)));
-  return `<div class="hop-chon" id="modal"><div class="noi-hop"><div class="dau-hop"><div><div class="nhan-muc">LỊCH SỬ ĐIỂM</div><h2>${esc(st?.name||'Học viên')}</h2></div><button class="nut nho" data-action="close-modal">×</button></div><div class="table-wrap" style="margin-top:14px"><table class="bang"><thead><tr><th>Bài thi</th><th>Lần</th><th>Ngày</th><th>Điểm</th><th>Kết quả</th><th>Trạng thái</th></tr></thead><tbody>${attempts.map(a=>`<tr><td>${esc(a.examTitle)}</td><td>#${a.attemptNo}</td><td>${fmtDate(a.submittedAt||a.startedAt)}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?(a.totalScore??'—'):'—'}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?esc(a.result||'—'):'—'}</td><td>${statusText(a.status)}</td></tr>`).join('')}</tbody></table></div></div></div>`;
+  return `<div class="hop-chon" id="modal"><div class="noi-hop"><div class="dau-hop"><div><div class="nhan-muc">LỊCH SỬ ĐIỂM</div><h2>${esc(st?.name||'Học viên')}</h2></div><button class="nut nho" data-action="close-modal">×</button></div><div class="table-wrap" style="margin-top:14px"><table class="bang"><thead><tr><th>Bài thi</th><th>Lần</th><th>Ngày</th><th>Điểm</th><th>Kết quả</th><th>Trạng thái</th></tr></thead><tbody>${attempts.map(a=>`<tr><td>${esc(a.examTitle)}</td><td>#${a.attemptNo}</td><td>${fmtDate(a.submittedAt||a.startedAt)}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?(a.totalScore??'—'):'—'}</td><td>${a.status===ATTEMPT_STATUS.PUBLISHED?esc(resultLabel(a.result)||'—'):'—'}</td><td>${statusText(a.status)}</td></tr>`).join('')}</tbody></table></div></div></div>`;
 }

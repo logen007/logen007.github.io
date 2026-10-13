@@ -15,7 +15,7 @@ export function telcResult(skills){
   if(!skills.speaking)return 'Chờ điểm Nói';
   if(skills.speaking.max!==TELC_SCORING.oralMax)return 'Chưa đủ cấu trúc điểm TELC';
   const written=Object.keys(TELC_SCORING.written).reduce((sum,key)=>sum+skills[key].score,0);
-  if(written<TELC_SCORING.writtenPass||skills.speaking.score<TELC_SCORING.oralPass)return 'nicht bestanden';
+  if(written<TELC_SCORING.writtenPass||skills.speaking.score<TELC_SCORING.oralPass)return 'Chưa đạt';
   return gradeBand(written+skills.speaking.score,TELC_SCORING.totalMax).label;
 }
 
@@ -23,9 +23,15 @@ export function examResult(exam,skills){
   return isStandardTelc(exam)?telcResult(skills):skillPassResult(skills);
 }
 
+export function resultLabel(result){
+  const labels={'sehr gut':'Xuất sắc',gut:'Giỏi',befriedigend:'Khá',ausreichend:'Đạt','nicht bestanden':'Chưa đạt',Trượt:'Chưa đạt'};
+  return Object.hasOwn(labels,result)?labels[result]:result;
+}
+
 export function resultClass(result){
-  if(['Đạt','sehr gut','gut','befriedigend','ausreichend'].includes(result))return 'passed';
-  if(['Chưa đạt','Trượt','nicht bestanden'].includes(result))return 'failed';
+  result=resultLabel(result);
+  if(['Xuất sắc','Giỏi','Khá','Đạt'].includes(result))return 'passed';
+  if(['Chưa đạt'].includes(result))return 'failed';
   return '';
 }
 
@@ -69,11 +75,11 @@ export function skillScores(exam,questions,attempt){
 export function gradeBand(score,max){
   if(score==null||!Number.isFinite(Number(score))||!(max>0))return null;
   const percent=Number(score)/max*100;
-  if(percent>=90)return {key:'excellent',label:'sehr gut'};
-  if(percent>=80)return {key:'good',label:'gut'};
-  if(percent>=70)return {key:'satisfactory',label:'befriedigend'};
-  if(percent>=60)return {key:'sufficient',label:'ausreichend'};
-  return {key:'failed',label:'nicht bestanden'};
+  if(percent>=90)return {key:'excellent',label:'Xuất sắc'};
+  if(percent>=80)return {key:'good',label:'Giỏi'};
+  if(percent>=70)return {key:'satisfactory',label:'Khá'};
+  if(percent>=60)return {key:'sufficient',label:'Đạt'};
+  return {key:'failed',label:'Chưa đạt'};
 }
 
 export function skillPassResult(skills){
