@@ -13,7 +13,8 @@ export function syncLetterPicker(select){
   const trigger=select.parentElement?.querySelector('[data-letter-picker]');
   if(!trigger)return;
   const selected=select.selectedOptions[0];
-  trigger.textContent=selectedLetterLabel(selected,select.dataset?.fullSelection==='true');
+  const number=select.dataset?.questionNumber;
+  trigger.textContent=(number?`${number}. `:'')+selectedLetterLabel(selected,select.dataset?.fullSelection==='true');
   trigger.dataset.answered=String(select.value!=='');
   trigger.setAttribute('aria-label',`${select.getAttribute('aria-label')}: ${selected?.textContent||'—'}`);
 }
