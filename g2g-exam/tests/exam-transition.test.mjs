@@ -9,6 +9,8 @@ for(const status of ['Đã nộp bài','Đã hủy bài thi','Hết giờ — Đ
 assert.ok(appSource.includes("leaveExam('student-home','Đã hủy bài thi',{danger:true})"));
 assert.match(transitionCss,/\.exam-transition-waves i \{[^}]*var\(--brand-primary\)/);
 assert.match(transitionCss,/\.exam-transition::before \{[^}]*background:#fff/);
+assert.match(transitionCss,/\.exam-transition--danger \.exam-transition-waves i \{[^}]*transparent 16%[^}]*transparent 88%/);
+assert.match(transitionCss,/@keyframes exam-cancel-wave \{[^\n]*20% \{ opacity:\.22; \} 55% \{ opacity:\.12; \}[^\n]*opacity:0;/);
 assert.match(transitionCss,/@keyframes exam-white-fill \{ from \{ opacity:0; \} to \{ opacity:1; \} \}/);
 assert.doesNotMatch(transitionCss,/@keyframes exam-reveal/);
 assert.match(transitionCss,/transparent 8%,var\(--wave-color,var\(--brand-primary\)\) 30%,var\(--wave-color,var\(--brand-primary\)\) 66%,transparent 96%/);

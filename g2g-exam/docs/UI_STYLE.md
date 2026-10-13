@@ -315,6 +315,7 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   the exit; errors keep the exam visible. Reduced motion skips exit animation delays.
   Do not repeat successful exit status in a corner toast; retain errors and unsynced-answer warnings.
   Confirmed cancellation uses the shared danger red for the transition wave;
+  its inner/outer edges are feathered, with a lower-opacity fade as it contracts.
   entry and successful submission retain the primary color.
 
 - Writing-answer textareas default to notebook ruling and handwriting font.

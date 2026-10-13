@@ -9,6 +9,7 @@ export async function withExamTransition(start,trigger,{exit=false,message='Đã
   const overlay=document.createElement('div');
   overlay.className='exam-transition';overlay.tabIndex=-1;
   if(exit)overlay.classList.add('exam-transition--exit');
+  if(danger)overlay.classList.add('exam-transition--danger');
   const rect=trigger?.getBoundingClientRect?.();
   const x=rect?rect.left+rect.width/2:window.innerWidth/2;
   const y=rect?rect.top+rect.height/2:window.innerHeight/2;
