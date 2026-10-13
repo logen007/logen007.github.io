@@ -81,6 +81,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   v1.0.1 format, including drafts; its tooltip explains publication status. Preview is an eye icon with an accessible name and
   tooltip. No publication progress or success notice; retain error feedback.
   The exam-list action column never displays a version, including after publish/unpublish.
+  Builder badges reuse the student-card provider and level colors: each category
+  keeps its own recognizable color rather than using the same brand tint for both.
 
 - Section prompts are independent ordered blocks, not owned by questions. The
   plus action inserts a prompt directly below the current one; up/down moves its

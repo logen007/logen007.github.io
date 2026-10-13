@@ -431,7 +431,7 @@ try{
     const meta=html.match(/<div class="builder-meta">([\s\S]*?)<\/div>/)?.[1]||'';
     assert.ok(meta.includes(back[0]));
     assert.ok(meta.indexOf(back[0])<meta.indexOf('class="builder-badges"'));
-    assert.match(meta,/<span class="nhan">Goethe<\/span><span class="nhan">A1<\/span>/);
+    assert.match(meta,/<span class="nhan exam-provider" data-provider="GOETHE">Goethe<\/span><span class="nhan exam-level" data-level="A1">A1<\/span>/);
     assert.match(meta,/data-exam-version=/);
     assert.match(meta,/>v1\.0\.1<\/small>/);
     assert.equal((html.match(/class="exam-publication-version"/g)||[]).length,1);
