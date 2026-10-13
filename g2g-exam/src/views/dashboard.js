@@ -5,18 +5,23 @@ import {dashboardInfrastructureHtml} from './dashboard-infrastructure.js';
 import {distributionChart} from './resource-charts.js';
 
 const total=value=>Number(value||0).toLocaleString('vi-VN');
+const writingPart=value=>{const text=String(value||''),number=text.match(/(?:teil|bài|viết|viet)\s*(\d+)/i)?.[1];return number?`Viết ${number}`:(text.trim()&&text.trim()!=='Viết'?text.trim():'Bài viết');};
 export function dashboardHtml({data,infrastructure=null,infrastructureError='',now=new Date(),activityFilter={}}){
   const exams=data.exams.filter(ex=>ex.status!=='trash');
   const examById=new Map(exams.map(exam=>[exam.id,exam]));
+  const questionById=new Map((data.questions||[]).map(question=>[question.id,question]));
   const accuracyGroups=new Map();
   for(const attempt of data.attempts)for(const item of Object.values(attempt.aiWritingAccuracy||{})){
     if(typeof item?.accurate!=='boolean')continue;
     const exam=examById.get(attempt.examId)||{};
     const provider=item.provider==='groq'?'Groq':item.provider==='gemini'?'Gemini':'AI';
-    const label=[exam.title||attempt.examTitle||'Đề thi',[exam.provider,exam.level].filter(Boolean).join(' '),item.part||'Bài viết',provider].filter(Boolean).join(' · ');
-    const group=accuracyGroups.get(label)||{label,correct:0,total:0};
+    const section=(exam.sections||[]).find(section=>(section.questionIds||[]).includes(item.questionId));
+    const part=writingPart(section?.name||questionById.get(item.questionId)?.title||item.part);
+    const examName=exam.title||attempt.examTitle||'Đề thi',level=[exam.provider,exam.level].filter(Boolean).join(' ');
+    const key=[examName,level,part,provider].join('\u0000');
+    const group=accuracyGroups.get(key)||{examName,level,part,provider,correct:0,total:0};
     group.total++;if(item.accurate)group.correct++;
-    accuracyGroups.set(label,group);
+    accuracyGroups.set(key,group);
   }
   const gradingOverview={needsGrading:data.attempts.filter(attempt=>attempt.status==='grading').length,graded:data.attempts.filter(attempt=>['ready','published'].includes(attempt.status)).length,aiAccuracy:[...accuracyGroups.values()].sort((a,b)=>b.total-a.total||a.label.localeCompare(b.label))};
   const activity=dashboardActivity(data,{range:['7','30','365'].includes(activityFilter.range)?activityFilter.range:'30'},now),months=activity.bins;

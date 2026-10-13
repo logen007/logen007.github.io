@@ -174,6 +174,7 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
     writingAi:{
       jobs:Object.fromEntries(aiJobs.rows.map(row=>[row.status,{count:Number(row.count||0),models:row.models||[]}])),
       failures:aiFailures.rows.map(row=>({id:String(row.id),attemptId:row.attempt_id,error:row.last_error||'AI chấm bài thất bại.',at:row.updated_at})),
+      providerPreference:settings.ai?.providerPreference==='gemini'?'gemini':'groq',
       providers:{groq:Boolean(ai.groq?.configured),gemini:Boolean(ai.gemini?.configured)},
     },
     storage:true,
