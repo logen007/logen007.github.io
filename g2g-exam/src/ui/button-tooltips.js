@@ -18,12 +18,17 @@ export function bindButtonTooltips(){
     if(!iconOnly||!label)return;
     hide();active=button;
     tip=document.createElement('div');tip.className=imageTarget?'button-tooltip button-tooltip--image':button.matches('.image-width-control')?'button-tooltip button-tooltip--image-width':'button-tooltip';tip.id='button-action-tooltip';tip.setAttribute('role','tooltip');tip.textContent=label;
+    const source=imageTarget&&button.closest('.goethe-builder')?button.querySelector('img:not(.ui-icon)'):null;
+    if(source?.getAttribute('src')){
+      const preview=document.createElement('img');preview.src=source.currentSrc||source.src;preview.alt=source.alt||'Xem trước ảnh';
+      tip.classList.add('button-tooltip--preview');tip.prepend(preview);
+    }
     document.body.append(tip);
     button.setAttribute('aria-describedby',[button.getAttribute('aria-describedby'),tip.id].filter(Boolean).join(' '));
     const rect=button.getBoundingClientRect(),size=tip.getBoundingClientRect();
     tip.style.left=Math.max(8,Math.min(innerWidth-size.width-8,rect.left+rect.width/2-size.width/2))+'px';
-    tip.style.top=(imageTarget?rect.bottom+8:Math.max(8,rect.top-size.height-8))+'px';
-    timer=setTimeout(hide,2000);
+    tip.style.top=Math.max(8,Math.min(innerHeight-size.height-8,imageTarget?rect.bottom+8:rect.top-size.height-8))+'px';
+    if(!source)timer=setTimeout(hide,2000);
   };
   document.addEventListener('pointerover',event=>{if(event.pointerType!=='touch')show(event.target);});
   document.addEventListener('pointerout',event=>{if(active&&!active.contains(event.relatedTarget))hide();});

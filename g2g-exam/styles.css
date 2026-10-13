@@ -1201,6 +1201,9 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .goethe-question-side:empty { display:none; }
 .button-tooltip { position:fixed; z-index:1000; width:max-content; max-width:calc(100vw - 16px); padding:6px 10px; border-radius:8px; background:var(--chu); color:var(--mat); font-size:12px; line-height:1.4; text-align:center; pointer-events:none; }
 .button-tooltip--image { white-space:pre-line; }
+.button-tooltip--preview { width:min(420px,calc(100vw - 16px)); padding:10px; background:var(--mat); color:var(--chu); border:1px solid var(--vien); border-radius:12px; box-shadow:var(--shadow); }
+.button-tooltip--preview img { display:block; width:100%; height:min(300px,50vh); object-fit:contain; margin-bottom:8px; }
+.goethe-builder .choice-image-upload .choice-image-tooltip { display:none; }
 .button-tooltip--image-width { white-space:pre-line; max-width:min(240px,calc(100vw - 16px)); }
 .reading-blocks-editor { display:grid; gap:16px; margin:20px 0; }
 .reading-block-editor { display:grid; grid-template-columns:100px minmax(0,1fr); gap:12px; }

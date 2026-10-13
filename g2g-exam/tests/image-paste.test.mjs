@@ -102,14 +102,14 @@ console.log('Clipboard: destination, native text paste, validation, replacement,
 const tooltipEvents={};let tooltip;
 globalThis.document={addEventListener:(type,fn)=>tooltipEvents[type]=fn,
   body:{append:node=>tooltip=node},
-  createElement:()=>({style:{},setAttribute(){},remove(){},getBoundingClientRect:()=>({width:220,height:46})})};
-globalThis.window={addEventListener(){}};globalThis.innerWidth=1000;
+  createElement:()=>({style:{},classList:{add(){}},prepend(node){this.preview=node;},setAttribute(){},remove(){},getBoundingClientRect:()=>({width:220,height:46})})};
+globalThis.window={addEventListener(){}};globalThis.innerWidth=1000;globalThis.innerHeight=800;
 const {bindButtonTooltips}=await import('../src/ui/button-tooltips.js');
 bindButtonTooltips();
 function tooltipTarget(imageTarget){
   const attrs={title:'Bấm lần 1 để chọn vùng dán\nBấm lần 2 để chọn ảnh','aria-label':'Upload'};
   const target={textContent:'',closest:()=>target,matches:selector=>selector==='[data-image-paste-target]'?imageTarget:selector!=='.image-width-control',
-    getAttribute:name=>attrs[name],setAttribute:(name,value)=>attrs[name]=value,removeAttribute:name=>delete attrs[name],
+    querySelector:()=>null,getAttribute:name=>attrs[name],setAttribute:(name,value)=>attrs[name]=value,removeAttribute:name=>delete attrs[name],
     getBoundingClientRect:()=>({left:100,top:200,bottom:240,width:40})};
   return target;
 }
@@ -132,4 +132,10 @@ assert.match(css,/\.button-tooltip--image-width\s*\{[^}]*white-space:pre-line;[^
 assert.doesNotMatch(css,/\[data-has-image="false"\][^{]*(?:image-width-control|instruction-image-width)/);
 assert.doesNotMatch(imageWidthInput(null),/\s(?:hidden|disabled)(?:\s|=|>)/);
 assert.match(imageWidthInput(600),/value="600"/);
+tooltipEvents.keydown({key:'Escape'});
+const previewTarget=tooltipTarget(true);
+previewTarget.querySelector=()=>({getAttribute:()=>'/uploads/photo.jpg',src:'/uploads/photo.jpg',alt:'Ảnh đề bài'});
+tooltipEvents.focusin({target:previewTarget});
+assert.equal(tooltip.preview.src,'/uploads/photo.jpg');
+assert.equal(tooltip.preview.alt,'Ảnh đề bài');
 tooltipEvents.keydown({key:'Escape'});
