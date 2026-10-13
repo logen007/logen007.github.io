@@ -65,6 +65,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Example groups use one outer frame only. Inner question cards remain
+  borderless and transparent even when mobile rearranges reading content
+  outside the desktop question-column wrapper.
+
 - Three illustrated A/B/C answers stay in three equal columns on mobile,
   including examples and preview, across all part templates. Use compact card
   padding, wrapped captions and uncropped responsive images.

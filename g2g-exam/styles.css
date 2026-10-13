@@ -854,6 +854,8 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .exam-question-pair--example > .question-example-title { margin-bottom:0; }
 .exam-paper .to-thi .exam-question-pair > .cau-thi,
 .exam-paper .to-thi .exam-question-pair > .cau-thi:is(:first-child,:last-child),
+.exam-paper .exam-question-pair.exam-question-pair--example > .cau-thi.is-example,
+.exam-paper .exam-question-pair.exam-question-pair--example > .cau-thi.is-example:is(:first-child,:last-child),
 .exam-paper .to-thi .exam-question-pair > .cau-thi.is-example:is(:first-child,:last-child) { margin:0; padding:0; border:0; border-radius:0; background:transparent; }
 .exam-question-pair:last-child { margin-bottom:0; }
 .exam-reading-split .to-thi > .cau-thi:not(.is-example) { padding-block:12px; }

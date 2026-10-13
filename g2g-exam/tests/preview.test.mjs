@@ -243,6 +243,8 @@ try{
     const html=examHtml(input);
     assert.equal((html.match(/question-example-title/g)||[]).length,1);
     assert.equal((html.match(/>Beispiel</g)||[]).length,1);
+    const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+    assert.match(css,/\.exam-paper \.exam-question-pair\.exam-question-pair--example > \.cau-thi\.is-example,[\s\S]*?\{ margin:0; padding:0; border:0; border-radius:0; background:transparent; \}/,'Grouped examples lose their inner frame even outside the desktop to-thi wrapper');
     assert.equal((html.match(/class="exam-question-pair exam-question-pair--example"/g)||[]).length,1);
     assert.doesNotMatch(html,/class="question-number">_/);
     const exampleStart=html.indexOf('class="exam-question-pair exam-question-pair--example"');
