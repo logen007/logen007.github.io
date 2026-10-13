@@ -211,6 +211,7 @@ assert.match(css,/\.letter-picker-dialog \{ width:calc\(100% - 24px\); max-width
 assert.match(css,/\.gap-article\.writing-paper \{ width:calc\(100% - 12px\); max-width:760px; margin:8px auto 16px;/);
 assert.match(css,/\.inline-gap \{ --gap-control-height:32px;[^}]*min-height:var\(--gap-control-height\);[^}]*margin:4px;[^}]*line-height:1;/);
 assert.match(css,/\.inline-gap-value \{ position:relative;[^}]*align-items:center; min-height:var\(--gap-control-height\)/);
+assert.match(css,/\.inline-gap:has\(select\[data-option-texts\]:not\(\[hidden\]\)\) \.inline-gap-value \{[^}]*min-width:40px; padding:0 8px;/);
 assert.match(css,/@media\(pointer:coarse\) \{ \.inline-gap \{ --gap-control-height:36px;/);
 assert.match(css,/\.letter-picker-option \{[^}]*white-space:normal/);
 assert.doesNotMatch(css,/answer-option-body::before/);
