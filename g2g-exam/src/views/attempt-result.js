@@ -1,4 +1,5 @@
 import {esc,textHtml,fmtDate} from '../ui/format.js';
+import {animateResult} from '../ui/result-motion.js';
 import {iconHtml} from '../ui/icons.js';
 import {resultClass,isStandardTelc,gradeBand} from '../domain/gradebook.js';
 import {SKILL_LABELS} from '../domain/result-summary.js';
@@ -74,6 +75,7 @@ export function resultShareText(review,user={}){
     ...Object.entries(summary?.skills||{}).map(([k,v])=>`${SKILL_LABELS[k]||k}: ${v.score}/${v.max}`),'G2G Career'].join('\n');
 }
 export function bindAttemptResult(root,{review,user,notify=()=>{}}){
+  animateResult(root,review);
   const tabs=[...root.querySelectorAll('[data-result-tab]')];
   const activate=tab=>{tabs.forEach(b=>{const active=b===tab;b.setAttribute('aria-selected',String(active));b.tabIndex=active?0:-1;root.querySelector(`#result-panel-${b.dataset.resultTab}`).hidden=!active;});};
   tabs.forEach((tab,i)=>{tab.onclick=()=>activate(tab);tab.onkeydown=e=>{let n;if(e.key==='ArrowRight')n=(i+1)%tabs.length;else if(e.key==='ArrowLeft')n=(i+tabs.length-1)%tabs.length;else if(e.key==='Home')n=0;else if(e.key==='End')n=tabs.length-1;else return;e.preventDefault();activate(tabs[n]);tabs[n].focus();};});

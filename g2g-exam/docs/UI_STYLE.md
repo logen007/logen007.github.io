@@ -533,6 +533,10 @@ theme application must not wait for a network response to render the page.
 
 ## Student result detail
 
+- Animate result counters, skill bars and answer distribution once per opened
+  review over 900ms, with a subtle card entrance. Preserve exact final values,
+  skip reduced motion, and stop updates when hidden or detached. No new requests.
+
 - Header groups the student avatar, “Kết quả thi” with the actual exam level,
   student name and an icon-only Share button immediately beside the name.
   Exam provider/title/date remain below; the large result badge sits top-right.

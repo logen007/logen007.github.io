@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import './publication.test.mjs';
 import './badge-colors.test.mjs';
+import './result-motion.test.mjs';
 import vm from 'node:vm';
 import {studentResultsHtml} from '../src/views/student.js';
 import {examAdminHtml} from '../src/views/admin.js';

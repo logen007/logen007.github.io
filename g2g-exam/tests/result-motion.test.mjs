@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import {animateResult} from '../src/ui/result-motion.js';
+const queue=[];
+const saved={requestAnimationFrame:globalThis.requestAnimationFrame,document:globalThis.document,matchMedia:globalThis.matchMedia};
+globalThis.requestAnimationFrame=callback=>queue.push(callback);
+globalThis.document={hidden:false};
+globalThis.matchMedia=()=>({matches:false});
+const number={nodeType:3,textContent:'39'};
+const style={removeProperty(key){delete this[key];}};
+const page={isConnected:true,querySelectorAll(selector){
+  if(selector.includes('strong'))return [{firstChild:number}];
+  if(selector==='.result-track>span')return [{style}];
+  return [];
+}};
+const root={querySelector:()=>page},review={};
+animateResult(root,review);assert.equal(number.textContent,'0');
+queue.shift()(0);queue.shift()(450);
+assert.ok(Number(number.textContent)>0&&Number(number.textContent)<39);
+queue.shift()(900);assert.equal(number.textContent,'39');
+assert.equal(style.transform,undefined);
+animateResult(root,review);assert.equal(queue.length,0,'No replay on rebind');
+globalThis.matchMedia=()=>({matches:true});
+animateResult(root,{});assert.equal(queue.length,0);
+globalThis.matchMedia=()=>({matches:false});
+animateResult(root,{});page.isConnected=false;queue.shift()(0);
+assert.equal(number.textContent,'39');assert.equal(queue.length,0);
+Object.assign(globalThis,saved);
+console.log('Result motion: interpolation, final values, reduced motion, rebind and teardown passed.');
