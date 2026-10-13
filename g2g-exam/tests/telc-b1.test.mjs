@@ -136,7 +136,8 @@ syncLetterPicker(selection);assert.equal(trigger.textContent,'a. The complete se
 selection.dataset.questionNumber='1';
 syncLetterPicker(selection);assert.equal(trigger.textContent,'a. The complete selected heading');
 selection.value='';
-syncLetterPicker(selection);assert.equal(trigger.textContent,'1');
+selection.selectedOptions=[{dataset:{},textContent:'Überschrift wählen'}];
+syncLetterPicker(selection);assert.equal(trigger.textContent,'1. Überschrift wählen');
 selection.value='0';
 delete selection.dataset.questionNumber;
 selection.selectedOptions=[{dataset:{},textContent:'1'}];selection.value='';
