@@ -17,6 +17,7 @@ export function inlineGapBuilder(section,questions,readOnly){
 {a}, {b}, {c}… → ô trả lời theo thứ tự; chọn đáp án đúng riêng bên dưới.
 ${hasGapExample(section)?'{z} → vị trí câu ví dụ\\n':''}[b]chữ đậm[/b] · [i]chữ nghiêng[/i] · [u]gạch chân[/u]
 [box]nội dung[/box] → đóng khung chữ
+[headline]Tiêu đề[/headline] → tiêu đề lớn, riêng một dòng
 [signature]Tên người ký[/signature] → chữ ký viết tay cỡ lớn
 [img] → đặt ảnh đã tải lên tại đây`;
   const legacyWarning=(section.gapPassage||[]).some(part=>typeof part==='string'&&/\[b\](?:(?!\[\/b\])[\s\S])*?\[b\]/i.test(part))

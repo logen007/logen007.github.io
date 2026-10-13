@@ -18,6 +18,7 @@ const instructionPlaceholder=`Nhập hướng dẫn đề bài…
 [i]chữ nghiêng[/i] · Cmd/Ctrl I
 [u]gạch chân[/u] · Cmd/Ctrl U
 [box]nội dung[/box] → đóng khung chữ
+[headline]Tiêu đề[/headline] → tiêu đề lớn, riêng một dòng
 [signature]Tên người ký[/signature] → chữ ký viết tay cỡ lớn
 [img] → đặt ảnh đã tải lên tại đây
 Trong ô soạn đoạn điền khuyết: {a}, {b}… là vị trí ô trả lời, không phải đáp án đúng; {z} là ví dụ nếu phần thi hỗ trợ.`;
