@@ -19,7 +19,7 @@ export function dashboardHtml({data,infrastructure=null,infrastructureError='',n
     const part=writingPart(section?.name||questionById.get(item.questionId)?.title||item.part);
     const examName=exam.title||attempt.examTitle||'Đề thi',level=[exam.provider,exam.level].filter(Boolean).join(' ');
     const key=[examName,level,part,provider].join('\u0000');
-    const group=accuracyGroups.get(key)||{examName,level,part,provider,correct:0,total:0};
+    const group=accuracyGroups.get(key)||{examId:exam.id||attempt.examId||'',examName,level,part,provider,correct:0,total:0};
     group.total++;if(item.accurate)group.correct++;
     accuracyGroups.set(key,group);
   }
