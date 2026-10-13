@@ -6,7 +6,7 @@ assert.ok(appSource.includes('onStarted:id=>beginAttempt(null,false,button,id)')
 assert.ok(appSource.includes('await beginAttempt(null,false,null,resumed.id)'));
 assert.ok(appSource.includes("performance.getEntriesByType('navigation')[0]?.type==='reload'"));
 assert.ok(appSource.includes('if(!reloadingExam&&resumed?.studentId'));
-assert.match(transitionCss,/\.exam-transition--danger\.is-revealing::before \{ animation:exam-cancel-white-out 400ms ease-out both; \}/);
+assert.match(transitionCss,/\.exam-transition--exit\.is-revealing::before \{ animation:exam-cancel-white-out 400ms ease-out both; \}/);
 assert.match(transitionCss,/@keyframes exam-cancel-white-out \{ from \{ opacity:1; \} to \{ opacity:0; \} \}/);
 assert.ok(appSource.includes('existingAttemptId?byId((await repo.getState()).attempts,existingAttemptId):await act('));
 assert.match(appSource,/if\(startingAttempt\|\|submitBusy\|\|timerBusy\)return;/);
@@ -16,10 +16,10 @@ for(const status of ['Đã nộp bài','Đã hủy bài thi','Hết giờ — Đ
 assert.ok(appSource.includes("leaveExam('student-home','Đã hủy bài thi',{danger:true})"));
 assert.match(transitionCss,/\.exam-transition-waves i \{[^}]*var\(--brand-primary\)/);
 assert.match(transitionCss,/\.exam-transition::before \{[^}]*background:#fff/);
-assert.match(transitionCss,/\.exam-transition--danger \.exam-transition-center \{ animation:exam-cancel-caption 1500ms linear both; \}/);
+assert.match(transitionCss,/\.exam-transition--exit \.exam-transition-center \{ animation:exam-cancel-caption 1500ms linear both; \}/);
 assert.match(transitionCss,/animation:exam-cancel-wave 1500ms linear both;/);
 assert.match(transitionCss,/@keyframes exam-cancel-caption \{ 0% \{ opacity:0; \} 20% \{ opacity:1; \} 55% \{ opacity:\.55; \} 100% \{ opacity:0; \} \}/);
-assert.match(transitionCss,/\.exam-transition--danger \.exam-transition-waves i \{[^}]*transparent 16%[^}]*transparent 88%/);
+assert.match(transitionCss,/\.exam-transition--exit \.exam-transition-waves i \{[^}]*transparent 16%[^}]*transparent 88%/);
 assert.match(transitionCss,/@keyframes exam-cancel-wave \{[^\n]*20% \{ opacity:\.22; \} 55% \{ opacity:\.12; \}[^\n]*opacity:0;/);
 assert.match(transitionCss,/@keyframes exam-white-fill \{ from \{ opacity:0; \} to \{ opacity:1; \} \}/);
 assert.doesNotMatch(transitionCss,/@keyframes exam-reveal/);
@@ -64,8 +64,9 @@ try{
   assert.equal(app.inert,false);assert.equal(overlay.removed,true);
   delays.length=0;
   await withExamTransition(async covered=>{await covered;},null,{exit:true,message:'Đã nộp bài'});
-  assert.deepEqual(delays,[1100,1100,400,500]);
-  assert.equal(delays.slice(1).reduce((sum,ms)=>sum+ms,0),2000);
+  assert.deepEqual(delays,[1100,1100,400]);
+  assert.equal(delays.slice(1).reduce((sum,ms)=>sum+ms,0),1500);
+  assert.ok(overlay.classList.has('is-revealing'));
   assert.equal(overlay.style['--wave-color'],undefined,'Submission keeps primary color');
   delays.length=0;
   await withExamTransition(async covered=>{
@@ -94,6 +95,6 @@ try{
   assert.deepEqual(delays,[0,100,100,0]);
   delays.length=0;
   await withExamTransition(async covered=>{await covered;},null,{exit:true});
-  assert.deepEqual(delays,[0,0,0,0]);
+  assert.deepEqual(delays,[0,0,0]);
 }finally{Object.assign(globalThis,saved);}
 console.log('Exam transition timing, duplicate guard, reduced motion and cleanup passed.');

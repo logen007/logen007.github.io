@@ -314,21 +314,21 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   attempt. Section navigation and answer updates do not replay the transition.
 
 - Successful submission (including timeout) and confirmed cancellation reuse the
-  entry transition style with a 2-second reverse wave/fade (entry stays 3 seconds).
+  same 1.5-second contracting wave/fade (entry stays 3 seconds); only color and status differ.
   Keep the full 1.1-second white coverage before changing pages. Center text states
   “Đã nộp bài”, “Đã hủy bài thi”, or “Hết giờ — Đã nộp bài” as appropriate. Server completion precedes
   the exit; errors keep the exam visible. Reduced motion skips exit animation delays.
   Do not repeat successful exit status in a corner toast; retain errors and unsynced-answer warnings.
-  Confirmed cancellation uses the shared danger red for the transition wave;
-  its inner/outer edges are feathered, with a lower-opacity fade as it contracts.
-  Cancellation ends with the red wave at 1.5 seconds, without an extra overlay fade.
+  Confirmed cancellation uses shared danger red; submission/timeout use primary.
+  All exit waves have feathered inner/outer edges and fade as they contract.
+  Every exit ends with its wave at 1.5 seconds, without an extra overlay fade.
   After full white coverage, the white layer fades over the final 400ms, rather
   than being removed abruptly; logo, wave and white layer finish together.
   Coverage must paint before replacing the page; start revealing only after the
   destination has rendered, never at the same moment coverage begins.
-  Cancellation logo/text share the wave's 1.5-second linear fade envelope; do not
+  Exit logo/text share the wave's 1.5-second linear fade envelope; do not
   reuse the delayed entry caption, which leaves the logo visible after the wave.
-  entry and successful submission retain the primary color.
+  Entry retains its original primary-color animation.
 
 - Writing-answer textareas default to notebook ruling and handwriting font.
   The exam editor owns a pen-icon “Viết tay / Viết thường” toggle button per writing
