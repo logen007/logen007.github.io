@@ -921,7 +921,15 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .letter-group-table th:first-child { width:84px; }
 .letter-group-table th:nth-child(3) { width:128px; }
 .letter-group-table th:last-child { width:40px; }
-.letter-group-table th:nth-child(4) { width:64px; }
+.letter-group-table th:nth-child(4) { width:116px; }
+.letter-group-table .nhom-nut { flex-wrap:nowrap; }
+.compact-score { display:inline-flex; align-items:center; gap:4px; width:64px; flex:0 0 64px; height:var(--editor-control); padding:0 8px; border:1px solid var(--control-border); border-radius:var(--r-sm); background:var(--mat); }
+.compact-score input { width:2ch; min-width:0; flex:1; padding:0; border:0; background:transparent; text-align:center; appearance:textfield; }
+.compact-score input::-webkit-inner-spin-button,.compact-score input::-webkit-outer-spin-button { appearance:none; margin:0; }
+.compact-score span { flex:none; }
+.gap-score-row { display:flex; gap:8px; align-items:center; }
+.gap-score-row > .gap-option { flex:1; min-width:0; }
+.gap-options-editor fieldset > .compact-score { grid-column:1/-1; }
 .letter-group-table td:last-child { padding-right:0; }
 .letter-group-table small { color:var(--phu); white-space:nowrap; }
 .letter-group-table .letter-builder-answer { margin:0; padding:0; display:block; }

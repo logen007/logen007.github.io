@@ -108,7 +108,9 @@ assert.equal((settingsEditor.match(/<input class="truong" data-field="title"/g)|
 assert.doesNotMatch(settingsEditor,/<textarea data-field="title"|goethe-question-row/);
 assert.equal((settingsEditor.match(/data-audio-question-id=/g)||[]).length,3);
 assert.match(settingsEditor,/>_ <small>Ví dụ<\/small>/);
-assert.equal((settingsEditor.match(/type="hidden" data-field="maxScore"/g)||[]).length,6);
+assert.equal((settingsEditor.match(/data-field="maxScore"/g)||[]).length,6);
+assert.equal((settingsEditor.match(/class="compact-score"/g)||[]).length,6);
+assert.doesNotMatch(settingsEditor,/type="hidden" data-field="maxScore"/);
 const groupFields=[{value:'1'},{value:'1'}];let onGroupScore,totalUpdates=0;
 const groupScore={value:'2.5',validity:{valid:true},addEventListener:(event,handler)=>{onGroupScore=handler;}};
 bindLetterTableBuilder({querySelector:()=>groupScore,querySelectorAll:selector=>{

@@ -277,8 +277,12 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
       const display=card.querySelector('[data-writing-total]');if(display)display.textContent=`${writingFormScore(rows)} điểm`;
       return [card.dataset.questionId,score];
     }));
+    root.querySelectorAll('[data-gap-score]').forEach(input=>{
+      const id=section.questionIds?.[Number(input.dataset.gapScore)];
+      if(id)draftScores.set(id,Math.max(0,Number(input.value)||0));
+    });
     root.querySelectorAll('[data-skill-total]').forEach(total=>{const skill=total.dataset.skillTotal;const sum=(exam.sections||[]).filter(item=>item.skill===skill).reduce((skillScore,item)=>{const fallback=Number(exam.settings?.skillSettings?.[item.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);return skillScore+(item.questionIds||[]).reduce((partScore,id)=>partScore+(draftScores.has(id)?draftScores.get(id):getQuestionMaxScore(byId(data.questions,id),fallback)),0);},0);total.textContent=`${Number.isInteger(sum)?sum:Number(sum.toFixed(2))} điểm`;});
   };
   bindLetterTableBuilder(root,updateSkillTotals);
-  root.querySelectorAll('[data-field="maxScore"],[data-rubric-score]').forEach(input=>input.oninput=updateSkillTotals);updateSkillTotals();root.querySelectorAll('[data-action="preview-inline-audio"]').forEach(bindInlineAudioPreview);
+  root.querySelectorAll('[data-field="maxScore"],[data-rubric-score],[data-gap-score]').forEach(input=>input.oninput=updateSkillTotals);updateSkillTotals();root.querySelectorAll('[data-action="preview-inline-audio"]').forEach(bindInlineAudioPreview);
 }

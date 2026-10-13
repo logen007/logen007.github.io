@@ -65,6 +65,11 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Every scored answer has an editable score, including each inline gap and
+  letter-table row. Use compact two-digit inputs with a visible “đ” unit next
+  to answer/action controls. Do not add scores to decorative content or examples;
+  preserve rubric-derived totals and existing score ownership.
+
 - Every visible question card in the exam editor has a persistent “N.” label,
   not only a placeholder. Number scored questions sequentially across the exam;
   label zero-point/prefilled examples “Ví dụ” without consuming a question number.
