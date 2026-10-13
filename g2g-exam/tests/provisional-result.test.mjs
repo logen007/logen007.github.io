@@ -47,13 +47,13 @@ const complete={parts:[
 ]};
 assert.deepEqual(provisionalSkills(complete).writing,{score:2,max:15,temporary:true});
 const overview=provisionalResultHtml(complete,bar);
-assert.match(overview,/class="temporary-badge">Tạm tính/);
+assert.match(overview,/class="score-badge score-pending temporary-badge" data-fixed-assessment>Tạm tính/);
 assert.doesNotMatch(html,/<h2>Điểm từng phần/);
 for(const [score,tone] of [[0,'failed'],[60,'sufficient'],[70,'satisfactory'],[80,'good'],[90,'excellent']]){
   for(const temporary of [false,true]){
     const progress=bar('Viết',{score,max:100},{showBand:false,temporary});
     assert.match(progress,new RegExp('result-track--'+tone));
-    assert.doesNotMatch(progress,/score-badge|result-track--temporary/);
+    assert.doesNotMatch(progress,/score-badge score-(failed|sufficient|satisfactory|good|excellent)|result-track--temporary/);
   }
 }
 assert.ok(overview.indexOf('Đọc')<overview.indexOf('Nghe'));

@@ -7,7 +7,7 @@ export function sectionResultHtml(review,section){
     return value!=null?` <span class="phu-de">· ${esc(value)} điểm</span>`:'';
   }
   const parts=(review.provisional?.parts||[]).filter(p=>p.label===section.name||p.label.startsWith(section.name+' · Bài '));
-  return parts.map(p=>` <span class="${p.source==='ai'&&p.score!=null?'provisional-score':'phu-de'}">· ${p.score==null?'Chờ điểm':`${esc(p.score)}/${esc(p.max)}${p.source==='ai'?' <span class="temporary-badge">Tạm tính</span>':''}`}</span>`).join('');
+  return parts.map(p=>` <span class="${p.source==='ai'&&p.score!=null?'provisional-score':'phu-de'}">· ${p.score==null?'Chờ điểm':`${esc(p.score)}/${esc(p.max)}${p.source==='ai'?' <span class="score-badge score-pending temporary-badge" data-fixed-assessment>Tạm tính</span>':''}`}</span>`).join('');
 }
 
 export function provisionalSkills(result){

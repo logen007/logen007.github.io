@@ -546,8 +546,10 @@ theme application must not wait for a network response to render the page.
 
 - Pending score rows retain an empty neutral progress track, including Speaking
   and the TELC oral block. Label “Chờ điểm”; never imply a zero score or verdict.
-  Align that label right even when the row title is visually hidden; use 18px,
-  weight 600, with the maximum in smaller regular text.
+  Align the pending badge right even when the row title is visually hidden.
+  All result status badges use the same 14px/500 text, line height, padding and
+  pill radius. Chờ điểm and Tạm tính share neutral gray; only colors differ from
+  assessment badges. Keep any maximum outside the badge in smaller regular text.
 
 - Omit the “Điểm từng phần” heading. Progress always uses the same grade-based
   palette across providers, independently of whether assessment badges are shown.
