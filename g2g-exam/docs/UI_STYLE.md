@@ -51,7 +51,7 @@ Keep an aria-label even after a value is selected. Preserve the original filter
 values and behavior; filters with a required selection retain that selection.
 This applies to dropdown filters, not count tabs such as “Tất cả (234)”.
 Student exam filters use two compact dropdowns aligned with the action button.
-The student exam grid adapts its column count to a 380px minimum card width;
+The student exam grid adapts its column count to a 320px minimum card width;
 when the viewport is narrower, cards fit 100% without horizontal overflow. Mobile uses one column. Card titles reserve exactly two lines and clamp overflow; the complete
 title remains in the accessible text and title tooltip.
 On mobile, gradebook filters use two unequal columns (1:1.6): provider, level,
@@ -307,6 +307,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   aligns to the right edge of its row.
 
 ## Preview layout
+
+- Successful submission (including timeout) and confirmed cancellation reuse the
+  entry transition with a short 700ms reverse wave/fade. Server completion precedes
+  the exit; errors keep the exam visible. Reduced motion skips exit animation delays.
 
 - Writing-answer textareas default to notebook ruling and handwriting font.
   The exam editor owns a pen-icon “Viết tay / Viết thường” toggle button per writing

@@ -218,7 +218,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .thong-ke span { color:var(--phu); font-size:13px; }.thong-ke b { display:block; font-size:36px; line-height:1.2; font-weight:450; letter-spacing:-.04em; margin-top:14px; }
 .tong-quan-hv { display:grid; grid-template-columns:1.7fr repeat(4,1fr); gap:24px; align-items:center; }
 .tong-quan-hv .o span { color:var(--phu); font-size:13px; }.tong-quan-hv .o b { display:block; margin-top:8px; font-size:28px; font-weight:500; }.tong-quan-hv .o:first-child b { font-size:20px; }
-.danh-sach-de { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr)); gap:16px; }.the-de { position:relative; display:flex; flex-direction:column; min-width:0; }
+.danh-sach-de { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr)); gap:16px; }.the-de { position:relative; display:flex; flex-direction:column; min-width:0; }
 .exam-card-details { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-bottom:16px; }
 .exam-card-tags { display:flex; gap:6px; align-items:center; flex-shrink:0; }
 .exam-card-tags .nhan { background:#f0f1f3; color:#48515e; }
@@ -246,6 +246,10 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .exam-transition-waves { position:absolute; inset:0; z-index:1; pointer-events:none; }
 .exam-transition-waves i { position:absolute; left:var(--reveal-x); top:var(--reveal-y); width:calc(var(--reveal-radius) * 2); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle,transparent 8%,var(--wave-color,var(--brand-primary)) 30%,var(--wave-color,var(--brand-primary)) 66%,transparent 96%); animation:exam-power-wave 1500ms cubic-bezier(.22,.61,.36,1) both; }
 .exam-transition.is-leaving { opacity:0; }
+.exam-transition--exit { transition-duration:280ms; }
+.exam-transition--exit::before { animation-duration:240ms; }
+.exam-transition--exit .exam-transition-center { animation:exam-caption-fade 180ms 80ms ease both; }
+.exam-transition--exit .exam-transition-waves i { animation-duration:700ms; animation-direction:reverse; }
 @keyframes exam-white-fill { from { opacity:0; } to { opacity:1; } }
 @keyframes exam-power-wave { 0% { transform:translate(-50%,-50%) scale(.04); opacity:0; } 15% { opacity:.35; } 60% { opacity:.18; } 100% { transform:translate(-50%,-50%) scale(1.4); opacity:0; } }
 @media(prefers-reduced-motion:reduce) { .exam-transition-waves { display:none; } }

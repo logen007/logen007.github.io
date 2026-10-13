@@ -44,6 +44,10 @@ try{
   assert.match(overlay.innerHTML,/exam-transition-logo/);
   assert.doesNotMatch(overlay.innerHTML,/orbit/);
   assert.equal(app.inert,false);assert.equal(overlay.removed,true);
+  delays.length=0;
+  await withExamTransition(async covered=>{await covered;},null,{exit:true,message:'Đã nộp bài'});
+  assert.deepEqual(delays,[240,240,180,280]);
+  assert.equal(app.inert,false);assert.equal(overlay.removed,true);
   let finishLoading;
   const slow=withExamTransition(()=>new Promise(resolve=>{finishLoading=resolve;}));
   for(let i=0;i<8;i++)await Promise.resolve();
@@ -56,5 +60,8 @@ try{
   delays.length=0;globalThis.window.matchMedia=()=>({matches:true});
   await withExamTransition(async()=>{});
   assert.deepEqual(delays,[0,100,100,0]);
+  delays.length=0;
+  await withExamTransition(async covered=>{await covered;},null,{exit:true});
+  assert.deepEqual(delays,[0,0,0,0]);
 }finally{Object.assign(globalThis,saved);}
 console.log('Exam transition timing, duplicate guard, reduced motion and cleanup passed.');

@@ -526,7 +526,7 @@ function startExamTimer(attempt,exam,sectionIndex){
       const unsynced=Object.keys(repo.outbox?.draft.pending||{}).length>0;
       const result=await act(()=>submitAttemptFast(attempt.id),null,{rerender:false});
       if(result){
-        ui.view='submitted';render();
+        await leaveExam('submitted','Đã nộp bài');
         if(unsynced)notify('Hết giờ khi còn đáp án chưa đồng bộ. Máy chủ chỉ nhận các đáp án đã lưu đúng hạn; bản trên máy vẫn được giữ lại.');
         if(byId(data.attempts,attempt.id)?.status===ATTEMPT_STATUS.INCOMPLETE){timerBusy=false;return;}
         const modal=document.createElement('div');modal.className='hop-chon';
@@ -558,8 +558,16 @@ async function submitCurrentExam(confirmed=false){
   try{
     if(!await flushTextAnswers())return;
     const result=await act(()=>submitAttemptFast(ui.attemptId),null,{rerender:false});
-    if(result){clearTimer();ui.view='submitted';render();}
+    if(result){clearTimer();await leaveExam('submitted','Đã nộp bài');}
   }finally{submitBusy=false;}
+}
+
+async function leaveExam(view,message){
+  stopActiveAudio();
+  await withExamTransition(async covered=>{
+    await covered;
+    ui.view=view;render();window.scrollTo(0,0);
+  },null,{exit:true,message});
 }
 
 function confirmAbandonExam(){
@@ -572,11 +580,12 @@ function confirmAbandonExam(){
     try{
       const result=await act(()=>repo.transaction(st=>abandonAttempt(st,user,attemptId)),null,{rerender:false});
       if(result){
-        ui.attemptId=null;ui.view='student-home';
+        ui.attemptId=null;
         data=await repo.getState();
+        await leaveExam('student-home','Trở về danh sách đề');
         notify('Đã hủy bài thi. Các câu trả lời đã được xóa vĩnh viễn.');
       }
-      render();window.scrollTo(0,0);
+      if(!result){render();window.scrollTo(0,0);}
     }finally{submitBusy=false;}
   },{confirmLabel:'Hủy bài thi',cancelLabel:'Tiếp tục làm bài',danger:true,confirmIcon:'close',cancelIcon:'grading'});
 }

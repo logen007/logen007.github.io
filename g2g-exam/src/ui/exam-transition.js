@@ -1,13 +1,14 @@
 import {currentPublicSettings} from '../settings/theme.js';
 import {pickExamMessages} from './exam-messages.js';
 let busy=false;
-export async function withExamTransition(start,trigger){
+export async function withExamTransition(start,trigger,{exit=false,message='Đã nộp bài'}={}){
   if(busy)return;
   busy=true;
   const previous=document.activeElement,app=document.getElementById('app');
   const wasInert=app?.inert;
   const overlay=document.createElement('div');
   overlay.className='exam-transition';overlay.tabIndex=-1;
+  if(exit)overlay.classList.add('exam-transition--exit');
   const rect=trigger?.getBoundingClientRect?.();
   const x=rect?rect.left+rect.width/2:window.innerWidth/2;
   const y=rect?rect.top+rect.height/2:window.innerHeight/2;
@@ -26,20 +27,20 @@ export async function withExamTransition(start,trigger){
   const logo=overlay.querySelector('img');
   logo.src=document.querySelector?.('.thuong-hieu .logo img')?.src||'/brand/logo';
   const messages=pickExamMessages(currentPublicSettings().general?.examMessages);
-  overlay.querySelector('p').textContent=messages[0];
+  overlay.querySelector('p').textContent=exit?message:messages[0];
   const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   try{
     if(app)app.inert=true;
     document.body.append(overlay);overlay.focus({preventScroll:true});
     // Fetch immediately; callers await coverage before replacing the visible page.
-    const covered=wait(reduced?0:1100);
+    const covered=wait(reduced?0:exit?240:1100);
     const loading=Promise.resolve().then(()=>start(covered)).then(()=>({ok:true}),error=>({ok:false,error}));
-    await wait(reduced?100:1100);
-    const [result]=await Promise.all([loading,wait(reduced?100:1400)]);
+    await wait(reduced?(exit?0:100):exit?240:1100);
+    const [result]=await Promise.all([loading,wait(reduced?(exit?0:100):exit?180:1400)]);
     if(!result.ok)throw result.error;
     overlay.classList.add('is-leaving');
-    await wait(reduced?0:500);
+    await wait(reduced?0:exit?280:500);
   }finally{
     overlay.remove();if(app)app.inert=wasInert;
     busy=false;
