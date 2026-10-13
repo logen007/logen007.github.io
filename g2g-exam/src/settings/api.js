@@ -35,8 +35,10 @@ async function request(path,{method='GET',body}={}){
   return data;
 }
 
-export async function loadPublicSettings(){
-  return request('/public-settings');
+let publicSettingsLoad;
+export function loadPublicSettings(){
+  if(!publicSettingsLoad)publicSettingsLoad=request('/public-settings').finally(()=>{publicSettingsLoad=null;});
+  return publicSettingsLoad;
 }
 
 let settingsLoad;

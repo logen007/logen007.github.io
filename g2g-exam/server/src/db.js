@@ -29,8 +29,17 @@ export async function initDb(){
     await client.query('COMMIT');
   }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
 }
-export const query=(text,params=[])=>pool.query(text,params);
-export async function withTx(fn){const c=await pool.connect();try{await c.query('BEGIN');const out=await fn(c);await c.query('COMMIT');return out;}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}}
+let dataRevision=0;
+export const getDataRevision=()=>dataRevision;
+const changesData=(sql,result)=>/^\s*(INSERT|UPDATE|DELETE)\b/i.test(sql)&&result.rowCount>0;
+export async function query(text,params=[]){const result=await pool.query(text,params);if(changesData(text,result))dataRevision++;return result;}
+export async function withTx(fn){
+  const c=await pool.connect(),original=c.query;let changed=false;
+  c.query=async(text,params)=>{const result=await original.call(c,text,params);if(changesData(text,result))changed=true;return result;};
+  try{await c.query('BEGIN');const out=await fn(c);await c.query('COMMIT');if(changed)dataRevision++;return out;}
+  catch(e){await c.query('ROLLBACK');throw e;}
+  finally{c.query=original;c.release();}
+}
 export async function getSettings(client=pool){const r=await client.query(`SELECT data FROM settings WHERE id='global'`);return mergeSettings(r.rows[0]?.data||{});}
 export async function audit(user,action,entityType,entityId,detail={},client=pool){await client.query(`INSERT INTO audit_log(user_id,user_name,action,entity_type,entity_id,detail) VALUES($1,$2,$3,$4,$5,$6::jsonb)`,[user?.id||null,user?.name||user?.email||'',action,entityType,entityId,JSON.stringify(detail||{})]);}
 export function appError(statusCode,message){const e=new Error(message);e.statusCode=statusCode;return e;}

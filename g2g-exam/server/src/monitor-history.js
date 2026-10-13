@@ -23,13 +23,14 @@ export function startMonitorHistory(logger){
 export async function monitorHistory(){
   const end=Date.now();
   const ranges=await Promise.all([[1,60],[24,60],[168,1800],[720,3600],[8760,86400]].map(async([hours,bucket])=>{
-    const rows=await query(`SELECT max(sampled_at) AS at,avg(cpu) AS cpu,max(memory) AS memory,
+    const rows=await query(`SELECT max(sampled_at) AS at,avg(cpu) AS cpu,max(cpu) AS maximum,min(cpu) AS minimum,count(cpu)::int AS samples,max(memory) AS memory,
       max(r2_bytes) AS r2, bool_or(r2_error) AS error FROM monitor_samples
       WHERE sampled_at >= to_timestamp($1) AND sampled_at <= to_timestamp($2)
       GROUP BY floor(extract(epoch from sampled_at)/$3) ORDER BY at`,
       [(end-hours*3600000)/1000,end/1000,bucket]);
-    const stats=await query(`SELECT max(cpu) AS maximum,avg(cpu) AS average,min(cpu) AS minimum,count(cpu)::int AS samples FROM monitor_samples WHERE sampled_at >= to_timestamp($1) AND sampled_at <= to_timestamp($2)`,[(end-hours*3600000)/1000,end/1000]);
-    return {hours,bucketSeconds:bucket,start:end-hours*3600000,end,points:rows.rows,stats:stats.rows[0]};
+    const sampled=rows.rows.filter(row=>Number(row.samples)>0),samples=sampled.reduce((sum,row)=>sum+Number(row.samples),0);
+    const stats={maximum:samples?Math.max(...sampled.map(row=>Number(row.maximum))):null,minimum:samples?Math.min(...sampled.map(row=>Number(row.minimum))):null,average:samples?sampled.reduce((sum,row)=>sum+Number(row.cpu)*Number(row.samples),0)/samples:null,samples};
+    return {hours,bucketSeconds:bucket,start:end-hours*3600000,end,points:rows.rows,stats};
   }));
   return ranges;
 }

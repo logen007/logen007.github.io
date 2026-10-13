@@ -21,12 +21,11 @@ export async function aiApiKeyStatus(){
   }));
 }
 
-async function savedSecret(key){
-  const result=await query(`SELECT value_enc FROM secrets WHERE key=$1`,[key]);
-  return result.rowCount?decrypt(result.rows[0].value_enc):'';
-}
-
 export async function aiApiKeys(){
-  const [groqSaved,geminiSaved,grokSaved]=await Promise.all([savedSecret('ai_groq_api_key'),savedSecret('ai_gemini_api_key'),savedSecret('ai_grok_api_key')]);
-  return {groqApiKey:groqSaved||process.env.GROQ_API_KEY||'',geminiApiKey:geminiSaved||process.env.GEMINI_API_KEY||'',grokApiKey:grokSaved||process.env.XAI_API_KEY||''};
+  const result=await query('SELECT key,value_enc FROM secrets WHERE key=ANY($1::text[])',[['ai_groq_api_key','ai_gemini_api_key','ai_grok_api_key']]);
+  const saved=new Map(result.rows.map(row=>[row.key,row.value_enc]));
+  return Object.fromEntries(['groq','gemini','grok'].map(provider=>{
+    const encrypted=saved.get(keyFor(provider));
+    return [provider+'ApiKey',(encrypted?decrypt(encrypted):'')||process.env[envFor(provider)]||''];
+  }));
 }

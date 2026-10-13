@@ -23,7 +23,7 @@ export function dashboardHtml({data,infrastructure=null,infrastructureError='',n
     group.total++;if(item.accurate)group.correct++;
     accuracyGroups.set(key,group);
   }
-  const gradingOverview={needsGrading:data.attempts.filter(attempt=>attempt.status==='grading').length,graded:data.attempts.filter(attempt=>['ready','published'].includes(attempt.status)).length,aiAccuracy:[...accuracyGroups.values()].sort((a,b)=>b.total-a.total||a.label.localeCompare(b.label))};
+  const gradingOverview={needsGrading:data.attempts.filter(attempt=>attempt.status==='grading').length,graded:data.attempts.filter(attempt=>['ready','published'].includes(attempt.status)).length,aiAccuracy:[...accuracyGroups.values()].sort((a,b)=>b.total-a.total||a.examName.localeCompare(b.examName))};
   const activity=dashboardActivity(data,{range:['7','30','365'].includes(activityFilter.range)?activityFilter.range:'30'},now),months=activity.bins;
   const biggest=Math.max(1,...months.map(item=>item.count));
   const active=activity.active;

@@ -197,7 +197,7 @@ export async function submitAttempt(user,{attemptId}){
   if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
   const attempt=result.rows[0];
   if(attempt.student_id!==user.id)throw appError(403,'Không có quyền nộp lượt thi này.');
-  if(attempt.status!=='in_progress')return {status:attempt.status};
+  if(attempt.status!=='in_progress')return {status:attempt.status,attempt:{...attempt.public_data,id:attempt.id,status:attempt.status}};
 
   const exam=await attemptExam(attempt);
   const questions=await questionMap(exam);
@@ -208,7 +208,7 @@ export async function submitAttempt(user,{attemptId}){
     const publicData={...attempt.public_data,status:'incomplete',completion,...timing,updatedAt:now()};
     await client.query('UPDATE attempts SET status=$2,public_data=$3::jsonb,updated_at=now() WHERE id=$1',[attemptId,'incomplete',JSON.stringify(publicData)]);
     await audit(user,'incomplete_attempt','attempt',attemptId,{completion},client);
-    return {status:'incomplete',completion};
+    return {status:'incomplete',completion,attempt:{...publicData,id:attempt.id}};
   }
   const sectionScores={};
   let autoScore=0,hasManual=false;
@@ -236,7 +236,7 @@ export async function submitAttempt(user,{attemptId}){
   await client.query(`UPDATE attempts SET status=$2,public_data=$3::jsonb,private_data=$4::jsonb,updated_at=now() WHERE id=$1`,[attemptId,status,JSON.stringify(publicData),JSON.stringify(privateData)]);
   if(hasManual)await queueWritingAiJobs(client,{...attempt,public_data:publicData,private_data:privateData},exam,questions);
   await audit(user,'submit_attempt','attempt',attemptId,{status},client);
-  return {status};
+  return {status,attempt:{...publicData,id:attempt.id}};
   });
 }
 

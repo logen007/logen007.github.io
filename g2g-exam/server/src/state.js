@@ -8,13 +8,14 @@ import {publicWritingRows,writingFormScore,normalizeWritingRows} from './writing
 import {expireCodes} from './actions/exam-access.js';
 import {preserveAttemptSnapshots} from './exam-snapshots.js';
 import {ensureClassCodes} from './actions/class-enrollment.js';
+import {questionMetadata,examMetadata,attemptPublicMetadata,attemptPrivateMetadata} from './state-projection.js';
 
 const stripId=x=>{const y=structuredClone(x||{});delete y.id;return y;};
 const isTeacher=u=>u?.role==='teacher'||u?.role==='master';
 function publicQuestion(data){const q=structuredClone(data||{});if(q.type==='writing'&&q.aiGradingRules&&q.title===q.aiGradingRules)q.title='Nháp';delete q.aiGradingRules;if(!isPrefilledQuestion(q))delete q.correctAnswer;if(q.writingFormVersion===1&&!isPrefilledQuestion(q))q.rubric=publicWritingRows(q.rubric);else if(q.writingFormVersion!==1)delete q.rubric;if(Array.isArray(q.pairs)&&!isPrefilledQuestion(q)){const rights=q.pairs.map(x=>x[1]).sort(()=>Math.random()-.5);q.pairs=q.pairs.map((x,i)=>[x[0],rights[i]]);}return q;}
 async function rows(sql,args=[]){return (await query(sql,args)).rows;}
 async function allowedExamIds(user){if(user.role==='master'||user.role==='teacher')return null;return new Set();}
-function rowEntity(r){const item={...(r.data||{}),id:r.id,...(r.owner_id?{ownerId:r.owner_id}:{}),...(r.status?{status:r.status}:{}),...(typeof r.locked==='boolean'?{locked:r.locked}:{})};if(item.writingFormVersion===1){item.rubric=normalizeWritingRows(item.rubric);item.maxScore=writingFormScore(item.rubric);}return item;}
+function rowEntity(r,summary=false){const item={...(r.data||{}),id:r.id,...(r.owner_id?{ownerId:r.owner_id}:{}),...(r.status?{status:r.status}:{}),...(typeof r.locked==='boolean'?{locked:r.locked}:{})};if(!summary&&item.writingFormVersion===1){item.rubric=normalizeWritingRows(item.rubric);item.maxScore=writingFormScore(item.rubric);}return item;}
 function attemptEntity(r,includePrivate=false){return {id:r.id,...(r.exam_id?{examId:r.exam_id}:{}),...(r.public_data||{}),...(includePrivate?(r.private_data||{}):{})};}
 function inferredAiWritingAccuracy(attempt,exam,questions){
   if(Object.keys(attempt.aiWritingAccuracy||{}).length)return attempt.aiWritingAccuracy;
@@ -29,16 +30,23 @@ function inferredAiWritingAccuracy(attempt,exam,questions){
   return accuracy;
 }
 
-export async function loadState(user){
+export async function loadState(user,{summaryOnly=false,attemptId=null}={}){
+  if(summaryOnly&&user.role==='student')throw appError(403,'Không có quyền xem tổng quan quản trị.');
   const state={schemaVersion:6,revision:1,users:[],questions:[],exams:[],attempts:[],gradingRequests:[],notifications:[],auditLog:[]};
+  if(summaryOnly)state.scope='summary';
   state.classes=await rows(user.role==='student'?'SELECT id,code,active FROM classes WHERE active=true ORDER BY lower(code)':'SELECT id,code,active,description,teacher_ids AS "teacherIds" FROM classes WHERE active=true ORDER BY lower(code)');
   if(user.role==='student'){
-    await expireCodes();
+    let session;
+    if(attemptId){
+      session=(await rows('SELECT id,exam_id,status,public_data,private_data FROM attempts WHERE id=$1 AND student_id=$2',[attemptId,user.id]))[0];
+      if(!session)throw appError(404,'Không tìm thấy lượt thi.');
+    }else await expireCodes();
     state.users=[user];
-    state.exams=(await rows(`SELECT id,owner_id,status,locked,data FROM exams WHERE status='published' ORDER BY updated_at DESC`)).map(rowEntity);
-    const attempts=await rows(`SELECT id,public_data,private_data,status,exam_id FROM attempts WHERE student_id=$1 ORDER BY created_at DESC`,[user.id]);
+    state.exams=(await rows(`SELECT id,owner_id,status,locked,data FROM exams WHERE ${session?'id=$1':"status='published'"} ORDER BY updated_at DESC`,session?[session.exam_id]:[])).map(r=>rowEntity(r));
+    const attempts=session?[session]:await rows(`SELECT id,public_data,CASE WHEN status='in_progress' THEN private_data ELSE '{}'::jsonb END AS private_data,status,exam_id FROM attempts WHERE student_id=$1 ORDER BY created_at DESC`,[user.id]);
     state.attempts=attempts.map(r=>({id:r.id,...r.public_data}));
-    const allQuestions=(await rows(`SELECT id,data FROM questions WHERE status<>'trash'`)).map(rowEntity);
+    const neededIds=[...new Set(state.exams.filter(exam=>!attempts.some(a=>a.exam_id===exam.id&&a.status==='in_progress'&&a.private_data?.examSnapshot)).flatMap(exam=>(exam.sections||[]).flatMap(section=>section.questionIds||[])))];
+    const allQuestions=(await rows(`SELECT id,data FROM questions WHERE status<>'trash' AND id=ANY($1::text[])`,[neededIds])).map(r=>rowEntity(r));
     const activeCodes=await rows('SELECT c.exam_id,NOT EXISTS(SELECT 1 FROM exam_code_uses u WHERE u.code_id=c.id AND u.student_id=$1) AS unused FROM exam_codes c WHERE c.expires_at>now()',[user.id]);
     const allowed=new Set();
     state.exams=state.exams.map(exam=>{
@@ -58,24 +66,24 @@ export async function loadState(user){
         sections:(exam.sections||[]).map(s=>({id:s.id,name:s.name,timeMinutes:s.timeMinutes,questionIds:[]}))};
     });
     state.questions=[...new Map(allQuestions.filter(q=>allowed.has(q.id)).map(q=>[q.id,{id:q.id,...publicQuestion(q)}])).values()];
-    state.promotions=await rows('SELECT attempt_id AS "attemptId",from_level AS "fromLevel",to_level AS "toLevel" FROM level_promotions WHERE student_id=$1 AND acknowledged_at IS NULL ORDER BY created_at',[user.id]);
-    state.notifications=(await rows(`SELECT id,data,status FROM notifications WHERE student_id=$1 ORDER BY created_at DESC LIMIT 200`,[user.id])).map(r=>({id:r.id,status:r.status,...r.data}));
+    state.promotions=session?[]:await rows('SELECT attempt_id AS "attemptId",from_level AS "fromLevel",to_level AS "toLevel" FROM level_promotions WHERE student_id=$1 AND acknowledged_at IS NULL ORDER BY created_at',[user.id]);
+    state.notifications=session?[]:(await rows(`SELECT id,data,status FROM notifications WHERE student_id=$1 ORDER BY created_at DESC LIMIT 200`,[user.id])).map(r=>({id:r.id,status:r.status,...r.data}));
     const ids=[...new Set([...state.exams,...state.questions,...state.attempts].flatMap(item=>[item.ownerId,item.studentId,item.reviewerId]).filter(Boolean))];
     const names=ids.length?await rows("SELECT id,data->>'name' AS name FROM users WHERE id=ANY($1::text[])",[ids]):[];
     return resolveAccountNames(state,names);
   }
-  await ensureClassCodes();
+  if(!summaryOnly)await ensureClassCodes();
   state.users=(await rows(`SELECT u.id,u.email,u.role,u.active,u.data,k.code AS confirmation_code FROM users u
     LEFT JOIN class_confirmation_codes k ON k.student_id=u.id AND k.used_at IS NULL AND k.email=lower(u.email)
       AND u.role='student' AND coalesce(u.data->>'classId','')=''
     LEFT JOIN classes c ON c.id=u.data->>'classId'
     ORDER BY u.created_at DESC`)).map(r=>({...r.data,id:r.id,email:r.email,role:r.role,active:r.active,confirmationCode:r.role==='student'?r.confirmation_code:null}));
-  state.questions=(await rows(`SELECT id,owner_id,status,locked,data FROM questions ORDER BY updated_at DESC`)).map(rowEntity);
-  state.exams=(await rows(`SELECT id,owner_id,status,locked,data FROM exams ORDER BY updated_at DESC`)).map(rowEntity);
+  state.questions=(await rows(`SELECT id,owner_id,status,locked,${summaryOnly?questionMetadata('data'):'data'} AS data FROM questions ORDER BY updated_at DESC`)).map(r=>rowEntity(r,summaryOnly));
+  state.exams=(await rows(`SELECT id,owner_id,status,locked,${summaryOnly?examMetadata('data'):'data'} AS data FROM exams ORDER BY updated_at DESC`)).map(r=>rowEntity(r,summaryOnly));
   const allowed=await allowedExamIds(user);
   const [ars,writingJobs]=await Promise.all([
-    rows(`SELECT id,exam_id,public_data,private_data FROM attempts ORDER BY created_at DESC`),
-    rows(`SELECT attempt_id,question_id,status FROM writing_ai_jobs WHERE status IN ('queued','processing') ORDER BY created_at,id`),
+    rows(`SELECT id,exam_id,${summaryOnly?attemptPublicMetadata('public_data'):'public_data'} AS public_data,${summaryOnly?attemptPrivateMetadata('private_data'):'private_data'} AS private_data FROM attempts ORDER BY created_at DESC`),
+    summaryOnly?Promise.resolve([]):rows(`SELECT attempt_id,question_id,status FROM writing_ai_jobs WHERE status IN ('queued','processing') ORDER BY created_at,id`),
   ]);
   state.attempts=ars.filter(r=>!allowed||allowed.has(r.exam_id)).map(r=>attemptEntity(r,true));
   const examsById=new Map(state.exams.map(exam=>[exam.id,exam])),questionsById=new Map(state.questions.map(question=>[question.id,question]));
@@ -91,7 +99,7 @@ export async function loadState(user){
     const attempt=state.attempts.find(item=>item.id===job.attempt_id),suggestion=attempt?.aiWritingSuggestions?.[job.question_id];
     if(suggestion)Object.assign(suggestion,{status:job.status,queuePosition:index+1,queueTotal});
   });
-  if(user.role==='master')state.auditLog=(await rows(`SELECT id,at,user_id,user_name,action,entity_type,entity_id,detail FROM audit_log ORDER BY at DESC LIMIT 1000`)).map(r=>({id:String(r.id),at:r.at,userId:r.user_id,userName:r.user_name,action:r.action,entityType:r.entity_type,entityId:r.entity_id,detail:r.detail}));
+  if(user.role==='master'&&!summaryOnly)state.auditLog=(await rows(`SELECT id,at,user_id,user_name,action,entity_type,entity_id,detail FROM audit_log ORDER BY at DESC LIMIT 1000`)).map(r=>({id:String(r.id),at:r.at,userId:r.user_id,userName:r.user_name,action:r.action,entityType:r.entity_type,entityId:r.entity_id,detail:r.detail}));
   return resolveAccountNames(state);
 }
 

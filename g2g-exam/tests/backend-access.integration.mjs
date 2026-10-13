@@ -12,7 +12,7 @@ const db=new PGlite(),context=new AsyncLocalStorage();
 const query=(sql,args)=>sql.includes('pg_advisory_xact_lock')?Promise.resolve({rows:[],rowCount:1}):(context.getStore()||db).query(sql,args).then(result=>({...result,rowCount:Math.max(result.affectedRows||0,result.rows.length)}));
 globalThis.__testDb={query,withTx:fn=>db.transaction(client=>context.run(client,()=>fn({query}))),getSettings:async()=>structuredClone(DEFAULT_SETTINGS),audit:async()=>{},now:()=>new Date().toISOString(),uid:prefix=>`${prefix}-${crypto.randomUUID()}`,appError:(statusCode,message)=>Object.assign(new Error(message),{statusCode})};
 const hook=registerHooks({resolve(specifier,ctx,next){
-  if(specifier.endsWith('/db.js')||specifier==='../db.js'||specifier==='./db.js')return {shortCircuit:true,url:'data:text/javascript,export const {query,withTx,getSettings,audit,now,uid,appError}=globalThis.__testDb; export const pool={query};'};
+  if(specifier.endsWith('/db.js')||specifier==='../db.js'||specifier==='./db.js')return {shortCircuit:true,url:'data:text/javascript,export const {query,withTx,getSettings,audit,now,uid,appError}=globalThis.__testDb; export const pool={query}; export const getDataRevision=()=>0;'};
   if(specifier==='nodemailer')return {shortCircuit:true,url:'data:text/javascript,export default {createTransport(){throw new Error("External email forbidden in test")}};'};
   return next(specifier,ctx);
 }});
@@ -409,4 +409,11 @@ try{
   assert.equal(hiddenReview.score,null);
   assert.ok(hiddenReview.sections.flatMap(s=>s.questions).every(q=>q.correct===null&&q.fields.every(f=>f.expected===null)));
   console.log('Result review SQL: owner-only access, real published summary and hidden unpublished answers passed.');
+  const {filteredGradebook}=await import('../src/domain/gradebook.js');
+  const fullGrades=await loadState(teacher),summaryGrades=await loadState(teacher,{summaryOnly:true});
+  for(const provider of ['GOETHE','TELC','FID']){
+    const project=state=>filteredGradebook(state,{provider}).map(row=>({id:row.attempt.id,skills:row.skills}));
+    assert.deepEqual(project(summaryGrades),project(fullGrades));
+  }
+  console.log('Full/summary gradebook parity passed across historical forms, Goethe, TELC and FID.');
 }finally{hook.deregister();await db.close();delete globalThis.__testDb;}

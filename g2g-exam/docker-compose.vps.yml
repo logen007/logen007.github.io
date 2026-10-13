@@ -29,9 +29,11 @@ services:
         condition: service_healthy
     volumes:
       - g2g_uploads:/data/uploads
+      - g2g_web_assets:/data/web-assets
     ports:
       - "127.0.0.1:8787:8080"
 
 volumes:
   g2g_pgdata:
   g2g_uploads:
+  g2g_web_assets:

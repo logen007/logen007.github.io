@@ -1,6 +1,7 @@
 import {query,withTx,now} from './db.js';
 import {attemptExam,questionMap} from './actions/shared.js';
 import {suggestWritingGrade} from './writing-ai.js';
+import {createJobPump} from './job-pump.js';
 
 const isFreeWriting=question=>question?.type==='writing'&&question.writingFormVersion!==1&&String(question.aiGradingRules||'').trim();
 
@@ -15,9 +16,18 @@ export async function queueWritingAiJobs(client,attempt,exam,questions){
   }
 }
 
-async function backfillQueue(logger){
+export async function backfillQueue(logger){
   try{
-    const attempts=(await query(`SELECT * FROM attempts WHERE status IN ('grading','ready') ORDER BY updated_at DESC LIMIT 200`)).rows;
+    // Normal submissions enqueue inside their transaction. Only discover
+    // missing jobs at startup, and exclude existing jobs before reading papers.
+    const attempts=(await query(`SELECT a.* FROM attempts a WHERE a.status IN ('grading','ready') AND (
+      EXISTS (SELECT 1 FROM jsonb_array_elements(coalesce(a.private_data->'examSnapshot'->'questionSnapshot','[]'::jsonb)) q
+        WHERE q->>'type'='writing' AND q->>'writingFormVersion' IS DISTINCT FROM '1'
+          AND length(trim(coalesce(q->>'aiGradingRules','')))>0
+          AND length(trim(coalesce(a.public_data->'answers'->>(q->>'id'),'')))>0
+          AND NOT EXISTS(SELECT 1 FROM writing_ai_jobs j WHERE j.attempt_id=a.id AND j.question_id=q->>'id'))
+      OR (NOT (a.private_data ? 'examSnapshot') AND NOT EXISTS(SELECT 1 FROM writing_ai_jobs j WHERE j.attempt_id=a.id))
+    ) ORDER BY a.created_at DESC`)).rows;
     for(const attempt of attempts){
       const exam=await attemptExam(attempt),questions=await questionMap(exam);
       await queueWritingAiJobs({query},attempt,exam,questions);
@@ -39,14 +49,15 @@ async function claimJob(){
 async function processJob(job,logger){
   try{
     const row=(await query('SELECT * FROM attempts WHERE id=$1',[job.attempt_id])).rows[0];
-    if(!row||!['grading','ready'].includes(row.status))throw new Error('Bài làm không còn ở trạng thái chấm.');
+    if(!row||!['grading','ready','published'].includes(row.status))throw new Error('Bài làm không còn ở trạng thái chấm.');
     const exam=await attemptExam(row),questions=await questionMap(exam),question=questions.get(job.question_id);
     if(!isFreeWriting(question))throw new Error('Câu hỏi không còn quy tắc chấm AI.');
     const section=(exam.sections||[]).find(item=>(item.questionIds||[]).includes(question.id))||{};
     const task=[section.instruction,section.additionalInstructions?.map(item=>item.text).join('\n'),question.instruction,question.prompt,question.instructionBlocks?.map(item=>item.text).join('\n')].filter(Boolean).join('\n\n');
     const suggestion=await suggestWritingGrade({task,level:exam.level,rule:question.aiGradingRules,answer:row.public_data?.answers?.[question.id],maxScore:question.maxScore});
-    const aiWritingSuggestions={...(row.private_data?.aiWritingSuggestions||{}),[question.id]:{...suggestion,status:'completed',createdAt:now()}};
     await withTx(async client=>{
+      const current=(await client.query('SELECT private_data FROM attempts WHERE id=$1 FOR UPDATE',[row.id])).rows[0];
+      const aiWritingSuggestions={...(current?.private_data?.aiWritingSuggestions||{}),[question.id]:{...suggestion,status:'completed',createdAt:now()}};
       await client.query(`UPDATE attempts SET private_data=private_data||$2::jsonb,updated_at=now() WHERE id=$1`,[row.id,JSON.stringify({aiWritingSuggestions})]);
       await client.query(`UPDATE writing_ai_jobs SET status='completed',model=$2,finished_at=now(),updated_at=now(),last_error=NULL WHERE id=$1`,[job.id,suggestion.model||null]);
     });
@@ -65,15 +76,18 @@ async function processJob(job,logger){
 }
 
 export function startWritingAiWorker({logger,concurrency=Math.max(1,Math.min(6,Number(process.env.AI_WRITING_CONCURRENCY||3)))}={}){
-  let active=0,stopped=false;
-  const tick=async()=>{
-    if(stopped)return;
-    while(active<concurrency){
-      const job=await claimJob();if(!job)break;
-      active++;void processJob(job,logger).finally(()=>{active--;void tick();});
-    }
+  const pump=createJobPump({claim:claimJob,processJob:job=>processJob(job,logger),concurrency,onError:error=>logger?.error?.({err:error},'writing AI worker failed')});
+  let maintenanceBusy=false;
+  const recover=async()=>{
+    if(maintenanceBusy)return;
+    maintenanceBusy=true;
+    try{
+      await query(`UPDATE writing_ai_jobs SET status='queued',tries=0,available_at=now(),updated_at=now()
+        WHERE (status='failed' AND available_at<=now()) OR (status='processing' AND started_at<now()-interval '5 minutes')`);
+      await pump.tick();
+    }catch(error){logger?.warn?.({err:error},'writing AI recovery failed');}finally{maintenanceBusy=false;}
   };
-  const timer=setInterval(()=>void tick(),750),backfillTimer=setInterval(()=>void backfillQueue(logger),30000);
-  timer.unref();backfillTimer.unref();void backfillQueue(logger).then(tick);
-  return ()=>{stopped=true;clearInterval(timer);clearInterval(backfillTimer);};
+  const timer=setInterval(()=>void pump.tick(),2000),recoveryTimer=setInterval(()=>void recover(),60000);
+  timer.unref();recoveryTimer.unref();void backfillQueue(logger).then(recover);
+  return ()=>{pump.stop();clearInterval(timer);clearInterval(recoveryTimer);};
 }

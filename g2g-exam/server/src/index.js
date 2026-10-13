@@ -4,12 +4,15 @@ import {createWriteStream} from 'node:fs';
 import {pipeline} from 'node:stream/promises';
 import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
+import {gzip} from 'node:zlib';
+import {promisify} from 'node:util';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
-import {initDb,getSettings,appError,pool} from './db.js';
+import {initDb,getSettings,getDataRevision,appError,pool} from './db.js';
+import {createStateCache} from './state-cache.js';
 import {registerAuthRoutes,currentUser,requireUser,requireRole} from './auth.js';
 import {loadState,commitOperations} from './state.js';
 import {loadExamCatalog} from './exam-catalog.js';
@@ -23,9 +26,12 @@ import {r2Settings} from './r2-settings.js';
 import {registerMediaDeliveryRoutes} from './media-routes.js';
 import {APP_VERSION} from '../../src/release.js';
 import {startWritingAiWorker} from './writing-ai-queue.js';
+import {startResultEmailWorker} from './actions/grading.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
-const publicDir=path.resolve(here,'../../public');
+const publicDir=path.resolve(process.env.WEB_PUBLIC_DIR||path.resolve(here,'../../public'));
+const assetDir=path.resolve(process.env.WEB_ASSETS_DIR||'/data/web-assets');
+const compressJson=promisify(gzip);
 const uploadDir=path.resolve(process.env.UPLOAD_DIR||'/data/uploads');
 const demoMediaUploadsEnabled=process.env.NODE_ENV!=='production'&&process.env.DEMO_MEDIA_UPLOAD_ENABLED==='true';
 const demoUploadWindows=new Map();
@@ -44,36 +50,62 @@ await app.register(multipart,{limits:{fileSize:25*1024*1024,files:1}});
 
 app.addHook('onSend',async(request,reply,payload)=>{
   const pathname=String(request.url||'').split('?')[0];
-  const noCache=['/', '/adm', '/teacher', '/student', '/index.html', '/vi.html', '/runtime-config.js', '/styles.css', '/enhancements.css'].includes(pathname)||pathname.startsWith('/src/')||pathname.startsWith('/specs/');
-  if(pathname.startsWith('/api/'))reply.header('Cache-Control','no-store');
+  const noCache=['/', '/adm', '/teacher', '/student', '/index.html', '/vi.html', '/runtime-config.js'].includes(pathname);
+  const sourceAsset=['/styles.css','/enhancements.css'].includes(pathname)||pathname.startsWith('/src/')||pathname.startsWith('/specs/');
+  if(pathname.startsWith('/api/')&&!reply.hasHeader('Cache-Control'))reply.header('Cache-Control','no-store');
+  if(sourceAsset)reply.header('Cache-Control','public, max-age=0, must-revalidate');
+  if(pathname.startsWith('/assets/')&&reply.statusCode<400)reply.header('Cache-Control','public, max-age=31536000, immutable');
   if(noCache){
     reply.header('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
     reply.header('Pragma','no-cache');reply.header('Expires','0');reply.header('Surrogate-Control','no-store');
   }
+  if(typeof payload==='string'&&Buffer.byteLength(payload)>1024&&String(reply.getHeader('Content-Type')||'').includes('application/json')&&!reply.hasHeader('Content-Encoding')&&/(?:^|[, ])gzip(?:[, ;]|$)/.test(String(request.headers['accept-encoding']||''))){
+    reply.header('Content-Encoding','gzip');
+    const vary=new Set(String(reply.getHeader('Vary')||'').split(',').map(item=>item.trim()).filter(Boolean));vary.add('Accept-Encoding');reply.header('Vary',[...vary].join(', '));
+    reply.removeHeader('Content-Length');
+    return compressJson(payload);
+  }
   return payload;
 });
 
-await app.register(fastifyStatic,{root:publicDir,prefix:'/',index:['index.html']});
+// Retain content-addressed chunks across deployments for students/editors who
+// still have an older tab open. Existing media/database volumes are untouched.
+await fs.mkdir(assetDir,{recursive:true});
+try{await fs.cp(path.join(publicDir,'assets'),assetDir,{recursive:true});}catch(error){if(error.code!=='ENOENT')throw error;}
+await app.register(fastifyStatic,{root:assetDir,prefix:'/assets/',decorateReply:false,preCompressed:true});
+await app.register(fastifyStatic,{root:publicDir,prefix:'/',index:['index.html'],preCompressed:true});
 await registerAuthRoutes(app);
 
 app.get('/api/health',async()=>{let db=true;try{await pool.query('SELECT 1');}catch{db=false;}return {ok:db,backend:'vps',database:db,time:new Date().toISOString()};});
 app.get('/api/version',async()=>({version:APP_VERSION}));
-app.get('/api/public-settings',async()=>{
+const publicSettingsCache=createStateCache({revision:getDataRevision,ttlMs:30000,maxEntries:1});
+app.get('/api/public-settings',async()=>publicSettingsCache('public',async()=>{
   const s=await getSettings();
   const [students,graded,exams,teachers,attempts]=await Promise.all([
     pool.query(`SELECT count(*)::int AS count FROM users WHERE role='student'`),
     pool.query(`SELECT count(*)::int AS count FROM attempts WHERE status='published'`),
-    pool.query(`SELECT data FROM exams WHERE status='published'`),
+    pool.query(`SELECT data->>'provider' AS provider,data->>'level' AS level FROM exams WHERE status='published'`),
     pool.query(`SELECT count(*)::int AS count FROM users WHERE role='teacher'`),
     pool.query(`SELECT count(*)::int AS count FROM attempts WHERE status IN ('grading','ready','published')`),
   ]);
-  const examTypes=[...new Set(exams.rows.map(row=>[row.data.provider,row.data.level].filter(Boolean).join(' ')).filter(Boolean))].sort();
+  const examTypes=[...new Set(exams.rows.map(row=>[row.provider,row.level].filter(Boolean).join(' ')).filter(Boolean))].sort();
   return {general:{examMessages:s.general.examMessages||'',systemName:s.general.systemName,organizationName:s.general.organizationName,publicUrl:s.general.publicUrl,logoUrl:s.general.logoUrl,faviconUrl:s.general.faviconUrl},theme:s.theme,auth:{googleLoginEnabled:s.auth.googleLoginEnabled,allowNewStudents:s.auth.allowNewStudents},operations:{maintenanceMode:s.operations.maintenanceMode,maintenanceMessage:s.operations.maintenanceMessage},stats:{teachers:teachers.rows[0].count,attempts:attempts.rows[0].count,students:students.rows[0].count,graded:graded.rows[0].count,exams:exams.rowCount,examTypes}};
-});
+}));
 app.get('/api/settings',async request=>{await requireRole(request,'master');return {settings:await getSettings()};});
-app.get('/api/state',async (request,reply)=>stateResponse(await loadState(await requireUser(request)),request,reply));
-app.get('/api/exam-catalog',async (request,reply)=>stateResponse(await loadExamCatalog(await requireUser(request)),request,reply));
+const cachedState=createStateCache({revision:getDataRevision});
+const readState=async(request,reply,scope,load)=>{
+  const user=await requireUser(request);
+  const state=await cachedState(JSON.stringify([scope,user]),()=>load(user));
+  return stateResponse(state,request,reply,{prehashed:true});
+};
+app.get('/api/state',async(request,reply)=>readState(request,reply,'full',loadState));
+app.get('/api/state-summary',async(request,reply)=>readState(request,reply,'summary',user=>loadState(user,{summaryOnly:true})));
+app.get('/api/exam-catalog',async(request,reply)=>readState(request,reply,'catalog',loadExamCatalog));
 app.get('/api/attempts/:id/sync',async(request,reply)=>stateResponse(await loadAttemptSync(await requireUser(request),request.params.id),request,reply));
+app.get('/api/attempts/:id/session',async(request,reply)=>{
+  const user=await requireRole(request,'student');
+  return stateResponse(await loadState(user,{attemptId:request.params.id}),request,reply);
+});
 app.post('/api/commit',async request=>commitOperations(await requireUser(request),request.body?.operations||[]));
 app.post('/api/actions/:name',async request=>handleAction(await requireUser(request),request.params.name,request.body||{}));
 
@@ -118,17 +150,20 @@ app.get('/brand/:kind',async(request,reply)=>{
 app.get('/api/whoami',async request=>({user:await currentUser(request)}));
 
 app.setErrorHandler((error,_request,reply)=>{app.log.error(error);const status=Number(error.statusCode)||500;reply.code(status).send({error:status>=500?'Lỗi máy chủ. Vui lòng thử lại.':error.message,code:status});});
-app.setNotFoundHandler((request,reply)=>{if(request.url.startsWith('/api/'))return reply.code(404).send({error:'API không tồn tại.'});return reply.sendFile('vi.html');});
+app.setNotFoundHandler((request,reply)=>{if(request.url.startsWith('/api/'))return reply.code(404).send({error:'API không tồn tại.'});if(/^\/(assets|src|specs)\//.test(request.url))return reply.code(404).send({error:'Tài nguyên không tồn tại.'});return reply.sendFile('vi.html');});
 
 const {startMonitorHistory}=await import('./monitor-history.js');
 const stopMonitorHistory=startMonitorHistory(app.log);
 const port=Number(process.env.PORT||8080);
+app.addHook('onClose',async()=>{stopMonitorHistory();r2Media?.stop();stopMediaGc();stopTrashGc();stopWritingAi();stopResultEmails();clearInterval(expiryTimer);});
 await app.listen({host:'0.0.0.0',port});
 const stopMediaGc=startMediaGarbageCollector({uploadDir,logger:app.log});
 const stopTrashGc=startTrashGarbageCollector({uploadDir,logger:app.log});
 const stopWritingAi=startWritingAiWorker({logger:app.log});
+const stopResultEmails=startResultEmailWorker(app.log);
 let expiryBusy=false;
-const expiryTimer=setInterval(async()=>{if(expiryBusy)return;expiryBusy=true;try{await submitExpiredAttempts();}catch(error){app.log.error(error);}finally{expiryBusy=false;}},1000);
+const expiryTimer=setInterval(async()=>{if(expiryBusy)return;expiryBusy=true;try{await submitExpiredAttempts();}catch(error){app.log.error(error);}finally{expiryBusy=false;}},5000);
 expiryTimer.unref();
-const stop=async()=>{try{stopMonitorHistory();r2Media?.stop();stopMediaGc();stopTrashGc();stopWritingAi();clearInterval(expiryTimer);await app.close();await pool.end();}finally{process.exit(0);}};
+export {app};
+const stop=async()=>{try{await app.close();await pool.end();}finally{process.exit(0);}};
 process.on('SIGTERM',stop);process.on('SIGINT',stop);

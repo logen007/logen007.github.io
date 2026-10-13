@@ -6,11 +6,12 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt
 const choiceText=choice=>choice&&typeof choice==='object'?String(choice.text||''):String(choice||'');
 const choiceImage=choice=>choice&&typeof choice==='object'?String(choice.imageUrl||''):'';
 
-export async function mountStudentRuntime({state:initialState=null,examRoot:initialRoot=null}={}){
+export async function mountStudentRuntime({state:initialState=null,examRoot:initialRoot=null,saveAnswer}={}){
   const examRoot=initialRoot||document.querySelector('.thi');
   if(!examRoot||examRoot.classList.contains('thi--preview')||examRoot.dataset.a1ListeningPart1Enhanced==='1')return;
-  let state=initialState;if(!state){try{state=await templateRequest('/state');}catch{return;}}
+  const state=initialState;if(!state)return;
   const spec=await getA1ListeningPart1Spec(),policy=audioPolicyFromSpec(spec);
+  if(!examRoot.isConnected)return;
   const visibleIds=[...examRoot.querySelectorAll('.cau-thi[data-q]')].map(node=>node.dataset.q);
   const attempt=(state.attempts||[]).find(item=>item.status==='in_progress'&&visibleIds.some(id=>(item.currentQuestionIds||[]).includes(id)));
   if(!attempt)return;
@@ -32,9 +33,9 @@ export async function mountStudentRuntime({state:initialState=null,examRoot:init
     const node=examRoot.querySelector(`.cau-thi[data-q="${CSS.escape(question.id)}"]`);if(!node)continue;
     const wrap=node.querySelector('.audio-thi');if(wrap){wrap.style.display='none';const audio=wrap.querySelector('audio');if(audio){audio.controls=Boolean(policy.controls);audioElements.push({question,audio});}}
     const select=node.querySelector('.answer-one');
-    if(select&&Array.isArray(question.choices)&&question.choices.some(choice=>typeof choice==='object')){
+    if(select?.tagName==='SELECT'&&Array.isArray(question.choices)&&question.choices.some(choice=>typeof choice==='object')){
       const list=document.createElement('div');list.className='qg-choice-list';
-      question.choices.slice(0,3).forEach((choice,index)=>{const label=document.createElement('label');label.className='qg-answer';const image=choiceImage(choice);label.innerHTML=`<div><input type="radio" name="tpl-${esc(question.id)}" value="${index}" ${String(attempt.answers?.[question.id])===String(index)?'checked':''}><b>${String.fromCharCode(65+index)}.</b> ${textHtml(choiceText(choice))}</div>${image?`<img src="${esc(image)}" alt="Antwort ${String.fromCharCode(65+index)}">`:''}`;label.querySelector('input').onchange=async()=>{await templateRequest('/actions/saveAnswers',{method:'POST',body:{attemptId:attempt.id,answers:{[question.id]:index}}});const save=document.getElementById('saveState');if(save)save.textContent='Gespeichert';};list.appendChild(label);});
+      question.choices.slice(0,3).forEach((choice,index)=>{const label=document.createElement('label');label.className='qg-answer';const image=choiceImage(choice);label.innerHTML=`<div><input class="answer-one" data-q="${esc(question.id)}" type="radio" name="tpl-${esc(question.id)}" value="${index}" ${String(attempt.answers?.[question.id])===String(index)?'checked':''}><b>${String.fromCharCode(65+index)}.</b> ${textHtml(choiceText(choice))}</div>${image?`<img src="${esc(image)}" alt="Antwort ${String.fromCharCode(65+index)}">`:''}`;label.querySelector('input').onchange=()=>saveAnswer?.(question.id,index);list.appendChild(label);});
       select.replaceWith(list);
     }
   }

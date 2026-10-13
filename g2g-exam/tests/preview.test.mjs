@@ -253,7 +253,7 @@ try{
   });
   await test('Starting a retake refreshes state and advancing returns to page top',()=>{
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-    assert.ok(source.includes("await repo.ensureFull({refresh:true})"),'Starting or retaking fetches fresh full data before starting');
+    assert.ok(source.includes('repo.startAttemptSecure(examId,{restart})'),'Starting or retaking opens a fresh server-owned session');
     assert.match(source,/await covered;data=await repo.getState\(\);ui.attemptId=attempt.id;ui.view='exam';startingAttempt=false;render\(\)/);
     assert.match(source,/async function moveAttemptSection\(delta\)[\s\S]*?if\(result\)\{[^}]*render\(\);scrollExamToTop\(\)/);
     assert.match(source,/function showPreviewSection\(index\)[\s\S]*?scrollExamToTop\(\)/);
@@ -768,18 +768,14 @@ try{
       assert.equal(inspections,0,'The A1 runtime must not inspect preview questions for a matching real attempt.');
       assert.deepEqual(requests,[]);
       assert.deepEqual(examRoot.dataset,{});
-      await import('../src/part-templates/runtime.js');
-      assert.equal(typeof frameCallback,'function');
-      frameCallback();
-      await new Promise(resolve=>setImmediate(resolve));
+      const {mountExamRuntime}=await import('../src/part-templates/runtime.js');
+      await mountExamRuntime({examRoot,state:{questions:[]}});
       assert.equal(inspections,0,'The general runtime must leave preview questions alone.');
       assert.deepEqual(requests,[]);
       preview=false;
-      mutationCallback();
-      frameCallback();
-      await new Promise(resolve=>setImmediate(resolve));
-      assert.equal(requests.length,1,'A real exam must still load its runtime state.');
-      assert.match(requests[0],/\/state$/);
+      examRoot.isConnected=true;
+      await mountExamRuntime({examRoot,state:{questions:[]}});
+      assert.equal(requests.length,0,'A real exam reuses the authorized view state.');
       assert.equal(inspections,1);
     }finally{
       for(const [name,value] of previous){

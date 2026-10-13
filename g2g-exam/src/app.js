@@ -74,14 +74,16 @@ import {getProviderLevels} from './exam-specs/index.js';
 import {createExamDraft,ensureExamMatchesConfiguredSpec,questionDraftChoices} from './controllers/exam-factory.js';
 import {populateGoetheA1TestFixture} from './controllers/goethe-a1-test-fixture.js';
 import {hasPartTemplate,openPartTemplate,bindPartBuilder} from './part-templates/index.js';
+import {mountExamRuntime} from './part-templates/runtime.js';
 import {collectReadingBlocks,bindReadingBlocks} from './ui/reading-blocks.js';
 import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
-import {loadPublicSettings,readCachedInfrastructure,refreshInfrastructure} from './settings/api.js';
+import {readCachedInfrastructure,refreshInfrastructure} from './settings/api.js';
 import {isScoredWritingField,writingFormScore,addWritingRow,removeWritingRow} from './domain/writing-form.js';
 import {readWritingRow} from './ui/writing-form.js';
 import {readExamAnswers,revealUnansweredQuestion} from './ui/exam-answers.js';
 import {startReleaseMonitor} from './ui/release-update.js';
+import {startDashboardRefresh} from './ui/dashboard-refresh.js';
 
 initializeTheme();
 const app=document.getElementById('app');
@@ -110,7 +112,7 @@ const pendingAudioUploads=new Map();
 const ui={
   view:user?(isStudent(user)?'student-home':'admin'):'login',
   adminTab:isMaster(user)?'dashboard':'exams',examId:null,attemptId:null,builderExamId:null,builderSectionId:null,
-  gradeAttemptId:null,gradeMode:'best',examFilter:'all',review:null,previewExamId:null,previewSectionIndex:0,previewAnswers:{},infrastructure:readCachedInfrastructure(),online:navigator.onLine,
+  gradeAttemptId:null,gradeMode:'best',examFilter:'all',review:null,previewExamId:null,previewSectionIndex:0,previewAnswers:{},infrastructure:isMaster(user)?readCachedInfrastructure():null,online:navigator.onLine,
 };
 
 repo.subscribe(next=>{
@@ -196,7 +198,7 @@ function loginView(){
     document.getElementById('landingTypes').innerHTML=types.map(type=>`<span>${type.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}</span>`).join('');
     document.getElementById('landingMetrics').innerHTML=[['Học viên',data.users.filter(u=>u.role==='student').length],['Giáo viên',data.users.filter(u=>u.role==='teacher').length],['Bài thi',data.attempts.filter(a=>['grading','ready','published'].includes(a.status)).length],['Đề thi',exams.length]].map(([label,count])=>`<div><b>${count}</b><span>${label}</span></div>`).join('');
   }
-  if(repo.mode!=='local')loadPublicSettings().then(publicData=>{
+  if(repo.mode!=='local')initializeTheme().then(publicData=>{
     const types=document.getElementById('landingTypes'),metrics=document.getElementById('landingMetrics');
     if(types)types.innerHTML=(publicData.stats?.examTypes||[]).map(type=>`<span>${String(type).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}</span>`).join('')||'<span>Đang cập nhật bộ đề</span>';
     if(metrics)metrics.innerHTML=[['students','Học viên'],['teachers','Giáo viên'],['attempts','Bài thi'],['exams','Đề thi']].map(([key,label])=>`<div><b>${Number(publicData.stats?.[key]||0).toLocaleString('vi-VN')}</b><span>${label}</span></div>`).join('');
@@ -251,6 +253,7 @@ function examView(){
   examPreloader.update(attempt.id,examMediaUrls(exam,data.questions,sectionIndex));
   const examBrandIcon=app.querySelector('.exam-mobile-brand img');if(examBrandIcon)examBrandIcon.onerror=()=>examBrandIcon.remove();
   bindExamInputs(attempt,questions);
+  void mountExamRuntime({state:data,examRoot:app.querySelector('.thi'),saveAnswer:(qid,value)=>queueAnswer(attempt.id,qid,value,0)}).catch(error=>console.error('Part runtime',error));
   bindSectionAudio(attempt,{preview:false});
   startExamTimer(attempt,exam,sectionIndex);
 }
@@ -494,16 +497,7 @@ async function flushTextAnswers(){
 // account data in the background instead.
 async function submitAttemptFast(attemptId){
   if(repo.mode!=='api')return repo.transaction(st=>submitAttempt(st,user,attemptId));
-  const result=await repo.call('submitAttempt',{attemptId});
-  repo.closeExamDraft();
-  repo.setPollingScope('full');
-  const attempt=byId(data.attempts,attemptId);
-  if(attempt){
-    const at=new Date().toISOString();
-    Object.assign(attempt,{status:result.status,submittedAt:attempt.submittedAt||at,updatedAt:at});
-  }
-  void repo.reload().catch(()=>{});
-  return result;
+  return repo.submitAttemptSecure(attemptId);
 }
 
 function startExamTimer(attempt,exam,sectionIndex){
@@ -726,10 +720,10 @@ function render(){
   if(user&&repo.mode==='api'){
     const scope=viewStateScope(ui.view,ui.adminTab);
     repo.setPollingScope(scope,{attemptId:ui.view==='exam'?ui.attemptId:null});
-    if(scope==='full'&&data.scope==='catalog'){
+    if((scope==='full'&&['catalog','summary'].includes(data.scope))||(scope==='catalog'&&data.scope!=='catalog')){
       if(!viewLoadPromise){
         app.setAttribute('aria-busy','true');
-        viewLoadPromise=repo.ensureFull().then(async()=>{data=await repo.getState();})
+        viewLoadPromise=(scope==='full'?repo.ensureFull():repo.reload()).then(async()=>{data=await repo.getState();})
           .catch(error=>{notify(error.message);return false;})
           .then(result=>{viewLoadPromise=null;app.removeAttribute('aria-busy');if(result!==false)render();});
       }
@@ -1148,8 +1142,7 @@ async function beginAttempt(examId,restart,trigger){
   clearTimeout(realtimeRenderTimer);
   try{
   return await withExamTransition(async covered=>{
-  if(repo.mode==='api'&&!await act(async()=>{await repo.ensureFull({refresh:true});return true;},null,{rerender:false}))return;
-  const attempt=await act(()=>repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});
+  const attempt=await act(()=>repo.mode==='api'?repo.startAttemptSecure(examId,{restart}):repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});
   if(attempt?.status===ATTEMPT_STATUS.IN_PROGRESS){await covered;data=await repo.getState();ui.attemptId=attempt.id;ui.view='exam';startingAttempt=false;render();window.scrollTo(0,0);}
   else if(attempt)notify('Không thể mở lượt thi này. Vui lòng tải lại và thử lại.');
   },trigger);
@@ -1509,6 +1502,15 @@ else{
   startupGate.finish();
   render();
 }
+if(repo.mode==='api')startDashboardRefresh({
+  isActive:()=>isMaster(user)&&ui.view==='admin'&&ui.adminTab==='dashboard'&&Boolean(ui.infrastructure)&&!document.getElementById('modal'),
+  refresh:()=>repo.call('getWritingAiQueueStatus'),
+  onResult:writingAi=>{
+    const {revision,...queue}=writingAi;
+    if(JSON.stringify(ui.infrastructure.writingAi)===JSON.stringify(queue))return;
+    ui.infrastructure={...ui.infrastructure,writingAi:queue};render();
+  },
+});
 if(repo.mode==='api')startReleaseMonitor({canReload:()=>
   !document.hidden&&startupGate.isReady()&&!startingAttempt&&!submitBusy&&!builderAutosaveBusy&&!builderSavePromise&&
   !document.getElementById('modal')&&!document.querySelector('[data-name-form]:not([hidden])')&&

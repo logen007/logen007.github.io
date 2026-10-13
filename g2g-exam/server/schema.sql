@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS attempts (
 CREATE INDEX IF NOT EXISTS attempts_student_idx ON attempts(student_id);
 CREATE INDEX IF NOT EXISTS attempts_exam_idx ON attempts(exam_id);
 CREATE INDEX IF NOT EXISTS attempts_status_idx ON attempts(status);
+CREATE INDEX IF NOT EXISTS attempts_deadline_idx ON attempts (((public_data->>'examDeadlineMs')::numeric)) WHERE status='in_progress';
 
 CREATE TABLE IF NOT EXISTS writing_ai_jobs (
   id bigserial PRIMARY KEY,
@@ -83,6 +84,7 @@ CREATE TABLE IF NOT EXISTS writing_ai_jobs (
   UNIQUE(attempt_id,question_id)
 );
 CREATE INDEX IF NOT EXISTS writing_ai_jobs_pending_idx ON writing_ai_jobs(status,available_at);
+CREATE INDEX IF NOT EXISTS writing_ai_jobs_claim_idx ON writing_ai_jobs(created_at) WHERE status='queued';
 ALTER TABLE writing_ai_jobs ADD COLUMN IF NOT EXISTS model text;
 
 CREATE TABLE IF NOT EXISTS exam_codes (

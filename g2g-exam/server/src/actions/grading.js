@@ -6,6 +6,7 @@ import {finalizeOutcome} from '../result-outcome.js';
 import {resultSummary} from '../../../src/domain/result-summary.js';
 import {manualGroups} from '../../../src/domain/manual-grading.js';
 import {suggestWritingGrade} from '../writing-ai.js';
+import {createJobPump} from '../job-pump.js';
 
 export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
   if(!isTeacher(user))throw appError(403,'Chỉ giáo viên được chấm bài.');
@@ -124,6 +125,18 @@ export async function publishAttemptResult(user,{attemptId}){
     await audit(user,'publish_result','attempt',attemptId,{studentId:attempt.student_id,notificationStatus},client);
     return {alreadyPublished:false,notificationStatus};
   });
-  const email=await deliverResultEmail(attemptId);
-  return {status:'published',...out,email};
+  // The publication transaction is durable. SMTP latency must not block the
+  // teacher; failures stay recorded on the notification for retry/inspection.
+  return {status:'published',...out,email:{status:'queued'}};
+}
+
+export function startResultEmailWorker(logger){
+  const pump=createJobPump({concurrency:1,claim:async()=>{
+    return (await query(`SELECT id,attempt_id FROM notifications
+      WHERE status='queued' OR (status='sending' AND updated_at<now()-interval '2 minutes')
+        OR (status='failed' AND updated_at<now()-interval '15 minutes')
+      ORDER BY created_at LIMIT 1`)).rows[0];
+  },processJob:job=>deliverResultEmail(job.attempt_id,job.id),onError:error=>logger?.error?.({err:error},'Result email worker failed')});
+  const timer=setInterval(()=>void pump.tick(),5000);timer.unref();void pump.tick();
+  return ()=>{pump.stop();clearInterval(timer);};
 }

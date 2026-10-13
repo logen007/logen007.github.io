@@ -28,6 +28,7 @@ async function request(path,{method='GET',body,form,timeoutMs=15000,headers={}}=
 function same(a,b){return JSON.stringify(a)===JSON.stringify(b);}
 function mapById(list=[]){return new Map(list.map(x=>[x.id,x]));}
 const MUTABLE_COLLECTIONS=['users','questions','exams'];
+const statePath=scope=>scope==='catalog'?'/exam-catalog':scope==='summary'?'/state-summary':'/state';
 
 export class ApiRepository{
   constructor(){this.mode='api';this.state=normalizeState({});this.user=null;this.listeners=new Set();this.poll=null;this.pollScope='full';this.generation=0;this.pollBusy=false;this.fullLoad=null;this.writing=false;}
@@ -38,6 +39,8 @@ export class ApiRepository{
     const me=await request('/auth/me',{timeoutMs:7000});
     this.user=me.user||null;
     this.pollScope=initialStateScope(this.user);
+    const route=new URL(globalThis.location?.href||'https://local.invalid/').searchParams;
+    if(this.user?.role==='student'&&route.get('view')==='exam')this.pollingAttempt=route.get('attempt');
     if(this.user)await this.reload();
     this.startPolling();
     return this;
@@ -46,7 +49,7 @@ export class ApiRepository{
   startPolling(){
     clearInterval(this.poll);
     this.poll=setInterval(async()=>{
-      if(!this.user||document.hidden||this.pollBusy||this.writing||this.fullLoad||this.outbox?.running)return;
+      if(!this.user||document.hidden||this.pollBusy||this.writing||this.fullLoad||this.stateLoad||this.outbox?.running)return;
       const scope=this.pollScope,generation=this.generation;
       this.pollBusy=true;
       try{
@@ -59,7 +62,7 @@ export class ApiRepository{
           return;
         }
         const headers=(this.state.scope||'full')===scope?{'If-None-Match':'"'+this.state.revision+'"'}:{};
-        const next=await request(scope==='catalog'?'/exam-catalog':'/state',{timeoutMs:10000,headers});
+        const next=await request(statePath(scope),{timeoutMs:10000,headers});
         if(generation!==this.generation||scope!==this.pollScope||!this.user||!next)return;
         if(next.revision!==this.state.revision){
           this.state=normalizeState(next);
@@ -130,14 +133,17 @@ export class ApiRepository{
   }
 
   async reload(){
-    ++this.generation;
     if(!this.user){this.state=normalizeState({});this.emit();return this.state;}
-    const generation=this.generation,scope=this.pollScope;
-    const next=await request(scope==='catalog'?'/exam-catalog':'/state',{timeoutMs:10000});
-    if(generation!==this.generation)return this.state;
-    this.state=normalizeState(next);
-    this.emit();
-    return this.state;
+    const scope=this.pollScope;
+    const path=this.user.role==='student'&&scope==='full'&&this.pollingAttempt?`/attempts/${encodeURIComponent(this.pollingAttempt)}/session`:statePath(scope);
+    if(this.stateLoad?.path===path&&this.stateLoad.generation===this.generation)return this.stateLoad.promise;
+    const generation=++this.generation,load={path,generation};
+    load.promise=(async()=>{
+      const next=await request(path,{timeoutMs:10000});
+      if(generation!==this.generation)return this.state;
+      this.state=normalizeState(next);this.emit();return this.state;
+    })().finally(()=>{if(this.stateLoad===load)this.stateLoad=null;});
+    this.stateLoad=load;return load.promise;
   }
 
   setPollingScope(scope,{attemptId=null}={}){
@@ -148,10 +154,10 @@ export class ApiRepository{
 
   async ensureFull({refresh=false}={}){
     this.setPollingScope('full');
-    if(!refresh&&this.state.scope!=='catalog')return;
+    if(!refresh&&!['catalog','summary'].includes(this.state.scope))return;
     if(!this.fullLoad)this.fullLoad=this.reload().finally(()=>{this.fullLoad=null;});
     await this.fullLoad;
-    if(this.state.scope==='catalog')throw new Error('Chưa tải được nội dung. Vui lòng thử lại.');
+    if(['catalog','summary'].includes(this.state.scope))throw new Error('Chưa tải được nội dung. Vui lòng thử lại.');
   }
 
   async signInGoogle(){
@@ -271,7 +277,7 @@ export class ApiRepository{
 
   async replaceState(next){
     await this.ensureFull();
-    if(next.scope==='catalog')throw new Error('Không thể lưu bản danh sách thay cho nội dung đầy đủ.');
+    if(['catalog','summary'].includes(next.scope))throw new Error('Không thể lưu bản danh sách thay cho nội dung đầy đủ.');
     const before=clone(this.state),after=clone(next),ops=[];
     for(const collection of MUTABLE_COLLECTIONS){
       const a=mapById(before[collection]||[]),b=mapById(after[collection]||[]);
@@ -283,7 +289,22 @@ export class ApiRepository{
     return clone(this.state);
   }
 
-  async submitAttemptSecure(id){await this.call('submitAttempt',{attemptId:id});await this.reload();return this.state.attempts.find(a=>a.id===id);}
+  async submitAttemptSecure(id){
+    ++this.generation;
+    const result=await this.call('submitAttempt',{attemptId:id});
+    const attempt=this.state.attempts.find(a=>a.id===id);
+    if(!attempt)throw new Error('Không tìm thấy lượt thi đã nộp.');
+    this.closeExamDraft();
+    Object.assign(attempt,result.attempt||{status:result.status});
+    this.setPollingScope('full');
+    return clone(attempt);
+  }
+  async startAttemptSecure(examId,{restart=false,code}={}){
+    const result=await this.call('startAttemptSecure',{examId,restart,code});
+    this.setPollingScope('full',{attemptId:result.attemptId});
+    await this.reload();
+    return this.state.attempts.find(attempt=>attempt.id===result.attemptId);
+  }
   async saveManualGradeSecure(id,scores,feedback){await this.call('saveManualGrade',{attemptId:id,scores,feedback});await this.reload();return this.state.attempts.find(a=>a.id===id);}
   async publishAttemptSecure(id){await this.call('publishAttemptResult',{attemptId:id});await this.reload();return this.state.attempts.find(a=>a.id===id);}
   async setUserRoleSecure(userId,role){await this.call('setUserRole',{userId,role});await this.reload();return this.state.users.find(u=>u.id===userId);}

@@ -31,6 +31,7 @@ services:
         condition: service_healthy
     volumes:
       - g2g_uploads:/data/uploads
+      - g2g_web_assets:/data/web-assets
     networks:
       - g2g_internal
       - traefik
@@ -53,3 +54,4 @@ networks:
 volumes:
   g2g_pgdata:
   g2g_uploads:
+  g2g_web_assets:

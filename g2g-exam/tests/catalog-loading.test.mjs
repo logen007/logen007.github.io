@@ -1,22 +1,20 @@
 import assert from 'node:assert/strict';
-import './exam-outbox.test.mjs';
-import './next-section.test.mjs';
-import './start-transition.test.mjs';
-import './split-reading.test.mjs';
-import './exam-preload.test.mjs';
-import './navigation-loading.test.mjs';
-import './fid.test.mjs';
-import './dashboard.test.mjs';
-import './dashboard-activity.test.mjs';
-import './feedback.test.mjs';
 import {ApiRepository} from '../src/repositories/api.js';
 import {initialStateScope,viewStateScope} from '../src/repositories/state-scope.js';
 import {stateResponse} from '../server/src/state-response.js';
 
+// These scenarios replace global fetch/timers; run them sequentially so one
+// scenario cannot change another scenario's in-flight mocked response.
+for(const scenario of ['exam-outbox','next-section','start-transition','split-reading','exam-preload','navigation-loading','fid','dashboard','dashboard-activity','feedback'])await import(`./${scenario}.test.mjs`);
+
 assert.equal(initialStateScope({role:'student'},'https://test/'),'catalog');
 assert.equal(initialStateScope({role:'teacher'},'https://test/'),'catalog');
-for(const query of ['?edit=e&section=s','?preview=e','?view=exam&attempt=a','?view=grading&attempt=a','?tab=grades'])
+for(const query of ['?edit=e&section=s','?preview=e','?view=exam&attempt=a','?view=grading&attempt=a'])
   assert.equal(initialStateScope({role:'teacher'},'https://test/'+query),'full');
+assert.equal(initialStateScope({role:'teacher'},'https://test/?tab=grades'),'summary');
+assert.equal(initialStateScope({role:'master'},'https://test/'),'summary');
+assert.equal(viewStateScope('admin','dashboard'),'summary');
+assert.equal(viewStateScope('admin','grades'),'summary');
 assert.equal(viewStateScope('admin','exams'),'catalog');
 assert.equal(viewStateScope('builder'),'full');
 assert.equal(viewStateScope('grading-detail'),'full');
@@ -70,6 +68,9 @@ try{
   const operations=JSON.parse(requests.find(r=>r.url.endsWith('/commit')).options.body).operations;
   assert.equal(operations.length,1);assert.equal(operations[0].item.sections[0].instruction,'Keep this');
   assert.equal(operations[0].kind,'upsert');
+  repo.state={...catalog,scope:'summary'};
+  await repo.ensureFull();
+  assert.equal(repo.state.questions[0].title,'Keep question','Summary must hydrate before editing');
   console.log('Catalog loading: conditional reads, deep links, deduplication, stale responses and safe hydration passed.');
 }finally{Object.assign(globalThis,saved);}
-import './attempt-result.test.mjs';
+await import('./attempt-result.test.mjs');

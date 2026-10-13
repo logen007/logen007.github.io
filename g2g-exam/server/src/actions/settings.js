@@ -13,12 +13,37 @@ import {getMediaGarbageCollectionStatus} from '../media-gc.js';
 import {r2Settings} from '../r2-settings.js';
 import {normalizeLayout,validateLayout} from '../../../src/settings/layout.js';
 import {normalizeButtonTheme,validateButtonTheme} from '../../../src/settings/palette.js';
+import {createStateCache} from '../state-cache.js';
+import {getDataRevision} from '../db.js';
 
 const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||''));
 const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||''));
 const uploadDir=path.resolve(process.env.UPLOAD_DIR||'/data/uploads');
 const uploadPattern=/\/uploads\/([A-Za-z0-9._-]+)/g;
 let infrastructureCache={value:null,expiresAt:0};
+let infrastructurePending=null;
+const queueCache=createStateCache({revision:getDataRevision,ttlMs:5000,maxEntries:1});
+
+function writingQueueState(settings,ai,jobs,failures){
+  return {
+    jobs:Object.fromEntries(jobs.rows.map(row=>[row.status,{count:Number(row.count||0),models:row.models||[]}])),
+    failures:failures.rows.map(row=>({id:String(row.id),attemptId:row.attempt_id,error:row.last_error||'AI chấm bài thất bại.',at:row.updated_at})),
+    providerPreference:['groq','gemini','grok'].includes(settings.ai?.providerPreference)?settings.ai.providerPreference:'groq',
+    providers:{groq:Boolean(ai.groq?.configured),gemini:Boolean(ai.gemini?.configured),grok:Boolean(ai.grok?.configured)},
+  };
+}
+
+export async function getWritingAiQueueStatus(user){
+  if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được xem hàng đợi AI.');
+  return queueCache('queue',async()=>{
+    const [settings,ai,jobs,failures]=await Promise.all([
+      getSettings(),aiApiKeyStatus(),
+      query(`SELECT status,count(*)::int AS count,array_remove(array_agg(DISTINCT model),NULL) AS models FROM writing_ai_jobs GROUP BY status`),
+      query(`SELECT id,attempt_id,last_error,updated_at FROM writing_ai_jobs WHERE status='failed' ORDER BY updated_at DESC LIMIT 5`),
+    ]);
+    return writingQueueState(settings,ai,jobs,failures);
+  });
+}
 
 function uploadNames(value,names=new Set()){
   if(typeof value==='string')for(const match of value.matchAll(uploadPattern))names.add(path.basename(match[1]));
@@ -133,6 +158,12 @@ export async function testSmtp(user,{to}){
 export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
   if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được xem trạng thái hạ tầng.');
   if(!summaryOnly&&infrastructureCache.value&&Date.now()<infrastructureCache.expiresAt)return infrastructureCache.value;
+  if(summaryOnly)return buildInfrastructureStatus({summaryOnly:true});
+  if(!infrastructurePending)infrastructurePending=buildInfrastructureStatus({summaryOnly:false}).finally(()=>{infrastructurePending=null;});
+  return infrastructurePending;
+}
+
+async function buildInfrastructureStatus({summaryOnly}){
   const settings=await getSettings();
   const [secret,ai]=await Promise.all([smtpSecretStatus(),aiApiKeyStatus()]);
   let database=true;
@@ -173,12 +204,7 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
       secretUpdatedAt:secret.updatedAt,
     },
     ai,
-    writingAi:{
-      jobs:Object.fromEntries(aiJobs.rows.map(row=>[row.status,{count:Number(row.count||0),models:row.models||[]}])),
-      failures:aiFailures.rows.map(row=>({id:String(row.id),attemptId:row.attempt_id,error:row.last_error||'AI chấm bài thất bại.',at:row.updated_at})),
-      providerPreference:['groq','gemini','grok'].includes(settings.ai?.providerPreference)?settings.ai.providerPreference:'groq',
-      providers:{groq:Boolean(ai.groq?.configured),gemini:Boolean(ai.gemini?.configured),grok:Boolean(ai.grok?.configured)},
-    },
+    writingAi:writingQueueState(settings,ai,aiJobs,aiFailures),
     storage:true,
     resources:{
       cpu:await sampleCpu(),

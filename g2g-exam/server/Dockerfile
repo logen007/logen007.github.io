@@ -1,3 +1,14 @@
+FROM node:22-alpine AS web-build
+WORKDIR /build
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY scripts /build/scripts
+COPY src /build/src
+COPY specs /build/specs
+COPY vi.html styles.css enhancements.css media-worker.js /build/
+COPY server/runtime /build/server/runtime
+RUN npm run build:web
+
 FROM node:22-alpine
 
 WORKDIR /app/server
@@ -35,6 +46,7 @@ COPY server/runtime/runtime-config.js /app/public/runtime-config.js
 
 COPY server/schema.sql /app/server/schema.sql
 COPY server/src /app/server/src
+COPY --from=web-build /build/.web-build/ /app/public/
 
 WORKDIR /app/server
 ENV NODE_ENV=production PORT=8080 UPLOAD_DIR=/data/uploads

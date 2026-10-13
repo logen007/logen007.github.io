@@ -32,7 +32,7 @@ export function startReleaseMonitor({canReload}){
     location.reload();
   }});
   let timer;
-  const run=async()=>{clearTimeout(timer);if(document.hidden)return;await check();timer=setTimeout(run,60000);};
+  const run=async()=>{clearTimeout(timer);if(document.hidden)return;await check();timer=setTimeout(run,300000);};
   document.addEventListener('visibilitychange',run);
   void run();
 }
