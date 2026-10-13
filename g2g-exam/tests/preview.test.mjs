@@ -434,6 +434,7 @@ try{
     assert.match(meta,/<span class="nhan exam-provider" data-provider="GOETHE">Goethe<\/span><span class="nhan exam-level" data-level="A1">A1<\/span>/);
     assert.match(meta,/data-exam-version=/);
     assert.match(meta,/>v1\.0\.1<\/small>/);
+    assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.builder-version\s*\{\s*margin-left:0;/);
     assert.equal((html.match(/class="exam-publication-version"/g)||[]).length,1);
     assert.match(html,/data-builder-save-status[^>]+hidden><\/span>/);
     assert.doesNotMatch(html,/Đã tự động lưu|Tự động lưu/);
