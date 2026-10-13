@@ -415,6 +415,10 @@ theme application must not wait for a network response to render the page.
   Reference principles: [NN/g progressive disclosure](https://www.nngroup.com/articles/progressive-disclosure/)
   and [Carbon simple charts](https://v10.carbondesignsystem.com/data-visualization/simple-charts/).
 
+- New-student counts appear in the card heading (e.g. 3 học viên), without a
+  duplicate large total. Default to the week/month/year range with the highest
+  share of nonzero bins; ties prefer the shorter range. Keep true zero bins
+  and respect manual period selection.
 - Overview starts with charts; omit the four summary cards for pending work,
   exams, students and teachers (user request, 12 October 2026).
 - Use aligned equal-height panels, adaptive day/week/month/year bars with editable

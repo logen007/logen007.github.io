@@ -42,3 +42,10 @@ export function dashboardActivity(data,filter={},now=new Date()){
   const active=students.map(u=>({...u,count:counts.get(u.id)||0})).filter(u=>u.count).sort((a,b)=>b.count-a.count||String(a.name).localeCompare(String(b.name),'vi'));
   return {mode,from:dateKey(start),to:dateKey(end),unit,bins:[...bins.values()],active,unitLabel:{day:'Theo ngày',week:'Theo tuần',month:'Theo tháng',year:'Theo năm'}[unit]};
 }
+export function preferredDashboardActivity(data,range,now=new Date()){
+  if(['7','30','365'].includes(range))return dashboardActivity(data,{range},now);
+  return ['7','30','365'].map(range=>dashboardActivity(data,{range},now)).reduce((best,current)=>{
+    const density=item=>item.bins.filter(bin=>bin.count>0).length/item.bins.length;
+    return density(current)>density(best)?current:best;
+  });
+}

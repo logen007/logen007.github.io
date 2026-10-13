@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
-import {dashboardActivity} from '../src/views/dashboard-activity.js';
+import {dashboardActivity,preferredDashboardActivity} from '../src/views/dashboard-activity.js';
 const now=new Date(2026,9,12);
 const data={users:[{id:'a',name:'A',role:'student',createdAt:'2026-10-11'},{id:'b',name:'B',role:'student',createdAt:'2026-10-12'}],attempts:[{studentId:'a',status:'submitted',submittedAt:'2026-10-12'},{studentId:'a',status:'published',submittedAt:'2026-10-11'},{studentId:'b',status:'abandoned',submittedAt:'2026-10-12'}]};
 const daily=dashboardActivity(data,{},now);
+assert.equal(preferredDashboardActivity(data,undefined,now).mode,'7');
+assert.equal(preferredDashboardActivity(data,'365',now).mode,'365');
+assert.equal(preferredDashboardActivity({users:[],attempts:[]},undefined,now).mode,'7');
+const spread={users:['2026-09-15','2026-09-22','2026-09-29','2026-10-06'].map(createdAt=>({role:'student',createdAt})),attempts:[]};
+assert.equal(preferredDashboardActivity(spread,undefined,now).mode,'30');
 assert.equal(daily.unit,'day');assert.equal(daily.bins.length,2);
 assert.equal(daily.active[0].count,2);assert.equal(daily.active.length,1);
 for(const [range,unit] of [['7','day'],['30','week'],['365','month']])assert.equal(dashboardActivity(data,{range},now).unit,unit);
