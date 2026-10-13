@@ -1,4 +1,4 @@
-import {appError} from './db.js';
+import {appError,getSettings} from './db.js';
 import {aiApiKeys} from './ai-settings.js';
 
 const groqEndpoint='https://api.groq.com/openai/v1/chat/completions';
@@ -45,9 +45,9 @@ async function fromGroq({prompt,maximum,apiKey,fetchImpl}){
 }
 
 async function fromGemini({prompt,maximum,apiKey,fetchImpl}){
-  if(!apiKey)throw appError(429,'Groq đã đạt giới hạn miễn phí và Gemini chưa được cấu hình.');
+  if(!apiKey)return null;
   const {response,body}=await requestJson(fetchImpl,geminiEndpoint,{method:'POST',headers:{'x-goog-api-key':apiKey,'content-type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json'}})});
-  if(response.status===429)throw appError(429,'AI đang đạt giới hạn miễn phí. Vui lòng thử lại sau.');
+  if(response.status===429)return null;
   if(!response.ok){
     const detail=String(body?.error?.message||'').replace(/\s+/g,' ').trim().slice(0,180);
     if(response.status===401||response.status===403)throw appError(503,'Gemini từ chối API key. Kiểm tra lại khóa Gemini trong Cài đặt nâng cao.');
@@ -56,13 +56,18 @@ async function fromGemini({prompt,maximum,apiKey,fetchImpl}){
   return {...parseWritingSuggestion(body?.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join(''),maximum),model:'gemini'};
 }
 
-export async function suggestWritingGrade({task='',level='',rule,answer,maxScore,groqApiKey,geminiApiKey,fetchImpl=fetch}={}){
+export async function suggestWritingGrade({task='',level='',rule,answer,maxScore,groqApiKey,geminiApiKey,providerPreference,fetchImpl=fetch}={}){
   const rubric=String(rule||'').trim(),submission=String(answer||'').trim(),maximum=Math.max(0,Number(maxScore)||0);
   if(!rubric)throw appError(409,'Bài này chưa có quy tắc chấm AI.');
   if(!submission)throw appError(409,'Học viên chưa có bài viết để AI xem.');
-  if(groqApiKey===undefined&&geminiApiKey===undefined)({groqApiKey,geminiApiKey}=await aiApiKeys());
+  const loadConfiguredKeys=groqApiKey===undefined&&geminiApiKey===undefined;
+  if(loadConfiguredKeys)({groqApiKey,geminiApiKey}=await aiApiKeys());
   if(!groqApiKey&&!geminiApiKey)throw appError(503,'AI chấm bài chưa được cấu hình.');
   const prompt=promptFor({task:String(task||''),level,rubric,submission,maximum});
-  const groq=await fromGroq({prompt,maximum,apiKey:groqApiKey,fetchImpl});
-  return groq||fromGemini({prompt,maximum,apiKey:geminiApiKey,fetchImpl});
+  const preferred=providerPreference||(loadConfiguredKeys?(await getSettings()).ai?.providerPreference:null)||'groq';
+  const providers=preferred==='gemini'
+    ?[()=>fromGemini({prompt,maximum,apiKey:geminiApiKey,fetchImpl}),()=>fromGroq({prompt,maximum,apiKey:groqApiKey,fetchImpl})]
+    :[()=>fromGroq({prompt,maximum,apiKey:groqApiKey,fetchImpl}),()=>fromGemini({prompt,maximum,apiKey:geminiApiKey,fetchImpl})];
+  for(const provider of providers){const result=await provider();if(result)return result;}
+  throw appError(429,'Các AI đã đạt giới hạn miễn phí hoặc chưa được cấu hình. Vui lòng thử lại sau.');
 }

@@ -74,6 +74,7 @@ function cleanSettings(input={}){
   Object.assign(settings.theme,normalizeLayout(settings.theme),normalizeButtonTheme(settings.theme));
   settings.auth.allowedDomain=String(settings.auth.allowedDomain||'').trim().toLowerCase().replace(/^@/,'').slice(0,160);
   settings.auth.teacherEmails=normalizeTeacherEmails(settings.auth.teacherEmails);
+  settings.ai.providerPreference=settings.ai.providerPreference==='gemini'?'gemini':'groq';
   settings.smtp.port=Math.max(1,Math.min(65535,Number(settings.smtp.port||587)));
   settings.smtp.timeoutMs=Math.max(3000,Math.min(120000,Number(settings.smtp.timeoutMs||20000)));
   if(!settings.general.systemName||!/^https?:\/\//.test(settings.general.publicUrl))throw appError(400,'Thông tin hệ thống không hợp lệ.');

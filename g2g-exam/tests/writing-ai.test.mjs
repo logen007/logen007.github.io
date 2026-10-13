@@ -17,4 +17,11 @@ const gemini=await suggestWritingGrade({rule:'Lời chào 1đ',answer:'Hallo',ma
   return calls===1?{ok:false,status:429,json:async()=>({})}:{ok:true,status:200,json:async()=>({candidates:[{content:{parts:[{text:'{"suggestedScore":1,"findings":[{"met":true,"text":"Có lời chào"}]}' }]}}]})};
 }});
 assert.deepEqual(gemini,{suggestedScore:1,findings:[{met:true,text:'Có lời chào'}],model:'gemini'});assert.equal(calls,2);
-console.log('Writing AI: rubric required, bounded structured suggestions and Groq-to-Gemini fallback passed.');
+let preferredCalls=0;
+const preferredGemini=await suggestWritingGrade({rule:'Lời chào 1đ',answer:'Hallo',maxScore:10,groqApiKey:'groq',geminiApiKey:'gemini',providerPreference:'gemini',fetchImpl:async(url)=>{
+  preferredCalls++;
+  assert.match(url,/generativelanguage/);
+  return {ok:true,status:200,json:async()=>({candidates:[{content:{parts:[{text:'{"suggestedScore":1,"findings":[]}' }]}}]})};
+}});
+assert.equal(preferredGemini.model,'gemini');assert.equal(preferredCalls,1);
+console.log('Writing AI: rubric required, bounded structured suggestions and configurable provider fallback passed.');
