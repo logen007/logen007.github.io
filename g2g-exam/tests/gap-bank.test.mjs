@@ -78,3 +78,19 @@ rows(section).forEach((q,i)=>{q.maxScore=i+1;});
 fields['[data-gap-common-score]']={value:'',dataset:{preserveMixed:'true'}};
 saveInlineGapDraft(root,state,teacher,exam,section);
 assert.deepEqual(rows(section).map(q=>q.maxScore),Array.from({length:10},(_,i)=>i+1));
+{
+  const part=exam.sections[3],questions=rows(part),options=structuredClone(part.gapOptions),keys=questions.map(q=>q.correctAnswer);
+  const controls={'[data-gap-text]':{value:gapAuthorText(part,questions,numbers)},'[data-gap-common-score]':{value:'2.5'}};
+  questions.forEach((q,i)=>{
+    controls[`[data-gap-correct="${i}"]:checked`]={value:String(q.correctAnswer)};
+    options[i].forEach((value,j)=>{controls[`[data-gap-choice="${i}-${j}"]`]={value};});
+  });
+  saveInlineGapDraft({querySelector:key=>controls[key]||null},state,teacher,exam,part);
+  assert.ok(questions.every(q=>q.maxScore===2.5));
+  assert.deepEqual(part.gapOptions,options);
+  assert.deepEqual(questions.map(q=>q.correctAnswer),keys);
+  const editor=inlineGapBuilder(part,questions,false,numbers);
+  assert.equal((editor.match(/data-gap-common-score/g)||[]).length,1);
+  assert.doesNotMatch(editor,/data-gap-score=/);
+  assert.match(inlineGapBuilder(part,questions,true,numbers),/data-gap-common-score[^>]*disabled/);
+}

@@ -137,7 +137,7 @@ html { background:var(--nen); color-scheme:light; }
 body { margin:0; color:var(--chu); background:var(--nen); font:400 15px/1.5 var(--font-ui); font-optical-sizing:auto; }
 button,input,select,textarea { font:inherit; color:inherit; }
 /* Shared readability floor, including compact forms and inline autosizing. */
-textarea { min-height:max(200px,var(--textarea-min-height,200px))!important; resize:vertical; }
+textarea:not(.exam-title-input) { min-height:max(100px,var(--textarea-min-height,100px))!important; resize:vertical; }
 button { cursor:pointer; }
 a { color:inherit; }
 button,input,select,textarea { -webkit-tap-highlight-color:transparent; }
@@ -1088,9 +1088,9 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 
 /* Inline sentence gaps share the existing letter-answer controls. */
 .inline-gap-editor, .gap-options-editor { display:grid; gap:16px; }
-.inline-gap-editor--shared { padding:24px; border:1px solid var(--vien); border-radius:var(--r); background:var(--mat); min-width:0; }
-.inline-gap-editor--shared .gap-article-editor { padding:0; border:0; border-radius:0; }
-@media(max-width:600px){.inline-gap-editor--shared { padding:16px; }}
+.inline-gap-editor { padding:24px; border:1px solid var(--vien); border-radius:var(--r); background:var(--mat); min-width:0; }
+.inline-gap-editor .gap-article-editor { padding:0; border:0; border-radius:0; }
+@media(max-width:600px){.inline-gap-editor { padding:16px; }}
 .gap-options-editor [data-gap-options-count] { display:grid; gap:12px; }
 .gap-article-editor { display:grid; gap:20px; padding:24px; border:1px solid var(--vien); border-radius:24px; min-width:0; }
 .gap-article.writing-paper { width:calc(100% - 12px); max-width:760px; margin:8px auto 16px; min-width:0; gap:20px; }
@@ -1179,7 +1179,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 [data-editor-mode="heading-match"] textarea { min-height:140px; }
 .gap-options-editor fieldset { min-width:0; border:1px solid var(--vien); border-radius:12px; padding:12px; display:grid; gap:8px; }
 .inline-gap-editor--positions { grid-template-columns:minmax(0,1fr); }
-.inline-gap-editor--positions fieldset { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.inline-gap-editor--positions fieldset { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; border:0; padding:12px 0; margin:0; }
 .inline-gap-editor--positions .gap-choice-edit { min-width:0; gap:8px; }
 .gap-options-editor fieldset[hidden] { display:none; }
 .gap-choice-edit { display:flex; align-items:center; gap:12px; min-height:44px; }

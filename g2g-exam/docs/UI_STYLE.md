@@ -126,11 +126,13 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   preserve legacy mixed scores until the teacher supplies a common score. Keep
   passage, shared score and distractors inside a single rounded frame, with
   a distractor textarea (one option per nonempty line, with a live count).
-  All textareas have a shared minimum of 200px, including compact/mobile forms;
+  All content textareas have a shared minimum of 100px, including compact/mobile forms;
+  the auto-sized exam title is exempt. Letter-matching question text uses a single-line input.
   larger writing areas keep their larger minimum through --textarea-min-height.
   Preserve existing answer text, distractors, scores and question IDs.
   New production attempts shuffle the bank and remap keys in their saved snapshot;
-  reloads and existing attempts retain their order. Per-question A/B/C tasks are unchanged.
+  reloads and existing attempts retain their order. A/B/C gap tasks also use one
+  shared score and one rounded outer frame, preserving their separate choice groups.
   Per-question choices retain numbered {31}, {32} positions; {z} is the example.
   Existing shared-bank passages automatically show their current correct answers
   in the new author syntax. Legacy numbered/letter/backtick markers remain readable.
