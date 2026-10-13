@@ -40,7 +40,7 @@ for(const section of exam.sections){
     const expected={'Nghe 1':[1,2,2,2,2,2],'Nghe 2':[1,1,1,1,1,1],'Nghe 3':[1,1,1,1,1,1,1,1],'Nghe 4':[2]};
     assert.deepEqual(partAudioSegments(section,qs).map(s=>s.repeat),expected[section.name]);
     const html=renderBuilder({data:state,exam,section});
-    assert.equal((html.match(/data-field="audio"/g)||[]).length,selected.length+1);
+    assert.equal((html.match(/data-field="audio"/g)||[]).length,qs.length+1);
   }
 }
 const pairSection=exam.sections.find(s=>s.name==='Nghe 1'),paired=rows(pairSection);

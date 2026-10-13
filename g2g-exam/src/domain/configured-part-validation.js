@@ -18,12 +18,11 @@ export function configuredPartErrors(section,questions){
   if(profile.pairedQuestions){
     for(const example of [true,false]){
       const group=rows.filter(q=>isPrefilledQuestion(q)===example);
-      if(example&&group.length!==2)errors.push(`${section.name}: cần đúng 2 câu ví dụ trong một cặp.`);
+      if(example&&group.length>0&&group.length!==2)errors.push(`${section.name}: cần đúng 2 câu ví dụ trong một cặp.`);
       if(group.length%2||group.some((q,index)=>q.type!==profile.pairProfiles[index%2].type))errors.push(`${section.name}: mỗi Text cần một cặp Đúng/Sai rồi A/B/C.`);
     }
   }
   if(scoredCount!==section.questionLimit)errors.push(`${section.name}: cần đúng ${section.questionLimit} câu tính điểm, hiện có ${scoredCount}. Thêm hoặc bỏ câu tính điểm cho đủ số lượng; câu ví dụ không được tính.`);
-  if(profile.example&&rows.filter(q=>isPrefilledQuestion(q)).length<1)errors.push(`${section.name}: cần ít nhất một câu ví dụ. Bật lựa chọn Ví dụ ở câu mẫu.`);
   if(profile.uniqueLetters){
     const error=letterAnswerError(section,map,Object.fromEntries(rows.map(q=>[q.id,q.correctAnswer])));
     if(error)errors.push(profile.layout==='inline-gaps'?`${section.name}: mỗi ký hiệu đáp án chỉ dùng một lần. Kiểm tra các chỗ trống trong đoạn văn.`:`${section.name}: kiểm tra đáp án đúng. Chọn một chữ cái hợp lệ cho mỗi câu; các đáp án đúng không được trùng nhau, kể cả câu ví dụ (Beispiel).`);

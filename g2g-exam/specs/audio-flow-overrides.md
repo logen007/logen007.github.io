@@ -2,6 +2,11 @@
 
 Status: APPROVED — user request, 12 October 2026.
 
+Amendment approved 13 October 2026: every listening question permits an audio
+attachment and detachment. Explicit recordings on additional questions play in
+question order under the existing repeat policy; legacy grouping still defines
+required audio positions. Detaching clears the reference, never deletes the file.
+
 The listening skill settings allow an author to configure each part's playback
 flow. This is an explicit per-exam override, not a change to provider defaults.
 

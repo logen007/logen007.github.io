@@ -14,6 +14,7 @@ for(const [provider,levels] of [['GOETHE',['A1','A2','B1','B2']],['FID',['A1','A
     const p=part.audioPolicy,section={...part,instructionAudioUrl:'intro'};
     const qs=[{id:'ex',example:true,audioUrl:'ex'},...Array.from({length:part.questionLimit},(_,i)=>({id:'q'+i,audioUrl:'q'+i,maxScore:1}))];
     const tasks=p.questionsPerSegment===2?qs.slice(1).filter((_,i)=>i%2===0):p.sharedPart?qs.slice(1,2):qs.slice(1);
+    qs.forEach(q=>{if(!q.example&&!tasks.includes(q))q.audioUrl='';});
     assert.deepEqual(expanded(section,qs),['intro','ex',...tasks.flatMap(q=>Array(p.segmentRepeat).fill(q.id))],provider+level+part.key);
   }
 }
@@ -22,11 +23,11 @@ const flow={source:'question',segmentRepeat:2,instructionRepeat:1,exampleRepeat:
 const section={id:'s',skill:'Nghe',skillKey:'listening',instructionAudioUrl:'intro',questionIds:qs.map(q=>q.id),audioPolicy:{mode:'per_question_segment',segmentRepeat:2},audioFlow:flow};
 assert.deepEqual(expanded(section,qs),['intro','ex','1','2','3','4','1','2','3','4']);
 assert.deepEqual(expanded({...section,audioFlow:{...flow,repeatOrder:'consecutive'}},qs),['intro','ex','1','1','2','2','3','3','4','4']);
-assert.deepEqual(expanded({...section,audioFlow:{...flow,source:'part',exampleRepeat:2,instructionRepeat:2}},qs),['intro','intro','ex','ex','1','1']);
+assert.deepEqual(expanded({...section,audioFlow:{...flow,source:'part',exampleRepeat:2,instructionRepeat:2}},qs),['intro','intro','ex','ex','1','2','3','4','1','2','3','4']);
 assert.deepEqual(partAudioQuestions({...section,audioFlow:{...flow,source:'pair'}},qs).map(q=>q.id),['ex','1','3']);
 assert.deepEqual(expanded({...section,audioFlow:{segmentRepeat:1}},qs),['intro','ex','1','2','3','4']);
 assert.deepEqual(expanded({...section,audioFlow:{segmentRepeat:2}},qs),['intro','ex','1','1','2','2','3','3','4','4']);
-assert.deepEqual(expanded({...section,audioPolicy:{...section.audioPolicy,sharedPart:true},audioFlow:{segmentRepeat:2}},qs),['intro','ex','1','1']);
+assert.deepEqual(expanded({...section,audioPolicy:{...section.audioPolicy,sharedPart:true},audioFlow:{segmentRepeat:2}},qs),['intro','ex','1','1','2','2','3','3','4','4']);
 assert.deepEqual(partAudioQuestions({...section,audioPolicy:{questionsPerSegment:2},audioFlow:{segmentRepeat:1}},qs).map(q=>q.id),['ex','1','3']);
 assert.throws(()=>normalizeAudioFlow({segmentRepeat:3}));
 assert.equal((audioFlowFields(section).match(/<button/g)||[]).length,1);

@@ -4,6 +4,8 @@
 
 ## Nguyên tắc
 
+- Người dùng duyệt 2026-10-13: câu ví dụ là tùy chọn khi xuất bản ở mọi Part. `questionProfile.example` chỉ cấu hình ví dụ mặc định, không bắt buộc giữ lại. Nếu có ví dụ, vẫn kiểm tra cấu trúc, đáp án và audio của các câu đó; dạng cặp phải có đủ cặp.
+
 - Một Part có một specification riêng.
 - Specification dùng dữ liệu có cấu trúc để code, test và visual rule map có thể cùng đọc.
 - Không duy trì nhiều bản rule song song cho cùng một Part.

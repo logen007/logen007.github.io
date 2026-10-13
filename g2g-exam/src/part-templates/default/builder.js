@@ -76,7 +76,7 @@ const audioName=q=>{
 
 function audioHtml(q,readOnly,showAudio,emptyLabel='Tải audio lên'){
   if(!showAudio)return '';
-  return `<div class="audio-upload ${q.audioUrl?'has-audio':''}"><label class="audio-file-select" title="${q.audioUrl?'Thay audio':'Tải audio'}"><span>${q.audioUrl?esc(audioName(q)):esc(emptyLabel)}</span><input type="file" aria-label="Tải audio" data-field="audio" accept="audio/*" ${readOnly?'disabled':''}></label>${q.audioUrl?`<button type="button" class="audio-preview" data-action="preview-inline-audio" title="Nghe thử audio" aria-label="Nghe thử audio">${icons.play}</button><audio class="inline-audio-preview" preload="metadata" src="${esc(q.audioUrl)}"></audio>`:icons.upload}</div>`;
+  return `<div class="audio-upload ${q.audioUrl?'has-audio':''}"><label class="audio-file-select" title="${q.audioUrl?'Thay audio':'Tải audio'}"><span>${q.audioUrl?esc(audioName(q)):esc(emptyLabel)}</span><input type="file" aria-label="Tải audio" data-field="audio" accept="audio/*" ${readOnly?'disabled':''}></label><button type="button" class="audio-remove" data-remove-audio title="Bỏ audio" aria-label="Bỏ audio" ${readOnly?'disabled':''} ${q.audioUrl?'':'hidden'}>${icons.remove}</button>${q.audioUrl?`<button type="button" class="audio-preview" data-action="preview-inline-audio" title="Nghe thử audio" aria-label="Nghe thử audio">${icons.play}</button><audio class="inline-audio-preview" preload="metadata" src="${esc(q.audioUrl)}"></audio>`:icons.upload}</div>`;
 }
 
 function questionImageHtml(q,readOnly,showQuestionImage){
@@ -102,7 +102,7 @@ function choicesHtml(q,choiceProfile,readOnly){
 function choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile}){
   const stimulus=choiceProfile.instructionImage&&Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length?fixedStimulusHtml(q,index,readOnly):'';
   const media=choiceProfile.questionImage?questionImageHtml(q,readOnly,true):audioHtml(q,readOnly,choiceProfile.showAudio);
-  return `<article class="goethe-question ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="choices" data-question-id="${q.id}">${stimulus}<div class="goethe-question-row"><textarea data-field="title" placeholder="${choiceProfile.letterTable?'Tên người trong bảng đáp án':q.example?'Câu ví dụ (Beispiel)':'Câu hỏi '+(index+1)}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly,{audio:choiceProfile.questionImage?'':media})}${choiceProfile.questionImage?media:''}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</article>`;
+  return `<article class="goethe-question ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="choices" data-question-id="${q.id}">${stimulus}<div class="goethe-question-row"><textarea data-field="title" placeholder="${choiceProfile.letterTable?'Tên người trong bảng đáp án':q.example?'Câu ví dụ (Beispiel)':'Câu hỏi '+(index+1)}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly,{audio:choiceProfile.questionImage?audioHtml(q,readOnly,choiceProfile.showAudio):media})}${choiceProfile.questionImage?media:''}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</article>`;
 }
 
 function fixedStimulusHtml(q,questionIndex,readOnly){
@@ -169,6 +169,8 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
   const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).sort((a,b)=>Number(Boolean(b.example))-Number(Boolean(a.example)));
   const choiceProfile=profileFor(section);
+  const listening=section.skillKey==='listening'||/nghe|hören|listening/i.test(section.skill||'');
+  if(listening)choiceProfile.showAudio=true;
   if(section.questionProfile?.layout==='heading-match')return `<div class="part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}${headingMatchBuilder(section,questions,readOnly)}</div>`;
   if(section.questionProfile?.readingBlocks){
     return `<div class="part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}${readingBlocksEditor(section,readOnly)}<div class="goethe-questions">${questions.map((q,index)=>choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile})).join('')}</div></div>`;
@@ -179,7 +181,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
     const pairs=[];
     for(let index=0;index<questions.length;index+=2){
       const pair=questions.slice(index,index+2),example=pair[0]?.example;
-      const cards=pair.map((q,offset)=>choiceQuestionHtml(q,index+offset,{defaultScore,readOnly,choiceProfile:{...profileFor({questionProfile:questionProfileAt(section,offset)}),showAudio:audioIds.has(q.id)}})).join('');
+      const cards=pair.map((q,offset)=>choiceQuestionHtml(q,index+offset,{defaultScore,readOnly,choiceProfile:{...profileFor({questionProfile:questionProfileAt(section,offset)}),showAudio:listening||audioIds.has(q.id)}})).join('');
       pairs.push(`<section class="paired-question-group">${example?'<h3>Beispiel</h3>':''}${cards}</section>`);
     }
     return `<div class="part-editor paired-part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}<div class="goethe-questions">${pairs.join('')}</div></div>`;
@@ -193,7 +195,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
       ?mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile})
     :choiceProfile.isFreeResponse
       ?freeResponseHtml(q,{defaultScore,readOnly})
-      :choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile:{...choiceProfile,showAudio:choiceProfile.showAudio&&audioIds.has(q.id)}});
+      :choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile:{...choiceProfile,showAudio:listening||(choiceProfile.showAudio&&audioIds.has(q.id))}});
   return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${section.questionProfile?.layout==='letter-table'?`<label class="part-display-setting">Nhãn bảng<input class="truong" id="sectionTableHeading" value="${esc(section.tableHeading??'Person')}" ${readOnly?'disabled':''}></label>`:''}${instructionHtml(section,choiceProfile,readOnly,choiceProfile.instructionImage?questions.find(question=>!question.example)||questions[0]:null)}<div class="goethe-questions">${questions.map(renderQuestion).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
 }
 
@@ -239,10 +241,22 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     try{if(audio.ended)audio.currentTime=0;await audio.play();button.innerHTML='<span class="audio-stop-icon" aria-hidden="true"></span>';button.title='Dừng audio';button.setAttribute('aria-label','Dừng audio');audio.onended=()=>resetAudioPreview(button);audio.onpause=()=>{if(!audio.ended)resetAudioPreview(button);};}catch{notify('Không thể phát audio này. Hãy thử chọn lại tệp.');}
   };
   const showUploadedAudio=(control,{url,name})=>{
+    control.querySelector('[data-remove-audio]').hidden=false;
     control.classList.add('has-audio');const label=control.querySelector('.audio-file-select span');if(label)label.textContent=name;control.querySelector(':scope > img, :scope > svg')?.remove();
     let audio=control.querySelector('.inline-audio-preview');if(!audio){audio=document.createElement('audio');audio.className='inline-audio-preview';audio.preload='metadata';control.append(audio);}audio.src=url;
     let button=control.querySelector('.audio-preview');if(!button){button=document.createElement('button');button.type='button';button.className='audio-preview';control.insertBefore(button,audio);bindInlineAudioPreview(button);}resetAudioPreview(button);
   };
+  root.querySelectorAll('[data-remove-audio]').forEach(button=>button.onclick=()=>{
+    if(button.disabled)return;
+    const control=button.closest('.audio-upload'),input=control.querySelector('input[data-field="audio"]');
+    const id=control.closest('.part-question')?.dataset.questionId||control.closest('[data-audio-question-id]')?.dataset.audioQuestionId;
+    if(!id)return;
+    pendingAudioUploads.set(id,{promise:Promise.resolve({url:'',name:''})});
+    control.querySelector('audio')?.pause();control.querySelector('audio')?.remove();control.querySelector('.audio-preview')?.remove();
+    input.value='';input.disabled=false;control.classList.remove('has-audio');button.hidden=true;
+    control.querySelector('.audio-file-select span').textContent='Tải audio lên';
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
   root.querySelectorAll('.audio-upload input[data-field="audio"]').forEach(input=>input.onchange=()=>{
     const file=input.files?.[0],control=input.closest('.audio-upload'),questionId=input.closest('.part-question')?.dataset.questionId||input.closest('[data-audio-question-id]')?.dataset.audioQuestionId,label=control?.querySelector('.audio-file-select span');if(!file||!control||!questionId||!label)return;
     input.disabled=true;label.textContent='Đang tải audio · 0%';const upload={name:file.name,promise:null};

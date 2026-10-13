@@ -32,7 +32,9 @@ export function partAudioSegments(section,questions){
   const policy=effectiveAudioPolicy(section),prefix=[],tasks=[];
   let taskNumber=0;
   if(section.instructionAudioUrl)prefix.push({url:section.instructionAudioUrl,repeat:policy.instructionRepeat||1,label:'Aufgabenstellung'});
-  for(const q of partAudioQuestions(section,questions).filter(q=>q.audioUrl)){
+  // Explicit recordings on any question are playable, including legacy non-carriers.
+  const recordings=[...questions].filter(q=>q.audioUrl).sort((a,b)=>Number(isPrefilledQuestion(b))-Number(isPrefilledQuestion(a)));
+  for(const q of recordings){
     const example=isPrefilledQuestion(q);
     (example?prefix:tasks).push({url:q.audioUrl,repeat:example?(policy.exampleRepeat||1):Math.max(1,Number(policy.segmentRepeat)||1),label:example?'Beispiel':policy.sharedPart?'Hörtext':`Aufgabe ${++taskNumber}`});
   }

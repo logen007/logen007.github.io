@@ -1,4 +1,13 @@
 import assert from 'node:assert/strict';
+import {configuredPartErrors} from '../src/domain/configured-part-validation.js';
+
+const optionalRows=[{id:'one',type:'single',maxScore:1},{id:'two',type:'single',maxScore:1}];
+const optionalSection={name:'Optional examples',questionIds:['one','two'],questionLimit:2,questionProfile:{example:true}};
+assert.deepEqual(configuredPartErrors(optionalSection,optionalRows),[]);
+const pairedOptional={...optionalSection,questionProfile:{example:true,pairedQuestions:true,pairProfiles:[{type:'single'},{type:'single'}]}};
+assert.deepEqual(configuredPartErrors(pairedOptional,optionalRows),[]);
+assert.ok(configuredPartErrors({...pairedOptional,questionIds:['example','one','two']},[{id:'example',example:true,type:'single'},...optionalRows]).some(error=>error.includes('2 câu ví dụ')));
+assert.ok(configuredPartErrors({...optionalSection,questionLimit:3},optionalRows).some(error=>error.includes('câu tính điểm')));
 import {calculateAutomaticScores} from '../src/domain/attempts.js';
 import {completeWrongAnswers} from './answer-fixture.mjs';
 import {seedState} from '../src/seed.js';
@@ -34,7 +43,7 @@ for(const section of exam.sections){
     assert.deepEqual(repeats,expected[section.name]);
     const builder=renderBuilder({data:state,exam,section});
     assert.doesNotMatch(builder,/Tải audio một lượt nghe|Hệ thống tự phát|part-audio-guide/);
-    assert.equal((builder.match(/data-field="audio"/g)||[]).length,selected.length+1);
+    assert.equal((builder.match(/data-field="audio"/g)||[]).length,questions.length+1);
   }
   if(section.questionProfile.uniqueLetters){
     const answers=Object.fromEntries(questions.filter(q=>!q.example).map(q=>[q.id,q.correctAnswer]));
@@ -106,7 +115,7 @@ assert.equal((settingsEditor.match(/data-letter-group-score/g)||[]).length,1);
 assert.equal((settingsEditor.match(/<tr class="part-question"/g)||[]).length,6);
 assert.equal((settingsEditor.match(/<input class="truong" data-field="title"/g)||[]).length,6);
 assert.doesNotMatch(settingsEditor,/<textarea data-field="title"|goethe-question-row/);
-assert.equal((settingsEditor.match(/data-audio-question-id=/g)||[]).length,3);
+assert.equal((settingsEditor.match(/data-audio-question-id=/g)||[]).length,7);
 assert.match(settingsEditor,/>_ <small>Ví dụ<\/small>/);
 assert.equal((settingsEditor.match(/data-field="maxScore"/g)||[]).length,6);
 assert.equal((settingsEditor.match(/class="compact-score"/g)||[]).length,6);
