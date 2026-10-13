@@ -426,7 +426,7 @@ theme application must not wait for a network response to render the page.
 - Show missing metrics as unavailable, never as zero or a successful health check.
   Garbage collection has an explicit not-yet-scanned state. Keep failures visible.
 - Use existing theme tokens and actions; no chart library or extra polling.
-- AI grading has two count cards: suggested and waiting. Replace the healthy
+- AI grading omits the suggested/waiting count cards. Replace the healthy
   status badge with one horizontal row of provider pills, each showing
   its completed-job count. Give Groq yellow, Gemini blue, Grok purple and Mistral
   orange backgrounds with dark text; outline processing providers (preferred when idle).

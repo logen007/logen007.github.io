@@ -48,7 +48,7 @@ assert.match(concurrentAi,/Gemini quota/);assert.doesNotMatch(concurrentAi,/Ch�
 const mistralAccuracy=dashboardHtml({data:{users:[],exams:[],attempts:[{aiWritingAccuracy:{w:{part:'Viết 2',provider:'mistral',accurate:true}}}]},infrastructure:{resources:{}}});
 assert.doesNotMatch(mistralAccuracy,/dashboard-ai-model/);
 assert.match(providerCounts,/<h2>Chấm bài AI<\/h2><span class="dashboard-ai-providers"/);
-assert.doesNotMatch(providerCounts,/Ổn định|<b>AI<\/b>/);
+assert.doesNotMatch(providerCounts,/Ổn định|<b>AI<\/b>|Đã gợi ý|Đang chờ|dashboard-ai-metrics/);
 assert.match(accuracyHtml,/data-action="edit-exam" data-id="a1"/);
 assert.match(accuracyHtml,/>Đề mẫu<\/button>/);
 assert.doesNotMatch(accuracyHtml.slice(accuracyHtml.indexOf('dashboard-ai-accuracy'),accuracyHtml.indexOf('dashboard-infrastructure')),/GOETHE A1/);
