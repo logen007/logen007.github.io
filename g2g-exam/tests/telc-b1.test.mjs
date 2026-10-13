@@ -75,7 +75,10 @@ const {exam,rows}=telcFixture(state,teacher);
   assert.match(html,/data-heading-correct-text aria-label="Đáp án đúng câu/);
   assert.match(html,/data-heading-distractors/);
   assert.doesNotMatch(html,/data-heading-bank|data-heading-option=/);
-  assert.match(html,/data-heading-score aria-label="Điểm câu/);
+  assert.match(html,/aria-label="Điểm câu[^"]*" data-heading-score/);
+  assert.match(html,/<span>đ<\/span>/);
+  assert.match(html,/<strong>Đáp án nhiễu<\/strong>/);
+  assert.doesNotMatch(html,/data-action="add-inline-question"[^>]*disabled/);
 }
 {
   const part=exam.sections.find(s=>s.skill==='Nghe'&&s.questionProfile?.layout==='true-false');
