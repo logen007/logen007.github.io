@@ -383,24 +383,36 @@ theme application must not wait for a network response to render the page.
   five-second cache. Display load averages separately as 1/5/15-minute numbers
   with core count, never as a percentage. Missing measurements remain unavailable.
 
+- Dashboard redesign approved 13 October 2026 from the user's visual references:
+  use independent compact cards with a clear numeric hierarchy. Keep the three
+  activity cards first, then a two-column system grid: CPU spans the left column;
+  resource and R2 cards stack on the right. At 960px stack the system cards, with
+  mobile gutters and controls remaining readable. Only CPU uses a line chart.
+  Healthy connections show a label and status dot; errors show their state too.
+  Technical samples, load averages, storage breakdown and sync timestamps use
+  one clearly labelled disclosure per card. Warnings remain visible immediately.
+  This replaces the prior expanded resource-breakdown presentation.
+  Reference principles: [NN/g progressive disclosure](https://www.nngroup.com/articles/progressive-disclosure/)
+  and [Carbon simple charts](https://v10.carbondesignsystem.com/data-visualization/simple-charts/).
+
 - Overview starts with charts; omit the four summary cards for pending work,
   exams, students and teachers (user request, 12 October 2026).
 - Use aligned equal-height panels, adaptive day/week/month/year bars with editable
   date ranges, exam distribution and top students by submitted attempts in the range.
   Do not show grader rankings. Zero values
   have zero-height bars. Counts and labels remain readable without interpreting color.
-- Surface CPU load, RAM, disk and overall data size; keep resource breakdown and
-  per-exam storage expanded in ordinary sections, without expand/collapse controls. Sort storage largest first.
+- Surface CPU, RAM, disk and overall data size; detailed resource breakdown uses
+  its card disclosure. Per-exam storage stays expanded outside System, largest first.
 - Show missing metrics as unavailable, never as zero or a successful health check.
   Garbage collection has an explicit not-yet-scanned state. Keep failures visible.
 - Use existing theme tokens and actions; no chart library or extra polling.
 - Technical details remain available but must not dominate the default screen.
-- System connection statuses use a compact strip, not nested cards. Align R2
-  and storage breakdown in two columns, stacking on mobile. Exam storage is a
+- System connection statuses use a compact strip, not nested cards. Align CPU
+  with stacked resource/R2 cards, stacking on mobile. Exam storage is a
   separate full-width card with Last edit, using the same authoring timestamp
   calculation as the exam catalog.
-- System metrics use compact SVG time-series with visible numeric labels; storage
-  comparisons use CSS columns. Keep missing data distinct from zero. Never
+- CPU uses SVG time-series with visible numeric labels; storage allocation uses
+  a horizontal proportional strip beside its numeric total. Keep missing data distinct from zero. Never
   fabricate line-chart history from a single reading. R2 scan status is not
   browser delivery success. Reuse theme tokens without a chart dependency.
 
