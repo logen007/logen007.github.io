@@ -9,6 +9,10 @@ import {collectAdditionalInstructions,questionPromptEditor} from '../src/part-te
 import {seedState} from '../src/seed.js';
 import {referencedUploadNames} from '../server/src/media-gc.js';
 
+// Rendering a live audio section needs the browser storage API on Node 22 CI.
+const originalStorage=globalThis.sessionStorage;
+globalThis.sessionStorage={getItem:()=>null};
+
 const state=structuredClone(seedState),teacher=state.users.find(u=>u.role==='teacher');
 const exam=createExam(state,teacher,{title:'Prompt blocks',sections:[{id:'prompts',skill:'Nghe',skillKey:'listening',instruction:'First [img]',instructionImageUrl:'/uploads/first.jpg',instructionAudioUrl:'/uploads/first.mp3'}]});
 const section=exam.sections[0];
@@ -109,3 +113,4 @@ console.log('Independent section prompts: add, move, remove, media, copy, render
   assert.equal(imageMaxWidth(600),600);
   assert.match(renderBuilder({data:{questions},exam:paper,section:part}),/data-tooltip="Chiều rộng tối đa/);
 }
+globalThis.sessionStorage=originalStorage;
