@@ -583,7 +583,6 @@ function confirmAbandonExam(){
         ui.attemptId=null;
         data=await repo.getState();
         await leaveExam('student-home','Đã hủy bài thi');
-        notify('Đã hủy bài thi. Các câu trả lời đã được xóa vĩnh viễn.');
       }
       if(!result){render();window.scrollTo(0,0);}
     }finally{submitBusy=false;}

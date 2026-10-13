@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const transitionCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 const appSource=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+assert.doesNotMatch(appSource,/notify\('Đã hủy bài thi/);
 for(const status of ['Đã nộp bài','Đã hủy bài thi','Hết giờ — Đã nộp bài'])assert.ok(appSource.includes(",\'"+status+"\')"));
 assert.match(transitionCss,/\.exam-transition-waves i \{[^}]*var\(--brand-primary\)/);
 assert.match(transitionCss,/\.exam-transition::before \{[^}]*background:#fff/);
