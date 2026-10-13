@@ -47,6 +47,10 @@ export async function updateSmtpSecret(password){
   return request('/actions/updateSmtpSecret',{method:'POST',body:{password}});
 }
 
+export async function updateAiApiKey(provider,apiKey){
+  return request('/actions/updateAiApiKey',{method:'POST',body:{provider,apiKey}});
+}
+
 export async function testSmtp(to){
   return request('/actions/testSmtp',{method:'POST',body:{to}});
 }

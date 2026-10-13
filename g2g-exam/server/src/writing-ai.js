@@ -1,4 +1,5 @@
 import {appError} from './db.js';
+import {aiApiKeys} from './ai-settings.js';
 
 const groqEndpoint='https://api.groq.com/openai/v1/chat/completions';
 const geminiEndpoint='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
@@ -47,10 +48,11 @@ async function fromGemini({prompt,maximum,apiKey,fetchImpl}){
   return {...parseWritingSuggestion(body?.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join(''),maximum),model:'gemini'};
 }
 
-export async function suggestWritingGrade({rule,answer,maxScore,groqApiKey=process.env.GROQ_API_KEY,geminiApiKey=process.env.GEMINI_API_KEY,fetchImpl=fetch}={}){
+export async function suggestWritingGrade({rule,answer,maxScore,groqApiKey,geminiApiKey,fetchImpl=fetch}={}){
   const rubric=String(rule||'').trim(),submission=String(answer||'').trim(),maximum=Math.max(0,Number(maxScore)||0);
   if(!rubric)throw appError(409,'Bài này chưa có quy tắc chấm AI.');
   if(!submission)throw appError(409,'Học viên chưa có bài viết để AI xem.');
+  if(groqApiKey===undefined&&geminiApiKey===undefined)({groqApiKey,geminiApiKey}=await aiApiKeys());
   if(!groqApiKey&&!geminiApiKey)throw appError(503,'AI chấm bài chưa được cấu hình.');
   const prompt=promptFor({rubric,submission,maximum});
   const groq=await fromGroq({prompt,maximum,apiKey:groqApiKey,fetchImpl});

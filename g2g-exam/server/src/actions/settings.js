@@ -1,6 +1,7 @@
 import {query,getSettings,audit,appError} from '../db.js';
 import {examLastEdit} from '../../../src/domain/exam-last-edit.js';
 import {setSmtpSecret,smtpSecretStatus,sendConfiguredMail} from '../mail.js';
+import {setAiApiKey,aiApiKeyStatus} from '../ai-settings.js';
 import {mergeSettings} from '../defaults.js';
 import {isPrimaryMasterEmail,normalizeEmail} from '../roles.js';
 import os from 'node:os';
@@ -95,6 +96,11 @@ export async function updateSmtpSecret(user,{password}){
   return setSmtpSecret(password,user.id);
 }
 
+export async function updateAiApiKey(user,{provider,apiKey}){
+  if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được cập nhật API key AI.');
+  return setAiApiKey(provider,apiKey,user.id);
+}
+
 export async function testSmtp(user,{to}){
   if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được gửi email thử.');
   if(!validEmail(to))throw appError(400,'Email nhận thử không hợp lệ.');
@@ -113,10 +119,10 @@ export async function testSmtp(user,{to}){
 export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
   if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được xem trạng thái hạ tầng.');
   const settings=await getSettings();
-  const secret=await smtpSecretStatus();
+  const [secret,ai]=await Promise.all([smtpSecretStatus(),aiApiKeyStatus()]);
   let database=true;
   try{await query('SELECT 1');}catch{database=false;}
-  const connectionStatus={backend:'VPS',postgresql:database,googleLoginConfigured:Boolean(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET),smtp:{enabled:Boolean(settings.smtp.enabled),configured:Boolean(settings.smtp.host&&settings.smtp.fromEmail&&(!settings.smtp.username||secret.configured)),secretConfigured:secret.configured,secretUpdatedAt:secret.updatedAt}};
+  const connectionStatus={backend:'VPS',postgresql:database,googleLoginConfigured:Boolean(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET),smtp:{enabled:Boolean(settings.smtp.enabled),configured:Boolean(settings.smtp.host&&settings.smtp.fromEmail&&(!settings.smtp.username||secret.configured)),secretConfigured:secret.configured,secretUpdatedAt:secret.updatedAt},ai};
   // Settings needs connection status, not a scan of every exam and uploaded file.
   if(summaryOnly===true)return connectionStatus;
   const [databaseSize,tableSizes,examRows,questionRows,uploadBytes,applicationBytes,disk]=await Promise.all([
@@ -149,6 +155,7 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
       secretConfigured:secret.configured,
       secretUpdatedAt:secret.updatedAt,
     },
+    ai,
     storage:true,
     resources:{
       cpu:await sampleCpu(),

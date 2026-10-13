@@ -2,7 +2,7 @@ import {hasApiBackend} from './config.js';
 import {bindR2Settings} from './settings/r2.js';
 import {
   loadPrivateSettings,refreshInfrastructure,
-  updateSystemSettings,updateSmtpSecret,testSmtp
+  updateSystemSettings,updateSmtpSecret,updateAiApiKey,testSmtp
 } from './settings/api.js';
 import {settingsPageHtml,connectionStatusHtml} from './settings/view.js';
 import {normalizeLayout,validateLayout} from './settings/layout.js';
@@ -40,6 +40,10 @@ function updateConnectionStatus(){
   if(target)target.innerHTML=connectionStatusHtml(infra);
   const hint=document.getElementById('sSecretHint');
   if(hint)hint.textContent=infra?.smtp?.secretConfigured?'Đã lưu mật khẩu an toàn.':'Chưa lưu mật khẩu SMTP.';
+  for(const provider of ['groq','gemini']){
+    const hint=document.getElementById(`sAi${provider[0].toUpperCase()+provider.slice(1)}Hint`),state=infra?.ai?.[provider];
+    if(hint)hint.textContent=state?.configured?`Đã cấu hình${state.source==='settings'?' trong Cài đặt':' từ biến môi trường'}.`:'Chưa cấu hình.';
+  }
 }
 function selectedThemeColor(){
   const input=document.getElementById('sPrimaryColorText');
@@ -202,6 +206,19 @@ async function saveSecret(){
   finally{if(button)button.disabled=false;}
 }
 
+async function saveAiKey(provider){
+  const suffix=provider[0].toUpperCase()+provider.slice(1),input=document.getElementById(`sAi${suffix}`),button=document.getElementById(`sAi${suffix}Save`);
+  const apiKey=input?.value||'';
+  if(!apiKey)return setState('Hãy nhập API key AI mới.',true);
+  if(button)button.disabled=true;
+  try{
+    setState('Đang mã hóa và lưu API key AI...');
+    await updateAiApiKey(provider,apiKey);input.value='';infra=await refreshInfrastructure();
+    setState(`Đã cập nhật API key ${provider==='groq'?'Groq':'Gemini'}.`);updateConnectionStatus();
+  }catch(error){setState(error.message,true);}
+  finally{if(button)button.disabled=false;}
+}
+
 async function sendTest(){
   const to=val('sTestTo');
   const status=document.getElementById('sTestState'),button=document.getElementById('sTest');
@@ -233,6 +250,8 @@ function bindSettingsActions(){
   document.getElementById('sSave')?.addEventListener('click',save);
   document.getElementById('sSaveBottom')?.addEventListener('click',save);
   document.getElementById('sSecret')?.addEventListener('click',saveSecret);
+  document.getElementById('sAiGroqSave')?.addEventListener('click',()=>saveAiKey('groq'));
+  document.getElementById('sAiGeminiSave')?.addEventListener('click',()=>saveAiKey('gemini'));
   document.getElementById('sTest')?.addEventListener('click',sendTest);
   document.getElementById('sRefresh')?.addEventListener('click',async()=>{
     const button=document.getElementById('sRefresh');

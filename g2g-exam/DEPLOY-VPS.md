@@ -45,11 +45,12 @@ cp server/.env.example server/.env
 
 ### Gợi ý chấm bài viết bằng AI (tùy chọn)
 
-Tạo API key ở Groq Console Free rồi thêm `GROQ_API_KEY` vào `server/.env`. Thêm
-`GEMINI_API_KEY` từ Google AI Studio để tự động fallback khi Groq đạt hạn mức
-miễn phí. Các khóa chỉ ở VPS, không được commit hoặc đưa xuống trình duyệt. Nếu
-để trống cả hai, nút gợi ý AI sẽ báo chưa cấu hình; các luồng tạo đề và chấm
-điểm còn lại không thay đổi.
+Vào **Quản trị cấp cao → Cài đặt → AI gợi ý chấm bài viết** để nhập API key Groq
+và Gemini. Cả hai khóa được mã hóa trong PostgreSQL, không được trả về trình
+duyệt. Groq chạy trước; Gemini tự dùng khi Groq đạt hạn mức miễn phí. Biến môi
+trường `GROQ_API_KEY` và `GEMINI_API_KEY` chỉ là lựa chọn dự phòng khi cần quản
+lý hạ tầng; cấu hình trong Cài đặt được ưu tiên. Nếu để trống cả hai, nút gợi ý
+AI sẽ báo chưa cấu hình; các luồng tạo đề và chấm điểm còn lại không thay đổi.
 
 AI chỉ chạy cho câu viết tự do đã nhập “Quy tắc chấm cho AI”; kết quả là gợi ý
 riêng cho giáo viên, không tự ghi vào điểm của học viên.
