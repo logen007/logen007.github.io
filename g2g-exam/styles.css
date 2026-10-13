@@ -555,7 +555,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .feedback-panel [role=status]:empty { display:none; }
 .feedback-panel small,.feedback-panel [role=status] { font-size:12px; color:var(--phu); }
 @media(max-width:900px) { .web-feedback { display:none; } }
-.admin-dashboard { --dashboard-ink:var(--chu); --dashboard-paper:color-mix(in srgb,var(--mat) 96%,var(--brand-primary)); padding:8px 0 24px; }
+.admin-dashboard { --dashboard-ink:var(--chu); --dashboard-paper:var(--mat); padding:8px 0 24px; }
 .admin-dashboard .the { background:var(--dashboard-paper); border-color:transparent; border-radius:28px; }
 .admin-dashboard .dashboard-heading h1 { font-size:clamp(30px,3.5vw,44px); font-weight:400; letter-spacing:-1.5px; }
 .admin-dashboard .dashboard-heading .chinh { background:var(--dashboard-ink); border-color:var(--dashboard-ink); color:var(--mat); }
