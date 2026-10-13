@@ -562,13 +562,13 @@ async function submitCurrentExam(confirmed=false){
   }finally{submitBusy=false;}
 }
 
-async function leaveExam(view,message){
+async function leaveExam(view,message,{danger=false}={}){
   clearTimeout(realtimeRenderTimer);
   stopActiveAudio();
   await withExamTransition(async covered=>{
     await covered;
     ui.view=view;render();window.scrollTo(0,0);
-  },null,{exit:true,message});
+  },null,{exit:true,message,danger});
 }
 
 function confirmAbandonExam(){
@@ -583,7 +583,7 @@ function confirmAbandonExam(){
       if(result){
         ui.attemptId=null;
         data=await repo.getState();
-        await leaveExam('student-home','Đã hủy bài thi');
+        await leaveExam('student-home','Đã hủy bài thi',{danger:true});
       }
       if(!result){render();window.scrollTo(0,0);}
     }finally{submitBusy=false;}

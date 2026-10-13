@@ -314,6 +314,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   “Đã nộp bài”, “Đã hủy bài thi”, or “Hết giờ — Đã nộp bài” as appropriate. Server completion precedes
   the exit; errors keep the exam visible. Reduced motion skips exit animation delays.
   Do not repeat successful exit status in a corner toast; retain errors and unsynced-answer warnings.
+  Confirmed cancellation uses the shared danger red for the transition wave;
+  entry and successful submission retain the primary color.
 
 - Writing-answer textareas default to notebook ruling and handwriting font.
   The exam editor owns a pen-icon “Viết tay / Viết thường” toggle button per writing

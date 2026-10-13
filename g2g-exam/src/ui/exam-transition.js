@@ -1,7 +1,7 @@
 import {currentPublicSettings} from '../settings/theme.js';
 import {pickExamMessages} from './exam-messages.js';
 let busy=false;
-export async function withExamTransition(start,trigger,{exit=false,message='Đã nộp bài'}={}){
+export async function withExamTransition(start,trigger,{exit=false,message='Đã nộp bài',danger=false}={}){
   if(busy)return;
   busy=true;
   const previous=document.activeElement,app=document.getElementById('app');
@@ -22,6 +22,7 @@ export async function withExamTransition(start,trigger,{exit=false,message='Đã
   overlay.style.setProperty('--transition-center-y',window.innerHeight/2+'px');
   const buttonColor=trigger&&window.getComputedStyle?.(trigger).backgroundColor;
   if(buttonColor&&buttonColor!=='transparent'&&buttonColor!=='rgba(0, 0, 0, 0)')overlay.style.setProperty('--wave-color',buttonColor);
+  if(danger)overlay.style.setProperty('--wave-color','var(--do)');
   overlay.setAttribute('role','status');overlay.setAttribute('aria-live','polite');
   overlay.innerHTML='<div class="exam-transition-waves" aria-hidden="true"><i></i></div><div class="exam-transition-center"><img class="exam-transition-logo" alt="G2G Career" width="48" height="48"><p>Hãy sẵn sàng</p></div>';
   const logo=overlay.querySelector('img');
