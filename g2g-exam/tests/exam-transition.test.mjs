@@ -4,6 +4,10 @@ const transitionCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8'
 const appSource=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
 assert.ok(appSource.includes('onStarted:id=>beginAttempt(null,false,button,id)'));
 assert.ok(appSource.includes('await beginAttempt(null,false,null,resumed.id)'));
+assert.ok(appSource.includes("performance.getEntriesByType('navigation')[0]?.type==='reload'"));
+assert.ok(appSource.includes('if(!reloadingExam&&resumed?.studentId'));
+assert.match(transitionCss,/\.exam-transition--danger\.is-covered::before \{ animation:exam-cancel-white-out 400ms ease-out both; \}/);
+assert.match(transitionCss,/@keyframes exam-cancel-white-out \{ from \{ opacity:1; \} to \{ opacity:0; \} \}/);
 assert.ok(appSource.includes('existingAttemptId?byId((await repo.getState()).attempts,existingAttemptId):await act('));
 assert.match(appSource,/if\(startingAttempt\|\|submitBusy\|\|timerBusy\)return;/);
 assert.match(transitionCss,/\.exam-transition\.is-covered::before \{ animation:none; opacity:1; \}/);

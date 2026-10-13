@@ -247,6 +247,8 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .exam-transition-waves i { position:absolute; left:var(--reveal-x); top:var(--reveal-y); width:calc(var(--reveal-radius) * 2); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle,transparent 8%,var(--wave-color,var(--brand-primary)) 30%,var(--wave-color,var(--brand-primary)) 66%,transparent 96%); animation:exam-power-wave 1500ms cubic-bezier(.22,.61,.36,1) both; }
 .exam-transition.is-leaving { opacity:0; }
 .exam-transition.is-covered::before { animation:none; opacity:1; }
+.exam-transition--danger.is-covered::before { animation:exam-cancel-white-out 400ms ease-out both; }
+@keyframes exam-cancel-white-out { from { opacity:1; } to { opacity:0; } }
 .exam-transition--exit .exam-transition-waves i { animation-direction:reverse; }
 .exam-transition--danger .exam-transition-waves i { background:radial-gradient(circle,transparent 16%,color-mix(in srgb,var(--do) 25%,transparent) 35%,color-mix(in srgb,var(--do) 60%,transparent) 50%,color-mix(in srgb,var(--do) 25%,transparent) 65%,transparent 88%); animation:exam-cancel-wave 1500ms linear both; }
 .exam-transition--danger .exam-transition-center { animation:exam-cancel-caption 1500ms linear both; }

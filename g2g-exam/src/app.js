@@ -1528,7 +1528,8 @@ else{
   else if(!isStudent(user)&&initialUrl.searchParams.get('tab')){ui.adminTab=initialUrl.searchParams.get('tab');ui.settingsTab=settingsRouteTab(initialUrl.href)||'general';ui.view='admin';}
   startupGate.finish();
   const resumed=ui.view==='exam'&&byId(data.attempts,ui.attemptId);
-  if(resumed?.studentId===user?.id&&resumed.status===ATTEMPT_STATUS.IN_PROGRESS)await beginAttempt(null,false,null,resumed.id);
+  const reloadingExam=performance.getEntriesByType('navigation')[0]?.type==='reload';
+  if(!reloadingExam&&resumed?.studentId===user?.id&&resumed.status===ATTEMPT_STATUS.IN_PROGRESS)await beginAttempt(null,false,null,resumed.id);
   else render();
 }
 if(repo.mode==='api')startDashboardRefresh({

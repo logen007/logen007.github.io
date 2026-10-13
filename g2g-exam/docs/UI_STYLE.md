@@ -309,7 +309,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 ## Preview layout
 
 - Every student room entry uses the shared entry transition: normal start, code
-  entry and resuming through a direct link/reload. Resuming never creates another
+  entry and resuming through a direct link. Reload/F5 during an exam skips the entry
+  animation. Resuming never creates another
   attempt. Section navigation and answer updates do not replay the transition.
 
 - Successful submission (including timeout) and confirmed cancellation reuse the
@@ -321,6 +322,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   Confirmed cancellation uses the shared danger red for the transition wave;
   its inner/outer edges are feathered, with a lower-opacity fade as it contracts.
   Cancellation ends with the red wave at 1.5 seconds, without an extra overlay fade.
+  After full white coverage, the white layer fades over the final 400ms, rather
+  than being removed abruptly; logo, wave and white layer finish together.
   Cancellation logo/text share the wave's 1.5-second linear fade envelope; do not
   reuse the delayed entry caption, which leaves the logo visible after the wave.
   entry and successful submission retain the primary color.
