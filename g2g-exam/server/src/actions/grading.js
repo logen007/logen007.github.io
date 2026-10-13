@@ -5,7 +5,7 @@ import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
 import {finalizeOutcome} from '../result-outcome.js';
 import {resultSummary} from '../../../src/domain/result-summary.js';
 import {manualGroups} from '../../../src/domain/manual-grading.js';
-import {suggestWritingGrade} from '../writing-ai.js';
+import {queueWritingAiJobs,wakeWritingAiWorker} from '../writing-ai-queue.js';
 import {createJobPump} from '../job-pump.js';
 
 export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
@@ -74,13 +74,13 @@ export async function suggestWritingGradeForAttempt(user,{attemptId,questionId})
   if(!['grading','ready'].includes(attempt.status))throw appError(409,'Bài không ở trạng thái chấm.');
   const question=(await questionMap(exam)).get(questionId);
   if(!question||(question.type!=='writing')||question.writingFormVersion===1)throw appError(400,'Chỉ hỗ trợ gợi ý cho bài viết tự do.');
-  const section=(exam.sections||[]).find(item=>(item.questionIds||[]).includes(questionId))||{};
-  const task=[section.instruction,section.additionalInstructions?.map(item=>item.text).join('\n'),question.instruction,question.prompt,question.instructionBlocks?.map(item=>item.text).join('\n')].filter(Boolean).join('\n\n');
-  const suggestion=await suggestWritingGrade({task,level:exam.level,rule:question.aiGradingRules,answer:attempt.public_data?.answers?.[questionId],maxScore:question.maxScore});
-  const aiWritingSuggestions={...(attempt.private_data?.aiWritingSuggestions||{}),[questionId]:{...suggestion,createdAt:now()}};
-  await query(`UPDATE attempts SET private_data=private_data||$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify({aiWritingSuggestions})]);
-  await audit(user,'suggest_writing_grade','attempt',attemptId,{questionId,suggestedScore:suggestion.suggestedScore});
-  return suggestion;
+  if(!String(question.aiGradingRules||'').trim())throw appError(409,'Bài này chưa có quy tắc chấm AI.');
+  if(!String(attempt.public_data?.answers?.[questionId]||'').trim())throw appError(409,'Học viên chưa có bài viết để AI xem.');
+  const suggestion=attempt.private_data?.aiWritingSuggestions?.[questionId];
+  if(suggestion?.status==='completed')return suggestion;
+  await withTx(client=>queueWritingAiJobs(client,attempt,{sections:[{questionIds:[questionId]}]},new Map([[questionId,question]])));
+  wakeWritingAiWorker();
+  return {status:'queued'};
 }
 
 export async function deliverResultEmail(attemptId,id=`result-${attemptId}`){

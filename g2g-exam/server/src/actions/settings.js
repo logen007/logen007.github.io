@@ -16,6 +16,7 @@ import {normalizeButtonTheme,validateButtonTheme} from '../../../src/settings/pa
 import {createStateCache} from '../state-cache.js';
 import {getDataRevision} from '../db.js';
 import {AI_PROVIDER_IDS,normalizeAiProvider} from '../../../src/domain/ai-providers.js';
+import {writingAiWorkerStatus,wakeWritingAiWorker} from '../writing-ai-queue.js';
 
 const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||''));
 const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||''));
@@ -36,6 +37,7 @@ export function writingQueueState(settings,ai,jobs,failures){
   return {
     jobs:byStatus,
     successfulByProvider,
+    providerStates:writingAiWorkerStatus(),
     failures:failures.rows.map(row=>({id:String(row.id),attemptId:row.attempt_id,error:row.last_error||'AI chấm bài thất bại.',at:row.updated_at})),
     providerPreference:normalizeAiProvider(settings.ai?.providerPreference),
     providers:Object.fromEntries(AI_PROVIDER_IDS.map(id=>[id,Boolean(ai[id]?.configured)])),
@@ -135,6 +137,7 @@ export async function updateSmtpSecret(user,{password}){
 export async function updateAiApiKey(user,{provider,apiKey}){
   if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được cập nhật API key AI.');
   const result=await setAiApiKey(provider,apiKey,user.id);
+  wakeWritingAiWorker();
   // A new key can resolve a terminal provider failure.  Retry those papers now,
   // rather than making teachers wait for the scheduled recovery window.
   const retried=await retryFailedWritingAiJobs(user,{auditAction:false});

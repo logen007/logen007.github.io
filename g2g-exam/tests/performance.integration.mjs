@@ -21,7 +21,7 @@ try{
   await db.exec(await fs.readFile(new URL('../server/schema.sql',import.meta.url),'utf8'));
   const {loadState}=await import('../server/src/state.js');
   const {submitAttempt,submitExpiredAttempts}=await import('../server/src/actions/attempts.js');
-  const {backfillQueue}=await import('../server/src/writing-ai-queue.js');
+  const {backfillQueue,claimJob,processJob}=await import('../server/src/writing-ai-queue.js');
   const {getWritingAiQueueStatus}=await import('../server/src/actions/settings.js');
   const {filteredGradebook}=await import('../src/domain/gradebook.js');
   const {dashboardHtml}=await import('../src/views/dashboard.js');
@@ -63,7 +63,29 @@ try{
   assert.equal((await query('SELECT count(*)::int AS n FROM writing_ai_jobs')).rows[0].n,200);
   const lightweight=await getWritingAiQueueStatus({role:'master'});assert.equal(lightweight.jobs.queued.count,200);
   await assert.rejects(getWritingAiQueueStatus({role:'teacher'}),error=>error.statusCode===403);
+  const claimed=await Promise.all(['groq','gemini','grok','mistral'].map(claimJob));
+  assert.equal(new Set(claimed.map(job=>job.id)).size,4,'Provider lanes claim different papers');
+  for(const provider of ['groq','gemini','grok','mistral'])assert.equal(await claimJob(provider),null,'One database lease per provider');
+  const savedFetch=globalThis.fetch,savedKey=process.env.GROQ_API_KEY;
+  try{
+    process.env.GROQ_API_KEY='isolated-fixture';
+    globalThis.fetch=async()=>({ok:true,status:200,json:async()=>({choices:[{message:{content:'{"suggestedScore":7,"findings":[]}'}}]})});
+    await processJob(claimed[0],'groq');
+    const completed=(await query('SELECT status,model FROM writing_ai_jobs WHERE id=$1',[claimed[0].id])).rows[0];
+    assert.deepEqual(completed,{status:'completed',model:'groq'});
+    const suggestion=(await query('SELECT private_data FROM attempts WHERE id=$1',[claimed[0].attempt_id])).rows[0].private_data.aiWritingSuggestions.write;
+    assert.equal(suggestion.suggestedScore,7);assert.equal(suggestion.status,'completed');
+    const quotaJob=await claimJob('groq');
+    globalThis.fetch=async()=>({ok:false,status:429,headers:{get:()=> '120'},json:async()=>({})});
+    const paused=await processJob(quotaJob,'groq');assert.equal(paused.cooldownMs,120000);
+    const waiting=(await query('SELECT status,tries FROM writing_ai_jobs WHERE id=$1',[quotaJob.id])).rows[0];
+    assert.deepEqual(waiting,{status:'queued',tries:0},'Quota does not burn a paper retry or mark it failed');
+    await query("UPDATE writing_ai_jobs SET status='processing',started_at=now() WHERE id=$1",[quotaJob.id]);
+    globalThis.fetch=async()=>({ok:true,status:200,json:async()=>({choices:[{message:{content:'{"suggestedScore":3,"findings":[]}'}}]})});
+    await processJob(quotaJob,'groq');
+    assert.equal((await query('SELECT status FROM writing_ai_jobs WHERE id=$1',[quotaJob.id])).rows[0].status,'processing','An old lease cannot overwrite a recovered job');
+  }finally{globalThis.fetch=savedFetch;if(savedKey===undefined)delete process.env.GROQ_API_KEY;else process.env.GROQ_API_KEY=savedKey;}
   await query("UPDATE attempts SET status='in_progress',public_data=public_data||jsonb_build_object('status','in_progress','examDeadlineMs',$1::numeric,'answers','{}'::jsonb) WHERE id='a1'",[Date.now()-1000]);
   await submitExpiredAttempts();assert.equal((await query("SELECT status FROM attempts WHERE id='a1'")).rows[0].status,'incomplete');
-  console.log(JSON.stringify({scenario:'Isolated PostgreSQL, 200 papers; excludes HTTP/VPS/provider latency',fullBytes,summaryBytes,reductionPercent:Math.round((1-summaryBytes/fullBytes)*100),queueJobs:200,repeatedBackfillInserts:inserts,queries,checks:'summary parity/privacy, scoped session/F5, owner access, submission receipt/idempotency, queue recovery and deadline'}));
+  console.log(JSON.stringify({scenario:'Isolated PostgreSQL, 200 papers; excludes HTTP/VPS/provider latency',fullBytes,summaryBytes,reductionPercent:Math.round((1-summaryBytes/fullBytes)*100),queueJobs:200,repeatedBackfillInserts:inserts,queries,checks:'summary/privacy, submission idempotency, 4 provider leases, successful persistence, quota requeue, stale lease protection and deadline'}));
 }finally{hook.deregister();await db.close();delete globalThis.__perfDb;}

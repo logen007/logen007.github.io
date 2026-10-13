@@ -34,19 +34,25 @@ function promptFor({task,rubric,submission,maximum,level}){
 }
 
 async function requestJson(fetchImpl,url,options){
-  let response;try{response=await fetchImpl(url,options);}catch{throw appError(503,'Không kết nối được dịch vụ AI.');}
+  let response;try{response=await fetchImpl(url,{...options,signal:AbortSignal.timeout(90000)});}catch{throw appError(503,'Không kết nối được dịch vụ AI hoặc đã quá thời gian chờ.');}
   let body={};try{body=await response.json();}catch{}
   return {response,body};
+}
+
+function rateLimitError(provider,response){
+  const header=response.headers?.get?.('retry-after'),seconds=header==null?NaN:Number(header);
+  const delay=Number.isFinite(seconds)?seconds*1000:Date.parse(header)-Date.now();
+  return Object.assign(appError(429,`${aiProviderLabel(provider)} đã đạt hạn mức, đang chờ lượt tiếp theo.`),{retryAfterMs:Math.max(1000,Math.min(86400000,Number.isFinite(delay)?delay:60000))});
 }
 
 async function fromChatProvider(provider,{prompt,maximum,apiKey,fetchImpl}){
   if(!apiKey)return null;
   const {endpoint,...parameters}=chatProviders[provider],label=aiProviderLabel(provider);
   const {response,body}=await requestJson(fetchImpl,endpoint,{method:'POST',headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/json'},body:JSON.stringify({...parameters,temperature:0.2,max_tokens:900,messages:[{role:'user',content:prompt}]})});
-  if(response.status===429)return null;
+  if(response.status===429)throw rateLimitError(provider,response);
   if(!response.ok){
     const detail=String(body?.error?.message||'').replace(/\s+/g,' ').trim().slice(0,180);
-    if(response.status===401||response.status===403)throw appError(503,`${label} từ chối API key${detail?`: ${detail}`:`. Kiểm tra lại khóa ${label} trong Cài đặt nâng cao.`}`);
+    if(response.status===401||response.status===403)throw Object.assign(appError(503,`${label} từ chối API key${detail?`: ${detail}`:`. Kiểm tra lại khóa ${label} trong Cài đặt nâng cao.`}`),{providerBlocked:true,retryAfterMs:900000});
     throw appError(503,`${label} không thể chấm bài${detail?`: ${detail}`:'.'}`);
   }
   return {...parseWritingSuggestion(body?.choices?.[0]?.message?.content,maximum),model:provider};
@@ -55,29 +61,32 @@ async function fromChatProvider(provider,{prompt,maximum,apiKey,fetchImpl}){
 async function fromGemini({prompt,maximum,apiKey,fetchImpl}){
   if(!apiKey)return null;
   const {response,body}=await requestJson(fetchImpl,geminiEndpoint,{method:'POST',headers:{'x-goog-api-key':apiKey,'content-type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json'}})});
-  if(response.status===429)return null;
+  if(response.status===429)throw rateLimitError('gemini',response);
   if(!response.ok){
     const detail=String(body?.error?.message||'').replace(/\s+/g,' ').trim().slice(0,180);
-    if(response.status===401||response.status===403)throw appError(503,`Gemini từ chối API key${detail?`: ${detail}`:'. Kiểm tra lại khóa Gemini trong Cài đặt nâng cao.'}`);
+    if(response.status===401||response.status===403)throw Object.assign(appError(503,`Gemini từ chối API key${detail?`: ${detail}`:'. Kiểm tra lại khóa Gemini trong Cài đặt nâng cao.'}`),{providerBlocked:true,retryAfterMs:900000});
     throw appError(503,`Gemini không thể chấm bài${detail?`: ${detail}`:'.'}`);
   }
   return {...parseWritingSuggestion(body?.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join(''),maximum),model:'gemini'};
 }
 
-export async function suggestWritingGrade({task='',level='',rule,answer,maxScore,groqApiKey,geminiApiKey,grokApiKey,mistralApiKey,providerPreference,fetchImpl=fetch}={}){
+export async function suggestWritingGrade({task='',level='',rule,answer,maxScore,groqApiKey,geminiApiKey,grokApiKey,mistralApiKey,providerPreference,providerOnly,fetchImpl=fetch}={}){
   const rubric=String(rule||'').trim(),submission=String(answer||'').trim(),maximum=Math.max(0,Number(maxScore)||0);
   if(!rubric)throw appError(409,'Bài này chưa có quy tắc chấm AI.');
   if(!submission)throw appError(409,'Học viên chưa có bài viết để AI xem.');
+  if(providerOnly&&!AI_PROVIDER_IDS.includes(providerOnly))throw appError(400,'Nhà cung cấp AI không hợp lệ.');
   let keys={groqApiKey,geminiApiKey,grokApiKey,mistralApiKey};
   const loadConfiguredKeys=Object.values(keys).every(key=>key===undefined);
-  if(loadConfiguredKeys)keys=await aiApiKeys();
+  if(loadConfiguredKeys)keys=await aiApiKeys(providerOnly);
   if(!Object.values(keys).some(Boolean))throw appError(503,'AI chấm bài chưa được cấu hình.');
   const prompt=promptFor({task:String(task||''),level,rubric,submission,maximum});
   const preferred=normalizeAiProvider(providerPreference||(loadConfiguredKeys?(await getSettings()).ai?.providerPreference:null));
-  for(const provider of [preferred,...AI_PROVIDER_IDS.filter(id=>id!==preferred)]){
+  for(const provider of providerOnly?[providerOnly]:[preferred,...AI_PROVIDER_IDS.filter(id=>id!==preferred)]){
     const options={prompt,maximum,apiKey:keys[provider+'ApiKey'],fetchImpl};
-    const result=await (provider==='gemini'?fromGemini(options):fromChatProvider(provider,options));
-    if(result)return result;
+    try{
+      const result=await (provider==='gemini'?fromGemini(options):fromChatProvider(provider,options));
+      if(result)return result;
+    }catch(error){if(error.statusCode===429&&!providerOnly)continue;throw error;}
   }
   throw appError(429,'Các AI đã đạt giới hạn miễn phí hoặc chưa được cấu hình. Vui lòng thử lại sau.');
 }

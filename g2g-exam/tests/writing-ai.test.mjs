@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {parseWritingSuggestion,suggestWritingGrade} from '../server/src/writing-ai.js';
 import {writingQueueState} from '../server/src/actions/settings.js';
+import './provider-job-pump.test.mjs';
 
 const queue=writingQueueState({ai:{providerPreference:'gemini'}},{},{rows:[
   {status:'completed',model:'groq',count:4},{status:'completed',model:'gemini',count:2},
@@ -66,4 +67,10 @@ const mistralQueue=writingQueueState({ai:{providerPreference:'mistral'}},{mistra
 assert.equal(mistralQueue.providerPreference,'mistral');
 assert.equal(mistralQueue.providers.mistral,true);
 assert.equal(mistralQueue.successfulByProvider.mistral,4);
+let singleCalls=0;
+await assert.rejects(suggestWritingGrade({rule:'Ý 10đ',answer:'Hallo',maxScore:10,groqApiKey:'g',mistralApiKey:'m',providerOnly:'mistral',fetchImpl:async(url,options)=>{
+  singleCalls++;assert.match(url,/mistral/);assert.ok(options.signal instanceof AbortSignal);
+  return {ok:false,status:429,headers:{get:()=> '120'},json:async()=>({})};
+}}),error=>error.statusCode===429&&error.retryAfterMs===120000);
+assert.equal(singleCalls,1,'An assigned lane never falls back into another occupied provider');
 console.log('Writing AI: rubric required, bounded structured suggestions and configurable provider fallback passed.');

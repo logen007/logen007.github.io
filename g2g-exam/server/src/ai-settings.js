@@ -22,10 +22,12 @@ export async function aiApiKeyStatus(){
   }));
 }
 
-export async function aiApiKeys(){
-  const result=await query('SELECT key,value_enc FROM secrets WHERE key=ANY($1::text[])',[AI_PROVIDER_IDS.map(keyFor)]);
+export async function aiApiKeys(provider){
+  if(provider&&!AI_PROVIDER_IDS.includes(provider))throw appError(400,'Nhà cung cấp AI không hợp lệ.');
+  const providers=provider?[provider]:AI_PROVIDER_IDS;
+  const result=await query('SELECT key,value_enc FROM secrets WHERE key=ANY($1::text[])',[providers.map(keyFor)]);
   const saved=new Map(result.rows.map(row=>[row.key,row.value_enc]));
-  return Object.fromEntries(AI_PROVIDER_IDS.map(provider=>{
+  return Object.fromEntries(providers.map(provider=>{
     const encrypted=saved.get(keyFor(provider));
     return [provider+'ApiKey',(encrypted?decrypt(encrypted):'')||process.env[envFor(provider)]||''];
   }));
