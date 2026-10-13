@@ -308,6 +308,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Preview layout
 
+- Every student room entry uses the shared entry transition: normal start, code
+  entry and resuming through a direct link/reload. Resuming never creates another
+  attempt. Section navigation and answer updates do not replay the transition.
+
 - Successful submission (including timeout) and confirmed cancellation reuse the
   entry transition style with a 2-second reverse wave/fade (entry stays 3 seconds).
   Keep the full 1.1-second white coverage before changing pages. Center text states

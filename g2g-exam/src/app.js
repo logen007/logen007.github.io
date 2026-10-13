@@ -1040,7 +1040,7 @@ function bindViewSpecific(){
     try{status.textContent=await shareStudentProfile(data,user);}
     catch(error){if(error.name!=='AbortError')status.textContent='Chưa chia sẻ được. Vui lòng thử lại hoặc sao chép địa chỉ trang.';}
   });
-  app.querySelectorAll('[data-action="enter-code"]').forEach(button=>button.onclick=()=>openCodeEntry({repo,examId:button.dataset.exam,onStarted:async id=>{data=await repo.getState();ui.attemptId=id;ui.view='exam';render();window.scrollTo(0,0);}}));
+  app.querySelectorAll('[data-action="enter-code"]').forEach(button=>button.onclick=()=>openCodeEntry({repo,examId:button.dataset.exam,onStarted:id=>beginAttempt(null,false,button,id)}));
   app.querySelectorAll('[data-exam-level-filter]').forEach(select=>select.onchange=()=>{ui.examLevelFilter=select.value;render();});
   app.querySelectorAll('[data-action="exam-access-settings"]').forEach(button=>button.onclick=async()=>{
     if(!await flushBuilderDraft())return;
@@ -1163,13 +1163,13 @@ function bindViewSpecific(){
   bindGrading();
 }
 
-async function beginAttempt(examId,restart,trigger){
+async function beginAttempt(examId,restart,trigger,existingAttemptId=null){
   if(startingAttempt)return;
   startingAttempt=true;
   clearTimeout(realtimeRenderTimer);
   try{
   return await withExamTransition(async covered=>{
-  const attempt=await act(()=>repo.mode==='api'?repo.startAttemptSecure(examId,{restart}):repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});
+  const attempt=existingAttemptId?byId((await repo.getState()).attempts,existingAttemptId):await act(()=>repo.mode==='api'?repo.startAttemptSecure(examId,{restart}):repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});
   if(attempt?.status===ATTEMPT_STATUS.IN_PROGRESS){await covered;data=await repo.getState();ui.attemptId=attempt.id;ui.view='exam';startingAttempt=false;render();window.scrollTo(0,0);}
   else if(attempt)notify('Không thể mở lượt thi này. Vui lòng tải lại và thử lại.');
   },trigger);
@@ -1527,7 +1527,9 @@ else{
   else if(requestedView==='grading'&&user&&!isStudent(user)&&requestedAttempt){ui.gradeAttemptId=requestedAttempt;ui.view='grading-detail';ui.adminTab='grades';}
   else if(!isStudent(user)&&initialUrl.searchParams.get('tab')){ui.adminTab=initialUrl.searchParams.get('tab');ui.settingsTab=settingsRouteTab(initialUrl.href)||'general';ui.view='admin';}
   startupGate.finish();
-  render();
+  const resumed=ui.view==='exam'&&byId(data.attempts,ui.attemptId);
+  if(resumed?.studentId===user?.id&&resumed.status===ATTEMPT_STATUS.IN_PROGRESS)await beginAttempt(null,false,null,resumed.id);
+  else render();
 }
 if(repo.mode==='api')startDashboardRefresh({
   intervalMs:60000,idleIntervalMs:60000,
