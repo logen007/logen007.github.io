@@ -28,8 +28,6 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
   const gc=resources.mediaGarbageCollection||{};
   const memoryPercent=percent(memory.usedBytes,memory.totalBytes),diskPercent=percent(disk?.usedBytes,disk?.totalBytes);
   const cpu=valid(resources.cpu?.usagePercent)?Math.min(100,Number(resources.cpu.usagePercent)):null;
-  const loads=[0,1,2].map(index=>valid(resources.cpu?.loadAverage?.[index])?Number(resources.cpu.loadAverage[index]).toFixed(2):'—');
-  const cores=valid(resources.cpu?.cores)?Number(resources.cpu.cores):'—';
   const totalBytes=['databaseBytes','uploadsBytes','applicationBytes'].every(key=>valid(usage[key]))?Number(usage.databaseBytes)+Number(usage.uploadsBytes)+Number(usage.applicationBytes):null;
   const gcKnown=gc.lastSuccessAt&&Number.isFinite(new Date(gc.lastSuccessAt).getTime());
   const gcText=gc.error?'Quét lỗi':gcKnown?'Đã quét':'Chưa có lần quét';
@@ -40,7 +38,7 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
     ${warnings.length?`<div class="dashboard-alerts" role="status">${warnings.map(text=>status(text,'error')).join('')}</div>`:''}
     <div class="dashboard-system-grid">
       <section class="the dashboard-cpu-card"><header class="dashboard-section-heading"><h3>CPU</h3>${monitorRangePicker()}</header><div class="dashboard-cpu-history">
-        ${monitorChart('CPU','cpu',resources.history,cpu==null?'—':cpu+'%',value=>value+'%',{hideLabel:true,detailsLabel:'Chi tiết CPU',detailsContent:`<p>Tải trung bình: ${loads.join(' / ')} · 1 / 5 / 15 phút · ${cores} lõi</p>`})}
+        ${monitorChart('CPU','cpu',resources.history,cpu==null?'—':cpu+'%',value=>value+'%',{hideLabel:true,detailsLabel:null})}
       </div></section>
       <section class="the dashboard-capacity-card"><header class="dashboard-section-heading"><h3>Tài nguyên</h3></header><div class="dashboard-capacity-rings">
         ${resourceGauge('RAM',`${bytes(memory.usedBytes)} / ${bytes(memory.totalBytes)}`,memoryPercent,{warning:memoryPercent>=85})}

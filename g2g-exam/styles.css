@@ -664,24 +664,24 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-system-grid>.the { min-width:0; padding:24px; }
 .dashboard-system-grid h3 { margin:0; font-size:16px; font-weight:500; }
 .dashboard-system-grid h3>span { font-size:12px; font-weight:400; color:var(--phu); margin-left:6px; }
-.dashboard-cpu-card { grid-column:1/-1; display:flex; flex-direction:column; }
+.dashboard-cpu-card { grid-column:1; grid-row:span 2; display:flex; flex-direction:column; }
 .dashboard-cpu-card>.dashboard-section-heading { flex-wrap:wrap; }
 .dashboard-cpu-card .monitor-range { margin:0; gap:0; width:100%; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); border-bottom:1px solid var(--vien); }
-.dashboard-cpu-card .monitor-range span { padding:16px 8px; font-size:14px; text-align:center; border-radius:0; background:transparent; border-bottom:3px solid transparent; }
+.dashboard-cpu-card .monitor-range span { padding:12px 4px; font-size:12px; text-align:center; border-radius:0; background:transparent; border-bottom:3px solid transparent; }
 .dashboard-cpu-card .monitor-range input:checked+span { background:transparent; color:var(--chu); border-bottom-color:var(--brand-primary); font-weight:550; }
 .dashboard-cpu-history { width:100%; margin:16px auto 0; display:block; }
 .dashboard-cpu-history .monitor-chart { width:100%; }
 .dashboard-cpu-history .monitor-chart header { justify-content:flex-start; margin:0 0 16px; }
-.dashboard-cpu-history .monitor-chart strong { font-size:28px; font-weight:450; line-height:1.1; letter-spacing:-.5px; font-variant-numeric:tabular-nums; }
+.dashboard-cpu-history .monitor-chart strong { font-size:22px; font-weight:450; line-height:1.1; letter-spacing:-.5px; font-variant-numeric:tabular-nums; }
 .dashboard-cpu-history .monitor-chart svg { max-height:none; }
 .dashboard-cpu-history .monitor-chart svg text { font-size:12px; }
 .dashboard-cpu-history .monitor-grid { stroke-dasharray:none; }
 .dashboard-cpu-history .monitor-line { stroke-width:1.5; vector-effect:non-scaling-stroke; }
 .monitor-area { fill:var(--brand-primary); fill-opacity:.3; stroke:none; }
 .monitor-axis { stroke:var(--phu); stroke-width:.7; fill:none; }
-.monitor-summary-wrap { overflow-x:auto; margin:12px 0 20px; }
-.monitor-summary { width:100%; border-collapse:collapse; min-width:360px; text-align:left; font-size:13px; font-variant-numeric:tabular-nums; }
-.monitor-summary th,.monitor-summary td { padding:14px 16px; border-bottom:1px solid var(--vien); white-space:nowrap; font-weight:400; }
+.monitor-summary-wrap { overflow-x:auto; margin:12px 0 0; }
+.monitor-summary { width:100%; border-collapse:collapse; min-width:320px; text-align:left; font-size:12px; font-variant-numeric:tabular-nums; }
+.monitor-summary th,.monitor-summary td { padding:10px 8px; border-bottom:1px solid var(--vien); white-space:nowrap; font-weight:400; }
 .monitor-summary thead { background:var(--surface-muted); }
 .monitor-summary tbody th { font-weight:500; }
 .dashboard-cpu-history .monitor-dot { opacity:0; }
