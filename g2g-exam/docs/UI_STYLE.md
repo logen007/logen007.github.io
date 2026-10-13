@@ -178,7 +178,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   explicit gaps and shrinkable tracks to avoid forced wrapping.
 
 - Minimize visible form labels; prefer concise placeholders inside empty inputs.
-  Gray rounded backgrounds are reserved for instruction blocks, not question wrappers.
+  Gray rounded backgrounds are reserved for instruction blocks, not ordinary question wrappers.
+  Examples always retain their own rounded border and fixed example colors
+  (--example-bg, --example-border), including compact letter and binary editors.
   Short letter-matching questions use an unframed transparent row: number at left,
   answer selector, score and actions at right; a full-width single-line question
   input below. Keep the answer label accessible but visually hidden. No divider.

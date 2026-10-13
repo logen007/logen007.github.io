@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.goethe-question\.part-question\.is-example\s*\{[^}]*border:1px solid var\(--example-border\);[^}]*border-radius:18px;[^}]*background:var\(--example-bg\)/);
 import './gap-bank.test.mjs';
 import {seedState} from '../src/seed.js';
 import {telcFixture} from './telc-b1-fixture.mjs';
