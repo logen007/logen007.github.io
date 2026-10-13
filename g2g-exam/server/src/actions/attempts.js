@@ -104,7 +104,7 @@ async function partAudioContext(client,attempt,sectionId){
   const allowed=new Set(section.questionIds||[]);
   const ids=(section.questionIds||[]).filter(id=>allowed.has(id));
   const questionRows=exam.questionSnapshot?exam.questionSnapshot.filter(q=>ids.includes(q.id)).map(q=>({data:q})):ids.length?(await client.query(`SELECT data FROM questions WHERE id=ANY($1::text[])`,[ids])).rows:[];
-  const hasQuestionAudio=questionRows.some(row=>String(row.data?.audioUrl||'').trim());
+  const hasQuestionAudio=questionRows.some(row=>String(row.data?.audioUrl||'').trim()||row.data?.instructionBlocks?.some(block=>String(block.audioUrl||'').trim()));
   const hasAudio=hasQuestionAudio||sectionInstructions(section).some(block=>String(block.audioUrl||'').trim());
   if(!hasAudio)throw appError(409,'Part audio không có audio trong phần thi hiện tại.');
   if(policy.mode==='per_question_segment'&&(Number(policy.maxSessions)<1||Number(policy.segmentRepeat)<1))throw appError(500,'Specification audio không hợp lệ.');

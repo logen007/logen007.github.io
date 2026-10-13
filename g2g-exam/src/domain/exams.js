@@ -5,6 +5,7 @@ import {
 import {getQuestionChoiceError} from './questions.js';
 import {imageMaxWidth,isPrefilledQuestion} from './question-display.js';
 import {configuredPartErrors} from './configured-part-validation.js';
+import {examQuestionNumbers} from './question-numbering.js';
 import {normalizeAudioFlow} from './part-audio.js';
 import {normalizeInstructions} from './section-instructions.js';
 
@@ -269,9 +270,9 @@ export function validateExamForPublish(state,exam){
   const errors=[];
   if(!exam?.title?.trim())errors.push('Bài thi chưa có tên. Nhập tên đề ở đầu trang.');
   if(!exam?.sections?.length)errors.push('Bài thi chưa có phần nào. Thêm phần thi trước khi xuất bản.');
-  const seen=new Set();
+  const seen=new Set(),numbers=examQuestionNumbers(exam,state.questions);
   for(const [index,section] of (exam?.sections||[]).entries()){
-    errors.push(...configuredPartErrors(section,state.questions));
+    errors.push(...configuredPartErrors(section,state.questions,numbers));
     if(!section.name?.trim())errors.push(`Phần ${index+1} chưa có tên.`);
     const realQuestionIds=(section.questionIds||[]).filter(questionId=>!isPrefilledQuestion(byId(state.questions,questionId)));
     if(!realQuestionIds.length)errors.push(`${section.name||'Phần '+(index+1)} chưa có câu hỏi tính điểm. Thêm câu có điểm lớn hơn 0 và không bật Ví dụ.`);
@@ -282,7 +283,7 @@ export function validateExamForPublish(state,exam){
       else{
         const choiceError=getQuestionChoiceError(question);
         if(choiceError){
-          const position=(section.questionIds||[]).slice(0,(section.questionIds||[]).indexOf(questionId)+1).filter(id=>!isPrefilledQuestion(byId(state.questions,id))).length;
+          const position=numbers.get(questionId);
           const location=`${section.name||'Phần '+(index+1)} · ${isPrefilledQuestion(question)?'Câu ví dụ':'Câu '+position} (${question.code||questionId})`;
           errors.push(`${location}: ${choiceError}`);
         }

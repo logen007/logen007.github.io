@@ -11,10 +11,15 @@ Status: APPROVED — user's request, 13 October 2026.
 - The first block keeps legacy instruction fields; subsequent blocks are saved
   in `additionalInstructions`. Existing question-owned prompts are preserved,
   not automatically moved or removed. New section prompts never belong to a question.
-- For separate question cards, a position selector places a prompt at the start
-  or after a scored question (global exam numbering in the selector). The prompt
+  Legacy prompts use the same shared editor frame, image-width tooltip and
+  listening audio controls. When explicitly moved past their legacy block group,
+  they become section-owned at the corresponding position, retaining all media.
+- For separate question cards, up/down moves a prompt across the adjacent prompt
+  or scored question. No position dropdown. The prompt
   remains section-owned and moves with its image, image-width setting and audio.
-  Embedded gap passages, heading banks and horizontal tables remain indivisible.
+  Embedded gap passages and horizontal tables remain indivisible; arrows place
+  the prompt before or after that content block. Heading questions allow
+  interleaved prompts. All layouts expose identical image/max-width controls.
 - Prompt audio plays at its selected position, using the
   existing instruction repeat policy. Preview and real exams use the same planner.
 - Copying and attempt snapshots preserve the full ordered content. Removing a

@@ -7,7 +7,7 @@ export function inlineGapsHtml(section,questions,answers,startNumber,{splitLayou
   const perQuestion=section.questionProfile?.gapChoicesPerQuestion;
   const split=!compact&&(!perQuestion||splitLayout);
   const options=perQuestion?`<section class="gap-choice-bank" aria-label="Antwortmöglichkeiten">${questions.map((q,index)=>`<div class="gap-choice-group"><b>${startNumber+index+1}.</b><div>${[0,1,2].map(i=>`<p><span>${String.fromCharCode(97+i)})</span><span>${textHtml(section.gapOptions?.[index]?.[i]||'')}</span></p>`).join('')}</div></div>`).join('')}</section>`:'';
-  const image=section.instructionImageUrl?`<img class="gap-article-image" src="${esc(section.instructionImageUrl)}" alt="Abbildung zum Text" ${imageMaxWidth(section.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(section.instructionImageMaxWidth)}px"`:''}>`:'';
+  const image=!section.instructionAfterQuestion&&section.instructionImageUrl?`<img class="gap-article-image" src="${esc(section.instructionImageUrl)}" alt="Abbildung zum Text" ${imageMaxWidth(section.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(section.instructionImageMaxWidth)}px"`:''}>`:'';
   const instructionHasImage=/\[img\]/i.test(section.instruction||'');
   const passageHasImage=(section.gapPassage||[]).some(part=>typeof part==='string'&&/\[img\]/i.test(part));
   let insertedImage=false;

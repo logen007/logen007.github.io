@@ -17,8 +17,8 @@ const review=make(),counts=reviewCounts(review.sections.flatMap(s=>s.questions))
 assert.deepEqual(counts,{total:5,objective:3,correct:1,wrong:1,blank:1});
 assert.equal(review.sections[0].questions[0].number,1);
 assert.equal(review.attempt.level,'A1');
-const numbered=buildAttemptReview({exam:{...exam,sections:[...exam.sections,{name:'Nghe 1',skillKey:'listening',questionProfile:{numberWithinSkill:true},questionIds:['a']}]},questions,attempt});
-assert.equal(numbered.sections[2].questions[0].number,1);
+const numbered=buildAttemptReview({exam:{...exam,sections:[...exam.sections,{name:'Nghe 1',skillKey:'listening',questionProfile:{numberWithinSkill:true},questionIds:['next']}]},questions:[...questions,{...questions[1],id:'next'}],attempt});
+assert.equal(numbered.sections[2].questions[0].number,6);
 const html=attemptResultHtml({review});
 assert.match(html,/Kết quả thi A1/);assert.match(html,/An &lt;x&gt;/);assert.doesNotMatch(html,/<script>|javascript:/);
 assert.match(html,/Cô Lan/);assert.match(html,/Nhận xét riêng/);assert.match(html,/Đáp án đúng/);

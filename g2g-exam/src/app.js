@@ -1,5 +1,5 @@
 import {scrollExamToTop} from './ui/exam-scroll.js';
-import {changeInstructions} from './domain/section-instructions.js';
+import {changeInstructions,moveLegacyInstruction} from './domain/section-instructions.js';
 import {collectAdditionalInstructions} from './part-templates/default/section-instruction-editor.js';
 import {gradingNeighbors} from './domain/grading-navigation.js';
 import {isPrefilledQuestion} from './domain/question-display.js';
@@ -807,6 +807,10 @@ async function persistBuilderDraft({silent=false}={}){
       }
       for(const card of app.querySelectorAll('.part-question[data-question-id]')){
         const questionId=card.dataset.questionId;
+        for(const control of card.querySelectorAll('[data-question-instruction-block]')){
+          const key=`question-prompt:${questionId}:${control.dataset.index}`,pending=pendingAudioUploads.get(key);
+          if(pending){const audio=await pending.promise;audioUrls.set(key,audio.url);audioNames.set(key,audio.name);}
+        }
         const questionPosition={...imagePosition,question:section.questionIds.indexOf(questionId)+1};
         for(const input of card.querySelectorAll('[data-choice-image]')){
           const file=input.files?.[0];
@@ -844,7 +848,7 @@ async function persistBuilderDraft({silent=false}={}){
       if(section&&app.querySelector('[data-section-prompt]')){
         const imageControl=app.querySelector('[data-section-image]')?.closest('[data-section-image-control]');
         const instructionImageUrl=imageValue(app.querySelector('[data-section-image]'),sectionImageUrl,imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'');
-        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionAfterQuestion:Number(app.querySelector('[data-section-prompt="main"] [data-prompt-position]')?.value||0),instructionImageUrl,instructionImageMaxWidth:document.getElementById('sectionImageMaxWidth')?.value||null,additionalInstructions:instructionDraft.blocks});
+        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionAfterQuestion:section.instructionAfterQuestion||0,instructionImageUrl,instructionImageMaxWidth:document.getElementById('sectionImageMaxWidth')?.value||null,additionalInstructions:instructionDraft.blocks});
       }
       if(section&&app.querySelector('.part-question[data-question-id]')){
         const questionIds=[...app.querySelectorAll('.part-question[data-question-id]')].map(card=>card.dataset.questionId);
@@ -890,7 +894,8 @@ async function persistBuilderDraft({silent=false}={}){
             :[{text:previousQuestion?.prompt||'',imageUrl:previousQuestion?.instructionImageUrl||''}];
           const instructionBlocks=card.closest('.letter-group-table')?previousInstructionBlocks:[...card.querySelectorAll('[data-question-instruction-block]')].map((control,index)=>{
             const previousBlock=previousInstructionBlocks[index]||{};
-            return {text:control.querySelector('[data-instruction-prompt]')?.value.trim()||'',imageUrl:imageValue(control.querySelector('[data-question-instruction-image]'),questionInstructionImageUrls.get(`${id}:${index}`),control.dataset.removeQuestionImage==='true'?'':previousBlock.imageUrl||'')};
+            const audioKey=`question-prompt:${id}:${index}`;
+            return {...previousBlock,text:control.querySelector('[data-instruction-prompt]')?.value.trim()||'',imageMaxWidth:control.querySelector('[data-question-prompt-width]')?.value||null,audioUrl:audioUrls.get(audioKey)??previousBlock.audioUrl??'',audioName:audioNames.get(audioKey)??previousBlock.audioName??'',imageUrl:imageValue(control.querySelector('[data-question-instruction-image]'),questionInstructionImageUrls.get(`${id}:${index}`),control.dataset.removeQuestionImage==='true'?'':previousBlock.imageUrl||'')};
           });
           const firstInstruction=instructionBlocks[0]||{text:'',imageUrl:''};
           const instructionImageUrl=section.questionProfile?.questionImage===true
@@ -1313,7 +1318,9 @@ function bindBuilder(){
     await saveBuilderDraft({silent:true});
     await act(()=>repo.transaction(st=>{
       const question=byId(st.questions,b.dataset.id);if(!question)return;
-      updateQuestion(st,user,question.id,{instructionBlocks:[...instructionBlocksFor(question),{text:'',imageUrl:''}]});
+      const blocks=[...instructionBlocksFor(question)];
+      blocks.splice(Number(b.dataset.index??blocks.length-1)+1,0,{text:'',imageUrl:''});
+      updateQuestion(st,user,question.id,{instructionBlocks:blocks});
     }),'Đã thêm đề bài.');
   });
   app.querySelectorAll('[data-action="remove-question-instruction"]').forEach(b=>b.onclick=async()=>{
@@ -1329,15 +1336,10 @@ function bindBuilder(){
     if(!await saveBuilderDraft({silent:true}))return;
     await act(()=>repo.transaction(st=>{
       const currentExam=byId(st.exams,exam.id),currentSection=currentExam?.sections.find(item=>item.id===ui.builderSectionId);
-      const ids=currentSection?.questionIds||[],sourceIndex=ids.indexOf(b.dataset.id),targetIndex=sourceIndex+(b.dataset.dir==='up'?-1:1);
-      if(sourceIndex<0||targetIndex<0||targetIndex>=ids.length)return;
-      const source=byId(st.questions,b.dataset.id),target=byId(st.questions,ids[targetIndex]);if(!source||!target)return;
-      const sourceBlocks=[...instructionBlocksFor(source)],blockIndex=Number(b.dataset.index),block=sourceBlocks.splice(blockIndex,1)[0];if(!block)return;
-      const targetBlocks=Array.isArray(target.instructionBlocks)?[...target.instructionBlocks]:[];
-      if(b.dataset.dir==='up')targetBlocks.push(block);else targetBlocks.unshift(block);
-      const sourceFirst=sourceBlocks[0]||{text:'',imageUrl:''},targetFirst=targetBlocks[0]||{text:'',imageUrl:''};
-      updateQuestion(st,user,source.id,{instructionBlocks:sourceBlocks,prompt:sourceFirst.text,instructionImageUrl:sourceFirst.imageUrl});
-      updateQuestion(st,user,target.id,{instructionBlocks:targetBlocks,prompt:targetFirst.text,instructionImageUrl:targetFirst.imageUrl});
+      const source=byId(st.questions,b.dataset.id);if(!currentSection||!source)return;
+      const moved=moveLegacyInstruction(currentSection,source,Number(b.dataset.index),b.dataset.dir,st.questions);if(!moved)return;
+      updateQuestion(st,user,source.id,moved.questionPatch);
+      if(moved.sectionPatch)updateSection(st,user,exam.id,currentSection.id,moved.sectionPatch);
     }));
   });
   const section=exam.sections.find(item=>item.id===ui.builderSectionId)||exam.sections[0];
@@ -1345,7 +1347,7 @@ function bindBuilder(){
     if(button.disabled||!await flushBuilderDraft())return;
     await act(()=>repo.transaction(st=>{
       const current=byId(st.exams,exam.id)?.sections.find(item=>item.id===section.id);
-      if(current)updateSection(st,user,exam.id,section.id,changeInstructions(current,Number(button.dataset.index),button.dataset.sectionInstructionAction));
+      if(current)updateSection(st,user,exam.id,section.id,changeInstructions(current,Number(button.dataset.index),button.dataset.sectionInstructionAction,(current.questionIds||[]).filter(id=>!isPrefilledQuestion(byId(st.questions,id))).length));
     }));
   });
   app.querySelectorAll('[data-gap-resize]').forEach(button=>button.onclick=async()=>{
@@ -1366,7 +1368,7 @@ function bindBuilder(){
     field.addEventListener('change',()=>queueBuilderAutosave(0));
   });
   app.querySelectorAll('[data-action="clear-section-image"],[data-action="clear-question-image"]').forEach(button=>button.addEventListener('click',()=>queueBuilderAutosave(0)));
-  app.querySelectorAll('[data-prompt-position]').forEach(field=>field.addEventListener('change',async()=>{if(await flushBuilderDraft())render();}));
+
   app.querySelectorAll('[data-action="save-section"]').forEach(b=>b.onclick=()=>{
     const patch={
       name:document.getElementById('sectionName').value,

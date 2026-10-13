@@ -164,6 +164,16 @@ assert.equal(exam.sections[8].questionProfile.layout,'free-response');
 assert.deepEqual(exam.sections[8].questionProfile.wordRange,[20,30]);
 assert.deepEqual(validateExamForPublish(state,exam),[]);
 {
+  const draft=structuredClone(state),paper=draft.exams.find(e=>e.id===exam.id),section=paper.sections[2];
+  const scored=section.questionIds.map(id=>draft.questions.find(q=>q.id===id)).filter(q=>!q.example&&q.maxScore!==0);
+  for(const id of section.questionIds){const q=draft.questions.find(item=>item.id===id);q.correctAnswer=q.choices.indexOf('X');}
+  scored[0].correctAnswer=0;scored[7].correctAnswer=0;
+  // All other letters are X, which remains repeatable.
+  for(const q of scored)if(q!==scored[0]&&q!==scored[7])q.correctAnswer=q.choices.indexOf('X');
+  const errors=validateExamForPublish(draft,paper);
+  assert.ok(errors.some(message=>message.includes('câu 11 và câu 18 trùng đáp án A')));
+}
+{
   const draft=structuredClone(state),draftExam=draft.exams.find(item=>item.id===exam.id);
   for(const question of draft.questions)question.audioUrl='';
   assert.deepEqual(validateExamForPublish(draft,draftExam),[],'No example or question audio is required to publish');
@@ -358,22 +368,24 @@ const gapBuilder=renderBuilder({data:state,exam,section:gap3});
 }
 assert.match(gapBuilder,/data-gap-position-action="add"/);
 assert.match(gapBuilder,/data-gap-position-action="remove"/);
-assert.doesNotMatch(gapBuilder,/data-gap-title|data-section-image|sectionImageMaxWidth/,'Reading 4 has no title/image editor');
+assert.doesNotMatch(gapBuilder,/data-gap-title/,'Reading 4 has no article title editor');
+assert.match(gapBuilder,/data-section-image/,'Every section prompt supports images');
+assert.match(gapBuilder,/sectionImageMaxWidth/);
 assert.match(gapBuilder,/data-gap-text/,'Reading 4 keeps its passage editor');
 const reading5Builder=renderBuilder({data:state,exam,section:gapBank});
 assert.match(reading5Builder,/data-gap-title/,'Reading 5 keeps its title editor');
 assert.match(reading5Builder,/data-section-image/,'Reading 5 keeps its image editor');
 assert.doesNotMatch(gapBuilder,/Chỗ trống/);
-assert.ok(gapBuilder.includes('<legend>{a}</legend>'));
-assert.ok(gapBuilder.includes('<legend>{b}</legend>'));
-assert.ok(gapBuilder.includes('<legend>{d}</legend>'),'Position label is independent of correct answer');
+assert.ok(gapBuilder.includes('<legend>21. · {a}</legend>'));
+assert.ok(gapBuilder.includes('<legend>22. · {b}</legend>'));
+assert.ok(gapBuilder.includes('<legend>24. · {d}</legend>'),'Global question number and syntax marker are independent of correct answer');
 assert.equal((gapBuilder.match(/data-gap-correct=/g)||[]).length,30);
 assert.ok(gapAuthorText(gap3,rows(gap3)).includes('{j}'));
 for(const invalid of [-1,undefined,null,'',1.5,3]){
   const incomplete=structuredClone(state);
   incomplete.questions.find(q=>q.id===gap3.questionIds[3]).correctAnswer=invalid;
   const html=renderBuilder({data:incomplete,exam,section:gap3});
-  assert.ok(html.includes('<legend>{d}</legend>'));
+  assert.ok(html.includes('<legend>24. · {d}</legend>'));
   assert.doesNotMatch(html,/\[a\/b\/c\]/);
 }
 {

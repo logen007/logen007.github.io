@@ -211,6 +211,17 @@ Hãy chỉ ra chính xác phần còn thiếu và hỏi lại trước khi xây 
 
 ## 13. Nguyên tắc ưu tiên
 
+Rule được duyệt 13/10/2026: số câu là thứ tự liên tục của toàn đề thi, không
+đếm lại theo bài hoặc kỹ năng. Dùng chung quy tắc ở editor, bài thi, xem trước,
+kết quả/chấm bài và mọi thông báo lỗi. Ví dụ không chiếm số; bài viết một câu
+có thể ẩn nhãn nhưng vẫn giữ thứ tự chung. Không đổi số trong nội dung tác giả
+đã nhập hoặc mã định danh dữ liệu.
+
+Mọi khung đề bài dùng chung cấu trúc: nội dung, tải ảnh, max-width ảnh có đơn vị
+px và tooltip; chỉ bài nghe có tải audio. Có nút lên, xuống, ×, +; không có
+dropdown vị trí. Lên/xuống di chuyển cả khung và media qua câu hoặc khung bên
+cạnh. Đoạn điền khuyết/bảng ngang liền khối di chuyển nguyên khối.
+
 Thứ tự ưu tiên:
 
 1. Specification đã APPROVED.

@@ -66,7 +66,7 @@ assert.match(tooltipSource,/addEventListener\('focusin'/);
 assert.match(tooltipSource,/event.composedPath\(\)/);
 assert.doesNotMatch(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.writing-style-toggle\[aria-pressed="true"\]/);
 const writingBuilderSource=readFileSync(new URL('../src/part-templates/default/builder.js',import.meta.url),'utf8');
-assert.equal((writingBuilderSource.match(/placeholder="\$\{esc\(instructionPlaceholder\)\}"/g)||[]).length,1);
+assert.match(writingBuilderSource,/questionPromptEditor\(q,block,index,\{readOnly,placeholder:instructionPlaceholder,audioHtml/);
 assert.match(writingBuilderSource,/sectionInstructionEditor\(section,\{readOnly,placeholder:instructionPlaceholder,audioHtml\}\)/);
 for(const hint of ['[b]chữ đậm[/b]','[i]chữ nghiêng[/i]','[u]gạch chân[/u]','Cmd/Ctrl B','Cmd/Ctrl I','Cmd/Ctrl U','[box]nội dung[/box]'])assert.ok(writingBuilderSource.includes(hint));
 assert.match(writingBuilderSource,/data-writing-style-toggle/);

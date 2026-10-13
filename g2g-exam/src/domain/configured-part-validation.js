@@ -2,7 +2,7 @@ import {isPrefilledQuestion} from './question-display.js';
 import {letterAnswerIssue} from './letter-answers.js';
 import {inlineGapErrors} from './inline-gaps.js';
 
-export function configuredPartErrors(section,questions){
+export function configuredPartErrors(section,questions,numbers=new Map()){
   const profile=section.questionProfile||{},errors=[];
   // A2 approved profiles explicitly request examples; legacy parts stay unchanged.
   if(!profile.example&&!profile.manualPerPart&&!section.audioPolicy&&!['inline-gaps','heading-match'].includes(profile.layout))return errors;
@@ -25,7 +25,7 @@ export function configuredPartErrors(section,questions){
   if(profile.uniqueLetters){
     const issue=letterAnswerIssue(section,map,Object.fromEntries(rows.map(q=>[q.id,q.correctAnswer])));
     if(issue){
-      const label=id=>isPrefilledQuestion(map.get(id))?'câu ví dụ':`câu ${rows.filter(q=>!isPrefilledQuestion(q)).findIndex(q=>q.id===id)+1}`;
+      const label=id=>isPrefilledQuestion(map.get(id))?'câu ví dụ':`câu ${numbers.get(id)??rows.filter(q=>!isPrefilledQuestion(q)).findIndex(q=>q.id===id)+1}`;
       const exception=profile.repeatableLetters?.length?` ${profile.repeatableLetters.join(', ')} được phép lặp lại.`:'';
       errors.push(issue.kind==='invalid'?`${section.name}: ${label(issue.id)} chưa chọn đáp án đúng hợp lệ.${exception}`:`${section.name}: ${label(issue.previousId)} và ${label(issue.id)} trùng đáp án ${issue.letter}; đáp án này chỉ dùng một lần.${exception}`);
     }

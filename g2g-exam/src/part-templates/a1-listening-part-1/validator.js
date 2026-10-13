@@ -1,4 +1,4 @@
-export function validateA1ListeningPart1({part,section,group,questions,spec}){
+export function validateA1ListeningPart1({part,section,group,questions,spec,startNumber=0}){
   const context=part||section||group;
   const min=Math.max(1,Number(spec?.questions?.min||1));
   const max=Math.max(min,Number(spec?.questions?.max||min));
@@ -8,13 +8,14 @@ export function validateA1ListeningPart1({part,section,group,questions,spec}){
   if(realQuestions.length<min||realQuestions.length>max)throw new Error(`Phần này phải có từ ${min} đến ${max} câu tính điểm.`);
   for(let index=0;index<questions.length;index++){
     const question=questions[index];
-    if(!String(question?.prompt||'').trim())throw new Error(`Câu ${index+1} chưa có nội dung câu hỏi.`);
-    if(!Array.isArray(question?.choices)||question.choices.length!==keys.length)throw new Error(`Câu ${index+1} phải có đủ đáp án ${keys.join('/')} .`);
-    if(question.choices.some(choice=>!String(choice?.text??choice??'').trim()))throw new Error(`Câu ${index+1} cần đủ nội dung ${keys.join(', ')}.`);
+    const label=question.example?'Câu ví dụ':`Câu ${startNumber+questions.slice(0,index+1).filter(q=>!q.example).length}`;
+    if(!String(question?.prompt||'').trim())throw new Error(`${label} chưa có nội dung câu hỏi.`);
+    if(!Array.isArray(question?.choices)||question.choices.length!==keys.length)throw new Error(`${label} phải có đủ đáp án ${keys.join('/')} .`);
+    if(question.choices.some(choice=>!String(choice?.text??choice??'').trim()))throw new Error(`${label} cần đủ nội dung ${keys.join(', ')}.`);
     const correct=Number(question.correctAnswer);
-    if(!Number.isInteger(correct)||correct<0||correct>=keys.length)throw new Error(`Câu ${index+1} chưa có đáp án đúng hợp lệ.`);
+    if(!Number.isInteger(correct)||correct<0||correct>=keys.length)throw new Error(`${label} chưa có đáp án đúng hợp lệ.`);
     const score=Number(question.maxScore);
-    if(!Number.isFinite(score)||score<0)throw new Error(`Điểm câu ${index+1} không hợp lệ.`);
+    if(!Number.isFinite(score)||score<0)throw new Error(`Điểm ${label.toLowerCase()} không hợp lệ.`);
   }
   return true;
 }

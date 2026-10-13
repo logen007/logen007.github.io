@@ -70,6 +70,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   text, image and listening audio together. Each block has image upload and, only
   for listening, audio upload. Desktop textarea fills the entire tools-column
   height; mobile stacks the two columns. Preserve existing question-owned content.
+  All part types use the same image/max-width/tooltip and up/down/remove/plus
+  controls. No position dropdown. Arrows cross adjacent questions or prompts;
+  indivisible gap passages and horizontal tables move as one block.
 
 - Example groups use one outer frame only. Inner question cards remain
   borderless and transparent even when mobile rearranges reading content
@@ -96,6 +99,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   not only a placeholder. Number scored questions sequentially across the exam;
   label zero-point/prefilled examples “Ví dụ” without consuming a question number.
   Preserve existing table number columns and gap-position labels, without duplicates.
+  The same whole-exam numbering applies to validation dialogs, question/audio
+  labels, preview, exams and result review. Never reset by part or skill, including
+  legacy numberWithinSkill profiles. Authored prose and internal IDs are unchanged.
 
 - Question audio controls share one row in this order: compact score, flexible
   audio upload/play, example, remove, add. Keep score input wide enough for two

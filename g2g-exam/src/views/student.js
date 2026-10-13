@@ -1,5 +1,6 @@
 import {sectionLabel} from '../ui/section-label.js';
-import {sectionInstructions,supportsInstructionPositions,instructionPosition} from '../domain/section-instructions.js';
+import {sectionInstructions,supportsInstructionPositions,instructionPosition,instructionSlotCount} from '../domain/section-instructions.js';
+import {sectionQuestionOffset} from '../domain/question-numbering.js';
 import {isPrefilledQuestion,imageMaxWidth,shortChoiceColumns,compactBinaryChoices} from '../domain/question-display.js';
 import {answerPresent,MIN_COMPLETION_PERCENT} from '../domain/exam-completion.js';
 export {answerPresent} from '../domain/exam-completion.js';
@@ -67,17 +68,16 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Kết thúc':'Abgeben'):'Weiter';
   const splitHeadings=splitLayout&&sec.questionProfile?.layout==='heading-match';
-  const positioned=supportsInstructionPositions(sec),promptAt=position=>sectionPromptHtml(sec,{position,questionCount:requiredQuestions.length});
+  const positioned=supportsInstructionPositions(sec),promptAt=position=>sectionPromptHtml(sec,{position,questionCount:instructionSlotCount(sec,requiredQuestions.length)});
   const afterPrompt=position=>{const content=positioned?promptAt(position):'';return content?`<section class="exam-instruction positioned-section-prompt">${content}</section>`:'';};
 const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additionalInstructions?.length||sec.readingBlocks?.length||splitHeadings?`<section class="exam-instruction">${positioned?promptAt(0):sectionPromptHtml(sec)}${readingBlocksHtml(sec)}${splitHeadings?headingOptionsHtml(sec):''}</section>`:'';
-  const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
+  const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview,startNumber:sectionQuestionOffset(exam,sec,[...allQuestions,...questions])});
   const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
-  const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
-  let questionNumber=exam.sections.slice(0,sectionIndex).filter(item=>!sec.questionProfile?.numberWithinSkill||item.skillKey===sec.skillKey).reduce((total,item)=>total+(item.questionIds||[]).filter(id=>!isPrefilledQuestion(knownQuestions.get(id))).length,0);
+  let questionNumber=sectionQuestionOffset(exam,sec,[...allQuestions,...questions]);
   const exampleCount=orderedQuestions.length-requiredQuestions.length;
   const stimulusGroups=[{left:sectionInstruction,right:sectionAudio}];
   const groupStimuli=splitLayout&&!['heading-match','inline-gaps','letter-select'].includes(sec.questionProfile?.layout)&&!sec.questionProfile?.uniqueLetters&&questions.some(q=>q.instructionBlocks?.length);
-  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber,{separateOptions:splitHeadings||compactHeadings}):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber,{compact:compactGaps,splitLayout:configuredPart?.questionProfile?.gapSplitLayout??sec.questionProfile?.gapSplitLayout}):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber,{afterQuestion:afterPrompt}):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
+  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber,{separateOptions:splitHeadings||compactHeadings,afterQuestion:afterPrompt}):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber,{compact:compactGaps,splitLayout:configuredPart?.questionProfile?.gapSplitLayout??sec.questionProfile?.gapSplitLayout})+afterPrompt(1):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber,{afterQuestion:afterPrompt})+(sec.questionProfile?.layout==='letter-table'?afterPrompt(1):''):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
     const example=isPrefilledQuestion(q),scoredIndex=displayIndex-exampleCount;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
     const paired=sec.questionProfile?.pairedQuestions;
@@ -124,14 +124,14 @@ export function unansweredExamQuestions(exam,questions,answers){
   }));
 }
 
-function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
+function sectionAudioHtml(section,questions,attempt,{preview=false,startNumber=0}={}){
   const policy=effectiveAudioPolicy(section),audioQuestions=questions.filter(question=>String(question.audioUrl||'').trim());
   const policyEnabled=section.skillKey==='listening'&&policy.mode==='per_question_segment';
-  const hasSpecialAudio=audioQuestions.some(question=>question.example);
-  if(!sectionInstructions(section).some(block=>block.audioUrl)&&(!audioQuestions.length||(!policyEnabled&&!hasSpecialAudio)))return '';
+  const hasSpecialAudio=audioQuestions.some(question=>question.example)||questions.some(q=>q.instructionBlocks?.some(block=>block.audioUrl));
+  if(!sectionInstructions(section).some(block=>block.audioUrl)&&(!hasSpecialAudio&&(!audioQuestions.length||!policyEnabled)))return '';
   const repeat=Math.max(1,Number(policy.segmentRepeat)||1),key=`g2g.section-audio.${attempt.id}.${section.id}`;
   const used=!preview&&(Boolean(attempt.audioSessions?.[section.id]?.startedAt)||Boolean(sessionStorage.getItem(key)));
-  const segments=partAudioSegments(section,questions);
+  const segments=partAudioSegments(section,questions,{startNumber});
   const audios=segments.map((segment,index)=>`<audio class="section-audio-segment" data-order="${index}" data-repeat="${segment.repeat}" data-label="${esc(segment.label)}" preload="metadata" src="${esc(segment.url)}"></audio>`).join('');
   return `<section class="section-audio" data-section-audio="${esc(section.id)}" data-storage-key="${esc(key)}">${audios}<button type="button" class="section-audio-play" aria-label="Audio abspielen" ${used?'disabled':''}>${iconHtml('play')}</button><div class="section-audio-body"><span class="section-audio-progress" role="progressbar" aria-label="Audiofortschritt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><i></i></span><span class="section-audio-status" aria-live="polite">${used?'Audio wurde bereits abgespielt':'Audio kann nur einmal abgespielt werden'}</span></div></section>`;
 }
@@ -146,13 +146,13 @@ export function sectionPromptHtml(section,{position=null,questionCount=0}={}){
   let inserted=false;
   const formatted=instructionTextHtml(text).replace(/\[img\]/gi,()=>{if(inserted)return '';inserted=true;return image;});
   const content=text?`<div><p>${formatted}</p></div>`:'';
-  return content+(!hasMarker&&(index>0||section.questionProfile?.layout!=='inline-gaps')?image:'');
+  return content+(!hasMarker&&(index>0||block.afterQuestion>0||section.questionProfile?.layout!=='inline-gaps')?image:'');
   }).join('');
 }
 
 function questionStimulusHtml(q,{hideImage=false}={}){
   const blocks=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length?q.instructionBlocks:[{text:q.prompt||'',imageUrl:q.instructionImageUrl||''}];
-  return blocks.map(block=>{const text=block?.text||'',imageUrl=hideImage?'':String(block?.imageUrl||'').trim();return text||imageUrl?`<section class="question-stimulus">${text?`<div><p>${instructionTextHtml(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';}).join('');
+  return blocks.map(block=>{const text=block?.text||'',imageUrl=hideImage?'':String(block?.imageUrl||'').trim();return text||imageUrl?`<section class="question-stimulus">${text?`<div><p>${instructionTextHtml(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" ${imageMaxWidth(block.imageMaxWidth)?`style="max-width:${imageMaxWidth(block.imageMaxWidth)}px"`:''} alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';}).join('');
 }
 
 function questionPromptHtml(text,q){

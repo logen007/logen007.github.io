@@ -1,4 +1,5 @@
 import {canonicalSkill} from './gradebook.js';
+import {examQuestionNumbers} from './question-numbering.js';
 import {isPrefilledQuestion} from './question-display.js';
 import {resultSummary} from './result-summary.js';
 
@@ -6,6 +7,7 @@ import {resultSummary} from './result-summary.js';
 // Never send grading keys or private feedback before publication.
 export function buildAttemptReview({exam={},questions=[],attempt={},privateData=attempt,student={}}){
   const published=attempt.status==='published';
+  const numbers=examQuestionNumbers(exam,questions);
   const map=new Map(questions.map(q=>[q.id,q]));
   const scoredIds=section=>(section.questionIds||[]).filter(id=>map.has(id)&&!isPrefilledQuestion(map.get(id))&&map.get(id).type!=='speaking');
   return {
@@ -16,7 +18,7 @@ export function buildAttemptReview({exam={},questions=[],attempt={},privateData=
     sections:(exam.sections||[]).map((section,sectionIndex)=>({name:section.name,
       skill:canonicalSkill(section.questionProfile?.scoringSkill||section.skillKey||section.skill||section.name),
       questions:scoredIds(section).map(id=>map.get(id)).map((q,index)=>({
-        id:q.id,number:1+index+(exam.sections||[]).slice(0,sectionIndex).filter(s=>!section.questionProfile?.numberWithinSkill||s.skillKey===section.skillKey).reduce((sum,s)=>sum+scoredIds(s).length,0),title:q.title||q.prompt||'',type:q.type||'',maxScore:q.maxScore,
+        id:q.id,number:numbers.get(q.id),title:q.title||q.prompt||'',type:q.type||'',maxScore:q.maxScore,
         answer:attempt.answers?.[q.id],
         correct:published&&q.writingFormVersion!==1?q.correctAnswer:null,
         pairs:q.type==='matching'?(q.pairs||[]).map(pair=>[pair[0],published?pair[1]:null]):[],

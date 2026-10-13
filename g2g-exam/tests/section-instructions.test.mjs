@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import {sectionInstructions,changeInstructions,instructionAudioKey} from '../src/domain/section-instructions.js';
+import {sectionInstructions,changeInstructions,instructionAudioKey,moveLegacyInstruction} from '../src/domain/section-instructions.js';
 import {createExam,updateSection,duplicateExam} from '../src/domain/exams.js';
 import {partAudioSegments} from '../src/domain/part-audio.js';
 import {sectionPromptHtml,examHtml} from '../src/views/student.js';
 import {imageMaxWidth} from '../src/domain/question-display.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
-import {collectAdditionalInstructions} from '../src/part-templates/default/section-instruction-editor.js';
+import {collectAdditionalInstructions,questionPromptEditor} from '../src/part-templates/default/section-instruction-editor.js';
 import {seedState} from '../src/seed.js';
 import {referencedUploadNames} from '../server/src/media-gc.js';
 
@@ -35,6 +35,7 @@ assert.equal((builder.match(/data-section-prompt=/g)||[]).length,2);
 assert.equal((builder.match(/data-field="audio"/g)||[]).length,2);
 assert.match(builder,/data-section-instruction-action="add"/);
 assert.doesNotMatch(builder,/data-action="add-question-instruction"/);
+assert.doesNotMatch(builder,/data-prompt-position|Vị trí đề bài/);
 assert.doesNotMatch(renderBuilder({data:state,exam,section:{...section,skill:'Đọc',skillKey:'reading'}}),/data-field="audio"/);
 const readOnly=renderBuilder({data:state,exam,section,readOnly:true});
 for(const tag of readOnly.match(/<button[^>]*data-section-instruction-action[^>]*>/g))assert.match(tag,/disabled/);
@@ -55,6 +56,42 @@ assert.equal(section.instructionImageUrl,'/uploads/second.jpg');
 const references=await referencedUploadNames({query:async sql=>({rows:sql==='SELECT data FROM exams'?[{data:{sections:[before]}}]:[]})});
 assert.ok(references.has('second.jpg'));assert.ok(references.has('second.mp3'),'Additional prompt media is protected from garbage collection');
 console.log('Independent section prompts: add, move, remove, media, copy, render, save and read-only passed.');
+{
+  const block={text:'Legacy prompt',imageUrl:'/legacy.jpg',imageMaxWidth:400,audioUrl:'/legacy.mp3'};
+  const question={id:'legacy',skill:'Nghe',maxScore:1,instructionBlocks:[block]};
+  const part={id:'legacy-part',instruction:'Intro',questionIds:['legacy','next']};
+  const moved=moveLegacyInstruction(part,question,0,'down',[question,{id:'next',maxScore:1}]);
+  assert.deepEqual(moved.questionPatch.instructionBlocks,[]);
+  const prompt=moved.sectionPatch.additionalInstructions[0];
+  assert.equal(prompt.afterQuestion,1);assert.equal(prompt.imageUrl,block.imageUrl);
+  assert.equal(prompt.imageMaxWidth,400);assert.equal(prompt.audioUrl,block.audioUrl);
+  const html=questionPromptEditor(question,block,0,{placeholder:'Hint',audioHtml:()=>'<audio-control>'});
+  assert.match(html,/section-prompt-editor/);assert.match(html,/data-question-prompt-width/);
+  assert.match(html,/question-prompt:legacy:0/);assert.match(html,/<audio-control>/);
+  for(const action of ['move','remove','add'])assert.ok(html.includes(action+'-question-instruction'));
+  assert.deepEqual(partAudioSegments(part,[question,{id:'next',maxScore:1,audioUrl:'/next.mp3'}],{startNumber:10}).map(s=>s.label),['Aufgabenstellung','Aufgabe 12']);
+}
+{
+  const base={instruction:'Movable',instructionImageUrl:'/move.jpg',instructionAudioUrl:'/move.mp3',questionProfile:{layout:'choices'}};
+  let moved={...base,...changeInstructions(base,0,'down',4)};
+  assert.equal(moved.instructionAfterQuestion,1,'Down crosses the first question');
+  moved={...moved,...changeInstructions(moved,0,'down',4)};
+  moved={...moved,...changeInstructions(moved,0,'down',4)};
+  assert.equal(moved.instructionAfterQuestion,3);
+  assert.equal(moved.instructionImageUrl,'/move.jpg');assert.equal(moved.instructionAudioUrl,'/move.mp3');
+  moved={...moved,...changeInstructions(moved,0,'up',4)};
+  assert.equal(moved.instructionAfterQuestion,2);
+  const removed=changeInstructions(moved,0,'remove',4);
+  assert.equal(removed.instruction,'');assert.equal(removed.instructionImageUrl,'');assert.equal(removed.instructionAudioUrl,'');
+  for(const layout of ['choices','heading-match','inline-gaps','letter-table','free-response']){
+    const part={...section,questionProfile:{layout,choices:['A','B'],type:'writing'},questionIds:[],gapOptions:[]};
+    const html=renderBuilder({data:{questions:[]},exam,section:part});
+    assert.equal((html.match(/data-section-image(?:\s|>)/g)||[]).length,1,layout);
+    assert.equal((html.match(/id="sectionImageMaxWidth"/g)||[]).length,1,layout);
+    assert.doesNotMatch(html,/data-prompt-position/);
+    for(const action of ['up','down','remove','add'])assert.ok(html.includes('data-section-instruction-action="'+action+'"'));
+  }
+}
 {
   const questions=[1,2,3,4].map(n=>({id:'position-'+n,type:'single',title:'Question '+n,choices:['Yes','No'],maxScore:1,audioUrl:n===3?'':'/q'+n+'.mp3'}));
   const part={id:'position',name:'Nghe 3',skill:'Nghe',skillKey:'listening',questionIds:questions.map(q=>q.id),instruction:'Intro',additionalInstructions:[{id:'prompt-1',text:'Between three and four',imageUrl:'/between.jpg',audioUrl:'/between.mp3',afterQuestion:3}],questionProfile:{layout:'choices'}};

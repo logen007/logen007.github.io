@@ -1,6 +1,7 @@
 import {templateRequest,uploadTemplateMedia} from '../shared/api.js';
 import {getA1ListeningPart1Spec,audioPolicyFromSpec} from './spec.js';
 import {validateA1ListeningPart1} from './validator.js';
+import {sectionQuestionOffset} from '../../domain/question-numbering.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
 const id=prefix=>`${prefix}-${crypto.randomUUID()}`;
@@ -19,6 +20,7 @@ export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved
   const minQuestions=Math.max(1,Number(spec.questions?.min||1)),maxQuestions=Math.max(minQuestions,Number(spec.questions?.max||minQuestions));
   const specDefaultScore=Math.max(0,Number(spec.scoring?.default??1));
   const originalQuestions=(section.questionIds||[]).map(questionId=>(state.questions||[]).find(q=>q.id===questionId)).filter(Boolean);
+  const startNumber=sectionQuestionOffset(exam,section,state.questions);
   if(exam?.ownerId!==user.id&&user.role!=='master')throw new Error('Bạn không có quyền sửa đề này.');
   const uniformScores=[...new Set(originalQuestions.map(q=>Number(q.maxScore)).filter(Number.isFinite))];
   const defaultScore=Math.max(0,Number(uniformScores.length===1?uniformScores[0]:specDefaultScore)||0);
@@ -51,7 +53,7 @@ export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved
   };
 
   function questionCard(q,index){
-    const number=questions.slice(0,index+1).filter(item=>!item.example).length;
+    const number=startNumber+questions.slice(0,index+1).filter(item=>!item.example).length;
     const cannotRemove=!q.example&&questions.filter(item=>!item.example).length<=minQuestions;
     return `<section class="tpl-a1-question ${q.example?'is-example':''}"><div class="tpl-a1-head"><b>${q.example?'Beispiel':`Câu ${number}`}</b><div><button class="nut nho" data-example="${index}">${q.example?'Bỏ ví dụ':'Ví dụ'}</button><button class="nut nho nguy" data-remove="${index}" ${cannotRemove?'disabled':''}>Xóa câu</button></div></div><div class="tpl-a1-question-grid" style="margin-top:10px"><label class="cai-dat">Câu hỏi<textarea class="tpl-prompt" data-i="${index}" style="width:100%;min-height:70px">${esc(q.prompt||'')}</textarea></label><label class="cai-dat ${q.example?'is-disabled':''}">Điểm<input class="tpl-score" data-i="${index}" type="number" min="0" step="0.25" value="${Number(q.maxScore??specDefaultScore)}" ${q.example?'disabled':''}><span class="phu-de">Đáp án đúng</span><select class="tpl-correct" data-i="${index}">${['A','B','C'].map((key,j)=>`<option value="${j}" ${Number(q.correctAnswer)===j?'selected':''}>${key}</option>`).join('')}</select></label></div><label class="cai-dat">Audio<input class="tpl-audio" data-i="${index}" type="file" accept="audio/*"></label><div class="phu-de"><b>Đáp án A / B / C</b> · hình ảnh tùy chọn</div>${q.choices.map((choice,j)=>`<div class="tpl-a1-choice"><strong>${choice.key}</strong><input class="tpl-choice" data-i="${index}" data-j="${j}" value="${esc(choice.text)}" placeholder="Nội dung ${choice.key}"><input class="tpl-image" data-i="${index}" data-j="${j}" type="file" accept="image/*"></div>`).join('')}</section>`;
   }
@@ -76,11 +78,11 @@ export async function openA1ListeningPart1Editor({exam=null,section=null,onSaved
           if(imageFile)question.choices[j].imageUrl=await uploadTemplateMedia('image',imageFile,{skill:'listening',part:1,question:index+1,slot:String.fromCharCode(97+j)});
         }
       }
-      validateA1ListeningPart1({part,questions,spec});
+      validateA1ListeningPart1({part,questions,spec,startNumber});
       if(typeof commit!=='function')throw new Error('Thiếu ngữ cảnh lưu Part.');
       const now=new Date().toISOString(),questionIds=questions.map(q=>q.id),ops=[];
       questions.forEach((q,index)=>{
-        const item={...q,code:`A1-LIS-01-${String(index+1).padStart(3,'0')}`,level:'A1',skill:'Nghe',part:section.name||'Phần 1',partOrder:Number(section.partOrder||1),type:'single',title:`A1 Nghe 1 · Câu ${index+1}`,instruction:'',autoGrade:Boolean(spec.scoring?.autoGrade??true),pairs:[],rubric:[],ownerId:q.ownerId||exam?.ownerId||user.id,ownerName:q.ownerName||exam?.ownerName||user.name||'',status:q.status==='trash'?'active':(q.status||'active'),locked:Boolean(q.locked),usedCount:Number(q.usedCount||0),correctRate:q.correctRate??null,createdAt:q.createdAt||now,updatedAt:now};
+        const item={...q,code:`A1-LIS-01-${String(index+1).padStart(3,'0')}`,level:'A1',skill:'Nghe',part:section.name||'Phần 1',partOrder:Number(section.partOrder||1),type:'single',title:q.example?'Beispiel':`A1 Nghe 1 · Câu ${startNumber+questions.slice(0,index+1).filter(item=>!item.example).length}`,instruction:'',autoGrade:Boolean(spec.scoring?.autoGrade??true),pairs:[],rubric:[],ownerId:q.ownerId||exam?.ownerId||user.id,ownerName:q.ownerName||exam?.ownerName||user.name||'',status:q.status==='trash'?'active':(q.status||'active'),locked:Boolean(q.locked),usedCount:Number(q.usedCount||0),correctRate:q.correctRate??null,createdAt:q.createdAt||now,updatedAt:now};
         ops.push({collection:'questions',id:q.id,kind:'upsert',item});
       });
       const kept=new Set(questionIds);for(const old of originalQuestions)if(!kept.has(old.id))ops.push({collection:'questions',id:old.id,kind:'upsert',item:{...old,status:'trash',deletedAt:now,updatedAt:now}});

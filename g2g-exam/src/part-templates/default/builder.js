@@ -1,5 +1,5 @@
-import {modernInstructionText} from '../../domain/text-markup.js';
-import {sectionInstructionEditor,placeInstructionEditors} from './section-instruction-editor.js';
+import {examQuestionNumbers} from '../../domain/question-numbering.js';
+import {sectionInstructionEditor,placeInstructionEditors,questionPromptEditor} from './section-instruction-editor.js';
 import {imageMaxWidth,isPrefilledQuestion} from '../../domain/question-display.js';
 import {byId,getQuestionMaxScore} from '../../core.js';
 import {esc} from '../../ui/format.js';
@@ -103,7 +103,7 @@ function choicesHtml(q,choiceProfile,readOnly){
 function choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile}){
   const stimulus=choiceProfile.instructionImage&&Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length?fixedStimulusHtml(q,index,readOnly):'';
   const media=choiceProfile.questionImage?questionImageHtml(q,readOnly,true):audioHtml(q,readOnly,choiceProfile.showAudio);
-  return `<article class="goethe-question ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="choices" data-question-id="${q.id}">${stimulus}<div class="goethe-question-row"><textarea data-field="title" placeholder="${choiceProfile.letterTable?'Tên người trong bảng đáp án':q.example?'Câu ví dụ (Beispiel)':'Câu hỏi '+(index+1)}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly,{audio:choiceProfile.questionImage?audioHtml(q,readOnly,choiceProfile.showAudio):media})}${choiceProfile.questionImage?media:''}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</article>`;
+  return `<article class="goethe-question ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="choices" data-question-id="${q.id}">${stimulus}<div class="goethe-question-row"><textarea data-field="title" placeholder="${choiceProfile.letterTable?'Tên người trong bảng đáp án':q.example?'Câu ví dụ (Beispiel)':'Câu hỏi'}" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea><div class="goethe-question-side">${scoreControls(q,defaultScore,readOnly,{audio:choiceProfile.questionImage?audioHtml(q,readOnly,choiceProfile.showAudio):media})}${choiceProfile.questionImage?media:''}</div></div>${choicesHtml(q,choiceProfile,readOnly)}</article>`;
 }
 
 function fixedStimulusHtml(q,questionIndex,readOnly){
@@ -153,10 +153,8 @@ function instructionBlocksFor(q){
   return Array.isArray(q.instructionBlocks)?q.instructionBlocks:[{text:q.prompt||'',imageUrl:q.instructionImageUrl||''}];
 }
 
-function questionInstructionHtml(q,block,index,readOnly,{questionIndex=null}={}){
-  const imageUrl=block.imageUrl||'';
-  const move=questionIndex===null?'':`<button type="button" class="icon-btn" data-action="move-question-instruction" data-id="${q.id}" data-index="${index}" data-dir="up" title="Đưa đề bài lên" aria-label="Đưa đề bài lên" ${readOnly||questionIndex===0?'disabled':''}>↑</button><button type="button" class="icon-btn" data-action="move-question-instruction" data-id="${q.id}" data-index="${index}" data-dir="down" title="Đưa đề bài xuống" aria-label="Đưa đề bài xuống" ${readOnly?'disabled':''}>↓</button>`;
-  return `<div class="goethe-instruction goethe-instruction--media mixed-writing-instruction" data-question-instruction-block data-question-image-control data-index="${index}" data-has-image="${imageUrl?'true':'false'}"><textarea data-instruction-prompt aria-label="Đề bài" placeholder="${esc(instructionPlaceholder)}" ${readOnly?'disabled':''}>${esc(modernInstructionText(block.text||''))}</textarea><div class="goethe-instruction-actions"><div class="goethe-instruction-icons">${move}<button type="button" class="icon-btn" data-action="remove-question-instruction" data-id="${q.id}" data-index="${index}" title="Xóa đề bài" aria-label="Xóa đề bài" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-question-instruction" data-id="${q.id}" title="Thêm đề bài" aria-label="Thêm đề bài" ${readOnly?'disabled':''}>${icons.add}</button></div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.addImage}<span>Thêm hình ảnh</span>`}</span><input type="file" data-question-instruction-image="${index}" accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
+function questionInstructionHtml(q,block,index,readOnly,options={}){
+  return questionPromptEditor(q,block,index,{readOnly,placeholder:instructionPlaceholder,audioHtml,...options});
 }
 
 export function renderBuilder({data,exam,section,readOnly=false}={}){
@@ -164,13 +162,14 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
   const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
   const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).sort((a,b)=>Number(Boolean(b.example))-Number(Boolean(a.example)));
   const choiceProfile=profileFor(section);
+  const numbers=examQuestionNumbers(exam,data.questions);
   const listening=section.skillKey==='listening'||/nghe|hören|listening/i.test(section.skill||'');
   if(listening)choiceProfile.showAudio=true;
-  if(section.questionProfile?.layout==='heading-match')return `<div class="part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}${headingMatchBuilder(section,questions,readOnly)}</div>`;
+  if(section.questionProfile?.layout==='heading-match')return `<div class="part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}${headingMatchBuilder(section,questions,readOnly,numbers)}</div>`;
   if(section.questionProfile?.readingBlocks){
     return `<div class="part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}${readingBlocksEditor(section,readOnly)}<div class="goethe-questions">${questions.map((q,index)=>choiceQuestionHtml(q,index,{defaultScore,readOnly,choiceProfile})).join('')}</div></div>`;
   }
-  if(section.questionProfile?.layout==='inline-gaps')return `<div class="part-editor">${instructionHtml(section,{...choiceProfile,instructionImage:false},readOnly,null)}${inlineGapBuilder(section,questions,readOnly)}</div>`;
+  if(section.questionProfile?.layout==='inline-gaps')return `<div class="part-editor">${instructionHtml(section,{...choiceProfile,instructionImage:false},readOnly,null)}${inlineGapBuilder(section,questions,readOnly,numbers)}</div>`;
   const audioIds=new Set(partAudioQuestions(section,questions).map(q=>q.id));
   if(section.questionProfile?.pairedQuestions){
     const pairs=[];
@@ -181,7 +180,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
     }
     return `<div class="part-editor paired-part-editor">${instructionHtml(section,choiceProfile,readOnly,null)}<div class="goethe-questions">${pairs.join('')}</div></div>`;
   }
-  if(choiceProfile.letterTable)return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${instructionHtml(section,choiceProfile,readOnly,null)}${letterTableBuilder({questions,section,defaultScore,readOnly,audioHtml,choicesHtml:q=>choicesHtml(q,choiceProfile,readOnly)})}</div>`;
+  if(choiceProfile.letterTable)return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${instructionHtml(section,choiceProfile,readOnly,null)}${letterTableBuilder({questions,section,numbers,defaultScore,readOnly,audioHtml,choicesHtml:q=>choicesHtml(q,choiceProfile,readOnly)})}</div>`;
   const renderQuestion=(q,index)=>choiceProfile.formFrame
     ?writingFormEditor(q,{readOnly})
     :choiceProfile.isWritingForm
@@ -196,13 +195,7 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
 
 export function numberBuilderQuestions(root,questions,exam){
   let number=0;
-  const numbers=new Map();
-  for(const section of exam?.sections||[]){
-    for(const id of section.questionIds||[]){
-      const question=byId(questions,id);
-      if(question&&!isPrefilledQuestion(question))numbers.set(id,++number);
-    }
-  }
+  const numbers=examQuestionNumbers(exam,questions);
   number=0;
   for(const card of root.querySelectorAll('article.part-question:not([hidden])')){
     const question=byId(questions,card.dataset.questionId);
@@ -245,7 +238,7 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
   root.querySelectorAll('[data-remove-audio]').forEach(button=>button.onclick=()=>{
     if(button.disabled)return;
     const control=button.closest('.audio-upload'),input=control.querySelector('input[data-field="audio"]');
-    const id=control.closest('.part-question')?.dataset.questionId||control.closest('[data-audio-question-id]')?.dataset.audioQuestionId;
+    const id=control.closest('[data-audio-question-id]')?.dataset.audioQuestionId||control.closest('.part-question')?.dataset.questionId;
     if(!id)return;
     pendingAudioUploads.set(id,{promise:Promise.resolve({url:'',name:''})});
     control.querySelector('audio')?.pause();control.querySelector('audio')?.remove();control.querySelector('.audio-preview')?.remove();
@@ -254,7 +247,7 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     input.dispatchEvent(new Event('input',{bubbles:true}));
   });
   root.querySelectorAll('.audio-upload input[data-field="audio"]').forEach(input=>input.onchange=()=>{
-    const file=input.files?.[0],control=input.closest('.audio-upload'),questionId=input.closest('.part-question')?.dataset.questionId||input.closest('[data-audio-question-id]')?.dataset.audioQuestionId,label=control?.querySelector('.audio-file-select span');if(!file||!control||!questionId||!label)return;
+    const file=input.files?.[0],control=input.closest('.audio-upload'),questionId=input.closest('[data-audio-question-id]')?.dataset.audioQuestionId||input.closest('.part-question')?.dataset.questionId,label=control?.querySelector('.audio-file-select span');if(!file||!control||!questionId||!label)return;
     input.disabled=true;label.textContent='Đang tải audio · 0%';const upload={name:file.name,promise:null};
     upload.promise=uploadQuestionAudio(file,{onProgress:percent=>{if(pendingAudioUploads.get(questionId)===upload)label.textContent=`Đang tải audio · ${percent}%`;}}).then(url=>{if(pendingAudioUploads.get(questionId)===upload)showUploadedAudio(control,{url,name:file.name});return {url,name:file.name};}).catch(error=>{if(pendingAudioUploads.get(questionId)===upload){pendingAudioUploads.delete(questionId);label.textContent='Tải audio thất bại';notify(error.message);}throw error;}).finally(()=>{if(pendingAudioUploads.get(questionId)===upload)input.disabled=false;});
     pendingAudioUploads.set(questionId,upload);upload.promise.catch(()=>{});
