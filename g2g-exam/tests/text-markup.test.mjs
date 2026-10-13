@@ -67,7 +67,7 @@ assert.match(tooltipSource,/event.composedPath\(\)/);
 assert.doesNotMatch(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.writing-style-toggle\[aria-pressed="true"\]/);
 const writingBuilderSource=readFileSync(new URL('../src/part-templates/default/builder.js',import.meta.url),'utf8');
 assert.equal((writingBuilderSource.match(/placeholder="\$\{esc\(instructionPlaceholder\)\}"/g)||[]).length,2);
-for(const hint of ['[b]chữ đậm[/b]','[i]chữ nghiêng[/i]','[u]gạch chân[/u]','Cmd/Ctrl B','Cmd/Ctrl I','Cmd/Ctrl U','[a], [b], [text]'])assert.ok(writingBuilderSource.includes(hint));
+for(const hint of ['[b]chữ đậm[/b]','[i]chữ nghiêng[/i]','[u]gạch chân[/u]','Cmd/Ctrl B','Cmd/Ctrl I','Cmd/Ctrl U','[box]nội dung[/box]'])assert.ok(writingBuilderSource.includes(hint));
 assert.match(writingBuilderSource,/data-writing-style-toggle/);
 assert.match(writingBuilderSource,/class="icon-btn writing-style-toggle"/);
 assert.match(writingBuilderSource,/iconHtml\(handwritten\?'grading':'type'\)/);
@@ -95,6 +95,18 @@ assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.si
 import {textHtml} from '../src/ui/format.js';
 assert.equal(textHtml('[a], [b] oder [c]'),'[a], [b] oder [c]');
 import {parseGapText,gapAuthorText,inlineGapErrors} from '../src/domain/inline-gaps.js';
+import {modernInstructionText} from '../src/domain/text-markup.js';
+assert.equal(modernInstructionText('[Richtig] [a] [img] [b]text[/b]'),'[box]Richtig[/box] [box]a[/box] [img] [b]text[/b]');
+assert.equal(modernInstructionText(modernInstructionText('[Richtig]')),'[box]Richtig[/box]');
+assert.match(textHtml('[box]<script>[/box]'),/instruction-token.*&lt;script&gt;/);
+assert.deepEqual(parseGapText('[b]{a}[/b] [i]{b}[/i] {z}',2).keys,[0,1]);
+{
+  const output=inlineGapsHtml({gapPassage:['Before [b][img] After[/b]'],instructionImageUrl:'/safe.jpg',questionProfile:{inlineExample:false}},[],{},0);
+  assert.equal((output.match(/src="\/safe.jpg"/g)||[]).length,1);
+  assert.ok(output.indexOf('Before')<output.indexOf('<img'));
+  assert.doesNotMatch(output,/\[img\]|\[\/b\]/);
+}
+assert.match(inlineGapsHtml({gapPassage:['[b]',{gap:0},'[/b]'],gapOptions:['word'],questionProfile:{}},[{id:'new-syntax',choices:['A']}],{},0),/<strong class="text-bold"><span class="inline-gap">/);
 import {readingBlocksHtml,readingBlocksEditor} from '../src/ui/reading-blocks.js';
 import {inlineGapsHtml} from '../src/ui/inline-gaps.js';
 import {letterAnswersHtml} from '../src/ui/letter-answers.js';
@@ -163,7 +175,7 @@ assert.match(readingBlocksEditor(section),/>Normal \[b\]important\[b\]<\/textare
 const source='[z] [b]Important text[b] then [a] and [b] end';
 const parsed=parseGapText(source,2);
 assert.deepEqual(parsed.keys,[0,1]);
-assert.equal(gapAuthorText({gapPassage:parsed.passage},[{correctAnswer:0},{correctAnswer:1}]),source);
+assert.equal(gapAuthorText({gapPassage:parsed.passage},[{correctAnswer:0},{correctAnswer:1}]),'{z} [b]Important text[b] then {a} and {b} end');
 assert.deepEqual(parseGapText('[a] one [b] two [c] three',3).keys,[0,1,2]);
 const gaps={questionProfile:{layout:'inline-gaps'},questionLimit:2,gapPassage:parsed.passage,gapExample:'Demo',gapOptions:[...'abcdefgh'],name:'Test'};
 assert.deepEqual(inlineGapErrors(gaps),[]);

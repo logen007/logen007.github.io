@@ -32,6 +32,27 @@ const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teach
 globalThis.sessionStorage={getItem:()=>null};
 const {exam,rows}=telcFixture(state,teacher);
 {
+  const local=structuredClone(state),copy=local.exams.find(e=>e.id===exam.id),part=copy.sections[4];
+  const questions=part.questionIds.map(id=>local.questions.find(q=>q.id===id));
+  const keys=questions.map(q=>q.correctAnswer),passage=JSON.stringify(part.gapPassage);
+  const source=gapAuthorText(part,questions);
+  assert.ok(source.includes('{a}')&&source.includes('{b}'));
+  const root={querySelector(selector){
+    if(selector==='[data-gap-text]')return {value:source};
+    if(selector==='[data-gap-options-count]')return {dataset:{gapOptionsCount:part.gapOptions.length}};
+    const option=selector.match(/data-gap-option="([a-y])"/);
+    if(option)return {value:part.gapOptions[option[1].charCodeAt(0)-97]};
+    const answer=selector.match(/data-gap-answer="(\d+)"/);
+    if(answer)return {value:String(keys[Number(answer[1])])};
+    return null;
+  }};
+  for(let retry=0;retry<2;retry++)saveInlineGapDraft(root,local,teacher,copy,part);
+  assert.deepEqual(questions.map(q=>q.correctAnswer),keys,'Automatic syntax migration preserves saved answer keys');
+  assert.equal(JSON.stringify(part.gapPassage),passage);
+  assert.equal(gapAuthorText(JSON.parse(JSON.stringify(part)),questions),source);
+  assert.throws(()=>saveInlineGapDraft({querySelector:s=>s==='[data-gap-text]'?{value:'{b} {a}'}:null},local,teacher,copy,part),/theo thứ tự/);
+}
+{
   const local=structuredClone(state),localExam=local.exams.find(e=>e.id===exam.id);
   const question=local.questions.find(q=>q.id===localExam.sections[1].questionIds[2]);
   assert.ok(question.instructionBlocks.length,'New reading part 2 has its initial second stimulus');
@@ -255,7 +276,7 @@ const gapBuilder=renderBuilder({data:state,exam,section:gap3});
   assert.ok(field.value.includes('[b]Bold[/b]'),'Removing a position preserves text formatting');
   buttons[1].click();
   assert.equal(groups[9].hidden,false);
-  assert.ok(field.value.endsWith('[j]'));
+  assert.ok(field.value.endsWith('{j}'));
 }
 assert.match(gapBuilder,/data-gap-position-action="add"/);
 assert.match(gapBuilder,/data-gap-position-action="remove"/);
@@ -265,16 +286,16 @@ const reading5Builder=renderBuilder({data:state,exam,section:gapBank});
 assert.match(reading5Builder,/data-gap-title/,'Reading 5 keeps its title editor');
 assert.match(reading5Builder,/data-section-image/,'Reading 5 keeps its image editor');
 assert.doesNotMatch(gapBuilder,/Chỗ trống/);
-assert.ok(gapBuilder.includes('<legend>[a]</legend>'));
-assert.ok(gapBuilder.includes('<legend>[b]</legend>'));
-assert.ok(gapBuilder.includes('<legend>[d]</legend>'),'Position label is independent of correct answer');
+assert.ok(gapBuilder.includes('<legend>{a}</legend>'));
+assert.ok(gapBuilder.includes('<legend>{b}</legend>'));
+assert.ok(gapBuilder.includes('<legend>{d}</legend>'),'Position label is independent of correct answer');
 assert.equal((gapBuilder.match(/data-gap-correct=/g)||[]).length,30);
-assert.ok(gapAuthorText(gap3,rows(gap3)).includes('[j]'));
+assert.ok(gapAuthorText(gap3,rows(gap3)).includes('{j}'));
 for(const invalid of [-1,undefined,null,'',1.5,3]){
   const incomplete=structuredClone(state);
   incomplete.questions.find(q=>q.id===gap3.questionIds[3]).correctAnswer=invalid;
   const html=renderBuilder({data:incomplete,exam,section:gap3});
-  assert.ok(html.includes('<legend>[d]</legend>'));
+  assert.ok(html.includes('<legend>{d}</legend>'));
   assert.doesNotMatch(html,/\[a\/b\/c\]/);
 }
 {
@@ -301,7 +322,7 @@ assert.match(letterAnswerError(gapBank,rows(gapBank),Object.fromEntries(rows(gap
 assert.deepEqual(inlineGapErrors(gapBank),[]);
 assert.ok(inlineGapErrors({...gapBank,gapOptions:gapBank.gapOptions.slice(0,9)}).length);
 assert.ok(inlineGapErrors({...gap3,gapOptions:[['a','b']]}).length);
-assert.equal(gapAuthorText(gapBank,rows(gapBank)).includes('[j]'),true);
+assert.equal(gapAuthorText(gapBank,rows(gapBank)).includes('{j}'),true);
 assert.deepEqual(parseGapText('[i]italic[/i] [u]underlined[/u] [b]bold[/b] [i] [j]',10,'abcdefghijklmnopqrstuvwxy').keys,[8,9]);
 const copy=duplicateExam(state,teacher,exam.id);
 const scoreCard={dataset:{questionId:copy.sections[0].questionIds[0]},querySelector:selector=>({value:selector==='[data-heading-score]'?'12.5':selector==='[data-heading-answer]'?'5':'Custom passage'})};

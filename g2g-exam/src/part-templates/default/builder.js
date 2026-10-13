@@ -1,3 +1,4 @@
+import {modernInstructionText} from '../../domain/text-markup.js';
 import {imageMaxWidth} from '../../domain/question-display.js';
 import {byId,getQuestionMaxScore} from '../../core.js';
 import {esc} from '../../ui/format.js';
@@ -12,7 +13,7 @@ import {headingMatchBuilder} from './heading-match-builder.js';
 import {readingBlocksEditor} from '../../ui/reading-blocks.js';
 import {letterTableBuilder,bindLetterTableBuilder} from './letter-table-builder.js';
 
-const instructionPlaceholder='Nhập đề bài. Dùng [b]chữ đậm[/b] (Cmd/Ctrl B), [i]chữ nghiêng[/i] (Cmd/Ctrl I), [u]gạch chân[/u] (Cmd/Ctrl U); [a], [b], [text] hiển thị chữ đậm trong khung viền. Chọn chữ rồi dùng phím tắt để định dạng.';
+const instructionPlaceholder='Nhập đề bài. Dùng [b]chữ đậm[/b] (Cmd/Ctrl B), [i]chữ nghiêng[/i] (Cmd/Ctrl I), [u]gạch chân[/u] (Cmd/Ctrl U); [box]nội dung[/box] đóng khung chữ; [img] chèn ảnh. Ô điền dùng {a}, {b}… và {z} cho ví dụ. Chọn chữ rồi dùng phím tắt để định dạng.';
 
 const icons={
   add:iconHtml('plus'),
@@ -129,7 +130,7 @@ function freeResponseHtml(q,{defaultScore,readOnly}){
 
 function instructionHtml(section,choiceProfile,readOnly,question){
   const listening=section.skillKey==='listening'||/nghe|hören|listening/i.test(section.skill||'');
-  const instruction=`<div class="instruction-content"><textarea id="sectionInstruction" aria-label="Đề bài" placeholder="${esc(instructionPlaceholder)}" ${readOnly?'disabled':''}>${esc(section.instruction||'')}</textarea></div>`;
+  const instruction=`<div class="instruction-content"><textarea id="sectionInstruction" aria-label="Đề bài" placeholder="${esc(instructionPlaceholder)}" ${readOnly?'disabled':''}>${esc(modernInstructionText(section.instruction||''))}</textarea></div>`;
   const audio=listening?`<div class="instruction-audio" role="group" aria-label="Audio đề bài" data-audio-question-id="section:${esc(section.id)}">${audioHtml({audioUrl:section.instructionAudioUrl,audioName:section.instructionAudioName},readOnly,true)}</div>`:'';
   if(!choiceProfile.instructionImage)return `<div class="goethe-instruction ${listening?'goethe-instruction--with-audio':''}">${instruction}${audio}</div>`;
   const imageUrl=section.instructionImageUrl||'';
@@ -144,7 +145,7 @@ function instructionBlocksFor(q){
 function questionInstructionHtml(q,block,index,readOnly,{questionIndex=null}={}){
   const imageUrl=block.imageUrl||'';
   const move=questionIndex===null?'':`<button type="button" class="icon-btn" data-action="move-question-instruction" data-id="${q.id}" data-index="${index}" data-dir="up" title="Đưa đề bài lên" aria-label="Đưa đề bài lên" ${readOnly||questionIndex===0?'disabled':''}>↑</button><button type="button" class="icon-btn" data-action="move-question-instruction" data-id="${q.id}" data-index="${index}" data-dir="down" title="Đưa đề bài xuống" aria-label="Đưa đề bài xuống" ${readOnly?'disabled':''}>↓</button>`;
-  return `<div class="goethe-instruction goethe-instruction--media mixed-writing-instruction" data-question-instruction-block data-question-image-control data-index="${index}" data-has-image="${imageUrl?'true':'false'}"><textarea data-instruction-prompt aria-label="Đề bài" placeholder="${esc(instructionPlaceholder)}" ${readOnly?'disabled':''}>${esc(block.text||'')}</textarea><div class="goethe-instruction-actions"><div class="goethe-instruction-icons">${move}<button type="button" class="icon-btn" data-action="remove-question-instruction" data-id="${q.id}" data-index="${index}" title="Xóa đề bài" aria-label="Xóa đề bài" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-question-instruction" data-id="${q.id}" title="Thêm đề bài" aria-label="Thêm đề bài" ${readOnly?'disabled':''}>${icons.add}</button></div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.addImage}<span>Thêm hình ảnh</span>`}</span><input type="file" data-question-instruction-image="${index}" accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
+  return `<div class="goethe-instruction goethe-instruction--media mixed-writing-instruction" data-question-instruction-block data-question-image-control data-index="${index}" data-has-image="${imageUrl?'true':'false'}"><textarea data-instruction-prompt aria-label="Đề bài" placeholder="${esc(instructionPlaceholder)}" ${readOnly?'disabled':''}>${esc(modernInstructionText(block.text||''))}</textarea><div class="goethe-instruction-actions"><div class="goethe-instruction-icons">${move}<button type="button" class="icon-btn" data-action="remove-question-instruction" data-id="${q.id}" data-index="${index}" title="Xóa đề bài" aria-label="Xóa đề bài" ${readOnly?'disabled':''}>${icons.remove}</button><button type="button" class="icon-btn" data-action="add-question-instruction" data-id="${q.id}" title="Thêm đề bài" aria-label="Thêm đề bài" ${readOnly?'disabled':''}>${icons.add}</button></div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.addImage}<span>Thêm hình ảnh</span>`}</span><input type="file" data-question-instruction-image="${index}" accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
 }
 
 export function renderBuilder({data,exam,section,readOnly=false}={}){

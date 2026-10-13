@@ -62,7 +62,7 @@ gap.instructionImageUrl='/uploads/bicycle-test.png';
 gap.instructionImageMaxWidth=700;
 for(const key of 'abcdefgh')fields['[data-gap-option="'+key+'"]']={value:'Sentence '+key};
 saveInlineGapDraft({querySelector:key=>fields[key]},state,teacher,exam,gap);
-assert.equal(gapAuthorText(gap,qs),text);
+assert.equal(gapAuthorText(gap,qs),'Vorher {z}. Dann {a} und {b}.\nWeiter {c} {d} {e} {f}.');
 assert.equal(gap.gapTitle,fields['[data-gap-title]'].value);
 assert.deepEqual(qs.map(q=>q.correctAnswer),[3,0,7,1,5,2]);
 assert.equal(qs.some(q=>q.example),false);
@@ -86,7 +86,7 @@ assert.match(css,/\.gap-article-editor \{ grid-template-columns:minmax\(0,1fr\) 
 assert.equal((builder.match(/data-section-image accept/g)||[]).length,1);
 assert.doesNotMatch(builder,/Chèn \[a\]–\[h\] tại chỗ trống/);
 assert.equal((builder.match(/data-gap-option=/g)||[]).length,9);
-assert.match(builder,/\[z\]/);
+assert.match(builder,/\{z\}/);
 const publicQuestions=qs.map(({correctAnswer,...q})=>q);
 const html=examHtml({exam,attempt:{answers:{}},sectionIndex:1,questions:publicQuestions,allQuestions:state.questions,online:true});
 const readingThreeHtml=examHtml({exam,attempt:{answers:{}},sectionIndex:2,questions:rows(exam.sections[2]),allQuestions:state.questions,online:true});
@@ -164,16 +164,16 @@ for(const unique of [false,true]){
   assert.equal(controls[1].options[1].disabled,false);
 }
 const originalPassage=structuredClone(gap.gapPassage);
-fields['[data-gap-text]'].value='Partial [z] [a] and [';
+fields['[data-gap-text]'].value='Partial {z} {a} and [';
 saveInlineGapDraft({querySelector:key=>fields[key]},state,teacher,exam,gap);
-assert.equal(gapAuthorText(gap,qs),'Partial [z] [a] and [');
+assert.equal(gapAuthorText(gap,qs),'Partial {z} {a} and [');
 assert.ok(inlineGapErrors(gap).length);
 fields['[data-gap-text]'].value=text;
 saveInlineGapDraft({querySelector:key=>fields[key]},state,teacher,exam,gap);
 assert.deepEqual(gap.gapPassage,originalPassage);
 const copy=duplicateExam(state,teacher,exam.id);
 assert.deepEqual(copy.sections[0].readingBlocks,exam.sections[0].readingBlocks);
-assert.equal(gapAuthorText(copy.sections[1],rows(copy.sections[1])),text);
+assert.equal(gapAuthorText(copy.sections[1],rows(copy.sections[1])),gapAuthorText(gap,qs));
 assert.equal(copy.sections[1].gapTitle,gap.gapTitle);
 assert.equal(copy.sections[1].instructionImageUrl,gap.instructionImageUrl);
 assert.equal(ensureExamMatchesConfiguredSpec(state,teacher,exam.id),false);

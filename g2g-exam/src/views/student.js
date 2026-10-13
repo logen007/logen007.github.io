@@ -139,10 +139,8 @@ export function sectionPromptHtml(section){
   const text=String(section.instruction||''),hasMarker=/\[img\]/i.test(text);
   const image=section.instructionImageUrl?`<img ${imageMaxWidth(section.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(section.instructionImageMaxWidth)}px"`:''} src="${esc(section.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:'';
   let inserted=false;
-  const content=text.split(/(\[img\])/gi).map(part=>{
-    if(/^\[img\]$/i.test(part)){if(inserted)return '';inserted=true;return image;}
-    return part?`<div><p>${instructionTextHtml(part)}</p></div>`:'';
-  }).join('');
+  const formatted=instructionTextHtml(text).replace(/\[img\]/gi,()=>{if(inserted)return '';inserted=true;return image;});
+  const content=text?`<div><p>${formatted}</p></div>`:'';
   return content+(!hasMarker&&section.questionProfile?.layout!=='inline-gaps'?image:'');
 }
 

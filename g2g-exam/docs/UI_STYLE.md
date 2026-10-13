@@ -65,6 +65,16 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Approved syntax (13 October 2026): {a}, {b}, … are ordered answer positions,
+  {z} is the example. Correct answers are edited separately for both shared-bank
+  and per-question choices. Existing structured passages are presented in this
+  syntax automatically; preserve their stored answer keys and attempt snapshots.
+  Legacy square-bracket gap input remains readable during rollout. Keep ambiguous
+  legacy [b]…[b] text unchanged and warn in the editor instead of guessing.
+  [box]text[/box] explicitly frames instruction text. Existing unambiguous framed
+  instruction tokens convert when loaded into the editor and persist on normal save.
+  [img] uses the section image at the marker; no repeated trailing image.
+
 - Instruction/prompt text wrapped in square brackets, e.g. [Richtig], renders
   bold inside a thin rectangular inline border. Keep raw text in editors.
   Instruction letters [a]–[h] use the same frame. This instruction-only rule
