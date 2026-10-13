@@ -53,7 +53,8 @@ function populateConfiguredSections(state,user,exam){
       if(Object.keys(patch).length)updateQuestion(state,user,questionId,patch);
     }
     const additions=[];
-    if(profile.example&&!(section.questionIds||[]).some(id=>isPrefilledQuestion(byId(state.questions,id)))){
+    // Examples are initial content, not mandatory content to resurrect after deletion.
+    if(profile.example&&!section.questionIds?.length){
       additions.push(createQuestion(state,user,{level:exam.level,skill:section.skill,part:section.name,type:profile.type||'single',title:'Nháp',choices,correctAnswer:0,example:true,maxScore:0}).id);
     }
     const realQuestionCount=(section.questionIds||[]).filter(questionId=>!isPrefilledQuestion(byId(state.questions,questionId))).length;

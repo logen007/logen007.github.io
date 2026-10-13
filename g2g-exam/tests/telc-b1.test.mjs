@@ -49,6 +49,17 @@ const {exam,rows}=telcFixture(state,teacher);
   assert.equal(local.questions.find(q=>q.id===question.id).instructionBlocks.length,1,'Legacy missing field still initializes');
 }
 assert.equal(getExamSpec('TELC','B1').configured,true);
+{
+  const local=structuredClone(state),copy=local.exams.find(e=>e.id===exam.id),part=copy.sections[2];
+  part.questionIds=part.questionIds.filter(id=>!local.questions.find(q=>q.id===id)?.example);
+  const retained=[...part.questionIds];
+  part.questionProfile.staleLayout=true;
+  ensureExamMatchesConfiguredSpec(local,teacher,exam.id);
+  assert.deepEqual(copy.sections[2].questionIds,retained,'Deleted example stays absent after spec repair');
+  const reloaded=JSON.parse(JSON.stringify(local));
+  ensureExamMatchesConfiguredSpec(reloaded,teacher,exam.id);
+  assert.deepEqual(reloaded.exams.find(e=>e.id===exam.id).sections[2].questionIds,retained);
+}
 assert.equal(getExamSpec('TELC','B2').configured,true);
 assert.strictEqual(getExamSpec('TELC','B2').skills,getExamSpec('TELC','B1').skills,'Both levels use the same structure source');
 assert.deepEqual({...getExamSpec('TELC','B2'),level:'B1'},getExamSpec('TELC','B1'));
