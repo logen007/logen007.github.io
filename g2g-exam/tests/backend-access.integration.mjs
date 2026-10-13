@@ -407,8 +407,13 @@ try{
   await query("UPDATE attempts SET status='grading' WHERE id=$1",[resultRow.id]);
   const hiddenReview=await handleAction(student,'getAttemptReview',{attemptId:resultRow.id});
   assert.equal(hiddenReview.score,null);
-  assert.ok(hiddenReview.sections.flatMap(s=>s.questions).every(q=>q.correct===null&&q.fields.every(f=>f.expected===null)));
-  console.log('Result review SQL: owner-only access, real published summary and hidden unpublished answers passed.');
+  const automaticReview=hiddenReview.sections.flatMap(s=>s.questions);
+  const publishedQuestions=resultReview.sections.flatMap(s=>s.questions);
+  assert.ok(automaticReview.every(q=>q.fields.every(f=>f.expected===null)));
+  assert.ok(automaticReview.some(q=>q.correct!=null));
+  for(const q of automaticReview.filter(q=>q.correct!=null))assert.equal(q.correct,publishedQuestions.find(p=>p.id===q.id).correct);
+  assert.equal(hiddenReview.score,null,'Teacher draft marks stay private');
+  console.log('Result review SQL: owner-only access, exact automatic answers and private unpublished teacher marks passed.');
   const {filteredGradebook}=await import('../src/domain/gradebook.js');
   const fullGrades=await loadState(teacher),summaryGrades=await loadState(teacher,{summaryOnly:true});
   for(const provider of ['GOETHE','TELC','FID']){

@@ -52,7 +52,7 @@ for(const status of ['published','ready','grading','submitted']){
   const review=await context.getAttemptReview(student,{attemptId:'mine'},{runQuery:async()=>++calls===1?{rowCount:1,rows:[row]}:{rows:[]}});
   assert.equal(calls,2,'A frozen snapshot should not query the question bank');
   assert.equal(review.attempt.status,status);
-  assert.equal(review.sections[0].questions[0].correct,status==='published'?0:null);
+  assert.equal(review.sections[0].questions[0].correct,0);
   assert.equal(review.score?.feedback??null,status==='published'?'Private feedback':null);
 }
 console.log('Maintainability: shared scoring, review loading, ownership, frozen snapshots and publication privacy passed.');

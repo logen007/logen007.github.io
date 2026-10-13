@@ -549,9 +549,10 @@ theme application must not wait for a network response to render the page.
 - Use skill tabs, native point scales, a compact answer-distribution ring and
   labeled score bars. Counts exclude examples and oral grading; objective
   correct/wrong counts exclude manually graded answers. Never substitute answer
-  accuracy for weighted examination score. Before publication, only the owner-only
-  temporary projection in `specs/provisional-results.md` is visible, in slate blue
-  with “– điểm tạm tính” beside each score. No AI wording or pass/fail assessment;
+  accuracy for weighted examination score. Before publication, preserve this layout
+  with exact automatic scores, objective counts and answer distribution. Only
+  estimated writing scores use slate blue and “– điểm tạm tính”, following
+  `specs/provisional-results.md`. No AI wording or overall pass/fail assessment;
   unavailable scores say “Chờ điểm”. Teacher's draft scores remain private.
 - Skill tabs expose submitted answers, published correct answers and an optional
   wrong/unanswered filter. Teacher identity and general feedback are real saved

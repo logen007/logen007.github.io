@@ -1,3 +1,4 @@
+import {canonicalSkill} from './gradebook.js';
 import {isPrefilledQuestion} from './question-display.js';
 import {scoreQuestion} from './question-score.js';
 import {isAutomaticWritingForm,scoreWritingForm} from './writing-form.js';
@@ -7,7 +8,8 @@ export function provisionalResult(exam,questions,attempt,privateData=attempt){
   if(!['submitted','grading','ready'].includes(attempt.status))return null;
   const map=new Map(questions.map(q=>[q.id,q])),parts=[];
   for(const section of exam.sections||[]){
-    const automatic={label:section.name,score:0,max:0,source:'automatic'},writing=[];
+    const skill=canonicalSkill(section.questionProfile?.scoringSkill||section.skillKey||section.skill||section.name);
+    const automatic={skill,label:section.name,score:0,max:0,source:'automatic'},writing=[];
     for(const id of section.questionIds||[]){
       const q=map.get(id);if(!q||isPrefilledQuestion(q))continue;
       const max=Math.max(0,Number(q.maxScore)||0),answer=attempt.answers?.[id];
@@ -17,7 +19,7 @@ export function provisionalResult(exam,questions,attempt,privateData=attempt){
       }else if(q.type==='writing'){
         const suggestion=privateData.aiWritingSuggestions?.[id],value=suggestion?.suggestedScore;
         const complete=suggestion?.status==='completed'&&value!=null&&value!==''&&Number.isFinite(Number(value));
-        writing.push({label:section.name,source:'ai',max,score:complete?Math.round(Math.max(0,Math.min(max,Number(value)))*100)/100:null,
+        writing.push({skill,label:section.name,source:'ai',max,score:complete?Math.round(Math.max(0,Math.min(max,Number(value)))*100)/100:null,
           status:complete?'completed':suggestion?.status==='failed'?'failed':String(q.aiGradingRules||'').trim()&&String(answer||'').trim()?'pending':'unavailable'});
       }
     }

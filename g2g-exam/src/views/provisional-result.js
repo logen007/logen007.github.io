@@ -1,6 +1,7 @@
-import {esc} from '../ui/format.js';
-
-export function provisionalResultHtml(result){
+// Use the existing result bars; only estimated writing scores need a special label.
+export function provisionalResultHtml(result,renderBar,skill){
   if(!result)return '';
-  return `<div class="provisional-result"><p class="phu-de">Chờ giáo viên chấm và công bố kết quả chính thức.</p><div class="provisional-parts">${result.parts.map(part=>`<div class="provisional-part"><span>${esc(part.label)}</span>${part.score!=null?`<span class="provisional-score"><strong>${esc(part.score)}<small>/${esc(part.max)}</small></strong> <span>– điểm tạm tính</span></span>`:`<span class="phu-de">Chờ điểm</span>`}</div>`).join('')}</div></div>`;
+  const parts=result.parts.filter(part=>!skill||part.skill===skill);
+  return parts.map(part=>renderBar(part.label,part.score==null?null:part,{showBand:part.source==='automatic',temporary:part.source==='ai'})).join('')+
+    (!skill?'<p class="phu-de">Chờ giáo viên chấm và công bố kết quả chính thức.</p>':!parts.length?'<p class="phu-de">Chờ điểm</p>':'');
 }

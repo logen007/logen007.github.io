@@ -31,9 +31,11 @@ assert.match(html,/data-result-share aria-label="Chia sẻ kết quả"/);assert
 assert.match(html,/role="tabpanel"/);assert.match(html,/data-result-verdict="blank"/);
 const share=resultShareText(review);assert.doesNotMatch(share,/Nhận xét riêng|Bài viết riêng|Đáp án|mine|https?:/);
 for(const status of ['submitted','grading','ready','incomplete']){
-  const pending=make(status);assert.equal(pending.score,null);assert.equal(pending.sections[0].questions[0].correct,null);
+  const pending=make(status);assert.equal(pending.score,null);assert.equal(pending.sections[0].questions[0].correct,status==='incomplete'?null:0);
   assert.equal(pending.sections[1].questions[1].fields[0].expected,null);
-  const view=attemptResultHtml({review:pending});assert.doesNotMatch(view,/Đáp án đúng|Nhận xét riêng|data-result-share aria|result-donut/);
+  const view=attemptResultHtml({review:pending});assert.doesNotMatch(view,/Nhận xét riêng|data-result-share aria/);
+  if(status==='incomplete')assert.doesNotMatch(view,/Đáp án đúng|result-donut/);
+  else{assert.match(view,/Đáp án đúng/);assert.match(view,/result-donut/);assert.match(view,/result-stats/);}
   assert.equal(resultShareText(pending),null);
 }
 const grammar=buildAttemptReview({exam:{...exam,sections:[{name:'Đọc 4',skillKey:'reading',questionProfile:{scoringSkill:'grammar'},questionIds:['a']}]},questions,attempt});

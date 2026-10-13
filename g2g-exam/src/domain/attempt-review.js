@@ -5,9 +5,10 @@ import {resultSummary} from './result-summary.js';
 import {provisionalResult} from './provisional-result.js';
 
 // A read-only projection shared by local mode and the authenticated review API.
-// Never send grading keys or private feedback before publication.
+// Submitted owners may review automatic answers; teacher drafts remain private.
 export function buildAttemptReview({exam={},questions=[],attempt={},privateData=attempt,student={}}){
   const published=attempt.status==='published';
+  const submitted=['submitted','grading','ready'].includes(attempt.status);
   const numbers=examQuestionNumbers(exam,questions);
   const map=new Map(questions.map(q=>[q.id,q]));
   const scoredIds=section=>(section.questionIds||[]).filter(id=>map.has(id)&&!isPrefilledQuestion(map.get(id))&&map.get(id).type!=='speaking');
@@ -22,7 +23,7 @@ export function buildAttemptReview({exam={},questions=[],attempt={},privateData=
       questions:scoredIds(section).map(id=>map.get(id)).map((q,index)=>({
         id:q.id,number:numbers.get(q.id),title:q.aiGradingRules&&q.title===q.aiGradingRules?q.prompt||'':q.title||q.prompt||'',type:q.type||'',maxScore:q.maxScore,
         answer:attempt.answers?.[q.id],
-        correct:published&&q.writingFormVersion!==1?q.correctAnswer:null,
+        correct:(published||submitted&&q.autoGrade)&&q.writingFormVersion!==1?q.correctAnswer:null,
         pairs:q.type==='matching'?(q.pairs||[]).map(pair=>[pair[0],published?pair[1]:null]):[],
         choices:(q.choices||[]).map(choice=>({text:typeof choice==='object'?String(choice.text||''):String(choice??''),imageUrl:typeof choice==='object'?choice.imageUrl||'':''})),
         fields:q.writingFormVersion===1?(q.rubric||[]).map((field,index)=>({index,label:field.label||'',type:field.type||'text',expected:published?field.answers||field.options?.[field.correctIndex]||'':null})):[],

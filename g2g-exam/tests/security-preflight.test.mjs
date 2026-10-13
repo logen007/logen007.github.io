@@ -81,7 +81,7 @@ test('Học viên không nhận đáp án đúng hoặc điểm riêng tư chưa
   assert.ok(studentBlock.includes('allowed.has(q.id)'));
 });
 
-test('Xem lại bài làm chỉ mở cho đúng học viên; đáp án chuẩn đợi công bố',()=>{
+test('Xem lại bài làm chỉ mở cho đúng học viên; kết quả tự chấm sau nộp, điểm giáo viên đợi công bố',()=>{
   const actions=read('server/src/actions/index.js');
   assert.ok(actions.includes("case 'getAttemptReview'"));
   assert.ok(actions.includes('return getAttemptReview(user,data)'));
@@ -91,7 +91,8 @@ test('Xem lại bài làm chỉ mở cho đúng học viên; đáp án chuẩn �
   assert.ok(review.includes('return buildAttemptReview('));
   const projection=read('src/domain/attempt-review.js');
   assert.ok(projection.includes("const published=attempt.status==='published'"));
-  assert.ok(projection.includes('correct:published&&'));
+  assert.ok(projection.includes("const submitted=['submitted','grading','ready'].includes(attempt.status)"));
+  assert.ok(projection.includes('correct:(published||submitted&&q.autoGrade)&&'));
   assert.ok(projection.includes('score:published?'));
 });
 

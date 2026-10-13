@@ -1,13 +1,9 @@
 /* G2G design system. Shared visual rules live here; operational settings in enhancements.css. */
 /* Published student results; shared tokens and controls, no grading-rule overrides. */
 .result-page{padding-bottom:32px}
-.provisional-result{margin-top:20px;text-align:left}
-.provisional-parts{display:grid;gap:12px}
-.provisional-part{display:flex;align-items:baseline;justify-content:space-between;gap:8px 20px;flex-wrap:wrap}
 .provisional-score{color:#526a80;display:inline-flex;align-items:baseline;gap:6px;flex-wrap:wrap}
-.provisional-score strong{font-size:24px;font-weight:500;font-variant-numeric:tabular-nums}
-.provisional-score small{font-size:14px;font-weight:400}
 .provisional-score>span{font-size:13px}
+.result-track.result-track--temporary>span{background:#526a80}
 .result-page [hidden]{display:none!important}
 .result-back{margin-bottom:16px}
 .result-page .the{margin:0;padding:24px}

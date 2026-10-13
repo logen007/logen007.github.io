@@ -20,17 +20,27 @@ const privateData={manualScores:{Viết:99},totalScore:999,feedback:'PRIVATE FEE
   failed:{status:'failed',error:'PRIVATE ERROR'},
 }};
 const before=JSON.stringify({attempt,privateData}),review=buildAttemptReview({exam,questions,attempt,privateData});
-assert.deepEqual(review.provisional.parts.slice(0,2),[{label:'Đọc',score:3,max:5,source:'automatic'},{label:'Viết 1',score:1,max:1,source:'automatic'}]);
+assert.deepEqual(review.provisional.parts.slice(0,2),[{skill:'reading',label:'Đọc',score:3,max:5,source:'automatic'},{skill:'writing',label:'Viết 1',score:1,max:1,source:'automatic'}]);
 assert.deepEqual(review.provisional.parts.slice(2).map(p=>p.score),[7,null,null,null]);
 assert.deepEqual(review.provisional.parts.slice(2).map(p=>p.status),['completed','pending','failed','unavailable']);
-assert.equal(review.score,null);assert.equal(review.sections[0].questions[0].correct,null);
+assert.equal(review.score,null);assert.equal(review.sections[0].questions[0].correct,1);
 assert.doesNotMatch(JSON.stringify(review),/PRIVATE|999/);
 assert.equal(JSON.stringify({attempt,privateData}),before);
 const html=attemptResultHtml({review});
 assert.match(html,/– điểm tạm tính/);assert.match(html,/Chờ điểm/);assert.match(html,/provisional-score/);
-assert.doesNotMatch(html,/AI|Đạt|Chưa đạt|Đáp án đúng|PRIVATE|điểm dự kiến/);
+assert.doesNotMatch(html,/AI|PRIVATE|điểm dự kiến/);
+assert.match(html,/result-stats/);assert.match(html,/result-donut/);assert.match(html,/Đáp án đúng/);
+assert.match(html,/data-provisional-result="writing"/);
+const bars=[...html.matchAll(/<div class="result-bar">([\s\S]*?)<div class="result-track/g)].map(m=>m[1]);
+assert.ok(bars.some(row=>row.includes('Đọc')&&!row.includes('điểm tạm tính')&&!row.includes('provisional-score')));
+assert.ok(bars.some(row=>row.includes('Viết 1')&&!row.includes('điểm tạm tính')));
+assert.ok(bars.some(row=>row.includes('Viết 2')&&row.includes('điểm tạm tính')));
 assert.equal(resultShareText(review),null);
 for(const status of ['in_progress','incomplete','abandoned','published'])assert.equal(provisionalResult(exam,questions,{...attempt,status},privateData),null);
+for(const status of ['in_progress','incomplete','abandoned']){
+  const hidden=buildAttemptReview({exam,questions,attempt:{...attempt,status},privateData});
+  assert.ok(hidden.sections.flatMap(s=>s.questions).every(q=>q.correct==null));
+}
 for(const value of [null,'',Infinity,'bad']){
   assert.equal(provisionalResult(exam,questions,attempt,{aiWritingSuggestions:{w:{status:'completed',suggestedScore:value}}}).parts[2].score,null);
 }
