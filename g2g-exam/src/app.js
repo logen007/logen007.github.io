@@ -1561,11 +1561,12 @@ import {shareStudentProfile,bindStudentName} from './views/student-profile-card.
 import {loadStudentReview as loadStudentReviewData} from './controllers/student-review.js';
 import {bindAttemptResult,bar as resultBar} from './views/attempt-result.js';
 import {provisionalResultHtml} from './views/provisional-result.js';
+import {telcResultHtml} from './views/telc-result.js';
 import {startResultRefresh} from './controllers/result-refresh.js';
 if(repo.mode==='api')startResultRefresh({
   isActive:()=>isStudent(user)&&ui.view==='student-attempt-detail'&&Boolean(ui.review?.provisional),
   getReview:()=>ui.review,
   refresh:attemptId=>repo.call('getAttemptReview',{attemptId,progressOnly:true}),
-  onResult:provisional=>{ui.review={...ui.review,provisional};app.querySelectorAll('[data-provisional-result]').forEach(slot=>{slot.innerHTML=provisionalResultHtml(provisional,resultBar,slot.dataset.provisionalResult);});},
+  onResult:provisional=>{ui.review={...ui.review,provisional};app.querySelectorAll('[data-provisional-result]').forEach(slot=>{slot.innerHTML=provisionalResultHtml(provisional,resultBar,slot.dataset.provisionalResult);});app.querySelectorAll('[data-telc-result]').forEach(slot=>{slot.innerHTML=telcResultHtml(ui.review,resultBar,slot.dataset.telcResult);});},
   onPublished:async id=>{const review=await loadStudentReview(id);if(isStudent(user)&&ui.view==='student-attempt-detail'&&ui.review?.attempt.id===id){ui.review=review;render();}},
 });

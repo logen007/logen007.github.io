@@ -533,6 +533,12 @@ theme application must not wait for a network response to render the page.
 
 ## Student result detail
 
+- Standard TELC results use two separate cards: Khối thi viết (with four nested
+  skill rows) and Khối thi nói. Use shared bars without grade badges on children;
+  show block thresholds and only published block verdicts. Missing written
+  components leave the total pending; estimated writing makes the block total
+  explicitly temporary. Keep this hierarchy during background updates.
+
 - Animate result counters, skill bars and answer distribution once per opened
   review over 900ms, with a subtle card entrance. Preserve exact final values,
   skip reduced motion, and stop updates when hidden or detached. No new requests.

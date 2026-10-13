@@ -4,6 +4,10 @@
 .provisional-score{color:#526a80;display:inline-flex;align-items:baseline;gap:6px;flex-wrap:wrap}
 .provisional-score>span{font-size:13px}
 .result-track.result-track--temporary>span{background:#526a80}
+.telc-result-groups{display:grid;gap:20px;min-width:0}
+.telc-result-children{display:grid;gap:16px;margin-top:24px;padding-left:16px;border-left:2px solid var(--border,#e5e7eb)}
+.telc-result-children .result-bar{margin:0}
+.telc-result-threshold{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted,#666)}
 .result-page [hidden]{display:none!important}
 .result-back{margin-bottom:16px}
 .result-page .the{margin:0;padding:24px}

@@ -50,3 +50,4 @@ bindAttemptResult(root,{review});tabs[1].onclick();assert.equal(panels['#result-
 tabs[1].onkeydown({key:'Home',preventDefault(){}});assert.equal(tabs[0].focused,true);assert.equal(panels['#result-panel-overview'].hidden,false);
 console.log('Student results: projection, publication privacy, counts, escaping, skill tabs, keyboard and private sharing passed.');
 await import('./provisional-result.test.mjs');
+await import('./telc-result.test.mjs');
