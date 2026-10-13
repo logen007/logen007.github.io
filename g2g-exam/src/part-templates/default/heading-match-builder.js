@@ -1,3 +1,4 @@
+import {buildGapBank,splitGapBank} from '../../domain/gap-bank.js';
 import {iconHtml} from '../../ui/icons.js';
 import {esc} from '../../ui/format.js';
 import {updateQuestion,updateSection} from '../../core.js';
@@ -22,22 +23,27 @@ export function resizeHeadingOptions(state,user,examId,sectionId,action,index){
 
 export function headingMatchBuilder(section,questions,readOnly,numbers=new Map()){
   const disabled=readOnly?'disabled':'',choices=Array.from({length:section.headingOptions?.length||section.questionProfile.choices.length},(_,i)=>String.fromCharCode(65+i));
-  const bank=choices.map((letter,i)=>`<div class="heading-option-row"><b>${letter.toLowerCase()}</b><input class="truong" data-heading-option="${i}" aria-label="Đáp án ${letter.toLowerCase()}" placeholder="Đáp án ${letter.toLowerCase()}" value="${esc(section.headingOptions?.[i]||'')}" ${disabled}><button type="button" class="icon-btn" data-heading-remove="${i}" aria-label="Bỏ đáp án ${letter.toLowerCase()}" title="Bỏ đáp án" ${readOnly||choices.length<=section.questionLimit?'disabled':''}>${iconHtml('close')}</button><button type="button" class="icon-btn" data-heading-add="${i}" aria-label="Thêm đáp án bên dưới" title="Thêm đáp án" ${readOnly||choices.length>=26?'disabled':''}>${iconHtml('plus')}</button></div>`).join('');
-  return `<div class="gap-options-editor" data-heading-bank data-count="${choices.length}">${bank}</div><div class="goethe-questions">${questions.map((q,index)=>`<article class="goethe-question part-question" data-editor-mode="heading-match" data-question-id="${esc(q.id)}"><textarea class="truong" data-heading-text aria-label="Đoạn văn ${numbers.get(q.id)??index+1}" placeholder="Đoạn văn ${numbers.get(q.id)??index+1}" ${disabled}>${esc(q.title==='Nháp'?'':q.title)}</textarea><div class="heading-answer-row"><label><select class="truong" data-heading-answer aria-label="Đáp án đúng câu ${numbers.get(q.id)??index+1}" ${disabled}><option value="-1" ${Number(q.correctAnswer)<0?'selected':''}>Chọn đáp án</option>${choices.map((letter,i)=>`<option value="${i}" ${Number(q.correctAnswer)===i?'selected':''}>${letter.toLowerCase()}</option>`).join('')}</select></label><label><input class="truong" type="number" min="0" step="any" data-heading-score aria-label="Điểm câu ${numbers.get(q.id)??index+1}" value="${esc(q.maxScore)}" ${disabled}></label></div></article>`).join('')}</div>`;
+  const bank=splitGapBank({gapOptions:section.headingOptions},questions);
+  return `<div class="goethe-questions">${questions.map((q,index)=>`<article class="goethe-question part-question" data-editor-mode="heading-match" data-question-id="${esc(q.id)}"><textarea class="truong" data-heading-text aria-label="Đoạn văn ${numbers.get(q.id)??index+1}" placeholder="Đoạn văn ${numbers.get(q.id)??index+1}" ${disabled}>${esc(q.title==='Nháp'?'':q.title)}</textarea><div class="heading-answer-row"><input class="truong" data-heading-correct-text aria-label="Đáp án đúng câu ${numbers.get(q.id)??index+1}" placeholder="Đáp án đúng" value="${esc(bank.answers[index])}" ${disabled}><input class="truong" type="number" min="0" step="any" data-heading-score aria-label="Điểm câu ${numbers.get(q.id)??index+1}" value="${esc(q.maxScore)}" ${disabled}><button type="button" class="icon-btn" data-action="remove-inline-question" data-id="${esc(q.id)}" aria-label="Bỏ câu" ${readOnly||questions.length<=1?'disabled':''}>${iconHtml('close')}</button><button type="button" class="icon-btn" data-action="add-inline-question" data-after="${esc(q.id)}" aria-label="Thêm câu bên dưới" ${readOnly||questions.length>=section.questionLimit?'disabled':''}>${iconHtml('plus')}</button></div></article>`).join('')}</div><label class="gap-distractors"><span>Đáp án nhiễu</span><textarea class="truong" data-heading-distractors aria-label="Đáp án nhiễu" placeholder="Mỗi dòng một đáp án nhiễu" ${disabled}>${esc(bank.distractors.join('\n'))}</textarea></label>`;
+
 }
 
 export function saveHeadingMatchDraft(root,state,user,exam,section){
   if(section.questionProfile?.layout!=='heading-match')return;
   const count=Number(root.querySelector('[data-heading-bank]')?.dataset?.count)||section.questionProfile.choices.length;
-  const choices=Array.from({length:count},(_,i)=>String.fromCharCode(65+i));
+  let choices=Array.from({length:count},(_,i)=>String.fromCharCode(65+i));
   const cards=[...root.querySelectorAll('[data-editor-mode="heading-match"]')];
-  updateSection(state,user,exam.id,section.id,{headingOptions:choices.map((_,i)=>root.querySelector(`[data-heading-option="${i}"]`)?.value.trim()||'')});
+  const noise=root.querySelector('[data-heading-distractors]');
+  const bank=noise?buildGapBank(cards.map(card=>card.querySelector('[data-heading-correct-text]')?.value||''),noise.value,26):null;
+  if(bank)choices=bank.options.map((_,i)=>String.fromCharCode(65+i));
+  for(const card of cards){const score=card.querySelector('[data-heading-score]');if(score&&(!score.value.trim()||!Number.isFinite(Number(score.value))||Number(score.value)<0))throw new Error('Nhập điểm hợp lệ, lớn hơn hoặc bằng 0.');}
+  updateSection(state,user,exam.id,section.id,{headingOptions:bank?bank.options:choices.map((_,i)=>root.querySelector(`[data-heading-option="${i}"]`)?.value.trim()||'')});
   for(const card of cards){
     const score=card.querySelector('[data-heading-score]');
     if(score&&(!score.value.trim()||!Number.isFinite(Number(score.value))||Number(score.value)<0))throw new Error('Nhập điểm hợp lệ, lớn hơn hoặc bằng 0.');
     updateQuestion(state,user,card.dataset.questionId,{
     title:card.querySelector('[data-heading-text]').value.trim()||'Nháp',
-    choices,correctAnswer:Number(card.querySelector('[data-heading-answer]').value),
+    choices,correctAnswer:bank?bank.correct[cards.indexOf(card)]:Number(card.querySelector('[data-heading-answer]').value),
     ...(score?{maxScore:Number(score.value)}:{}),example:false
     });
   }

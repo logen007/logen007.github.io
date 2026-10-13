@@ -9,7 +9,7 @@ export function splitGapBank(section,questions){
   };
 }
 
-export function buildGapBank(answers,distractorText){
+export function buildGapBank(answers,distractorText,maximum=25){
   const options=[],correct=answers.map(answer=>{
     const text=String(answer||'').trim();if(!text)return -1;
     if(!options.includes(text))options.push(text);
@@ -19,7 +19,7 @@ export function buildGapBank(answers,distractorText){
     if(options.includes(text))throw new Error('Đáp án nhiễu bị trùng: '+text);
     options.push(text);
   }
-  if(options.length>25)throw new Error('Tối đa 25 đáp án, gồm đáp án đúng và đáp án nhiễu.');
+  if(options.length>maximum)throw new Error('Tối đa '+maximum+' đáp án, gồm đáp án đúng và đáp án nhiễu.');
   // Do not persist a bank whose order reveals which options answer questions 1, 2…
   const ordered=[...options].sort((a,b)=>a.localeCompare(b,'de'));
   return {options:ordered,correct:correct.map(index=>index<0?-1:ordered.indexOf(options[index]))};

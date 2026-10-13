@@ -14,7 +14,7 @@ export function telcFixture(state,teacher){
   const heading=exam.sections[0];
   rows(exam.sections[1]).forEach(q=>{q.choices=['Answer a','Answer b','Answer c'];});
   const cards=rows(heading).map((q,i)=>({dataset:{questionId:q.id},querySelector:selector=>({value:selector==='[data-heading-score]'?String(q.maxScore):selector==='[data-heading-answer]'?String(i+5):'Passage '+i})}));
-  saveHeadingMatchDraft({querySelectorAll:()=>cards,querySelector:key=>({value:'Heading '+Number(key.split('"')[1])})},state,teacher,exam,heading);
+  saveHeadingMatchDraft({querySelectorAll:()=>cards,querySelector:key=>key==='[data-heading-distractors]'?null:({value:'Heading '+Number(key.split('"')[1])})},state,teacher,exam,heading);
   for(const index of [3,4]){
     const section=exam.sections[index],perQuestion=index===3;
     const values={'[data-gap-text]':Array.from({length:10},(_,i)=>`Text [${String.fromCharCode(97+i)}]`).join(' '),'[data-gap-option="z"]':'Demo','[data-gap-options]':Array.from({length:12},(_,i)=>'Word '+i).join('\n')};

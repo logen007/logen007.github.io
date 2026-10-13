@@ -72,7 +72,9 @@ const {exam,rows}=telcFixture(state,teacher);
 {
   const html=renderBuilder({data:state,exam,section:exam.sections[0]});
   assert.doesNotMatch(html,/<label>(?:Đáp án đúng|Điểm)/);
-  assert.match(html,/data-heading-answer aria-label="Đáp án đúng câu/);
+  assert.match(html,/data-heading-correct-text aria-label="Đáp án đúng câu/);
+  assert.match(html,/data-heading-distractors/);
+  assert.doesNotMatch(html,/data-heading-bank|data-heading-option=/);
   assert.match(html,/data-heading-score aria-label="Điểm câu/);
 }
 {
@@ -214,7 +216,7 @@ assert.equal(heading.headingOptions.length,10);
 assert.ok(rows(heading).every(q=>q.choices.join('')==='ABCDEFGHIJ'));
 const savedKeys=rows(heading).map(q=>q.correctAnswer);
 const headingCards=rows(heading).map(q=>({dataset:{questionId:q.id},querySelector:selector=>({value:selector==='[data-heading-score]'?String(q.maxScore):selector==='[data-heading-answer]'?String(q.correctAnswer):q.title})}));
-saveHeadingMatchDraft({querySelectorAll:()=>headingCards,querySelector:key=>({value:heading.headingOptions[Number(key.split('"')[1])]})},state,teacher,exam,heading);
+saveHeadingMatchDraft({querySelectorAll:()=>headingCards,querySelector:key=>key==='[data-heading-distractors]'?null:({value:heading.headingOptions[Number(key.split('"')[1])]})},state,teacher,exam,heading);
 assert.deepEqual(rows(heading).map(q=>q.correctAnswer),savedKeys,'Autosave must preserve the private mapping');
 rows(heading).forEach((q,i)=>assert.equal(heading.headingOptions[q.correctAnswer],'Heading '+(i+5)));
 const publicRows=rows(heading).map(({correctAnswer,...q})=>q);
@@ -258,8 +260,8 @@ assert.deepEqual(exam.sections[2].questionProfile.choices,[...'ABCDEFGHIJKL','X'
   assert.equal(question.choices[question.correctAnswer],'X');
   assert.ok(question.choices.includes('K')&&question.choices.includes('L'));
 }
-assert.equal((renderBuilder({data:state,exam,section:heading}).match(/data-heading-answer/g)||[]).length,5);
-assert.equal((renderBuilder({data:state,exam,section:heading}).match(/data-heading-option=/g)||[]).length,10);
+assert.equal((renderBuilder({data:state,exam,section:heading}).match(/data-heading-correct-text/g)||[]).length,5);
+assert.equal((renderBuilder({data:state,exam,section:heading}).match(/data-heading-distractors/g)||[]).length,1);
 assert.equal((publicHtml.match(/data-letter="j"/g)||[]).length,5);
 assert.equal((renderBuilder({data:state,exam,section:gap3}).match(/data-gap-choice=/g)||[]).length,30);
 for(let i=0;i<exam.sections.length;i++){
@@ -432,7 +434,7 @@ assert.equal(gapAuthorText(gapBank,rows(gapBank)).includes('{j}'),true);
 assert.deepEqual(parseGapText('[i]italic[/i] [u]underlined[/u] [b]bold[/b] [i] [j]',10,'abcdefghijklmnopqrstuvwxy').keys,[8,9]);
 const copy=duplicateExam(state,teacher,exam.id);
 const scoreCard={dataset:{questionId:copy.sections[0].questionIds[0]},querySelector:selector=>({value:selector==='[data-heading-score]'?'12.5':selector==='[data-heading-answer]'?'5':'Custom passage'})};
-saveHeadingMatchDraft({querySelectorAll:()=>[scoreCard],querySelector:key=>key==='[data-heading-bank]'?{dataset:{count:10}}:{value:heading.headingOptions[Number(key.split('"')[1])]}},state,teacher,copy,copy.sections[0]);
+saveHeadingMatchDraft({querySelectorAll:()=>[scoreCard],querySelector:key=>key==='[data-heading-distractors]'?null:key==='[data-heading-bank]'?{dataset:{count:10}}:{value:heading.headingOptions[Number(key.split('"')[1])]}},state,teacher,copy,copy.sections[0]);
 assert.equal(rows(copy.sections[0])[0].maxScore,12.5,'Custom points survive autosave');
 rows(copy.sections[1])[0].choices=['Existing a','Existing b'];
 copy.sections[1].questionProfile.layout='true-false';
@@ -472,8 +474,8 @@ assert.equal(legacyHeading.headingOptions.length,26);
 assert.equal(ensureExamMatchesConfiguredSpec(state,teacher,copy.id),false);
 assert.equal(rows(legacyHeading)[0].choices.length,26,'Reload must not truncate the extended bank');
 const dynamicBuilder=renderBuilder({data:state,exam:copy,section:legacyHeading});
-assert.equal((dynamicBuilder.match(/data-heading-add=/g)||[]).length,26);
-assert.equal((dynamicBuilder.match(/data-heading-remove=/g)||[]).length,26);
+assert.equal((dynamicBuilder.match(/data-action="add-inline-question"/g)||[]).length,legacyHeading.questionIds.length);
+assert.equal((dynamicBuilder.match(/data-action="remove-inline-question"/g)||[]).length,legacyHeading.questionIds.length);
 const old=createExam(state,teacher,{provider:'TELC',level:'B1',title:'Legacy',sections:[{name:'Custom',instruction:'Keep me',questionIds:[heading.questionIds[0]]}]});
 const oldBefore=JSON.stringify(old);assert.equal(ensureExamMatchesConfiguredSpec(state,teacher,old.id),false);assert.equal(JSON.stringify(old),oldBefore);
 exam.status='published';

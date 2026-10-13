@@ -178,6 +178,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   explicit gaps and shrinkable tracks to avoid forced wrapping.
 
 - Minimize visible form labels; prefer concise placeholders inside empty inputs.
+  Heading matching uses a correct-answer text input beside each passage's score
+  and remove/add controls, plus one distractor textarea (one option per line).
+  Do not show a separate lettered option editor. Preserve old answer text and
+  private keys when rebuilding the bank; existing attempt snapshots stay unchanged.
   Keep a persistent accessible name (aria-label or visually hidden label).
   For icon-only upload controls, use an accessible name and tooltip instead of
   redundant visible labels. Keep visible labels only when necessary for clarity.

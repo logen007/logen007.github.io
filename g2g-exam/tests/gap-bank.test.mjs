@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {saveHeadingMatchDraft,headingMatchBuilder} from '../src/part-templates/default/heading-match-builder.js';
 import {seedState} from '../src/seed.js';
 import {telcFixture} from './telc-b1-fixture.mjs';
 import {splitGapBank,buildGapBank,distractorLines,shuffledGapSnapshot} from '../src/domain/gap-bank.js';
@@ -8,6 +9,24 @@ import {inlineGapBuilder,saveInlineGapDraft,bindGapPositions} from '../src/part-
 const state=structuredClone(seedState),teacher=state.users.find(u=>u.role==='teacher');
 const {exam,rows}=telcFixture(state,teacher),section=exam.sections[4];
 const numbers=examQuestionNumbers(exam,state.questions),original=splitGapBank(section,rows(section));
+{
+  const part=exam.sections[0],questions=rows(part),bank=splitGapBank({gapOptions:part.headingOptions},questions);
+  const originalScores=questions.map(q=>q.maxScore),ids=[...part.questionIds];
+  const cards=questions.map((q,i)=>({dataset:{questionId:q.id},querySelector:key=>({value:key==='[data-heading-text]'?q.title:key==='[data-heading-score]'?String(q.maxScore):bank.answers[i]})}));
+  const root={querySelectorAll:()=>cards,querySelector:key=>key==='[data-heading-distractors]'?{value:bank.distractors.join('\n')}:null};
+  saveHeadingMatchDraft(root,state,teacher,exam,part);
+  saveHeadingMatchDraft(root,state,teacher,exam,part);
+  assert.deepEqual(questions.map(q=>part.headingOptions[q.correctAnswer]),bank.answers);
+  assert.deepEqual(questions.map(q=>q.maxScore),originalScores);
+  assert.deepEqual(part.questionIds,ids);
+  assert.equal(splitGapBank({gapOptions:part.headingOptions},questions).distractors.length,bank.distractors.length);
+  const html=headingMatchBuilder(part,questions,true,numbers);
+  assert.match(html,/data-heading-correct-text[^>]*disabled/);
+  assert.doesNotMatch(html,/data-heading-bank|<select/);
+  const before=JSON.stringify(part);
+  assert.throws(()=>saveHeadingMatchDraft({...root,querySelector:key=>key==='[data-heading-distractors]'?{value:bank.answers[0]}:null},state,teacher,exam,part),/trùng/);
+  assert.equal(JSON.stringify(part),before);
+}
 assert.equal(original.distractors.length,2);
 const fields={'[data-gap-text]':{value:gapAuthorText(section,rows(section),numbers)},'[data-gap-distractors]':{value:original.distractors.join('\n')+'\n\n Extra 1\r\n Extra 2\n Extra 3\n'}};
 rows(section).forEach((q,i)=>fields[`[data-gap-correct-text="${i}"]`]={value:original.answers[i]});
