@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {createReleaseCheck} from '../src/ui/release-update.js';
 let version='1.3.7',safe=true,applied=[];
-const check=createReleaseCheck({readVersion:async()=>version,canReload:()=>safe,applyUpdate:async value=>applied.push(value)});
+const check=createReleaseCheck({current:'1.3.7',readVersion:async()=>version,canReload:()=>safe,applyUpdate:async value=>applied.push(value)});
 await check();assert.deepEqual(applied,[]);
 version='1.3.8';safe=false;await check();assert.deepEqual(applied,[]);
 safe=true;await check();await check();assert.deepEqual(applied,['1.3.8']);
@@ -9,7 +9,7 @@ let resolve,calls=0;
 const overlap=createReleaseCheck({readVersion:()=>{calls++;return new Promise(r=>resolve=r);},canReload:()=>true,applyUpdate:()=>{}});
 const pending=overlap();await overlap();assert.equal(calls,1);resolve(null);await pending;
 let retries=0;
-const deferred=createReleaseCheck({readVersion:async()=> '1.3.8',canReload:()=>true,applyUpdate:()=>{retries++;return false;}});
+const deferred=createReleaseCheck({current:'1.3.7',readVersion:async()=> '1.3.8',canReload:()=>true,applyUpdate:()=>{retries++;return false;}});
 await deferred();await deferred();assert.equal(retries,2);
 const failed=createReleaseCheck({readVersion:async()=>{throw Error('offline');},canReload:()=>true,applyUpdate:()=>assert.fail('Offline must not trigger reload')});
 await failed();

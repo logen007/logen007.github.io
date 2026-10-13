@@ -12,7 +12,7 @@ export function startMonitorHistory(logger){
       const cpu=await sampleCpu(),r2=r2Settings.status();
       await query('INSERT INTO monitor_samples(cpu,memory,r2_bytes,r2_error) VALUES($1,$2,$3,$4)',
         [cpu.usagePercent,(os.totalmem()-os.freemem())/os.totalmem()*100,r2?.syncedBytes??null,Boolean(r2?.error)]);
-      await query("DELETE FROM monitor_samples WHERE sampled_at < now()-interval '8 days'");
+      await query("DELETE FROM monitor_samples WHERE sampled_at < now()-interval '366 days'");
     }catch(error){logger.error(error,'Monitor sample failed');}finally{busy=false;}
   };
   void collect();
@@ -22,13 +22,14 @@ export function startMonitorHistory(logger){
 
 export async function monitorHistory(){
   const end=Date.now();
-  const ranges=await Promise.all([[1,60],[24,900],[168,7200]].map(async([hours,bucket])=>{
-    const rows=await query(`SELECT max(sampled_at) AS at,max(cpu) AS cpu,max(memory) AS memory,
+  const ranges=await Promise.all([[1,60],[24,60],[168,1800],[720,3600],[8760,86400]].map(async([hours,bucket])=>{
+    const rows=await query(`SELECT max(sampled_at) AS at,avg(cpu) AS cpu,max(memory) AS memory,
       max(r2_bytes) AS r2, bool_or(r2_error) AS error FROM monitor_samples
       WHERE sampled_at >= to_timestamp($1) AND sampled_at <= to_timestamp($2)
       GROUP BY floor(extract(epoch from sampled_at)/$3) ORDER BY at`,
       [(end-hours*3600000)/1000,end/1000,bucket]);
-    return {hours,bucketSeconds:bucket,start:end-hours*3600000,end,points:rows.rows};
+    const stats=await query(`SELECT max(cpu) AS maximum,avg(cpu) AS average,min(cpu) AS minimum,count(cpu)::int AS samples FROM monitor_samples WHERE sampled_at >= to_timestamp($1) AND sampled_at <= to_timestamp($2)`,[(end-hours*3600000)/1000,end/1000]);
+    return {hours,bucketSeconds:bucket,start:end-hours*3600000,end,points:rows.rows,stats:stats.rows[0]};
   }));
   return ranges;
 }

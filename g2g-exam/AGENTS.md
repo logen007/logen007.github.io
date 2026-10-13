@@ -246,7 +246,7 @@ Thứ tự ưu tiên:
 
 ## 15. Commit và triển khai
 
-Phiên bản được đặt tại `src/release.js` (hiện tại 1.3.7). Mỗi bản cập nhật sau
+Phiên bản được đặt tại `src/release.js`. Mỗi bản cập nhật sau
 phải tăng phiên bản theo major.minor.patch; mặc định tăng patch cho sửa nhỏ.
 Thông báo cập nhật chỉ hiện khi máy chủ báo phiên bản khác, và chỉ tải lại
 ở màn hình an toàn; không ngắt editor, chấm bài hoặc bài thi đang làm.

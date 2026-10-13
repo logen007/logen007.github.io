@@ -377,11 +377,14 @@ theme application must not wait for a network response to render the page.
 ## Admin dashboard
 
 - Only CPU uses a time-series chart with its own range picker; RAM, disk and R2
-  retain their ring/stat layouts. Keep the CPU chart capped at 640px. Collect one
-  real sample per minute independently of visits; retain eight days in PostgreSQL.
-  Offer 1h/24h/7d ranges. Longer views show bucket maxima, missing periods break
-  lines, and empty history remains empty. CPU technical details and accessible
-  sample tables are collapsed. Exam storage is a separate full-width card outside
+  retain their ring/stat layouts. UpCloud-style CPU presentation approved on
+  13 October 2026: full-width chart, yellow line/area, labelled time axis, five
+  percentage ticks, underline range tabs and a visible maximum/average/current
+  table. Collect one real sample per minute independently of visits; retain
+  366 days in PostgreSQL. Offer 1h/24h/1w/1m/1y ranges. Long views show bucket
+  averages; statistics use original samples. Missing periods break lines and
+  filled areas, and empty history remains empty. CPU technical details and
+  accessible sample tables are collapsed. Exam storage is full-width outside
   System; exam titles open the existing exam editor through its normal action.
 
 - CPU percentage uses differences in host CPU busy/total counters sampled over
@@ -391,8 +394,8 @@ theme application must not wait for a network response to render the page.
 
 - Dashboard redesign approved 13 October 2026 from the user's visual references:
   use independent compact cards with a clear numeric hierarchy. Keep the three
-  activity cards first, then a two-column system grid: CPU spans the left column;
-  resource and R2 cards stack on the right. At 960px stack the system cards, with
+  activity cards first, then a system grid: CPU spans the full row;
+  resource and R2 cards share the next row. On phones stack the system cards, with
   mobile gutters and controls remaining readable. Only CPU uses a line chart.
   Healthy connections show a label and status dot; errors show their state too.
   Technical samples, load averages, storage breakdown and sync timestamps use
@@ -413,8 +416,8 @@ theme application must not wait for a network response to render the page.
   Garbage collection has an explicit not-yet-scanned state. Keep failures visible.
 - Use existing theme tokens and actions; no chart library or extra polling.
 - Technical details remain available but must not dominate the default screen.
-- System connection statuses use a compact strip, not nested cards. Align CPU
-  with stacked resource/R2 cards, stacking on mobile. Exam storage is a
+- System connection statuses use a compact strip, not nested cards. Place CPU
+  above resource/R2 cards, stacking on mobile. Exam storage is a
   separate full-width card with Last edit, using the same authoring timestamp
   calculation as the exam catalog.
 - CPU uses SVG time-series with visible numeric labels; storage allocation uses
