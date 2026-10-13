@@ -1,4 +1,5 @@
 import {modernInstructionText} from '../../domain/text-markup.js';
+import {sectionInstructionEditor} from './section-instruction-editor.js';
 import {imageMaxWidth,isPrefilledQuestion} from '../../domain/question-display.js';
 import {byId,getQuestionMaxScore} from '../../core.js';
 import {esc} from '../../ui/format.js';
@@ -144,14 +145,8 @@ function freeResponseHtml(q,{defaultScore,readOnly}){
   return `<article class="goethe-free-response ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Câu trả lời textarea" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea>${scoreControls(q,defaultScore,readOnly,{writingStyle:true})}</article>`;
 }
 
-function instructionHtml(section,choiceProfile,readOnly,question){
-  const listening=section.skillKey==='listening'||/nghe|hören|listening/i.test(section.skill||'');
-  const instruction=`<div class="instruction-content"><textarea id="sectionInstruction" aria-label="Đề bài" placeholder="${esc(instructionPlaceholder)}" ${readOnly?'disabled':''}>${esc(modernInstructionText(section.instruction||''))}</textarea></div>`;
-  const audio=listening?`<div class="instruction-audio" role="group" aria-label="Audio đề bài" data-audio-question-id="section:${esc(section.id)}">${audioHtml({audioUrl:section.instructionAudioUrl,audioName:section.instructionAudioName},readOnly,true)}</div>`:'';
-  if(!choiceProfile.instructionImage)return `<div class="goethe-instruction ${listening?'goethe-instruction--with-audio':''}">${instruction}${audio}</div>`;
-  const imageUrl=section.instructionImageUrl||'';
-  const addInstruction=question?`<button type="button" class="icon-btn" data-action="add-question-instruction" data-id="${question.id}" title="Thêm đề bài" aria-label="Thêm đề bài" ${readOnly?'disabled':''}>${icons.add}</button>`:'';
-  return `<div class="goethe-instruction goethe-instruction--media ${listening?'goethe-instruction--with-audio':''}" data-section-image-control data-has-image="${imageUrl?'true':'false'}">${instruction}<div class="goethe-instruction-actions">${audio}<div class="goethe-instruction-icons"><input class="truong instruction-image-width" id="sectionImageMaxWidth" type="number" min="1" step="1" aria-label="img width (px)" placeholder="img width (px)" value="${imageMaxWidth(section.instructionImageMaxWidth)??''}" ${readOnly?'disabled':''}><button type="button" class="icon-btn" data-action="clear-section-image" title="Xóa hình ảnh đề bài" aria-label="Xóa hình ảnh đề bài" ${readOnly?'disabled':''}>${icons.remove}</button>${addInstruction}</div><label class="section-image-upload" title="${imageUrl?'Bấm để thay hình ảnh đề bài':'Thêm hình ảnh đề bài'}"><span class="section-image-label">${imageUrl?`<img src="${esc(imageUrl)}" alt="Hình ảnh đề bài">`:`${icons.addImage}<span>Thêm hình ảnh</span>`}</span><input type="file" data-section-image accept="image/*" ${readOnly?'disabled':''}></label></div></div>`;
+function instructionHtml(section,choiceProfile,readOnly){
+  return sectionInstructionEditor(section,{readOnly,placeholder:instructionPlaceholder,audioHtml});
 }
 
 function instructionBlocksFor(q){
@@ -273,8 +268,8 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     const label=input.closest('.rubric-image-upload')?.querySelector('span');if(!file||!label)return;
     label.innerHTML=`<img src="${URL.createObjectURL(file)}" alt="Hình trong form">`;
   });
-  root.querySelectorAll('[data-section-image]').forEach(input=>input.onchange=()=>{
-    const file=input.files?.[0],control=input.closest('[data-section-image-control]');if(!file||!control)return;const url=URL.createObjectURL(file),label=control.querySelector('.section-image-label');control.dataset.hasImage='true';control.dataset.removeSectionImage='false';if(label)label.innerHTML=`<img src="${url}" alt="Hình ảnh đề bài">`;
+  root.querySelectorAll('[data-section-image],[data-prompt-image]').forEach(input=>input.onchange=()=>{
+    const file=input.files?.[0],control=input.closest('[data-section-prompt],[data-section-image-control]');if(!file||!control)return;const url=URL.createObjectURL(file),label=control.querySelector('.section-image-label');control.dataset.hasImage='true';control.dataset.removeSectionImage='false';if(label)label.innerHTML=`<img src="${url}" alt="Hình ảnh đề bài">`;
   });
   root.querySelector('[data-action="clear-section-image"]')?.addEventListener('click',()=>{
     const control=root.querySelector('[data-section-image-control]'),label=control?.querySelector('.section-image-label');if(!control||!label)return;control.dataset.hasImage='false';control.dataset.removeSectionImage='true';root.querySelectorAll('[data-section-image]').forEach(input=>{input.value='';});label.innerHTML=`${icons.imageUpload}<span>Thêm hình ảnh</span>`;

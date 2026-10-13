@@ -1,4 +1,5 @@
 import {isPrefilledQuestion} from '../../../src/domain/question-display.js';
+import {sectionInstructions} from '../../../src/domain/section-instructions.js';
 import {examCompletion,completionMessage} from '../../../src/domain/exam-completion.js';
 import {query,withTx,getSettings,audit,uid,now,appError} from '../db.js';
 import {examById,attemptExam,questionMap,scoreQuestion,resultFor,sectionMeta} from './shared.js';
@@ -104,7 +105,7 @@ async function partAudioContext(client,attempt,sectionId){
   const ids=(section.questionIds||[]).filter(id=>allowed.has(id));
   const questionRows=exam.questionSnapshot?exam.questionSnapshot.filter(q=>ids.includes(q.id)).map(q=>({data:q})):ids.length?(await client.query(`SELECT data FROM questions WHERE id=ANY($1::text[])`,[ids])).rows:[];
   const hasQuestionAudio=questionRows.some(row=>String(row.data?.audioUrl||'').trim());
-  const hasAudio=hasQuestionAudio||Boolean(String(section.instructionAudioUrl||'').trim());
+  const hasAudio=hasQuestionAudio||sectionInstructions(section).some(block=>String(block.audioUrl||'').trim());
   if(!hasAudio)throw appError(409,'Part audio không có audio trong phần thi hiện tại.');
   if(policy.mode==='per_question_segment'&&(Number(policy.maxSessions)<1||Number(policy.segmentRepeat)<1))throw appError(500,'Specification audio không hợp lệ.');
   return section;

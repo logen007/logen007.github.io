@@ -65,6 +65,12 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Section prompts are independent ordered blocks, not owned by questions. The
+  plus action inserts a prompt directly below the current one; up/down moves its
+  text, image and listening audio together. Each block has image upload and, only
+  for listening, audio upload. Desktop textarea fills the entire tools-column
+  height; mobile stacks the two columns. Preserve existing question-owned content.
+
 - Example groups use one outer frame only. Inner question cards remain
   borderless and transparent even when mobile rearranges reading content
   outside the desktop question-column wrapper.

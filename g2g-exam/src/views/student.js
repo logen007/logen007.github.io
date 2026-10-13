@@ -1,4 +1,5 @@
 import {sectionLabel} from '../ui/section-label.js';
+import {sectionInstructions} from '../domain/section-instructions.js';
 import {isPrefilledQuestion,imageMaxWidth,shortChoiceColumns,compactBinaryChoices} from '../domain/question-display.js';
 import {answerPresent,MIN_COMPLETION_PERCENT} from '../domain/exam-completion.js';
 export {answerPresent} from '../domain/exam-completion.js';
@@ -66,7 +67,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Kết thúc':'Abgeben'):'Weiter';
   const splitHeadings=splitLayout&&sec.questionProfile?.layout==='heading-match';
-const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBlocks?.length||splitHeadings?`<section class="exam-instruction">${sectionPromptHtml(sec)}${readingBlocksHtml(sec)}${splitHeadings?headingOptionsHtml(sec):''}</section>`:'';
+const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additionalInstructions?.length||sec.readingBlocks?.length||splitHeadings?`<section class="exam-instruction">${sectionPromptHtml(sec)}${readingBlocksHtml(sec)}${splitHeadings?headingOptionsHtml(sec):''}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
   const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
@@ -125,7 +126,7 @@ function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
   const policy=effectiveAudioPolicy(section),audioQuestions=questions.filter(question=>String(question.audioUrl||'').trim());
   const policyEnabled=section.skillKey==='listening'&&policy.mode==='per_question_segment';
   const hasSpecialAudio=audioQuestions.some(question=>question.example);
-  if(!section.instructionAudioUrl&&(!audioQuestions.length||(!policyEnabled&&!hasSpecialAudio)))return '';
+  if(!sectionInstructions(section).some(block=>block.audioUrl)&&(!audioQuestions.length||(!policyEnabled&&!hasSpecialAudio)))return '';
   const repeat=Math.max(1,Number(policy.segmentRepeat)||1),key=`g2g.section-audio.${attempt.id}.${section.id}`;
   const used=!preview&&(Boolean(attempt.audioSessions?.[section.id]?.startedAt)||Boolean(sessionStorage.getItem(key)));
   const segments=partAudioSegments(section,questions);
@@ -136,12 +137,14 @@ function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
 const questionImageUrl=q=>String((Array.isArray(q.instructionBlocks)?q.instructionBlocks[0]?.imageUrl:'')||q.instructionImageUrl||'').trim();
 
 export function sectionPromptHtml(section){
-  const text=String(section.instruction||''),hasMarker=/\[img\]/i.test(text);
-  const image=section.instructionImageUrl?`<img ${imageMaxWidth(section.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(section.instructionImageMaxWidth)}px"`:''} src="${esc(section.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:'';
+  return sectionInstructions(section).map((block,index)=>{
+  const text=block.text,hasMarker=/\[img\]/i.test(text);
+  const image=block.imageUrl?`<img ${imageMaxWidth(block.imageMaxWidth)?`style="max-width:${imageMaxWidth(block.imageMaxWidth)}px"`:''} src="${esc(block.imageUrl)}" alt="Abbildung zur Aufgabenstellung">`:'';
   let inserted=false;
   const formatted=instructionTextHtml(text).replace(/\[img\]/gi,()=>{if(inserted)return '';inserted=true;return image;});
   const content=text?`<div><p>${formatted}</p></div>`:'';
-  return content+(!hasMarker&&section.questionProfile?.layout!=='inline-gaps'?image:'');
+  return content+(!hasMarker&&(index>0||section.questionProfile?.layout!=='inline-gaps')?image:'');
+  }).join('');
 }
 
 function questionStimulusHtml(q,{hideImage=false}={}){

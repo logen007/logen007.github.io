@@ -1,4 +1,5 @@
 import {isPrefilledQuestion} from './question-display.js';
+import {sectionInstructions} from './section-instructions.js';
 export function normalizeAudioFlow(value){
   if(value==null)return null;
   // Compact settings; keep the legacy format readable for frozen attempts.
@@ -31,7 +32,7 @@ export function partAudioQuestions(section,questions){
 export function partAudioSegments(section,questions){
   const policy=effectiveAudioPolicy(section),prefix=[],tasks=[];
   let taskNumber=0;
-  if(section.instructionAudioUrl)prefix.push({url:section.instructionAudioUrl,repeat:policy.instructionRepeat||1,label:'Aufgabenstellung'});
+  for(const block of sectionInstructions(section))if(block.audioUrl)prefix.push({url:block.audioUrl,repeat:policy.instructionRepeat||1,label:'Aufgabenstellung'});
   // Explicit recordings on any question are playable, including legacy non-carriers.
   const recordings=[...questions].filter(q=>q.audioUrl).sort((a,b)=>Number(isPrefilledQuestion(b))-Number(isPrefilledQuestion(a)));
   for(const q of recordings){

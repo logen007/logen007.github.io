@@ -1,4 +1,6 @@
 import {scrollExamToTop} from './ui/exam-scroll.js';
+import {changeInstructions} from './domain/section-instructions.js';
+import {collectAdditionalInstructions} from './part-templates/default/section-instruction-editor.js';
 import {gradingNeighbors} from './domain/grading-navigation.js';
 import {isPrefilledQuestion} from './domain/question-display.js';
 import {openSkillSettings} from './ui/skill-settings.js';
@@ -827,24 +829,26 @@ async function persistBuilderDraft({silent=false}={}){
           rubricImageUrls.set(`${questionId}:${row.dataset.rubricIndex}`,await uploadQuestionImage(file,{...questionPosition,slot:'form-'+(Number(row.dataset.rubricIndex)+1)}));uploadedInputs.push(input);
         }
       }
-      const sectionImage=[...app.querySelectorAll('[data-section-image]')].find(input=>input.files?.[0]);
-      if(sectionImage){
-        sectionImageUrl=await uploadQuestionImage(sectionImage.files[0],imagePosition);
-        uploadedInputs.push(sectionImage);
-      }
+    }
+    const sectionImage=[...app.querySelectorAll('[data-section-image]')].find(input=>input.files?.[0]);
+    if(sectionImage){
+      sectionImageUrl=await uploadQuestionImage(sectionImage.files[0],imagePosition);
+      uploadedInputs.push(sectionImage);
     }
     const readingBlocks=await collectReadingBlocks(app,imagePosition);
+    const instructionDraft=await collectAdditionalInstructions(app,section,pendingAudioUploads,imagePosition);
     await repo.transaction(st=>{
       updateExam(st,user,exam.id,{title});
       if(readingBlocks)updateSection(st,user,exam.id,section.id,{readingBlocks});
       if(sectionAudio)updateSection(st,user,exam.id,section.id,{instructionAudioUrl:sectionAudio.url,instructionAudioName:sectionAudio.name});
+      if(section&&app.querySelector('[data-section-prompt]')){
+        const imageControl=app.querySelector('[data-section-image]')?.closest('[data-section-image-control]');
+        const instructionImageUrl=imageValue(app.querySelector('[data-section-image]'),sectionImageUrl,imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'');
+        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl,instructionImageMaxWidth:document.getElementById('sectionImageMaxWidth')?.value||null,additionalInstructions:instructionDraft.blocks});
+      }
       if(section&&app.querySelector('.part-question[data-question-id]')){
-        const imageControl=app.querySelector('[data-section-image-control]');
-        const instructionImageUrl=section.questionProfile?.instructionImage===false
-          ?''
-          :imageValue(app.querySelector('[data-section-image]'),sectionImageUrl,imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'');
         const questionIds=[...app.querySelectorAll('.part-question[data-question-id]')].map(card=>card.dataset.questionId);
-        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl,instructionImageMaxWidth:document.getElementById('sectionImageMaxWidth')?.value||null,tableHeading:document.getElementById('sectionTableHeading')?.value??section.tableHeading??'Person',questionIds});
+        updateSection(st,user,exam.id,section.id,{tableHeading:document.getElementById('sectionTableHeading')?.value??section.tableHeading??'Person',questionIds});
         saveInlineGapDraft(app,st,user,exam,section);
         saveHeadingMatchDraft(app,st,user,exam,section);
         app.querySelectorAll('.part-question[data-question-id]').forEach(card=>{
@@ -909,6 +913,7 @@ async function persistBuilderDraft({silent=false}={}){
       if(audioInput)audioInput.value='';
     });
     uploadedInputs.forEach(input=>{input.value='';});
+    instructionDraft.complete();
     builderSavedRevision=revision;
     setBuilderSaveStatus(revision===builderEditRevision?'saved':'pending',revision===builderEditRevision?'Đã tự động lưu':'Chờ lưu thay đổi…');
     if(!silent)notify('Đã lưu bài thi.');
@@ -1336,6 +1341,13 @@ function bindBuilder(){
     }));
   });
   const section=exam.sections.find(item=>item.id===ui.builderSectionId)||exam.sections[0];
+  app.querySelectorAll('[data-section-instruction-action]').forEach(button=>button.onclick=async()=>{
+    if(button.disabled||!await flushBuilderDraft())return;
+    await act(()=>repo.transaction(st=>{
+      const current=byId(st.exams,exam.id)?.sections.find(item=>item.id===section.id);
+      if(current)updateSection(st,user,exam.id,section.id,changeInstructions(current,Number(button.dataset.index),button.dataset.sectionInstructionAction));
+    }));
+  });
   app.querySelectorAll('[data-gap-resize]').forEach(button=>button.onclick=async()=>{
     if(button.disabled||!await flushBuilderDraft())return;
     act(()=>repo.transaction(st=>resizeGapOptions(st,user,exam.id,section.id,button.dataset.gapResize,button.dataset.gapIndex)));

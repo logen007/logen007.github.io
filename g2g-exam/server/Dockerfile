@@ -23,6 +23,7 @@ COPY src/domain/exam-completion.js /app/src/domain/exam-completion.js
 COPY src/domain/manual-grading.js src/domain/writing-form.js src/domain/letter-answers.js /app/src/domain/
 COPY src/domain/question-display.js /app/src/domain/question-display.js
 COPY src/domain/part-audio.js /app/src/domain/part-audio.js
+COPY src/domain/section-instructions.js /app/src/domain/section-instructions.js
 COPY src/exam-specs /app/src/exam-specs
 COPY src/settings/layout.js /app/src/settings/layout.js
 COPY src/settings/palette.js /app/src/settings/palette.js

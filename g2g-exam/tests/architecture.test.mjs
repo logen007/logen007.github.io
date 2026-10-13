@@ -96,7 +96,8 @@ test('Mỗi form Goethe A1 lấy bố cục authoring từ specs',()=>{
   assert.deepEqual(questionDraftChoices(readingTwo.questionProfile),['Nháp','Nháp']);
   const readingThree=exam.sections.find(section=>section.name==='Đọc 3'),readingThreeQuestion=byId(state.questions,readingThree.questionIds[0]);
   const readingThreeHtml=renderBuilder({data:state,exam,section:readingThree,readOnly:false});
-  assert.doesNotMatch(readingThreeHtml,/data-section-image|data-field="audio"/);
+  assert.match(readingThreeHtml,/data-section-image/,'Shared prompts allow an image in every non-gap part');
+  assert.doesNotMatch(readingThreeHtml,/data-field="audio"/);
   assert.match(readingThreeHtml,new RegExp(`data-question-id="${readingThreeQuestion.id}"[\\s\\S]*data-question-card-image`));
   const writing=exam.sections.find(section=>section.name==='Viết 1');
   const writingQuestion=byId(state.questions,writing.questionIds[0]);
@@ -112,7 +113,7 @@ test('Production image phục vụ specs JSON cùng app',()=>{
 test('App tạo/migrate đề qua exam factory, không hard-code GOETHE_A1_PARTS',()=>{
   const app=read('src/app.js');
   assert.ok(app.includes('createExamDraft'));
-  assert.match(app,/questionProfile\?\.instructionImage===false\s*\?''/);
+  assert.match(app,/additionalInstructions:instructionDraft.blocks/);
   assert.ok(app.includes('ensureExamMatchesConfiguredSpec'));
   assert.ok(app.includes('getProviderLevels'));
   assert.equal(app.includes('GOETHE_A1_PARTS'),false);

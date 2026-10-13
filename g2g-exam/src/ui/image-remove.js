@@ -1,4 +1,4 @@
-export const EDITOR_IMAGE_INPUTS='[data-section-image],[data-question-card-image],[data-question-instruction-image],[data-choice-image],[data-rubric-image]';
+export const EDITOR_IMAGE_INPUTS='[data-section-image],[data-prompt-image],[data-question-card-image],[data-question-instruction-image],[data-choice-image],[data-rubric-image]';
 
 export function imageValue(input,uploaded,previous=''){
   return input?.dataset.imageRemoved==='true'?'':uploaded??previous??'';
@@ -28,6 +28,8 @@ export function bindImageRemoval(root,onRemove){
       control.append(empty);
       const section=input.closest('[data-section-image-control]');
       if(input.matches('[data-section-image]')&&section){section.dataset.removeSectionImage='true';section.dataset.hasImage='false';}
+      const prompt=input.closest('[data-section-prompt]');
+      if(prompt)prompt.dataset.hasImage='false';
       const instruction=input.closest('[data-question-image-control]');
       if(input.matches('[data-question-instruction-image]')&&instruction){instruction.dataset.removeQuestionImage='true';instruction.dataset.hasImage='false';}
       input.focus();onRemove();

@@ -130,7 +130,7 @@ groupScore.value='';onGroupScore();assert.equal(totalUpdates,1);
 groupScore.value='-1';groupScore.validity.valid=false;onGroupScore();assert.equal(totalUpdates,1);
 assert.match(settingsEditor,/id="sectionTableHeading" value="Gegenstand"/);
 assert.match(settingsEditor,/id="sectionImageMaxWidth"/);
-assert.match(settingsEditor,/<div class="goethe-instruction-icons"><input[^>]+id="sectionImageMaxWidth"[^>]+placeholder="img width \(px\)"/);
+assert.match(settingsEditor,/<input[^>]+id="sectionImageMaxWidth"[^>]+placeholder="Rộng ảnh \(px\)"/);
 assert.doesNotMatch(settingsEditor,/Rộng ảnh tối đa \(px\)|placeholder="Toàn cột"/);
 assert.equal(summarizeExam(exam,state).questions,42);
 updateSection(state,teacher,exam.id,letterSection.id,{instructionImageMaxWidth:620,tableHeading:'Thema'});

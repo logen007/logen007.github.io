@@ -6,6 +6,7 @@ import {getQuestionChoiceError} from './questions.js';
 import {imageMaxWidth,isPrefilledQuestion} from './question-display.js';
 import {configuredPartErrors} from './configured-part-validation.js';
 import {normalizeAudioFlow} from './part-audio.js';
+import {normalizeInstructions} from './section-instructions.js';
 
 function normalizeSection(input={},index=0){
   return {
@@ -18,6 +19,7 @@ function normalizeSection(input={},index=0){
     audioPolicy:clone(input.audioPolicy||null),
     audioFlow:normalizeAudioFlow(input.audioFlow),
     instruction:String(input.instruction||''),
+    additionalInstructions:normalizeInstructions(input.additionalInstructions),
     instructionImageUrl:String(input.instructionImageUrl||''),
     instructionAudioUrl:String(input.instructionAudioUrl||''),
     instructionAudioName:String(input.instructionAudioName||''),

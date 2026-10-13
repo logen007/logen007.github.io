@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './section-instructions.test.mjs';
 import {completeWrongAnswers} from './answer-fixture.mjs';
 import { seedState } from '../src/seed.js';
 import {

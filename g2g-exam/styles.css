@@ -1105,3 +1105,21 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .audio-remove { position:absolute; top:-10px; right:-6px; z-index:2; display:grid; place-items:center; width:24px; height:24px; padding:3px; border:1px solid var(--vien); border-radius:50%; color:var(--do); background:var(--mat); }
 .audio-remove[hidden] { display:none; }
 .audio-remove .ui-icon { width:16px; height:16px; }
+
+/* Section prompts are independent blocks; the whole tool column stretches together. */
+.section-instructions { display:grid; gap:24px; margin-bottom:24px; }
+.section-prompt-editor { display:grid; grid-template-columns:minmax(0,1fr) 224px; align-items:stretch; gap:16px; min-width:0; }
+.section-prompt-editor .instruction-content { display:flex; min-width:0; }
+.section-prompt-editor .instruction-content textarea { flex:1; width:100%; height:100%; min-height:180px; resize:vertical; }
+.section-prompt-tools { display:flex; flex-direction:column; gap:12px; min-width:0; padding-right:6px; }
+.section-prompt-tools .section-image-upload { width:100%; min-height:var(--editor-control); }
+.section-prompt-tools .instruction-image-width { width:100%; height:var(--editor-control); }
+.section-prompt-editor[data-has-image="false"] .instruction-image-width { display:none; }
+.section-prompt-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:auto; }
+.section-prompt-actions .icon-btn { flex:none; }
+@media(max-width:700px) {
+  .section-prompt-editor { grid-template-columns:minmax(0,1fr); gap:12px; }
+  .section-prompt-tools { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:center; }
+  .section-prompt-tools>[data-audio-question-id],.section-prompt-actions { grid-column:1/-1; }
+  .section-prompt-editor .instruction-content textarea { height:180px; }
+}
