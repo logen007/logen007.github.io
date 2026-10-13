@@ -189,19 +189,29 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
   return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${section.questionProfile?.layout==='letter-table'?`<label class="part-display-setting">Nhãn bảng<input class="truong" id="sectionTableHeading" value="${esc(section.tableHeading??'Person')}" ${readOnly?'disabled':''}></label>`:''}${instructionHtml(section,choiceProfile,readOnly,choiceProfile.instructionImage?questions.find(question=>!question.example)||questions[0]:null)}<div class="goethe-questions">${questions.map(renderQuestion).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
 }
 
-export function numberBuilderQuestions(root,questions){
+export function numberBuilderQuestions(root,questions,exam){
   let number=0;
+  const numbers=new Map();
+  for(const section of exam?.sections||[]){
+    for(const id of section.questionIds||[]){
+      const question=byId(questions,id);
+      if(question&&!isPrefilledQuestion(question))numbers.set(id,++number);
+    }
+  }
+  number=0;
   for(const card of root.querySelectorAll('article.part-question:not([hidden])')){
     const question=byId(questions,card.dataset.questionId);
     if(!question)continue;
     let label=card.querySelector(':scope > .builder-question-number');
     if(!label){label=card.ownerDocument.createElement('div');label.className='builder-question-number';card.prepend(label);}
-    label.textContent=isPrefilledQuestion(question)?'Ví dụ':`Câu ${++number}`;
+    label.textContent=isPrefilledQuestion(question)?'Ví dụ':`${numbers.get(question.id)??++number}.`;
+    const audioControls=card.querySelector(':scope > .goethe-question-row > .goethe-question-side > .goethe-score--audio');
+    if(audioControls)label.after(audioControls);
   }
 }
 
 export function bindBuilder({root=document,data,exam,section,pendingAudioUploads=new Map(),notify=()=>{}}={}){
-  numberBuilderQuestions(root,data.questions);
+  numberBuilderQuestions(root,data.questions,exam);
   root.querySelectorAll('[data-writing-style-toggle]').forEach(button=>button.onclick=()=>{
     if(button.disabled)return;
     const field=button.parentElement.querySelector('[data-field="handwriting"]');

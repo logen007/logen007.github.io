@@ -23,13 +23,22 @@ import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {numberBuilderQuestions} from '../src/part-templates/default/builder.js';
 {
   const questions=[{id:'ex',example:true,maxScore:0},{id:'one',maxScore:1},{id:'zero',maxScore:0},{id:'two',maxScore:1}];
-  const cards=questions.map(q=>({dataset:{questionId:q.id},ownerDocument:{createElement:()=>({})},querySelector(){return this.label;},prepend(label){this.label=label;}}));
+  const cards=questions.map(q=>({dataset:{questionId:q.id},ownerDocument:{createElement:()=>({})},querySelector(selector){return selector.includes('builder-question-number')?this.label:null;},prepend(label){this.label=label;}}));
   const root={querySelectorAll:()=>cards};
   numberBuilderQuestions(root,questions);
-  assert.deepEqual(cards.map(c=>c.label.textContent),['Ví dụ','Câu 1','Ví dụ','Câu 2']);
+  assert.deepEqual(cards.map(c=>c.label.textContent),['Ví dụ','1.','Ví dụ','2.']);
   const labels=cards.map(c=>c.label);
   numberBuilderQuestions(root,questions);
   assert.deepEqual(cards.map(c=>c.label),labels,'Rebinding never duplicates question labels');
+  const prior={id:'prior',maxScore:1};
+  const exam={sections:[{questionIds:['prior']},{questionIds:questions.map(q=>q.id)}]};
+  numberBuilderQuestions(root,[...questions,prior],exam);
+  assert.deepEqual(cards.map(c=>c.label.textContent),['Ví dụ','2.','Ví dụ','3.']);
+  const audioControls={};
+  cards[1].querySelector=selector=>selector.includes('builder-question-number')?cards[1].label:audioControls;
+  cards[1].label.after=node=>{cards[1].afterNumber=node;};
+  numberBuilderQuestions(root,[...questions,prior],exam);
+  assert.equal(cards[1].afterNumber,audioControls,'Audio toolbar follows the question number');
 }
 import {saveHeadingMatchDraft,resizeHeadingOptions} from '../src/part-templates/default/heading-match-builder.js';
 import {resizeGapOptions,saveInlineGapDraft,bindGapPositions} from '../src/part-templates/default/inline-gap-builder.js';

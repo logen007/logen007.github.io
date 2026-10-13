@@ -65,8 +65,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
-- Every visible question card in the exam editor has a persistent “Câu N” label,
-  not only a placeholder. Number scored questions sequentially within the part;
+- Every visible question card in the exam editor has a persistent “N.” label,
+  not only a placeholder. Number scored questions sequentially across the exam;
   label zero-point/prefilled examples “Ví dụ” without consuming a question number.
   Preserve existing table number columns and gap-position labels, without duplicates.
 
@@ -75,7 +75,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   digits plus a visible “đ” unit, with an accessible score label; do not hide the
   unit or let the score consume spare row space.
   Audio filename truncates within its area. Keep all actions on the same row on
-  mobile, with the question text above. Do not put audio on a separate row.
+  mobile, directly below the question number and before the question text.
+  Do not put audio on a separate row.
 
 - Approved syntax (13 October 2026): {a}, {b}, … are ordered answer positions,
   {z} is the example. Correct answers are edited separately for both shared-bank
