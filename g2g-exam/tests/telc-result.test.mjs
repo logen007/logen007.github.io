@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {telcResultHtml,telcResultSkills} from '../src/views/telc-result.js';
 import {bar,attemptResultHtml} from '../src/views/attempt-result.js';
+const childStyle=readFileSync(new URL('../styles.css',import.meta.url),'utf8').match(/\.telc-result-children\{([^}]+)\}/)[1];
+assert.match(childStyle,/border:1px solid var\(--vien\)/);
+assert.match(childStyle,/border-radius:20px/);
+assert.doesNotMatch(childStyle,/border-left/);
 const parts=[
   ...[0,15,0].map(score=>({skill:'reading',score,max:25,source:'automatic'})),
   ...[6,1.5].map(score=>({skill:'grammar',score,max:15,source:'automatic'})),

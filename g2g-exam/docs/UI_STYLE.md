@@ -533,6 +533,9 @@ theme application must not wait for a network response to render the page.
 
 ## Student result detail
 
+- TELC written child skills share one rounded, thin-border inner frame with
+  16px padding and gaps; no vertical guide line, no separate frame per skill.
+
 - TELC block titles are the left label in the score row, with score and badge
   on the right and the track directly below. No separate heading above that row.
 
