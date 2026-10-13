@@ -24,9 +24,17 @@ let infrastructureCache={value:null,expiresAt:0};
 let infrastructurePending=null;
 const queueCache=createStateCache({revision:getDataRevision,ttlMs:5000,maxEntries:1});
 
-function writingQueueState(settings,ai,jobs,failures){
+export function writingQueueState(settings,ai,jobs,failures){
+  const byStatus={},successfulByProvider={groq:0,gemini:0,grok:0};
+  for(const row of jobs.rows){
+    const group=byStatus[row.status]??={count:0,models:[]};
+    group.count+=Number(row.count||0);
+    if(row.model&&!group.models.includes(row.model))group.models.push(row.model);
+    if(row.status==='completed'&&Object.hasOwn(successfulByProvider,row.model))successfulByProvider[row.model]+=Number(row.count||0);
+  }
   return {
-    jobs:Object.fromEntries(jobs.rows.map(row=>[row.status,{count:Number(row.count||0),models:row.models||[]}])),
+    jobs:byStatus,
+    successfulByProvider,
     failures:failures.rows.map(row=>({id:String(row.id),attemptId:row.attempt_id,error:row.last_error||'AI chấm bài thất bại.',at:row.updated_at})),
     providerPreference:['groq','gemini','grok'].includes(settings.ai?.providerPreference)?settings.ai.providerPreference:'groq',
     providers:{groq:Boolean(ai.groq?.configured),gemini:Boolean(ai.gemini?.configured),grok:Boolean(ai.grok?.configured)},
@@ -38,7 +46,7 @@ export async function getWritingAiQueueStatus(user){
   return queueCache('queue',async()=>{
     const [settings,ai,jobs,failures]=await Promise.all([
       getSettings(),aiApiKeyStatus(),
-      query(`SELECT status,count(*)::int AS count,array_remove(array_agg(DISTINCT model),NULL) AS models FROM writing_ai_jobs GROUP BY status`),
+      query(`SELECT status,model,count(*)::int AS count FROM writing_ai_jobs GROUP BY status,model`),
       query(`SELECT id,attempt_id,last_error,updated_at FROM writing_ai_jobs WHERE status='failed' ORDER BY updated_at DESC LIMIT 5`),
     ]);
     return writingQueueState(settings,ai,jobs,failures);
@@ -179,7 +187,7 @@ async function buildInfrastructureStatus({summaryOnly}){
     directoryBytes(uploadDir),
     directoryBytes(process.cwd(),{skip:new Set(['node_modules','.git','uploads'])}),
     fs.statfs(uploadDir).catch(()=>null),
-    query(`SELECT status,count(*)::int AS count,array_remove(array_agg(DISTINCT model),NULL) AS models FROM writing_ai_jobs GROUP BY status`),
+    query(`SELECT status,model,count(*)::int AS count FROM writing_ai_jobs GROUP BY status,model`),
     query(`SELECT id,attempt_id,last_error,updated_at FROM writing_ai_jobs WHERE status='failed' ORDER BY updated_at DESC LIMIT 5`),
   ]);
   const questions=new Map(questionRows.rows.map(row=>[row.id,row.data||{}]));

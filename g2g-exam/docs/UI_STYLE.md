@@ -416,9 +416,11 @@ theme application must not wait for a network response to render the page.
 - Show missing metrics as unavailable, never as zero or a successful health check.
   Garbage collection has an explicit not-yet-scanned state. Keep failures visible.
 - Use existing theme tokens and actions; no chart library or extra polling.
-- Keep AI grading's three metric cards on one mobile row. Stack the three
-  provider names vertically inside the AI card, beneath its label, with a
-  readable font and yellow/black active pill; never require sideways scrolling.
+- AI grading has two count cards: suggested and waiting. Replace the healthy
+  status badge with one horizontal row of Groq/Gemini/Grok pills, each showing
+  its completed-job count, with the preferred provider yellow/black. The pills
+  may move together below the heading on narrow phones, never scroll sideways.
+  Failures remain visible separately with the retry action.
 - Technical details remain available but must not dominate the default screen.
 - System connection statuses use a compact strip, not nested cards. Place CPU
   beside stacked resource/R2 cards, stacking on mobile. Exam storage is a

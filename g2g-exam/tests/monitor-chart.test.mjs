@@ -24,8 +24,8 @@ assert.doesNotMatch(statistics,/monitor-summary-wrap|<th>Chỉ số/,'CPU statis
 const styles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(styles,/\.monitor-summary \{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
 assert.doesNotMatch(styles,/\.monitor-summary[^}]*min-width:320px/);
-assert.match(styles,/\.dashboard-ai-metrics--compact \.dashboard-ai-providers\{[^}]*flex-direction:column/,'Mobile providers stack inside their own metric');
-assert.doesNotMatch(styles,/\.dashboard-ai-metrics--compact \.dashboard-ai-providers\{[^}]*white-space:nowrap/);
+assert.match(styles,/\.dashboard-ai-metrics--compact \{[^}]*repeat\(2,minmax\(0,1fr\)\)/,'Only two count cards remain');
+assert.match(styles,/\.dashboard-ai-queue>\.dashboard-section-heading>\.dashboard-ai-providers \{[^}]*flex-wrap:nowrap/,'Providers share one horizontal header row');
 assert.equal((html.match(/class="monitor-area" d="[^"]*Z/g)||[]).length,1,'Area exists only on contiguous samples');
 assert.doesNotMatch(html,/NaN|Infinity/);
 assert.match(monitorChart('R2','r2',[range],'2 KB',String),/monitor-error/);

@@ -35,7 +35,13 @@ assert.ok(html.indexOf('data-dashboard-range')>html.indexOf('<h2>Học viên m�
 const accuracyHtml=dashboardHtml({data:{users:[],exams:[{id:'a1',title:'Đề mẫu',provider:'GOETHE',level:'A1',status:'published'}],attempts:[{examId:'a1',aiWritingAccuracy:{w1:{part:'Viết 1',provider:'groq',accurate:true},w2:{part:'Viết 1',provider:'groq',accurate:false}}}]},infrastructure:{resources:{}}});
 assert.match(accuracyHtml,/Độ chính xác AI/);
 assert.match(accuracyHtml,/Chấm bài AI/);
-assert.match(accuracyHtml,/>Grok<\/i>/);
+assert.match(accuracyHtml,/>Grok <b>—<\/b><\/i>/);
+const providerCounts=dashboardInfrastructureHtml({resources:{},writingAi:{successfulByProvider:{groq:4,gemini:2,grok:0},jobs:{completed:{count:6},queued:{count:3}}}});
+assert.match(providerCounts,/>Groq <b>4<\/b><\/i>/);
+assert.match(providerCounts,/>Gemini <b>2<\/b><\/i>/);
+assert.match(providerCounts,/>Grok <b>0<\/b><\/i>/);
+assert.match(providerCounts,/<h2>Chấm bài AI<\/h2><span class="dashboard-ai-providers"/);
+assert.doesNotMatch(providerCounts,/Ổn định|<b>AI<\/b>/);
 assert.match(accuracyHtml,/data-action="edit-exam" data-id="a1"/);
 assert.match(accuracyHtml,/>Đề mẫu<\/button>/);
 assert.doesNotMatch(accuracyHtml.slice(accuracyHtml.indexOf('dashboard-ai-accuracy'),accuracyHtml.indexOf('dashboard-infrastructure')),/GOETHE A1/);

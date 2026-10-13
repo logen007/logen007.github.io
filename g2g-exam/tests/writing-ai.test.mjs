@@ -1,5 +1,16 @@
 import assert from 'node:assert/strict';
 import {parseWritingSuggestion,suggestWritingGrade} from '../server/src/writing-ai.js';
+import {writingQueueState} from '../server/src/actions/settings.js';
+
+const queue=writingQueueState({ai:{providerPreference:'gemini'}},{},{rows:[
+  {status:'completed',model:'groq',count:4},{status:'completed',model:'gemini',count:2},
+  {status:'completed',model:null,count:1},{status:'failed',model:'groq',count:3},
+  {status:'queued',model:'gemini',count:1}
+]},{rows:[]});
+assert.deepEqual(queue.successfulByProvider,{groq:4,gemini:2,grok:0});
+assert.equal(queue.jobs.completed.count,7,'Grouped providers must preserve the total successful-job count');
+assert.deepEqual(queue.jobs.completed.models,['groq','gemini']);
+assert.equal(queue.jobs.failed.count,3);
 
 const parsed=parseWritingSuggestion('{"suggestedScore":12,"findings":[{"met":true,"text":"Có lời chào"},{"met":false,"text":"Thiếu câu hỏi khách sạn"}]}',10);
 assert.equal(parsed.suggestedScore,10);
