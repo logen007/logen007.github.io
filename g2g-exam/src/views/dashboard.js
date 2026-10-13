@@ -7,6 +7,7 @@ import {distributionChart} from './resource-charts.js';
 const total=value=>Number(value||0).toLocaleString('vi-VN');
 export function dashboardHtml({data,infrastructure=null,infrastructureError='',now=new Date(),activityFilter={}}){
   const exams=data.exams.filter(ex=>ex.status!=='trash');
+  const gradingOverview={needsGrading:data.attempts.filter(attempt=>attempt.status==='grading').length,graded:data.attempts.filter(attempt=>['ready','published'].includes(attempt.status)).length};
   const activity=dashboardActivity(data,{range:['7','30','365'].includes(activityFilter.range)?activityFilter.range:'30'},now),months=activity.bins;
   const biggest=Math.max(1,...months.map(item=>item.count));
   const active=activity.active;
@@ -20,6 +21,6 @@ export function dashboardHtml({data,infrastructure=null,infrastructureError='',n
       <section class="the dashboard-panel"><header><h2>Cơ cấu đề thi</h2><button class="text-link" data-action="admin-tab" data-tab="exams">Xem tất cả ${iconHtml('arrowRight')}</button></header>${distributionChart(types)}</section>
       <section class="the dashboard-panel"><header><h2>Học viên tích cực</h2><span>Top 5</span></header><ol class="dashboard-graders">${active.slice(0,5).map(grader).join('')||'<li class="dashboard-empty">Chưa có bài nộp.</li>'}</ol></section>
     </div>
-    ${dashboardInfrastructureHtml(infrastructure,infrastructureError)}
+    ${dashboardInfrastructureHtml(infrastructure,infrastructureError,gradingOverview)}
   </div>`;
 }

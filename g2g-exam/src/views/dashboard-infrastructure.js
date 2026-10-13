@@ -10,6 +10,15 @@ const percent=(used,total)=>valid(used)&&valid(total)&&Number(total)>0?Math.min(
 const row=(label,value)=>`<div class="dashboard-row"><span>${label}</span><b>${bytes(value)}</b></div>`;
 const date=value=>value&&Number.isFinite(new Date(value).getTime())?esc(new Date(value).toLocaleString('vi-VN')):'Chưa có';
 const status=(text,tone='neutral')=>`<span class="dashboard-state dashboard-state--${tone}">${esc(text)}</span>`;
+const count=value=>Number(value||0).toLocaleString('vi-VN');
+
+function dashboardAiQueueHtml(ai,overview={}){
+  const jobs=ai?.jobs||{},waiting=Number(jobs.queued?.count||0)+Number(jobs.processing?.count||0),done=Number(jobs.completed?.count||0),failed=Number(jobs.failed?.count||0);
+  const models=[...new Set(Object.values(jobs).flatMap(item=>item?.models||[]))];
+  const provider= models.length?models.map(model=>model==='groq'?'Groq':'Gemini').join(' · '):(ai?.providers?.groq?'Groq':ai?.providers?.gemini?'Gemini':'Chưa cấu hình');
+  const failures=ai?.failures||[];
+  return `<section class="the dashboard-ai-queue"><header class="dashboard-section-heading"><h2>Chấm bài &amp; AI</h2>${status(failed?`${count(failed)} lỗi`:waiting?`${count(waiting)} AI đang chấm`:'Ổn định',failed?'error':waiting?'neutral':'success')}</header><div class="dashboard-ai-metrics"><div><b>${count(overview.needsGrading)}</b><span>Bài cần chấm</span></div><div><b>${count(overview.graded)}</b><span>Bài đã chấm</span></div><div><b>${count(waiting)}</b><span>AI đang chấm</span></div><div><b>${esc(provider)}</b><span>AI đang dùng</span></div></div>${failures.length?`<div class="dashboard-ai-errors" role="alert"><strong>Lỗi AI mới nhất</strong>${failures.map(item=>`<p>${esc(item.error)}<small>${date(item.at)}</small></p>`).join('')}</div>`:'<p class="dashboard-caption">Bài viết được xếp hàng tự chấm; Groq ưu tiên, Gemini dự phòng khi Groq hết hạn mức.</p>'}</section>`;
+}
 
 export function dashboardR2Html(r2){
   const known=r2&&['totalFiles','syncedFiles','pendingFiles','skippedFiles'].every(key=>valid(r2[key])),count=value=>valid(value)?Number(value):'—';
@@ -22,7 +31,7 @@ export function dashboardR2Html(r2){
   </section>`;
 }
 
-export function dashboardInfrastructureHtml(infrastructure,error=''){
+export function dashboardInfrastructureHtml(infrastructure,error='',overview={}){
   if(!infrastructure)return `<section class="the dashboard-infrastructure dashboard-infrastructure--empty"><div class="dashboard-section-heading"><h2>Hệ thống</h2><span role="status">${error?'Không tải được dữ liệu':'Đang tải…'}</span></div>${error?'<p class="dashboard-caption">Tải lại trang để thử lại.</p>':''}</section>`;
   const resources=infrastructure.resources||{},memory=resources.memory||{},disk=resources.disk,usage=resources.usage||{},tables=resources.databaseTables||{};
   const gc=resources.mediaGarbageCollection||{};
@@ -34,7 +43,7 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
   const warnings=[memoryPercent>=85?'RAM cao':null,diskPercent>=85?'Ổ đĩa gần đầy':null,gc.error?'Dọn tệp gặp lỗi':null].filter(Boolean);
   const storage=[...(infrastructure.examStorage||[])].sort((a,b)=>Number(b.totalBytes||0)-Number(a.totalBytes||0));
   const parts=[['PostgreSQL',usage.databaseBytes],['Ảnh & audio',usage.uploadsBytes],['Mã nguồn',usage.applicationBytes]];
-  return `<section class="dashboard-infrastructure"><div class="dashboard-section-heading dashboard-system-heading"><h2>Hệ thống</h2><div class="dashboard-services" aria-label="Trạng thái kết nối">${connectionStatusHtml(infrastructure,{compact:true})}</div></div>
+  return `${dashboardAiQueueHtml(infrastructure.writingAi,overview)}<section class="dashboard-infrastructure"><div class="dashboard-section-heading dashboard-system-heading"><h2>Hệ thống</h2><div class="dashboard-services" aria-label="Trạng thái kết nối">${connectionStatusHtml(infrastructure,{compact:true})}</div></div>
     ${warnings.length?`<div class="dashboard-alerts" role="status">${warnings.map(text=>status(text,'error')).join('')}</div>`:''}
     <div class="dashboard-system-grid">
       <section class="the dashboard-cpu-card"><header class="dashboard-section-heading"><h3>CPU</h3>${monitorRangePicker()}</header><div class="dashboard-cpu-history">

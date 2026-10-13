@@ -125,7 +125,7 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
   const connectionStatus={backend:'VPS',postgresql:database,googleLoginConfigured:Boolean(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET),smtp:{enabled:Boolean(settings.smtp.enabled),configured:Boolean(settings.smtp.host&&settings.smtp.fromEmail&&(!settings.smtp.username||secret.configured)),secretConfigured:secret.configured,secretUpdatedAt:secret.updatedAt},ai};
   // Settings needs connection status, not a scan of every exam and uploaded file.
   if(summaryOnly===true)return connectionStatus;
-  const [databaseSize,tableSizes,examRows,questionRows,uploadBytes,applicationBytes,disk]=await Promise.all([
+  const [databaseSize,tableSizes,examRows,questionRows,uploadBytes,applicationBytes,disk,aiJobs,aiFailures]=await Promise.all([
     query(`SELECT pg_database_size(current_database())::bigint AS bytes`),
     query(`SELECT relname AS name,pg_total_relation_size(oid)::bigint AS bytes FROM pg_class WHERE relname=ANY($1::text[])`,[['users','exams','questions','attempts','notifications','audit_log','settings']]),
     query(`SELECT id,data,updated_at FROM exams WHERE status<>'trash' ORDER BY updated_at DESC`),
@@ -133,6 +133,8 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
     directoryBytes(uploadDir),
     directoryBytes(process.cwd(),{skip:new Set(['node_modules','.git','uploads'])}),
     fs.statfs(uploadDir).catch(()=>null),
+    query(`SELECT status,count(*)::int AS count,array_remove(array_agg(DISTINCT model),NULL) AS models FROM writing_ai_jobs GROUP BY status`),
+    query(`SELECT id,attempt_id,last_error,updated_at FROM writing_ai_jobs WHERE status='failed' ORDER BY updated_at DESC LIMIT 5`),
   ]);
   const questions=new Map(questionRows.rows.map(row=>[row.id,row.data||{}]));
   const questionEdits=new Map(questionRows.rows.map(row=>[row.id,new Date(row.updated_at).getTime()||0]));
@@ -156,6 +158,11 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
       secretUpdatedAt:secret.updatedAt,
     },
     ai,
+    writingAi:{
+      jobs:Object.fromEntries(aiJobs.rows.map(row=>[row.status,{count:Number(row.count||0),models:row.models||[]}])),
+      failures:aiFailures.rows.map(row=>({id:String(row.id),attemptId:row.attempt_id,error:row.last_error||'AI chấm bài thất bại.',at:row.updated_at})),
+      providers:{groq:Boolean(ai.groq?.configured),gemini:Boolean(ai.gemini?.configured)},
+    },
     storage:true,
     resources:{
       cpu:await sampleCpu(),

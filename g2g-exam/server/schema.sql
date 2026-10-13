@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS writing_ai_jobs (
   question_id text NOT NULL,
   status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','processing','completed','failed')),
   tries integer NOT NULL DEFAULT 0,
+  model text,
   available_at timestamptz NOT NULL DEFAULT now(),
   started_at timestamptz,
   finished_at timestamptz,
@@ -82,6 +83,7 @@ CREATE TABLE IF NOT EXISTS writing_ai_jobs (
   UNIQUE(attempt_id,question_id)
 );
 CREATE INDEX IF NOT EXISTS writing_ai_jobs_pending_idx ON writing_ai_jobs(status,available_at);
+ALTER TABLE writing_ai_jobs ADD COLUMN IF NOT EXISTS model text;
 
 CREATE TABLE IF NOT EXISTS exam_codes (
   id text PRIMARY KEY,

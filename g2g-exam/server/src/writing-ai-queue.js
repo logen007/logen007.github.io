@@ -9,7 +9,9 @@ export async function queueWritingAiJobs(client,attempt,exam,questions){
     const question=questions.get(questionId),answer=String(attempt.public_data?.answers?.[questionId]||'').trim();
     if(!isFreeWriting(question)||!answer)continue;
     await client.query(`INSERT INTO writing_ai_jobs(attempt_id,question_id,status)
-      VALUES($1,$2,'queued') ON CONFLICT(attempt_id,question_id) DO NOTHING`,[attempt.id,questionId]);
+      VALUES($1,$2,'queued') ON CONFLICT(attempt_id,question_id) DO UPDATE
+      SET status='queued',tries=0,last_error=NULL,available_at=now(),updated_at=now()
+      WHERE writing_ai_jobs.status='failed' AND writing_ai_jobs.available_at<=now()`,[attempt.id,questionId]);
   }
 }
 
@@ -46,7 +48,7 @@ async function processJob(job,logger){
     const aiWritingSuggestions={...(row.private_data?.aiWritingSuggestions||{}),[question.id]:{...suggestion,status:'completed',createdAt:now()}};
     await withTx(async client=>{
       await client.query(`UPDATE attempts SET private_data=private_data||$2::jsonb,updated_at=now() WHERE id=$1`,[row.id,JSON.stringify({aiWritingSuggestions})]);
-      await client.query(`UPDATE writing_ai_jobs SET status='completed',finished_at=now(),updated_at=now(),last_error=NULL WHERE id=$1`,[job.id]);
+      await client.query(`UPDATE writing_ai_jobs SET status='completed',model=$2,finished_at=now(),updated_at=now(),last_error=NULL WHERE id=$1`,[job.id,suggestion.model||null]);
     });
   }catch(error){
     const message=String(error?.message||'AI chưa thể chấm bài.').slice(0,500),tries=Number(job.tries||0)+1,retry=tries<3;
@@ -56,7 +58,7 @@ async function processJob(job,logger){
         const aiWritingSuggestions={...(attempt.private_data?.aiWritingSuggestions||{}),[job.question_id]:{status:retry?'queued':'failed',error:retry?'AI đang thử lại…':message,createdAt:now()}};
         await client.query(`UPDATE attempts SET private_data=private_data||$2::jsonb,updated_at=now() WHERE id=$1`,[job.attempt_id,JSON.stringify({aiWritingSuggestions})]);
       }
-      await client.query(`UPDATE writing_ai_jobs SET status=$2,tries=$3,last_error=$4,available_at=now()+($5::text||' seconds')::interval,finished_at=CASE WHEN $2='failed' THEN now() ELSE NULL END,updated_at=now() WHERE id=$1`,[job.id,retry?'queued':'failed',tries,message,String(Math.min(60,2**tries))]);
+      await client.query(`UPDATE writing_ai_jobs SET status=$2,tries=$3,last_error=$4,available_at=now()+($5::text||' seconds')::interval,finished_at=CASE WHEN $2='failed' THEN now() ELSE NULL END,updated_at=now() WHERE id=$1`,[job.id,retry?'queued':'failed',tries,message,String(retry?Math.min(60,2**tries):900)]);
     });
     logger?.warn?.({err:error,jobId:job.id},'writing AI job failed');
   }

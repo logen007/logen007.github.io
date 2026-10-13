@@ -36,7 +36,11 @@ async function fromGroq({prompt,maximum,apiKey,fetchImpl}){
   if(!apiKey)return null;
   const {response,body}=await requestJson(fetchImpl,groqEndpoint,{method:'POST',headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/json'},body:JSON.stringify({model:'openai/gpt-oss-20b',temperature:0.2,max_tokens:900,messages:[{role:'user',content:prompt}]})});
   if(response.status===429)return null;
-  if(!response.ok)throw appError(503,'AI chưa thể tạo gợi ý. Vui lòng thử lại sau.');
+  if(!response.ok){
+    const detail=String(body?.error?.message||'').replace(/\s+/g,' ').trim().slice(0,180);
+    if(response.status===401||response.status===403)throw appError(503,'Groq từ chối API key. Kiểm tra lại khóa Groq trong Cài đặt nâng cao.');
+    throw appError(503,`Groq không thể chấm bài${detail?`: ${detail}`:'.'}`);
+  }
   return {...parseWritingSuggestion(body?.choices?.[0]?.message?.content,maximum),model:'groq'};
 }
 
@@ -44,7 +48,11 @@ async function fromGemini({prompt,maximum,apiKey,fetchImpl}){
   if(!apiKey)throw appError(429,'Groq đã đạt giới hạn miễn phí và Gemini chưa được cấu hình.');
   const {response,body}=await requestJson(fetchImpl,geminiEndpoint,{method:'POST',headers:{'x-goog-api-key':apiKey,'content-type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json'}})});
   if(response.status===429)throw appError(429,'AI đang đạt giới hạn miễn phí. Vui lòng thử lại sau.');
-  if(!response.ok)throw appError(503,'AI chưa thể tạo gợi ý. Vui lòng thử lại sau.');
+  if(!response.ok){
+    const detail=String(body?.error?.message||'').replace(/\s+/g,' ').trim().slice(0,180);
+    if(response.status===401||response.status===403)throw appError(503,'Gemini từ chối API key. Kiểm tra lại khóa Gemini trong Cài đặt nâng cao.');
+    throw appError(503,`Gemini không thể chấm bài${detail?`: ${detail}`:'.'}`);
+  }
   return {...parseWritingSuggestion(body?.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join(''),maximum),model:'gemini'};
 }
 
