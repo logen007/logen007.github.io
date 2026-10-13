@@ -54,10 +54,13 @@ export class ApiRepository{
 
   startPolling(){
     clearInterval(this.poll);
+    this.nextPollAt=Date.now()+15000;
     this.poll=setInterval(async()=>{
+      this.nextPollAt=Date.now()+15000;
       if(!this.user||document.hidden||this.pollBusy||this.writing||this.fullLoad||this.stateLoad||this.outbox?.running)return;
       const scope=this.pollScope,generation=this.generation;
       this.pollBusy=true;
+      this.onPollCycle?.(0,true);
       try{
         if(this.outboxAttempt&&this.pollingAttempt===this.outboxAttempt){
           const id=this.outboxAttempt;
@@ -74,7 +77,7 @@ export class ApiRepository{
           this.state=normalizeState(next);
           this.emit();
         }
-      }catch{}finally{this.pollBusy=false;}
+      }catch{}finally{this.pollBusy=false;this.onPollCycle?.(Math.max(0,this.nextPollAt-Date.now()),false);}
     },15000);
   }
 

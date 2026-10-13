@@ -94,3 +94,6 @@
 .letter-builder-answer select{width:100px}
 .part-audio-guide{margin:0 0 20px;line-height:1.6}
 @media(max-width:760px){.exam-reading-split{grid-template-columns:minmax(0,1fr);gap:24px}}
+.admin-dashboard .dashboard-refresh-ring{display:inline-block;width:14px;height:14px;margin-left:6px;vertical-align:middle;flex-shrink:0;overflow:visible;fill:none;stroke-width:2;transform:rotate(-90deg)}
+.admin-dashboard .dashboard-refresh-track{stroke:currentColor;opacity:.12}
+.admin-dashboard .dashboard-refresh-fill{stroke:var(--brand-primary);stroke-linecap:round}

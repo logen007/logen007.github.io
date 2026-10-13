@@ -4,6 +4,11 @@ import {setInfrastructureOwner,readCachedInfrastructure,refreshInfrastructure,cl
 import {ApiRepository} from '../src/repositories/api.js';
 import {needsStateLoad} from '../src/repositories/state-scope.js';
 import {dashboardHtml} from '../src/views/dashboard.js';
+import {cycleProgress,refreshRing} from '../src/ui/dashboard-progress.js';
+assert.equal(cycleProgress({at:1000,delay:15000,busy:false},8500),.5);
+assert.equal(cycleProgress({at:1000,delay:15000,busy:false},20000),1);
+assert.equal(cycleProgress({at:1000,delay:15000,busy:true},1001),1);
+assert.doesNotMatch(refreshRing('summary'),/<text|<span/,'Refresh ring has no visible numeric label');
 const saved={sessionStorage:globalThis.sessionStorage,fetch:globalThis.fetch};
 const rows=new Map();
 globalThis.sessionStorage={getItem:key=>rows.get(key),setItem:(key,value)=>rows.set(key,value),removeItem:key=>rows.delete(key)};
@@ -25,6 +30,8 @@ try{
   assert.match(html,/Active student/);
   assert.match(html,/Độ chính xác AI/,'Accuracy must not wait for infrastructure');
   assert.match(html,/1\/1/);
+  assert.equal((html.match(/data-refresh-cycle="summary"/g)||[]).length,4,'Activity, exams, students and accuracy share summary timing');
+  assert.match(html,/data-refresh-cycle="ai"/);
   const startupCalls=[];
   globalThis.fetch=async url=>{startupCalls.push(url);return {ok:true,json:async()=>url.endsWith('/auth/me')?{user:{id:'one',role:'master'}}:{scope:'summary',...cached}};};
   const repository=new ApiRepository();repository.startPolling=()=>{};

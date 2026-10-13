@@ -31,7 +31,7 @@ assert.match(html,/data-tab="exams"/);
 assert.match(html,/data-dashboard-range/);
 assert.doesNotMatch(html,/data-dashboard-from|data-dashboard-to|Tuỳ chọn|Theo dữ liệu/);
 assert.match(html,/>Tuần<.*>Tháng<.*>Năm</);
-assert.match(html,/<h2>\d+ học viên<\/h2>/);
+assert.match(html,/<h2>\d+ học viên <svg class="dashboard-refresh-ring"[^>]*data-refresh-cycle="summary"/);
 assert.doesNotMatch(html,/dashboard-growth-total/);
 const accuracyHtml=dashboardHtml({data:{users:[],exams:[{id:'a1',title:'Đề mẫu',provider:'GOETHE',level:'A1',status:'published'}],attempts:[{examId:'a1',aiWritingAccuracy:{w1:{part:'Viết 1',provider:'groq',accurate:true},w2:{part:'Viết 1',provider:'gemini',accurate:false}}}]},infrastructure:{resources:{}}});
 assert.match(accuracyHtml,/Độ chính xác AI/);
@@ -48,7 +48,7 @@ assert.match(concurrentAi,/is-active"[^>]*>Groq/);assert.match(concurrentAi,/is-
 assert.match(concurrentAi,/Gemini quota/);assert.doesNotMatch(concurrentAi,/Chạy lại 0/);
 const mistralAccuracy=dashboardHtml({data:{users:[],exams:[],attempts:[{aiWritingAccuracy:{w:{part:'Viết 2',provider:'mistral',accurate:true}}}]},infrastructure:{resources:{}}});
 assert.doesNotMatch(mistralAccuracy,/dashboard-ai-model/);
-assert.match(providerCounts,/<h2>Chấm bài AI<\/h2><span class="dashboard-ai-providers"/);
+assert.match(providerCounts,/<h2>Chấm bài AI <svg[^>]*data-refresh-cycle="ai"[\s\S]*?<\/svg><\/h2><span class="dashboard-ai-providers"/);
 assert.doesNotMatch(providerCounts,/Ổn định|<b>AI<\/b>|Đã gợi ý|Đang chờ|dashboard-ai-metrics/);
 assert.match(accuracyHtml,/data-action="edit-exam" data-id="a1"/);
 assert.match(accuracyHtml,/>Đề mẫu<\/button>/);
