@@ -489,6 +489,23 @@ async function flushTextAnswers(){
   }),null,{rerender:false}));
 }
 
+// Submission used to wait for a full account-state reload after the server had
+// already accepted the paper. Show the receipt immediately; refresh the wider
+// account data in the background instead.
+async function submitAttemptFast(attemptId){
+  if(repo.mode!=='api')return repo.transaction(st=>submitAttempt(st,user,attemptId));
+  const result=await repo.call('submitAttempt',{attemptId});
+  repo.closeExamDraft();
+  repo.setPollingScope('full');
+  const attempt=byId(data.attempts,attemptId);
+  if(attempt){
+    const at=new Date().toISOString();
+    Object.assign(attempt,{status:result.status,submittedAt:attempt.submittedAt||at,updatedAt:at});
+  }
+  void repo.reload().catch(()=>{});
+  return result;
+}
+
 function startExamTimer(attempt,exam,sectionIndex){
   const section=exam.sections[sectionIndex],el=document.getElementById('examTimer'),summary=document.getElementById('examTimeSummary');
   const tick=async()=>{
@@ -506,9 +523,9 @@ function startExamTimer(attempt,exam,sectionIndex){
       for(const pending of saveTimers.values())clearTimeout(pending);
       saveTimers.clear();
       const unsynced=Object.keys(repo.outbox?.draft.pending||{}).length>0;
-      const result=await act(()=>repo.mode==='api'?repo.submitAttemptSecure(attempt.id):repo.transaction(st=>submitAttempt(st,user,attempt.id)),null,{rerender:false});
+      const result=await act(()=>submitAttemptFast(attempt.id),null,{rerender:false});
       if(result){
-        data=await repo.getState();ui.view='submitted';render();
+        ui.view='submitted';render();
         if(unsynced)notify('Hết giờ khi còn đáp án chưa đồng bộ. Máy chủ chỉ nhận các đáp án đã lưu đúng hạn; bản trên máy vẫn được giữ lại.');
         if(byId(data.attempts,attempt.id)?.status===ATTEMPT_STATUS.INCOMPLETE){timerBusy=false;return;}
         const modal=document.createElement('div');modal.className='hop-chon';
@@ -539,8 +556,8 @@ async function submitCurrentExam(confirmed=false){
   submitBusy=true;
   try{
     if(!await flushTextAnswers())return;
-    const result=await act(()=>repo.transaction(st=>submitAttempt(st,user,ui.attemptId)),null,{rerender:false});
-    if(result){data=await repo.getState();ui.view='submitted';render();}
+    const result=await act(()=>submitAttemptFast(ui.attemptId),null,{rerender:false});
+    if(result){clearTimer();ui.view='submitted';render();}
   }finally{submitBusy=false;}
 }
 
