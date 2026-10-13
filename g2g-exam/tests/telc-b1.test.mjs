@@ -9,6 +9,13 @@ import {manualGroups} from '../src/domain/manual-grading.js';
 import {partAudioSegments} from '../src/domain/part-audio.js';
 import {parseGapText,gapAuthorText,inlineGapErrors} from '../src/domain/inline-gaps.js';
 import {letterAnswerError} from '../src/domain/letter-answers.js';
+{
+  const questions=[{id:'x1',maxScore:1,choices:['A','X']},{id:'x2',maxScore:1,choices:['A','X']}];
+  const section={questionProfile:{uniqueLetters:true,repeatableLetters:['X']},questionIds:['x1','x2']};
+  assert.equal(letterAnswerError(section,questions,{x1:1,x2:1}),'');
+  assert.match(letterAnswerError(section,questions,{x1:0,x2:0}),/einmal/);
+  assert.match(letterAnswerError({...section,questionProfile:{uniqueLetters:true}},questions,{x1:1,x2:1}),/einmal/);
+}
 import {headingMatchHtml} from '../src/ui/heading-match.js';
 import {sectionLabel} from '../src/ui/section-label.js';
 for(const level of ['B1','B2']){

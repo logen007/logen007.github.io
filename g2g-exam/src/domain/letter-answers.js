@@ -11,6 +11,7 @@ export function letterAnswerError(section,questions,answers){
     if(!Number.isInteger(Number(value))||Number(value)<0)return 'Bitte wählen Sie einen gültigen Buchstaben.';
     const letter=choiceLetter(q.choices?.[Number(value)]);
     if(!/^[A-Z]$/.test(letter))return 'Bitte wählen Sie einen gültigen Buchstaben.';
+    if((section.questionProfile.repeatableLetters||[]).some(value=>choiceLetter(value)===letter))continue;
     if(used.has(letter))return 'Jeden Buchstaben dürfen Sie nur einmal verwenden.';
     used.add(letter);
   }

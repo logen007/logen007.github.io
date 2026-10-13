@@ -19,12 +19,12 @@ export function letterAnswersHtml(section,questions,answers,startNumber){
   const body=layout==='letter-table'
     ?`<div class="letter-table-scroll"><table class="letter-table"><thead><tr><th scope="row">${esc(section.tableHeading??'Person')}</th>${items.map(({q,number})=>`<th scope="col">${number}<span>${textHtml(q.title==='Nháp'?'':q.title)}</span></th>`).join('')}</tr></thead><tbody><tr><th scope="row">Lösung</th>${items.map(({q})=>`<td>${letterAnswerControl(q,answers[q.id],layout)}</td>`).join('')}</tr></tbody></table></div>`
     :items.map(({q,number})=>`<div class="letter-question"><label for="letter-${esc(q.id)}"><b>${number}${number==='_'?'':'.'}</b> ${textHtml(q.title==='Nháp'?'':q.title)}</label>${letterAnswerControl(q,answers[q.id],layout).replace('<input ','<input id="letter-'+esc(q.id)+'" ')}</div>`).join('');
-  return `<section class="letter-answers" data-letter-section data-unique-letters="${section.questionProfile.uniqueLetters!==false}">${body}<p class="letter-answer-error" role="status" aria-live="polite"></p></section>`;
+  return `<section class="letter-answers" data-letter-section data-repeatable-letters="${esc((section.questionProfile.repeatableLetters||[]).join(','))}" data-unique-letters="${section.questionProfile.uniqueLetters!==false}">${body}<p class="letter-answer-error" role="status" aria-live="polite"></p></section>`;
 }
 
 export function bindLetterAnswers(root,questions,answers,onSave){
   const controls=[...root.querySelectorAll('[data-letter-answer]')];if(!controls.length)return;
-  const section={questionProfile:{uniqueLetters:root.querySelector('[data-letter-section]')?.dataset.uniqueLetters!=='false'},questionIds:questions.map(q=>q.id)};
+  const section={questionProfile:{uniqueLetters:root.querySelector('[data-letter-section]')?.dataset.uniqueLetters!=='false',repeatableLetters:(root.querySelector('[data-letter-section]')?.dataset.repeatableLetters||'').split(',').filter(Boolean)},questionIds:questions.map(q=>q.id)};
   const refresh=()=>controls.forEach(el=>{
     syncLetterPicker(el);
     const display=el.parentElement?.querySelector('.inline-gap-value');
