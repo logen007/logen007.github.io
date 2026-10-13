@@ -6,7 +6,7 @@ assert.ok(appSource.includes('onStarted:id=>beginAttempt(null,false,button,id)')
 assert.ok(appSource.includes('await beginAttempt(null,false,null,resumed.id)'));
 assert.ok(appSource.includes("performance.getEntriesByType('navigation')[0]?.type==='reload'"));
 assert.ok(appSource.includes('if(!reloadingExam&&resumed?.studentId'));
-assert.match(transitionCss,/\.exam-transition--danger\.is-covered::before \{ animation:exam-cancel-white-out 400ms ease-out both; \}/);
+assert.match(transitionCss,/\.exam-transition--danger\.is-revealing::before \{ animation:exam-cancel-white-out 400ms ease-out both; \}/);
 assert.match(transitionCss,/@keyframes exam-cancel-white-out \{ from \{ opacity:1; \} to \{ opacity:0; \} \}/);
 assert.ok(appSource.includes('existingAttemptId?byId((await repo.getState()).attempts,existingAttemptId):await act('));
 assert.match(appSource,/if\(startingAttempt\|\|submitBusy\|\|timerBusy\)return;/);
@@ -38,7 +38,7 @@ let overlay;
 globalThis.window={innerWidth:400,innerHeight:800,getComputedStyle:()=>({backgroundColor:'rgb(248, 210, 52)'}),matchMedia:()=>({matches:false})};
 globalThis.setTimeout=(fn,ms)=>{delays.push(ms);queueMicrotask(fn);};
 globalThis.document={getElementById:()=>app,body:{append(){}},createElement(){
-  overlay={style:{setProperty(key,value){this[key]=value;}},setAttribute(){},focus(){},classList:{add(){}},querySelector:()=>({textContent:''}),remove(){this.removed=true;}};return overlay;
+  overlay={style:{setProperty(key,value){this[key]=value;}},setAttribute(){},focus(){},classList:new Set(),querySelector:()=>({textContent:''}),remove(){this.removed=true;}};return overlay;
 }};
 try{
   let calls=0;
@@ -68,7 +68,12 @@ try{
   assert.equal(delays.slice(1).reduce((sum,ms)=>sum+ms,0),2000);
   assert.equal(overlay.style['--wave-color'],undefined,'Submission keeps primary color');
   delays.length=0;
-  await withExamTransition(async covered=>{await covered;},null,{exit:true,danger:true,message:'Đã hủy bài thi'});
+  await withExamTransition(async covered=>{
+    await covered;
+    assert.ok(overlay.classList.has('is-covered'));
+    assert.equal(overlay.classList.has('is-revealing'),false,'Page changes under opaque white');
+  },null,{exit:true,danger:true,message:'Đã hủy bài thi'});
+  assert.ok(overlay.classList.has('is-revealing'));
   assert.deepEqual(delays,[1100,1100,400]);
   assert.equal(overlay.removed,true,'Cancellation ends when the red wave disappears');
   assert.equal(app.inert,false);

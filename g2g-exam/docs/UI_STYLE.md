@@ -324,6 +324,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   Cancellation ends with the red wave at 1.5 seconds, without an extra overlay fade.
   After full white coverage, the white layer fades over the final 400ms, rather
   than being removed abruptly; logo, wave and white layer finish together.
+  Coverage must paint before replacing the page; start revealing only after the
+  destination has rendered, never at the same moment coverage begins.
   Cancellation logo/text share the wave's 1.5-second linear fade envelope; do not
   reuse the delayed entry caption, which leaves the logo visible after the wave.
   entry and successful submission retain the primary color.

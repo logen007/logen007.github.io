@@ -32,17 +32,30 @@ export async function withExamTransition(start,trigger,{exit=false,message='Đã
   overlay.querySelector('p').textContent=exit?message:messages[0];
   const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const painted=()=>new Promise(resolve=>{
+    if(reduced||!window.requestAnimationFrame)return resolve();
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(resolve));
+  });
   try{
     if(app)app.inert=true;
     document.body.append(overlay);overlay.focus({preventScroll:true});
     // Fetch immediately; callers await coverage before replacing the visible page.
-    const covered=wait(reduced?0:1100).then(()=>overlay.classList.add('is-covered'));
+    const covered=wait(reduced?0:1100).then(async()=>{
+      overlay.classList.add('is-covered');
+      await painted();
+    });
     const loading=Promise.resolve().then(()=>start(covered)).then(()=>({ok:true}),error=>({ok:false,error}));
     await wait(reduced?(exit?0:100):1100);
+    if(exit&&danger){
+      const result=await loading;
+      if(!result.ok)throw result.error;
+      await painted();
+      overlay.classList.add('is-revealing');
+      await wait(reduced?0:400);
+      return;
+    }
     const [result]=await Promise.all([loading,wait(reduced?(exit?0:100):(exit?400:1400))]);
     if(!result.ok)throw result.error;
-    // Cancellation ends with its 1500ms red wave, without a trailing overlay fade.
-    if(exit&&danger)return;
     overlay.classList.add('is-leaving');
     await wait(reduced?0:500);
   }finally{
