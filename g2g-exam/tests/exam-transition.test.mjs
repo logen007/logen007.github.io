@@ -12,6 +12,9 @@ for(const status of ['Đã nộp bài','Đã hủy bài thi','Hết giờ — Đ
 assert.ok(appSource.includes("leaveExam('student-home','Đã hủy bài thi',{danger:true})"));
 assert.match(transitionCss,/\.exam-transition-waves i \{[^}]*var\(--brand-primary\)/);
 assert.match(transitionCss,/\.exam-transition::before \{[^}]*background:#fff/);
+assert.match(transitionCss,/\.exam-transition--danger \.exam-transition-center \{ animation:exam-cancel-caption 1500ms linear both; \}/);
+assert.match(transitionCss,/animation:exam-cancel-wave 1500ms linear both;/);
+assert.match(transitionCss,/@keyframes exam-cancel-caption \{ 0% \{ opacity:0; \} 20% \{ opacity:1; \} 55% \{ opacity:\.55; \} 100% \{ opacity:0; \} \}/);
 assert.match(transitionCss,/\.exam-transition--danger \.exam-transition-waves i \{[^}]*transparent 16%[^}]*transparent 88%/);
 assert.match(transitionCss,/@keyframes exam-cancel-wave \{[^\n]*20% \{ opacity:\.22; \} 55% \{ opacity:\.12; \}[^\n]*opacity:0;/);
 assert.match(transitionCss,/@keyframes exam-white-fill \{ from \{ opacity:0; \} to \{ opacity:1; \} \}/);

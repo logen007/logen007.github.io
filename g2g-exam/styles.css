@@ -248,7 +248,9 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .exam-transition.is-leaving { opacity:0; }
 .exam-transition.is-covered::before { animation:none; opacity:1; }
 .exam-transition--exit .exam-transition-waves i { animation-direction:reverse; }
-.exam-transition--danger .exam-transition-waves i { background:radial-gradient(circle,transparent 16%,color-mix(in srgb,var(--do) 25%,transparent) 35%,color-mix(in srgb,var(--do) 60%,transparent) 50%,color-mix(in srgb,var(--do) 25%,transparent) 65%,transparent 88%); animation:exam-cancel-wave 1500ms cubic-bezier(.22,.61,.36,1) both; }
+.exam-transition--danger .exam-transition-waves i { background:radial-gradient(circle,transparent 16%,color-mix(in srgb,var(--do) 25%,transparent) 35%,color-mix(in srgb,var(--do) 60%,transparent) 50%,color-mix(in srgb,var(--do) 25%,transparent) 65%,transparent 88%); animation:exam-cancel-wave 1500ms linear both; }
+.exam-transition--danger .exam-transition-center { animation:exam-cancel-caption 1500ms linear both; }
+@keyframes exam-cancel-caption { 0% { opacity:0; } 20% { opacity:1; } 55% { opacity:.55; } 100% { opacity:0; } }
 @keyframes exam-cancel-wave { 0% { transform:translate(-50%,-50%) scale(1.4); opacity:0; } 20% { opacity:.22; } 55% { opacity:.12; } 100% { transform:translate(-50%,-50%) scale(.04); opacity:0; } }
 @keyframes exam-white-fill { from { opacity:0; } to { opacity:1; } }
 @keyframes exam-power-wave { 0% { transform:translate(-50%,-50%) scale(.04); opacity:0; } 15% { opacity:.35; } 60% { opacity:.18; } 100% { transform:translate(-50%,-50%) scale(1.4); opacity:0; } }

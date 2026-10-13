@@ -321,6 +321,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   Confirmed cancellation uses the shared danger red for the transition wave;
   its inner/outer edges are feathered, with a lower-opacity fade as it contracts.
   Cancellation ends with the red wave at 1.5 seconds, without an extra overlay fade.
+  Cancellation logo/text share the wave's 1.5-second linear fade envelope; do not
+  reuse the delayed entry caption, which leaves the logo visible after the wave.
   entry and successful submission retain the primary color.
 
 - Writing-answer textareas default to notebook ruling and handwriting font.
