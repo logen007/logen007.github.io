@@ -217,6 +217,13 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 - Controls have only two density levels: 44px for normal screens and 40px inside
   the exam builder. Both use a 12px radius, 14px horizontal inset, the shared
   border tokens, and identical hover/focus/disabled states.
+  On touch devices both densities are 44px. `--control-font-size` owns text
+  size for fields and buttons alike: 14px desktop, 16px touch. File/image/audio
+  triggers use the same size, not smaller local values. Builder containers own
+  their control density so generic input min-height cannot override compact
+  rows. Neutral builder buttons use the same surface and border as inputs;
+  primary, selected, disabled and destructive states remain distinct. Textareas
+  can grow for content; circular icon controls keep their shared frame.
 - Native dropdowns always reserve 42px on the right for one 16px chevron placed
   14px from the edge. Feature modules must not redraw or reposition that icon.
 - User-approved exception: single-letter dropdowns embedded in reading text

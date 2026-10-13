@@ -48,6 +48,14 @@ assert.match(page,/id="sBackground"[^>]*maxlength="7"/);
 assert.match(page,/id="sSelectionStrength" type="range"/);
 assert.doesNotMatch(page,/data-theme-preset|Than đậm|Xanh dương|Xanh lá/);
 const layoutCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(layoutCss,/--control-font-size:14px/);
+assert.match(layoutCss,/:root \{ --control-font-size:16px; --control-height-sm:44px; --editor-control:44px; \}/,'Touch controls share readable text and touch-target height');
+assert.match(layoutCss,/\.goethe-editor \{ --control-height:var\(--editor-control\); \}/,'Builder density controls generic input min-height too');
+for(const selector of ['.nut {','.audio-upload {','.section-image-upload {','.goethe-choices label>input:last-child {']){
+  const rule=layoutCss.slice(layoutCss.indexOf(selector)).split('}')[0];
+  assert.ok(rule.includes('font-size:var(--control-font-size)'),`${selector} must use shared control typography`);
+}
+assert.match(layoutCss,/\.goethe-editor \.nut:not\(\.chinh\):not\(\.nguy\):not\(\.active\) \{[^}]*border-color:var\(--control-border\)/);
 assert.match(layoutCss,/\.exam-instruction img \{[^}]*width:100%; max-width:100%; height:auto; max-height:none;/);
 assert.match(layoutCss,/\.question-stimulus img \{[^}]*width:100%; max-width:100%; height:auto; max-height:none;/);
 assert.doesNotMatch(layoutCss.match(/\.exam-paper \.cau-thi \{[^}]+\}/)?.[0]||'',/border-bottom:1px/);
