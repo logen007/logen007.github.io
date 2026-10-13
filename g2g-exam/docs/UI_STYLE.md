@@ -533,6 +533,11 @@ theme application must not wait for a network response to render the page.
 
 ## Student result detail
 
+- Unpublished and published reviews keep the same skill grouping, order and tabs.
+  Overview aggregates parts into skills; part marks stay in the matching detail
+  tab. Missing component marks keep the skill pending; a writing estimate marks
+  its aggregate temporary too. Speaking retains its position before publication.
+
 - Standard TELC results use two separate cards: Khối thi viết (with four nested
   skill rows) and Khối thi nói. Use shared bars without grade badges on children;
   show block thresholds and only published block verdicts. Missing written

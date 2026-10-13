@@ -1560,13 +1560,13 @@ if(repo.mode==='api')startReleaseMonitor({canReload:()=>
 import {shareStudentProfile,bindStudentName} from './views/student-profile-card.js';
 import {loadStudentReview as loadStudentReviewData} from './controllers/student-review.js';
 import {bindAttemptResult,bar as resultBar} from './views/attempt-result.js';
-import {provisionalResultHtml} from './views/provisional-result.js';
+import {provisionalResultHtml,sectionResultHtml} from './views/provisional-result.js';
 import {telcResultHtml} from './views/telc-result.js';
 import {startResultRefresh} from './controllers/result-refresh.js';
 if(repo.mode==='api')startResultRefresh({
   isActive:()=>isStudent(user)&&ui.view==='student-attempt-detail'&&Boolean(ui.review?.provisional),
   getReview:()=>ui.review,
   refresh:attemptId=>repo.call('getAttemptReview',{attemptId,progressOnly:true}),
-  onResult:provisional=>{ui.review={...ui.review,provisional};app.querySelectorAll('[data-provisional-result]').forEach(slot=>{slot.innerHTML=provisionalResultHtml(provisional,resultBar,slot.dataset.provisionalResult);});app.querySelectorAll('[data-telc-result]').forEach(slot=>{slot.innerHTML=telcResultHtml(ui.review,resultBar,slot.dataset.telcResult);});},
+  onResult:provisional=>{ui.review={...ui.review,provisional};app.querySelectorAll('[data-provisional-result]').forEach(slot=>{slot.innerHTML=provisionalResultHtml(provisional,resultBar,slot.dataset.provisionalResult);});app.querySelectorAll('[data-telc-result]').forEach(slot=>{slot.innerHTML=telcResultHtml(ui.review,resultBar,slot.dataset.telcResult);});app.querySelectorAll('[data-result-section-score]').forEach(slot=>{slot.innerHTML=sectionResultHtml(ui.review,{name:slot.dataset.resultSectionScore});});},
   onPublished:async id=>{const review=await loadStudentReview(id);if(isStudent(user)&&ui.view==='student-attempt-detail'&&ui.review?.attempt.id===id){ui.review=review;render();}},
 });

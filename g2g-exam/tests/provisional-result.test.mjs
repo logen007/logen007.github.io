@@ -3,6 +3,8 @@ import {buildAttemptReview} from '../src/domain/attempt-review.js';
 import {provisionalResult} from '../src/domain/provisional-result.js';
 import {attemptResultHtml,resultShareText} from '../src/views/attempt-result.js';
 import {startResultRefresh} from '../src/controllers/result-refresh.js';
+import {provisionalSkills,provisionalResultHtml} from '../src/views/provisional-result.js';
+import {bar} from '../src/views/attempt-result.js';
 
 const exam={provider:'GOETHE',level:'A1',sections:[
   {name:'Đọc',questionIds:['example','a','b']},
@@ -33,8 +35,25 @@ assert.match(html,/result-stats/);assert.match(html,/result-donut/);assert.match
 assert.match(html,/data-provisional-result="writing"/);
 const bars=[...html.matchAll(/<div class="result-bar">([\s\S]*?)<div class="result-track/g)].map(m=>m[1]);
 assert.ok(bars.some(row=>row.includes('Đọc')&&!row.includes('điểm tạm tính')&&!row.includes('provisional-score')));
-assert.ok(bars.some(row=>row.includes('Viết 1')&&!row.includes('điểm tạm tính')));
-assert.ok(bars.some(row=>row.includes('Viết 2')&&row.includes('điểm tạm tính')));
+assert.equal(provisionalSkills(review.provisional).writing.score,null,'Missing writing parts are not zero');
+assert.ok(!bars.some(row=>row.includes('Viết 1')||row.includes('Viết 2')));
+const complete={parts:[
+  {skill:'listening',label:'Nghe 1',score:2,max:6,source:'automatic'},
+  {skill:'listening',label:'Nghe 2',score:4,max:4,source:'automatic'},
+  {skill:'listening',label:'Nghe 3',score:2,max:5,source:'automatic'},
+  {skill:'reading',label:'Đọc 1',score:11,max:15,source:'automatic'},
+  {skill:'writing',label:'Viết 1',score:2,max:5,source:'automatic'},
+  {skill:'writing',label:'Viết 2',score:0,max:10,source:'ai'},
+]};
+assert.deepEqual(provisionalSkills(complete).writing,{score:2,max:15,temporary:true});
+const overview=provisionalResultHtml(complete,bar);
+assert.ok(overview.indexOf('Đọc')<overview.indexOf('Nghe'));
+assert.ok(overview.indexOf('Nghe')<overview.indexOf('Viết'));
+assert.match(overview,/8<small> \/ 15/);
+assert.match(overview,/2<small> \/ 15/);
+assert.match(overview,/Nói/);
+assert.equal((overview.match(/– điểm tạm tính/g)||[]).length,1);
+assert.doesNotMatch(overview,/Nghe 1|Viết 1|Viết 2/);
 assert.equal(resultShareText(review),null);
 for(const status of ['in_progress','incomplete','abandoned','published'])assert.equal(provisionalResult(exam,questions,{...attempt,status},privateData),null);
 for(const status of ['in_progress','incomplete','abandoned']){

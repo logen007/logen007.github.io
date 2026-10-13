@@ -4,6 +4,9 @@
 thang điểm hoặc quy tắc đạt/trượt của từng Provider/Level/Part.
 
 - Giữ cấu trúc kết quả cũ: thống kê, điểm từng phần, biểu đồ và tab chi tiết.
+- Trước/sau công bố dùng cùng thứ tự và nhóm kỹ năng ở Tổng quan và đầu tab.
+  Cộng các bài theo scoringSkill; có điểm thiếu thì kỹ năng chờ điểm, không tính 0.
+  Kỹ năng có gợi ý viết thì tổng kỹ năng mang nhãn tạm tính. Nói luôn giữ vị trí.
 - Trắc nghiệm có kết quả chính xác ngay sau khi nộp, gồm điểm, đúng/sai và đáp án.
   Không gắn nhãn tạm tính hoặc màu tạm tính cho điểm tự chấm (kể cả form viết).
 - Chỉ gợi ý điểm bài viết có AI chấm mới ghi “– điểm tạm tính”, màu xanh xám riêng.

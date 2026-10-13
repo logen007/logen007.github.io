@@ -1,5 +1,6 @@
 import {TELC_SCORING} from '../../specs/telc/scoring.js';
 import {SKILL_LABELS} from '../domain/result-summary.js';
+import {provisionalSkills} from './provisional-result.js';
 
 const writtenKeys=Object.keys(TELC_SCORING.written);
 const label=key=>key==='grammar'?'Ngữ pháp & từ vựng':SKILL_LABELS[key];
@@ -7,12 +8,9 @@ const sum=values=>Math.round(values.reduce((n,v)=>n+v,0)*100)/100;
 
 export function telcResultSkills(review){
   if(review.attempt?.status==='published')return review.score?.summary?.skills||{};
-  const skills={};
+  const skills=provisionalSkills(review.provisional);
   for(const key of writtenKeys){
-    const parts=(review.provisional?.parts||[]).filter(p=>p.skill===key);
-    skills[key]={max:parts.length?sum(parts.map(p=>p.max)):TELC_SCORING.written[key],
-      score:parts.length&&parts.every(p=>p.score!=null)?sum(parts.map(p=>p.score)):null,
-      temporary:parts.some(p=>p.source==='ai')};
+    skills[key]||={max:TELC_SCORING.written[key],score:null,temporary:false};
   }
   return skills;
 }
