@@ -32,6 +32,7 @@ function checkImports(file){
 checkImports('server/src/index.js');
 // Starting an exam removes duplicated status from JSON; the SQL column owns it.
 const stateContext={
+  releasedExam:async exam=>exam,
   structuredClone,Date,Map,Set,expireCodes:async()=>{},resolveAccountNames:state=>state,
   query:async sql=>{
     if(sql.includes('FROM exams')){

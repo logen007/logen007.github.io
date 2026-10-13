@@ -819,7 +819,7 @@ try{
     assert.equal(calls,before,'Read-only preview must not attempt to save a locked exam.');
     for(const action of ['back-admin','select-section','preview-exam','publish-exam']){
       const binding=source.slice(source.indexOf(`app.querySelectorAll('[data-action="${action}"]')`));
-      assert.ok(binding.indexOf('if(!await flushBuilderDraft())return;')<binding.indexOf('\n  });')||binding.split('\n')[0].includes('if(!await flushBuilderDraft())return;'),`${action} must flush edits first.`);
+      assert.match(binding.slice(0,binding.indexOf('\n  });')),/if\(!await flushBuilderDraft\(\)\)(?:return;|\{progress.remove\(\);return;\})/,`${action} must flush edits first.`);
     }
   });
 

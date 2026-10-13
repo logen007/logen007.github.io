@@ -21,9 +21,10 @@ export async function telcB1BackendScenario({query,teacher,student}){
   const head=exam.sections[0].questionIds;
   await saveAnswers(student,{attemptId:id,answers:{[head[0]]:0}});
   await assert.rejects(()=>saveAnswers(student,{attemptId:id,answers:{[head[1]]:0}}),/einmal/);
+  const snapshot=(await query('SELECT private_data FROM attempts WHERE id=$1',[id])).rows[0].private_data.examSnapshot;
   for(let index=0;index<exam.sections.length;index++){
     await setAttemptSection(student,{attemptId:id,index});
-    const answers=Object.fromEntries(rows(exam.sections[index]).filter(q=>!q.example).map(q=>[q.id,q.type==='writing'?'Meine Antwort':q.correctAnswer]));
+    const answers=Object.fromEntries(rows(exam.sections[index]).filter(q=>!q.example).map(q=>[q.id,q.type==='writing'?'Meine Antwort':snapshot.questionSnapshot.find(item=>item.id===q.id).correctAnswer]));
     await saveAnswers(student,{attemptId:id,answers});
   }
   // Editing public bank/source keys after start must not change the active snapshot.

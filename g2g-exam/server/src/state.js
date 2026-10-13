@@ -7,6 +7,7 @@ import {deleteTrashedExam} from './trash-delete.js';
 import {publicWritingRows,writingFormScore,normalizeWritingRows} from './writing-form.js';
 import {expireCodes} from './actions/exam-access.js';
 import {preserveAttemptSnapshots} from './exam-snapshots.js';
+import {createExamRelease,releasedExam} from './exam-releases.js';
 import {ensureClassCodes} from './actions/class-enrollment.js';
 import {questionMetadata,examMetadata,attemptPublicMetadata,attemptPrivateMetadata} from './state-projection.js';
 
@@ -43,10 +44,13 @@ export async function loadState(user,{summaryOnly=false,attemptId=null}={}){
     }else await expireCodes();
     state.users=[user];
     state.exams=(await rows(`SELECT id,owner_id,status,locked,data FROM exams WHERE ${session?'id=$1':"status='published'"} ORDER BY updated_at DESC`,session?[session.exam_id]:[])).map(r=>rowEntity(r));
+    state.exams=await Promise.all(state.exams.map(exam=>releasedExam(exam)));
     const attempts=session?[session]:await rows(`SELECT id,public_data,CASE WHEN status='in_progress' THEN private_data ELSE '{}'::jsonb END AS private_data,status,exam_id FROM attempts WHERE student_id=$1 ORDER BY created_at DESC`,[user.id]);
     state.attempts=attempts.map(r=>({id:r.id,...r.public_data}));
-    const neededIds=[...new Set(state.exams.filter(exam=>!attempts.some(a=>a.exam_id===exam.id&&a.status==='in_progress'&&a.private_data?.examSnapshot)).flatMap(exam=>(exam.sections||[]).flatMap(section=>section.questionIds||[])))];
+    const neededIds=[...new Set(state.exams.filter(exam=>!exam.questionSnapshot&&!attempts.some(a=>a.exam_id===exam.id&&a.status==='in_progress'&&a.private_data?.examSnapshot)).flatMap(exam=>(exam.sections||[]).flatMap(section=>section.questionIds||[])))];
     const allQuestions=(await rows(`SELECT id,data FROM questions WHERE status<>'trash' AND id=ANY($1::text[])`,[neededIds])).map(r=>rowEntity(r));
+    allQuestions.push(...state.exams.flatMap(exam=>exam.questionSnapshot||[]));
+    state.exams=state.exams.map(({questionSnapshot,...exam})=>exam);
     const activeCodes=await rows('SELECT c.exam_id,NOT EXISTS(SELECT 1 FROM exam_code_uses u WHERE u.code_id=c.id AND u.student_id=$1) AS unused FROM exam_codes c WHERE c.expires_at>now()',[user.id]);
     const allowed=new Set();
     state.exams=state.exams.map(exam=>{
@@ -125,8 +129,12 @@ async function applyExam(c,user,op){
   const item=op.item||{};
   try{for(const section of item.sections||[])if(section.audioFlow!=null)section.audioFlow=normalizeAudioFlow(section.audioFlow);}
   catch(error){throw appError(400,error.message);}
+  if(!current.rowCount){delete item.publicationVersion;delete item.publicationLabel;}
   if(!current.rowCount){if(!isTeacher(user)||item.ownerId!==user.id)throw appError(403,'Không có quyền tạo bài thi.');await c.query(`INSERT INTO exams(id,owner_id,status,locked,data) VALUES($1,$2,$3,$4,$5::jsonb)`,[op.id,user.id,item.status||'draft',Boolean(item.locked),JSON.stringify(stripId(item))]);return;}
   const old=current.rows[0],oldData=old.data||{};if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa bài thi này.');if(old.status==='trash'&&item.status!=='trash'&&user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được khôi phục bài thi.');if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu bài thi.');
+  // Publication pointers are server-owned; stale editor saves cannot roll back a release.
+  if(old.status==='published'&&oldData.publicationVersion&&item.status==='draft')item.status='published';
+  for(const key of ['publicationVersion','publicationLabel']){delete item[key];if(oldData[key]!=null)item[key]=oldData[key];}
   await c.query(`UPDATE exams SET status=$2,locked=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,item.status||old.status,Boolean(item.locked),JSON.stringify(stripId({...item,hidden:Boolean(oldData.hidden),learningLevel:oldData.learningLevel||null,ownerId:old.owner_id}))]);
 }
 async function applyUser(c,user,op){if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được quản lý tài khoản.');if(op.kind==='delete')throw appError(409,'Không xóa tài khoản trực tiếp; hãy vô hiệu hóa tài khoản.');const item=op.item||{};const cur=await c.query(`SELECT * FROM users WHERE id=$1 FOR UPDATE`,[op.id]);if(!cur.rowCount)throw appError(404,'Không tìm thấy tài khoản.');if(op.id===user.id&&item.role&&item.role!=='master')throw appError(409,'Không thể tự hạ quyền tài khoản Quản trị cấp cao.');const old=cur.rows[0],role=['student','teacher','master'].includes(item.role)?item.role:old.role;const data=stripId(item);delete data.email;delete data.role;delete data.active;delete data.confirmationCode;for(const key of ['level','classId','profileCompletedAt','nameChangedAt']){delete data[key];if(old.data[key]!==undefined)data[key]=old.data[key];}await c.query(`UPDATE users SET role=$2,active=$3,data=$4::jsonb,updated_at=now() WHERE id=$1`,[op.id,role,item.active!==false,JSON.stringify(data)]);}
@@ -141,6 +149,11 @@ export async function commitOperations(user,ops=[]){
       else if(op.collection==='exams')await applyExam(c,user,op);
       else if(op.collection==='users')await applyUser(c,user,op);
       else throw appError(400,`Không hỗ trợ thay đổi ${op.collection}.`);
+    }
+    // Compatibility for older clients that publish through the generic commit.
+    for(const op of ops.filter(op=>op.collection==='exams'&&op.item?.status==='published')){
+      const row=(await c.query('SELECT * FROM exams WHERE id=$1 FOR UPDATE',[op.id])).rows[0];
+      if(row&&!row.data.publicationVersion)await createExamRelease(c,row);
     }
     if(ops.length)await audit(user,'commit_changes','system','batch',{count:ops.length},c);
     return {ok:true,count:ops.length};

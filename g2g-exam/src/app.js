@@ -81,6 +81,7 @@ import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
 import {readCachedInfrastructure,refreshInfrastructure,setInfrastructureOwner,clearInfrastructureCache} from './settings/api.js';
 import {readDashboardCache,writeDashboardCache,clearDashboardCache,patchDashboard} from './ui/dashboard-cache.js';
+import {publicationProgress,streamPublication} from './ui/publication-progress.js';
 import {isScoredWritingField,writingFormScore,addWritingRow,removeWritingRow} from './domain/writing-form.js';
 import {readWritingRow} from './ui/writing-form.js';
 import {readExamAnswers,revealUnansweredQuestion} from './ui/exam-answers.js';
@@ -110,6 +111,7 @@ let builderSavedRevision=0;
 let infrastructureLoading=false;
 let infrastructureRefreshStarted=false;
 const saveTimers=new Map();
+const publishingExams=new Set();
 const pendingAudioUploads=new Map();
 
 const ui={
@@ -1097,17 +1099,25 @@ function bindViewSpecific(){
     finally{if(b.isConnected)b.disabled=false;}
   });
   app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=async()=>{
-    if(b.disabled)return;
+    if(b.disabled||publishingExams.has(b.dataset.id))return;
+    publishingExams.add(b.dataset.id);
     b.disabled=true;
+    const progress=publicationProgress();progress.update('saving');
     try{
-      if(!await flushBuilderDraft())return;
-      await repo.transaction(st=>{
-        ensureExamMatchesConfiguredSpec(st,user,b.dataset.id);
-        return publishExam(st,user,b.dataset.id);
-      });
-      data=await repo.getState();notify('Đã xuất bản bài thi.');render();
-    }catch(error){showPublishErrors(error);}
-    finally{if(b.isConnected)b.disabled=false;}
+      if(!await flushBuilderDraft()){progress.remove();return;}
+      let receipt;
+      if(repo.mode==='api'){
+        await repo.transaction(st=>ensureExamMatchesConfiguredSpec(st,user,b.dataset.id));
+        receipt=await streamPublication(b.dataset.id,stage=>progress.update(stage));
+        repo.applyPublicationReceipt(receipt);
+      }else{
+        progress.update('checking');
+        await repo.transaction(st=>{ensureExamMatchesConfiguredSpec(st,user,b.dataset.id);return publishExam(st,user,b.dataset.id);});
+      }
+      data=await repo.getState();
+      if(receipt)progress.done(receipt.version);else{progress.remove();notify('Đã xuất bản bản cục bộ.');}
+    }catch(error){progress.remove();showPublishErrors(error);}
+    finally{publishingExams.delete(b.dataset.id);if(b.isConnected)b.disabled=false;}
   });
   app.querySelectorAll('[data-action="preview-exam"]').forEach(b=>b.onclick=async()=>{
     if(!await flushBuilderDraft())return;

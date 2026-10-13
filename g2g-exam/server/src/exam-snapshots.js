@@ -1,4 +1,5 @@
 // Preserve legacy attempts before authoring changes. New attempts already snapshot at start.
+import {createExamRelease} from './exam-releases.js';
 export async function preserveAttemptSnapshots(client,operations){
   const examIds=operations.filter(op=>op.collection==='exams').map(op=>op.id);
   const questionIds=new Set(operations.filter(op=>op.collection==='questions').map(op=>op.id));
@@ -8,6 +9,7 @@ export async function preserveAttemptSnapshots(client,operations){
     WHERE COALESCE(section->'questionIds','[]'::jsonb) ?| $2::text[]
   ) ORDER BY id FOR UPDATE`,[examIds,[...questionIds]])).rows;
   for(const row of exams){
+    if(row.status==='published'&&!row.data.publicationVersion)await createExamRelease(client,row,{baseline:true});
     const ids=[...new Set((row.data.sections||[]).flatMap(section=>section.questionIds||[]))];
     if(!examIds.includes(row.id)&&!ids.some(id=>questionIds.has(id)))continue;
     const legacy=await client.query("SELECT id FROM attempts WHERE exam_id=$1 AND NOT(private_data ? 'examSnapshot')",[row.id]);

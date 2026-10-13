@@ -32,6 +32,17 @@ CREATE TABLE IF NOT EXISTS exams (
 CREATE INDEX IF NOT EXISTS exams_owner_idx ON exams(owner_id);
 CREATE INDEX IF NOT EXISTS exams_status_idx ON exams(status);
 
+-- Immutable authoring releases. Attempts created before this expansion retain
+-- their own snapshots; no existing attempt data is rewritten.
+CREATE TABLE IF NOT EXISTS exam_releases (
+  exam_id text NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+  version integer NOT NULL CHECK (version > 0),
+  content_hash text NOT NULL,
+  snapshot jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(exam_id,version)
+);
+
 ALTER TABLE exams ADD COLUMN IF NOT EXISTS trashed_at timestamptz;
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS trashed_at timestamptz;
 UPDATE exams SET trashed_at=updated_at WHERE status='trash' AND trashed_at IS NULL;

@@ -193,6 +193,12 @@ export class ApiRepository{
     return request(`/actions/${encodeURIComponent(name)}`,{method:'POST',body:payload});
   }
 
+  applyPublicationReceipt(receipt){
+    const exam=this.state.exams.find(exam=>exam.id===receipt.examId);
+    if(exam)Object.assign(exam,{status:'published',publicationVersion:receipt.publicationVersion,publicationLabel:receipt.version});
+    this.emit();
+  }
+
   async transaction(mutator){
     const task=(this.writeQueue||Promise.resolve()).then(()=>this.runTransaction(mutator));
     this.writeQueue=task.catch(()=>{});

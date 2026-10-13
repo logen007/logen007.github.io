@@ -23,6 +23,7 @@ export async function referencedUploadNames({query=databaseQuery}={}){
   const queries=[
     'SELECT data FROM questions',
     'SELECT data FROM exams',
+    'SELECT snapshot FROM exam_releases',
     'SELECT public_data,private_data FROM attempts',
     'SELECT data FROM notifications',
     'SELECT data FROM settings',

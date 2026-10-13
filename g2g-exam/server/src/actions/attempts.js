@@ -9,6 +9,7 @@ import {examDeadlineMs,submissionTiming} from '../../../src/domain/exam-clock.js
 import {letterAnswerError} from '../../../src/domain/letter-answers.js';
 import {queueWritingAiJobs} from '../writing-ai-queue.js';
 import {shuffledGapSnapshot} from '../../../src/domain/gap-bank.js';
+import {releasedExam} from '../exam-releases.js';
 
 export async function startAttempt(user,{examId,restart=false,code}){
   if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
@@ -24,7 +25,8 @@ export async function startAttempt(user,{examId,restart=false,code}){
       examId=access.exam_id;
     }
     await client.query('SELECT id FROM exams WHERE id=$1 FOR UPDATE',[examId]);
-    const exam=await examById(examId,client);
+    const currentExam=await examById(examId,client);
+    const exam=await releasedExam(currentExam,client);
     if(exam.status!=='published')throw appError(409,'Bài thi chưa mở cho học viên.');
     if(exam.hidden&&!access)throw appError(403,'Vui lòng nhập mã thi.');
     if(access&&(await client.query('SELECT 1 FROM exam_code_uses WHERE code_id=$1 AND student_id=$2',[access.id,user.id])).rowCount)throw appError(409,'Bạn đã sử dụng mã thi này.');
@@ -42,7 +44,7 @@ export async function startAttempt(user,{examId,restart=false,code}){
     meta.currentDeadlineMs=deadline;
     for(const state of Object.values(meta.sectionStates))state.deadlineAt=new Date(deadline).toISOString();
     const data={
-      examId,examTitle:exam.title,examVersion:Number(exam.version||1),
+      examId,examTitle:exam.title,examVersion:Number(exam.publicationVersion||exam.version||1),publicationLabel:exam.publicationLabel,
       studentId:user.id,studentName:user.name||'',studentEmail:user.email||'',attemptNo,
       status:'in_progress',startedAt,updatedAt:startedAt,currentSectionIndex:0,
       ...meta,examDeadlineMs:deadline,answers:{},audioSessions:{},publishedAt:null,
@@ -53,7 +55,7 @@ export async function startAttempt(user,{examId,restart=false,code}){
     if(access)await client.query('INSERT INTO exam_code_uses(code_id,student_id,attempt_id) VALUES($1,$2,$3)',[access.id,user.id,id]);
 
     if(!exam.locked){
-      const examData={...exam,locked:true,lockedAt:startedAt};
+      const examData={...currentExam,locked:true,lockedAt:startedAt};
       delete examData.id;
       delete examData.ownerId;
       delete examData.status;

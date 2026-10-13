@@ -19,6 +19,7 @@ import {loadExamCatalog} from './exam-catalog.js';
 import {loadAttemptSync} from './attempt-sync.js';
 import {stateResponse} from './state-response.js';
 import {handleAction} from './actions.js';
+import {registerPublicationRoute} from './publication-route.js';
 import {startMediaGarbageCollector} from './media-gc.js';
 import {startTrashGarbageCollector} from './trash-gc.js';
 import {submitExpiredAttempts} from './actions/attempts.js';
@@ -111,6 +112,7 @@ app.get('/api/attempts/:id/session',async(request,reply)=>{
   return stateResponse(await loadState(user,{attemptId:request.params.id}),request,reply);
 });
 app.post('/api/commit',async request=>commitOperations(await requireUser(request),request.body?.operations||[]));
+registerPublicationRoute(app,requireUser);
 app.post('/api/actions/:name',async request=>handleAction(await requireUser(request),request.params.name,request.body||{}));
 
 function demoUploadUser(request){

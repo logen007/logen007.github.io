@@ -23,6 +23,8 @@ COPY media-worker.js /app/public/media-worker.js
 RUN cp /app/public/vi.html /app/public/index.html
 COPY src /app/public/src
 COPY src/release.js /app/src/release.js
+COPY src/config.js /app/src/config.js
+COPY src/domain/exams.js src/domain/questions.js src/domain/base.js src/domain/configured-part-validation.js src/domain/inline-gaps.js src/domain/text-markup.js /app/src/domain/
 COPY src/domain/student-profile.js /app/src/domain/student-profile.js
 COPY src/domain/account-name.js /app/src/domain/account-name.js
 COPY src/domain/gradebook.js /app/src/domain/gradebook.js

@@ -46,7 +46,8 @@ export async function b2BackendScenario({query,teacher,student}){
   await saveAnswers(student,{attemptId:id,answers:{[ids[0]]:0}});
   await assert.rejects(()=>saveAnswers(student,{attemptId:id,answers:{[ids[1]]:0}}),/einmal/);
   await saveAnswers(student,{attemptId:id,answers:{[ids[0]]:null,[ids[1]]:0}});
-  await saveAnswers(student,{attemptId:id,answers:Object.fromEntries(ids.map((qid,i)=>[qid,parsed.keys[i]]))});
+  const snapshot=(await query('SELECT private_data FROM attempts WHERE id=$1',[id])).rows[0].private_data.examSnapshot;
+  await saveAnswers(student,{attemptId:id,answers:Object.fromEntries(ids.map(qid=>[qid,snapshot.questionSnapshot.find(q=>q.id===qid).correctAnswer]))});
   // Editing the source cannot alter a running student's passage or grading key.
   const edited=structuredClone(exam);edited.sections[1].gapExample='Changed after start';
   await commitOperations(teacher,[{collection:'exams',id:exam.id,item:edited}]);

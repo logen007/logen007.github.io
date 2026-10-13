@@ -23,7 +23,7 @@ export async function copyExam(user,{examId}){
     let number=1;while(titles.includes(`${source.title} - Copy ${number}`))number++;
     const data={...await copyMedia(source),title:`${source.title} - Copy ${number}`,ownerId:user.id,ownerName:user.name,status:'draft',locked:false,copiedFrom:examId,independentCopyVersion:1,createdAt:at,updatedAt:at,version:1,
       sections:await Promise.all((source.sections||[]).map(async s=>({...await copyMedia(s),id:uid('sec'),questionIds:(s.questionIds||[]).map(q=>mapping.get(q))})))};
-    delete data.id;delete data.lockedAt;delete data.publishedAt;delete data.deletedAt;
+    delete data.id;delete data.lockedAt;delete data.publishedAt;delete data.deletedAt;delete data.publicationVersion;delete data.publicationLabel;
     await client.query('INSERT INTO exams(id,owner_id,status,locked,data) VALUES($1,$2,$3,false,$4::jsonb)',[id,user.id,'draft',JSON.stringify(data)]);
     await audit(user,'duplicate','exam',id,{sourceId:examId,ownerId:user.id},client);
     return {id};

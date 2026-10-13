@@ -71,6 +71,12 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Publishing keeps one Xuất bản button. Server-owned immutable releases use
+  per-exam labels v1.0.0, v1.0.1, etc.; unchanged content reuses its version.
+  A small non-interactive bottom-right progress notice follows actual server
+  stages, then shows “Đã xuất bản v…” for 1 second. It must not rerender the
+  editor, block page interaction, or add artificial percentage/timing delays.
+
 - Section prompts are independent ordered blocks, not owned by questions. The
   plus action inserts a prompt directly below the current one; up/down moves its
   text, image and listening audio together. Each block has image upload and, only

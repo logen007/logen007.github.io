@@ -1,0 +1,83 @@
+// Real PostgreSQL SQL in an isolated PGlite database; never touches production.
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import {registerHooks} from 'node:module';
+import {AsyncLocalStorage} from 'node:async_hooks';
+import crypto from 'node:crypto';
+import {DEFAULT_SETTINGS} from '../server/src/defaults.js';
+const {PGlite}=await import(process.env.G2G_PGLITE_PATH);
+const db=new PGlite(),context=new AsyncLocalStorage();
+const query=(sql,args)=>sql.includes('pg_advisory_xact_lock')?Promise.resolve({rows:[],rowCount:1}):(context.getStore()||db).query(sql,args).then(result=>({...result,rowCount:Math.max(result.affectedRows||0,result.rows.length)}));
+globalThis.__publicationDb={query,withTx:fn=>db.transaction(client=>context.run(client,()=>fn({query}))),getSettings:async()=>structuredClone(DEFAULT_SETTINGS),audit:async()=>{},now:()=>new Date().toISOString(),uid:prefix=>prefix+'-'+crypto.randomUUID(),appError:(statusCode,message)=>Object.assign(new Error(message),{statusCode})};
+const hook=registerHooks({resolve(specifier,ctx,next){
+  if(specifier.endsWith('/db.js'))return {shortCircuit:true,url:'data:text/javascript,export const {query,withTx,getSettings,audit,now,uid,appError}=globalThis.__publicationDb; export const pool={query}; export const getDataRevision=()=>0;'};
+  if(specifier==='nodemailer')return {shortCircuit:true,url:'data:text/javascript,export default {createTransport(){throw new Error("Email forbidden in test")}};'};
+  return next(specifier,ctx);
+}});
+try{
+  await db.exec(await fs.readFile(new URL('../server/schema.sql',import.meta.url),'utf8'));
+  const {publishExamRelease,releasedExam}=await import('../server/src/exam-releases.js');
+  const {commitOperations,loadState}=await import('../server/src/state.js');
+  const {loadExamCatalog}=await import('../server/src/exam-catalog.js');
+  const {startAttempt}=await import('../server/src/actions/attempts.js');
+  const {referencedUploadNames}=await import('../server/src/media-gc.js');
+  const teacher={id:'t',role:'teacher'},student={id:'s',role:'student',profileCompletedAt:'2026-01-01'};
+  for(const user of [teacher,student])await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4)',[user.id,user.id+'@test.invalid',user.role,JSON.stringify(user)]);
+  const q={id:'q',title:'Original question',type:'single',choices:['A','B'],correctAnswer:0,maxScore:1,imageUrl:'/uploads/original.jpg'};
+  const exam={id:'e',ownerId:'t',title:'Original exam',sections:[{id:'section',name:'Reading',skill:'Đọc',timeMinutes:30,questionIds:['q']}],settings:{}};
+  await query("INSERT INTO questions(id,owner_id,data) VALUES('q','t',$1)",[JSON.stringify(q)]);
+  await query("INSERT INTO exams(id,owner_id,data) VALUES('e','t',$1)",[JSON.stringify(exam)]);
+  await assert.rejects(publishExamRelease(student,{examId:'e'}),error=>error.statusCode===403);
+  await assert.rejects(publishExamRelease({id:'other',role:'teacher'},{examId:'e'}),error=>error.statusCode===403);
+  const stages=[],first=await publishExamRelease(teacher,{examId:'e'},stage=>stages.push(stage));
+  assert.equal(first.version,'1.0.0');assert.deepEqual(stages,['checking','version','cache']);
+  assert.equal(first.snapshot,undefined,'Private snapshot never enters publication response');
+  const duplicate=await publishExamRelease(teacher,{examId:'e'});
+  assert.equal(duplicate.version,first.version);assert.equal(duplicate.reused,true);
+  const started=await startAttempt(student,{examId:'e'});
+  const oldAttempt=(await query('SELECT private_data FROM attempts WHERE id=$1',[started.attemptId])).rows[0].private_data;
+  await query("UPDATE attempts SET status='published' WHERE id=$1",[started.attemptId]);
+  const edited={...q,title:'NEW PRIVATE DRAFT',correctAnswer:1,imageUrl:'/uploads/new.jpg'};
+  await commitOperations(teacher,[{collection:'questions',id:'q',kind:'upsert',item:{...edited,ownerId:'t'}},{collection:'exams',id:'e',kind:'upsert',item:{...exam,title:'NEW DRAFT EXAM',status:'draft',publicationVersion:999}}]);
+  let row=(await query("SELECT * FROM exams WHERE id='e'")).rows[0];
+  assert.equal(row.status,'published');assert.equal(row.data.publicationVersion,1,'Stale/forged editor pointers cannot change publication');
+  assert.equal((await releasedExam({...row.data,id:'e',status:row.status})).title,'Original exam');
+  const catalog=await loadExamCatalog(student);
+  assert.equal(catalog.exams[0].title,'Original exam');
+  const publicState=await loadState(student);
+  assert.equal(publicState.questions[0].title,'Original question');
+  assert.equal(publicState.questions[0].correctAnswer,undefined);
+  assert.ok(!JSON.stringify(publicState).includes('NEW PRIVATE DRAFT'));
+  const second=await publishExamRelease(teacher,{examId:'e'});
+  assert.equal(second.version,'1.0.1');
+  assert.deepEqual((await query('SELECT private_data FROM attempts WHERE id=$1',[started.attemptId])).rows[0].private_data,oldAttempt,'Existing attempts remain byte-equivalent');
+  const startedNew=await startAttempt(student,{examId:'e'});
+  const fresh=(await query('SELECT public_data,private_data FROM attempts WHERE id=$1',[startedNew.attemptId])).rows[0];
+  assert.equal(fresh.public_data.publicationLabel,'1.0.1');
+  assert.equal(fresh.private_data.examSnapshot.questionSnapshot[0].title,'NEW PRIVATE DRAFT');
+  assert.equal((await query("SELECT data FROM exams WHERE id='e'")).rows[0].data.title,'NEW DRAFT EXAM','Starting an attempt must not overwrite author draft');
+  assert.ok((await referencedUploadNames({query})).has('original.jpg'),'Old release media stays referenced');
+  // Invalid publication rolls back; previous release remains available.
+  await query("UPDATE questions SET data=data||'{\"choices\":[],\"correctAnswer\":-1}'::jsonb WHERE id='q'");
+  await assert.rejects(publishExamRelease(teacher,{examId:'e'}));
+  assert.equal((await query("SELECT count(*)::int AS n FROM exam_releases WHERE exam_id='e'")).rows[0].n,2);
+  // Existing published exams receive a compatibility baseline before any edits.
+  await query("INSERT INTO exams(id,owner_id,status,data) VALUES('legacy','t','published',$1)",[JSON.stringify({...exam,id:'legacy',sections:[]})]);
+  await commitOperations(teacher,[{collection:'exams',id:'legacy',kind:'upsert',item:{...exam,id:'legacy',title:'Edited legacy',status:'published'}}]);
+  assert.equal((await query("SELECT snapshot FROM exam_releases WHERE exam_id='legacy'")).rows[0].snapshot.title,'Original exam');
+  const {default:Fastify}=await import('../server/node_modules/fastify/fastify.js');
+  const {registerPublicationRoute}=await import('../server/src/publication-route.js');
+  const app=Fastify();registerPublicationRoute(app,async()=>teacher);
+  try{
+    const failed=await app.inject({method:'POST',url:'/api/exams/e/publish'});
+    assert.match(failed.headers['content-type'],/application\/x-ndjson/);
+    assert.match(failed.body,/"stage":"error"/);assert.doesNotMatch(failed.body,/"stage":"done"/);
+    await query("UPDATE questions SET data=$1 WHERE id='q'",[JSON.stringify(edited)]);
+    const streamed=await app.inject({method:'POST',url:'/api/exams/e/publish'});
+    const events=streamed.body.trim().split('\n').map(line=>JSON.parse(line));
+    assert.deepEqual(events.map(e=>e.stage),['checking','version','cache','done']);
+    assert.equal(events.at(-1).version,'1.0.1');
+    assert.doesNotMatch(streamed.body,/correctAnswer|questionSnapshot/);
+  }finally{await app.close();}
+  console.log('Publication SQL: permissions, idempotency, immutable releases, draft isolation, student privacy, old/new attempts, media retention and failure rollback passed.');
+}finally{hook.deregister();await db.close();}
