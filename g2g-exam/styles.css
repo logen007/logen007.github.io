@@ -1222,7 +1222,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .button-tooltip { position:fixed; z-index:1000; width:max-content; max-width:calc(100vw - 16px); padding:6px 10px; border-radius:8px; background:var(--chu); color:var(--mat); font-size:12px; line-height:1.4; text-align:center; pointer-events:none; }
 .button-tooltip--image { white-space:pre-line; }
 .button-tooltip--preview { width:max-content; padding:4px; background:var(--mat); color:var(--chu); border:1px solid var(--vien); border-radius:8px; box-shadow:var(--shadow); }
-.button-tooltip--preview img { display:block; width:auto; height:auto; max-width:min(336px,calc(100vw - 26px)); max-height:min(240px,40vh); object-fit:contain; }
+.button-tooltip--preview img { display:block; width:auto; height:auto; max-width:min(336px,calc(100vw - 26px)); max-height:min(240px,40vh); object-fit:contain; margin:0 auto 6px; }
 .button-tooltip--image-width { white-space:pre-line; max-width:min(240px,calc(100vw - 16px)); }
 .reading-blocks-editor { display:grid; gap:16px; margin:20px 0; }
 .reading-block-editor { display:grid; grid-template-columns:100px minmax(0,1fr); gap:12px; }

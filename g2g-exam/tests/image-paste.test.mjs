@@ -141,6 +141,6 @@ tooltipEvents.focusin({target:previewTarget});
 assert.equal(tooltip.preview.src,'/uploads/photo.jpg');
 assert.equal(tooltip.preview.alt,'Ảnh đề bài');
 assert.equal(tooltip.style.top,'148px');
-assert.equal(tooltip.textContent,'');
+assert.equal(tooltip.textContent,'Bấm lần 1 để chọn vùng dán\nBấm lần 2 để chọn ảnh');
 assert.equal(previewTarget.getAttribute('title'),undefined);
 tooltipEvents.keydown({key:'Escape'});

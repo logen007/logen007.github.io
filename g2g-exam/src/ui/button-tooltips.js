@@ -23,7 +23,7 @@ export function bindButtonTooltips(){
     const source=imageTarget&&button.closest('.goethe-builder')?button.querySelector('img:not(.ui-icon)'):null;
     if(source?.getAttribute('src')){
       const preview=document.createElement('img');preview.src=source.currentSrc||source.src;preview.alt=source.alt||'Xem trước ảnh';
-      tip.classList.add('button-tooltip--preview');tip.textContent='';tip.prepend(preview);
+      tip.classList.add('button-tooltip--preview');tip.textContent=savedLabel;tip.prepend(preview);
       preview.onload=()=>{if(active===button&&tip)position();};
     }
     document.body.append(tip);
