@@ -83,7 +83,7 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   The exam-list action column never displays a version, including after publish/unpublish.
   Builder badges reuse the student-card provider and level colors: each category
   keeps its own recognizable color rather than using the same brand tint for both.
-  Provider/level badges use vivid, saturated category backgrounds and white text with
+  Provider/level badges use gentle pastel backgrounds and darker same-hue text with
   at least 4.5:1 contrast, shared by student cards and the builder.
 
 - Section prompts are independent ordered blocks, not owned by questions. The
