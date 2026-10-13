@@ -72,7 +72,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 - Question audio controls share one row in this order: compact score, flexible
   audio upload/play, example, remove, add. Keep score input wide enough for two
-  digits, with an accessible score label; do not let it consume spare row space.
+  digits plus a visible “đ” unit, with an accessible score label; do not hide the
+  unit or let the score consume spare row space.
   Audio filename truncates within its area. Keep all actions on the same row on
   mobile, with the question text above. Do not put audio on a separate row.
 
