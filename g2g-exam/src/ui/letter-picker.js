@@ -14,7 +14,7 @@ export function syncLetterPicker(select){
   if(!trigger)return;
   const selected=select.selectedOptions[0];
   const number=select.dataset?.questionNumber;
-  trigger.textContent=(number?`${number}. `:'')+selectedLetterLabel(selected,select.dataset?.fullSelection==='true');
+  trigger.textContent=number&&select.value===''?number:selectedLetterLabel(selected,select.dataset?.fullSelection==='true');
   trigger.dataset.answered=String(select.value!=='');
   trigger.setAttribute('aria-label',`${select.getAttribute('aria-label')}: ${selected?.textContent||'—'}`);
 }
