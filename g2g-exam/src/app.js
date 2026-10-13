@@ -77,7 +77,7 @@ import {hasPartTemplate,openPartTemplate,bindPartBuilder} from './part-templates
 import {collectReadingBlocks,bindReadingBlocks} from './ui/reading-blocks.js';
 import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
-import {loadPublicSettings,refreshInfrastructure} from './settings/api.js';
+import {loadPublicSettings,readCachedInfrastructure,refreshInfrastructure} from './settings/api.js';
 import {isScoredWritingField,writingFormScore,addWritingRow,removeWritingRow} from './domain/writing-form.js';
 import {readWritingRow} from './ui/writing-form.js';
 import {readExamAnswers,revealUnansweredQuestion} from './ui/exam-answers.js';
@@ -103,13 +103,14 @@ let builderSavePromise=null;
 let builderEditRevision=0;
 let builderSavedRevision=0;
 let infrastructureLoading=false;
+let infrastructureRefreshStarted=false;
 const saveTimers=new Map();
 const pendingAudioUploads=new Map();
 
 const ui={
   view:user?(isStudent(user)?'student-home':'admin'):'login',
   adminTab:isMaster(user)?'dashboard':'exams',examId:null,attemptId:null,builderExamId:null,builderSectionId:null,
-  gradeAttemptId:null,gradeMode:'best',examFilter:'all',review:null,previewExamId:null,previewSectionIndex:0,previewAnswers:{},infrastructure:null,online:navigator.onLine,
+  gradeAttemptId:null,gradeMode:'best',examFilter:'all',review:null,previewExamId:null,previewSectionIndex:0,previewAnswers:{},infrastructure:readCachedInfrastructure(),online:navigator.onLine,
 };
 
 repo.subscribe(next=>{
@@ -569,9 +570,10 @@ function adminView(){
   let content='';
   if(ui.adminTab==='dashboard'&&isMaster(user)){
     content=dashboardHtml({data,infrastructure:ui.infrastructure,infrastructureError:ui.infrastructureError||'',activityFilter:ui.dashboardPeriod||{}});
-    if(!ui.infrastructure&&!ui.infrastructureError&&!infrastructureLoading){
+    if(!infrastructureRefreshStarted&&!infrastructureLoading){
+      infrastructureRefreshStarted=true;
       infrastructureLoading=true;
-      refreshInfrastructure({summaryOnly:false}).then(result=>{ui.infrastructure=result;}).catch(error=>{ui.infrastructureError=error.message||'Không tải được thông tin hạ tầng.';}).finally(()=>{infrastructureLoading=false;if(ui.view==='admin'&&ui.adminTab==='dashboard')render();});
+      refreshInfrastructure({summaryOnly:false}).then(result=>{ui.infrastructure=result;ui.infrastructureError='';}).catch(error=>{if(!ui.infrastructure)ui.infrastructureError=error.message||'Không tải được thông tin hạ tầng.';}).finally(()=>{infrastructureLoading=false;if(ui.view==='admin'&&ui.adminTab==='dashboard')render();});
     }
   }
   else if(ui.adminTab==='exams')content=examAdminHtml({data,user,filters:ui.adminExamFilters});

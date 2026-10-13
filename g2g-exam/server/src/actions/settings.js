@@ -18,6 +18,7 @@ const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||''));
 const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||''));
 const uploadDir=path.resolve(process.env.UPLOAD_DIR||'/data/uploads');
 const uploadPattern=/\/uploads\/([A-Za-z0-9._-]+)/g;
+let infrastructureCache={value:null,expiresAt:0};
 
 function uploadNames(value,names=new Set()){
   if(typeof value==='string')for(const match of value.matchAll(uploadPattern))names.add(path.basename(match[1]));
@@ -131,6 +132,7 @@ export async function testSmtp(user,{to}){
 
 export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
   if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được xem trạng thái hạ tầng.');
+  if(!summaryOnly&&infrastructureCache.value&&Date.now()<infrastructureCache.expiresAt)return infrastructureCache.value;
   const settings=await getSettings();
   const [secret,ai]=await Promise.all([smtpSecretStatus(),aiApiKeyStatus()]);
   let database=true;
@@ -159,7 +161,7 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
     return {id:row.id,title:exam.title||row.id,updatedAt:examLastEdit(exam,row.updated_at,questionEdits),provider:exam.provider||'',level:exam.level||'',dataBytes,mediaBytes,totalBytes:dataBytes+mediaBytes,questions:questionData.filter(item=>!item.example).length,mediaFiles:media.size};
   }));
   const memoryTotal=os.totalmem(),memoryFree=os.freemem(),uptimeSeconds=Math.max(1,process.uptime());
-  return {
+  const result={
     backend:'VPS',
     r2:r2Settings.status(),
     postgresql:database,
@@ -190,6 +192,10 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
     },
     examStorage,
   };
+  // The full report walks uploaded files and exam content. A short cache keeps
+  // repeated dashboard reloads responsive while still refreshing operational data.
+  infrastructureCache={value:result,expiresAt:Date.now()+30_000};
+  return result;
 }
 
 export async function setTeacherByEmail(user,{email,enabled=true}){

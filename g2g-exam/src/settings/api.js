@@ -1,4 +1,22 @@
 const API=String(globalThis.G2G_API_BASE||'/api').replace(/\/$/,'');
+const INFRASTRUCTURE_CACHE_KEY='g2g.infrastructure-cache.v1';
+const INFRASTRUCTURE_CACHE_MS=2*60*1000;
+
+function infrastructureStorage(){
+  try{return globalThis.sessionStorage;}catch{return null;}
+}
+
+export function readCachedInfrastructure(){
+  try{
+    const cached=JSON.parse(infrastructureStorage()?.getItem(INFRASTRUCTURE_CACHE_KEY)||'null');
+    return cached&&Date.now()-cached.at<INFRASTRUCTURE_CACHE_MS?cached.value:null;
+  }catch{return null;}
+}
+
+function cacheInfrastructure(value){
+  try{infrastructureStorage()?.setItem(INFRASTRUCTURE_CACHE_KEY,JSON.stringify({at:Date.now(),value}));}catch{}
+  return value;
+}
 
 export function r2SettingsAction(action,data={}){
   return request('/actions/'+action,{method:'POST',body:data});
@@ -36,7 +54,8 @@ async function readPrivateSettings(){
 }
 
 export async function refreshInfrastructure({summaryOnly=true}={}){
-  return request('/actions/getInfrastructureStatus',{method:'POST',body:{summaryOnly}});
+  const result=await request('/actions/getInfrastructureStatus',{method:'POST',body:{summaryOnly}});
+  return summaryOnly?result:cacheInfrastructure(result);
 }
 
 export async function updateSystemSettings(settings){
