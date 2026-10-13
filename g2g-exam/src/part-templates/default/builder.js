@@ -143,7 +143,7 @@ function mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile}){
 
 function freeResponseHtml(q,{defaultScore,readOnly}){
   const rule=String(q.aiGradingRules||q.title||'').trim();
-  return `<article class="goethe-free-response ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Chỉ ghi tiêu chí + điểm từng ý.\n\nVD:\nLý do du lịch — 3đ\nHỏi KS rẻ — 3đ\nHỏi tham quan — 3đ\nChào đầu/cuối — 1đ\n\nChấm theo ý, chấp nhận diễn đạt tương đương; lỗi nhẹ không trừ riêng." aria-label="Quy tắc chấm AI" ${readOnly?'disabled':''}>${esc(blank(rule))}</textarea>${scoreControls(q,defaultScore,readOnly,{writingStyle:true})}</article>`;
+  return `<article class="goethe-free-response ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="QUY TẮC CHẤM ĐIỂM\n\nChỉ ghi tiêu chí + điểm từng ý.\n\nVD:\nLý do du lịch — 3đ\nHỏi KS rẻ — 3đ\nHỏi tham quan — 3đ\nChào đầu/cuối — 1đ\n\nChấm theo ý, chấp nhận diễn đạt tương đương; lỗi nhẹ không trừ riêng." aria-label="Quy tắc chấm AI" ${readOnly?'disabled':''}>${esc(blank(rule))}</textarea>${scoreControls(q,defaultScore,readOnly,{writingStyle:true})}</article>`;
 }
 
 function instructionHtml(section,choiceProfile,readOnly){
