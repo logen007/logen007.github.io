@@ -20,7 +20,17 @@ for(const level of ['B1','B2']){
 assert.equal(sectionLabel({provider:'GOETHE',level:'B1'},{name:'Đọc 4'}),'Đọc 4');
 import {inlineGapsHtml} from '../src/ui/inline-gaps.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
-import {numberBuilderQuestions} from '../src/part-templates/default/builder.js';
+import {numberBuilderQuestions,builderQuestionScore} from '../src/part-templates/default/builder.js';
+{
+  const card={dataset:{editorMode:'heading-match'},querySelectorAll:()=>[],querySelector:selector=>selector.includes('data-heading-score')?{value:'5'}:null};
+  assert.equal(builderQuestionScore(card,{maxScore:8}),5,'Use the live heading score, without weights');
+  card.querySelector=()=>null;
+  assert.equal(builderQuestionScore(card,{maxScore:8}),8,'Missing control preserves the saved raw maximum');
+  card.querySelector=()=>({value:'1.99'});
+  assert.equal(builderQuestionScore(card,{maxScore:8}),1.99,'Do not round individual raw scores');
+  card.dataset.example='true';
+  assert.equal(builderQuestionScore(card,{maxScore:8}),0);
+}
 {
   const questions=[{id:'ex',example:true,maxScore:0},{id:'one',maxScore:1},{id:'zero',maxScore:0},{id:'two',maxScore:1}];
   const cards=questions.map(q=>({dataset:{questionId:q.id},ownerDocument:{createElement:()=>({})},querySelector(selector){return selector.includes('builder-question-number')?this.label:null;},prepend(label){this.label=label;}}));

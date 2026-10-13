@@ -34,7 +34,15 @@ const icons={
 };
 const blank=value=>value==='Nháp'?'':value;
 const textOf=choice=>typeof choice==='object'?choice.text:choice;
-const normalizedScore=value=>Math.abs(value-Math.round(value))<0.02?Math.round(value):value;
+export function builderQuestionScore(card,question){
+  if(card.dataset.example==='true')return 0;
+  const rows=[...card.querySelectorAll('[data-rubric-index]:not(.is-hidden)')].map(row=>({type:row.querySelector('[data-rubric-type]')?.value||'text',maxScore:Number(row.querySelector('[data-rubric-score]')?.value)||0}));
+  const input=card.querySelector('[data-field="maxScore"],[data-heading-score]');
+  const score=input?Math.max(0,Number(input.value)||0):getQuestionMaxScore(question);
+  if(card.dataset.editorMode==='form-fields')return writingFormScore(rows);
+  if(card.dataset.editorMode==='mixed-form')return writingFormScore(rows)+(card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden==='true'?0:score);
+  return score;
+}
 
 function profileFor(section){
   const source=section?.questionProfile||{};
@@ -269,11 +277,8 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
   }));
   const updateSkillTotals=()=>{
     const draftScores=new Map([...root.querySelectorAll('.part-question[data-question-id]')].map(card=>{
-      const formScores=[...card.querySelectorAll('[data-rubric-index]:not(.is-hidden) [data-rubric-score]')];
       const rows=[...card.querySelectorAll('[data-rubric-index]:not(.is-hidden)')].map(row=>({type:row.querySelector('[data-rubric-type]')?.value||'text',maxScore:Number(row.querySelector('[data-rubric-score]')?.value)||0}));
-      const score=card.dataset.example==='true'?0:normalizedScore(formScores.length
-        ?writingFormScore(rows)+(card.dataset.editorMode==='mixed-form'&&card.querySelector('[data-mixed-choice-hidden]')?.dataset.mixedChoiceHidden!=='true'?Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0):0)
-        :Math.max(0,Number(card.querySelector('[data-field="maxScore"]')?.value)||0));
+      const score=builderQuestionScore(card,byId(data.questions,card.dataset.questionId));
       const display=card.querySelector('[data-writing-total]');if(display)display.textContent=`${writingFormScore(rows)} điểm`;
       return [card.dataset.questionId,score];
     }));
@@ -284,5 +289,5 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     root.querySelectorAll('[data-skill-total]').forEach(total=>{const skill=total.dataset.skillTotal;const sum=(exam.sections||[]).filter(item=>item.skill===skill).reduce((skillScore,item)=>{const fallback=Number(exam.settings?.skillSettings?.[item.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);return skillScore+(item.questionIds||[]).reduce((partScore,id)=>partScore+(draftScores.has(id)?draftScores.get(id):getQuestionMaxScore(byId(data.questions,id),fallback)),0);},0);total.textContent=`${Number.isInteger(sum)?sum:Number(sum.toFixed(2))} điểm`;});
   };
   bindLetterTableBuilder(root,updateSkillTotals);
-  root.querySelectorAll('[data-field="maxScore"],[data-rubric-score],[data-gap-score]').forEach(input=>input.oninput=updateSkillTotals);updateSkillTotals();root.querySelectorAll('[data-action="preview-inline-audio"]').forEach(bindInlineAudioPreview);
+  root.querySelectorAll('[data-field="maxScore"],[data-heading-score],[data-rubric-score],[data-gap-score]').forEach(input=>input.oninput=updateSkillTotals);updateSkillTotals();root.querySelectorAll('[data-action="preview-inline-audio"]').forEach(bindInlineAudioPreview);
 }

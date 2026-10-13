@@ -65,6 +65,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- The total beside each skill is the sum of raw question maxima across all
+  parts of that skill, including live editor changes. No weights, multipliers,
+  normalized exam scales or per-question rounding. Examples contribute zero.
+
 - Every scored answer has an editable score, including each inline gap and
   letter-table row. Use compact two-digit inputs with a visible “đ” unit next
   to answer/action controls. Do not add scores to decorative content or examples;
