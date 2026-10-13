@@ -117,6 +117,8 @@ app.get('/api/whoami',async request=>({user:await currentUser(request)}));
 app.setErrorHandler((error,_request,reply)=>{app.log.error(error);const status=Number(error.statusCode)||500;reply.code(status).send({error:status>=500?'Lỗi máy chủ. Vui lòng thử lại.':error.message,code:status});});
 app.setNotFoundHandler((request,reply)=>{if(request.url.startsWith('/api/'))return reply.code(404).send({error:'API không tồn tại.'});return reply.sendFile('vi.html');});
 
+const {startMonitorHistory}=await import('./monitor-history.js');
+const stopMonitorHistory=startMonitorHistory(app.log);
 const port=Number(process.env.PORT||8080);
 await app.listen({host:'0.0.0.0',port});
 const stopMediaGc=startMediaGarbageCollector({uploadDir,logger:app.log});
@@ -124,5 +126,5 @@ const stopTrashGc=startTrashGarbageCollector({uploadDir,logger:app.log});
 let expiryBusy=false;
 const expiryTimer=setInterval(async()=>{if(expiryBusy)return;expiryBusy=true;try{await submitExpiredAttempts();}catch(error){app.log.error(error);}finally{expiryBusy=false;}},1000);
 expiryTimer.unref();
-const stop=async()=>{try{r2Media?.stop();stopMediaGc();stopTrashGc();clearInterval(expiryTimer);await app.close();await pool.end();}finally{process.exit(0);}};
+const stop=async()=>{try{stopMonitorHistory();r2Media?.stop();stopMediaGc();stopTrashGc();clearInterval(expiryTimer);await app.close();await pool.end();}finally{process.exit(0);}};
 process.on('SIGTERM',stop);process.on('SIGINT',stop);

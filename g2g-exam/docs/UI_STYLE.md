@@ -356,6 +356,12 @@ theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
 
+- Infrastructure uses CPU/RAM and R2 time-series charts, not rings. Collect one
+  real sample per minute independently of visits; retain eight days in PostgreSQL.
+  Offer 1h/24h/7d ranges. Longer views show bucket maxima, missing periods break
+  lines, and empty history remains empty. R2 errors have red markers; technical
+  details and accessible sample tables are collapsed, while current values stay visible.
+
 - CPU percentage uses differences in host CPU busy/total counters sampled over
   approximately one second, with concurrent requests sharing the sample and a
   five-second cache. Display load averages separately as 1/5/15-minute numbers
@@ -377,7 +383,7 @@ theme application must not wait for a network response to render the page.
   and storage breakdown in two columns, stacking on mobile. Exam storage is a
   separate full-width card with Last edit, using the same authoring timestamp
   calculation as the exam catalog.
-- System metrics use compact SVG rings with visible numeric labels; storage
+- System metrics use compact SVG time-series with visible numeric labels; storage
   comparisons use CSS columns. Keep missing data distinct from zero. Never
   fabricate line-chart history from a single reading. R2 scan status is not
   browser delivery success. Reuse theme tokens without a chart dependency.

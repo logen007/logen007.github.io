@@ -195,3 +195,10 @@ CREATE TABLE IF NOT EXISTS class_code_checks (
 -- Lượt thi bỏ dở không phải là lịch sử làm bài và không được lưu lâu dài.
 DELETE FROM notifications WHERE attempt_id IN (SELECT id FROM attempts WHERE status='abandoned');
 DELETE FROM attempts WHERE status='abandoned';
+CREATE TABLE IF NOT EXISTS monitor_samples (
+  sampled_at timestamptz PRIMARY KEY DEFAULT clock_timestamp(),
+  cpu double precision,
+  memory double precision,
+  r2_bytes bigint,
+  r2_error boolean NOT NULL DEFAULT false
+);

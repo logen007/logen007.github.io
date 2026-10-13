@@ -1073,3 +1073,29 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .letter-answers [data-letter-answer], .text-bold { font-weight:600; }
 .reading-block p { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; }
 @media(max-width:600px) { .reading-block-editor { grid-template-columns:64px minmax(0,1fr); gap:8px; } .exam-paper .exam-instruction .reading-block > img { width:64px; } }
+.monitor-range { display:flex; gap:6px; margin:16px 0; }
+.monitor-range label { position:relative; cursor:pointer; }
+.monitor-range input { position:absolute; opacity:0; }
+.monitor-range span { display:block; padding:10px 16px; border-radius:var(--pill); background:var(--surface-muted); }
+.monitor-range input:checked + span { background:var(--brand-primary); color:var(--brand-on-primary); }
+.monitor-range input:focus-visible + span { outline:2px solid var(--chu); }
+.monitor-charts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+.monitor-chart { min-width:0; }
+.monitor-chart header,.monitor-r2-status { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:12px 0; }
+.monitor-chart strong { font-size:24px; font-weight:500; }
+.monitor-chart svg { width:100%; display:block; overflow:visible; }
+.monitor-chart svg text { fill:var(--phu); font:9px var(--font-ui); }
+.monitor-grid { stroke:var(--vien); fill:none; }
+.monitor-line { stroke:var(--brand-primary); stroke-width:2; fill:none; }
+.monitor-dot { fill:var(--brand-primary); }
+.monitor-error { fill:var(--do); }
+.monitor-empty { height:134px; display:grid; place-items:center; color:var(--phu); font-size:13px; }
+.monitor-period { display:none; }
+.dashboard-infrastructure:has(.monitor-range input[value="1"]:checked) .monitor-period--1,
+.dashboard-infrastructure:has(.monitor-range input[value="24"]:checked) .monitor-period--24,
+.dashboard-infrastructure:has(.monitor-range input[value="168"]:checked) .monitor-period--168 { display:block; }
+.monitor-values { margin:12px 0; color:var(--phu); font-size:12px; }
+.monitor-values summary { cursor:pointer; padding:8px 0; }
+.monitor-values > div { max-height:200px; overflow:auto; }
+.monitor-values table { width:100%; }
+@media(max-width:700px) { .monitor-charts { grid-template-columns:minmax(0,1fr); gap:20px; } }

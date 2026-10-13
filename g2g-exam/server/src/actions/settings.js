@@ -5,6 +5,7 @@ import {mergeSettings} from '../defaults.js';
 import {isPrimaryMasterEmail,normalizeEmail} from '../roles.js';
 import os from 'node:os';
 import {sampleCpu} from '../cpu-metrics.js';
+import {monitorHistory} from '../monitor-history.js';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import {getMediaGarbageCollectionStatus} from '../media-gc.js';
@@ -151,6 +152,7 @@ export async function getInfrastructureStatus(user,{summaryOnly=false}={}){
     storage:true,
     resources:{
       cpu:await sampleCpu(),
+      history:await monitorHistory(),
       memory:{totalBytes:memoryTotal,usedBytes:memoryTotal-memoryFree,freeBytes:memoryFree,processBytes:process.memoryUsage().rss,heapBytes:process.memoryUsage().heapUsed},
       disk:disk?{totalBytes:Number(disk.blocks)*Number(disk.bsize),freeBytes:Number(disk.bfree)*Number(disk.bsize),usedBytes:(Number(disk.blocks)-Number(disk.bfree))*Number(disk.bsize)}:null,
       usage:{databaseBytes:Number(databaseSize.rows[0]?.bytes||0),uploadsBytes:uploadBytes,applicationBytes},
