@@ -648,7 +648,9 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-system-panels>.dashboard-details>.dashboard-caption:last-child { margin-top:auto; padding-top:16px; }
 .dashboard-system-panels>.dashboard-storage-breakdown { padding-left:32px; border-left:1px solid var(--vien); }
 .resource-breakdown { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; align-items:center; }
-.dashboard-storage-card { margin-top:24px; min-width:0; }
+.dashboard-storage-card { margin-top:24px; min-width:0; grid-column:1/-1; }
+.dashboard-cpu-history { max-width:640px; margin:20px 0 24px; }
+.dashboard-cpu-history .monitor-chart svg { max-height:220px; }
 @media(max-width:760px) { .dashboard-system-panels { grid-template-columns:1fr; gap:24px; }.dashboard-system-panels>.dashboard-storage-breakdown { padding:24px 0 0; border-left:0; border-top:1px solid var(--vien); } }
 .dashboard-exam-storage { margin-top:12px; }
 .dashboard-exam-storage .table-wrap { max-width:100%; overflow-x:auto; }

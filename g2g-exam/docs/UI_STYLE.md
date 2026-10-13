@@ -356,11 +356,13 @@ theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
 
-- Infrastructure uses CPU/RAM and R2 time-series charts, not rings. Collect one
+- Only CPU uses a time-series chart with its own range picker; RAM, disk and R2
+  retain their ring/stat layouts. Keep the CPU chart capped at 640px. Collect one
   real sample per minute independently of visits; retain eight days in PostgreSQL.
   Offer 1h/24h/7d ranges. Longer views show bucket maxima, missing periods break
-  lines, and empty history remains empty. R2 errors have red markers; technical
-  details and accessible sample tables are collapsed, while current values stay visible.
+  lines, and empty history remains empty. CPU technical details and accessible
+  sample tables are collapsed. Exam storage is a separate full-width card outside
+  System; exam titles open the existing exam editor through its normal action.
 
 - CPU percentage uses differences in host CPU busy/total counters sampled over
   approximately one second, with concurrent requests sharing the sample and a
