@@ -17,6 +17,8 @@ assert.match(html,/class="result-track" role="img" aria-label="Khối thi nói: 
 const pendingSpeaking=bar('Nói',null);
 assert.match(pendingSpeaking,/class="result-track"/);
 assert.match(pendingSpeaking,/Nói: Chờ điểm/);
+assert.match(pendingSpeaking,/class="result-pending-score">Chờ điểm/);
+assert.match(bar('Nói',null,{hideLabel:true,pendingMax:75}),/class="result-pending-score">Chờ điểm<small> \/75<\/small>/);
 assert.doesNotMatch(pendingSpeaking,/width:|0 điểm|score-badge/);
 assert.doesNotMatch(html,/Mốc đạt/);
 assert.equal((html.match(/class="the telc-result-card"/g)||[]).length,1);
