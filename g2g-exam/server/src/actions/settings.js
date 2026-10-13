@@ -183,7 +183,9 @@ async function buildInfrastructureStatus({summaryOnly}){
   const connectionStatus={backend:'VPS',postgresql:database,googleLoginConfigured:Boolean(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET),smtp:{enabled:Boolean(settings.smtp.enabled),configured:Boolean(settings.smtp.host&&settings.smtp.fromEmail&&(!settings.smtp.username||secret.configured)),secretConfigured:secret.configured,secretUpdatedAt:secret.updatedAt},ai};
   // Settings needs connection status, not a scan of every exam and uploaded file.
   if(summaryOnly===true)return connectionStatus;
-  const [databaseSize,tableSizes,examRows,questionRows,uploadBytes,applicationBytes,disk,aiJobs,aiFailures]=await Promise.all([
+  const [cpu,history,databaseSize,tableSizes,examRows,questionRows,uploadBytes,applicationBytes,disk,aiJobs,aiFailures]=await Promise.all([
+    sampleCpu(),
+    monitorHistory(),
     query(`SELECT pg_database_size(current_database())::bigint AS bytes`),
     query(`SELECT relname AS name,pg_total_relation_size(oid)::bigint AS bytes FROM pg_class WHERE relname=ANY($1::text[])`,[['users','exams','questions','attempts','notifications','audit_log','settings']]),
     query(`SELECT id,data,updated_at FROM exams WHERE status<>'trash' ORDER BY updated_at DESC`),
@@ -219,8 +221,8 @@ async function buildInfrastructureStatus({summaryOnly}){
     writingAi:writingQueueState(settings,ai,aiJobs,aiFailures),
     storage:true,
     resources:{
-      cpu:await sampleCpu(),
-      history:await monitorHistory(),
+      cpu,
+      history,
       memory:{totalBytes:memoryTotal,usedBytes:memoryTotal-memoryFree,freeBytes:memoryFree,processBytes:process.memoryUsage().rss,heapBytes:process.memoryUsage().heapUsed},
       disk:disk?{totalBytes:Number(disk.blocks)*Number(disk.bsize),freeBytes:Number(disk.bfree)*Number(disk.bsize),usedBytes:(Number(disk.blocks)-Number(disk.bfree))*Number(disk.bsize)}:null,
       usage:{databaseBytes:Number(databaseSize.rows[0]?.bytes||0),uploadsBytes:uploadBytes,applicationBytes},

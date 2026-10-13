@@ -43,5 +43,11 @@ try{
   const pending=monitor.tick();await monitor.tick();assert.equal(polls,1);
   active=false;resolver({});await pending;assert.equal(results,0,'Late response cannot update another view');
   active=true;document.hidden=true;await monitor.tick();assert.equal(polls,1,'Hidden tabs do not poll');monitor.stop();
+  document.hidden=false;let clock=0,requests=0,working=false;
+  const adaptive=startDashboardRefresh({isActive:()=>true,now:()=>clock,refresh:async()=>{requests++;return {jobs:working?{processing:{count:1}}:{}};},onResult(){}});
+  await adaptive.tick();clock=5000;await adaptive.tick();assert.equal(requests,1);
+  clock=30000;working=true;await adaptive.tick();assert.equal(requests,2);
+  clock=35000;await adaptive.tick();assert.equal(requests,3);
+  document.hidden=true;clock=40000;await adaptive.tick();assert.equal(requests,3);adaptive.stop();
 }finally{Object.assign(globalThis,saved);}
 console.log('Performance regressions: 200-reader deduplication, identity/write isolation, 200 jobs at concurrency 3, submission receipt, zero runtime reads and dashboard lifecycle passed.');

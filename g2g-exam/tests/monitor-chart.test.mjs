@@ -41,4 +41,4 @@ assert.match(collector,/setInterval\(collect,60000\)/);
 assert.match(collector,/interval '366 days'/);
 assert.doesNotMatch(collector,/getInfrastructureStatus|directoryBytes/,'Sampling must not scan files or exam content');
 assert.match(read('server/schema.sql'),/CREATE TABLE IF NOT EXISTS monitor_samples/);
-assert.match(read('server/src/actions/settings.js'),/user.role!=='master'[\s\S]*history:await monitorHistory/);
+assert.match(read('server/src/actions/settings.js'),/user.role!=='master'[\s\S]*await Promise.all\(\[\s*sampleCpu\(\),\s*monitorHistory\(\)/);
