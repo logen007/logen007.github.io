@@ -131,6 +131,11 @@ for(let i=0;i<exam.sections.length;i++){
   const html=examHtml({attempt:{answers:{}},exam,sectionIndex:i,questions:rows(exam.sections[i]),allQuestions:state.questions,online:true,preview:true});
   assert.ok(html.length>100);
   if(i===3)assert.match(html,/>SB 1<\/h1>/);
+  if(i===4){
+    assert.doesNotMatch(html,/exam-reading-split|gap-sentences|gap-choice-bank/);
+    assert.match(html,/inline-gap-native-text/);
+    assert.equal((html.match(/data-letter-answer/g)||[]).length,rows(exam.sections[i]).length);
+  }
   if(i===3){
     assert.doesNotMatch(html,/exam-reading-split|gap-choice-bank|data-full-options/);
     assert.match(html,/inline-gap-native-text/);

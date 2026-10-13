@@ -56,7 +56,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const sec=exam.sections[sectionIndex];
   const configuredPart=getExamSpec(exam.provider,exam.level)?.skills
     .find(skill=>skill.key===sec.skillKey||skill.label===sec.skill)?.parts.find(part=>part.name===sec.name);
-  const compactGaps=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&sec.name==='Đọc 4';
+  const compactGaps=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&['Đọc 4','Đọc 5'].includes(sec.name);
   const compactHeadings=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&sec.questionProfile?.layout==='heading-match';
   const splitLayout=!compactHeadings&&!compactGaps&&(configuredPart?.questionProfile?.splitLayout??sec.questionProfile?.splitLayout);
   const orderedQuestions=questions.map((q,originalIndex)=>({q,originalIndex})).sort((a,b)=>Number(Boolean(isPrefilledQuestion(b.q)))-Number(Boolean(isPrefilledQuestion(a.q))));
