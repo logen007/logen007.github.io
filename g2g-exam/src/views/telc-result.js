@@ -26,8 +26,8 @@ export function telcResultHtml(review,bar,skill){
     max:TELC_SCORING.writtenMax,temporary:writtenKeys.some(key=>skills[key]?.temporary)};
   const block=(title,entry,max,minimum,children='')=>{
     const known=entry?.score!=null&&entry.max===max;
-    const verdict=published&&known?`<span class="${entry.score>=minimum?'result-correct':'result-wrong'}">${entry.score>=minimum?'Đạt':'Chưa đạt'}</span>`:'';
-    return `<section class="telc-result-block"><h2>${title}</h2>${known?bar(title,entry,{hideLabel:true,showBand:false,temporary:Boolean(entry.temporary)}):bar(title,null,{hideLabel:true,pendingMax:max})}${verdict}${children}</section>`;
+    const assessment=published&&known?{key:entry.score>=minimum?'sufficient':'failed',label:entry.score>=minimum?'Đạt':'Chưa đạt'}:null;
+    return `<section class="telc-result-block"><h2>${title}</h2>${known?bar(title,entry,{hideLabel:true,showBand:false,temporary:Boolean(entry.temporary),assessment}):bar(title,null,{hideLabel:true,pendingMax:max})}${children}</section>`;
   };
   return '<section class="the telc-result-card">'+block('Khối thi viết',written,TELC_SCORING.writtenMax,TELC_SCORING.writtenPass,
     `<div class="telc-result-children">${writtenKeys.map(key=>row(key)).join('')}</div>`)+

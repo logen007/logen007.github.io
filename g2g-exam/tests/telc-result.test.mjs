@@ -41,9 +41,11 @@ const published={...review,attempt:{...review.attempt,status:'published'},provis
   score:{summary:{skills:{reading:{score:50,max:75},grammar:{score:20,max:30},listening:{score:40,max:75},writing:{score:25,max:45},speaking:{score:44,max:75}}}}};
 html=telcResultHtml(published,bar);
 assert.match(html,/135<small> \/ 225/);
-assert.match(html,/result-correct">Đạt/);
-assert.match(html,/result-wrong">Chưa đạt/);
-assert.doesNotMatch(html,/Tạm tính|score-badge/);
+assert.match(html,/score-sufficient" data-fixed-assessment>Đạt/);
+assert.match(html,/score-failed" data-fixed-assessment>Chưa đạt/);
+assert.equal((html.match(/data-fixed-assessment/g)||[]).length,2);
+assert.doesNotMatch(html,/Tạm tính/);
+assert.match(html,/<\/small><\/strong><span class="score-badge score-failed"/);
 assert.doesNotMatch(telcResultHtml(published,bar,'reading'),/Đạt|Chưa đạt/);
 published.score.summary.skills.reading.max=50;
 assert.doesNotMatch(telcResultHtml(published,bar),/135<small> \/ 225/);

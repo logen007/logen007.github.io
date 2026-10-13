@@ -19,6 +19,7 @@ export function animateResult(root,review){
   const grades=[...page.querySelectorAll('.result-bar')].flatMap(row=>{
     const badge=row.querySelector('.score-badge'),track=row.querySelector('.result-track');
     const score=row.querySelector('.result-bar-score strong');
+    if(badge?.hasAttribute?.('data-fixed-assessment'))return [];
     const raw=score?.firstChild?.textContent||'',max=Number(score?.querySelector('small')?.textContent.replace('/', '').trim());
     if(!badge||!track||!raw.trim()||!Number.isFinite(Number(raw))||!(max>0))return [];
     return [{badge,track,value:Number(raw),max,decimals:(raw.split('.')[1]||'').length,label:badge.textContent,badgeClass:badge.className,trackClass:track.className}];

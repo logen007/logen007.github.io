@@ -12,11 +12,11 @@ const display=value=>value==null||value===''?'Chưa trả lời':typeof value===
 const safePicture=value=>/^https?:\/\//i.test(String(value||''))?value:'';
 const safeImage=value=>safePicture(value)||(/^\/(?!\/)/.test(String(value||''))?value:'');
 const keys=['reading','grammar','listening','writing','speaking'];
-export function bar(label,entry,{showBand=true,hideLabel=false,temporary=false,pendingMax=null}={}){
+export function bar(label,entry,{showBand=true,hideLabel=false,temporary=false,pendingMax=null,assessment=null}={}){
   if(!entry)return `<div class="result-bar"><div class="result-bar-label"><span${hideLabel?' class="sr-only"':''}>${esc(label)}</span><span class="result-pending-score">Chờ điểm${pendingMax?'<small> /'+esc(pendingMax)+'</small>':''}</span></div><div class="result-track" role="img" aria-label="${esc(label)}: Chờ điểm"></div></div>`;
   const percent=entry.max>0?Math.max(0,Math.min(100,entry.score/entry.max*100)):0;
-  const tone=gradeBand(entry.score,entry.max),band=showBand?tone:null;
-  return `<div class="result-bar"><div class="result-bar-label"><span${hideLabel?' class="sr-only"':''}>${esc(label)}</span><span class="result-bar-score${temporary?' provisional-score':''}"><strong>${esc(entry.score)}<small> / ${esc(entry.max)}</small></strong>${temporary?'<span class="temporary-badge">Tạm tính</span>':''}${band?`<span class="score-badge score-${band.key}">${esc(band.label)}</span>`:''}</span></div><div class="result-track${tone?' result-track--'+tone.key:''}" role="img" aria-label="${esc(label)}: ${esc(entry.score)}/${esc(entry.max)} điểm${band?' · '+esc(band.label):''}"><span style="width:${percent}%"></span></div></div>`;
+  const tone=gradeBand(entry.score,entry.max),band=assessment||(showBand?tone:null);
+  return `<div class="result-bar"><div class="result-bar-label"><span${hideLabel?' class="sr-only"':''}>${esc(label)}</span><span class="result-bar-score${temporary?' provisional-score':''}"><strong>${esc(entry.score)}<small> / ${esc(entry.max)}</small></strong>${temporary?'<span class="temporary-badge">Tạm tính</span>':''}${band?`<span class="score-badge score-${band.key}"${assessment?' data-fixed-assessment':''}>${esc(band.label)}</span>`:''}</span></div><div class="result-track${tone?' result-track--'+tone.key:''}" role="img" aria-label="${esc(label)}: ${esc(entry.score)}/${esc(entry.max)} điểm${band?' · '+esc(band.label):''}"><span style="width:${percent}%"></span></div></div>`;
 }
 function option(q,index){
   if(index==null||index==='')return 'Chưa trả lời';

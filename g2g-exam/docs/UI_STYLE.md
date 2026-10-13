@@ -533,6 +533,10 @@ theme application must not wait for a network response to render the page.
 
 ## Student result detail
 
+- Published TELC block verdicts are shared rounded badges immediately to the
+  right of their score, above the track; never a separate line below it.
+  Preserve binary Đạt/Chưa đạt labels during counter animation.
+
 - Pending score rows retain an empty neutral progress track, including Speaking
   and the TELC oral block. Label “Chờ điểm”; never imply a zero score or verdict.
   Align that label right even when the row title is visually hidden; use 18px,

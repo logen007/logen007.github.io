@@ -50,7 +50,7 @@
 .result-bar-label strong{font-weight:500;font-variant-numeric:tabular-nums}
 .result-track{height:9px;border-radius:var(--pill);background:var(--surface-muted);overflow:hidden}
 .result-track>span{display:block;height:100%;border-radius:inherit;background:var(--brand-primary);transition:background-color 160ms ease}
-.result-bar-score{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.result-bar-score{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-inline-start:auto}
 .result-bar-score strong{white-space:nowrap}
 .result-pending-score{margin-inline-start:auto;text-align:right;font-size:18px;font-weight:600;color:var(--phu);white-space:nowrap}
 .result-bar-score .score-badge{margin:0;white-space:nowrap}
