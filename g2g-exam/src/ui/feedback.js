@@ -39,7 +39,6 @@ panel.addEventListener('paste',event=>{
 });
 function toggle(open,{focus=false}={}){root.classList.toggle('is-open',open);trigger.setAttribute('aria-expanded',String(open));form.inert=!open;if(focus){if(open)input.focus();else trigger.focus();}}
 form.inert=true;
-trigger.onpointerenter=event=>{if(event.pointerType==='mouse')toggle(true);};
 trigger.onclick=()=>toggle(true,{focus:true});
 panel.querySelector('header .icon-btn').onclick=()=>toggle(false,{focus:true});
 root.addEventListener('keydown',event=>{if(event.key==='Escape'&&root.classList.contains('is-open')){event.preventDefault();toggle(false,{focus:true});}});
