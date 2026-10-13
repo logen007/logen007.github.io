@@ -218,19 +218,19 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .thong-ke span { color:var(--phu); font-size:13px; }.thong-ke b { display:block; font-size:36px; line-height:1.2; font-weight:450; letter-spacing:-.04em; margin-top:14px; }
 .tong-quan-hv { display:grid; grid-template-columns:1.7fr repeat(4,1fr); gap:24px; align-items:center; }
 .tong-quan-hv .o span { color:var(--phu); font-size:13px; }.tong-quan-hv .o b { display:block; margin-top:8px; font-size:28px; font-weight:500; }.tong-quan-hv .o:first-child b { font-size:20px; }
-.danh-sach-de { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }.the-de { position:relative; display:flex; flex-direction:column; min-width:0; }
+.danh-sach-de { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr)); gap:16px; }.the-de { position:relative; display:flex; flex-direction:column; min-width:0; }
 .exam-card-details { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-bottom:16px; }
 .exam-card-tags { display:flex; gap:6px; align-items:center; flex-shrink:0; }
 .exam-card-tags .nhan { background:#f0f1f3; color:#48515e; }
-.exam-provider[data-provider="GOETHE"] { background:#27633e; color:#fff; }
-.exam-provider[data-provider="TELC"] { background:#31569b; color:#fff; }
-.exam-provider[data-provider="FID"] { background:#75418f; color:#fff; }
-.exam-level[data-level="A1"] { background:#795400; color:#fff; }
-.exam-level[data-level="A2"] { background:#914615; color:#fff; }
-.exam-level[data-level="B1"] { background:#216568; color:#fff; }
-.exam-level[data-level="B2"] { background:#5c4595; color:#fff; }
-.exam-level[data-level="C1"] { background:#963c65; color:#fff; }
-.exam-level[data-level="C2"] { background:#405675; color:#fff; }
+.exam-provider[data-provider="GOETHE"] { background:#15803d; color:#fff; }
+.exam-provider[data-provider="TELC"] { background:#2563eb; color:#fff; }
+.exam-provider[data-provider="FID"] { background:#9333ea; color:#fff; }
+.exam-level[data-level="A1"] { background:#a16207; color:#fff; }
+.exam-level[data-level="A2"] { background:#c2410c; color:#fff; }
+.exam-level[data-level="B1"] { background:#0f766e; color:#fff; }
+.exam-level[data-level="B2"] { background:#7c3aed; color:#fff; }
+.exam-level[data-level="C1"] { background:#be185d; color:#fff; }
+.exam-level[data-level="C2"] { background:#475569; color:#fff; }
 .the-de-new { position:absolute; top:var(--card-padding); right:var(--card-padding); display:inline-flex; align-items:center; min-height:26px; padding:4px 10px; border-radius:var(--pill); background:var(--brand-soft); color:var(--brand-text); font-size:12px; font-weight:600; line-height:1; }
 .the-de h3 { font-size:20px; line-height:1.4; height:2.8em; flex-shrink:0; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; margin:0 0 12px; font-weight:500; overflow-wrap:anywhere; }
 .the-de:has(.the-de-new) h3 { padding-right:48px; }
@@ -908,7 +908,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 }
 @media(max-width:960px) {
   .resource-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  #app { padding:16px 20px 0; }.goethe-layout,.xay-dung,.cham-bai { grid-template-columns:1fr; }.goethe-outline { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }.goethe-editor { min-height:0; }.danh-sach-de { grid-template-columns:repeat(2,minmax(0,1fr)); }.tong-quan-hv { grid-template-columns:repeat(4,minmax(0,1fr)); }.tong-quan-hv .o:first-child { grid-column:1/-1; }
+  #app { padding:16px 20px 0; }.goethe-layout,.xay-dung,.cham-bai { grid-template-columns:1fr; }.goethe-outline { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }.goethe-editor { min-height:0; }.tong-quan-hv { grid-template-columns:repeat(4,minmax(0,1fr)); }.tong-quan-hv .o:first-child { grid-column:1/-1; }
   .hang-thong-ke { grid-template-columns:repeat(2,minmax(0,1fr)); }.ds-cham { min-height:0; }.chi-tiet-kq { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 @media(max-width:680px) {

@@ -51,8 +51,8 @@ Keep an aria-label even after a value is selected. Preserve the original filter
 values and behavior; filters with a required selection retain that selection.
 This applies to dropdown filters, not count tabs such as “Tất cả (234)”.
 Student exam filters use two compact dropdowns aligned with the action button.
-The student exam grid has four equal columns above 960px, two on tablets and one
-on mobile. Card titles reserve exactly two lines and clamp overflow; the complete
+The student exam grid adapts its column count to a 380px minimum card width;
+when the viewport is narrower, cards fit 100% without horizontal overflow. Mobile uses one column. Card titles reserve exactly two lines and clamp overflow; the complete
 title remains in the accessible text and title tooltip.
 On mobile, gradebook filters use two unequal columns (1:1.6): provider, level,
 class on the left; reviewer, student, status on the wider right.
@@ -83,7 +83,7 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   The exam-list action column never displays a version, including after publish/unpublish.
   Builder badges reuse the student-card provider and level colors: each category
   keeps its own recognizable color rather than using the same brand tint for both.
-  Provider/level badges use solid dark category backgrounds and white text with
+  Provider/level badges use vivid, saturated category backgrounds and white text with
   at least 4.5:1 contrast, shared by student cards and the builder.
 
 - Section prompts are independent ordered blocks, not owned by questions. The

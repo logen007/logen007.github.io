@@ -94,11 +94,11 @@ assert.doesNotMatch(readFileSync(new URL('../src/part-templates/default/builder.
 assert.doesNotMatch(css,/image-paste-toolbar/);
 assert.match(css,/\[data-image-paste-target\]\.image-paste-active\s*\{\s*border-color:var\(--brand-primary\)/);
 assert.match(readFileSync(new URL('../src/ui/button-tooltips.js',import.meta.url),'utf8'),/imageTarget\?button.getAttribute\('title'\)/);
-assert.match(css,/\.danh-sach-de\s*\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+assert.ok(css.includes('grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr))'));
 assert.match(css,/\.the-de h3\s*\{[^}]*line-height:1\.4;[^}]*height:2\.8em;[^}]*-webkit-line-clamp:2/);
-assert.match(css,/@media\(max-width:960px\)[\s\S]*?\.danh-sach-de\s*\{\s*grid-template-columns:repeat\(2/);
+assert.doesNotMatch(css,/\.danh-sach-de\s*\{\s*grid-template-columns:repeat\(2/);
 assert.match(css,/@media\(max-width:680px\)[\s\S]*?\.danh-sach-de\s*\{\s*grid-template-columns:1fr/);
-console.log('Clipboard: destination, native text paste, validation, replacement, dynamic controls and 4-column cards passed.');
+console.log('Clipboard: destination, native text paste, validation, replacement, dynamic controls and adaptive-width cards passed.');
 
 // Measure the real tooltip renderer: image hints below, other actions above.
 const tooltipEvents={};let tooltip;
