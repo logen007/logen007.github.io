@@ -309,7 +309,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 ## Preview layout
 
 - Successful submission (including timeout) and confirmed cancellation reuse the
-  entry transition timing (3 seconds) with a reverse wave/fade. Center text states
+  entry transition style with a 2-second reverse wave/fade (entry stays 3 seconds).
+  Keep the full 1.1-second white coverage before changing pages. Center text states
   “Đã nộp bài”, “Đã hủy bài thi”, or “Hết giờ — Đã nộp bài” as appropriate. Server completion precedes
   the exit; errors keep the exam visible. Reduced motion skips exit animation delays.
   Do not repeat successful exit status in a corner toast; retain errors and unsynced-answer warnings.

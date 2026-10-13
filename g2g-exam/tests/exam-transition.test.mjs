@@ -51,7 +51,8 @@ try{
   assert.equal(app.inert,false);assert.equal(overlay.removed,true);
   delays.length=0;
   await withExamTransition(async covered=>{await covered;},null,{exit:true,message:'Đã nộp bài'});
-  assert.deepEqual(delays,[1100,1100,1400,500]);
+  assert.deepEqual(delays,[1100,1100,400,500]);
+  assert.equal(delays.slice(1).reduce((sum,ms)=>sum+ms,0),2000);
   assert.doesNotMatch(transitionCss,/\.exam-transition--exit[^{}]*\{[^}]*duration:/);
   assert.equal(app.inert,false);assert.equal(overlay.removed,true);
   let finishLoading;
