@@ -85,7 +85,7 @@ assert.match(css,/\.gap-article-editor \.gap-author-text \{ grid-column:1 \/ -1;
 assert.match(css,/\.gap-article-editor \{ grid-template-columns:minmax\(0,1fr\) 120px;/);
 assert.equal((builder.match(/data-section-image accept/g)||[]).length,1);
 assert.doesNotMatch(builder,/Chèn \[a\]–\[h\] tại chỗ trống/);
-assert.equal((builder.match(/data-gap-option=/g)||[]).length,9);
+assert.equal((builder.match(/data-gap-correct-text=/g)||[]).length,6);
 assert.match(builder,/\{z\}/);
 const publicQuestions=qs.map(({correctAnswer,...q})=>q);
 const html=examHtml({exam,attempt:{answers:{}},sectionIndex:1,questions:publicQuestions,allQuestions:state.questions,online:true});

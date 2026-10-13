@@ -122,6 +122,11 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 - Approved syntax (13 October 2026): numbered markers such as {31}, {32} use
   whole-exam question numbers in gap editors; legacy {a}, {b} stays readable.
   Gap textareas are at least 200px tall and answer rows show only the question number.
+  Shared-bank gap editors show direct answer inputs only for authored markers and
+  a distractor textarea (one option per nonempty line, with a live count), not a/b/c
+  setup rows. Preserve existing answer text, distractors, scores and question IDs.
+  New production attempts shuffle the bank and remap keys in their saved snapshot;
+  reloads and existing attempts retain their order. Per-question A/B/C tasks are unchanged.
   These are ordered answer positions,
   {z} is the example. Correct answers are edited separately for both shared-bank
   and per-question choices. Existing structured passages are presented in this

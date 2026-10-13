@@ -28,6 +28,7 @@ import {bindLetterAnswers} from './ui/letter-answers.js';
 import {bindSplitReading} from './ui/split-reading.js';
 let clearSplitReading=()=>{};
 import {saveInlineGapDraft,resizeGapOptions,bindGapPositions} from './part-templates/default/inline-gap-builder.js';
+import {shuffledGapSnapshot} from './domain/gap-bank.js';
 import {saveHeadingMatchDraft,resizeHeadingOptions} from './part-templates/default/heading-match-builder.js';
 import {createGradeAutosave} from './ui/grade-autosave.js';
 import {showPublishErrors} from './ui/publish-errors.js';
@@ -260,11 +261,12 @@ function examView(){
 
 function previewExamView(){
   clearTimer();
-  const exam=byId(data.exams,ui.previewExamId);
-  if(!exam||isStudent(user)){ui.view='admin';render();return;}
+  const source=byId(data.exams,ui.previewExamId);
+  if(!source||isStudent(user)){ui.view='admin';render();return;}
+  const exam=shuffledGapSnapshot(source,data.questions,`preview-${source.id}`);
   const sectionIndex=Math.min(ui.previewSectionIndex||0,Math.max(0,exam.sections.length-1));
   const section=exam.sections[sectionIndex];
-  const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
+  const questions=(section.questionIds||[]).map(id=>byId(exam.questionSnapshot,id)).filter(Boolean);
   const attempt={id:`preview-${exam.id}`,answers:ui.previewAnswers};
   const previewSummary=previewSummaryFor(exam);
   app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,allQuestions:data.questions,online:ui.online,preview:true,previewSummary});

@@ -1071,6 +1071,10 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .gap-score-row { display:flex; gap:8px; align-items:center; }
 .gap-score-row > .gap-option { flex:1; min-width:0; grid-template-columns:4ch minmax(0,1fr); gap:8px; }
 .gap-score-row > .gap-option > b { white-space:nowrap; font-size:14px; font-weight:500; }
+.gap-score-row[hidden] { display:none; }
+.gap-distractors { display:grid; gap:8px; }
+.gap-distractors textarea.truong { min-height:160px; resize:vertical; }
+.gap-distractors small { color:var(--phu); font-size:12px; }
 .gap-options-editor fieldset > .compact-score { grid-column:1/-1; }
 .letter-group-table td:last-child { padding-right:0; }
 .letter-group-table small { color:var(--phu); white-space:nowrap; }

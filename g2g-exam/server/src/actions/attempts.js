@@ -8,6 +8,7 @@ import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
 import {examDeadlineMs,submissionTiming} from '../../../src/domain/exam-clock.js';
 import {letterAnswerError} from '../../../src/domain/letter-answers.js';
 import {queueWritingAiJobs} from '../writing-ai-queue.js';
+import {shuffledGapSnapshot} from '../../../src/domain/gap-bank.js';
 
 export async function startAttempt(user,{examId,restart=false,code}){
   if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
@@ -47,7 +48,7 @@ export async function startAttempt(user,{examId,restart=false,code}){
       ...meta,examDeadlineMs:deadline,answers:{},audioSessions:{},publishedAt:null,
     };
     const questions=await questionMap(exam);
-    const examSnapshot={...exam,questionSnapshot:[...questions.values()],scoringPolicyVersion:1};
+    const examSnapshot={...shuffledGapSnapshot(exam,[...questions.values()]),scoringPolicyVersion:1};
     await client.query(`INSERT INTO attempts(id,student_id,exam_id,status,attempt_no,public_data,private_data) VALUES($1,$2,$3,'in_progress',$4,$5::jsonb,$6::jsonb)`,[id,user.id,examId,attemptNo,JSON.stringify(data),JSON.stringify({examSnapshot})]);
     if(access)await client.query('INSERT INTO exam_code_uses(code_id,student_id,attempt_id) VALUES($1,$2,$3)',[access.id,user.id,id]);
 

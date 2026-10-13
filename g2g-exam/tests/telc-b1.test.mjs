@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './gap-bank.test.mjs';
 import {seedState} from '../src/seed.js';
 import {telcFixture} from './telc-b1-fixture.mjs';
 import {getExamSpec} from '../src/exam-specs/index.js';
@@ -276,14 +277,14 @@ for(let i=0;i<exam.sections.length;i++){
   }
   if(i===8)assert.match(html,/lined-writing-paper/);
 }
-assert.match(renderBuilder({data:state,exam,section:gapBank}),/data-gap-options/);
+assert.match(renderBuilder({data:state,exam,section:gapBank}),/data-gap-distractors/);
 for(const section of [gap3,gapBank]){
   const editor=renderBuilder({data:state,exam,section});
   assert.doesNotMatch(editor,/data-gap-option="z"|Nhập đoạn văn có \[z\]/);
   assert.doesNotMatch(inlineGapsHtml(section,rows(section),{},20),/gap-demo|<b>0<\/b>/);
   assert.deepEqual(inlineGapErrors(section),[]);
 }
-assert.equal((renderBuilder({data:state,exam,section:gapBank}).match(/data-gap-option="/g)||[]).length,12);
+assert.equal((renderBuilder({data:state,exam,section:gapBank}).match(/data-gap-correct-text="/g)||[]).length,10);
 const previousKeys=rows(gapBank).map(q=>q.correctAnswer);
 resizeGapOptions(state,teacher,exam.id,gapBank.id,'add');
 {
@@ -300,8 +301,8 @@ resizeGapOptions(state,teacher,exam.id,gapBank.id,'add');
   const used=local.questions.find(q=>q.id===section().questionIds[0]).correctAnswer;
   assert.throws(()=>resizeGapOptions(local,teacher,exam.id,gapBank.id,'remove',used),/đang được dùng/);
   const markup=renderBuilder({data:local,exam:local.exams.find(e=>e.id===exam.id),section:section()});
-  assert.equal((markup.match(/data-gap-resize="add"/g)||[]).length,originalOptions.length);
-  assert.equal((markup.match(/data-gap-resize="remove"/g)||[]).length,originalOptions.length);
+  assert.equal((markup.match(/data-gap-resize="add"/g)||[]).length,0);
+  assert.equal((markup.match(/data-gap-resize="remove"/g)||[]).length,0);
 }
 assert.equal(gapBank.gapOptions.length,13);
 resizeGapOptions(state,teacher,exam.id,gapBank.id,'remove');
