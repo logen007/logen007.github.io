@@ -16,7 +16,7 @@ const hook=registerHooks({resolve(specifier,ctx,next){
 }});
 try{
   await db.exec(await fs.readFile(new URL('../server/schema.sql',import.meta.url),'utf8'));
-  const {publishExamRelease,releasedExam}=await import('../server/src/exam-releases.js');
+  const {publishExamRelease,unpublishExamRelease,releasedExam}=await import('../server/src/exam-releases.js');
   const {commitOperations,loadState}=await import('../server/src/state.js');
   const {loadExamCatalog}=await import('../server/src/exam-catalog.js');
   const {startAttempt}=await import('../server/src/actions/attempts.js');
@@ -79,5 +79,18 @@ try{
     assert.equal(events.at(-1).version,'1.0.1');
     assert.doesNotMatch(streamed.body,/correctAnswer|questionSnapshot/);
   }finally{await app.close();}
-  console.log('Publication SQL: permissions, idempotency, immutable releases, draft isolation, student privacy, old/new attempts, media retention and failure rollback passed.');
+  await assert.rejects(unpublishExamRelease(student,{examId:'e'}),error=>error.statusCode===403);
+  await assert.rejects(unpublishExamRelease({id:'other',role:'teacher'},{examId:'e'}),error=>error.statusCode===403);
+  const beforeUnpublish=(await query("SELECT data FROM exams WHERE id='e'")).rows[0].data;
+  await unpublishExamRelease(teacher,{examId:'e'});
+  await unpublishExamRelease(teacher,{examId:'e'});
+  assert.equal((await query("SELECT status FROM exams WHERE id='e'")).rows[0].status,'draft');
+  assert.ok(!(await loadExamCatalog(student)).exams.some(exam=>exam.id==='e'));
+  await assert.rejects(startAttempt(student,{examId:'e'}),/chưa mở/);
+  assert.ok((await loadState(student,{attemptId:startedNew.attemptId})).questions.length,'Existing attempt remains usable after unpublish');
+  await commitOperations(teacher,[{collection:'exams',id:'e',item:{...beforeUnpublish,id:'e',ownerId:'t',status:'published'}}]);
+  assert.equal((await query("SELECT status FROM exams WHERE id='e'")).rows[0].status,'draft','Stale autosave cannot silently republish');
+  assert.equal((await publishExamRelease(teacher,{examId:'e'})).version,'1.0.1','Republishing unchanged content reuses its release');
+  assert.deepEqual((await query('SELECT private_data FROM attempts WHERE id=$1',[started.attemptId])).rows[0].private_data,oldAttempt);
+  console.log('Publication SQL: permissions, publish/unpublish/republish, stale saves, immutable releases, privacy, active attempts, media and rollback passed.');
 }finally{hook.deregister();await db.close();}

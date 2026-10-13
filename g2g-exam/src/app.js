@@ -81,7 +81,8 @@ import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
 import {readCachedInfrastructure,refreshInfrastructure,setInfrastructureOwner,clearInfrastructureCache} from './settings/api.js';
 import {readDashboardCache,writeDashboardCache,clearDashboardCache,patchDashboard} from './ui/dashboard-cache.js';
-import {publicationProgress,streamPublication} from './ui/publication-progress.js';
+import {streamPublication} from './ui/publication-progress.js';
+import {syncExamPublishButtons} from './ui/exam-publish-button.js';
 import {isScoredWritingField,writingFormScore,addWritingRow,removeWritingRow} from './domain/writing-form.js';
 import {readWritingRow} from './ui/writing-form.js';
 import {readExamAnswers,revealUnansweredQuestion} from './ui/exam-answers.js';
@@ -1088,35 +1089,29 @@ function bindViewSpecific(){
   });
   app.querySelectorAll('[data-action="view-exam"]').forEach(b=>b.onclick=()=>previewExamModal(byId(data.exams,b.dataset.id)));
   app.querySelectorAll('[data-action="delete-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>softDeleteExam(st,user,b.dataset.id)),'Đã chuyển bài thi vào Thùng rác.'));
-  app.querySelectorAll('[data-action="unpublish-exam"]').forEach(b=>b.onclick=async()=>{
-    if(b.disabled)return;
-    b.disabled=true;
-    try{
-      if(!await flushBuilderDraft())return;
-      await repo.transaction(st=>unpublishExam(st,user,b.dataset.id));
-      data=await repo.getState();notify('Đã bỏ xuất bản. Đề đã chuyển về bản nháp.');render();
-    }catch(error){notify(error.message);}
-    finally{if(b.isConnected)b.disabled=false;}
-  });
-  app.querySelectorAll('[data-action="publish-exam"]').forEach(b=>b.onclick=async()=>{
+  app.querySelectorAll('[data-action="publish-exam"],[data-action="unpublish-exam"]').forEach(b=>b.onclick=async()=>{
     if(b.disabled||publishingExams.has(b.dataset.id))return;
     publishingExams.add(b.dataset.id);
     b.disabled=true;
-    const progress=publicationProgress();progress.update('saving');
     try{
-      if(!await flushBuilderDraft()){progress.remove();return;}
+      if(!await flushBuilderDraft())return;
+      if(b.dataset.action==='unpublish-exam'){
+        if(repo.mode==='api')repo.applyUnpublicationReceipt(await repo.call('unpublishExam',{examId:b.dataset.id}));
+        else await repo.transaction(st=>unpublishExam(st,user,b.dataset.id));
+        data=await repo.getState();syncExamPublishButtons(app,byId(data.exams,b.dataset.id));
+        return;
+      }
       let receipt;
       if(repo.mode==='api'){
         await repo.transaction(st=>ensureExamMatchesConfiguredSpec(st,user,b.dataset.id));
-        receipt=await streamPublication(b.dataset.id,stage=>progress.update(stage));
+        receipt=await streamPublication(b.dataset.id);
         repo.applyPublicationReceipt(receipt);
       }else{
-        progress.update('checking');
         await repo.transaction(st=>{ensureExamMatchesConfiguredSpec(st,user,b.dataset.id);return publishExam(st,user,b.dataset.id);});
       }
       data=await repo.getState();
-      if(receipt)progress.done(receipt.version);else{progress.remove();notify('Đã xuất bản bản cục bộ.');}
-    }catch(error){progress.remove();showPublishErrors(error);}
+      syncExamPublishButtons(app,byId(data.exams,b.dataset.id));
+    }catch(error){showPublishErrors(error);}
     finally{publishingExams.delete(b.dataset.id);if(b.isConnected)b.disabled=false;}
   });
   app.querySelectorAll('[data-action="preview-exam"]').forEach(b=>b.onclick=async()=>{

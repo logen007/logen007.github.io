@@ -1296,5 +1296,4 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
   .section-prompt-tools>[data-audio-question-id],.section-prompt-actions { grid-column:1/-1; }
   .section-prompt-editor .instruction-content textarea { height:180px; }
 }
-.publication-progress{position:fixed;right:20px;bottom:20px;z-index:1200;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 40px);padding:10px 14px;border:1px solid var(--vien);border-radius:14px;background:var(--mat);color:var(--chu);font-size:13px;pointer-events:none;box-shadow:0 4px 20px #00000012}
-.publication-progress progress{width:48px;height:4px;accent-color:var(--brand-primary)}
+.exam-publication-version{font-size:13px;color:var(--phu);white-space:nowrap;font-variant-numeric:tabular-nums}

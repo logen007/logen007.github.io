@@ -199,6 +199,12 @@ export class ApiRepository{
     this.emit();
   }
 
+  applyUnpublicationReceipt(receipt){
+    const exam=this.state.exams.find(exam=>exam.id===receipt.examId);
+    if(exam)exam.status='draft';
+    this.emit();
+  }
+
   async transaction(mutator){
     const task=(this.writeQueue||Promise.resolve()).then(()=>this.runTransaction(mutator));
     this.writeQueue=task.catch(()=>{});

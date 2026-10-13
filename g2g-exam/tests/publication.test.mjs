@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {releaseHash,publicationLabel} from '../server/src/exam-release-content.js';
-import {streamPublication,publicationProgress} from '../src/ui/publication-progress.js';
+import {streamPublication} from '../src/ui/publication-progress.js';
 const exam={id:'e',title:'Exam',sections:[{questionIds:['q']}]},questions=[{id:'q',title:'Prompt',correctAnswer:0}];
 assert.equal(releaseHash(exam,questions),releaseHash({...exam,updatedAt:'later',status:'published',publicationVersion:5},questions.map(q=>({...q,usedCount:99}))));
 assert.notEqual(releaseHash(exam,questions),releaseHash(exam,[{...questions[0],correctAnswer:1}]));
@@ -14,11 +14,5 @@ assert.equal((await streamPublication('e',stage=>phases.push(stage),{fetcher})).
 assert.deepEqual(phases,['checking','version','cache']);
 await assert.rejects(streamPublication('e',()=>{},{fetcher:async()=>({ok:true,body:new ReadableStream({start(c){c.close();}})})}),/Kết nối bị ngắt/);
 await assert.rejects(streamPublication('e',()=>{},{fetcher:async()=>({ok:true,body:new ReadableStream({start(c){c.enqueue(encoder.encode('{"stage":"error","message":"Invalid exam"}\n'));c.close();}})})}),/Invalid exam/);
-const saved={document:globalThis.document,setTimeout:globalThis.setTimeout};let delay,remove=0;
-try{
-  globalThis.document={createElement:()=>({setAttribute(){},append(){},remove(){remove++;}}),body:{append(){}}};
-  globalThis.setTimeout=(fn,ms)=>{delay=ms;fn();};
-  const notice=publicationProgress();notice.update('cache');notice.done('1.0.2');
-  assert.equal(delay,1000);assert.equal(remove,1);
-}finally{Object.assign(globalThis,saved);}
-console.log('Publication: content identity, real versions, streamed stages, failures and one-second dismissal passed.');
+assert.equal((await streamPublication('e',undefined,{fetcher})).version,'1.0.2');
+console.log('Publication: content identity, real versions, silent publication and failures passed.');

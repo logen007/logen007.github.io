@@ -1,5 +1,6 @@
 // Shared outline icons: the control owns its border, size and interaction state.
 const paths={
+  preview:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
   share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m9 10 6-3M9 14l6 3"/>',
   type:'<path d="M4 6V4h16v2M12 4v16M8 20h8"/>',
   arrowLeft:'<path d="M20 12H4m7-7-7 7 7 7"/>',

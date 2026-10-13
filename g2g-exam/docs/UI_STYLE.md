@@ -71,11 +71,14 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
-- Publishing keeps one Xuất bản button. Server-owned immutable releases use
+- Publishing keeps one button toggling Xuất bản / Bỏ xuất bản immediately on
+  success without rebuilding the editor. Unpublish uses an explicit authorized
+  action; stale draft saves cannot publish or unpublish a versioned exam.
+  Server-owned immutable releases use
   per-exam labels v1.0.0, v1.0.1, etc.; unchanged content reuses its version.
-  A small non-interactive bottom-right progress notice follows actual server
-  stages, then shows “Đã xuất bản v…” for 1 second. It must not rerender the
-  editor, block page interaction, or add artificial percentage/timing delays.
+  Keep the version visible beside the publish button; drafts label it as the
+  latest published version. Preview is an eye icon with an accessible name and
+  tooltip. No publication progress or success notice; retain error feedback.
 
 - Section prompts are independent ordered blocks, not owned by questions. The
   plus action inserts a prompt directly below the current one; up/down moves its
