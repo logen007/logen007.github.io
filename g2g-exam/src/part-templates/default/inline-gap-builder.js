@@ -17,6 +17,7 @@ export function inlineGapBuilder(section,questions,readOnly){
 {a}, {b}, {c}… → ô trả lời theo thứ tự; chọn đáp án đúng riêng bên dưới.
 ${hasGapExample(section)?'{z} → vị trí câu ví dụ\\n':''}[b]chữ đậm[/b] · [i]chữ nghiêng[/i] · [u]gạch chân[/u]
 [box]nội dung[/box] → đóng khung chữ
+[signature]Tên người ký[/signature] → chữ ký viết tay cỡ lớn
 [img] → đặt ảnh đã tải lên tại đây`;
   const legacyWarning=(section.gapPassage||[]).some(part=>typeof part==='string'&&/\[b\](?:(?!\[\/b\])[\s\S])*?\[b\]/i.test(part))
     ?'<p role="status">Đoạn này còn cú pháp [b]…[b] cũ có thể gây nhầm. Nội dung được giữ nguyên; nếu là chữ đậm, đổi dấu đóng thành [/b].</p>':'';

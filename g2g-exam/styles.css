@@ -149,6 +149,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 #app { width:min(calc(var(--max) + 64px),100%); min-height:100dvh; margin:0 auto; padding:24px 32px 0; }
 .ui-icon { display:block; flex:none; width:20px; height:20px; }
 .instruction-token { display:inline; padding:0 6px; border:1px solid var(--phu); border-radius:0; font-weight:600; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+.text-signature,.exam-instruction .text-signature { display:inline; margin:0; color:inherit; font-family:"Snell Roundhand","Segoe Script","Bradley Hand","Segoe Print",cursive; font-size:clamp(28px,2.5vw,36px); font-style:normal; font-weight:400; line-height:1.5; letter-spacing:normal; overflow-wrap:anywhere; }
 
 /* Shared navigation: centered pills, utility controls on the right. */
 .thanh-dau { display:flex; align-items:center; gap:24px; min-height:80px; padding:12px 16px; background:var(--mat); border:1px solid var(--vien); border-radius:20px; }

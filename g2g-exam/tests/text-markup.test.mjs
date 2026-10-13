@@ -98,6 +98,9 @@ import {parseGapText,gapAuthorText,inlineGapErrors} from '../src/domain/inline-g
 import {modernInstructionText} from '../src/domain/text-markup.js';
 assert.equal(modernInstructionText('[Richtig] [a] [img] [b]text[/b]'),'[box]Richtig[/box] [box]a[/box] [img] [b]text[/b]');
 assert.equal(modernInstructionText(modernInstructionText('[Richtig]')),'[box]Richtig[/box]');
+assert.equal(modernInstructionText('[signature]Sabine[/signature]'),'[signature]Sabine[/signature]');
+assert.equal(textHtml('[signature]Sabine[/signature]'),'<span class="text-signature">Sabine</span>');
+assert.equal(instructionTextHtml('[SIGNATURE]<img onerror=x>[/SIGNATURE]'),'<span class="text-signature">&lt;img onerror=x&gt;</span>');
 assert.match(textHtml('[box]<script>[/box]'),/instruction-token.*&lt;script&gt;/);
 assert.deepEqual(parseGapText('[b]{a}[/b] [i]{b}[/i] {z}',2).keys,[0,1]);
 {
