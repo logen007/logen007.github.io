@@ -11,6 +11,7 @@ COPY vi.html styles.css enhancements.css runtime-config.js /app/public/
 COPY media-worker.js /app/public/media-worker.js
 RUN cp /app/public/vi.html /app/public/index.html
 COPY src /app/public/src
+COPY src/release.js /app/src/release.js
 COPY src/domain/student-profile.js /app/src/domain/student-profile.js
 COPY src/domain/account-name.js /app/src/domain/account-name.js
 COPY src/domain/gradebook.js /app/src/domain/gradebook.js

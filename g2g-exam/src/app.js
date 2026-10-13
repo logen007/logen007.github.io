@@ -81,6 +81,7 @@ import {loadPublicSettings,refreshInfrastructure} from './settings/api.js';
 import {isScoredWritingField,writingFormScore,addWritingRow,removeWritingRow} from './domain/writing-form.js';
 import {readWritingRow} from './ui/writing-form.js';
 import {readExamAnswers,revealUnansweredQuestion} from './ui/exam-answers.js';
+import {startReleaseMonitor} from './ui/release-update.js';
 
 initializeTheme();
 const app=document.getElementById('app');
@@ -1478,6 +1479,12 @@ else{
   startupGate.finish();
   render();
 }
+if(repo.mode==='api')startReleaseMonitor({canReload:()=>
+  !document.hidden&&startupGate.isReady()&&!startingAttempt&&!submitBusy&&!builderAutosaveBusy&&!builderSavePromise&&
+  !document.getElementById('modal')&&!document.querySelector('[data-name-form]:not([hidden])')&&
+  !document.activeElement?.matches('input,textarea,select,[contenteditable="true"]')&&
+  (ui.view==='student-home'||ui.view==='student-results'||ui.view==='admin'&&['dashboard','exams'].includes(ui.adminTab))
+});
 import {shareStudentProfile,bindStudentName} from './views/student-profile-card.js';
 import {loadStudentReview as loadStudentReviewData} from './controllers/student-review.js';
 import {bindAttemptResult} from './views/attempt-result.js';

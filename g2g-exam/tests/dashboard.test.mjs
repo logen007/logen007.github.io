@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './release-update.test.mjs';
 import {examLastEdit} from '../src/domain/exam-last-edit.js';
 
 assert.equal(examLastEdit({updatedAt:'2026-10-01',sections:[{questionIds:['q1']}]},'2026-10-12',new Map([['q1',Date.parse('2026-10-05')]])),'2026-10-05T00:00:00.000Z');

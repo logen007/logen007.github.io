@@ -21,6 +21,7 @@ import {startTrashGarbageCollector} from './trash-gc.js';
 import {submitExpiredAttempts} from './actions/attempts.js';
 import {r2Settings} from './r2-settings.js';
 import {registerMediaDeliveryRoutes} from './media-routes.js';
+import {APP_VERSION} from '../../src/release.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const publicDir=path.resolve(here,'../../public');
@@ -55,6 +56,7 @@ await app.register(fastifyStatic,{root:publicDir,prefix:'/',index:['index.html']
 await registerAuthRoutes(app);
 
 app.get('/api/health',async()=>{let db=true;try{await pool.query('SELECT 1');}catch{db=false;}return {ok:db,backend:'vps',database:db,time:new Date().toISOString()};});
+app.get('/api/version',async()=>({version:APP_VERSION}));
 app.get('/api/public-settings',async()=>{
   const s=await getSettings();
   const [students,graded,exams,teachers,attempts]=await Promise.all([

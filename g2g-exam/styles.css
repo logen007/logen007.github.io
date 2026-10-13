@@ -982,8 +982,12 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .student-result-info h2.failed { color:var(--do); }
 .bang thead th { white-space:nowrap; }
 .table-link.exam-title-status.is-published { color:var(--xanh); }
-.bang tbody tr:has(.exam-title-status.is-published) { background:color-mix(in srgb,var(--xanh) 7%,var(--mat)); }
-.bang tbody tr:has(.exam-title-status.is-published):hover { background:color-mix(in srgb,var(--xanh) 11%,var(--mat)); }
+.bang tbody tr:has(.exam-title-status.is-published) { background:color-mix(in srgb,var(--xanh) 3%,var(--mat)); }
+.bang tbody tr:has(.exam-title-status.is-published):hover { background:color-mix(in srgb,var(--xanh) 6%,var(--mat)); }
+.release-update { position:fixed; z-index:12000; top:50%; left:50%; transform:translate(-50%,-50%); display:flex; align-items:center; gap:12px; width:max-content; max-width:calc(100vw - 32px); padding:16px 20px; border:1px solid var(--vien); border-radius:16px; background:var(--mat); color:var(--chu); box-shadow:0 8px 32px #0002; font-size:14px; line-height:1.5; pointer-events:none; }
+.release-update-spinner { flex:none; width:18px; height:18px; border:2px solid var(--vien); border-top-color:var(--brand-primary); border-radius:50%; animation:release-spin .8s linear infinite; }
+@keyframes release-spin { to { transform:rotate(360deg); } }
+@media(prefers-reduced-motion:reduce) { .release-update-spinner { animation:none; } }
 .table-link.exam-title-status.is-draft { color:var(--phu); }
 .student-result-info p { margin:8px 0 0; color:var(--phu); font-size:13px; }
 .student-result-outcome { display:flex; align-items:center; gap:20px; }
