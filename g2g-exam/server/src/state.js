@@ -60,8 +60,16 @@ export async function loadState(user){
   state.questions=(await rows(`SELECT id,owner_id,status,locked,data FROM questions ORDER BY updated_at DESC`)).map(rowEntity);
   state.exams=(await rows(`SELECT id,owner_id,status,locked,data FROM exams ORDER BY updated_at DESC`)).map(rowEntity);
   const allowed=await allowedExamIds(user);
-  const ars=await rows(`SELECT id,exam_id,public_data,private_data FROM attempts ORDER BY created_at DESC`);
+  const [ars,writingJobs]=await Promise.all([
+    rows(`SELECT id,exam_id,public_data,private_data FROM attempts ORDER BY created_at DESC`),
+    rows(`SELECT attempt_id,question_id,status FROM writing_ai_jobs WHERE status IN ('queued','processing') ORDER BY created_at,id`),
+  ]);
   state.attempts=ars.filter(r=>!allowed||allowed.has(r.exam_id)).map(r=>attemptEntity(r,true));
+  const queueTotal=writingJobs.length;
+  writingJobs.forEach((job,index)=>{
+    const attempt=state.attempts.find(item=>item.id===job.attempt_id),suggestion=attempt?.aiWritingSuggestions?.[job.question_id];
+    if(suggestion)Object.assign(suggestion,{status:job.status,queuePosition:index+1,queueTotal});
+  });
   if(user.role==='master')state.auditLog=(await rows(`SELECT id,at,user_id,user_name,action,entity_type,entity_id,detail FROM audit_log ORDER BY at DESC LIMIT 1000`)).map(r=>({id:String(r.id),at:r.at,userId:r.user_id,userName:r.user_name,action:r.action,entityType:r.entity_type,entityId:r.entity_id,detail:r.detail}));
   return resolveAccountNames(state);
 }

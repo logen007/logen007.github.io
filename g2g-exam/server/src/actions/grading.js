@@ -15,7 +15,7 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
     const attempt=result.rows[0];
     const exam=await attemptExam(attempt,client);
     if(!(await canGrade(user,exam)))throw appError(403,'Bạn chưa được cấp quyền chấm bài này.');
-    if(!['grading','ready'].includes(attempt.status))throw appError(409,'Bài không ở trạng thái chấm.');
+    if(!['grading','ready','published'].includes(attempt.status))throw appError(409,'Bài không ở trạng thái chấm.');
 
     const questions=await questionMap(exam),limits=Object.fromEntries(manualGroups(exam,questions).map(group=>[group.key,group.max]));
     const previous=attempt.private_data||{},clean={...(previous.manualScores||{})};
@@ -42,13 +42,13 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
     const summary=resultSummary(exam,questions,{...previous,sectionScores,manualScores:clean,scoringVersion:2});
     const totalScore=complete?summary.total:null;
     const resultText=complete?summary.result:null;
-    const status=complete?'ready':'grading';
+    const status=attempt.status==='published'?'published':complete?'ready':'grading';
     const at=now();
     const privateData={
       ...previous,autoScore,sectionScores,scoringVersion:2,manualScores:clean,feedback:String(feedback||''),
       reviewerId:user.id,reviewerName:user.name||'',totalScore,result:resultText,updatedAt:at,
     };
-    const publicData={...attempt.public_data,status,updatedAt:at};
+    const publicData={...attempt.public_data,status,updatedAt:at,...(status==='published'?{totalScore,manualScores:clean,sectionScores,result:resultText,feedback:String(feedback||'')}:{})};
     await client.query(`UPDATE attempts SET status=$2,public_data=$3::jsonb,private_data=$4::jsonb,updated_at=now() WHERE id=$1`,[attemptId,status,JSON.stringify(publicData),JSON.stringify(privateData)]);
     await audit(user,'save_grade','attempt',attemptId,{complete,status},client);
     return {status,totalScore};
