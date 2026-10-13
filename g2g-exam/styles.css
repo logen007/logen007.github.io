@@ -721,7 +721,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-r2-body { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin:12px 0 16px; }
 .dashboard-r2-body .resource-ring-plot { width:64px; height:64px; }
 .dashboard-r2-body .resource-ring { gap:10px; }
-.dashboard-r2-body .resource-ring-plot>b { font-size:24px; line-height:1; letter-spacing:-.05em; }
+.dashboard-r2-body .resource-ring-plot>b { font-size:16px; line-height:1; letter-spacing:-.04em; }
 .dashboard-r2-size { display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
 .dashboard-r2-size>b { font-size:22px; font-weight:400; letter-spacing:-.5px; font-variant-numeric:tabular-nums; }
 .dashboard-disclosure,.dashboard-cpu-history .monitor-values { margin:0; border-top:1px solid var(--vien); color:var(--phu); font-size:12px; }
