@@ -157,7 +157,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   14px from the edge. Feature modules must not redraw or reposition that icon.
 - User-approved exception: single-letter dropdowns embedded in reading text
   are 56×32px (36px high on touch screens), with pill corners and compact padding.
-  Reuse the same chevron at 12px, positioned 6px from the right.
+  Inside gap passages, omit the chevron and its reserved space; keep 8px
+  horizontal padding and the existing dropdown interaction.
   Inline gap menus show the letter plus the full sentence when opened; the
   closed control shows selected answer text up to 24 characters, otherwise its
   letter (or question number when unanswered).
