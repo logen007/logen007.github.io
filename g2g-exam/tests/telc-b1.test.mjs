@@ -75,10 +75,10 @@ const {exam,rows}=telcFixture(state,teacher);
   const keys=questions.map(q=>q.correctAnswer),passage=JSON.stringify(part.gapPassage);
   const source=gapAuthorText(part,questions);
   const scoreEditor=renderBuilder({data:local,exam:copy,section:part});
-  assert.equal((scoreEditor.match(/data-gap-score=/g)||[]).length,questions.length);
+  assert.equal((scoreEditor.match(/data-gap-common-score/g)||[]).length,1);
   assert.match(scoreEditor,/class="compact-score"/);
   const lockedScores=renderBuilder({data:local,exam:copy,section:part,readOnly:true});
-  assert.match(lockedScores,/data-gap-score="0" value="[^"]*" disabled/);
+  assert.match(lockedScores,/data-gap-common-score[^>]*disabled/);
   assert.ok(source.includes('{a}')&&source.includes('{b}'));
   const root={querySelector(selector){
     if(selector==='[data-gap-text]')return {value:source};

@@ -1,14 +1,24 @@
 import {boldPattern,italicPattern,underlinePattern,stripTextMarkup} from './text-markup.js';
 export const hasGapExample=section=>section.questionProfile?.inlineExample!==false;
 // This author-only syntax is stripped before any passage is persisted or published.
-export function parseGapAnswerText(text,limit,questionNumbers=[]){
+export function parseGapAnswerText(text,limit,questionNumbers=[],plain=false){
+  const source=String(text||'');
+  const tokens=[...source.matchAll(/\{((?:\\.|[^{}\\])*)\}/g)];
+  const authored=plain||tokens.some(match=>!/^(?:\d+|[a-z])$/i.test(match[1]));
+  if(!authored){
+    if(/[{}]/.test(source.replace(/\{(?:\d+|[a-z])\}/gi,'')))throw new Error('Đóng đủ ký hiệu {đáp án} trước khi lưu.');
+    return {...parseGapText(source,limit,'abcdefghijklmnopqrstuvwxy',questionNumbers),embeddedAnswers:null};
+  }
   const answers=[];
-  const normalized=String(text||'').replace(/\{`((?:\\.|[^`\\])*)`\}/g,(_,answer)=>{
-    answers.push(answer.replace(/\\([`\\])/g,'$1').trim());
+  const normalized=source.replace(/\{((?:\\.|[^{}\\])*)\}/g,(_,answer)=>{
+    if(answer==='z')return '{z}';
+    if(!plain&&/^\d+$/.test(answer))throw new Error('Không trộn số câu với đáp án trực tiếp.');
+    if(answer.startsWith('`')&&answer.endsWith('`'))answer=answer.slice(1,-1);
+    answers.push(answer.replace(/\\([`{}\\])/g,'$1').trim());
+    if(answers.length>limit)throw new Error(`Đoạn văn chỉ có ${limit} ô tính điểm.`);
     return `{${String.fromCharCode(96+answers.length)}}`;
   });
-  if(/\{`|`\}/.test(normalized))throw new Error('Đóng đủ ký hiệu {`đáp án`} trước khi lưu.');
-  if(answers.length&&/\{\d+\}/.test(normalized))throw new Error('Không trộn số câu với {`đáp án`}; hãy ghi đáp án trực tiếp cho mọi ô.');
+  if(/[{}]/.test(normalized.replace(/\{[a-z]\}/gi,'')))throw new Error('Đóng đủ ký hiệu {đáp án} trước khi lưu.');
   const parsed=parseGapText(normalized,limit,'abcdefghijklmnopqrstuvwxy',questionNumbers);
   if(answers.length&&(parsed.keys.length!==answers.length||parsed.keys.some((key,index)=>key!==index)))throw new Error('Không trộn ký hiệu cũ với {`đáp án`}.');
   return {...parsed,embeddedAnswers:answers.length?answers:null};
@@ -20,7 +30,7 @@ export function gapAnswerAuthorText(section,questions){
     if(part.example)return hasGapExample(section)?'{z}':section.gapExample||'';
     const question=questions[part.gap];
     const value=question?.correctAnswer!=null&&question.correctAnswer!==''?section.gapOptions?.[Number(question.correctAnswer)]||'':'';
-    return '{`'+String(value).replace(/\\/g,'\\\\').replace(/`/g,'\\`')+'`}';
+    return '{'+String(value).replace(/[\\{}]/g,'\\$&')+'}';
   }).join('');
 }
 // Public passage contains positions, never teacher answer letters.

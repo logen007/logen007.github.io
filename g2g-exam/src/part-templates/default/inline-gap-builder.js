@@ -14,7 +14,7 @@ export function inlineGapBuilder(section,questions,readOnly,numbers=new Map()){
   const markers=questions.slice(0,3).map((q,i)=>'{'+(numbers.get(q.id)??i+1)+'}').join(', ');
   const helpId='gap-help-'+section.id;
   const placeholder=`Nhập đoạn văn…
-${perQuestion?markers+'… → ô trả lời theo thứ tự; chọn đáp án bên dưới.':'{'+String.fromCharCode(96)+'ANZEIGE'+String.fromCharCode(96)+'} → ghi đáp án đúng ngay trong đoạn văn.'}
+${perQuestion?markers+'… → ô trả lời theo thứ tự; chọn đáp án bên dưới.':'{ANZEIGE} → ghi đáp án đúng ngay trong đoạn văn.'}
 ${hasGapExample(section)?'{z} → vị trí câu ví dụ\\n':''}[b]chữ đậm[/b] · [i]chữ nghiêng[/i] · [u]gạch chân[/u]
 [box]nội dung[/box] → đóng khung chữ
 [headline]Tiêu đề[/headline] → tiêu đề lớn, riêng một dòng
@@ -22,10 +22,11 @@ ${hasGapExample(section)?'{z} → vị trí câu ví dụ\\n':''}[b]chữ đậm
 [img] → đặt ảnh đã tải lên tại đây`;
   const legacyWarning=(section.gapPassage||[]).some(part=>typeof part==='string'&&/\[b\](?:(?!\[\/b\])[\s\S])*?\[b\]/i.test(part))
     ?'<p role="status">Đoạn này còn cú pháp [b]…[b] cũ có thể gây nhầm. Nội dung được giữ nguyên; nếu là chữ đậm, đổi dấu đóng thành [/b].</p>':'';
-  const help=(perQuestion?'Nhập {a}, {b}… theo thứ tự vị trí trong đoạn văn. Điền 3 lựa chọn A/B/C cho mỗi nhóm bên dưới và tích chọn đáp án đúng.':'Viết {`đáp án đúng`} tại mỗi chỗ trống. Hệ thống tự đánh số câu và xáo trộn đáp án khi thi. Đáp án nhiễu: mỗi dòng một đáp án.').replaceAll('{a}, {b}',markers);
+  const help=(perQuestion?'Nhập {a}, {b}… theo thứ tự vị trí trong đoạn văn. Điền 3 lựa chọn A/B/C cho mỗi nhóm bên dưới và tích chọn đáp án đúng.':'Viết {đáp án đúng} tại mỗi chỗ trống. Hệ thống tự đánh số câu và xáo trộn đáp án khi thi. Đáp án nhiễu: mỗi dòng một đáp án.').replaceAll('{a}, {b}',markers);
   const bank=perQuestion?null:splitGapBank(section,questions);
-  const answerFields=perQuestion?'':`<details class="gap-score-settings"><summary>Điểm từng câu</summary><div class="gap-answer-mapping">${questions.map((q,index)=>`<div class="gap-score-row" data-gap-position="${index}" ${(section.gapPassage||[]).some(part=>part?.gap===index)?'':'hidden'}><b>${numbers.get(q.id)??index+1}.</b>${scoreInput(q.maxScore??section.questionProfile?.defaultScore??1,{attributes:`data-gap-score="${index}"`,disabled:readOnly})}</div>`).join('')}</div></details><label class="gap-distractors"><span>Đáp án nhiễu</span><textarea class="truong" data-gap-distractors rows="5" placeholder="Mỗi dòng một đáp án nhiễu" ${disabled}>${esc(bank.distractors.join('\n'))}</textarea><small data-gap-distractor-count>${distractorLines(bank.distractors.join('\n')).length} đáp án nhiễu</small></label>`;
-  return `<div class="inline-gap-editor ${perQuestion?'inline-gap-editor--positions':''}"><div class="gap-article-editor"><textarea class="truong gap-author-text" data-gap-text data-gap-numbers="${questions.map((q,i)=>numbers.get(q.id)??i+1).join(',')}" aria-describedby="${esc(helpId)}" aria-label="Đoạn văn điền khuyết" placeholder="${esc(placeholder)}" ${disabled}>${esc(perQuestion?gapAuthorText(section,questions,numbers):gapAnswerAuthorText(section,questions))}</textarea><p class="gap-author-help" id="${esc(helpId)}">${esc(help)}</p>${legacyWarning}</div><div class="gap-options-editor">${hasGapExample(section)?input('z',section.gapExample):''}${perQuestion?optionFields:''}${answerFields}${perQuestion?`<div class="nhom-nut"><button type="button" class="icon-btn" data-gap-position-action="remove" title="Bỏ vị trí cuối" aria-label="Bỏ vị trí cuối" ${disabled}>${iconHtml('close')}</button><button type="button" class="icon-btn" data-gap-position-action="add" title="Thêm vị trí" aria-label="Thêm vị trí" ${disabled}>${iconHtml('plus')}</button></div>`:''}</div>${questions.map(q=>`<div hidden class="part-question" data-editor-mode="inline-gaps" data-question-id="${esc(q.id)}"><input data-field="maxScore" value="${q.maxScore??1}"></div>`).join('')}</div>`;
+  const sharedScore=questions.length&&questions.every(q=>q.maxScore===questions[0].maxScore)?questions[0].maxScore:'';
+  const answerFields=perQuestion?'':`<div class="gap-common-score"><span>Điểm mỗi câu</span>${scoreInput(sharedScore,{attributes:`data-gap-common-score ${sharedScore===''?'data-preserve-mixed="true" placeholder="Điểm khác nhau"':''}`,disabled:readOnly,label:'Điểm mỗi câu'})}</div><label class="gap-distractors"><span>Đáp án nhiễu</span><textarea class="truong" data-gap-distractors rows="5" placeholder="Mỗi dòng một đáp án nhiễu" ${disabled}>${esc(bank.distractors.join('\n'))}</textarea><small data-gap-distractor-count>${distractorLines(bank.distractors.join('\n')).length} đáp án nhiễu</small></label>`;
+  return `<div class="inline-gap-editor ${perQuestion?'inline-gap-editor--positions':'inline-gap-editor--shared'}"><div class="gap-article-editor"><textarea class="truong gap-author-text" data-gap-text ${perQuestion?'':'data-gap-answer-syntax="plain"'} data-gap-numbers="${questions.map((q,i)=>numbers.get(q.id)??i+1).join(',')}" aria-describedby="${esc(helpId)}" aria-label="Đoạn văn điền khuyết" placeholder="${esc(placeholder)}" ${disabled}>${esc(perQuestion?gapAuthorText(section,questions,numbers):gapAnswerAuthorText(section,questions))}</textarea><p class="gap-author-help" id="${esc(helpId)}">${esc(help)}</p>${legacyWarning}</div><div class="gap-options-editor">${hasGapExample(section)?input('z',section.gapExample):''}${perQuestion?optionFields:''}${answerFields}${perQuestion?`<div class="nhom-nut"><button type="button" class="icon-btn" data-gap-position-action="remove" title="Bỏ vị trí cuối" aria-label="Bỏ vị trí cuối" ${disabled}>${iconHtml('close')}</button><button type="button" class="icon-btn" data-gap-position-action="add" title="Thêm vị trí" aria-label="Thêm vị trí" ${disabled}>${iconHtml('plus')}</button></div>`:''}</div>${questions.map(q=>`<div hidden class="part-question" data-editor-mode="inline-gaps" data-question-id="${esc(q.id)}"><input data-field="maxScore" value="${q.maxScore??1}"></div>`).join('')}</div>`;
 }
 
 export function saveInlineGapDraft(root,state,user,exam,section){
@@ -34,7 +35,7 @@ export function saveInlineGapDraft(root,state,user,exam,section){
   const profile=section.questionProfile||{},perQuestion=profile.gapChoicesPerQuestion,dynamic=profile.dynamicGapOptions;
   const questionNumbers=section.questionIds.map((id,i)=>numbers.get(id)??i+1);
   const direct=!perQuestion&&root.querySelector('[data-gap-distractors]');
-  const {passage,keys,embeddedAnswers}=direct?parseGapAnswerText(field.value,section.questionLimit,questionNumbers):parseGapText(field.value,section.questionLimit,perQuestion?Array.from({length:section.questionLimit},(_,i)=>String.fromCharCode(97+i)).join(''):dynamic?'abcdefghijklmnopqrstuvwxy':'abcdefgh',questionNumbers);
+  const {passage,keys,embeddedAnswers}=direct?parseGapAnswerText(field.value,section.questionLimit,questionNumbers,field.dataset?.gapAnswerSyntax==='plain'):parseGapText(field.value,section.questionLimit,perQuestion?Array.from({length:section.questionLimit},(_,i)=>String.fromCharCode(97+i)).join(''):dynamic?'abcdefghijklmnopqrstuvwxy':'abcdefgh',questionNumbers);
   if(perQuestion||/\{(?:[a-z]|\d+)\}/i.test(field.value)){
     if(keys.some((key,index)=>direct?(key<0||key>=section.questionLimit||(index>0&&key<=keys[index-1])):key!==index))throw new Error('Nhập các số câu theo thứ tự, mỗi số một lần.');
   }
@@ -44,7 +45,8 @@ export function saveInlineGapDraft(root,state,user,exam,section){
   const bankCount=Number(root.querySelector('[data-gap-options-count]')?.dataset.gapOptionsCount);
   const options=directBank?directBank.options:perQuestion?section.questionIds.map((_,index)=>[0,1,2].map(i=>root.querySelector(`[data-gap-choice="${index}-${i}"]`)?.value.trim()||'')):dynamic?(bankCount?Array.from({length:bankCount},(_,i)=>root.querySelector(`[data-gap-option="${String.fromCharCode(97+i)}"]`)?.value.trim()||''):(root.querySelector('[data-gap-options]')?.value||'').split('\n').map(value=>value.trim()).filter(Boolean)):[...'abcdefgh'].map(key=>root.querySelector(`[data-gap-option="${key}"]`)?.value.trim()||'');
   const scores=section.questionIds.map((id,index)=>{
-    const input=root.querySelector(`[data-gap-score="${index}"]`);
+    const common=direct&&root.querySelector('[data-gap-common-score]');
+    const input=common?.dataset?.preserveMixed==='true'&&!common.value.trim()?null:common||root.querySelector(`[data-gap-score="${index}"]`);
     if(input&&(!input.value.trim()||!Number.isFinite(Number(input.value))||Number(input.value)<0))throw new Error('Nhập điểm hợp lệ, lớn hơn hoặc bằng 0.');
     return input?Number(input.value):state.questions.find(q=>q.id===id)?.maxScore??Number(profile.defaultScore??1);
   });
@@ -86,7 +88,7 @@ export function bindGapPositions(root,section){
   distractors?.addEventListener('input',()=>{const count=root.querySelector('[data-gap-distractor-count]');if(count)count.textContent=distractorLines(distractors.value).length+' đáp án nhiễu';});
   const refresh=()=>{
     try{
-      const {keys}=section.questionProfile.gapChoicesPerQuestion?parseGapText(field.value,section.questionLimit,letters,questionNumbers):parseGapAnswerText(field.value,section.questionLimit,questionNumbers);
+      const {keys}=section.questionProfile.gapChoicesPerQuestion?parseGapText(field.value,section.questionLimit,letters,questionNumbers):parseGapAnswerText(field.value,section.questionLimit,questionNumbers,field.dataset?.gapAnswerSyntax==='plain');
       root.querySelectorAll('[data-gap-position]').forEach(group=>{group.hidden=!keys.includes(Number(group.dataset.gapPosition));});
       buttons.forEach(button=>{button.disabled=field.disabled||(button.dataset.gapPositionAction==='add'?keys.length>=section.questionLimit:!keys.length);});
     }catch{/* Keep the current groups while a marker is incomplete. */}

@@ -1074,8 +1074,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .gap-score-row > .gap-option { flex:1; min-width:0; grid-template-columns:4ch minmax(0,1fr); gap:8px; }
 .gap-score-row > .gap-option > b { white-space:nowrap; font-size:14px; font-weight:500; }
 .gap-score-row[hidden] { display:none; }
-.gap-score-settings summary { cursor:pointer; color:var(--phu); }
-.gap-score-settings .gap-answer-mapping { grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); }
+.gap-common-score { display:flex; align-items:center; gap:12px; }
 .gap-distractors { display:grid; gap:8px; }
 .gap-distractors textarea.truong { min-height:160px; resize:vertical; }
 .gap-distractors small { color:var(--phu); font-size:12px; }
@@ -1089,6 +1088,9 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 
 /* Inline sentence gaps share the existing letter-answer controls. */
 .inline-gap-editor, .gap-options-editor { display:grid; gap:16px; }
+.inline-gap-editor--shared { padding:24px; border:1px solid var(--vien); border-radius:var(--r); background:var(--mat); min-width:0; }
+.inline-gap-editor--shared .gap-article-editor { padding:0; border:0; border-radius:0; }
+@media(max-width:600px){.inline-gap-editor--shared { padding:16px; }}
 .gap-options-editor [data-gap-options-count] { display:grid; gap:12px; }
 .gap-article-editor { display:grid; gap:20px; padding:24px; border:1px solid var(--vien); border-radius:24px; min-width:0; }
 .gap-article.writing-paper { width:calc(100% - 12px); max-width:760px; margin:8px auto 16px; min-width:0; gap:20px; }

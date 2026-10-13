@@ -119,10 +119,12 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   mobile, directly below the question number and before the question text.
   Do not put audio on a separate row.
 
-- Approved syntax (13 October 2026): shared-bank gaps use {`ANZEIGE`} directly
+- Approved syntax (13 October 2026): shared-bank gaps use {ANZEIGE} directly
   inside the author-only passage. Strip the embedded answer into the private key
   and public option bank before persisting; student passages contain only gap objects.
-  No separate correct-answer inputs. Keep per-question scores in a disclosure and
+  No separate correct-answer inputs. One shared score input applies to every question;
+  preserve legacy mixed scores until the teacher supplies a common score. Keep
+  passage, shared score and distractors inside a single rounded frame, with
   a distractor textarea (one option per nonempty line, with a live count).
   All textareas have a shared minimum of 200px, including compact/mobile forms;
   larger writing areas keep their larger minimum through --textarea-min-height.
@@ -131,7 +133,7 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   reloads and existing attempts retain their order. Per-question A/B/C tasks are unchanged.
   Per-question choices retain numbered {31}, {32} positions; {z} is the example.
   Existing shared-bank passages automatically show their current correct answers
-  in the new author syntax. Legacy numbered/letter markers remain readable.
+  in the new author syntax. Legacy numbered/letter/backtick markers remain readable.
   Legacy square-bracket gap input remains readable during rollout. Keep ambiguous
   legacy [b]…[b] text unchanged and warn in the editor instead of guessing.
   [box]text[/box] explicitly frames instruction text. Existing unambiguous framed
