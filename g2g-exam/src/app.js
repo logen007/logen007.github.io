@@ -585,7 +585,6 @@ function adminView(cachedAt=null){
   let content='';
   if(ui.adminTab==='dashboard'&&isMaster(user)){
     content=dashboardHtml({data,infrastructure:ui.infrastructure,infrastructureError:ui.infrastructureError||'',activityFilter:ui.dashboardPeriod||{}});
-    content=content.replace('<div class="dashboard-grid">',`<p class="dashboard-caption" role="status" ${cachedAt?'':'hidden'}>${cachedAt?'Dữ liệu đã lưu · Đang cập nhật…':''}</p><div class="dashboard-grid">`);
     if(!cachedAt)writeDashboardCache(user.id,data);
     if(!infrastructureRefreshStarted&&!infrastructureLoading){
       infrastructureRefreshStarted=true;
