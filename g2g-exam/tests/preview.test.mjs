@@ -178,6 +178,7 @@ try{
     }
     const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
     assert.match(css,/\.exam-paper \.answer-options--illustrated \.answer-option-body/);
+    assert.ok(css.includes('.answer-options--illustrated:has(> .answer-option:nth-child(3)):not(:has(> .answer-option:nth-child(4))) { grid-template-columns:repeat(3,minmax(0,1fr));'),'Three illustrated answers share a row across templates');
     assert.match(css,/\.exam-paper \.cau-thi/);
   });
 

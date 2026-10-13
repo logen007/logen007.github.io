@@ -65,6 +65,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Three illustrated A/B/C answers stay in three equal columns on mobile,
+  including examples and preview, across all part templates. Use compact card
+  padding, wrapped captions and uncropped responsive images.
+
 - Student writing tasks show no question number or automatically generated
   “Schreiben Sie … Wörter” hint above the answer field. Preserve the authored
   prompt, including any word limits it explicitly contains, and the word counter.
