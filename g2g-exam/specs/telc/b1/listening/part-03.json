@@ -5,6 +5,16 @@
   "name": "Nghe 3",
   "questionLimit": 5,
   "template": "GENERIC",
+  "audio": {
+    "mode": "per_question_segment",
+    "sharedPart": false,
+    "questionsPerSegment": 1,
+    "maxSessions": 1,
+    "segmentRepeat": 2,
+    "controls": false,
+    "pauseAllowed": false,
+    "replayAllowed": false
+  },
   "questionProfile": {
     "defaultScore": 5
   }

@@ -103,9 +103,17 @@ assert.equal(oralMaximum(exam),75);
 assert.deepEqual(manualGroups(exam,state.questions).map(g=>[g.key,g.max]),[['Viết 1',45]]);
 assert.deepEqual(exam.sections[1].questionProfile.choices,['A','B','C'],'User correction: Reading 2 has three choices');
 assert.equal(exam.sections[1].questionProfile.layout,'choices');
+{
+  const section=exam.sections[7],questions=rows(section);
+  assert.equal(section.audioPolicy.sharedPart,false);
+  const audioQuestions=questions.map((q,i)=>({...q,audioUrl:'/audio-'+i+'.mp3'}));
+  assert.equal(partAudioSegments({...section,instructionAudioUrl:''},audioQuestions).length,questions.length);
+  const markup=renderBuilder({data:state,exam,section});
+  assert.equal((markup.match(/data-field="audio"/g)||[]).length,questions.length+1,'Every question and section instruction have audio upload');
+}
 for(const section of exam.sections.slice(5,8)){
   assert.deepEqual(rows(section)[0].choices,['Ja','Nein']);
-  assert.deepEqual(partAudioSegments(section,rows(section)).map(s=>s.repeat),[1,2]);
+  assert.deepEqual(partAudioSegments(section,rows(section)).map(s=>s.repeat),section===exam.sections[7]?[1,2,2,2,2,2]:[1,2]);
 }
 assert.equal(exam.sections[8].questionProfile.layout,'free-response');
 assert.deepEqual(exam.sections[8].questionProfile.wordRange,[20,30]);
