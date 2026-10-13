@@ -65,6 +65,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Student writing tasks show no question number or automatically generated
+  “Schreiben Sie … Wörter” hint above the answer field. Preserve the authored
+  prompt, including any word limits it explicitly contains, and the word counter.
+
 - The total beside each skill is the sum of raw question maxima across all
   parts of that skill, including live editor changes. No weights, multipliers,
   normalized exam scales or per-question rounding. Examples contribute zero.

@@ -37,6 +37,13 @@ import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {writingFormScore} from '../src/domain/writing-form.js';
 import {compactBinaryChoices} from '../src/domain/question-display.js';
 import {renderQuestionHtml} from '../src/views/student.js';
+{
+  const html=renderQuestionHtml({id:'writing-clean',type:'writing',maxScore:10,title:'[b]Eigene Anleitung[/b]'},'Hallo',{id:'preview'},{singleQuestion:true,questionNumber:1,wordRange:[20,30]});
+  assert.doesNotMatch(html,/question-number|Schreiben Sie 20–30 Wörter/);
+  assert.match(html,/<strong class="text-bold">Eigene Anleitung<\/strong>/);
+  assert.match(html,/Hallo/);
+  assert.match(html,/word-count/);
+}
 
 for(const preview of [false,true]){
   const q={id:'reading-one',type:'single',title:'Aussage',choices:['Richtig','Falsch'],maxScore:1};

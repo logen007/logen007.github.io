@@ -71,7 +71,7 @@ assert.deepEqual(exam.sections.find(s=>s.name==='Đọc 4').questionProfile.choi
 assert.match(renderBuilder({data:state,exam,section:exam.sections.find(s=>s.name==='Đọc 4')}),/<select class="truong" id="correct-/);
 assert.match(htmlFor('Đọc 4'),/<select id="letter-[^"]+" class="truong"/);
 assert.match(htmlFor('Nghe 2'),/letter-table/);assert.equal((htmlFor('Nghe 2').match(/<select id="letter-/g)||[]).length,5);
-assert.match(htmlFor('Viết 1'),/20–30 Wörter/);assert.match(htmlFor('Viết 2'),/30–40 Wörter/);
+assert.doesNotMatch(htmlFor('Viết 1'),/Schreiben Sie 20–30 Wörter\./);assert.doesNotMatch(htmlFor('Viết 2'),/Schreiben Sie 30–40 Wörter\./);
 const grading=gradingDetailHtml({data:state,user:teacher,exam,attempt});
 assert.match(grading,/data-skill="Viết 1"/);assert.match(grading,/data-skill="Viết 2"/);assert.match(grading,/id="gradeOralScore"[^>]+max="25"/);
 const copy=duplicateExam(state,teacher,exam.id);
