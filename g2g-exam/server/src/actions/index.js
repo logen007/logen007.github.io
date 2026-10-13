@@ -11,7 +11,7 @@ import {saveOralScore} from './oral.js';
 import {saveExamAccess,listExamCodes,createExamCode,acknowledgePromotion} from './exam-access.js';
 import {startAttempt,saveAnswers,startPartAudio,completePartAudio,setAttemptSection,abandonAttempt,submitAttempt} from './attempts.js';
 import {saveManualGrade,publishAttemptResult,deliverResultEmail,suggestWritingGradeForAttempt} from './grading.js';
-import {updateSystemSettings,updateSmtpSecret,updateAiApiKey,testSmtp,getInfrastructureStatus,setUserRole,setTeacherByEmail} from './settings.js';
+import {updateSystemSettings,updateSmtpSecret,updateAiApiKey,retryFailedWritingAiJobs,testSmtp,getInfrastructureStatus,setUserRole,setTeacherByEmail} from './settings.js';
 
 export async function handleAction(user,name,data={}){
   switch(name){
@@ -50,6 +50,7 @@ export async function handleAction(user,name,data={}){
     case 'updateSystemSettings': return updateSystemSettings(user,data);
     case 'updateSmtpSecret': return updateSmtpSecret(user,data);
     case 'updateAiApiKey': return updateAiApiKey(user,data);
+    case 'retryFailedWritingAiJobs': return retryFailedWritingAiJobs(user);
     case 'testSmtp': return testSmtp(user,data);
     case 'getInfrastructureStatus': return getInfrastructureStatus(user,data);
     case 'setUserRole': return setUserRole(user,data);

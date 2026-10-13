@@ -102,9 +102,16 @@ export async function updateAiApiKey(user,{provider,apiKey}){
   const result=await setAiApiKey(provider,apiKey,user.id);
   // A new key can resolve a terminal provider failure.  Retry those papers now,
   // rather than making teachers wait for the scheduled recovery window.
-  const retried=await query(`UPDATE writing_ai_jobs SET status='queued',tries=0,last_error=NULL,available_at=now(),finished_at=NULL,updated_at=now() WHERE status='failed'`);
+  const retried=await retryFailedWritingAiJobs(user,{auditAction:false});
   await audit(user,'update_ai_api_key','settings',provider,{retriedJobs:retried.rowCount});
   return {...result,retriedJobs:retried.rowCount};
+}
+
+export async function retryFailedWritingAiJobs(user,{auditAction=true}={}){
+  if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được chạy lại bài lỗi AI.');
+  const retried=await query(`UPDATE writing_ai_jobs SET status='queued',tries=0,last_error=NULL,available_at=now(),finished_at=NULL,updated_at=now() WHERE status='failed'`);
+  if(auditAction)await audit(user,'retry_failed_writing_ai_jobs','writing_ai','failed',{retriedJobs:retried.rowCount});
+  return {retriedJobs:retried.rowCount,rowCount:retried.rowCount};
 }
 
 export async function testSmtp(user,{to}){
