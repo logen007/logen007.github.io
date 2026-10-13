@@ -1,4 +1,4 @@
-const validTabs=new Set(['general','access','email']);
+const validTabs=new Set(['general','access','email','advanced']);
 export const normalizeSettingsTab=value=>validTabs.has(value)?value:'general';
 export function settingsRouteTab(href){
   const url=new URL(href||'https://local.invalid/');
