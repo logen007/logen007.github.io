@@ -538,7 +538,9 @@ theme application must not wait for a network response to render the page.
   skip reduced motion, and stop updates when hidden or detached. No new requests.
   Skill labels and bar colors follow the animated displayed score through the
   shared gradeBand thresholds, then restore the exact final assessment.
-  Progress fills and assessment badges share pastel background tokens, with a
+  Progress fills use stronger mid-tone variants of the pastel assessment palette,
+  leaving badge backgrounds soft. The answer ring shares the excellent/failed
+  fill tokens for correct/wrong answers; unanswered stays neutral. Keep the
   short color transition as the displayed score crosses a grade threshold.
 
 - Header groups the student avatar, “Kết quả thi” with the actual exam level,
