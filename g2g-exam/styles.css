@@ -246,6 +246,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .exam-transition-waves { position:absolute; inset:0; z-index:1; pointer-events:none; }
 .exam-transition-waves i { position:absolute; left:var(--reveal-x); top:var(--reveal-y); width:calc(var(--reveal-radius) * 2); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle,transparent 8%,var(--wave-color,var(--brand-primary)) 30%,var(--wave-color,var(--brand-primary)) 66%,transparent 96%); animation:exam-power-wave 1500ms cubic-bezier(.22,.61,.36,1) both; }
 .exam-transition.is-leaving { opacity:0; }
+.exam-transition.is-covered::before { animation:none; opacity:1; }
 .exam-transition--exit .exam-transition-waves i { animation-direction:reverse; }
 @keyframes exam-white-fill { from { opacity:0; } to { opacity:1; } }
 @keyframes exam-power-wave { 0% { transform:translate(-50%,-50%) scale(.04); opacity:0; } 15% { opacity:.35; } 60% { opacity:.18; } 100% { transform:translate(-50%,-50%) scale(1.4); opacity:0; } }

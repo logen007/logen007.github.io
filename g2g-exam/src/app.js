@@ -124,7 +124,7 @@ const ui={
 repo.subscribe(next=>{
   data=next;
   if(!startupGate.isReady())return;
-  if(startingAttempt)return;
+  if(startingAttempt||submitBusy||timerBusy)return;
   if(ui.view==='exam'&&byId(next.attempts,ui.attemptId)?.status!==ATTEMPT_STATUS.IN_PROGRESS){
     ui.view='student-home';
     clearTimeout(realtimeRenderTimer);
@@ -563,6 +563,7 @@ async function submitCurrentExam(confirmed=false){
 }
 
 async function leaveExam(view,message){
+  clearTimeout(realtimeRenderTimer);
   stopActiveAudio();
   await withExamTransition(async covered=>{
     await covered;
