@@ -222,15 +222,15 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .exam-card-details { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-bottom:16px; }
 .exam-card-tags { display:flex; gap:6px; align-items:center; flex-shrink:0; }
 .exam-card-tags .nhan { background:#f0f1f3; color:#48515e; }
-.exam-provider[data-provider="GOETHE"] { background:#3949ab; color:#fff; }
-.exam-provider[data-provider="TELC"] { background:#007f86; color:#fff; }
-.exam-provider[data-provider="FID"] { background:#8e44ad; color:#fff; }
-.exam-level[data-level="A1"] { background:#c43d52; color:#fff; }
-.exam-level[data-level="A2"] { background:#b34e13; color:#fff; }
-.exam-level[data-level="B1"] { background:#007b59; color:#fff; }
-.exam-level[data-level="B2"] { background:#5364b8; color:#fff; }
-.exam-level[data-level="C1"] { background:#a12b77; color:#fff; }
-.exam-level[data-level="C2"] { background:#546479; color:#fff; }
+.exam-provider[data-provider="GOETHE"] { background:#0066cc; color:#fff; }
+.exam-provider[data-provider="TELC"] { background:#7047d6; color:#fff; }
+.exam-provider[data-provider="FID"] { background:#b52c83; color:#fff; }
+.exam-level[data-level="A1"] { background:#007ca8; color:#fff; }
+.exam-level[data-level="A2"] { background:#00806b; color:#fff; }
+.exam-level[data-level="B1"] { background:#c12f64; color:#fff; }
+.exam-level[data-level="B2"] { background:#8645b8; color:#fff; }
+.exam-level[data-level="C1"] { background:#405acb; color:#fff; }
+.exam-level[data-level="C2"] { background:#526781; color:#fff; }
 .the-de-new { position:absolute; top:var(--card-padding); right:var(--card-padding); display:inline-flex; align-items:center; min-height:26px; padding:4px 10px; border-radius:var(--pill); background:var(--brand-soft); color:var(--brand-text); font-size:12px; font-weight:600; line-height:1; }
 .the-de h3 { font-size:20px; line-height:1.4; height:2.8em; flex-shrink:0; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; margin:0 0 12px; font-weight:500; overflow-wrap:anywhere; }
 .the-de:has(.the-de-new) h3 { padding-right:48px; }
