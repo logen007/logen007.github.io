@@ -533,6 +533,9 @@ theme application must not wait for a network response to render the page.
 
 ## Student result detail
 
+- Pending score rows retain an empty neutral progress track, including Speaking
+  and the TELC oral block. Label “Chờ điểm”; never imply a zero score or verdict.
+
 - Omit the “Điểm từng phần” heading. Progress always uses the same grade-based
   palette across providers, independently of whether assessment badges are shown.
   Estimated scores use a compact gray rounded “Tạm tính” badge, not a text suffix;

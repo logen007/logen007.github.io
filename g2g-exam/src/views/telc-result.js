@@ -27,7 +27,7 @@ export function telcResultHtml(review,bar,skill){
   const block=(title,entry,max,minimum,children='')=>{
     const known=entry?.score!=null&&entry.max===max;
     const verdict=published&&known?`<span class="${entry.score>=minimum?'result-correct':'result-wrong'}">${entry.score>=minimum?'Đạt':'Chưa đạt'}</span>`:'';
-    return `<section class="the telc-result-block"><h2>${title}</h2>${known?bar(title,entry,{hideLabel:true,showBand:false,temporary:Boolean(entry.temporary)}):`<p class="phu-de">Chờ điểm · /${max}</p>`}<div class="telc-result-threshold"><span>Mốc đạt: ${minimum}/${max}</span>${verdict}</div>${children}</section>`;
+    return `<section class="the telc-result-block"><h2>${title}</h2>${known?bar(title,entry,{hideLabel:true,showBand:false,temporary:Boolean(entry.temporary)}):bar(title,null,{hideLabel:true,pendingMax:max})}<div class="telc-result-threshold"><span>Mốc đạt: ${minimum}/${max}</span>${verdict}</div>${children}</section>`;
   };
   return block('Khối thi viết',written,TELC_SCORING.writtenMax,TELC_SCORING.writtenPass,
     `<div class="telc-result-children">${writtenKeys.map(key=>row(key)).join('')}</div>`)+
