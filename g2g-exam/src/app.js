@@ -1389,16 +1389,6 @@ function bindGrading(){
     gradeAutosave=createGradeAutosave(()=>saveGrade(false),text=>{const status=app.querySelector('[data-grade-save-status]');if(status)status.textContent=text;});
     app.querySelectorAll('.manual-score,#gradeOralScore,#gradeFeedback').forEach(input=>input.addEventListener('input',()=>gradeAutosave.change()));
   }
-  app.querySelectorAll('[data-action="suggest-writing-grade"]').forEach(button=>button.onclick=async()=>{
-    if(!await flushBuilderDraft())return;
-    const attempt=byId(data.attempts,ui.gradeAttemptId);
-    if(!attempt||repo.mode!=='api')return;
-    button.disabled=true;const original=button.textContent;button.textContent='Đang tạo…';
-    try{
-      await repo.call('suggestWritingGrade',{attemptId:attempt.id,questionId:button.dataset.questionId});
-      await repo.reload();data=await repo.getState();render();
-    }catch(error){notify(error?.message||'Không tạo được gợi ý AI.');button.disabled=false;button.textContent=original;}
-  });
   app.querySelectorAll('[data-action="grading-neighbor"]').forEach(b=>b.onclick=async()=>{
     if(!await flushBuilderDraft())return;
     const current=byId(data.attempts,ui.gradeAttemptId),neighbors=gradingNeighbors(data,user,current);

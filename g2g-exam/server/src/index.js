@@ -22,6 +22,7 @@ import {submitExpiredAttempts} from './actions/attempts.js';
 import {r2Settings} from './r2-settings.js';
 import {registerMediaDeliveryRoutes} from './media-routes.js';
 import {APP_VERSION} from '../../src/release.js';
+import {startWritingAiWorker} from './writing-ai-queue.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const publicDir=path.resolve(here,'../../public');
@@ -125,8 +126,9 @@ const port=Number(process.env.PORT||8080);
 await app.listen({host:'0.0.0.0',port});
 const stopMediaGc=startMediaGarbageCollector({uploadDir,logger:app.log});
 const stopTrashGc=startTrashGarbageCollector({uploadDir,logger:app.log});
+const stopWritingAi=startWritingAiWorker({logger:app.log});
 let expiryBusy=false;
 const expiryTimer=setInterval(async()=>{if(expiryBusy)return;expiryBusy=true;try{await submitExpiredAttempts();}catch(error){app.log.error(error);}finally{expiryBusy=false;}},1000);
 expiryTimer.unref();
-const stop=async()=>{try{stopMonitorHistory();r2Media?.stop();stopMediaGc();stopTrashGc();clearInterval(expiryTimer);await app.close();await pool.end();}finally{process.exit(0);}};
+const stop=async()=>{try{stopMonitorHistory();r2Media?.stop();stopMediaGc();stopTrashGc();stopWritingAi();clearInterval(expiryTimer);await app.close();await pool.end();}finally{process.exit(0);}};
 process.on('SIGTERM',stop);process.on('SIGINT',stop);

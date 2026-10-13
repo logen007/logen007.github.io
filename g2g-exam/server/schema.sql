@@ -67,6 +67,22 @@ CREATE INDEX IF NOT EXISTS attempts_student_idx ON attempts(student_id);
 CREATE INDEX IF NOT EXISTS attempts_exam_idx ON attempts(exam_id);
 CREATE INDEX IF NOT EXISTS attempts_status_idx ON attempts(status);
 
+CREATE TABLE IF NOT EXISTS writing_ai_jobs (
+  id bigserial PRIMARY KEY,
+  attempt_id text NOT NULL REFERENCES attempts(id) ON DELETE CASCADE,
+  question_id text NOT NULL,
+  status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','processing','completed','failed')),
+  tries integer NOT NULL DEFAULT 0,
+  available_at timestamptz NOT NULL DEFAULT now(),
+  started_at timestamptz,
+  finished_at timestamptz,
+  last_error text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(attempt_id,question_id)
+);
+CREATE INDEX IF NOT EXISTS writing_ai_jobs_pending_idx ON writing_ai_jobs(status,available_at);
+
 CREATE TABLE IF NOT EXISTS exam_codes (
   id text PRIMARY KEY,
   exam_id text NOT NULL REFERENCES exams(id) ON DELETE CASCADE,

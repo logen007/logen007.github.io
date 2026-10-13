@@ -7,6 +7,7 @@ import {codeHash,checkCodeRate} from './exam-access.js';
 import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
 import {examDeadlineMs,submissionTiming} from '../../../src/domain/exam-clock.js';
 import {letterAnswerError} from '../../../src/domain/letter-answers.js';
+import {queueWritingAiJobs} from '../writing-ai-queue.js';
 
 export async function startAttempt(user,{examId,restart=false,code}){
   if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
@@ -233,6 +234,7 @@ export async function submitAttempt(user,{attemptId}){
   const publicData={...attempt.public_data,status,completion,...timing,updatedAt:at};
   const privateData={...attempt.private_data,autoScore,sectionScores,scoringVersion:2,manualScores:{},totalScore,result:resultText,feedback:'',updatedAt:at};
   await client.query(`UPDATE attempts SET status=$2,public_data=$3::jsonb,private_data=$4::jsonb,updated_at=now() WHERE id=$1`,[attemptId,status,JSON.stringify(publicData),JSON.stringify(privateData)]);
+  if(hasManual)await queueWritingAiJobs(client,{...attempt,public_data:publicData,private_data:privateData},exam,questions);
   await audit(user,'submit_attempt','attempt',attemptId,{status},client);
   return {status};
   });
