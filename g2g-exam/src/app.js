@@ -567,7 +567,7 @@ async function leaveExam(view,message,{danger=false}={}){
   stopActiveAudio();
   await withExamTransition(async covered=>{
     await covered;
-    ui.view=view;render();window.scrollTo(0,0);
+    ui.view=view;await render();window.scrollTo(0,0);
   },null,{exit:true,message,danger});
 }
 
@@ -746,13 +746,13 @@ function render(){
         app.setAttribute('aria-busy','true');
         viewLoadPromise=(scope==='full'?repo.ensureFull():repo.reload()).then(async()=>{data=await repo.getState();})
           .catch(error=>{notify(error.message);return false;})
-          .then(result=>{viewLoadPromise=null;app.removeAttribute('aria-busy');if(result!==false)render();});
+          .then(result=>{viewLoadPromise=null;app.removeAttribute('aria-busy');if(result!==false)return render();});
       }
       if(isMaster(user)&&ui.view==='admin'&&ui.adminTab==='dashboard'){
         const cached=readDashboardCache(user.id);
         if(cached){const live=data;try{data=cached.value;adminView(cached.at);bindGlobal();bindViewSpecific();}finally{data=live;}}
       }
-      return;
+      return viewLoadPromise;
     }
   }
   clearSplitReading();

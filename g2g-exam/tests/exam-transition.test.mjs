@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const transitionCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 const appSource=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+assert.ok(appSource.includes('ui.view=view;await render();window.scrollTo(0,0)'));
+assert.ok(appSource.includes('if(result!==false)return render();'));
+assert.ok(appSource.includes('return viewLoadPromise;'));
 assert.ok(appSource.includes('onStarted:id=>beginAttempt(null,false,button,id)'));
 assert.ok(appSource.includes('await beginAttempt(null,false,null,resumed.id)'));
 assert.ok(appSource.includes("performance.getEntriesByType('navigation')[0]?.type==='reload'"));
@@ -87,6 +90,18 @@ try{
   assert.equal(overlay.removed,undefined,'Overlay stays until exam data is ready');
   assert.equal(app.inert,true);
   finishLoading();await slow;
+  assert.equal(overlay.removed,true);
+  let finishDestination;
+  const slowExit=withExamTransition(async covered=>{
+    await covered;
+    await new Promise(resolve=>{finishDestination=resolve;});
+  },null,{exit:true});
+  for(let i=0;i<20;i++)await Promise.resolve();
+  assert.ok(overlay.classList.has('is-covered'));
+  assert.equal(overlay.classList.has('is-revealing'),false,'Slow destination stays hidden by white');
+  assert.equal(overlay.removed,undefined);
+  finishDestination();await slowExit;
+  assert.ok(overlay.classList.has('is-revealing'));
   assert.equal(overlay.removed,true);
   await assert.rejects(withExamTransition(async()=>{throw Error('network');}),/network/);
   assert.equal(app.inert,false);assert.equal(overlay.removed,true);

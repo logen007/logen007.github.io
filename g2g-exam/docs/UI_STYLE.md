@@ -326,6 +326,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   than being removed abruptly; logo, wave and white layer finish together.
   Coverage must paint before replacing the page; start revealing only after the
   destination has rendered, never at the same moment coverage begins.
+  Exit awaits the destination render's state-loading promise (including recursive
+  scope hydration), not just the initial synchronous render call.
   Exit logo/text share the wave's 1.5-second linear fade envelope; do not
   reuse the delayed entry caption, which leaves the logo visible after the wave.
   Entry retains its original primary-color animation.
