@@ -127,7 +127,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   passage, shared score and distractors inside a single rounded frame, with
   a distractor textarea (one option per nonempty line, with a live count).
   All content textareas have a shared minimum of 100px, including compact/mobile forms;
-  the auto-sized exam title is exempt. Letter-matching question text uses a single-line input.
+  the auto-sized exam title is exempt. Letter-matching and true/false question text
+  uses a single-line input; long section instructions retain their textarea.
   larger writing areas keep their larger minimum through --textarea-min-height.
   Preserve existing answer text, distractors, scores and question IDs.
   New production attempts shuffle the bank and remap keys in their saved snapshot;

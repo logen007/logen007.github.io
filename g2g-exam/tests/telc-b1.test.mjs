@@ -70,6 +70,14 @@ const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teach
 globalThis.sessionStorage={getItem:()=>null};
 const {exam,rows}=telcFixture(state,teacher);
 {
+  const part=exam.sections.find(s=>s.skill==='Nghe'&&s.questionProfile?.layout==='true-false');
+  assert.ok(part);
+  const html=renderBuilder({data:state,exam,section:part});
+  assert.match(html,/<input[^>]*type="text"[^>]*data-field="title"/);
+  assert.doesNotMatch(html,/<textarea[^>]*data-field="title"/);
+  assert.match(renderBuilder({data:state,exam,section:part,readOnly:true}),/<input[^>]*data-field="title"[^>]*disabled/);
+}
+{
   const local=structuredClone(state),copy=local.exams.find(e=>e.id===exam.id),part=copy.sections[4];
   const questions=part.questionIds.map(id=>local.questions.find(q=>q.id===id));
   const keys=questions.map(q=>q.correctAnswer),passage=JSON.stringify(part.gapPassage);
