@@ -1069,7 +1069,8 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .compact-score input::-webkit-inner-spin-button,.compact-score input::-webkit-outer-spin-button { appearance:none; margin:0; }
 .compact-score span { flex:none; }
 .gap-score-row { display:flex; gap:8px; align-items:center; }
-.gap-score-row > .gap-option { flex:1; min-width:0; }
+.gap-score-row > .gap-option { flex:1; min-width:0; grid-template-columns:9ch minmax(0,1fr); gap:8px; }
+.gap-score-row > .gap-option > b { white-space:nowrap; font-size:14px; font-weight:500; }
 .gap-options-editor fieldset > .compact-score { grid-column:1/-1; }
 .letter-group-table td:last-child { padding-right:0; }
 .letter-group-table small { color:var(--phu); white-space:nowrap; }

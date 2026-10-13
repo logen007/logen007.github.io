@@ -373,7 +373,7 @@ assert.match(gapBuilder,/data-section-image/,'Every section prompt supports imag
 assert.match(gapBuilder,/sectionImageMaxWidth/);
 assert.match(gapBuilder,/data-gap-text/,'Reading 4 keeps its passage editor');
 const reading5Builder=renderBuilder({data:state,exam,section:gapBank});
-assert.match(reading5Builder,/data-gap-title/,'Reading 5 keeps its title editor');
+assert.doesNotMatch(reading5Builder,/data-gap-title/,'Gap passages omit the title editor');
 assert.match(reading5Builder,/data-section-image/,'Reading 5 keeps its image editor');
 assert.doesNotMatch(gapBuilder,/Chỗ trống/);
 assert.ok(gapBuilder.includes('<legend>21. · {a}</legend>'));
