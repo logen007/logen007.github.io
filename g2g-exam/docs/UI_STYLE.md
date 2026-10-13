@@ -533,6 +533,9 @@ theme application must not wait for a network response to render the page.
 
 ## Student result detail
 
+- TELC block titles are the left label in the score row, with score and badge
+  on the right and the track directly below. No separate heading above that row.
+
 - Published TELC block verdicts are shared rounded badges immediately to the
   right of their score, above the track; never a separate line below it.
   Preserve binary Đạt/Chưa đạt labels during counter animation.
