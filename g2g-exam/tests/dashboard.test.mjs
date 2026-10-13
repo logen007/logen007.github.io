@@ -40,6 +40,10 @@ const providerCounts=dashboardInfrastructureHtml({resources:{},writingAi:{succes
 assert.match(providerCounts,/>Groq <b>4<\/b><\/i>/);
 assert.match(providerCounts,/>Gemini <b>2<\/b><\/i>/);
 assert.match(providerCounts,/>Grok <b>0<\/b><\/i>/);
+const mistralCounts=dashboardInfrastructureHtml({resources:{},writingAi:{providerPreference:'mistral',successfulByProvider:{mistral:4}}});
+assert.match(mistralCounts,/class="dashboard-ai-provider is-active"[^>]*>Mistral <b>4<\/b>/);
+const mistralAccuracy=dashboardHtml({data:{users:[],exams:[],attempts:[{aiWritingAccuracy:{w:{part:'Viết 2',provider:'mistral',accurate:true}}}]},infrastructure:{resources:{}}});
+assert.match(mistralAccuracy,/class="dashboard-ai-model">Mistral<\/i>/);
 assert.match(providerCounts,/<h2>Chấm bài AI<\/h2><span class="dashboard-ai-providers"/);
 assert.doesNotMatch(providerCounts,/Ổn định|<b>AI<\/b>/);
 assert.match(accuracyHtml,/data-action="edit-exam" data-id="a1"/);

@@ -15,6 +15,7 @@ import {normalizeLayout,validateLayout} from '../../../src/settings/layout.js';
 import {normalizeButtonTheme,validateButtonTheme} from '../../../src/settings/palette.js';
 import {createStateCache} from '../state-cache.js';
 import {getDataRevision} from '../db.js';
+import {AI_PROVIDER_IDS,normalizeAiProvider} from '../../../src/domain/ai-providers.js';
 
 const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||''));
 const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||''));
@@ -25,7 +26,7 @@ let infrastructurePending=null;
 const queueCache=createStateCache({revision:getDataRevision,ttlMs:5000,maxEntries:1});
 
 export function writingQueueState(settings,ai,jobs,failures){
-  const byStatus={},successfulByProvider={groq:0,gemini:0,grok:0};
+  const byStatus={},successfulByProvider=Object.fromEntries(AI_PROVIDER_IDS.map(id=>[id,0]));
   for(const row of jobs.rows){
     const group=byStatus[row.status]??={count:0,models:[]};
     group.count+=Number(row.count||0);
@@ -36,8 +37,8 @@ export function writingQueueState(settings,ai,jobs,failures){
     jobs:byStatus,
     successfulByProvider,
     failures:failures.rows.map(row=>({id:String(row.id),attemptId:row.attempt_id,error:row.last_error||'AI chấm bài thất bại.',at:row.updated_at})),
-    providerPreference:['groq','gemini','grok'].includes(settings.ai?.providerPreference)?settings.ai.providerPreference:'groq',
-    providers:{groq:Boolean(ai.groq?.configured),gemini:Boolean(ai.gemini?.configured),grok:Boolean(ai.grok?.configured)},
+    providerPreference:normalizeAiProvider(settings.ai?.providerPreference),
+    providers:Object.fromEntries(AI_PROVIDER_IDS.map(id=>[id,Boolean(ai[id]?.configured)])),
   };
 }
 
@@ -108,7 +109,7 @@ function cleanSettings(input={}){
   Object.assign(settings.theme,normalizeLayout(settings.theme),normalizeButtonTheme(settings.theme));
   settings.auth.allowedDomain=String(settings.auth.allowedDomain||'').trim().toLowerCase().replace(/^@/,'').slice(0,160);
   settings.auth.teacherEmails=normalizeTeacherEmails(settings.auth.teacherEmails);
-  settings.ai.providerPreference=['groq','gemini','grok'].includes(settings.ai.providerPreference)?settings.ai.providerPreference:'groq';
+  settings.ai.providerPreference=normalizeAiProvider(settings.ai.providerPreference);
   settings.smtp.port=Math.max(1,Math.min(65535,Number(settings.smtp.port||587)));
   settings.smtp.timeoutMs=Math.max(3000,Math.min(120000,Number(settings.smtp.timeoutMs||20000)));
   if(!settings.general.systemName||!/^https?:\/\//.test(settings.general.publicUrl))throw appError(400,'Thông tin hệ thống không hợp lệ.');

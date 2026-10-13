@@ -1,8 +1,9 @@
 import {query,appError} from './db.js';
 import {encrypt,decrypt} from './settings-secrets.js';
+import {AI_PROVIDER_IDS} from '../../src/domain/ai-providers.js';
 
-const keyFor=provider=>provider==='groq'?'ai_groq_api_key':provider==='gemini'?'ai_gemini_api_key':provider==='grok'?'ai_grok_api_key':null;
-const envFor=provider=>provider==='groq'?'GROQ_API_KEY':provider==='gemini'?'GEMINI_API_KEY':'XAI_API_KEY';
+const keyFor=provider=>AI_PROVIDER_IDS.includes(provider)?`ai_${provider}_api_key`:null;
+const envFor=provider=>provider==='grok'?'XAI_API_KEY':`${provider.toUpperCase()}_API_KEY`;
 
 export async function setAiApiKey(provider,value,userId){
   const key=keyFor(provider),secret=String(value||'').trim();
@@ -13,18 +14,18 @@ export async function setAiApiKey(provider,value,userId){
 }
 
 export async function aiApiKeyStatus(){
-  const result=await query(`SELECT key,updated_at FROM secrets WHERE key=ANY($1::text[])`,[['ai_groq_api_key','ai_gemini_api_key','ai_grok_api_key']]);
+  const result=await query(`SELECT key,updated_at FROM secrets WHERE key=ANY($1::text[])`,[AI_PROVIDER_IDS.map(keyFor)]);
   const saved=new Map(result.rows.map(row=>[row.key,row.updated_at]));
-  return Object.fromEntries(['groq','gemini','grok'].map(provider=>{
+  return Object.fromEntries(AI_PROVIDER_IDS.map(provider=>{
     const key=keyFor(provider),updatedAt=saved.get(key)||null;
     return [provider,{configured:Boolean(updatedAt||process.env[envFor(provider)]),stored:Boolean(updatedAt),updatedAt,source:updatedAt?'settings':process.env[envFor(provider)]?'environment':null}];
   }));
 }
 
 export async function aiApiKeys(){
-  const result=await query('SELECT key,value_enc FROM secrets WHERE key=ANY($1::text[])',[['ai_groq_api_key','ai_gemini_api_key','ai_grok_api_key']]);
+  const result=await query('SELECT key,value_enc FROM secrets WHERE key=ANY($1::text[])',[AI_PROVIDER_IDS.map(keyFor)]);
   const saved=new Map(result.rows.map(row=>[row.key,row.value_enc]));
-  return Object.fromEntries(['groq','gemini','grok'].map(provider=>{
+  return Object.fromEntries(AI_PROVIDER_IDS.map(provider=>{
     const encrypted=saved.get(keyFor(provider));
     return [provider+'ApiKey',(encrypted?decrypt(encrypted):'')||process.env[envFor(provider)]||''];
   }));

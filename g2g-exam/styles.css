@@ -719,10 +719,10 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-ai-queue { box-shadow:inset 0 3px 0 var(--brand-primary); }
 .dashboard-ai-metrics--compact { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .dashboard-ai-queue>.dashboard-section-heading>.dashboard-ai-providers { display:flex; flex-wrap:nowrap; gap:4px; min-width:0; }
-.dashboard-ai-providers .dashboard-ai-provider { gap:4px; white-space:nowrap; }
+.dashboard-ai-providers .dashboard-ai-provider { gap:4px; white-space:nowrap; min-width:0; flex-wrap:wrap; justify-content:center; }
 .dashboard-ai-provider b { font-size:inherit; font-variant-numeric:tabular-nums; }
 .dashboard-ai-provider.is-active { color:#111; background:var(--brand-primary); box-shadow:0 1px 2px color-mix(in srgb,#111 20%,transparent); }
-@media(max-width:700px){.dashboard-ai-metrics:not(.dashboard-ai-metrics--compact){grid-template-columns:1fr;}.dashboard-ai-metrics--compact{gap:8px;}.dashboard-ai-metrics--compact>div{min-width:0;padding:12px 10px;align-content:start;}.dashboard-ai-metrics--compact b{font-size:18px;}.dashboard-ai-queue>.dashboard-section-heading>.dashboard-ai-providers{margin-left:auto;max-width:100%;}.dashboard-ai-providers .dashboard-ai-provider{padding:4px 6px;font-size:12px;}.dashboard-ai-accuracy li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;}.dashboard-ai-accuracy-meta{gap:4px;}.dashboard-ai-part,.dashboard-ai-model{padding:3px 6px;}}
+@media(max-width:700px){.dashboard-ai-metrics:not(.dashboard-ai-metrics--compact){grid-template-columns:1fr;}.dashboard-ai-metrics--compact{gap:8px;}.dashboard-ai-metrics--compact>div{min-width:0;padding:12px 10px;align-content:start;}.dashboard-ai-metrics--compact b{font-size:18px;}.dashboard-ai-queue>.dashboard-section-heading>.dashboard-ai-providers{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);width:100%;margin-left:auto;max-width:100%;}.dashboard-ai-providers .dashboard-ai-provider{padding:4px 6px;font-size:12px;}.dashboard-ai-accuracy li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;}.dashboard-ai-accuracy-meta{gap:4px;}.dashboard-ai-part,.dashboard-ai-model{padding:3px 6px;}}
 .dashboard-capacity-rings .resource-ring { gap:10px; }
 .dashboard-capacity-rings .resource-ring-plot { width:64px; height:64px; }
 .dashboard-capacity-rings .resource-ring strong { font-size:12px; }

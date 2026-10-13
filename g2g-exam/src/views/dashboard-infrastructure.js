@@ -1,4 +1,5 @@
 import {esc,fmtDate} from '../ui/format.js';
+import {AI_PROVIDERS,normalizeAiProvider} from '../domain/ai-providers.js';
 import {iconHtml} from '../ui/icons.js';
 import {connectionStatusHtml} from './connection-status.js';
 import {monitorChart,monitorRangePicker} from './monitor-chart.js';
@@ -14,8 +15,8 @@ const count=value=>Number(value||0).toLocaleString('vi-VN');
 
 function dashboardAiQueueHtml(ai,overview={}){
   const jobs=ai?.jobs||{},queued=Number(jobs.queued?.count||0),processing=Number(jobs.processing?.count||0),waiting=queued+processing,done=Number(jobs.completed?.count||0),failed=Number(jobs.failed?.count||0);
-  const preferred=['groq','gemini','grok'].includes(ai?.providerPreference)?ai.providerPreference:'groq';
-  const providerPills=['groq','gemini','grok'].map(id=>`<i class="dashboard-ai-provider ${preferred===id?'is-active':''}" title="Số bài chấm thành công">${id==='groq'?'Groq':id==='gemini'?'Gemini':'Grok'} <b>${ai?.successfulByProvider?.[id]==null?'—':count(ai.successfulByProvider[id])}</b></i>`).join('');
+  const preferred=normalizeAiProvider(ai?.providerPreference);
+  const providerPills=AI_PROVIDERS.map(({id,label})=>`<i class="dashboard-ai-provider ${preferred===id?'is-active':''}" title="Số bài chấm thành công">${label} <b>${ai?.successfulByProvider?.[id]==null?'—':count(ai.successfulByProvider[id])}</b></i>`).join('');
   const failures=ai?.failures||[];
   const accuracy=overview.aiAccuracy||[];
   const accuracyHtml=accuracy.length?`<div class="dashboard-ai-accuracy"><strong>Độ chính xác AI</strong><ul>${accuracy.map(item=>`<li>${item.examId?`<button type="button" class="dashboard-ai-exam" data-action="edit-exam" data-id="${esc(item.examId)}" title="Mở đề thi: ${esc(item.examName)}">${esc(item.examName)}</button>`:`<span class="dashboard-ai-exam">${esc(item.examName)}</span>`}<span class="dashboard-ai-accuracy-meta"><i class="dashboard-ai-part">${esc(item.part)}</i><i class="dashboard-ai-model">${esc(item.provider)}</i><b>${count(item.correct)}/${count(item.total)}</b></span></li>`).join('')}</ul></div>`:'';

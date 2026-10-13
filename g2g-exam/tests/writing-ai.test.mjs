@@ -7,7 +7,7 @@ const queue=writingQueueState({ai:{providerPreference:'gemini'}},{},{rows:[
   {status:'completed',model:null,count:1},{status:'failed',model:'groq',count:3},
   {status:'queued',model:'gemini',count:1}
 ]},{rows:[]});
-assert.deepEqual(queue.successfulByProvider,{groq:4,gemini:2,grok:0});
+assert.deepEqual(queue.successfulByProvider,{groq:4,gemini:2,grok:0,mistral:0});
 assert.equal(queue.jobs.completed.count,7,'Grouped providers must preserve the total successful-job count');
 assert.deepEqual(queue.jobs.completed.models,['groq','gemini']);
 assert.equal(queue.jobs.failed.count,3);
@@ -41,4 +41,29 @@ const preferredGrok=await suggestWritingGrade({rule:'Lời chào 1đ',answer:'Ha
   return {ok:true,status:200,json:async()=>({choices:[{message:{content:'{"suggestedScore":1,"findings":[]}'}}]})};
 }});
 assert.equal(preferredGrok.model,'grok');
+const mistralSuccess={ok:true,status:200,json:async()=>({choices:[{message:{content:'{"suggestedScore":8,"findings":[{"met":true,"text":"Đủ ý"}]}'}}]})};
+const mistral=await suggestWritingGrade({task:'München',rule:'Ý chính 10đ',answer:'Hallo',maxScore:10,mistralApiKey:'test-mistral',providerPreference:'mistral',fetchImpl:async(url,options)=>{
+  assert.equal(url,'https://api.mistral.ai/v1/chat/completions');
+  assert.equal(options.headers.authorization,'Bearer test-mistral');
+  const body=JSON.parse(options.body);
+  assert.equal(body.model,'mistral-small-latest');
+  assert.deepEqual(body.response_format,{type:'json_object'});
+  assert.match(body.messages[0].content,/München/);
+  return mistralSuccess;
+}});
+assert.equal(mistral.model,'mistral');assert.equal(mistral.suggestedScore,8);
+for(const preferred of ['groq','mistral']){
+  const urls=[];
+  const result=await suggestWritingGrade({rule:'Ý chính 10đ',answer:'Hallo',maxScore:10,groqApiKey:'g',mistralApiKey:'m',providerPreference:preferred,fetchImpl:async url=>{
+    urls.push(url);return urls.length===1?{ok:false,status:429,json:async()=>({})}:mistralSuccess;
+  }});
+  assert.equal(urls.length,2);
+  assert.equal(result.model,preferred==='mistral'?'groq':'mistral','Quota fallback works in both directions');
+}
+await assert.rejects(suggestWritingGrade({rule:'Ý 10đ',answer:'Hallo',maxScore:10,mistralApiKey:'bad',fetchImpl:async()=>({ok:false,status:401,json:async()=>({})})}),error=>error.statusCode===503&&/Mistral từ chối/.test(error.message));
+await assert.rejects(suggestWritingGrade({rule:'Ý 10đ',answer:'Hallo',maxScore:10,mistralApiKey:'m',fetchImpl:async()=>({ok:true,json:async()=>({choices:[{message:{content:'invalid'}}]})})}),error=>error.statusCode===502);
+const mistralQueue=writingQueueState({ai:{providerPreference:'mistral'}},{mistral:{configured:true}},{rows:[{status:'completed',model:'mistral',count:4},{status:'failed',model:'mistral',count:2}]},{rows:[]});
+assert.equal(mistralQueue.providerPreference,'mistral');
+assert.equal(mistralQueue.providers.mistral,true);
+assert.equal(mistralQueue.successfulByProvider.mistral,4);
 console.log('Writing AI: rubric required, bounded structured suggestions and configurable provider fallback passed.');
