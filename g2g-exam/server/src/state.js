@@ -1,6 +1,7 @@
 import {resolveAccountNames} from '../../src/domain/account-name.js';
 import {normalizeAudioFlow} from '../../src/domain/part-audio.js';
 import {isPrefilledQuestion} from '../../src/domain/question-display.js';
+import {manualGroups} from '../../src/domain/manual-grading.js';
 import {query,withTx,audit,appError} from './db.js';
 import {deleteTrashedExam} from './trash-delete.js';
 import {publicWritingRows,writingFormScore,normalizeWritingRows} from './writing-form.js';
@@ -14,7 +15,19 @@ function publicQuestion(data){const q=structuredClone(data||{});if(q.type==='wri
 async function rows(sql,args=[]){return (await query(sql,args)).rows;}
 async function allowedExamIds(user){if(user.role==='master'||user.role==='teacher')return null;return new Set();}
 function rowEntity(r){const item={...(r.data||{}),id:r.id,...(r.owner_id?{ownerId:r.owner_id}:{}),...(r.status?{status:r.status}:{}),...(typeof r.locked==='boolean'?{locked:r.locked}:{})};if(item.writingFormVersion===1){item.rubric=normalizeWritingRows(item.rubric);item.maxScore=writingFormScore(item.rubric);}return item;}
-function attemptEntity(r,includePrivate=false){return {id:r.id,...(r.public_data||{}),...(includePrivate?(r.private_data||{}):{})};}
+function attemptEntity(r,includePrivate=false){return {id:r.id,...(r.exam_id?{examId:r.exam_id}:{}),...(r.public_data||{}),...(includePrivate?(r.private_data||{}):{})};}
+function inferredAiWritingAccuracy(attempt,exam,questions){
+  if(Object.keys(attempt.aiWritingAccuracy||{}).length)return attempt.aiWritingAccuracy;
+  const suggestions=attempt.aiWritingSuggestions||{},scores=attempt.manualScores||{},accuracy={};
+  for(const group of manualGroups(exam,questions)){
+    if(group.questions.length!==1)continue;
+    const question=group.questions[0],suggestion=suggestions[question.id],teacherScore=Number(scores[group.key]);
+    if(suggestion?.status!=='completed'||!Number.isFinite(Number(suggestion.suggestedScore))||!Number.isFinite(teacherScore))continue;
+    const suggestedScore=Number(suggestion.suggestedScore);
+    accuracy[question.id]={questionId:question.id,part:group.key,provider:String(suggestion.model||'unknown'),suggestedScore,teacherScore,accurate:Math.abs(suggestedScore-teacherScore)<0.000001,comparedAt:attempt.updatedAt||attempt.submittedAt||null};
+  }
+  return accuracy;
+}
 
 export async function loadState(user){
   const state={schemaVersion:6,revision:1,users:[],questions:[],exams:[],attempts:[],gradingRequests:[],notifications:[],auditLog:[]};
@@ -65,6 +78,14 @@ export async function loadState(user){
     rows(`SELECT attempt_id,question_id,status FROM writing_ai_jobs WHERE status IN ('queued','processing') ORDER BY created_at,id`),
   ]);
   state.attempts=ars.filter(r=>!allowed||allowed.has(r.exam_id)).map(r=>attemptEntity(r,true));
+  const examsById=new Map(state.exams.map(exam=>[exam.id,exam])),questionsById=new Map(state.questions.map(question=>[question.id,question]));
+  for(const attempt of state.attempts){
+    const snapshot=attempt.examSnapshot,exam=snapshot||examsById.get(attempt.examId);
+    if(!exam)continue;
+    const questions=snapshot?.questionSnapshot||questionsById;
+    const accuracy=inferredAiWritingAccuracy(attempt,exam,questions);
+    if(Object.keys(accuracy).length)attempt.aiWritingAccuracy=accuracy;
+  }
   const queueTotal=writingJobs.length;
   writingJobs.forEach((job,index)=>{
     const attempt=state.attempts.find(item=>item.id===job.attempt_id),suggestion=attempt?.aiWritingSuggestions?.[job.question_id];
