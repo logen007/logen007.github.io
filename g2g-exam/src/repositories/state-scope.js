@@ -11,3 +11,7 @@ export function viewStateScope(view,tab){
   if(view==='admin'&&['dashboard','grades'].includes(tab))return 'summary';
   return ['student-home','student-results','student-attempt-detail'].includes(view)||(view==='admin'&&['exams','settings'].includes(tab))?'catalog':'full';
 }
+
+export function needsStateLoad(scope,current){
+  return scope==='full'?['catalog','summary'].includes(current):scope==='catalog'?current!=='catalog':scope==='summary'&&current==='catalog';
+}

@@ -417,6 +417,10 @@ theme application must not wait for a network response to render the page.
   unchanged cards. Keep open disclosures and user-selected CPU ranges.
 - Coalesce infrastructure requests, reuse responses for 30 seconds, refresh the
   visible infrastructure at most once per minute; hidden tabs do not poll.
+- Entering dashboard from catalog loads summary immediately, never on the next
+  polling tick. Catalog data cannot overwrite the dashboard snapshot. Authenticated
+  warm startup displays that snapshot before summary loads; AI accuracy does not
+  wait for infrastructure metrics.
 
 - Only CPU uses a time-series chart with its own range picker; RAM, disk and R2
   retain their ring/stat layouts. UpCloud-style CPU presentation approved on

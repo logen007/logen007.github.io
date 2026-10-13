@@ -1,6 +1,7 @@
 import {clone,normalizeState} from '../core.js';
 import {ExamOutbox,openExamStore} from './exam-outbox.js';
 import {initialStateScope} from './state-scope.js';
+import {readDashboardCache} from '../ui/dashboard-cache.js';
 
 const API=String(globalThis.G2G_API_BASE||'/api').replace(/\/$/,'');
 
@@ -41,7 +42,12 @@ export class ApiRepository{
     this.pollScope=initialStateScope(this.user);
     const route=new URL(globalThis.location?.href||'https://local.invalid/').searchParams;
     if(this.user?.role==='student'&&route.get('view')==='exam')this.pollingAttempt=route.get('attempt');
-    if(this.user)await this.reload();
+    // Only the dashboard may render a cached projection before fresh state.
+    // Leave repository data empty/catalog so normal view loading requests summary
+    // immediately; cached display data must never enter transactions.
+    const cachedDashboard=this.user?.role==='master'&&this.pollScope==='summary'&&(route.get('tab')||'dashboard')==='dashboard'&&readDashboardCache(this.user.id);
+    if(cachedDashboard)this.state=normalizeState({scope:'catalog'});
+    else if(this.user)await this.reload();
     this.startPolling();
     return this;
   }

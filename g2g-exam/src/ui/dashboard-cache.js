@@ -4,7 +4,7 @@ export function readDashboardCache(owner){
   try{const row=JSON.parse(sessionStorage.getItem(key)||'null');return row?.owner===owner&&Date.now()-row.at<maxAge?row:null;}catch{return null;}
 }
 export function writeDashboardCache(owner,data){
-  if(!owner)return;
+  if(!owner||data.scope==='catalog')return;
   const pick=(row,fields)=>Object.fromEntries(fields.filter(field=>row[field]!==undefined).map(field=>[field,row[field]]));
   const value={
     users:(data.users||[]).map(row=>pick(row,['id','role','name','picture','createdAt','status'])),

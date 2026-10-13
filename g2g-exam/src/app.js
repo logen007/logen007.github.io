@@ -37,7 +37,7 @@ import {bindImagePaste} from './ui/image-paste.js';
 let gradeAutosave=null,gradePublishing=false;
 window.addEventListener('beforeunload',event=>{if(gradeAutosave?.pending||gradePublishing){event.preventDefault();event.returnValue='';}});
 import {createRepository} from './repository.js';
-import {viewStateScope} from './repositories/state-scope.js';
+import {viewStateScope,needsStateLoad} from './repositories/state-scope.js';
 import {settingsRouteTab,writeSettingsRoute} from './settings/route.js';
 import {unansweredExamQuestions} from './views/student.js';
 import {
@@ -730,7 +730,7 @@ function render(){
   if(user&&repo.mode==='api'){
     const scope=viewStateScope(ui.view,ui.adminTab);
     repo.setPollingScope(scope,{attemptId:ui.view==='exam'?ui.attemptId:null});
-    if((scope==='full'&&['catalog','summary'].includes(data.scope))||(scope==='catalog'&&data.scope!=='catalog')){
+    if(needsStateLoad(scope,data.scope)){
       if(!viewLoadPromise){
         app.setAttribute('aria-busy','true');
         viewLoadPromise=(scope==='full'?repo.ensureFull():repo.reload()).then(async()=>{data=await repo.getState();})
