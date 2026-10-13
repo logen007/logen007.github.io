@@ -13,7 +13,13 @@ import {headingMatchBuilder} from './heading-match-builder.js';
 import {readingBlocksEditor} from '../../ui/reading-blocks.js';
 import {letterTableBuilder,bindLetterTableBuilder} from './letter-table-builder.js';
 
-const instructionPlaceholder='Nhập đề bài. Dùng [b]chữ đậm[/b] (Cmd/Ctrl B), [i]chữ nghiêng[/i] (Cmd/Ctrl I), [u]gạch chân[/u] (Cmd/Ctrl U); [box]nội dung[/box] đóng khung chữ; [img] chèn ảnh. Ô điền dùng {a}, {b}… và {z} cho ví dụ. Chọn chữ rồi dùng phím tắt để định dạng.';
+const instructionPlaceholder=`Nhập hướng dẫn đề bài…
+[b]chữ đậm[/b] · Cmd/Ctrl B
+[i]chữ nghiêng[/i] · Cmd/Ctrl I
+[u]gạch chân[/u] · Cmd/Ctrl U
+[box]nội dung[/box] → đóng khung chữ
+[img] → đặt ảnh đã tải lên tại đây
+Trong ô soạn đoạn điền khuyết: {a}, {b}… là vị trí ô trả lời, không phải đáp án đúng; {z} là ví dụ nếu phần thi hỗ trợ.`;
 
 const icons={
   add:iconHtml('plus'),
