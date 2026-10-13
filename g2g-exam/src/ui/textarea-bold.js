@@ -27,32 +27,4 @@ export function handleTextareaShortcut(event){
 
 export function bindTextareaBold(doc=document){
   doc.addEventListener('keydown',handleTextareaShortcut);
-  const button=doc.createElement('button');
-  button.type='button';button.className='icon-btn textarea-bold-button';
-  button.textContent='B';button.title='In đậm đoạn đã chọn';
-  button.setAttribute('aria-label','In đậm đoạn đã chọn');button.hidden=true;
-  doc.body.appendChild(button);
-  let field=null;
-  const position=()=>{
-    if(!field?.isConnected||field.disabled||field.readOnly||field.selectionStart===field.selectionEnd){button.hidden=true;return;}
-    const rect=field.getBoundingClientRect();
-    button.hidden=rect.bottom<0||rect.top>doc.documentElement.clientHeight;
-    button.style.top=`${Math.max(4,rect.top-42)}px`;
-    button.style.left=`${Math.max(4,Math.min(rect.right-40,doc.documentElement.clientWidth-44))}px`;
-  };
-  doc.addEventListener('focusin',event=>{
-    if(event.target===button)return;
-    // Email template source is not rendered by the exam text formatter.
-    field=event.target.matches?.('textarea:not(#sHtml):not(#sText)')?event.target:null;
-    position();
-  });
-  doc.addEventListener('selectionchange',position);
-  doc.addEventListener('select',position,true);
-  doc.addEventListener('input',position);
-  doc.addEventListener('scroll',position,true);
-  globalThis.addEventListener('resize',position);
-  // Preserve the native selection when tapping the toolbar, including iPhone.
-  button.addEventListener('pointerdown',event=>event.preventDefault());
-  button.addEventListener('click',()=>{if(field?.isConnected)applyBoldSelection(field);position();});
-  new MutationObserver(()=>{if(field&&!field.isConnected){field=null;button.hidden=true;}}).observe(doc.body,{childList:true,subtree:true});
 }
