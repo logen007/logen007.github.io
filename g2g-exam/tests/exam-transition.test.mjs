@@ -60,7 +60,11 @@ try{
   assert.deepEqual(delays,[1100,1100,400,500]);
   assert.equal(delays.slice(1).reduce((sum,ms)=>sum+ms,0),2000);
   assert.equal(overlay.style['--wave-color'],undefined,'Submission keeps primary color');
+  delays.length=0;
   await withExamTransition(async covered=>{await covered;},null,{exit:true,danger:true,message:'Đã hủy bài thi'});
+  assert.deepEqual(delays,[1100,1100,400]);
+  assert.equal(overlay.removed,true,'Cancellation ends when the red wave disappears');
+  assert.equal(app.inert,false);
   assert.equal(overlay.style['--wave-color'],'var(--do)');
   assert.doesNotMatch(transitionCss,/\.exam-transition--exit[^{}]*\{[^}]*duration:/);
   assert.equal(app.inert,false);assert.equal(overlay.removed,true);

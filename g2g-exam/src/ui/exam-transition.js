@@ -41,6 +41,8 @@ export async function withExamTransition(start,trigger,{exit=false,message='Đã
     await wait(reduced?(exit?0:100):1100);
     const [result]=await Promise.all([loading,wait(reduced?(exit?0:100):(exit?400:1400))]);
     if(!result.ok)throw result.error;
+    // Cancellation ends with its 1500ms red wave, without a trailing overlay fade.
+    if(exit&&danger)return;
     overlay.classList.add('is-leaving');
     await wait(reduced?0:500);
   }finally{
