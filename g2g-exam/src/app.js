@@ -526,7 +526,7 @@ function startExamTimer(attempt,exam,sectionIndex){
       const unsynced=Object.keys(repo.outbox?.draft.pending||{}).length>0;
       const result=await act(()=>submitAttemptFast(attempt.id),null,{rerender:false});
       if(result){
-        await leaveExam('submitted','Đã nộp bài');
+        await leaveExam('submitted','Hết giờ — Đã nộp bài');
         if(unsynced)notify('Hết giờ khi còn đáp án chưa đồng bộ. Máy chủ chỉ nhận các đáp án đã lưu đúng hạn; bản trên máy vẫn được giữ lại.');
         if(byId(data.attempts,attempt.id)?.status===ATTEMPT_STATUS.INCOMPLETE){timerBusy=false;return;}
         const modal=document.createElement('div');modal.className='hop-chon';
@@ -582,7 +582,7 @@ function confirmAbandonExam(){
       if(result){
         ui.attemptId=null;
         data=await repo.getState();
-        await leaveExam('student-home','Trở về danh sách đề');
+        await leaveExam('student-home','Đã hủy bài thi');
         notify('Đã hủy bài thi. Các câu trả lời đã được xóa vĩnh viễn.');
       }
       if(!result){render();window.scrollTo(0,0);}
