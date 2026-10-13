@@ -182,6 +182,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   Short letter-matching questions use an unframed transparent row: number at left,
   answer selector, score and actions at right; a full-width single-line question
   input below. Keep the answer label accessible but visually hidden. No divider.
+  Image-based binary questions likewise group image, score and actions beside
+  the number, then full-width text and a compact pair of answers; no outer frame.
+  Image hover previews fit the image, cap at 336px by 240px, sit above the trigger,
+  and suppress duplicate native title hints. Empty upload controls retain paste hints.
   Heading matching uses a correct-answer text input beside each passage's score
   and remove/add controls, plus one distractor textarea (one option per line).
   Do not show a separate lettered option editor. Preserve old answer text and

@@ -70,6 +70,15 @@ const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teach
 globalThis.sessionStorage={getItem:()=>null};
 const {exam,rows}=telcFixture(state,teacher);
 {
+  const part=structuredClone(exam.sections.find(s=>s.questionProfile?.layout==='true-false'));
+  part.skill='Đọc';part.skillKey='reading';part.questionProfile.audio=false;part.questionProfile.questionImage=true;
+  const html=renderBuilder({data:state,exam,section:part});
+  assert.match(html,/binary-question-toolbar/);
+  assert.match(html,/binary-question-text/);
+  assert.match(html,/data-question-card-image/);
+  assert.match(html,/data-field="correct"/);
+}
+{
   const part=exam.sections[2];
   const html=renderBuilder({data:state,exam,section:part});
   assert.match(html,/letter-question-toolbar/);

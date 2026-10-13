@@ -121,7 +121,7 @@ assert.equal(tooltip.textContent,'Bấm lần 1 để chọn vùng dán\nBấm l
 assert.equal(tooltip.className,'button-tooltip button-tooltip--image');
 assert.match(css,/\.button-tooltip--image\s*\{\s*white-space:pre-line/);
 tooltipEvents.focusin({target:tooltipTarget(false)});
-assert.equal(tooltip.style.top,'146px');assert.equal(tooltip.className,'button-tooltip');
+assert.equal(tooltip.style.top,'148px');assert.equal(tooltip.className,'button-tooltip');
 const {imageWidthHelp,imageWidthInput}=await import('../src/ui/image-width.js');
 const widthTarget=tooltipTarget(false);
 const oldGet=widthTarget.getAttribute;
@@ -140,4 +140,7 @@ previewTarget.querySelector=()=>({getAttribute:()=>'/uploads/photo.jpg',src:'/up
 tooltipEvents.focusin({target:previewTarget});
 assert.equal(tooltip.preview.src,'/uploads/photo.jpg');
 assert.equal(tooltip.preview.alt,'Ảnh đề bài');
+assert.equal(tooltip.style.top,'148px');
+assert.equal(tooltip.textContent,'');
+assert.equal(previewTarget.getAttribute('title'),undefined);
 tooltipEvents.keydown({key:'Escape'});
