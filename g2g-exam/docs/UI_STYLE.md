@@ -411,10 +411,6 @@ theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
 
-- Small unnumbered progress rings beside refreshing section headings follow the
-  existing summary, AI queue and infrastructure schedules. They add no requests,
-  stop repainting while hidden and hold full while a request is in flight.
-
 - Show the same-account session snapshot immediately while loading fresh dashboard
   data. Retain it up to 24 hours and clear it on logout; never cache answers,
   credentials or full exam content. Patch changed DOM nodes without rebuilding

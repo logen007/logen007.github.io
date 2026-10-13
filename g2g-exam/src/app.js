@@ -81,7 +81,6 @@ import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
 import {readCachedInfrastructure,refreshInfrastructure,setInfrastructureOwner,clearInfrastructureCache} from './settings/api.js';
 import {readDashboardCache,writeDashboardCache,clearDashboardCache,patchDashboard} from './ui/dashboard-cache.js';
-import {setDashboardCycle,startDashboardProgress} from './ui/dashboard-progress.js';
 import {isScoredWritingField,writingFormScore,addWritingRow,removeWritingRow} from './domain/writing-form.js';
 import {readWritingRow} from './ui/writing-form.js';
 import {readExamAnswers,revealUnansweredQuestion} from './ui/exam-answers.js';
@@ -93,9 +92,6 @@ const app=document.getElementById('app');
 const toast=document.getElementById('toast');
 bindImagePaste(document,{notify,confirmReplace:apply=>new Promise(resolve=>confirmAction('Thay ảnh hiện tại bằng ảnh vừa dán?',()=>{apply();resolve();},{confirmLabel:'Thay ảnh',onCancel:resolve}))});
 const repo=await createRepository();
-repo.onPollCycle=(delay,busy)=>setDashboardCycle('summary',delay,busy);
-setDashboardCycle('summary',Math.max(0,(repo.nextPollAt||Date.now()+15000)-Date.now()));
-startDashboardProgress(app);
 let data=await repo.getState();
 let user=await repo.getCurrentUser();
 let authenticatedUser=user;
@@ -1521,13 +1517,11 @@ else{
 }
 if(repo.mode==='api')startDashboardRefresh({
   intervalMs:60000,idleIntervalMs:60000,
-  onCycle:(delay,busy)=>setDashboardCycle('infrastructure',delay,busy),
   isActive:()=>isMaster(user)&&ui.view==='admin'&&ui.adminTab==='dashboard'&&!infrastructureLoading&&!document.getElementById('modal'),
   refresh:()=>refreshInfrastructure({summaryOnly:false}),
   onResult:result=>{if(JSON.stringify(result)===JSON.stringify(ui.infrastructure))return;ui.infrastructure=result;ui.infrastructureError='';render();},
 });
 if(repo.mode==='api')startDashboardRefresh({
-  onCycle:(delay,busy)=>setDashboardCycle('ai',delay,busy),
   isActive:()=>isMaster(user)&&ui.view==='admin'&&ui.adminTab==='dashboard'&&Boolean(ui.infrastructure)&&!document.getElementById('modal'),
   refresh:()=>repo.call('getWritingAiQueueStatus'),
   onResult:writingAi=>{
