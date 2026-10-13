@@ -2,6 +2,18 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {iconHtml} from '../src/ui/icons.js';
+import {sectionPromptHtml} from '../src/views/student.js';
+{
+  const section={instruction:'Before [IMG] After [img]',instructionImageUrl:'/uploads/article.jpg',instructionImageMaxWidth:500};
+  const html=sectionPromptHtml(section);
+  assert.ok(html.indexOf('Before')<html.indexOf('<img'));
+  assert.ok(html.indexOf('<img')<html.indexOf('After'));
+  assert.equal((html.match(/<img /g)||[]).length,1);
+  assert.doesNotMatch(html,/\[img\]/i);
+  assert.match(html,/max-width:500px/);
+  assert.doesNotMatch(sectionPromptHtml({...section,instructionImageUrl:''}),/<img|\[img\]/i);
+  assert.ok(sectionPromptHtml({...section,instruction:'Before'}).indexOf('<img')>0);
+}
 import {examHtml,studentExamCardHtml,submittedHtml,expiredHtml,answerPresent} from '../src/views/student.js';
 const originalStorage=globalThis.sessionStorage;
 globalThis.sessionStorage={getItem:()=>null};

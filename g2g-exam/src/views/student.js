@@ -66,7 +66,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Kết thúc':'Abgeben'):'Weiter';
   const splitHeadings=splitLayout&&sec.questionProfile?.layout==='heading-match';
-const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBlocks?.length||splitHeadings?`<section class="exam-instruction">${sec.instruction?`<div><p>${instructionTextHtml(sec.instruction)}</p></div>`:''}${sec.instructionImageUrl&&sec.questionProfile?.layout!=='inline-gaps'?`<img ${imageMaxWidth(sec.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(sec.instructionImageMaxWidth)}px"`:''} src="${esc(sec.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:''}${readingBlocksHtml(sec)}${splitHeadings?headingOptionsHtml(sec):''}</section>`:'';
+const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.readingBlocks?.length||splitHeadings?`<section class="exam-instruction">${sectionPromptHtml(sec)}${readingBlocksHtml(sec)}${splitHeadings?headingOptionsHtml(sec):''}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
   const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
@@ -134,6 +134,17 @@ function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
 }
 
 const questionImageUrl=q=>String((Array.isArray(q.instructionBlocks)?q.instructionBlocks[0]?.imageUrl:'')||q.instructionImageUrl||'').trim();
+
+export function sectionPromptHtml(section){
+  const text=String(section.instruction||''),hasMarker=/\[img\]/i.test(text);
+  const image=section.instructionImageUrl?`<img ${imageMaxWidth(section.instructionImageMaxWidth)?`style="max-width:${imageMaxWidth(section.instructionImageMaxWidth)}px"`:''} src="${esc(section.instructionImageUrl)}" alt="Abbildung zur Aufgabenstellung">`:'';
+  let inserted=false;
+  const content=text.split(/(\[img\])/gi).map(part=>{
+    if(/^\[img\]$/i.test(part)){if(inserted)return '';inserted=true;return image;}
+    return part?`<div><p>${instructionTextHtml(part)}</p></div>`:'';
+  }).join('');
+  return content+(!hasMarker&&section.questionProfile?.layout!=='inline-gaps'?image:'');
+}
 
 function questionStimulusHtml(q,{hideImage=false}={}){
   const blocks=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length?q.instructionBlocks:[{text:q.prompt||'',imageUrl:q.instructionImageUrl||''}];
