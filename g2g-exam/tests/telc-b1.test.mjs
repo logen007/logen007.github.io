@@ -141,9 +141,10 @@ selection.selectedOptions=[{dataset:{letter:'f',shortText:'Anzeige'},textContent
 syncLetterPicker(selection);assert.equal(trigger.textContent,'Anzeige');
 assert.match(letterAnswerControl(rows(gap3)[0],0,'letter-select',{optionTexts:['Anzeige']}),/data-short-text="Anzeige"/);
 const compactOptions={nativeText:true,number:28,optionTexts:['nett','wiedersehen','obwohl']};
-assert.match(letterAnswerControl(rows(gap3)[0],null,'letter-select',compactOptions),/width:4ch/);
-assert.match(letterAnswerControl(rows(gap3)[0],0,'letter-select',compactOptions),/width:9ch/);
-assert.match(letterAnswerControl(rows(gap3)[0],1,'letter-select',compactOptions),/width:16ch/);
+assert.match(letterAnswerControl(rows(gap3)[0],null,'letter-select',compactOptions),/aria-hidden="true">28<\/span>/);
+assert.match(letterAnswerControl(rows(gap3)[0],0,'letter-select',compactOptions),/aria-hidden="true">a\. nett<\/span>/);
+assert.match(letterAnswerControl(rows(gap3)[0],1,'letter-select',compactOptions),/aria-hidden="true">b\. wiedersehen<\/span>/);
+assert.doesNotMatch(letterAnswerControl(rows(gap3)[0],1,'letter-select',compactOptions),/style="width:/);
 assert.doesNotMatch(letterAnswerControl(rows(gap3)[0],0,'letter-select',{optionTexts:['A sentence too long for a compact inline field']}),/data-short-text/);
 assert.deepEqual(exam.sections[2].questionProfile.choices,[...'ABCDEFGHIJKL','X']);
 {

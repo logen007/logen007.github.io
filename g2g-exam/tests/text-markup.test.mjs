@@ -202,6 +202,7 @@ for(const path of ['../src/views/student.js','../src/views/builder.js','../src/v
 assert.match(css,/\.dieu-huong-thi \.nut \{ min-width:80px/);
 assert.match(css,/\.dieu-huong-thi \.nut \{ min-width:112px; min-height:44px/);
 assert.match(css,/\.letter-picker-dialog \{ width:calc\(100% - 24px\); max-width:720px/);
+assert.match(css,/\.gap-article\.writing-paper \{ width:calc\(100% - 12px\); max-width:760px; margin:8px auto 16px;/);
 assert.match(css,/\.inline-gap \{ --gap-control-height:32px;[^}]*min-height:var\(--gap-control-height\);[^}]*margin:4px;[^}]*line-height:1;/);
 assert.match(css,/\.inline-gap-value \{ position:relative;[^}]*align-items:center; min-height:var\(--gap-control-height\)/);
 assert.match(css,/@media\(pointer:coarse\) \{ \.inline-gap \{ --gap-control-height:36px;/);
