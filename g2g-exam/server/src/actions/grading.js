@@ -64,7 +64,9 @@ export async function suggestWritingGradeForAttempt(user,{attemptId,questionId})
   if(!['grading','ready'].includes(attempt.status))throw appError(409,'Bài không ở trạng thái chấm.');
   const question=(await questionMap(exam)).get(questionId);
   if(!question||(question.type!=='writing')||question.writingFormVersion===1)throw appError(400,'Chỉ hỗ trợ gợi ý cho bài viết tự do.');
-  const suggestion=await suggestWritingGrade({rule:question.aiGradingRules,answer:attempt.public_data?.answers?.[questionId],maxScore:question.maxScore});
+  const section=(exam.sections||[]).find(item=>(item.questionIds||[]).includes(questionId))||{};
+  const task=[section.instruction,section.additionalInstructions?.map(item=>item.text).join('\n'),question.instruction,question.prompt,question.instructionBlocks?.map(item=>item.text).join('\n')].filter(Boolean).join('\n\n');
+  const suggestion=await suggestWritingGrade({task,level:exam.level,rule:question.aiGradingRules,answer:attempt.public_data?.answers?.[questionId],maxScore:question.maxScore});
   const aiWritingSuggestions={...(attempt.private_data?.aiWritingSuggestions||{}),[questionId]:{...suggestion,createdAt:now()}};
   await query(`UPDATE attempts SET private_data=private_data||$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify({aiWritingSuggestions})]);
   await audit(user,'suggest_writing_grade','attempt',attemptId,{questionId,suggestedScore:suggestion.suggestedScore});

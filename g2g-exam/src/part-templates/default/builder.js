@@ -143,7 +143,7 @@ function mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile}){
 
 function freeResponseHtml(q,{defaultScore,readOnly}){
   const rule=String(q.aiGradingRules||q.title||'').trim();
-  return `<article class="goethe-free-response ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Quy tắc chấm AI · tùy chọn" aria-label="Quy tắc chấm AI" ${readOnly?'disabled':''}>${esc(blank(rule))}</textarea>${scoreControls(q,defaultScore,readOnly,{writingStyle:true})}</article>`;
+  return `<article class="goethe-free-response ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Chỉ ghi tiêu chí + điểm từng ý. VD: Lý do du lịch 3đ; hỏi KS rẻ 3đ; hỏi tham quan 3đ; chào đầu/cuối 1đ. Chấm theo ý, chấp nhận diễn đạt tương đương; lỗi nhẹ không trừ riêng." aria-label="Quy tắc chấm AI" ${readOnly?'disabled':''}>${esc(blank(rule))}</textarea>${scoreControls(q,defaultScore,readOnly,{writingStyle:true})}</article>`;
 }
 
 function instructionHtml(section,choiceProfile,readOnly){
