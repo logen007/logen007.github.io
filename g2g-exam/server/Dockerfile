@@ -30,6 +30,7 @@ COPY src/domain/account-name.js /app/src/domain/account-name.js
 COPY src/domain/gradebook.js /app/src/domain/gradebook.js
 COPY src/domain/result-summary.js /app/src/domain/result-summary.js
 COPY src/domain/attempt-review.js /app/src/domain/attempt-review.js
+COPY src/domain/provisional-result.js /app/src/domain/provisional-result.js
 COPY src/domain/question-score.js /app/src/domain/question-score.js
 COPY src/domain/exam-clock.js /app/src/domain/exam-clock.js
 COPY src/domain/exam-last-edit.js /app/src/domain/exam-last-edit.js

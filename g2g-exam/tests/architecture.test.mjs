@@ -140,7 +140,8 @@ test('Part template A1 Nghe 1 đã tách module và bỏ legacy question bank',(
 test('Builder định tuyến editor theo templateType thay vì hard-code Goethe A1',()=>{
   const builder=read('src/views/builder.js'),registry=read('src/part-templates/index.js'),app=read('src/app.js');
   assert.ok(builder.includes('renderPartBuilder(section.templateType'));
-  assert.equal(builder.includes("provider==='GOETHE'"),false);
+  // Brand-label formatting is not editor routing; retain the routing guard.
+  assert.equal(builder.replace("exam.provider==='GOETHE'?'Goethe':exam.provider",'providerLabel').includes("provider==='GOETHE'"),false);
   assert.equal(builder.includes('goetheA1BuilderHtml'),false);
   assert.ok(registry.includes('renderPartBuilder'));assert.ok(registry.includes('bindPartBuilder'));
   assert.ok(fs.existsSync(path.join(root,'src/part-templates/default/builder.js')));

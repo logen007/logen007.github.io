@@ -567,6 +567,10 @@ async function leaveExam(view,message,{danger=false}={}){
   stopActiveAudio();
   await withExamTransition(async covered=>{
     await covered;
+    if(view==='submitted'&&byId(data.attempts,ui.attemptId)?.status!==ATTEMPT_STATUS.INCOMPLETE){
+      try{ui.review=await loadStudentReview(ui.attemptId);view='student-attempt-detail';}
+      catch{/* Submission succeeded; keep the receipt and its review link on read failure. */}
+    }
     ui.view=view;await render();window.scrollTo(0,0);
   },null,{exit:true,message,danger});
 }
@@ -1556,3 +1560,12 @@ if(repo.mode==='api')startReleaseMonitor({canReload:()=>
 import {shareStudentProfile,bindStudentName} from './views/student-profile-card.js';
 import {loadStudentReview as loadStudentReviewData} from './controllers/student-review.js';
 import {bindAttemptResult} from './views/attempt-result.js';
+import {provisionalResultHtml} from './views/provisional-result.js';
+import {startResultRefresh} from './controllers/result-refresh.js';
+if(repo.mode==='api')startResultRefresh({
+  isActive:()=>isStudent(user)&&ui.view==='student-attempt-detail'&&Boolean(ui.review?.provisional),
+  getReview:()=>ui.review,
+  refresh:attemptId=>repo.call('getAttemptReview',{attemptId,progressOnly:true}),
+  onResult:provisional=>{ui.review={...ui.review,provisional};const slot=app.querySelector('[data-provisional-result]');if(slot)slot.innerHTML=provisionalResultHtml(provisional);},
+  onPublished:async id=>{const review=await loadStudentReview(id);if(isStudent(user)&&ui.view==='student-attempt-detail'&&ui.review?.attempt.id===id){ui.review=review;render();}},
+});

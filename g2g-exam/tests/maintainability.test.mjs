@@ -5,6 +5,7 @@ import {scoreQuestion} from '../src/domain/question-score.js';
 import {calculateAutomaticScores} from '../src/domain/attempts.js';
 import {loadStudentReview} from '../src/controllers/student-review.js';
 import {buildAttemptReview} from '../src/domain/attempt-review.js';
+import {provisionalResult} from '../src/domain/provisional-result.js';
 
 const read=file=>fs.readFileSync(new URL('../'+file,import.meta.url),'utf8');
 // Both runtimes must retain one owner for grading arithmetic.
@@ -38,7 +39,7 @@ assert.equal(await loadStudentReview({repo:{mode:'api',call:async(name,args)=>{a
 await assert.rejects(loadStudentReview({repo:{mode:'api',call:async()=>{throw new Error('offline');}},attemptId:'mine'}),/offline/);
 
 // Exercise the actual server handler with a DB double, without a live database.
-const context=vm.createContext({buildAttemptReview,query:()=>{throw new Error('Unexpected database access');},appError:(statusCode,message)=>Object.assign(new Error(message),{statusCode})});
+const context=vm.createContext({buildAttemptReview,provisionalResult,query:()=>{throw new Error('Unexpected database access');},appError:(statusCode,message)=>Object.assign(new Error(message),{statusCode})});
 vm.runInContext(read('server/src/actions/attempt-review.js').replace(/^import .*;\n/gm,'').replace('export async function','async function'),context);
 for(const missing of [true,false]){
   let calls=0;
@@ -55,3 +56,12 @@ for(const status of ['published','ready','grading','submitted']){
   assert.equal(review.score?.feedback??null,status==='published'?'Private feedback':null);
 }
 console.log('Maintainability: shared scoring, review loading, ownership, frozen snapshots and publication privacy passed.');
+for(const status of ['grading','published','in_progress','incomplete']){
+  let calls=0;
+  const row={student_id:student.id,status,public_data:{...attempt,status:'published'},private_data:{examSnapshot:snapshot,feedback:'PRIVATE'}};
+  const progress=await context.getAttemptReview(student,{attemptId:'mine',progressOnly:true},{runQuery:async()=>++calls===1?{rowCount:1,rows:[row]}:{rows:[]}});
+  assert.equal(progress.status,status);
+  assert.equal(Boolean(progress.provisional),status==='grading');
+  assert.doesNotMatch(JSON.stringify(progress),/answers|correctAnswer|PRIVATE|questionSnapshot/);
+}
+await assert.rejects(context.getAttemptReview({id:'other'},{attemptId:'mine',progressOnly:true},{runQuery:async()=>({rowCount:1,rows:[{student_id:'student'}]})}),e=>e.statusCode===404);

@@ -149,7 +149,9 @@ try{
   await test('Submission screen uses the concise approved message',()=>{
     const html=submittedHtml();
     assert.match(html,/<h1>Đã nộp bài<\/h1>/);
-    assert.match(html,/Khi giáo viên chấm xong, điểm số sẽ được thông báo qua email và hiển thị tại trang kết quả\./);
+    assert.match(html,/Điểm tạm tính có tại trang kết quả/);
+    assert.match(html,/Kết quả chính thức sẽ có sau khi giáo viên chấm và công bố/);
+    assert.match(html,/data-action="student-attempt-detail"/);
     assert.match(html,/class="vong thanh-cong"/);
     for(const removed of ['ĐÃ NỘP BÀI THÀNH CÔNG','Đang chờ kết quả','Khi có kết quả','Bài thi đã được ghi nhận'])assert.ok(!html.includes(removed));
   });

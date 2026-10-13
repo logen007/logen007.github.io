@@ -2,6 +2,7 @@ import {canonicalSkill} from './gradebook.js';
 import {examQuestionNumbers} from './question-numbering.js';
 import {isPrefilledQuestion} from './question-display.js';
 import {resultSummary} from './result-summary.js';
+import {provisionalResult} from './provisional-result.js';
 
 // A read-only projection shared by local mode and the authenticated review API.
 // Never send grading keys or private feedback before publication.
@@ -11,6 +12,7 @@ export function buildAttemptReview({exam={},questions=[],attempt={},privateData=
   const map=new Map(questions.map(q=>[q.id,q]));
   const scoredIds=section=>(section.questionIds||[]).filter(id=>map.has(id)&&!isPrefilledQuestion(map.get(id))&&map.get(id).type!=='speaking');
   return {
+    provisional:provisionalResult(exam,questions,attempt,privateData),
     attempt:{id:attempt.id,status:attempt.status,examTitle:attempt.examTitle||exam.title,
       studentName:student.name||attempt.studentName,studentPicture:student.picture||'',
       provider:exam.provider,level:exam.level,attemptNo:attempt.attemptNo,
@@ -18,7 +20,7 @@ export function buildAttemptReview({exam={},questions=[],attempt={},privateData=
     sections:(exam.sections||[]).map((section,sectionIndex)=>({name:section.name,
       skill:canonicalSkill(section.questionProfile?.scoringSkill||section.skillKey||section.skill||section.name),
       questions:scoredIds(section).map(id=>map.get(id)).map((q,index)=>({
-        id:q.id,number:numbers.get(q.id),title:q.title||q.prompt||'',type:q.type||'',maxScore:q.maxScore,
+        id:q.id,number:numbers.get(q.id),title:q.aiGradingRules&&q.title===q.aiGradingRules?q.prompt||'':q.title||q.prompt||'',type:q.type||'',maxScore:q.maxScore,
         answer:attempt.answers?.[q.id],
         correct:published&&q.writingFormVersion!==1?q.correctAnswer:null,
         pairs:q.type==='matching'?(q.pairs||[]).map(pair=>[pair[0],published?pair[1]:null]):[],

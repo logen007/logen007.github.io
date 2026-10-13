@@ -47,3 +47,4 @@ const root={querySelectorAll:s=>s==='[data-result-tab]'?tabs:[],querySelector:s=
 bindAttemptResult(root,{review});tabs[1].onclick();assert.equal(panels['#result-panel-reading'].hidden,false);assert.equal(panels['#result-panel-overview'].hidden,true);
 tabs[1].onkeydown({key:'Home',preventDefault(){}});assert.equal(tabs[0].focused,true);assert.equal(panels['#result-panel-overview'].hidden,false);
 console.log('Student results: projection, publication privacy, counts, escaping, skill tabs, keyboard and private sharing passed.');
+await import('./provisional-result.test.mjs');
