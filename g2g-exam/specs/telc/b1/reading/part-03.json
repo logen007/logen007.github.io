@@ -6,6 +6,7 @@
   "questionLimit": 10,
   "template": "GENERIC",
   "questionProfile": {
-    "defaultScore": 2.5
+    "defaultScore": 2.5,
+    "choices": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "X"]
   }
 }

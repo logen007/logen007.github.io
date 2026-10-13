@@ -1,5 +1,10 @@
 import {esc} from './format.js';
 
+export function selectedLetterLabel(option,fullSelection=false){
+  const text=option?.textContent||'—',short=option?.dataset?.shortText;
+  return fullSelection?text:short||option?.dataset?.letter||text;
+}
+
 export function letterPickerOptions(select){
   return [...select.options].map(option=>`<button type="button" class="letter-picker-option" data-value="${esc(option.value)}" aria-pressed="${option.selected}" ${option.disabled?'disabled':''}>${esc(option.value===''?'Auswahl löschen':option.textContent)}</button>`).join('');
 }
@@ -8,7 +13,7 @@ export function syncLetterPicker(select){
   const trigger=select.parentElement?.querySelector('[data-letter-picker]');
   if(!trigger)return;
   const selected=select.selectedOptions[0];
-  trigger.textContent=(select.dataset?.fullSelection==='true'?selected?.textContent:selected?.dataset.letter||selected?.textContent)||'—';
+  trigger.textContent=selectedLetterLabel(selected,select.dataset?.fullSelection==='true');
   trigger.dataset.answered=String(select.value!=='');
   trigger.setAttribute('aria-label',`${select.getAttribute('aria-label')}: ${selected?.textContent||'—'}`);
 }

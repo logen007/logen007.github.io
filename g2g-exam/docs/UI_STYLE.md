@@ -159,7 +159,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   are 56×32px (36px high on touch screens), with pill corners and compact padding.
   Reuse the same chevron at 12px, positioned 6px from the right.
   Inline gap menus show the letter plus the full sentence when opened; the
-  closed control shows only the letter (or question number when unanswered).
+  closed control shows selected answer text up to 24 characters, otherwise its
+  letter (or question number when unanswered).
   Long-sentence choices open in a full-width mobile dialog (12px side gutters),
   with wrapping text, scrollable choices, clear and close actions; desktop caps
   the dialog at 720px. Do not rely on the narrow native iPhone select menu.

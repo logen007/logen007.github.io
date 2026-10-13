@@ -105,6 +105,20 @@ selection.selectedOptions=[{dataset:{},textContent:'1'}];selection.value='';
 syncLetterPicker(selection);assert.equal(trigger.textContent,'1');assert.equal(trigger.dataset.answered,'false');
 selection.dataset={};selection.value='0';selection.selectedOptions=[{dataset:{letter:'a'},textContent:'a. The complete selected heading'}];
 syncLetterPicker(selection);assert.equal(trigger.textContent,'a','Other inline gap pickers remain compact');
+selection.selectedOptions=[{dataset:{letter:'f',shortText:'Anzeige'},textContent:'f. Anzeige'}];
+syncLetterPicker(selection);assert.equal(trigger.textContent,'Anzeige');
+assert.match(letterAnswerControl(rows(gap3)[0],0,'letter-select',{optionTexts:['Anzeige']}),/data-short-text="Anzeige"/);
+assert.doesNotMatch(letterAnswerControl(rows(gap3)[0],0,'letter-select',{optionTexts:['A sentence too long for a compact inline field']}),/data-short-text/);
+assert.deepEqual(exam.sections[2].questionProfile.choices,[...'ABCDEFGHIJKL','X']);
+{
+  const legacy=structuredClone(state),part=legacy.exams.find(e=>e.id===exam.id).sections[2];
+  part.questionProfile.choices=[...'ABCDEFGHIJ','X'];
+  const question=legacy.questions.find(q=>q.id===part.questionIds[0]);
+  question.choices=[...'ABCDEFGHIJ','X'];question.correctAnswer=10;
+  ensureExamMatchesConfiguredSpec(legacy,teacher,exam.id);
+  assert.equal(question.choices[question.correctAnswer],'X');
+  assert.ok(question.choices.includes('K')&&question.choices.includes('L'));
+}
 assert.equal((renderBuilder({data:state,exam,section:heading}).match(/data-heading-answer/g)||[]).length,5);
 assert.equal((renderBuilder({data:state,exam,section:heading}).match(/data-heading-option=/g)||[]).length,10);
 assert.equal((publicHtml.match(/data-letter="j"/g)||[]).length,5);

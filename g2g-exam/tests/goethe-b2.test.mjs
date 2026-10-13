@@ -102,7 +102,7 @@ assert.doesNotMatch(pairedHtml,/paired-text-heading|>Text [1-5]</);
 assert.equal((html.match(/data-letter-answer/g)||[]).length,6);
 assert.match(html,/Gehen wir 200 Jahre zurück/);
 assert.match(html,/<option value="">10<\/option>/);
-assert.match(html,/<option value="0" data-letter="a" >a\. Sentence a<\/option>/);
+assert.match(html,/<option value="0" data-letter="a" data-short-text="Sentence a" >a\. Sentence a<\/option>/);
 assert.match(html,/<span class="inline-gap-value" aria-hidden="true">10<\/span>/);
 assert.doesNotMatch(html,/<b>10<\/b>|<b>_<\/b>|Beispiel:|<option value="">—/);
 assert.equal((html.match(/<b>0<\/b>/g)||[]).length,2);
