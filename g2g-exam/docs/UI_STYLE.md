@@ -178,7 +178,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   explicit gaps and shrinkable tracks to avoid forced wrapping.
 
 - Minimize visible form labels; prefer concise placeholders inside empty inputs.
-  Short letter-matching questions use a muted rounded row: number at left,
+  Gray rounded backgrounds are reserved for instruction blocks, not question wrappers.
+  Short letter-matching questions use an unframed transparent row: number at left,
   answer selector, score and actions at right; a full-width single-line question
   input below. Keep the answer label accessible but visually hidden. No divider.
   Heading matching uses a correct-answer text input beside each passage's score
