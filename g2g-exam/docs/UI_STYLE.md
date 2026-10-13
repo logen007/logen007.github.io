@@ -380,7 +380,8 @@ theme application must not wait for a network response to render the page.
   retain their ring/stat layouts. UpCloud-style CPU presentation approved on
   13 October 2026: compact left-column chart, yellow line/area, labelled time axis, five
   percentage ticks, underline range tabs and a visible maximum/average/current
-  table. Collect one real sample per minute independently of visits; retain
+  summary. The maximum/average/current summary uses three equal-width columns,
+  without a redundant CPU column or horizontal scrolling. Collect one real sample per minute independently of visits; retain
   366 days in PostgreSQL. Offer 1h/24h/1w/1m/1y ranges. Long views show bucket
   averages; statistics use original samples. Missing periods break lines and
   filled areas, and empty history remains empty. CPU has compact 12px controls
@@ -415,6 +416,9 @@ theme application must not wait for a network response to render the page.
 - Show missing metrics as unavailable, never as zero or a successful health check.
   Garbage collection has an explicit not-yet-scanned state. Keep failures visible.
 - Use existing theme tokens and actions; no chart library or extra polling.
+- Keep AI grading's three metric cards on one mobile row. Stack the three
+  provider names vertically inside the AI card, beneath its label, with a
+  readable font and yellow/black active pill; never require sideways scrolling.
 - Technical details remain available but must not dominate the default screen.
 - System connection statuses use a compact strip, not nested cards. Place CPU
   beside stacked resource/R2 cards, stacking on mobile. Exam storage is a
