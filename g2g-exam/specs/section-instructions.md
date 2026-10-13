@@ -27,5 +27,7 @@ Status: APPROVED — user's request, 13 October 2026.
   its existing shared-reference protection and grace period.
 - Image max-width has a visible px suffix and tooltip explaining automatic
   sizing when empty. Legacy 1px limits are treated as automatic, not invisible images.
+  The input is always visible, including without an image. Its short tooltip
+  uses two lines and a narrow maximum width (user approved, 13 October 2026).
 - TELC B1 SB2 shows its passage on the left and answer bank on the right;
   narrow screens use the existing responsive column flow. SB1 stays single-column.

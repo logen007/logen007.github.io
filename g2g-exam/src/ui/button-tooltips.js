@@ -17,7 +17,7 @@ export function bindButtonTooltips(){
     const label=button.getAttribute('data-tooltip')||(imageTarget?button.getAttribute('title'):button.getAttribute('aria-label')||button.getAttribute('title'));
     if(!iconOnly||!label)return;
     hide();active=button;
-    tip=document.createElement('div');tip.className=imageTarget?'button-tooltip button-tooltip--image':'button-tooltip';tip.id='button-action-tooltip';tip.setAttribute('role','tooltip');tip.textContent=label;
+    tip=document.createElement('div');tip.className=imageTarget?'button-tooltip button-tooltip--image':button.matches('.image-width-control')?'button-tooltip button-tooltip--image-width':'button-tooltip';tip.id='button-action-tooltip';tip.setAttribute('role','tooltip');tip.textContent=label;
     document.body.append(tip);
     button.setAttribute('aria-describedby',[button.getAttribute('aria-describedby'),tip.id].filter(Boolean).join(' '));
     const rect=button.getBoundingClientRect(),size=tip.getBoundingClientRect();

@@ -73,6 +73,8 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   All part types use the same image/max-width/tooltip and up/down/remove/plus
   controls. No position dropdown. Arrows cross adjacent questions or prompts;
   indivisible gap passages and horizontal tables move as one block.
+  Image max-width stays visible even before an image is uploaded or after removal.
+  Its tooltip is concise, split into two lines and capped at 240px.
 
 - Example groups use one outer frame only. Inner question cards remain
   borderless and transparent even when mobile rearranges reading content

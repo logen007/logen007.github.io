@@ -108,7 +108,7 @@ const {bindButtonTooltips}=await import('../src/ui/button-tooltips.js');
 bindButtonTooltips();
 function tooltipTarget(imageTarget){
   const attrs={title:'Bấm lần 1 để chọn vùng dán\nBấm lần 2 để chọn ảnh','aria-label':'Upload'};
-  const target={textContent:'',closest:()=>target,matches:selector=>selector==='[data-image-paste-target]'?imageTarget:true,
+  const target={textContent:'',closest:()=>target,matches:selector=>selector==='[data-image-paste-target]'?imageTarget:selector!=='.image-width-control',
     getAttribute:name=>attrs[name],setAttribute:(name,value)=>attrs[name]=value,removeAttribute:name=>delete attrs[name],
     getBoundingClientRect:()=>({left:100,top:200,bottom:240,width:40})};
   return target;
@@ -120,4 +120,16 @@ assert.equal(tooltip.className,'button-tooltip button-tooltip--image');
 assert.match(css,/\.button-tooltip--image\s*\{\s*white-space:pre-line/);
 tooltipEvents.focusin({target:tooltipTarget(false)});
 assert.equal(tooltip.style.top,'146px');assert.equal(tooltip.className,'button-tooltip');
+const {imageWidthHelp,imageWidthInput}=await import('../src/ui/image-width.js');
+const widthTarget=tooltipTarget(false);
+const oldGet=widthTarget.getAttribute;
+widthTarget.getAttribute=name=>name==='data-tooltip'?imageWidthHelp:oldGet(name);
+widthTarget.matches=selector=>selector==='.image-width-control';
+tooltipEvents.focusin({target:widthTarget});
+assert.equal(tooltip.className,'button-tooltip button-tooltip--image-width');
+assert.deepEqual(tooltip.textContent.split('\n'),['Chiều rộng tối đa (px).','Để trống: tự vừa khung.']);
+assert.match(css,/\.button-tooltip--image-width\s*\{[^}]*white-space:pre-line;[^}]*240px/);
+assert.doesNotMatch(css,/\[data-has-image="false"\][^{]*(?:image-width-control|instruction-image-width)/);
+assert.doesNotMatch(imageWidthInput(null),/\s(?:hidden|disabled)(?:\s|=|>)/);
+assert.match(imageWidthInput(600),/value="600"/);
 tooltipEvents.keydown({key:'Escape'});
