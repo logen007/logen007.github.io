@@ -42,7 +42,7 @@ export function resultOutcomeHtml(summary,status='published',pendingLabel='Chờ
   const band=['Xuất sắc','Giỏi','Khá','Đạt'].includes(result)?result:null;
   return `<div class="result-outcome ${tone}">${iconHtml(tone==='passed'?'example':tone==='failed'?'close':'grading')}<strong>${esc(outcome)}</strong>${band?`<span>${esc(band)}</span>`:''}</div>`;
 }
-function feedback(score){return `<div class="result-feedback"><h3>Nhận xét của cô</h3><p>${textHtml(score.feedback||'Chưa có nhận xét.')}</p>${score.reviewerName?`<div class="result-reviewer">${iconHtml('teacher')}<span>${esc(score.reviewerName)}</span></div>`:''}</div>`;}
+function feedback(score){return `<div class="result-feedback"><p>${textHtml(score.feedback||'Chưa có nhận xét.')}</p>${score.reviewerName?`<div class="result-reviewer">${iconHtml('teacher')}<span>${esc(score.reviewerName)}</span></div>`:''}</div>`;}
 export function resultStatsHtml({counts,total,max,visible=true,totalId='',speaking,showSpeaking=false}){
   const stat=(n,label)=>`<div><strong>${n}</strong><span>${label}</span></div>`;
   return `<div class="result-stats">${stat(visible?`${totalId?`<span id="${esc(totalId)}">${esc(total)}</span>`:esc(total)}${max?`<small>/${esc(max)}</small>`:''}`:'—','Tổng điểm')}${stat(visible?`${counts.correct}<small>/${counts.objective}</small>`:'—','Câu đúng')}${stat(visible?counts.wrong:'—','Câu sai')}${showSpeaking?stat(visible&&speaking?`${esc(speaking.score)}<small>/${esc(speaking.max)}</small>`:'—','Điểm nói'):stat(visible?counts.blank:'—','Bỏ trống')}</div>`;
