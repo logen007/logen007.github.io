@@ -766,8 +766,8 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
   .dashboard-services { width:100%; }
   .dashboard-cpu-card>.dashboard-section-heading { align-items:flex-start; flex-wrap:wrap; }
   .dashboard-cpu-card .monitor-range span { min-height:44px; padding:12px 2px; font-size:12px; }
-  .dashboard-cpu-history .monitor-period { max-width:100%; overflow-x:auto; }
-  .dashboard-cpu-history .monitor-chart svg { min-width:520px; }
+  .dashboard-cpu-history .monitor-period { width:100%; min-width:0; max-width:100%; }
+  .dashboard-cpu-history .monitor-chart svg { width:100%; min-width:0; max-width:100%; height:auto; }
   .dashboard-r2-size { align-items:flex-start; }
   .dashboard-panel { min-height:260px; }
 }

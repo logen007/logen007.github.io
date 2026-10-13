@@ -388,7 +388,10 @@ theme application must not wait for a network response to render the page.
   13 October 2026: compact left-column chart, yellow line/area, labelled time axis, five
   percentage ticks, underline range tabs and a visible maximum/average/current
   summary. The maximum/average/current summary uses three equal-width columns,
-  without a redundant CPU column or horizontal scrolling. Collect one real sample per minute independently of visits; retain
+  without a redundant CPU column or horizontal scrolling.
+  CPU SVG charts also scale to 100% of their card on mobile; do not set a fixed
+  minimum chart width or make the period panel horizontally scrollable.
+  Collect one real sample per minute independently of visits; retain
   366 days in PostgreSQL. Offer 1h/24h/1w/1m/1y ranges. Long views show bucket
   averages; statistics use original samples. Missing periods break lines and
   filled areas, and empty history remains empty. CPU has compact 12px controls
