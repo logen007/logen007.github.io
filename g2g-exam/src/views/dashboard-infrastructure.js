@@ -52,7 +52,7 @@ export function dashboardInfrastructureHtml(infrastructure,error=''){
       ${dashboardR2Html(infrastructure.r2)}
     </div>
   </section>
-  <section class="the dashboard-storage-card"><div class="dashboard-section-heading"><h2>Dung lượng đề thi</h2>${status(storage.length+' đề')}</div>
+  <section class="dashboard-storage-card"><div class="dashboard-section-heading"><h2>Dung lượng đề thi</h2>${status(storage.length+' đề')}</div>
     <div class="dashboard-exam-storage"><div class="table-wrap"><table class="bang"><thead><tr><th scope="col">Đề thi</th><th scope="col">Last edit</th><th scope="col">Câu</th><th scope="col">Media</th><th scope="col">Dữ liệu</th><th scope="col">Tổng</th></tr></thead><tbody>${storage.map(item=>`<tr><td><button type="button" class="table-link" data-action="edit-exam" data-id="${esc(item.id)}" title="Mở đề thi">${esc(item.title)}</button><span class="phu">${esc([item.provider,item.level].filter(Boolean).join(' '))}</span></td><td>${fmtDate(item.updatedAt)}</td><td>${Number(item.questions)||0}</td><td>${Number(item.mediaFiles)||0} tệp · ${bytes(item.mediaBytes)}</td><td>${bytes(item.dataBytes)}</td><td><b>${bytes(item.totalBytes)}</b></td></tr>`).join('')||'<tr><td colspan="6" class="rong">Chưa có đề thi.</td></tr>'}</tbody></table></div></div>
   </section>`;
 }

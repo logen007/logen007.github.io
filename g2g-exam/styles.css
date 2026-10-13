@@ -717,6 +717,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-detail-content p { margin:8px 0; font-size:12px; color:var(--phu); }
 .dashboard-detail-content .dashboard-warning { color:var(--do); }
 .dashboard-storage-card { margin-top:24px; min-width:0; grid-column:1/-1; }
+.dashboard-storage-card h2 { margin:0; font-size:18px; font-weight:500; }
 @media(max-width:960px) {
   .dashboard-system-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .dashboard-system-grid>.dashboard-cpu-card { grid-column:1/-1; }

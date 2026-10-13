@@ -61,7 +61,7 @@ assert.match(system,/<summary>Chi tiết CPU<\/summary>/);
 assert.equal((system.match(/class="monitor-chart"/g)||[]).length,1,'Only CPU uses a time-series chart');
 assert.match(system,/resource-ring/);
 assert.match(system,/data-action="edit-exam" data-id=/);
-assert.match(system,/<\/section>\s*<section class="the dashboard-storage-card"><div class="dashboard-section-heading"><h2>Dung lượng đề thi/,'Storage is outside the system card and always visible');
+assert.match(system,/<\/section>\s*<section class="dashboard-storage-card"><div class="dashboard-section-heading"><h2>Dung lượng đề thi/,'Storage is outside the system card and has no padded outer card');
 assert.match(system,/<th scope="col">Last edit<\/th>/);
 assert.equal(infrastructure.examStorage[0].title,'Small','Rendering must not sort shared state in place');
 const r2Failure=dashboardR2Html({enabled:true,totalFiles:490,syncedFiles:490,pendingFiles:0,skippedFiles:0,error:'<script>sync failed</script>'});
