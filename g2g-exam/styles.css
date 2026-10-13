@@ -948,11 +948,11 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .gap-option-row .gap-option { margin:0; min-width:0; }
 .gap-option .truong { height:var(--editor-control); min-width:0; width:100%; }
 .gap-passage { white-space:pre-wrap; line-height:2; overflow-wrap:anywhere; }
-.inline-gap { position:relative; display:inline-flex; align-items:center; margin:4px; max-width:100%; vertical-align:middle; white-space:nowrap; }
+.inline-gap { --gap-control-height:32px; position:relative; display:inline-flex; align-items:center; min-height:var(--gap-control-height); margin:4px; max-width:calc(100% - 8px); vertical-align:middle; white-space:nowrap; line-height:1; }
 .inline-gap select[data-option-texts], .inline-gap select[data-option-texts]:has(option:checked:not([value=""])) { color:transparent; }
 .inline-gap-value { position:absolute; left:8px; pointer-events:none; color:var(--brand-on-primary); font-weight:600; font-size:14px; }
 .inline-gap select[hidden] { display:none; }
-.inline-gap:has(select[data-option-texts]:not([hidden])) .inline-gap-value { position:relative; left:0; min-width:56px; padding:0 24px 0 8px; }
+.inline-gap:has(select[data-option-texts]:not([hidden])) .inline-gap-value { position:relative; left:0; display:inline-flex; align-items:center; min-height:var(--gap-control-height); min-width:56px; padding:0 24px 0 8px; }
 .inline-gap select[data-option-texts]:not([hidden]) { position:absolute; inset:0; width:100%; height:100%; }
 .inline-gap-trigger { width:auto; min-width:56px; min-height:36px; border:1px solid var(--brand-primary); border-radius:8px; padding:0 24px 0 8px; background-color:var(--brand-primary); background-position:right 6px center; background-size:12px; color:var(--brand-on-primary); font-weight:600; }
 .inline-gap-trigger[data-answered="true"] { background-color:color-mix(in srgb,var(--xanh) 14%,var(--mat)); border-color:var(--xanh); color:var(--xanh); }
@@ -965,7 +965,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .letter-picker-option[aria-pressed="true"] { border-color:var(--brand-primary); background:var(--brand-soft); color:var(--brand-text); }
 .inline-gap:has(option:checked:not([value=""])) .inline-gap-value { color:var(--xanh); }
 .inline-gap select { width:56px; min-width:56px; height:32px; min-height:32px; padding:0 24px 0 8px; border-radius:8px; font-size:14px; line-height:1; background-position:right 6px center; background-size:12px; background-color:var(--brand-primary); border-color:var(--brand-primary); color:var(--brand-on-primary); font-weight:600; }
-@media(pointer:coarse) { .inline-gap select { height:36px; min-height:36px; font-size:16px; } }
+@media(pointer:coarse) { .inline-gap { --gap-control-height:36px; } .inline-gap select { height:36px; min-height:36px; font-size:16px; } .inline-gap-value,.inline-gap-trigger { font-size:16px; } }
 .inline-gap select option { background-color:var(--mat); color:var(--chu); }
 .inline-gap select:has(option:checked:not([value=""])) { background-color:color-mix(in srgb,var(--xanh) 14%,var(--mat)); border-color:var(--xanh); color:var(--xanh); }
 .inline-gap-paper .gap-sentences p { font-weight:400; }
