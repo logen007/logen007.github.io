@@ -65,6 +65,11 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+- Every visible question card in the exam editor has a persistent “Câu N” label,
+  not only a placeholder. Number scored questions sequentially within the part;
+  label zero-point/prefilled examples “Ví dụ” without consuming a question number.
+  Preserve existing table number columns and gap-position labels, without duplicates.
+
 - Question audio controls share one row in this order: compact score, flexible
   audio upload/play, example, remove, add. Keep score input wide enough for two
   digits, with an accessible score label; do not let it consume spare row space.

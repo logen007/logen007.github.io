@@ -1004,6 +1004,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .cau-thi--binary>.answer-options .answer-option-body { justify-content:center; min-width:64px; min-height:44px; padding:10px 14px; white-space:nowrap; }
 .cau-thi--binary>:not(.preview-question-heading):not(.answer-options) { flex-basis:100%; }
 .heading-match-question { margin-top:24px; }
+.builder-question-number { grid-column:1/-1; margin-bottom:8px; color:var(--chu); font-size:14px; font-weight:600; }
 .heading-match-question p { white-space:pre-wrap; }
 .heading-match-question > div { display:flex; align-items:center; gap:8px; }
 .heading-match-question .inline-gap { display:inline-flex; align-items:center; flex:0 1 auto; min-width:0; max-width:100%; margin:0; }

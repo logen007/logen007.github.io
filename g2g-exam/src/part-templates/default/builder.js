@@ -1,5 +1,5 @@
 import {modernInstructionText} from '../../domain/text-markup.js';
-import {imageMaxWidth} from '../../domain/question-display.js';
+import {imageMaxWidth,isPrefilledQuestion} from '../../domain/question-display.js';
 import {byId,getQuestionMaxScore} from '../../core.js';
 import {esc} from '../../ui/format.js';
 import {uploadQuestionAudio} from '../../media.js';
@@ -189,7 +189,19 @@ export function renderBuilder({data,exam,section,readOnly=false}={}){
   return `<div class="part-editor" data-template-type="${esc(section.templateType||'GENERIC')}">${section.questionProfile?.layout==='letter-table'?`<label class="part-display-setting">Nhãn bảng<input class="truong" id="sectionTableHeading" value="${esc(section.tableHeading??'Person')}" ${readOnly?'disabled':''}></label>`:''}${instructionHtml(section,choiceProfile,readOnly,choiceProfile.instructionImage?questions.find(question=>!question.example)||questions[0]:null)}<div class="goethe-questions">${questions.map(renderQuestion).join('')||'<div class="rong">Chưa có câu hỏi trong bài này.</div>'}</div></div>`;
 }
 
+export function numberBuilderQuestions(root,questions){
+  let number=0;
+  for(const card of root.querySelectorAll('article.part-question:not([hidden])')){
+    const question=byId(questions,card.dataset.questionId);
+    if(!question)continue;
+    let label=card.querySelector(':scope > .builder-question-number');
+    if(!label){label=card.ownerDocument.createElement('div');label.className='builder-question-number';card.prepend(label);}
+    label.textContent=isPrefilledQuestion(question)?'Ví dụ':`Câu ${++number}`;
+  }
+}
+
 export function bindBuilder({root=document,data,exam,section,pendingAudioUploads=new Map(),notify=()=>{}}={}){
+  numberBuilderQuestions(root,data.questions);
   root.querySelectorAll('[data-writing-style-toggle]').forEach(button=>button.onclick=()=>{
     if(button.disabled)return;
     const field=button.parentElement.querySelector('[data-field="handwriting"]');

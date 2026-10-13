@@ -20,6 +20,17 @@ for(const level of ['B1','B2']){
 assert.equal(sectionLabel({provider:'GOETHE',level:'B1'},{name:'Đọc 4'}),'Đọc 4');
 import {inlineGapsHtml} from '../src/ui/inline-gaps.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
+import {numberBuilderQuestions} from '../src/part-templates/default/builder.js';
+{
+  const questions=[{id:'ex',example:true,maxScore:0},{id:'one',maxScore:1},{id:'zero',maxScore:0},{id:'two',maxScore:1}];
+  const cards=questions.map(q=>({dataset:{questionId:q.id},ownerDocument:{createElement:()=>({})},querySelector(){return this.label;},prepend(label){this.label=label;}}));
+  const root={querySelectorAll:()=>cards};
+  numberBuilderQuestions(root,questions);
+  assert.deepEqual(cards.map(c=>c.label.textContent),['Ví dụ','Câu 1','Ví dụ','Câu 2']);
+  const labels=cards.map(c=>c.label);
+  numberBuilderQuestions(root,questions);
+  assert.deepEqual(cards.map(c=>c.label),labels,'Rebinding never duplicates question labels');
+}
 import {saveHeadingMatchDraft,resizeHeadingOptions} from '../src/part-templates/default/heading-match-builder.js';
 import {resizeGapOptions,saveInlineGapDraft,bindGapPositions} from '../src/part-templates/default/inline-gap-builder.js';
 import {examHtml} from '../src/views/student.js';
