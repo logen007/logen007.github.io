@@ -982,6 +982,8 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .student-result-info h2.failed { color:var(--do); }
 .bang thead th { white-space:nowrap; }
 .table-link.exam-title-status.is-published { color:var(--xanh); }
+.bang tbody tr:has(.exam-title-status.is-published) { background:color-mix(in srgb,var(--xanh) 7%,var(--mat)); }
+.bang tbody tr:has(.exam-title-status.is-published):hover { background:color-mix(in srgb,var(--xanh) 11%,var(--mat)); }
 .table-link.exam-title-status.is-draft { color:var(--phu); }
 .student-result-info p { margin:8px 0 0; color:var(--phu); font-size:13px; }
 .student-result-outcome { display:flex; align-items:center; gap:20px; }
