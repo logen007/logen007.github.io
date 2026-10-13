@@ -9,10 +9,13 @@ thang điểm hoặc quy tắc đạt/trượt của từng Provider/Level/Part.
   Kỹ năng có gợi ý viết thì tổng kỹ năng mang nhãn tạm tính. Nói luôn giữ vị trí.
 - Trắc nghiệm có kết quả chính xác ngay sau khi nộp, gồm điểm, đúng/sai và đáp án.
   Không gắn nhãn tạm tính hoặc màu tạm tính cho điểm tự chấm (kể cả form viết).
-- Chỉ gợi ý điểm bài viết có AI chấm mới ghi “– điểm tạm tính”, màu xanh xám riêng.
+- Chỉ gợi ý điểm bài viết có AI chấm mới có badge “Tạm tính”, màu xanh xám riêng.
   Không tính tổng hoặc kết luận Đạt/Chưa đạt toàn bài trước khi giáo viên công bố.
 - Không nhắc AI hay trạng thái AI trên giao diện học viên; thiếu điểm là “Chờ điểm”,
   không phải 0. Gợi ý lỗi, thiếu rubric hoặc chưa hoàn thành không tạo điểm giả.
+- Cập nhật nhãn 2026-10-14: dùng badge xám bo tròn “Tạm tính”, thay cho
+  “– điểm tạm tính” ở mọi điểm gợi ý và tổng có chứa điểm gợi ý.
+  Màu progress dùng chung bảng màu theo mức điểm, kể cả điểm tạm tính.
 - Chỉ chủ lượt thi được xem; không lộ rubric, nhận xét, điểm giáo viên
   chưa công bố. Không ghi gợi ý vào điểm chính thức hoặc đổi trạng thái lượt thi.
 - Giáo viên vẫn chấm và công bố; sau đó giao diện dùng kết quả chính thức.

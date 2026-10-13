@@ -533,6 +533,11 @@ theme application must not wait for a network response to render the page.
 
 ## Student result detail
 
+- Omit the “Điểm từng phần” heading. Progress always uses the same grade-based
+  palette across providers, independently of whether assessment badges are shown.
+  Estimated scores use a compact gray rounded “Tạm tính” badge, not a text suffix;
+  their progress retains the shared palette rather than a gray-blue override.
+
 - Unpublished and published reviews keep the same skill grouping, order and tabs.
   Overview aggregates parts into skills; part marks stay in the matching detail
   tab. Missing component marks keep the skill pending; a writing estimate marks
