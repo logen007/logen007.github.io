@@ -70,6 +70,12 @@ const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teach
 globalThis.sessionStorage={getItem:()=>null};
 const {exam,rows}=telcFixture(state,teacher);
 {
+  const html=renderBuilder({data:state,exam,section:exam.sections[0]});
+  assert.doesNotMatch(html,/<label>(?:Đáp án đúng|Điểm)/);
+  assert.match(html,/data-heading-answer aria-label="Đáp án đúng câu/);
+  assert.match(html,/data-heading-score aria-label="Điểm câu/);
+}
+{
   const part=exam.sections.find(s=>s.skill==='Nghe'&&s.questionProfile?.layout==='true-false');
   assert.ok(part);
   const html=renderBuilder({data:state,exam,section:part});
