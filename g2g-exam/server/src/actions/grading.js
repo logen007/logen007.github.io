@@ -5,6 +5,7 @@ import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
 import {finalizeOutcome} from '../result-outcome.js';
 import {resultSummary} from '../../../src/domain/result-summary.js';
 import {manualGroups} from '../../../src/domain/manual-grading.js';
+import {suggestWritingGrade} from '../writing-ai.js';
 
 export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
   if(!isTeacher(user))throw appError(403,'Chỉ giáo viên được chấm bài.');
@@ -52,6 +53,22 @@ export async function saveManualGrade(user,{attemptId,scores={},feedback=''}){
     await audit(user,'save_grade','attempt',attemptId,{complete,status},client);
     return {status,totalScore};
   });
+}
+
+export async function suggestWritingGradeForAttempt(user,{attemptId,questionId}){
+  if(!isTeacher(user))throw appError(403,'Chỉ giáo viên được dùng gợi ý chấm AI.');
+  const result=await query(`SELECT * FROM attempts WHERE id=$1`,[attemptId]);
+  if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
+  const attempt=result.rows[0],exam=await attemptExam(attempt);
+  if(!(await canGrade(user,exam)))throw appError(403,'Bạn chưa được cấp quyền chấm bài này.');
+  if(!['grading','ready'].includes(attempt.status))throw appError(409,'Bài không ở trạng thái chấm.');
+  const question=(await questionMap(exam)).get(questionId);
+  if(!question||(question.type!=='writing')||question.writingFormVersion===1)throw appError(400,'Chỉ hỗ trợ gợi ý cho bài viết tự do.');
+  const suggestion=await suggestWritingGrade({rule:question.aiGradingRules,answer:attempt.public_data?.answers?.[questionId],maxScore:question.maxScore});
+  const aiWritingSuggestions={...(attempt.private_data?.aiWritingSuggestions||{}),[questionId]:{...suggestion,createdAt:now(),model:'groq'}};
+  await query(`UPDATE attempts SET private_data=private_data||$2::jsonb,updated_at=now() WHERE id=$1`,[attemptId,JSON.stringify({aiWritingSuggestions})]);
+  await audit(user,'suggest_writing_grade','attempt',attemptId,{questionId,suggestedScore:suggestion.suggestedScore});
+  return suggestion;
 }
 
 export async function deliverResultEmail(attemptId,id=`result-${attemptId}`){

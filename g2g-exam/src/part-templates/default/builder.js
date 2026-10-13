@@ -142,7 +142,8 @@ function mixedWritingFormHtml(q,{defaultScore,readOnly,choiceProfile}){
 }
 
 function freeResponseHtml(q,{defaultScore,readOnly}){
-  return `<article class="goethe-free-response ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Câu trả lời textarea" ${readOnly?'disabled':''}>${esc(blank(q.title))}</textarea>${scoreControls(q,defaultScore,readOnly,{writingStyle:true})}</article>`;
+  const rule=String(q.aiGradingRules||q.title||'').trim();
+  return `<article class="goethe-free-response ${q.example?'is-example ':''}part-question" data-example="${Boolean(q.example)}" data-editor-mode="free-response" data-question-id="${q.id}"><textarea data-field="title" placeholder="Quy tắc chấm AI · tùy chọn" aria-label="Quy tắc chấm AI" ${readOnly?'disabled':''}>${esc(blank(rule))}</textarea>${scoreControls(q,defaultScore,readOnly,{writingStyle:true})}</article>`;
 }
 
 function instructionHtml(section,choiceProfile,readOnly){

@@ -43,6 +43,15 @@ cp server/.env.example server/.env
 - `SETTINGS_ENCRYPTION_KEY` (chuỗi ngẫu nhiên dài khác; dùng mã hóa SMTP password)
 - `MASTER_EMAILS` (email Google của Quản trị cấp cao đầu tiên)
 
+### Gợi ý chấm bài viết bằng AI (tùy chọn)
+
+Tạo API key ở Groq Console Free rồi thêm `GROQ_API_KEY` vào `server/.env`. Khóa
+chỉ ở VPS, không được commit hoặc đưa xuống trình duyệt. Nếu để trống, nút gợi ý
+AI sẽ báo chưa cấu hình; các luồng tạo đề và chấm điểm còn lại không thay đổi.
+
+AI chỉ chạy cho câu viết tự do đã nhập “Quy tắc chấm cho AI”; kết quả là gợi ý
+riêng cho giáo viên, không tự ghi vào điểm của học viên.
+
 Không commit `server/.env`.
 
 ## 4. Chạy trên VPS dùng Traefik hiện hữu

@@ -10,7 +10,7 @@ import {verifyClassCode,enrollInClass} from './class-enrollment.js';
 import {saveOralScore} from './oral.js';
 import {saveExamAccess,listExamCodes,createExamCode,acknowledgePromotion} from './exam-access.js';
 import {startAttempt,saveAnswers,startPartAudio,completePartAudio,setAttemptSection,abandonAttempt,submitAttempt} from './attempts.js';
-import {saveManualGrade,publishAttemptResult,deliverResultEmail} from './grading.js';
+import {saveManualGrade,publishAttemptResult,deliverResultEmail,suggestWritingGradeForAttempt} from './grading.js';
 import {updateSystemSettings,updateSmtpSecret,testSmtp,getInfrastructureStatus,setUserRole,setTeacherByEmail} from './settings.js';
 
 export async function handleAction(user,name,data={}){
@@ -42,6 +42,7 @@ export async function handleAction(user,name,data={}){
     case 'abandonAttemptSecure': return abandonAttempt(user,data);
     case 'submitAttempt': return submitAttempt(user,data);
     case 'saveManualGrade': return saveManualGrade(user,data);
+    case 'suggestWritingGrade': return suggestWritingGradeForAttempt(user,data);
     case 'publishAttemptResult': return publishAttemptResult(user,data);
     case 'retryResultEmail':
       if(!isTeacher(user))throw appError(403,'Không có quyền gửi lại email.');

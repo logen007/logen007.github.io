@@ -907,7 +907,8 @@ async function persistBuilderDraft({silent=false}={}){
           const maxScore=mode==='mixed-form'?writingFormScore(rubric)+choiceScore:choiceScore;
           const handwritingField=card.querySelector('[data-field="handwriting"]');
           if(handwritingField)updateQuestion(st,user,id,{handwriting:handwritingField.value!=='false'});
-          updateQuestion(st,user,id,{title:titleField?.value.trim()||'Nháp',prompt:firstInstruction.text,choices,correctAnswer:Number(correct?.value??0),maxScore,example,audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl,instructionBlocks,mixedChoiceHidden});
+          const aiGradingRules=mode==='free-response'?titleField?.value.trim()||'':'';
+          updateQuestion(st,user,id,{title:mode==='free-response'?(aiGradingRules||'Nháp'):titleField?.value.trim()||'Nháp',prompt:firstInstruction.text,choices,correctAnswer:Number(correct?.value??0),maxScore,example,aiGradingRules,audioUrl:(audioUrls.get(id)??previousQuestion?.audioUrl)||'',audioName:(audioNames.get(id)??previousQuestion?.audioName)||'',rubric:(rubric??previousQuestion?.rubric)||[],instructionImageUrl,instructionBlocks,mixedChoiceHidden});
         });
       }
     });
@@ -1388,6 +1389,16 @@ function bindGrading(){
     gradeAutosave=createGradeAutosave(()=>saveGrade(false),text=>{const status=app.querySelector('[data-grade-save-status]');if(status)status.textContent=text;});
     app.querySelectorAll('.manual-score,#gradeOralScore,#gradeFeedback').forEach(input=>input.addEventListener('input',()=>gradeAutosave.change()));
   }
+  app.querySelectorAll('[data-action="suggest-writing-grade"]').forEach(button=>button.onclick=async()=>{
+    if(!await flushBuilderDraft())return;
+    const attempt=byId(data.attempts,ui.gradeAttemptId);
+    if(!attempt||repo.mode!=='api')return;
+    button.disabled=true;const original=button.textContent;button.textContent='Đang tạo…';
+    try{
+      await repo.call('suggestWritingGrade',{attemptId:attempt.id,questionId:button.dataset.questionId});
+      await repo.reload();data=await repo.getState();render();
+    }catch(error){notify(error?.message||'Không tạo được gợi ý AI.');button.disabled=false;button.textContent=original;}
+  });
   app.querySelectorAll('[data-action="grading-neighbor"]').forEach(b=>b.onclick=async()=>{
     if(!await flushBuilderDraft())return;
     const current=byId(data.attempts,ui.gradeAttemptId),neighbors=gradingNeighbors(data,user,current);
