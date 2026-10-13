@@ -423,13 +423,18 @@ try{
 
   await test('Builder places its return link beside provider/level and keeps successful autosave quiet',()=>{
     const input=fixture();
+    Object.assign(input.exam,{provider:'GOETHE',publicationLabel:'1.0.1'});
     const html=examBuilderHtml({data:{questions:input.questions},user:{id:'teacher'},exam:input.exam,section:null,readOnly:false});
     const back=actionButtons(html,'back-admin');
     assert.equal(back.length,1);
     assert.ok(hasClass(back[0],'text-link'));
     const meta=html.match(/<div class="builder-meta">([\s\S]*?)<\/div>/)?.[1]||'';
     assert.ok(meta.includes(back[0]));
-    assert.ok(meta.indexOf(back[0])<meta.indexOf('<p>'));
+    assert.ok(meta.indexOf(back[0])<meta.indexOf('class="builder-badges"'));
+    assert.match(meta,/<span class="nhan">Goethe<\/span><span class="nhan">A1<\/span>/);
+    assert.match(meta,/data-exam-version=/);
+    assert.match(meta,/>v1\.0\.1<\/small>/);
+    assert.equal((html.match(/class="exam-publication-version"/g)||[]).length,1);
     assert.match(html,/data-builder-save-status[^>]+hidden><\/span>/);
     assert.doesNotMatch(html,/Đã tự động lưu|Tự động lưu/);
     assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.builder-back:hover\s*\{\s*text-decoration:none;/);

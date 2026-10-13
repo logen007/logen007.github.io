@@ -11,7 +11,7 @@ assert.match(pubButton,/class="icon-btn".*data-action="publish-exam"/);
 assert.doesNotMatch(pubButton,/<span>/);
 const unpubButton=examPublishButton({id:'test',status:'published'});
 assert.match(examPublishButton({id:'test',status:'published',publicationLabel:'1.0.2'}),/>v1\.0\.2<\/small>/);
-assert.match(examPublishButton({id:'test',status:'draft',publicationLabel:'1.0.2'}),/Bản gần nhất: v1\.0\.2/);
+assert.match(examPublishButton({id:'test',status:'draft',publicationLabel:'1.0.2'}),/>v1\.0\.2<\/small>/);
 assert.doesNotMatch(pubButton,/exam-publication-version/);
 assert.match(unpubButton,/data-action="unpublish-exam"/);
 assert.match(unpubButton,/<svg.*<span>Bỏ xuất bản<\/span>/);

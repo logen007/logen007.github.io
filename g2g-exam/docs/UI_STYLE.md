@@ -76,8 +76,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   action; stale draft saves cannot publish or unpublish a versioned exam.
   Server-owned immutable releases use
   per-exam labels v1.0.0, v1.0.1, etc.; unchanged content reuses its version.
-  Keep the version visible beside the publish button; drafts label it as the
-  latest published version. Preview is an eye icon with an accessible name and
+  Builder metadata uses separate small provider and level badges in shared brand
+  colors, with the version aligned right on that row. Version text is always
+  v1.0.1 format, including drafts; its tooltip explains publication status. Preview is an eye icon with an accessible name and
   tooltip. No publication progress or success notice; retain error feedback.
 
 - Section prompts are independent ordered blocks, not owned by questions. The
