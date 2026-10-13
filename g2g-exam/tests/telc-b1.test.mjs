@@ -284,7 +284,7 @@ for(const section of [gap3,gapBank]){
   assert.doesNotMatch(inlineGapsHtml(section,rows(section),{},20),/gap-demo|<b>0<\/b>/);
   assert.deepEqual(inlineGapErrors(section),[]);
 }
-assert.equal((renderBuilder({data:state,exam,section:gapBank}).match(/data-gap-correct-text="/g)||[]).length,10);
+assert.equal((renderBuilder({data:state,exam,section:gapBank}).match(/data-gap-correct-text="/g)||[]).length,0);
 const previousKeys=rows(gapBank).map(q=>q.correctAnswer);
 resizeGapOptions(state,teacher,exam.id,gapBank.id,'add');
 {

@@ -1,7 +1,31 @@
 import {boldPattern,italicPattern,underlinePattern,stripTextMarkup} from './text-markup.js';
 export const hasGapExample=section=>section.questionProfile?.inlineExample!==false;
+// This author-only syntax is stripped before any passage is persisted or published.
+export function parseGapAnswerText(text,limit,questionNumbers=[]){
+  const answers=[];
+  const normalized=String(text||'').replace(/\{`((?:\\.|[^`\\])*)`\}/g,(_,answer)=>{
+    answers.push(answer.replace(/\\([`\\])/g,'$1').trim());
+    return `{${String.fromCharCode(96+answers.length)}}`;
+  });
+  if(/\{`|`\}/.test(normalized))throw new Error('Đóng đủ ký hiệu {`đáp án`} trước khi lưu.');
+  if(answers.length&&/\{\d+\}/.test(normalized))throw new Error('Không trộn số câu với {`đáp án`}; hãy ghi đáp án trực tiếp cho mọi ô.');
+  const parsed=parseGapText(normalized,limit,'abcdefghijklmnopqrstuvwxy',questionNumbers);
+  if(answers.length&&(parsed.keys.length!==answers.length||parsed.keys.some((key,index)=>key!==index)))throw new Error('Không trộn ký hiệu cũ với {`đáp án`}.');
+  return {...parsed,embeddedAnswers:answers.length?answers:null};
+}
+
+export function gapAnswerAuthorText(section,questions){
+  return (section.gapPassage||[]).map(part=>{
+    if(typeof part==='string')return part;
+    if(part.example)return hasGapExample(section)?'{z}':section.gapExample||'';
+    const question=questions[part.gap];
+    const value=question?.correctAnswer!=null&&question.correctAnswer!==''?section.gapOptions?.[Number(question.correctAnswer)]||'':'';
+    return '{`'+String(value).replace(/\\/g,'\\\\').replace(/`/g,'\\`')+'`}';
+  }).join('');
+}
 // Public passage contains positions, never teacher answer letters.
 export function parseGapText(text,limit,letters='abcdefgh',questionNumbers=[]){
+  if(/\{`|`\}/.test(String(text||'')))throw new Error('Cú pháp {`đáp án`} chỉ dùng cho bài có ngân hàng đáp án chung.');
   text=String(text||'').replace(/\{(\d+)\}/g,(_,number)=>{
     const index=questionNumbers.indexOf(Number(number));
     if(index<0)throw new Error(`Số câu {${number}} không thuộc bài này.`);

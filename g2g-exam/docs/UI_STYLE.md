@@ -119,18 +119,19 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   mobile, directly below the question number and before the question text.
   Do not put audio on a separate row.
 
-- Approved syntax (13 October 2026): numbered markers such as {31}, {32} use
-  whole-exam question numbers in gap editors; legacy {a}, {b} stays readable.
-  Gap textareas are at least 200px tall and answer rows show only the question number.
-  Shared-bank gap editors show direct answer inputs only for authored markers and
-  a distractor textarea (one option per nonempty line, with a live count), not a/b/c
-  setup rows. Preserve existing answer text, distractors, scores and question IDs.
+- Approved syntax (13 October 2026): shared-bank gaps use {`ANZEIGE`} directly
+  inside the author-only passage. Strip the embedded answer into the private key
+  and public option bank before persisting; student passages contain only gap objects.
+  No separate correct-answer inputs. Keep per-question scores in a disclosure and
+  a distractor textarea (one option per nonempty line, with a live count).
+  All textareas have a shared minimum of 200px, including compact/mobile forms;
+  larger writing areas keep their larger minimum through --textarea-min-height.
+  Preserve existing answer text, distractors, scores and question IDs.
   New production attempts shuffle the bank and remap keys in their saved snapshot;
   reloads and existing attempts retain their order. Per-question A/B/C tasks are unchanged.
-  These are ordered answer positions,
-  {z} is the example. Correct answers are edited separately for both shared-bank
-  and per-question choices. Existing structured passages are presented in this
-  syntax automatically; preserve their stored answer keys and attempt snapshots.
+  Per-question choices retain numbered {31}, {32} positions; {z} is the example.
+  Existing shared-bank passages automatically show their current correct answers
+  in the new author syntax. Legacy numbered/letter markers remain readable.
   Legacy square-bracket gap input remains readable during rollout. Keep ambiguous
   legacy [b]…[b] text unchanged and warn in the editor instead of guessing.
   [box]text[/box] explicitly frames instruction text. Existing unambiguous framed
