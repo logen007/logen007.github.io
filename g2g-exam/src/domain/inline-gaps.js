@@ -1,7 +1,12 @@
 import {boldPattern,italicPattern,underlinePattern,stripTextMarkup} from './text-markup.js';
 export const hasGapExample=section=>section.questionProfile?.inlineExample!==false;
 // Public passage contains positions, never teacher answer letters.
-export function parseGapText(text,limit,letters='abcdefgh'){
+export function parseGapText(text,limit,letters='abcdefgh',questionNumbers=[]){
+  text=String(text||'').replace(/\{(\d+)\}/g,(_,number)=>{
+    const index=questionNumbers.indexOf(Number(number));
+    if(index<0)throw new Error(`Số câu {${number}} không thuộc bài này.`);
+    return `{${String.fromCharCode(97+index)}}`;
+  });
   const passage=[],keys=[];let cursor=0;
   const positional=/\{[a-z]\}/i.test(text);
   const boldSpans=[...String(text||'').matchAll(boldPattern(letters+'z')),...String(text||'').matchAll(italicPattern()),...String(text||'').matchAll(underlinePattern())];
@@ -18,8 +23,8 @@ export function parseGapText(text,limit,letters='abcdefgh'){
   return {passage,keys};
 }
 
-export function gapAuthorText(section,questions){
-  return (section.gapPassage||[]).map(part=>typeof part==='string'?part:part.example?(hasGapExample(section)?'{z}':section.gapExample||''):`{${String.fromCharCode(97+Number(part.gap))}}`).join('');
+export function gapAuthorText(section,questions,numbers){
+  return (section.gapPassage||[]).map(part=>typeof part==='string'?part:part.example?(hasGapExample(section)?'{z}':section.gapExample||''):`{${numbers?(numbers.get(questions[part.gap]?.id)??Number(part.gap)+1):String.fromCharCode(97+Number(part.gap))}}`).join('');
 }
 
 export function inlineGapErrors(section){

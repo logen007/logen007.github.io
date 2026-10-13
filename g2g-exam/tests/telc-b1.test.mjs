@@ -376,21 +376,22 @@ const reading5Builder=renderBuilder({data:state,exam,section:gapBank});
 assert.doesNotMatch(reading5Builder,/data-gap-title/,'Gap passages omit the title editor');
 assert.match(reading5Builder,/data-section-image/,'Reading 5 keeps its image editor');
 assert.doesNotMatch(gapBuilder,/Chỗ trống/);
-assert.ok(gapBuilder.includes('<legend>21. · {a}</legend>'));
-assert.ok(gapBuilder.includes('<legend>22. · {b}</legend>'));
-assert.ok(gapBuilder.includes('<legend>24. · {d}</legend>'),'Global question number and syntax marker are independent of correct answer');
+assert.ok(gapBuilder.includes('<legend>21.</legend>'));
+assert.ok(gapBuilder.includes('<legend>22.</legend>'));
+assert.ok(gapBuilder.includes('<legend>24.</legend>'),'Global question number is independent of correct answer');
 assert.equal((gapBuilder.match(/data-gap-correct=/g)||[]).length,30);
 assert.ok(gapAuthorText(gap3,rows(gap3)).includes('{j}'));
 for(const invalid of [-1,undefined,null,'',1.5,3]){
   const incomplete=structuredClone(state);
   incomplete.questions.find(q=>q.id===gap3.questionIds[3]).correctAnswer=invalid;
   const html=renderBuilder({data:incomplete,exam,section:gap3});
-  assert.ok(html.includes('<legend>24. · {d}</legend>'));
+  assert.ok(html.includes('<legend>24.</legend>'));
   assert.doesNotMatch(html,/\[a\/b\/c\]/);
 }
 {
   const draft=structuredClone(state),draftExam=draft.exams.find(e=>e.id===exam.id),section=draftExam.sections[3];
-  const text=gapAuthorText(section,rows(gap3));
+  const markerNumbers=new Map(section.questionIds.map((id,index)=>[id,21+index]));
+  const text=gapAuthorText(section,rows(gap3),markerNumbers);
   const root={querySelector(selector){
     if(selector==='[data-gap-text]')return {value:text};
     const choice=selector.match(/data-gap-choice="(\d+)-(\d+)"/);
@@ -402,7 +403,7 @@ for(const invalid of [-1,undefined,null,'',1.5,3]){
   saveInlineGapDraft(root,draft,teacher,draftExam,section);
   const saved=section.questionIds.map(id=>draft.questions.find(q=>q.id===id));
   assert.deepEqual(saved.map(q=>q.correctAnswer),[2,2,2,2,2,2,2,2,2,-1]);
-  assert.equal(gapAuthorText(section,saved),text,'Changing correct option must not rewrite position markers');
+  assert.equal(gapAuthorText(section,saved,markerNumbers),text,'Changing correct option must not rewrite position markers');
   assert.ok(validateExamForPublish(draft,draftExam).length,'Missing correct answer must block publishing');
 }
 assert.equal((gapHtml.match(/<select /g)||[]).length,10);

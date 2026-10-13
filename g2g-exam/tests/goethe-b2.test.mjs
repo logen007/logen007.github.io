@@ -76,7 +76,7 @@ assert.ok(inlineGapErrors({...gap,gapOptions:['a']}).length);
 assert.ok(inlineGapErrors({...gap,gapPassage:[]}).length);
 const builder=renderBuilder({data:state,exam,section:gap});
 assert.match(builder,/data-gap-option="z"/);
-assert.match(builder,/data-gap-title/);
+assert.doesNotMatch(builder,/data-gap-title/);
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(css,/\.exam-question-pair \{ display:grid; gap:16px; margin:0 0 40px;/);
 assert.match(css,/\.answer-option>input:checked\+\.answer-option-body \{[^}]*font-weight:400;/);

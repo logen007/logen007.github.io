@@ -96,6 +96,10 @@ assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.si
 import {textHtml} from '../src/ui/format.js';
 assert.equal(textHtml('[a], [b] oder [c]'),'[a], [b] oder [c]');
 import {parseGapText,gapAuthorText,inlineGapErrors} from '../src/domain/inline-gaps.js';
+const numbered=parseGapText('Text {31} and {32}',2,'abcdefgh',[31,32]);
+assert.deepEqual(numbered.keys,[0,1]);
+assert.equal(gapAuthorText({gapPassage:numbered.passage},[{id:'a'},{id:'b'}],new Map([['a',31],['b',32]])),'Text {31} and {32}');
+assert.throws(()=>parseGapText('{99}',2,'abcdefgh',[31,32]),/không thuộc/);
 import {modernInstructionText} from '../src/domain/text-markup.js';
 assert.equal(modernInstructionText('[Richtig] [a] [img] [b]text[/b]'),'[box]Richtig[/box] [box]a[/box] [img] [b]text[/b]');
 assert.equal(modernInstructionText(modernInstructionText('[Richtig]')),'[box]Richtig[/box]');

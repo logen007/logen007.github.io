@@ -119,7 +119,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   mobile, directly below the question number and before the question text.
   Do not put audio on a separate row.
 
-- Approved syntax (13 October 2026): {a}, {b}, … are ordered answer positions,
+- Approved syntax (13 October 2026): numbered markers such as {31}, {32} use
+  whole-exam question numbers in gap editors; legacy {a}, {b} stays readable.
+  Gap textareas are at least 200px tall and answer rows show only the question number.
+  These are ordered answer positions,
   {z} is the example. Correct answers are edited separately for both shared-bank
   and per-question choices. Existing structured passages are presented in this
   syntax automatically; preserve their stored answer keys and attempt snapshots.
