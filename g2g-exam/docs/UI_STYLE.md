@@ -411,6 +411,13 @@ theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
 
+- Show the same-account session snapshot immediately while loading fresh dashboard
+  data. Retain it up to 24 hours and clear it on logout; never cache answers,
+  credentials or full exam content. Patch changed DOM nodes without rebuilding
+  unchanged cards. Keep open disclosures and user-selected CPU ranges.
+- Coalesce infrastructure requests, reuse responses for 30 seconds, refresh the
+  visible infrastructure at most once per minute; hidden tabs do not poll.
+
 - Only CPU uses a time-series chart with its own range picker; RAM, disk and R2
   retain their ring/stat layouts. UpCloud-style CPU presentation approved on
   13 October 2026: compact left-column chart, yellow line/area, labelled time axis, five

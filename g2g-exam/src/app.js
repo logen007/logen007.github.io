@@ -79,7 +79,8 @@ import {mountExamRuntime} from './part-templates/runtime.js';
 import {collectReadingBlocks,bindReadingBlocks} from './ui/reading-blocks.js';
 import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
-import {readCachedInfrastructure,refreshInfrastructure} from './settings/api.js';
+import {readCachedInfrastructure,refreshInfrastructure,setInfrastructureOwner,clearInfrastructureCache} from './settings/api.js';
+import {readDashboardCache,writeDashboardCache,clearDashboardCache,patchDashboard} from './ui/dashboard-cache.js';
 import {isScoredWritingField,writingFormScore,addWritingRow,removeWritingRow} from './domain/writing-form.js';
 import {readWritingRow} from './ui/writing-form.js';
 import {readExamAnswers,revealUnansweredQuestion} from './ui/exam-answers.js';
@@ -94,6 +95,7 @@ const repo=await createRepository();
 let data=await repo.getState();
 let user=await repo.getCurrentUser();
 let authenticatedUser=user;
+setInfrastructureOwner(isMaster(user)?user.id:null);
 let timerHandle=null;
 let timerBusy=false;
 let submitBusy=false;
@@ -576,13 +578,15 @@ function confirmAbandonExam(){
   },{confirmLabel:'Hủy bài thi',cancelLabel:'Tiếp tục làm bài',danger:true,confirmIcon:'close',cancelIcon:'grading'});
 }
 
-function adminView(){
+function adminView(cachedAt=null){
   if(ui.adminTab==='settings'&&!isMaster(user))ui.adminTab='exams';
   if(ui.adminTab==='grading')ui.adminTab='grades';
   if(isMaster(user)&&['grading','grades'].includes(ui.adminTab))ui.adminTab='dashboard';
   let content='';
   if(ui.adminTab==='dashboard'&&isMaster(user)){
     content=dashboardHtml({data,infrastructure:ui.infrastructure,infrastructureError:ui.infrastructureError||'',activityFilter:ui.dashboardPeriod||{}});
+    content=content.replace('<div class="dashboard-grid">',`<p class="dashboard-caption" role="status" ${cachedAt?'':'hidden'}>${cachedAt?'Dữ liệu đã lưu · Đang cập nhật…':''}</p><div class="dashboard-grid">`);
+    if(!cachedAt)writeDashboardCache(user.id,data);
     if(!infrastructureRefreshStarted&&!infrastructureLoading){
       infrastructureRefreshStarted=true;
       infrastructureLoading=true;
@@ -595,7 +599,11 @@ function adminView(){
   else if(ui.adminTab==='classes')content=classesHtml({data,classId:ui.classId});
   else if(ui.adminTab==='trash')content=trashAdminHtml({data});
   else if(ui.adminTab==='settings'&&isMaster(user))content='<div data-settings-route><p role="status">Đang tải cài đặt…</p></div>';
-  app.innerHTML=layout(adminShellHtml({content,user,ui}));
+  const current=app.querySelector('.admin-dashboard');
+  if(current&&ui.adminTab==='dashboard'&&isMaster(user)){
+    const template=document.createElement('template');template.innerHTML=content;
+    patchDashboard(current,template.content.firstElementChild);
+  }else app.innerHTML=layout(adminShellHtml({content,user,ui}));
   if(ui.adminTab==='settings'&&isMaster(user)){
     const target=app.querySelector('[data-settings-route]');
     import('./settings.js').then(({mountSettingsPage})=>mountSettingsPage(target,ui.settingsTab,tab=>{ui.settingsTab=tab;syncViewUrl();}))
@@ -728,6 +736,10 @@ function render(){
         viewLoadPromise=(scope==='full'?repo.ensureFull():repo.reload()).then(async()=>{data=await repo.getState();})
           .catch(error=>{notify(error.message);return false;})
           .then(result=>{viewLoadPromise=null;app.removeAttribute('aria-busy');if(result!==false)render();});
+      }
+      if(isMaster(user)&&ui.view==='admin'&&ui.adminTab==='dashboard'){
+        const cached=readDashboardCache(user.id);
+        if(cached){const live=data;try{data=cached.value;adminView(cached.at);bindGlobal();bindViewSpecific();}finally{data=live;}}
       }
       return;
     }
@@ -970,7 +982,7 @@ async function loadStudentReview(attemptId){
 }
 
 function bindGlobal(){
-  app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await repo.signOut();stopGoogleOneTap({logout:true});user=null;authenticatedUser=null;ui.view='login';render();});
+  app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await repo.signOut();clearDashboardCache();clearInfrastructureCache();ui.infrastructure=null;infrastructureRefreshStarted=false;stopGoogleOneTap({logout:true});user=null;authenticatedUser=null;ui.view='login';render();});
   app.querySelectorAll('[data-action="toggle-role-menu"]').forEach(button=>button.onclick=event=>{
     event.stopPropagation();const account=button.closest('.header-account'),menu=account?.querySelector('[data-role-menu]');if(!menu)return;
     menu.hidden=!menu.hidden;account.querySelectorAll('[data-action="toggle-role-menu"]').forEach(trigger=>trigger.setAttribute('aria-expanded',String(!menu.hidden)));
@@ -1039,7 +1051,7 @@ function bindViewSpecific(){
     try{const result=await repo.call('retryFailedWritingAiJobs');ui.infrastructure=await refreshInfrastructure({summaryOnly:false});notify(result.retriedJobs?`Đã đưa ${result.retriedJobs} bài lỗi vào hàng đợi AI.`:'Không có bài lỗi cần chạy lại.');render();}
     catch(error){button.disabled=false;notify(error?.message||'Không thể chạy lại bài lỗi AI.');}
   });
-  app.querySelector('[data-dashboard-range]')?.addEventListener('change',event=>{ui.dashboardPeriod={range:event.target.value};render();});
+  const dashboardRange=app.querySelector('[data-dashboard-range]');if(dashboardRange)dashboardRange.onchange=event=>{ui.dashboardPeriod={range:event.target.value};render();};
   app.querySelectorAll('[data-action="new-question"]').forEach(b=>b.onclick=()=>questionModal(null,ui.view==='builder'?async q=>{const ex=byId(data.exams,ui.builderExamId),sec=ex?.sections.find(s=>s.id===ui.builderSectionId);if(ex&&sec)await act(()=>repo.transaction(st=>addQuestionsToSection(st,user,ex.id,sec.id,[q.id])),'Đã thêm câu vào phần.');}:null));
   app.querySelectorAll('[data-action="edit-part-template"]').forEach(b=>b.onclick=async()=>{
     const exam=byId(data.exams,ui.builderExamId),section=exam?.sections.find(s=>s.id===ui.builderSectionId);
@@ -1504,6 +1516,12 @@ else{
   startupGate.finish();
   render();
 }
+if(repo.mode==='api')startDashboardRefresh({
+  intervalMs:60000,idleIntervalMs:60000,
+  isActive:()=>isMaster(user)&&ui.view==='admin'&&ui.adminTab==='dashboard'&&!infrastructureLoading&&!document.getElementById('modal'),
+  refresh:()=>refreshInfrastructure({summaryOnly:false}),
+  onResult:result=>{if(JSON.stringify(result)===JSON.stringify(ui.infrastructure))return;ui.infrastructure=result;ui.infrastructureError='';render();},
+});
 if(repo.mode==='api')startDashboardRefresh({
   isActive:()=>isMaster(user)&&ui.view==='admin'&&ui.adminTab==='dashboard'&&Boolean(ui.infrastructure)&&!document.getElementById('modal'),
   refresh:()=>repo.call('getWritingAiQueueStatus'),

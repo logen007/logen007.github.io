@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './dashboard-cache.test.mjs';
 import {createStateCache} from '../server/src/state-cache.js';
 import {createJobPump} from '../server/src/job-pump.js';
 import {ApiRepository} from '../src/repositories/api.js';
