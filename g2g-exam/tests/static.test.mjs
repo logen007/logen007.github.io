@@ -25,10 +25,11 @@ assert.equal(JSON.stringify(pubState.attempts),originalAttempts);
 assert.throws(()=>unpublishExam(pubState,{role:'master'},'test'),/Chỉ có thể/);
 
 const examList=examAdminHtml({user:{id:'owner',role:'master'},data:{attempts:[],exams:[
-  {id:'one',title:'Long <title>',ownerId:'owner',status:'published'},
-  {id:'two',title:'Draft',ownerId:'owner',status:'draft'}
+  {id:'one',title:'Long <title>',ownerId:'owner',status:'published',publicationLabel:'1.0.1'},
+  {id:'two',title:'Draft',ownerId:'owner',status:'draft',publicationLabel:'1.0.0'}
 ]}});
 assert.doesNotMatch(examList,/<th>Trạng thái<\/th>/);
+assert.doesNotMatch(examList,/exam-publication-version|v1\.0\.|Bản gần nhất/);
 assert.match(examList,/exam-title-status is-published/);
 assert.match(examList,/exam-title-status is-draft/);
 assert.match(examList,/aria-label="Long &lt;title&gt; — Đã xuất bản"/);

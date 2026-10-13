@@ -80,6 +80,7 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   colors, with the version aligned right on that row. Version text is always
   v1.0.1 format, including drafts; its tooltip explains publication status. Preview is an eye icon with an accessible name and
   tooltip. No publication progress or success notice; retain error feedback.
+  The exam-list action column never displays a version, including after publish/unpublish.
 
 - Section prompts are independent ordered blocks, not owned by questions. The
   plus action inserts a prompt directly below the current one; up/down moves its

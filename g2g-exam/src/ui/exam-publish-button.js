@@ -8,7 +8,7 @@ export function examPublicationVersion(exam){
 export function examPublishButton(exam,{compact=false,disabled=false,showVersion=true}={}){
   const action=exam.status==='published'?'unpublish':'publish';
   const label=action==='publish'?'Xuất bản':'Bỏ xuất bản';
-  const version=showVersion?examPublicationVersion(exam):'';
+  const version=showVersion&&!compact?examPublicationVersion(exam):'';
   return `<button class="${compact?'icon-btn':'nut chinh'}" data-action="${action}-exam" data-id="${esc(exam.id)}" aria-label="${label}" title="${label}" ${disabled?'disabled':''}>${iconHtml(action)}${compact?'':`<span>${label}</span>`}</button>${version}`;
 }
 
