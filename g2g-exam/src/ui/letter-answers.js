@@ -6,7 +6,8 @@ import {bindLetterPicker,syncLetterPicker,selectedLetterLabel} from './letter-pi
 export function letterAnswerControl(q,answer,layout,{number=null,optionTexts=null,fullSelection=false,nativeText=false}={}){
   const value=isPrefilledQuestion(q)?q.correctAnswer:answer,letter=value==null||value===''?'':choiceLetter(q.choices?.[Number(value)]);
   if(isPrefilledQuestion(q))return `<span class="letter-example">${esc(letter.toLowerCase())}</span>`;
-  const textWidth=Math.max(5,...(optionTexts||[]).map(text=>Math.min(32,[...String(text||'')].length+5)));
+  const selectedText=value==null||value===''?String(number??'—'):`${letter.toLowerCase()}. ${optionTexts?.[Number(value)]||''}`.trim();
+  const textWidth=Math.max(5,Math.min(32,[...selectedText].length+3));
   const attrs=`data-letter-answer ${fullSelection?'data-full-selection="true" ':''}data-q="${esc(q.id)}" aria-label="Antwort: ${esc(number??q.title)}"`;
   if(layout==='letter-table'||layout==='letter-select')return `<select id="letter-${esc(q.id)}" class="truong${nativeText?' inline-gap-native-text':''}" ${nativeText?`style="width:${textWidth}ch;max-width:100%"`:''} ${attrs} ${optionTexts&&!nativeText?'data-option-texts':''} ${!nativeText&&optionTexts&&(fullSelection||optionTexts.some(text=>String(text||'').trim().length>40))?'data-full-options':''}><option value="">${fullSelection?'Überschrift wählen':number==null?'—':esc(number)}</option>${(q.choices||[]).map((choice,i)=>{const key=choiceLetter(choice).toLowerCase(),text=String(optionTexts?.[i]||'').replace(/\[\/?b\]/gi,'').trim();return `<option value="${i}" data-letter="${esc(key)}"${text&&[...text].length<=24?` data-short-text="${esc(text)}"`:''} ${String(value)===String(i)?'selected':''}>${esc(text?`${key}. ${text}`:key)}</option>`;}).join('')}</select>${optionTexts&&!nativeText?`<span class="inline-gap-value" aria-hidden="true">${esc(letter.toLowerCase()||(fullSelection?'Überschrift wählen':number)||'—')}</span>`:''}`;
   return `<input ${attrs} maxlength="1" autocomplete="off" autocapitalize="characters" value="${esc(letter.toLowerCase())}">`;
@@ -27,6 +28,7 @@ export function bindLetterAnswers(root,questions,answers,onSave){
   const section={questionProfile:{uniqueLetters:root.querySelector('[data-letter-section]')?.dataset.uniqueLetters!=='false'},questionIds:questions.map(q=>q.id)};
   const refresh=()=>controls.forEach(el=>{
     syncLetterPicker(el);
+    if(el.classList?.contains('inline-gap-native-text'))el.style.width=`${Math.max(5,Math.min(32,[...(el.selectedOptions[0]?.textContent||'')].length+3))}ch`;
     const display=el.parentElement?.querySelector('.inline-gap-value');
     if(display)display.textContent=selectedLetterLabel(el.selectedOptions[0],el.dataset?.fullSelection==='true');
     for(const option of el.querySelectorAll('option')){
