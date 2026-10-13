@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+for(const band of ['excellent','good','satisfactory','sufficient','failed']){
+  assert.ok(css.includes('.result-track--'+band+'>span{background:var(--score-'+band+'-bg)}'));
+  assert.ok(css.includes('.score-'+band+' { background:var(--score-'+band+'-bg);'));
+}
 const badges=[...css.matchAll(/\.exam-(?:provider|level)\[data-(?:provider|level)="([^"]+)"\] \{ background:#([0-9a-f]{6}); color:#([0-9a-f]{6}); \}/g)];
 assert.equal(badges.length,9);
 assert.equal(new Set(badges.map(match=>match[2])).size,9);

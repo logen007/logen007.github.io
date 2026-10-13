@@ -538,6 +538,8 @@ theme application must not wait for a network response to render the page.
   skip reduced motion, and stop updates when hidden or detached. No new requests.
   Skill labels and bar colors follow the animated displayed score through the
   shared gradeBand thresholds, then restore the exact final assessment.
+  Progress fills and assessment badges share pastel background tokens, with a
+  short color transition as the displayed score crosses a grade threshold.
 
 - Header groups the student avatar, “Kết quả thi” with the actual exam level,
   student name and an icon-only Share button immediately beside the name.
