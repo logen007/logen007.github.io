@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createQuestion,addQuestionsToSection,updateSection} from '../src/core.js';
 import {saveHeadingMatchDraft,headingMatchBuilder} from '../src/part-templates/default/heading-match-builder.js';
 import {seedState} from '../src/seed.js';
 import {telcFixture} from './telc-b1-fixture.mjs';
@@ -9,6 +10,23 @@ import {inlineGapBuilder,saveInlineGapDraft,bindGapPositions} from '../src/part-
 const state=structuredClone(seedState),teacher=state.users.find(u=>u.role==='teacher');
 const {exam,rows}=telcFixture(state,teacher),section=exam.sections[4];
 const numbers=examQuestionNumbers(exam,state.questions),original=splitGapBank(section,rows(section));
+{
+  const copy=structuredClone(state),target=copy.exams.find(e=>e.id===exam.id),part=target.sections[0];
+  const input={level:target.level,skill:part.skill,part:part.name,type:'single',title:'Nháp',choices:['A','B'],correctAnswer:-1,maxScore:5};
+  assert.throws(()=>createQuestion(copy,teacher,input),/Đáp án đúng không hợp lệ/);
+  const question=createQuestion(copy,teacher,input,{allowIncompleteChoices:true});
+  const after=part.questionIds[0],count=part.questionIds.length;
+  addQuestionsToSection(copy,teacher,target.id,part.id,[question.id]);
+  const ids=part.questionIds.filter(id=>id!==question.id);ids.splice(ids.indexOf(after)+1,0,question.id);
+  updateSection(copy,teacher,target.id,part.id,{questionIds:ids});
+  assert.equal(part.questionIds.length,count+1);
+  assert.equal(part.questionIds[1],question.id);
+  assert.equal(question.correctAnswer,-1);
+  const html=headingMatchBuilder(part,part.questionIds.map(id=>copy.questions.find(q=>q.id===id)),false);
+  assert.equal((html.match(/data-heading-text/g)||[]).length,count+1);
+  assert.equal((html.match(/data-heading-correct-text/g)||[]).length,count+1);
+  assert.equal((html.match(/data-heading-score/g)||[]).length,count+1);
+}
 {
   const part=exam.sections[0],questions=rows(part),bank=splitGapBank({gapOptions:part.headingOptions},questions);
   const originalScores=questions.map(q=>q.maxScore),ids=[...part.questionIds];

@@ -1266,7 +1266,7 @@ function bindBuilder(){
     const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
     const profile=section.questionProfile||{};
     const choices=questionDraftChoices(profile);
-    const question=createQuestion(st,user,{level:exam.level,skill:section.skill||section.name,part:section.name,type:profile.type||'single',title:'Nháp',choices,correctAnswer:profile.layout==='heading-match'?-1:0,maxScore:groupScore!==undefined&&groupScore!==''?Math.max(0,Number(groupScore)):defaultScore});
+    const question=createQuestion(st,user,{level:exam.level,skill:section.skill||section.name,part:section.name,type:profile.type||'single',title:'Nháp',choices,correctAnswer:profile.layout==='heading-match'?-1:0,maxScore:groupScore!==undefined&&groupScore!==''?Math.max(0,Number(groupScore)):defaultScore},{allowIncompleteChoices:profile.layout==='heading-match'});
     addQuestionsToSection(st,user,exam.id,section.id,[question.id]);
     if(b.dataset.after){
       const ids=[...section.questionIds];

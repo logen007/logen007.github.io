@@ -49,9 +49,9 @@ function validateQuestionInput(input,existing=null,{allowIncompleteChoices=false
   }
 }
 
-export function createQuestion(state,user,input={}){
+export function createQuestion(state,user,input={},options={}){
   if(!isTeacher(user))throw new Error('Chỉ giáo viên hoặc quản trị viên mới được tạo câu hỏi.');
-  validateQuestionInput(input);
+  validateQuestionInput(input,null,{allowIncompleteChoices:options.allowIncompleteChoices===true});
   const type=input.type||'single';
   const question={
     id:uid('q'),
