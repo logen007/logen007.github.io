@@ -394,8 +394,6 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 .goethe-choices--true-false { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .choice-image-upload { display:grid; place-items:center; position:relative; width:var(--control-height-sm); height:var(--editor-control); flex:0 0 var(--control-height-sm); cursor:pointer; border:1px solid var(--control-border); border-radius:var(--r-sm); color:var(--phu); }
 .choice-image-upload>.ui-icon { width:18px; height:18px; }.choice-uploaded-image { display:block; width:100%; height:100%; object-fit:cover; border-radius:9px; }
-.choice-image-tooltip { display:none; position:absolute; z-index:40; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%); width:180px; height:132px; padding:6px; border:1px solid var(--vien); border-radius:12px; background:var(--mat); box-shadow:var(--shadow); pointer-events:none; }
-.choice-image-tooltip img { display:block; width:100%; height:100%; object-fit:contain; border-radius:8px; }.choice-image-upload.has-image:hover .choice-image-tooltip,.choice-image-upload.has-image:focus-within .choice-image-tooltip { display:block; }
 .goethe-instruction--media textarea { height:100%; min-height:calc(var(--editor-control) * 2 + var(--editor-gap)); }
 .goethe-instruction-actions { display:grid; gap:var(--editor-gap); align-content:start; }.goethe-instruction-icons { display:flex; justify-content:flex-end; gap:8px; height:var(--editor-control); }
 .section-image-upload { display:flex; align-items:center; justify-content:center; position:relative; height:var(--editor-control); min-width:0; border:1px solid var(--control-border); border-radius:var(--r-sm); padding:0 var(--control-pad-x); cursor:pointer; overflow:hidden; font-size:var(--control-font-size); }
@@ -1203,7 +1201,6 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .button-tooltip--image { white-space:pre-line; }
 .button-tooltip--preview { width:min(420px,calc(100vw - 16px)); padding:10px; background:var(--mat); color:var(--chu); border:1px solid var(--vien); border-radius:12px; box-shadow:var(--shadow); }
 .button-tooltip--preview img { display:block; width:100%; height:min(300px,50vh); object-fit:contain; margin-bottom:8px; }
-.goethe-builder .choice-image-upload .choice-image-tooltip { display:none; }
 .button-tooltip--image-width { white-space:pre-line; max-width:min(240px,calc(100vw - 16px)); }
 .reading-blocks-editor { display:grid; gap:16px; margin:20px 0; }
 .reading-block-editor { display:grid; grid-template-columns:100px minmax(0,1fr); gap:12px; }

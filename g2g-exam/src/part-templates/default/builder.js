@@ -97,7 +97,7 @@ function choicesHtml(q,choiceProfile,readOnly){
   const choices=[...(q.choices||[]),...Array(choiceProfile.choices.length).fill('')].slice(0,choiceProfile.choices.length);
   return `<div class="goethe-answer-row"><div class="goethe-choices ${choiceProfile.cssClass}">${choiceProfile.choices.map((label,choiceIndex)=>{
     const choice=choices[choiceIndex],imageUrl=typeof choice==='object'?choice.imageUrl:'',hasImage=Boolean(imageUrl),text=blank(textOf(choice))||'';
-    return `<label><input data-field="correct" type="radio" name="answer-${q.id}" value="${choiceIndex}" ${Number(q.correctAnswer)===choiceIndex?'checked':''} ${readOnly?'disabled':''}>${choiceProfile.showLabels?`<b>${esc(label)}</b>`:''}${choiceProfile.showChoiceImages?`<span class="choice-image-upload ${hasImage?'has-image':''}" title="${hasImage?'Bấm để thay hình ảnh đáp án':'Tải hình ảnh đáp án'}">${hasImage?`<img class="choice-uploaded-image" src="${esc(imageUrl)}" alt="Ảnh đáp án ${esc(label)}">`:icons.imageUpload}${hasImage?`<span class="choice-image-tooltip"><img src="${esc(imageUrl)}" alt="Ảnh đáp án ${esc(label)}"></span>`:''}<input type="file" data-choice-image="${choiceIndex}" accept="image/*" ${readOnly?'disabled':''}></span>`:''}<input data-choice="${choiceIndex}" placeholder="Nhập đáp án" value="${esc(text)}" ${readOnly?'disabled':''}></label>`;
+    return `<label><input data-field="correct" type="radio" name="answer-${q.id}" value="${choiceIndex}" ${Number(q.correctAnswer)===choiceIndex?'checked':''} ${readOnly?'disabled':''}>${choiceProfile.showLabels?`<b>${esc(label)}</b>`:''}${choiceProfile.showChoiceImages?`<span class="choice-image-upload ${hasImage?'has-image':''}" title="${hasImage?'Bấm để thay hình ảnh đáp án':'Tải hình ảnh đáp án'}">${hasImage?`<img class="choice-uploaded-image" src="${esc(imageUrl)}" alt="Ảnh đáp án ${esc(label)}">`:icons.imageUpload}<input type="file" data-choice-image="${choiceIndex}" accept="image/*" ${readOnly?'disabled':''}></span>`:''}<input data-choice="${choiceIndex}" placeholder="Nhập đáp án" value="${esc(text)}" ${readOnly?'disabled':''}></label>`;
   }).join('')}</div></div>`;
 }
 
@@ -256,7 +256,7 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
   });
   root.querySelectorAll('[data-choice-image]').forEach(input=>input.onchange=()=>{
     const file=input.files?.[0],control=input.closest('.choice-image-upload');if(!file||!control)return;control.classList.add('has-image');control.title='Bấm để thay hình ảnh đáp án';const objectUrl=URL.createObjectURL(file);let thumbnail=control.querySelector(':scope > img');
-    if(!thumbnail){control.querySelector(':scope > svg')?.remove();thumbnail=document.createElement('img');control.prepend(thumbnail);}thumbnail.src=objectUrl;thumbnail.className='choice-uploaded-image';thumbnail.alt='Ảnh đáp án đã chọn';control.querySelector('.choice-image-tooltip')?.remove();const tooltip=document.createElement('span'),preview=new Image();tooltip.className='choice-image-tooltip';preview.alt='Ảnh đáp án đã chọn';preview.src=objectUrl;tooltip.append(preview);control.append(tooltip);
+    if(!thumbnail){control.querySelector(':scope > svg')?.remove();thumbnail=document.createElement('img');control.prepend(thumbnail);}thumbnail.src=objectUrl;thumbnail.className='choice-uploaded-image';thumbnail.alt='Ảnh đáp án đã chọn';
   });
   root.querySelectorAll('[data-rubric-image]').forEach(input=>input.onchange=()=>{
     const file=input.files?.[0],picker=input.closest('.writing-image-picker');

@@ -89,6 +89,8 @@ click(fresh.input);fresh.input.isConnected=false;observe([{addedNodes:[]}]);asse
 cleanup();assert.equal(disconnected,true);assert.equal(Object.keys(listeners).length,0);
 
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.doesNotMatch(css,/choice-image-tooltip/,'Only the shared image preview is styled');
+assert.doesNotMatch(readFileSync(new URL('../src/part-templates/default/builder.js',import.meta.url),'utf8'),/choice-image-tooltip/,'Initial and uploaded answers use the shared preview');
 assert.doesNotMatch(css,/image-paste-toolbar/);
 assert.match(css,/\[data-image-paste-target\]\.image-paste-active\s*\{\s*border-color:var\(--brand-primary\)/);
 assert.match(readFileSync(new URL('../src/ui/button-tooltips.js',import.meta.url),'utf8'),/imageTarget\?button.getAttribute\('title'\)/);
