@@ -1,5 +1,5 @@
 import {modernInstructionText} from '../../domain/text-markup.js';
-import {sectionInstructionEditor} from './section-instruction-editor.js';
+import {sectionInstructionEditor,placeInstructionEditors} from './section-instruction-editor.js';
 import {imageMaxWidth,isPrefilledQuestion} from '../../domain/question-display.js';
 import {byId,getQuestionMaxScore} from '../../core.js';
 import {esc} from '../../ui/format.js';
@@ -228,6 +228,7 @@ export function bindBuilder({root=document,data,exam,section,pendingAudioUploads
     field.dispatchEvent(new Event('change',{bubbles:true}));
   });
   if(!section)return;
+  placeInstructionEditors(root,section,exam,data.questions);
   const resetAudioPreview=button=>{button.innerHTML=icons.play;button.title='Nghe thử audio';button.setAttribute('aria-label','Nghe thử audio');};
   const bindInlineAudioPreview=button=>button.onclick=async()=>{
     const control=button.closest('.audio-upload'),audio=control?.querySelector('.inline-audio-preview');if(!audio)return;

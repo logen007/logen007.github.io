@@ -23,7 +23,7 @@ assert.equal(questions.reduce((sum,q)=>sum+Number(q.maxScore||0),0),4);
 
 const badAudio=questions.map(q=>({...q}));
 badAudio[0]={...badAudio[0],audioUrl:''};
-assert.throws(()=>validateA1ListeningPart1({part,questions:badAudio,spec}),/audio/i);
+assert.doesNotThrow(()=>validateA1ListeningPart1({part,questions:badAudio,spec}));
 
 const tooMany=Array.from({length:11},(_,index)=>({...questions[0],id:`x${index}`}));
 assert.throws(()=>validateA1ListeningPart1({part:{...part,questionIds:tooMany.map(q=>q.id)},questions:tooMany,spec}),/1.*10|10 câu/i);

@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import {sectionInstructions,changeInstructions,instructionAudioKey} from '../src/domain/section-instructions.js';
 import {createExam,updateSection,duplicateExam} from '../src/domain/exams.js';
 import {partAudioSegments} from '../src/domain/part-audio.js';
-import {sectionPromptHtml} from '../src/views/student.js';
+import {sectionPromptHtml,examHtml} from '../src/views/student.js';
+import {imageMaxWidth} from '../src/domain/question-display.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
 import {collectAdditionalInstructions} from '../src/part-templates/default/section-instruction-editor.js';
 import {seedState} from '../src/seed.js';
@@ -54,3 +55,20 @@ assert.equal(section.instructionImageUrl,'/uploads/second.jpg');
 const references=await referencedUploadNames({query:async sql=>({rows:sql==='SELECT data FROM exams'?[{data:{sections:[before]}}]:[]})});
 assert.ok(references.has('second.jpg'));assert.ok(references.has('second.mp3'),'Additional prompt media is protected from garbage collection');
 console.log('Independent section prompts: add, move, remove, media, copy, render, save and read-only passed.');
+{
+  const questions=[1,2,3,4].map(n=>({id:'position-'+n,type:'single',title:'Question '+n,choices:['Yes','No'],maxScore:1,audioUrl:n===3?'':'/q'+n+'.mp3'}));
+  const part={id:'position',name:'Nghe 3',skill:'Nghe',skillKey:'listening',questionIds:questions.map(q=>q.id),instruction:'Intro',additionalInstructions:[{id:'prompt-1',text:'Between three and four',imageUrl:'/between.jpg',audioUrl:'/between.mp3',afterQuestion:3}],questionProfile:{layout:'choices'}};
+  const paper={id:'positions',provider:'TELC',level:'B1',title:'Positions',sections:[part]};
+  for(const preview of [false,true]){
+    const html=examHtml({exam:paper,attempt:{answers:{}},sectionIndex:0,questions,allQuestions:questions,online:true,preview});
+    assert.ok(html.indexOf('Question 3')<html.indexOf('Between three and four'));
+    assert.ok(html.indexOf('Between three and four')<html.indexOf('Question 4'));
+    assert.equal(html.split('/between.jpg').length-1,1);
+  }
+  assert.deepEqual(partAudioSegments(part,questions).map(s=>s.url),['/q1.mp3','/q2.mp3','/between.mp3','/q4.mp3'],'Prompt audio retains its position even after a question with no recording');
+  assert.match(sectionPromptHtml({...part,instructionImageUrl:'/writing.jpg',instructionImageMaxWidth:1}),/writing.jpg/);
+  assert.doesNotMatch(sectionPromptHtml({...part,instructionImageUrl:'/writing.jpg',instructionImageMaxWidth:1}),/max-width:1px/);
+  assert.equal(imageMaxWidth(1),null);
+  assert.equal(imageMaxWidth(600),600);
+  assert.match(renderBuilder({data:{questions},exam:paper,section:part}),/data-tooltip="Chiều rộng tối đa/);
+}

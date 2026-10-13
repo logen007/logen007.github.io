@@ -844,7 +844,7 @@ async function persistBuilderDraft({silent=false}={}){
       if(section&&app.querySelector('[data-section-prompt]')){
         const imageControl=app.querySelector('[data-section-image]')?.closest('[data-section-image-control]');
         const instructionImageUrl=imageValue(app.querySelector('[data-section-image]'),sectionImageUrl,imageControl?.dataset.removeSectionImage==='true'?'':section.instructionImageUrl||'');
-        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionImageUrl,instructionImageMaxWidth:document.getElementById('sectionImageMaxWidth')?.value||null,additionalInstructions:instructionDraft.blocks});
+        updateSection(st,user,exam.id,section.id,{instruction:document.getElementById('sectionInstruction')?.value||'',instructionAfterQuestion:Number(app.querySelector('[data-section-prompt="main"] [data-prompt-position]')?.value||0),instructionImageUrl,instructionImageMaxWidth:document.getElementById('sectionImageMaxWidth')?.value||null,additionalInstructions:instructionDraft.blocks});
       }
       if(section&&app.querySelector('.part-question[data-question-id]')){
         const questionIds=[...app.querySelectorAll('.part-question[data-question-id]')].map(card=>card.dataset.questionId);
@@ -1366,6 +1366,7 @@ function bindBuilder(){
     field.addEventListener('change',()=>queueBuilderAutosave(0));
   });
   app.querySelectorAll('[data-action="clear-section-image"],[data-action="clear-question-image"]').forEach(button=>button.addEventListener('click',()=>queueBuilderAutosave(0)));
+  app.querySelectorAll('[data-prompt-position]').forEach(field=>field.addEventListener('change',async()=>{if(await flushBuilderDraft())render();}));
   app.querySelectorAll('[data-action="save-section"]').forEach(b=>b.onclick=()=>{
     const patch={
       name:document.getElementById('sectionName').value,

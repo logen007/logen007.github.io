@@ -1,6 +1,5 @@
 import {isPrefilledQuestion} from './question-display.js';
-import {letterAnswerError} from './letter-answers.js';
-import {partAudioQuestions,effectiveAudioPolicy} from './part-audio.js';
+import {letterAnswerIssue} from './letter-answers.js';
 import {inlineGapErrors} from './inline-gaps.js';
 
 export function configuredPartErrors(section,questions){
@@ -24,9 +23,12 @@ export function configuredPartErrors(section,questions){
   }
   if(scoredCount!==section.questionLimit)errors.push(`${section.name}: cần đúng ${section.questionLimit} câu tính điểm, hiện có ${scoredCount}. Thêm hoặc bỏ câu tính điểm cho đủ số lượng; câu ví dụ không được tính.`);
   if(profile.uniqueLetters){
-    const error=letterAnswerError(section,map,Object.fromEntries(rows.map(q=>[q.id,q.correctAnswer])));
-    if(error)errors.push(profile.layout==='inline-gaps'?`${section.name}: mỗi ký hiệu đáp án chỉ dùng một lần. Kiểm tra các chỗ trống trong đoạn văn.`:`${section.name}: kiểm tra đáp án đúng. Chọn một chữ cái hợp lệ cho mỗi câu; các đáp án đúng không được trùng nhau, kể cả câu ví dụ (Beispiel).`);
+    const issue=letterAnswerIssue(section,map,Object.fromEntries(rows.map(q=>[q.id,q.correctAnswer])));
+    if(issue){
+      const label=id=>isPrefilledQuestion(map.get(id))?'câu ví dụ':`câu ${rows.filter(q=>!isPrefilledQuestion(q)).findIndex(q=>q.id===id)+1}`;
+      const exception=profile.repeatableLetters?.length?` ${profile.repeatableLetters.join(', ')} được phép lặp lại.`:'';
+      errors.push(issue.kind==='invalid'?`${section.name}: ${label(issue.id)} chưa chọn đáp án đúng hợp lệ.${exception}`:`${section.name}: ${label(issue.previousId)} và ${label(issue.id)} trùng đáp án ${issue.letter}; đáp án này chỉ dùng một lần.${exception}`);
+    }
   }
-  if((section.audioPolicy||section.audioFlow)&&partAudioQuestions(section,rows).some(q=>!String(q.audioUrl||'').trim()))errors.push(`${section.name}: hãy tải đủ audio cho Beispiel và ${effectiveAudioPolicy(section).sharedPart?'audio toàn bài':'từng câu hỏi'}.`);
   return errors;
 }

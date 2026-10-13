@@ -163,6 +163,23 @@ for(const section of exam.sections.slice(5,8)){
 assert.equal(exam.sections[8].questionProfile.layout,'free-response');
 assert.deepEqual(exam.sections[8].questionProfile.wordRange,[20,30]);
 assert.deepEqual(validateExamForPublish(state,exam),[]);
+{
+  const draft=structuredClone(state),draftExam=draft.exams.find(item=>item.id===exam.id);
+  for(const question of draft.questions)question.audioUrl='';
+  assert.deepEqual(validateExamForPublish(draft,draftExam),[],'No example or question audio is required to publish');
+  const listening=draftExam.sections[7],ids=listening.questionIds;
+  draft.questions.find(q=>q.id===ids.at(-1)).audioUrl='/only-one.mp3';
+  assert.deepEqual(validateExamForPublish(draft,draftExam),[],'Partial audio coverage is allowed');
+  assert.deepEqual(partAudioSegments({...listening,instructionAudioUrl:''},draft.questions.filter(q=>ids.includes(q.id))).map(s=>s.url),['/only-one.mp3']);
+}
+{
+  const draft=structuredClone(state),draftExam=draft.exams.find(item=>item.id===exam.id),matching=draftExam.sections[2];
+  draftExam.sections=[matching];delete matching.questionProfile.repeatableLetters;
+  const savedChoices=JSON.stringify(draft.questions.map(q=>q.choices));
+  assert.equal(ensureExamMatchesConfiguredSpec(draft,teacher,draftExam.id),true);
+  assert.deepEqual(draftExam.sections[0].questionProfile.repeatableLetters,['X']);
+  assert.equal(JSON.stringify(draft.questions.map(q=>q.choices)),savedChoices,'Policy repair preserves custom choices in partial exams');
+}
 const [heading,,,gap3,gapBank]=exam.sections;
 const before=JSON.stringify(exam);
 assert.equal(ensureExamMatchesConfiguredSpec(state,teacher,exam.id),false);
@@ -225,8 +242,8 @@ for(let i=0;i<exam.sections.length;i++){
   assert.ok(html.length>100);
   if(i===3)assert.match(html,/>SB 1<\/h1>/);
   if(i===4){
-    assert.doesNotMatch(html,/exam-reading-split|gap-sentences|gap-choice-bank/);
-    assert.match(html,/inline-gap-native-text/);
+    assert.match(html,/exam-reading-split/);
+    assert.match(html,/gap-sentences/);
     assert.equal((html.match(/data-letter-answer/g)||[]).length,rows(exam.sections[i]).length);
   }
   if(i===3){

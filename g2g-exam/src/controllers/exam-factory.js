@@ -93,18 +93,29 @@ export function ensureExamMatchesConfiguredSpec(state,user,examId,{stamp=Date.no
   const spec=getExamSpec(exam.provider,exam.level);
   if(!spec?.configured)return false;
   const expectedSections=buildSectionsFromSpec(spec,{idFactory:index=>`spec-${stamp}-${index+1}`});
+  // Repair this narrow policy even when a legacy exam has custom/missing parts.
+  // Do not rebuild its authored question choices or alter attempt snapshots.
+  let policyRepaired=false;
+  const policySections=exam.sections.map(section=>{
+    const configured=expectedSections.find(item=>item.name===section.name&&item.skill===section.skill);
+    const repeatable=configured?.questionProfile?.repeatableLetters;
+    if(!repeatable||JSON.stringify(section.questionProfile?.repeatableLetters)===JSON.stringify(repeatable))return section;
+    policyRepaired=true;
+    return {...section,questionProfile:{...section.questionProfile,repeatableLetters:clone(repeatable)}};
+  });
+  if(policyRepaired)updateExam(state,user,exam.id,{sections:policySections});
   const expected=expectedSections.map(section=>section.name);
   const hasAllParts=expected.every(name=>(exam.sections||[]).some(section=>section.name===name));
   // Previously unconfigured TELC exams may contain custom authored sections.
   // Do not reinterpret or discard their questions when enabling the new template.
-  if(spec.provider==='TELC'&&!hasAllParts&&(exam.sections||[]).some(section=>section.questionIds?.length||section.instruction||section.instructionImageUrl))return false;
+  if(spec.provider==='TELC'&&!hasAllParts&&(exam.sections||[]).some(section=>section.questionIds?.length||section.instruction||section.instructionImageUrl))return policyRepaired;
   const hasStaleProfile=hasAllParts&&expectedSections.some(expectedSection=>{
     const existing=(exam.sections||[]).find(section=>section.name===expectedSection.name);
     return JSON.stringify(existing?.questionProfile||null)!==JSON.stringify(expectedSection.questionProfile||null)
       ||JSON.stringify(existing?.audioPolicy||null)!==JSON.stringify(expectedSection.audioPolicy||null);
   });
   if(hasAllParts&&!hasStaleProfile){
-    let repaired=false;
+    let repaired=policyRepaired;
     for(const section of exam.sections||[]){
       if(!section.questionProfile?.formFrame)continue;
       for(const id of section.questionIds||[]){

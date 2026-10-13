@@ -5,6 +5,7 @@ export function normalizeInstructions(blocks){
     id:String(block.id||`prompt-${index+1}`),text:String(block.text||''),
     imageUrl:String(block.imageUrl||''),imageMaxWidth:imageMaxWidth(block.imageMaxWidth),
     audioUrl:String(block.audioUrl||''),audioName:String(block.audioName||''),
+    afterQuestion:Math.max(0,Math.floor(Number(block.afterQuestion)||0)),
   }));
 }
 
@@ -12,12 +13,12 @@ export function normalizeInstructions(blocks){
 export function sectionInstructions(section){
   return normalizeInstructions([{id:'main',text:section.instruction||'',imageUrl:section.instructionImageUrl||'',
     imageMaxWidth:section.instructionImageMaxWidth,audioUrl:section.instructionAudioUrl||'',
-    audioName:section.instructionAudioName||''},...normalizeInstructions(section.additionalInstructions)]);
+    audioName:section.instructionAudioName||'',afterQuestion:section.instructionAfterQuestion},...normalizeInstructions(section.additionalInstructions)]);
 }
 
 export function instructionPatch(blocks){
   const [first,...rest]=normalizeInstructions(blocks);
-  return {instruction:first?.text||'',instructionImageUrl:first?.imageUrl||'',
+  return {instruction:first?.text||'',instructionImageUrl:first?.imageUrl||'',instructionAfterQuestion:first?.afterQuestion||0,
     instructionImageMaxWidth:first?.imageMaxWidth??null,instructionAudioUrl:first?.audioUrl||'',
     instructionAudioName:first?.audioName||'',additionalInstructions:rest.map((block,index)=>({...block,id:`prompt-${index+1}`}))};
 }
@@ -25,7 +26,7 @@ export function instructionPatch(blocks){
 export function changeInstructions(section,index,action){
   const blocks=sectionInstructions(section);
   if(!Number.isInteger(index)||index<0||index>=blocks.length)return instructionPatch(blocks);
-  if(action==='add')blocks.splice(index+1,0,{text:''});
+  if(action==='add')blocks.splice(index+1,0,{text:'',afterQuestion:blocks[index].afterQuestion});
   if(action==='remove'&&blocks.length>1)blocks.splice(index,1);
   const next=index+(action==='up'?-1:1);
   if(['up','down'].includes(action)&&next>=0&&next<blocks.length)[blocks[index],blocks[next]]=[blocks[next],blocks[index]];
@@ -33,3 +34,7 @@ export function changeInstructions(section,index,action){
 }
 
 export const instructionAudioKey=(section,id)=>id==='main'?`section:${section.id}`:`instruction:${section.id}:${id}`;
+
+// Embedded gaps, heading banks and horizontal answer tables are indivisible passages.
+export const supportsInstructionPositions=section=>!['inline-gaps','heading-match','letter-table'].includes(section.questionProfile?.layout);
+export const instructionPosition=(block,count)=>Math.min(count,Math.max(0,Number(block.afterQuestion)||0));

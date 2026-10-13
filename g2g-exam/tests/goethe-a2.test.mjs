@@ -54,7 +54,7 @@ for(const section of exam.sections){
 }
 assert.deepEqual(validateExamForPublish(state,exam),[]);
 const hearing=exam.sections.find(s=>s.name==='Nghe 1'),missing=state.questions.find(q=>q.id===hearing.questionIds[1]);
-const url=missing.audioUrl;missing.audioUrl='';assert.ok(validateExamForPublish(state,exam).some(e=>e.includes('audio')));missing.audioUrl=url;
+const url=missing.audioUrl;missing.audioUrl='';assert.ok(!validateExamForPublish(state,exam).some(e=>e.includes('audio')));missing.audioUrl=url;
 exam.status='published';
 const attempt=startAttempt(state,student,exam.id);
 attempt.answers=Object.fromEntries(exam.sections.flatMap(s=>s.questionIds.map(id=>[id,null])));
@@ -130,7 +130,7 @@ groupScore.value='';onGroupScore();assert.equal(totalUpdates,1);
 groupScore.value='-1';groupScore.validity.valid=false;onGroupScore();assert.equal(totalUpdates,1);
 assert.match(settingsEditor,/id="sectionTableHeading" value="Gegenstand"/);
 assert.match(settingsEditor,/id="sectionImageMaxWidth"/);
-assert.match(settingsEditor,/<input[^>]+id="sectionImageMaxWidth"[^>]+placeholder="Rộng ảnh \(px\)"/);
+assert.match(settingsEditor,/<input[^>]+id="sectionImageMaxWidth"[^>]+placeholder="Rộng tối đa"/);
 assert.doesNotMatch(settingsEditor,/Rộng ảnh tối đa \(px\)|placeholder="Toàn cột"/);
 assert.equal(summarizeExam(exam,state).questions,42);
 updateSection(state,teacher,exam.id,letterSection.id,{instructionImageMaxWidth:620,tableHeading:'Thema'});

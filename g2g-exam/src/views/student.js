@@ -1,5 +1,5 @@
 import {sectionLabel} from '../ui/section-label.js';
-import {sectionInstructions} from '../domain/section-instructions.js';
+import {sectionInstructions,supportsInstructionPositions,instructionPosition} from '../domain/section-instructions.js';
 import {isPrefilledQuestion,imageMaxWidth,shortChoiceColumns,compactBinaryChoices} from '../domain/question-display.js';
 import {answerPresent,MIN_COMPLETION_PERCENT} from '../domain/exam-completion.js';
 export {answerPresent} from '../domain/exam-completion.js';
@@ -57,7 +57,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const sec=exam.sections[sectionIndex];
   const configuredPart=getExamSpec(exam.provider,exam.level)?.skills
     .find(skill=>skill.key===sec.skillKey||skill.label===sec.skill)?.parts.find(part=>part.name===sec.name);
-  const compactGaps=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&['Đọc 4','Đọc 5'].includes(sec.name);
+  const compactGaps=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&sec.name==='Đọc 4';
   const compactHeadings=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&sec.questionProfile?.layout==='heading-match';
   const splitLayout=!compactHeadings&&!compactGaps&&(configuredPart?.questionProfile?.splitLayout??sec.questionProfile?.splitLayout);
   const orderedQuestions=questions.map((q,originalIndex)=>({q,originalIndex})).sort((a,b)=>Number(Boolean(isPrefilledQuestion(b.q)))-Number(Boolean(isPrefilledQuestion(a.q))));
@@ -67,7 +67,9 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Kết thúc':'Abgeben'):'Weiter';
   const splitHeadings=splitLayout&&sec.questionProfile?.layout==='heading-match';
-const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additionalInstructions?.length||sec.readingBlocks?.length||splitHeadings?`<section class="exam-instruction">${sectionPromptHtml(sec)}${readingBlocksHtml(sec)}${splitHeadings?headingOptionsHtml(sec):''}</section>`:'';
+  const positioned=supportsInstructionPositions(sec),promptAt=position=>sectionPromptHtml(sec,{position,questionCount:requiredQuestions.length});
+  const afterPrompt=position=>{const content=positioned?promptAt(position):'';return content?`<section class="exam-instruction positioned-section-prompt">${content}</section>`:'';};
+const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additionalInstructions?.length||sec.readingBlocks?.length||splitHeadings?`<section class="exam-instruction">${positioned?promptAt(0):sectionPromptHtml(sec)}${readingBlocksHtml(sec)}${splitHeadings?headingOptionsHtml(sec):''}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview});
   const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
   const knownQuestions=new Map((allQuestions||[]).map(question=>[question.id,question]));
@@ -75,7 +77,7 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additiona
   const exampleCount=orderedQuestions.length-requiredQuestions.length;
   const stimulusGroups=[{left:sectionInstruction,right:sectionAudio}];
   const groupStimuli=splitLayout&&!['heading-match','inline-gaps','letter-select'].includes(sec.questionProfile?.layout)&&!sec.questionProfile?.uniqueLetters&&questions.some(q=>q.instructionBlocks?.length);
-  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber,{separateOptions:splitHeadings||compactHeadings}):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber,{compact:compactGaps,splitLayout:configuredPart?.questionProfile?.gapSplitLayout??sec.questionProfile?.gapSplitLayout}):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
+  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber,{separateOptions:splitHeadings||compactHeadings}):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber,{compact:compactGaps,splitLayout:configuredPart?.questionProfile?.gapSplitLayout??sec.questionProfile?.gapSplitLayout}):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber,{afterQuestion:afterPrompt}):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
     const example=isPrefilledQuestion(q),scoredIndex=displayIndex-exampleCount;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
     const paired=sec.questionProfile?.pairedQuestions;
@@ -86,7 +88,7 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additiona
       if(displayIndex>0&&!example&&(!paired||scoredIndex%2===0))stimulusGroups.push({left:'',right:''});
       stimulusGroups.at(-1).left+=questionStimulusHtml(q);
     }
-    const rendered=pairStart+renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{singleQuestion:questions.filter(q=>!isPrefilledQuestion(q)).length===1,linedPaper:sec.questionProfile?.linedPaper,wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,hideStimulus:movedStimulus,questionNumber:example?null:++questionNumber,showExampleTitle:false,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'})+pairEnd;
+    const rendered=pairStart+renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{singleQuestion:questions.filter(q=>!isPrefilledQuestion(q)).length===1,linedPaper:sec.questionProfile?.linedPaper,wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,hideStimulus:movedStimulus,questionNumber:example?null:++questionNumber,showExampleTitle:false,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1'})+pairEnd+(example?'':afterPrompt(scoredIndex+1));
     if(groupStimuli)stimulusGroups.at(-1).right+=rendered;
     return rendered;
   }).join('')||'<div class="rong">Dieser Teil enthält noch keine Aufgaben.</div>'}</section>`;
@@ -136,8 +138,9 @@ function sectionAudioHtml(section,questions,attempt,{preview=false}={}){
 
 const questionImageUrl=q=>String((Array.isArray(q.instructionBlocks)?q.instructionBlocks[0]?.imageUrl:'')||q.instructionImageUrl||'').trim();
 
-export function sectionPromptHtml(section){
+export function sectionPromptHtml(section,{position=null,questionCount=0}={}){
   return sectionInstructions(section).map((block,index)=>{
+  if(position!==null&&instructionPosition(block,questionCount)!==position)return '';
   const text=block.text,hasMarker=/\[img\]/i.test(text);
   const image=block.imageUrl?`<img ${imageMaxWidth(block.imageMaxWidth)?`style="max-width:${imageMaxWidth(block.imageMaxWidth)}px"`:''} src="${esc(block.imageUrl)}" alt="Abbildung zur Aufgabenstellung">`:'';
   let inserted=false;

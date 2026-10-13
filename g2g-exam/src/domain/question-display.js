@@ -4,7 +4,8 @@ export function isPrefilledQuestion(question){
 
 export function imageMaxWidth(value){
   const n=Number(value);
-  return Number.isFinite(n)&&n>0?Math.round(n):null;
+  // A saved 1px limit makes prompt images effectively invisible; restore automatic sizing.
+  return Number.isFinite(n)&&n>1?Math.round(n):null;
 }
 
 export function shortChoiceColumns(choices){

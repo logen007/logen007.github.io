@@ -5,7 +5,9 @@ Status: APPROVED — user request, 12 October 2026.
 Amendment approved 13 October 2026: every listening question permits an audio
 attachment and detachment. Explicit recordings on additional questions play in
 question order under the existing repeat policy; legacy grouping still defines
-required audio positions. Detaching clears the reference, never deletes the file.
+default audio positions. Detaching clears the reference, never deletes the file.
+Audio is optional when publishing, for both examples and scored questions,
+including A1 listening templates. Playback includes only attached recordings.
 
 The listening skill settings allow an author to configure each part's playback
 flow. This is an explicit per-exam override, not a change to provider defaults.
@@ -14,7 +16,9 @@ flow. This is an explicit per-exam override, not a change to provider defaults.
   (1 → 1 → 2 → 2 → 3 → 3). Show all parts, without tabs.
 - Instructions and examples, when present, always play once.
 - Question/pair/whole-part grouping follows the approved provider specification.
-- Instructions precede examples, which precede scored recordings.
+- By default instructions precede examples, then scored recordings. Independently
+  positioned prompts play after their selected scored question, even if that
+  question has no audio. Their audio is not repeated in subsequent question rounds.
 - Existing approved policies remain unchanged when no override is stored.
 - Audio files are never deleted. Saving replaces older advanced overrides with
   this compact configuration. Legacy frozen attempts remain readable unchanged.

@@ -12,13 +12,13 @@ export function letterAnswerControl(q,answer,layout,{number=null,optionTexts=nul
   return `<input ${attrs} maxlength="1" autocomplete="off" autocapitalize="characters" value="${esc(letter.toLowerCase())}">`;
 }
 
-export function letterAnswersHtml(section,questions,answers,startNumber){
+export function letterAnswersHtml(section,questions,answers,startNumber,{afterQuestion=()=>''}={}){
   let number=startNumber;
   const layout=section.questionProfile.layout;
   const items=questions.map(q=>({q,number:isPrefilledQuestion(q)?(layout==='letter-table'?'_':0):++number}));
   const body=layout==='letter-table'
     ?`<div class="letter-table-scroll"><table class="letter-table"><thead><tr><th scope="row">${esc(section.tableHeading??'Person')}</th>${items.map(({q,number})=>`<th scope="col">${number}<span>${textHtml(q.title==='Nháp'?'':q.title)}</span></th>`).join('')}</tr></thead><tbody><tr><th scope="row">Lösung</th>${items.map(({q})=>`<td>${letterAnswerControl(q,answers[q.id],layout)}</td>`).join('')}</tr></tbody></table></div>`
-    :items.map(({q,number})=>`<div class="letter-question"><label for="letter-${esc(q.id)}"><b>${number}${number==='_'?'':'.'}</b> ${textHtml(q.title==='Nháp'?'':q.title)}</label>${letterAnswerControl(q,answers[q.id],layout).replace('<input ','<input id="letter-'+esc(q.id)+'" ')}</div>`).join('');
+    :items.map(({q,number})=>`<div class="letter-question"><label for="letter-${esc(q.id)}"><b>${number}${number==='_'?'':'.'}</b> ${textHtml(q.title==='Nháp'?'':q.title)}</label>${letterAnswerControl(q,answers[q.id],layout).replace('<input ','<input id="letter-'+esc(q.id)+'" ')}</div>${isPrefilledQuestion(q)?'':afterQuestion(number-startNumber)}`).join('');
   return `<section class="letter-answers" data-letter-section data-repeatable-letters="${esc((section.questionProfile.repeatableLetters||[]).join(','))}" data-unique-letters="${section.questionProfile.uniqueLetters!==false}">${body}<p class="letter-answer-error" role="status" aria-live="polite"></p></section>`;
 }
 

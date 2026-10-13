@@ -9,7 +9,6 @@ export function validateA1ListeningPart1({part,section,group,questions,spec}){
   for(let index=0;index<questions.length;index++){
     const question=questions[index];
     if(!String(question?.prompt||'').trim())throw new Error(`Câu ${index+1} chưa có nội dung câu hỏi.`);
-    if(!String(question?.audioUrl||'').trim())throw new Error(`Câu ${index+1} chưa có mảnh audio.`);
     if(!Array.isArray(question?.choices)||question.choices.length!==keys.length)throw new Error(`Câu ${index+1} phải có đủ đáp án ${keys.join('/')} .`);
     if(question.choices.some(choice=>!String(choice?.text??choice??'').trim()))throw new Error(`Câu ${index+1} cần đủ nội dung ${keys.join(', ')}.`);
     const correct=Number(question.correctAnswer);

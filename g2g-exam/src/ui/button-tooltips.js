@@ -10,11 +10,11 @@ export function bindButtonTooltips(){
     tip?.remove();tip=null;active=null;
   };
   const show=target=>{
-    const button=target?.closest?.('button,.icon-btn,.gear,[data-image-paste-target]');
+    const button=target?.closest?.('button,.icon-btn,.gear,[data-image-paste-target],[data-tooltip]');
     if(!button||button.disabled)return;
     const imageTarget=button.matches('[data-image-paste-target]');
-    const iconOnly=imageTarget||button.matches('.icon-btn,.gear,.navigation-arrow,.section-arrow')||(!button.textContent.trim()&&button.querySelector('svg,img'));
-    const label=imageTarget?button.getAttribute('title'):button.getAttribute('aria-label')||button.getAttribute('title');
+    const iconOnly=button.getAttribute('data-tooltip')||imageTarget||button.matches('.icon-btn,.gear,.navigation-arrow,.section-arrow')||(!button.textContent.trim()&&button.querySelector('svg,img'));
+    const label=button.getAttribute('data-tooltip')||(imageTarget?button.getAttribute('title'):button.getAttribute('aria-label')||button.getAttribute('title'));
     if(!iconOnly||!label)return;
     hide();active=button;
     tip=document.createElement('div');tip.className=imageTarget?'button-tooltip button-tooltip--image':'button-tooltip';tip.id='button-action-tooltip';tip.setAttribute('role','tooltip');tip.textContent=label;
@@ -30,7 +30,7 @@ export function bindButtonTooltips(){
   document.addEventListener('focusin',event=>show(event.target));
   document.addEventListener('focusout',hide);
   document.addEventListener('click',event=>{
-    const button=event.composedPath().find(node=>node.matches?.('button,.icon-btn,.gear'));
+    const button=event.composedPath().find(node=>node.matches?.('button,.icon-btn,.gear,[data-tooltip]'));
     hide();if(button?.isConnected)show(button);
   });
   document.addEventListener('keydown',event=>{if(event.key==='Escape')hide();});

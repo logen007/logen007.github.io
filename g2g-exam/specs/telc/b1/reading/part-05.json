@@ -9,6 +9,7 @@
     "defaultScore": 1.5,
     "scoringSkill": "grammar",
     "dynamicGapOptions": true,
+    "gapSplitLayout": true,
     "inlineExample": false,
     "choices": [
       "A",

@@ -1108,6 +1108,12 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 
 /* Section prompts are independent blocks; the whole tool column stretches together. */
 .section-instructions { display:grid; gap:24px; margin-bottom:24px; }
+.section-prompt-editor { margin-block:16px; }
+.image-width-control { position:relative; display:flex; align-items:center; min-width:0; flex:1; }
+.image-width-control .instruction-image-width { width:100%; padding-right:30px; }
+.image-width-control>span { position:absolute; right:10px; font-size:12px; color:var(--muted); pointer-events:none; }
+[data-has-image="false"] .image-width-control { display:none; }
+.positioned-section-prompt { margin-block:24px; }
 .section-prompt-editor { display:grid; grid-template-columns:minmax(0,1fr) 224px; align-items:stretch; gap:16px; min-width:0; }
 .section-prompt-editor .instruction-content { display:flex; min-width:0; }
 .section-prompt-editor .instruction-content textarea { flex:1; width:100%; height:100%; min-height:180px; resize:vertical; }
