@@ -1,4 +1,4 @@
-# Performance changes — 1.3.40
+# Performance changes — 1.3.40–1.3.41
 
 The student session endpoint reads only the owner's selected exam and attempt.
 The submission response includes the committed public receipt; the repository

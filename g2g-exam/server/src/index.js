@@ -54,12 +54,16 @@ app.addHook('onSend',async(request,reply,payload)=>{
   const sourceAsset=['/styles.css','/enhancements.css'].includes(pathname)||pathname.startsWith('/src/')||pathname.startsWith('/specs/');
   if(pathname.startsWith('/api/')&&!reply.hasHeader('Cache-Control'))reply.header('Cache-Control','no-store');
   if(sourceAsset)reply.header('Cache-Control','public, max-age=0, must-revalidate');
-  if(pathname.startsWith('/assets/')&&reply.statusCode<400)reply.header('Cache-Control','public, max-age=31536000, immutable');
+  if(pathname.startsWith('/assets/')&&reply.statusCode<400){
+    reply.header('Cache-Control','public, max-age=31536000, immutable');
+    const vary=new Set(String(reply.getHeader('Vary')||'').split(',').map(item=>item.trim()).filter(Boolean));vary.add('Accept-Encoding');reply.header('Vary',[...vary].join(', '));
+  }
   if(noCache){
     reply.header('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
     reply.header('Pragma','no-cache');reply.header('Expires','0');reply.header('Surrogate-Control','no-store');
   }
-  if(typeof payload==='string'&&Buffer.byteLength(payload)>1024&&String(reply.getHeader('Content-Type')||'').includes('application/json')&&!reply.hasHeader('Content-Encoding')&&/(?:^|[, ])gzip(?:[, ;]|$)/.test(String(request.headers['accept-encoding']||''))){
+  const gzipAccepted=String(request.headers['accept-encoding']||'').split(',').some(item=>/^\s*gzip\s*(?:;|$)/i.test(item)&&!/\bq\s*=\s*0(?:\.0*)?\s*(?:;|$)/i.test(item));
+  if(typeof payload==='string'&&Buffer.byteLength(payload)>1024&&String(reply.getHeader('Content-Type')||'').includes('application/json')&&!reply.hasHeader('Content-Encoding')&&gzipAccepted){
     reply.header('Content-Encoding','gzip');
     const vary=new Set(String(reply.getHeader('Vary')||'').split(',').map(item=>item.trim()).filter(Boolean));vary.add('Accept-Encoding');reply.header('Vary',[...vary].join(', '));
     reply.removeHeader('Content-Length');

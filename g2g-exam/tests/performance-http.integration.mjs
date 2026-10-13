@@ -52,11 +52,12 @@ try{
   const html=await app.inject('/adm');assert.equal(html.statusCode,200);assert.ok(html.body.includes('/assets/app-'));assert.ok(html.headers['cache-control'].includes('no-store'));
   const assets=[...html.body.matchAll(/(?:src|href)="(\/assets\/[^" ]+)"/g)].map(match=>match[1]);
   assert.equal(assets.length,4);
-  for(const url of assets){const response=await app.inject({url,headers:{'accept-encoding':'br,gzip'}});assert.equal(response.statusCode,200);assert.ok(response.headers['cache-control'].includes('immutable'));assert.equal(response.headers['content-encoding'],'br');}
+  for(const url of assets){const response=await app.inject({url,headers:{'accept-encoding':'br,gzip'}});assert.equal(response.statusCode,200);assert.ok(response.headers['cache-control'].includes('immutable'));assert.equal(response.headers['content-encoding'],'br');assert.ok(response.headers.vary.includes('Accept-Encoding'));}
   assert.equal((await app.inject('/assets/missing-old-chunk.js')).statusCode,404);
   const first=await app.inject({url:'/api/state-summary',headers:{cookie:cookie('admin'),'accept-encoding':'gzip'}});
   assert.equal(first.statusCode,200);assert.equal(first.headers['content-encoding'],'gzip');assert.ok(first.headers.vary.includes('Cookie'));
   const summary=JSON.parse(gunzipSync(first.rawPayload));assert.equal(summary.scope,'summary');assert.ok(!JSON.stringify(summary).includes('private passage'));
+  const uncompressed=await app.inject({url:'/api/state-summary',headers:{cookie:cookie('admin'),'accept-encoding':'gzip;q=0'}});assert.equal(uncompressed.headers['content-encoding'],undefined);assert.equal(uncompressed.json().scope,'summary');
   const before=summaryLoads;
   const conditional=await Promise.all(Array.from({length:20},()=>app.inject({url:'/api/state-summary',headers:{cookie:cookie('admin'),'if-none-match':first.headers.etag}})));
   assert.ok(conditional.every(response=>response.statusCode===304));assert.equal(summaryLoads,before,'Conditional hits do not load the question bank');
