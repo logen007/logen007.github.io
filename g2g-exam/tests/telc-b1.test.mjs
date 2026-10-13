@@ -70,6 +70,14 @@ const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teach
 globalThis.sessionStorage={getItem:()=>null};
 const {exam,rows}=telcFixture(state,teacher);
 {
+  const part=exam.sections[2];
+  const html=renderBuilder({data:state,exam,section:part});
+  assert.match(html,/letter-question-toolbar/);
+  assert.match(html,/letter-question-text/);
+  assert.match(html,/data-field="correct"/);
+  assert.match(html,/data-field="maxScore"/);
+}
+{
   const html=renderBuilder({data:state,exam,section:exam.sections[0]});
   assert.doesNotMatch(html,/<label>(?:Đáp án đúng|Điểm)/);
   assert.match(html,/data-heading-correct-text aria-label="Đáp án đúng câu/);
