@@ -646,6 +646,8 @@ theme application must not wait for a network response to render the page.
 
 - Place manual grading tabs first, with Publish on the same toolbar; no Back
   button beside Publish.
+  No save/status text beside Publish; preserve autosave, flush-before-publish,
+  validation and error notifications.
   Oral grading belongs in a tab too. Keep the outcome badge at the header right.
   Show Result's shared skill score bars below the workspace, then automatic
   answers and published history. Reuse Result tokens and controls.

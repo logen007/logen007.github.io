@@ -72,6 +72,7 @@ assert.doesNotMatch(typedDetail,/lined-writing-paper/);
 assert.ok(detail.indexOf('grading-toolbar')<detail.indexOf('grading-workspace'));
 assert.ok(detail.indexOf('data-action="publish-result"')<detail.indexOf('grading-workspace'));
 assert.doesNotMatch(detail,/data-action="back-grading"/);
+assert.doesNotMatch(detail,/data-grade-save-status/);
 assert.ok(detail.indexOf('grading-scores')>detail.indexOf('gradeFeedback'));
 assert.doesNotMatch(detail,/Điểm từng phần/);
 assert.ok(detail.indexOf('grading-history')>detail.indexOf('grading-automatic'));

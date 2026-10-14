@@ -1434,7 +1434,7 @@ function bindBuilder(){
 
 function bindGrading(){
   if(ui.view==='grading-detail'&&app.querySelector('[data-action="publish-result"]')){
-    gradeAutosave=createGradeAutosave(()=>saveGrade(false),text=>{const status=app.querySelector('[data-grade-save-status]');if(status)status.textContent=text;});
+    gradeAutosave=createGradeAutosave(()=>saveGrade(false));
     app.querySelectorAll('.manual-score,#gradeOralScore,#gradeFeedback').forEach(input=>input.addEventListener('input',()=>gradeAutosave.change()));
   }
   app.querySelectorAll('[data-action="grading-neighbor"]').forEach(b=>b.onclick=async()=>{

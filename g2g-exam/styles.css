@@ -849,7 +849,6 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .grading-navigation { display:flex;justify-content:space-between;gap:16px;margin:24px 0; }
 .grading-toolbar>.result-tabs { margin:0; }
 .grading-toolbar>.nhom-nut { margin-left:auto; }
-.grading-toolbar [data-grade-save-status]:empty { display:none; }
 .grading-detail>.the { margin-bottom:24px; }
 .grading-detail>.tieu-de-trang { align-items:flex-start; }
 .grading-submissions .bai-lam { line-height:1.85;padding:20px;margin:0; }
