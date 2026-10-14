@@ -45,7 +45,6 @@ export function resultBadgeHtml(summary,status='published'){
     <svg class="result-medal-art" viewBox="0 0 240 270" aria-hidden="true" focusable="false">
       <defs>
         ${key==='passed'?`<mask id="${id}-check" maskUnits="userSpaceOnUse" x="0" y="0" width="240" height="270"><path data-medal-effect="check-line" d="M69 104L110 144L171 75" fill="none" stroke="#fff" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="0"/></mask>`:''}
-        ${key==='failed'?`<mask id="${id}-cross" maskUnits="userSpaceOnUse" x="0" y="0" width="240" height="270"><path data-medal-effect="cross-line" d="M70 67L170 167M170 67L70 167" fill="none" stroke="#fff" stroke-width="44" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="0"/></mask>`:''}
         <linearGradient id="${id}-rim" x1="0" y1="0" x2=".85" y2="1"><stop stop-color="${light}"/><stop offset=".45" stop-color="${mid}"/><stop offset="1" stop-color="${dark}"/></linearGradient>
         <linearGradient id="${id}-face" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${dark}"/><stop offset="1" stop-color="${deep}"/></linearGradient>
         <linearGradient id="${id}-symbol" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#fff"/><stop offset=".35" stop-color="${light}"/><stop offset="1" stop-color="${mid}"/></linearGradient>
@@ -61,7 +60,7 @@ export function resultBadgeHtml(summary,status='published'){
         <path d="M120 40V172H52V79Z" fill="#fff" opacity=".055"/>
         <polyline points="${frame.outer}" fill="none" stroke="${light}" stroke-width="1" stroke-opacity=".65"/>
         </g>
-        <g class="result-medal-symbol" data-medal-cluster="symbol"${key==='passed'?` mask="url(#${id}-check)"`:key==='failed'?` mask="url(#${id}-cross)"`:''}>${mark(key,id)}</g>
+        <g class="result-medal-symbol" data-medal-cluster="symbol"${key==='passed'?` mask="url(#${id}-check)"`:''}>${mark(key,id)}</g>
         <g data-medal-cluster="plate">
         <path d="M48 172H192L208 191L182 239L120 260L58 239L32 191Z" fill="url(#${id}-plate)"/>
         <path d="M48 172H192L182 180H58Z" fill="${light}" opacity=".42"/>

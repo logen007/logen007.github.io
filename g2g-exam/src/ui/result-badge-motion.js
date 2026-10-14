@@ -15,9 +15,12 @@ export function animateResultBadge(node){
       {strokeDashoffset:'1'},{strokeDashoffset:'0'}
     ],{duration:900,easing:'ease-in-out'});
   }else if(state==='failed'){
-    play(node.querySelector('[data-medal-effect="cross-line"]'),[
-      {strokeDashoffset:'1'},{strokeDashoffset:'0'}
-    ],{duration:900,easing:'ease-in-out'});
+    play(node.querySelector('.result-medal-symbol'),[
+      {transform:'scale(1)'},
+      {transform:'scale(.86)',offset:.28},
+      {transform:'scale(1.06)',offset:.65},
+      {transform:'none'}
+    ],{duration:850,easing:'ease-in-out'});
   }else{
     const angle=state==='good'?18:24;
     play(node.querySelector('.result-medal-symbol'),[

@@ -41,7 +41,11 @@ for(const state of ['waiting','failed','fair','good','excellent']){
     assert.equal(animation.frames.at(-1).transform,'rotate(180deg)','Hourglass visibly flips');
     assert.equal(animation.options.fill,'forwards','Do not snap back after the flip');
   }
-  if(state==='failed')assert.equal(animation.frames.at(-1).strokeDashoffset,'0');
+  if(state==='failed'){
+    assert.equal(animation.frames.at(-1).transform,'none');
+    assert.equal(animation.frames[1].transform,'scale(.86)');
+    assert.ok(!JSON.stringify(animation.frames).includes('strokeDashoffset'),'Cross stays fully visible during one scale emphasis');
+  }
   if(['fair','good','excellent'].includes(state)){
     assert.equal(animation.frames[0].transform,'none');
     assert.equal(animation.frames.at(-1).transform,'none');
