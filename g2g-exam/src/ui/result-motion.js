@@ -6,6 +6,11 @@ export function animateResult(root,review){
   if(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches||typeof requestAnimationFrame!=='function')return;
   const page=root.querySelector('.result-page');
   if(!page)return;
+  page.querySelectorAll('.result-medal').forEach(node=>{
+    node.animate?.([{opacity:0,transform:'translateY(5px) scale(.96)'},{opacity:1,transform:'none'}],{duration:600,easing:'cubic-bezier(.22,1,.36,1)'});
+    const shine=node.querySelector('.result-medal-glint');
+    shine?.animate?.([{opacity:0,transform:'translateX(-100px)'},{opacity:.65,offset:.45},{opacity:0,transform:'translateX(180px)'}],{duration:1000,delay:200,easing:'ease-out'});
+  });
   const numbers=[];
   page.querySelectorAll('.result-stats strong,.result-bar-score strong,.result-donut strong').forEach(element=>{
     const node=element.firstChild;

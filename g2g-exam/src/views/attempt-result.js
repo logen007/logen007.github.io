@@ -1,11 +1,12 @@
 import {esc,textHtml,fmtDate} from '../ui/format.js';
 import {animateResult} from '../ui/result-motion.js';
 import {iconHtml} from '../ui/icons.js';
-import {resultClass,isStandardTelc,gradeBand,resultLabel} from '../domain/gradebook.js';
+import {isStandardTelc,gradeBand,resultLabel} from '../domain/gradebook.js';
 import {SKILL_LABELS} from '../domain/result-summary.js';
 import {reviewCounts,questionVerdict} from '../domain/attempt-review.js';
 import {provisionalResultHtml,sectionResultHtml} from './provisional-result.js';
 import {telcResultHtml} from './telc-result.js';
+import {resultBadgeHtml} from '../ui/result-badge.js';
 
 const labels={correct:'Đúng',wrong:'Sai',blank:'Chưa trả lời'};
 const display=value=>value==null||value===''?'Chưa trả lời':typeof value==='object'?Object.values(value).join(' · '):String(value);
@@ -37,11 +38,9 @@ export function questionHtml(q,published,answerLabel='Bạn trả lời'){
   }
   return `<article class="result-question" data-result-verdict="${verdict||'manual'}"><div class="result-question-heading"><strong>Câu ${esc(q.number||'')} ${q.title?`· ${textHtml(q.title)}`:''}</strong>${verdict?`<span class="result-${verdict}">${labels[verdict]}</span>`:''}</div>${body}</article>`;
 }
-export function resultOutcomeHtml(summary,status='published',pendingLabel='Chờ chấm'){
-  const result=status==='published'?resultLabel(summary?.result):null,tone=resultClass(result);
-  const outcome=status!=='published'?pendingLabel:tone==='passed'?'Đạt':tone==='failed'?'Chưa đạt':result||'Chờ điểm';
-  const band=['Xuất sắc','Giỏi','Khá','Đạt'].includes(result)?result:null;
-  return `<div class="result-outcome ${tone}">${iconHtml(tone==='passed'?'example':tone==='failed'?'close':'grading')}<strong>${esc(outcome)}</strong>${band?`<span>${esc(band)}</span>`:''}</div>`;
+export function resultOutcomeHtml(summary,status='published',pendingLabel='Chờ công bố'){
+  if(status!=='published'&&pendingLabel!=='Chờ công bố')return `<div class="result-outcome">${iconHtml('grading')}<strong>${esc(pendingLabel)}</strong></div>`;
+  return resultBadgeHtml(summary,status);
 }
 function feedback(score){return `<div class="result-feedback"><p>${textHtml(score.feedback||'Chưa có nhận xét.')}</p>${score.reviewerName?`<div class="result-reviewer">${iconHtml('teacher')}<span>${esc(score.reviewerName)}</span></div>`:''}</div>`;}
 export function resultStatsHtml({counts,total,max,visible=true,totalId='',speaking,showSpeaking=false}){
@@ -61,7 +60,7 @@ export function attemptResultHtml({review,user={}}){
   const available=Boolean(score||review.provisional);
   const pendingBars=skill=>`<div data-provisional-result="${skill||''}">${provisionalResultHtml(review.provisional,bar,skill)}</div>`;
   const telc=isStandardTelc(a);
-  return `<main class="khung result-page"><section class="the result-hero"><div class="result-heading"><div><div class="result-identity"><span class="result-avatar">${picture?`<img src="${esc(picture)}" alt="" referrerpolicy="no-referrer">`:esc(initials)}</span><div><div class="phu-de">Kết quả thi ${esc(a.level||summary?.level||'')}</div><div class="result-name"><h1>${esc(name)}</h1>${score?`<button class="icon-btn" data-result-share aria-label="Chia sẻ kết quả" title="Chia sẻ kết quả">${iconHtml('share')}</button>`:''}</div></div></div><span class="result-provider">${esc(a.provider||summary?.provider||'')}</span><h2>${textHtml(a.examTitle||'Bài thi')}</h2><p class="phu-de">${esc(fmtDate(a.submittedAt||a.startedAt))} · Lần ${esc(a.attemptNo||1)}</p></div>${a.status==='incomplete'?`<div class="result-outcome"><strong>Không hoàn thành</strong></div>`:resultOutcomeHtml({...summary,result:score?.result||summary?.result},a.status)}</div>${resultStatsHtml({counts,total,max,visible:available,speaking:summary?.skills?.speaking,showSpeaking:true})}<span class="phu-de" data-result-share-status role="status"></span></section>
+  return `<main class="khung result-page"><section class="the result-hero"><div class="result-heading"><div><div class="result-identity"><span class="result-avatar">${picture?`<img src="${esc(picture)}" alt="" referrerpolicy="no-referrer">`:esc(initials)}</span><div><div class="phu-de">Kết quả thi ${esc(a.level||summary?.level||'')}</div><div class="result-name"><h1>${esc(name)}</h1>${score?`<button class="icon-btn" data-result-share aria-label="Chia sẻ kết quả" title="Chia sẻ kết quả">${iconHtml('share')}</button>`:''}</div></div></div><span class="result-provider">${esc(a.provider||summary?.provider||'')}</span><h2>${textHtml(a.examTitle||'Bài thi')}</h2><p class="phu-de">${esc(fmtDate(a.submittedAt||a.startedAt))} · Lần ${esc(a.attemptNo||1)}</p></div>${a.status==='incomplete'?'':resultOutcomeHtml({...summary,result:score?.result||summary?.result},a.status)}</div>${resultStatsHtml({counts,total,max,visible:available,speaking:summary?.skills?.speaking,showSpeaking:true})}<span class="phu-de" data-result-share-status role="status"></span></section>
   ${a.status==='incomplete'?'<p class="the">Bài thi không hoàn thành và không được chấm điểm.</p>':''}
   <div class="result-tabs" role="tablist" aria-label="Chi tiết kết quả">${['overview',...skills].map((k,i)=>`<button class="nut" role="tab" id="result-tab-${k}" data-result-tab="${k}" aria-controls="result-panel-${k}" aria-selected="${i===0}" tabindex="${i===0?0:-1}">${SKILL_LABELS[k]||'Tổng quan'}</button>`).join('')}</div>
   <section id="result-panel-overview" role="tabpanel" aria-labelledby="result-tab-overview"><div class="result-columns">${telc?`<div class="telc-result-groups"${review.provisional?' data-telc-result=""':''}>${telcResultHtml(review,bar)}</div>`:`<section class="the">${review.provisional?pendingBars():scoreBars}${summary?`<p class="phu-de">${esc(summary.condition)}</p>`:''}${summary&&!summary.skills.speaking?bar('Nói',null):''}</section>`}<section class="the"><h2>Câu trắc nghiệm</h2>${available&&counts.objective?`<div class="result-donut" style="--correct-angle:${counts.correct/counts.objective*360}deg;--wrong-angle:${(counts.correct+counts.wrong)/counts.objective*360}deg" role="img" aria-label="${counts.correct} câu đúng, ${counts.wrong} câu sai, ${counts.blank} chưa trả lời"><div><strong>${accuracy}%</strong><span>${counts.correct}/${counts.objective} câu đúng</span></div></div><div class="result-legend"><span class="result-correct">● Đúng ${counts.correct}</span><span class="result-wrong">● Sai ${counts.wrong}</span><span>○ Bỏ trống ${counts.blank}</span></div>`:`<p class="phu-de">${available?'Không có câu trắc nghiệm.':'Chờ công bố kết quả.'}</p>`}${score?feedback(score):''}</section></div></section>
