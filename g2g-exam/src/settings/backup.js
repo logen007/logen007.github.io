@@ -29,5 +29,6 @@ export function bindBackupSettings(){
       if(!res.ok)throw new Error('Không thể ngắt kết nối.');await load();
     }catch(error){report(error.message,true);}finally{disconnect.disabled=false;}
   };
+  root.querySelector('#sBackupNow').onclick=async()=>{try{await r2SettingsAction('runBackupNow');report('Đã yêu cầu backup.');}catch(error){report(error.message,true);}};
   void load();
 }
