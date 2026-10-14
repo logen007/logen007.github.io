@@ -4,25 +4,18 @@ const saved={document:globalThis.document,matchMedia:globalThis.matchMedia};
 const calls=[],listeners=new Map();
 globalThis.document={hidden:false,addEventListener:(key,fn)=>listeners.set(key,fn),removeEventListener:key=>listeners.delete(key)};
 globalThis.matchMedia=()=>({matches:false});
-const element=()=>({animate(frames,options){
+const element=()=>({getAttribute:()=>'.35',animate(frames,options){
   const call={frames,options,canceled:false};
   calls.push(call);
   return {finished:Promise.resolve(),cancel(){call.canceled=true;}};
 }});
-const elements=new Map([
-  ['[data-medal-cluster="shell"]',element()],
-  ['[data-medal-cluster="symbol"]',element()],
-  ['[data-medal-cluster="plate"]',element()],
-  ['.result-medal-label',element()]
-]);
-const node={...element(),querySelector:selector=>elements.get(selector)};
+const queries=[],target=element();
+const node={...element(),dataset:{resultState:'passed'},querySelector:selector=>{queries.push(selector);return target;}};
 const stop=animateResultBadge(node);
-assert.equal(calls.length,4);
-assert.deepEqual(calls.map(call=>call.options.delay),[0,170,340,340],'Intact clusters arrive in readable order');
-assert.deepEqual(calls[2].frames,calls[3].frames,'Plate and label move together');
-assert.deepEqual(calls[2].options,calls[3].options);
-assert.ok(calls.every(call=>call.frames.at(-1).transform==='none'));
-assert.ok(calls.every(call=>!JSON.stringify(call.frames).includes('rotate')));
+assert.equal(calls.length,1);
+assert.deepEqual(queries,['[data-medal-effect="check-line"]'],'Draw only the check; label and frame stay still');
+assert.equal(calls[0].frames[0].strokeDashoffset,'1');
+assert.equal(calls[0].frames.at(-1).strokeDashoffset,'0');
 globalThis.document.hidden=true;
 listeners.get('visibilitychange')();
 assert.ok(calls.every(call=>call.canceled),'Background tabs stop the complete assembly');
@@ -33,5 +26,22 @@ globalThis.matchMedia=()=>({matches:true});
 const count=calls.length;
 animateResultBadge(node);
 assert.equal(calls.length,count,'Reduced motion keeps the finished, readable badge');
+globalThis.matchMedia=()=>({matches:false});
+globalThis.document.hidden=false;
+for(const state of ['waiting','failed','fair','good','excellent']){
+  node.dataset.resultState=state;
+  queries.length=0;
+  const before=calls.length;
+  animateResultBadge(node);
+  assert.equal(calls.length,before+1,'Exactly one symbol animation per state');
+  assert.ok(queries.every(selector=>!selector.includes('label')&&!selector.includes('cluster')));
+  const animation=calls.at(-1);
+  assert.ok(animation.options.duration<=900);
+  if(state==='waiting')assert.equal(animation.frames.at(-1).opacity,0,'Sand disappears without leaving a loading indicator');
+  if(state==='failed')assert.equal(animation.frames.at(-1).transform,'none');
+  if(['fair','good','excellent'].includes(state))assert.equal(animation.frames[0].opacity,animation.frames.at(-1).opacity);
+}
+await new Promise(resolve=>setTimeout(resolve,0));
+assert.equal(listeners.size,0);
 Object.assign(globalThis,saved);
-console.log('Badge motion: grouped assembly, attached label, hidden-tab cleanup and reduced motion passed.');
+console.log('Badge motion: meaningful one-shot symbol effects, static frame/label, hidden cleanup and reduced motion passed.');

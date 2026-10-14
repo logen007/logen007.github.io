@@ -1,20 +1,31 @@
-// Three intact clusters settle in order. Keep the label attached to the plate.
+// Only the central symbol moves; frame and readable assessment stay still.
 export function animateResultBadge(node){
   if(typeof node?.animate!=='function'||globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return ()=>{};
   const animations=[],ease='cubic-bezier(.22,1,.36,1)';
   const play=(element,frames,options)=>{
     if(element?.animate)animations.push(element.animate(frames,options));
   };
-  const clusters=[['shell',0,5],['symbol',170,-5],['plate',340,5]];
-  clusters.forEach(([key,delay,y])=>{
-    play(node.querySelector(`[data-medal-cluster="${key}"]`),[
-      {opacity:0,transform:`translateY(${y}px)`},
-      {opacity:1,transform:'none'}
-    ],{duration:620,delay,easing:ease,fill:'backwards'});
-  });
-  play(node.querySelector('.result-medal-label'),[
-    {opacity:0,transform:'translateY(5px)'},{opacity:1,transform:'none'}
-  ],{duration:620,delay:340,easing:ease,fill:'backwards'});
+  const state=node.dataset.resultState;
+  if(state==='waiting'){
+    play(node.querySelector('[data-medal-effect="sand"]'),[
+      {opacity:0,strokeDashoffset:'0'},
+      {opacity:.5,offset:.25},
+      {opacity:.5,offset:.7},
+      {opacity:0,strokeDashoffset:'-21'}
+    ],{duration:900,easing:'linear'});
+  }else if(state==='passed'){
+    play(node.querySelector('[data-medal-effect="check-line"]'),[
+      {strokeDashoffset:'1'},{strokeDashoffset:'0'}
+    ],{duration:650,easing:ease});
+  }else if(state==='failed'){
+    play(node.querySelector('.result-medal-symbol'),[
+      {opacity:.75,transform:'scale(.96)'},{opacity:1,transform:'none'}
+    ],{duration:500,easing:ease});
+  }else{
+    const face=node.querySelector('[data-medal-effect="gleam"]');
+    const opacity=Number(face?.getAttribute('opacity')??.35);
+    play(face,[{opacity},{opacity:Math.min(.85,opacity+.25)},{opacity}],{duration:900,easing:'ease-in-out'});
+  }
   const stop=()=>animations.forEach(animation=>animation.cancel());
   const hidden=()=>{if(document.hidden)stop();};
   document.addEventListener?.('visibilitychange',hidden);

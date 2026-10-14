@@ -21,13 +21,13 @@ let sequence=0;
 
 function mark(key,id){
   const bright=`url(#${id}-symbol)`;
-  if(key==='waiting')return `<path d="M74 54H166L125 103V112L166 157H74L115 112V103Z" fill="${bright}"/><path d="M74 54L120 76L166 54L120 106Z" fill="#fff" opacity=".4"/><path d="M120 106L120 157H74L115 112Z" fill="#fff" opacity=".42"/><path d="M74 54H166M74 157H166" stroke="#f4f7fb" stroke-width="4" stroke-linecap="round" opacity=".8"/>`;
+  if(key==='waiting')return `<path d="M74 54H166L125 103V112L166 157H74L115 112V103Z" fill="${bright}"/><path d="M74 54L120 76L166 54L120 106Z" fill="#fff" opacity=".4"/><path d="M120 106L120 157H74L115 112Z" fill="#fff" opacity=".42"/><path d="M74 54H166M74 157H166" stroke="#f4f7fb" stroke-width="4" stroke-linecap="round" opacity=".8"/><path data-medal-effect="sand" d="M120 96V133" stroke="#465468" stroke-width="2.5" stroke-dasharray="2 5" opacity="0"/>`;
   if(key==='failed')return `<path d="M78 57L120 97L162 57L181 77L141 118L181 158L162 177L120 138L78 177L59 158L99 118L59 77Z" fill="${bright}"/><path d="M78 57L120 97V118L59 77Z" fill="#fff" opacity=".4"/><path d="M120 118L162 57L181 77L141 118Z" fill="#fff" opacity=".18"/><path d="M120 118L78 177L59 158L99 118Z" fill="#fff" opacity=".3"/>`;
   if(key==='passed')return `<path d="M60 109L81 88L110 117L160 64L181 85L110 160Z" fill="${bright}"/><path d="M60 109L81 88L110 117V138Z" fill="#fff" opacity=".45"/><path d="M110 138L160 64L181 85L110 160Z" fill="#fff" opacity=".14"/><path d="M81 88L110 117L160 64" fill="none" stroke="#fff" stroke-width="1.5" opacity=".6"/>`;
-  if(key==='good')return `<path d="M120 49L172 110L120 171L68 110Z" fill="${bright}"/><path d="M120 49V110H68Z" fill="#fff" opacity=".58"/><path d="M120 49L172 110H120Z" fill="#fff" opacity=".23"/><path d="M68 110H120V171Z" fill="#fff" opacity=".28"/><path d="M120 110H172L120 171Z" fill="#063965" opacity=".17"/><path d="M120 49L172 110L120 171L68 110Z" fill="none" stroke="#e2f5ff" stroke-width="1.5" opacity=".7"/>`;
+  if(key==='good')return `<path d="M120 49L172 110L120 171L68 110Z" fill="${bright}"/><path data-medal-effect="gleam" d="M120 49V110H68Z" fill="#fff" opacity=".58"/><path d="M120 49L172 110H120Z" fill="#fff" opacity=".23"/><path d="M68 110H120V171Z" fill="#fff" opacity=".28"/><path d="M120 110H172L120 171Z" fill="#063965" opacity=".17"/><path d="M120 49L172 110L120 171L68 110Z" fill="none" stroke="#e2f5ff" stroke-width="1.5" opacity=".7"/>`;
   const points=key==='fair'?[[120,50],[138,94],[181,112],[138,130],[120,169],[102,130],[59,112],[102,94]]:[[120,48],[139,82],[177,77],[163,111],[180,144],[141,145],[120,174],[99,145],[60,144],[77,111],[63,77],[101,82]];
   const center=key==='fair'?[120,112]:[120,111];
-  return `<polygon points="${points.map(p=>p.join(',')).join(' ')}" fill="${bright}"/>`+points.map((p,i)=>`<polygon points="${center.join(',')} ${p.join(',')} ${points[(i+1)%points.length].join(',')}" fill="${i%2?'#fff':'#163b42'}" opacity="${i%2?'.35':'.12'}"/>`).join('');
+  return `<polygon points="${points.map(p=>p.join(',')).join(' ')}" fill="${bright}"/>`+points.map((p,i)=>`<polygon ${i===1?'data-medal-effect="gleam" ':''}points="${center.join(',')} ${p.join(',')} ${points[(i+1)%points.length].join(',')}" fill="${i%2?'#fff':'#163b42'}" opacity="${i%2?'.35':'.12'}"/>`).join('');
 }
 
 function extensions(key,id){
@@ -44,6 +44,7 @@ export function resultBadgeHtml(summary,status='published'){
   return `<div class="result-outcome ${resultClass(label)} result-medal" data-result-state="${key}" role="img" aria-label="${esc(state.label)}">
     <svg class="result-medal-art" viewBox="0 0 240 270" aria-hidden="true" focusable="false">
       <defs>
+        ${key==='passed'?`<mask id="${id}-check" maskUnits="userSpaceOnUse" x="0" y="0" width="240" height="270"><path data-medal-effect="check-line" d="M69 104L110 144L171 75" fill="none" stroke="#fff" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="0"/></mask>`:''}
         <linearGradient id="${id}-rim" x1="0" y1="0" x2=".85" y2="1"><stop stop-color="${light}"/><stop offset=".45" stop-color="${mid}"/><stop offset="1" stop-color="${dark}"/></linearGradient>
         <linearGradient id="${id}-face" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${dark}"/><stop offset="1" stop-color="${deep}"/></linearGradient>
         <linearGradient id="${id}-symbol" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#fff"/><stop offset=".35" stop-color="${light}"/><stop offset="1" stop-color="${mid}"/></linearGradient>
@@ -59,7 +60,7 @@ export function resultBadgeHtml(summary,status='published'){
         <path d="M120 40V172H52V79Z" fill="#fff" opacity=".055"/>
         <polyline points="${frame.outer}" fill="none" stroke="${light}" stroke-width="1" stroke-opacity=".65"/>
         </g>
-        <g class="result-medal-symbol" data-medal-cluster="symbol">${mark(key,id)}</g>
+        <g class="result-medal-symbol" data-medal-cluster="symbol"${key==='passed'?` mask="url(#${id}-check)"`:''}>${mark(key,id)}</g>
         <g data-medal-cluster="plate">
         <path d="M48 172H192L208 191L182 239L120 260L58 239L32 191Z" fill="url(#${id}-plate)"/>
         <path d="M48 172H192L182 180H58Z" fill="${light}" opacity=".42"/>

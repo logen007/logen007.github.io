@@ -539,11 +539,11 @@ theme application must not wait for a network response to render the page.
   Xuất sắc (teal). All labels use the same 11px/600 size at every breakpoint
   and stay on one line. Published assessment is the existing saved result,
   never recomputed from the animated total. Use 144px desktop and 116px mobile
-  artwork, without a background card. Opening a result brings in three intact
-  clusters: shell (including side accents), symbol, then plate with its attached
-  label. Stagger them by 170ms, move only 5px and settle within 960ms. No individual
-  facet motion, rotation or shine sweep. Honor reduced motion and stop on hidden
-  pages. Teacher unpublished “Đang chấm” stays neutral.
+  artwork, without a background card. Keep the frame, accents, plate and label
+  still. On opening, animate only the symbol once: falling sand (pending),
+  a drawn check (passed), a tiny scale settle (failed), or one facet gently
+  brightening (star/diamond). Finish within 900ms. Honor reduced motion and stop
+  on hidden pages. Teacher unpublished “Đang chấm” stays neutral.
 
 - Student result lists have no Back button. Keep the exam count to the right
   of the page title on the same row, including mobile. Compact cards show the
