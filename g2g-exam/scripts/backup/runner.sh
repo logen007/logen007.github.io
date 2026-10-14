@@ -5,6 +5,7 @@ umask 077
 : "${BACKUP_STATE_DIR:=/var/lib/g2g-exam-backup}"
 : "${BACKUP_SCRIPT_DIR:=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)}"
 mkdir -p -m 700 "$BACKUP_STATE_DIR"
+rm -f -- "$BACKUP_STATE_DIR/request"
 exec 9>"$BACKUP_STATE_DIR/backup.lock"
 if ! flock -n 9; then echo "Backup already running; skipping overlapping invocation"; exit 0; fi
 started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
