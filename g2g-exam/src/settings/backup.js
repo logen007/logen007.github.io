@@ -6,7 +6,7 @@ export function backupSettingsCardHtml(){
   <div class="cai-dat-fields"><p id="sBackupStatus" role="status">Đang kiểm tra kết nối…</p>
   <div class="email-test"><button type="button" class="nut chinh" id="sBackupConnect">Kết nối Google Drive</button>
   <button type="button" class="nut" id="sBackupDisconnect" hidden>Ngắt kết nối</button></div>
-  <button type="button" class="nut" id="sBackupNow">Backup ngay</button><p id="sBackupLast" role="status"></p><small>Chỉ Quản trị cấp cao có quyền. Backup chỉ hoạt động sau khi cấu hình runner và kiểm thử restore trên VPS.</small></div></section>`;
+  <button type="button" class="nut" id="sBackupNow">Backup ngay</button><p id="sBackupLast" role="status"></p><div id="sBackupHistory" class="phu-de"></div><small>Chỉ Quản trị cấp cao có quyền. Backup chỉ hoạt động sau khi cấu hình runner và kiểm thử restore trên VPS.</small></div></section>`;
 }
 export function bindBackupSettings(){
   const root=document.getElementById('sBackupCard');if(!root)return;
@@ -14,10 +14,12 @@ export function bindBackupSettings(){
   const report=(value,bad=false)=>{status.textContent=value;status.classList.toggle('loi',bad);};
   async function load(){
     try{
-      const {drive:c,status,enabled}=await r2SettingsAction('getBackupStatus');
+      const {drive:c,status,enabled,history}=await r2SettingsAction('getBackupStatus');
       const last=root.querySelector('#sBackupLast');
       last.textContent=!enabled?'Chưa bật backup trên VPS.':status?.state==='success'?'Backup thành công · '+new Date(status.finishedAt).toLocaleString('vi-VN'):status?.state==='failed'?'Backup gần nhất thất bại.':status?.state==='running'?'Đang backup…':'Chưa có bản backup.';
       root.querySelector('#sBackupNow').disabled=!enabled||!c.connected;
+      const list=root.querySelector('#sBackupHistory');list.replaceChildren();
+      for(const item of history||[]){const p=document.createElement('p');p.textContent=(item.name||'Backup')+' · '+(item.createdAt||'');list.append(p);}
       connect.hidden=c.connected;disconnect.hidden=!c.connected;
       report(c.connected?`Đã kết nối: ${c.email||'Google Drive'} · Thư mục G2G Exam`:c.oauthConfigured?'Chưa kết nối Google Drive.':'Chưa cấu hình OAuth Backup trên máy chủ.');
       connect.disabled=!c.oauthConfigured;
