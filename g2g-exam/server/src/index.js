@@ -26,6 +26,7 @@ import {submitExpiredAttempts} from './actions/attempts.js';
 import {r2Settings} from './r2-settings.js';
 import {registerMediaDeliveryRoutes} from './media-routes.js';
 import {APP_VERSION} from '../../src/release.js';
+import {registerBackupGoogleRoutes} from './backup-google.js';
 import {startWritingAiWorker} from './writing-ai-queue.js';
 import {startResultEmailWorker} from './actions/grading.js';
 
@@ -80,6 +81,7 @@ try{await fs.cp(path.join(publicDir,'assets'),assetDir,{recursive:true});}catch(
 await app.register(fastifyStatic,{root:assetDir,prefix:'/assets/',decorateReply:false,preCompressed:true});
 await app.register(fastifyStatic,{root:publicDir,prefix:'/',index:['index.html'],preCompressed:true});
 await registerAuthRoutes(app);
+await registerBackupGoogleRoutes(app);
 
 app.get('/api/health',async()=>{let db=true;try{await pool.query('SELECT 1');}catch{db=false;}return {ok:db,backend:'vps',database:db,time:new Date().toISOString()};});
 app.get('/api/version',async()=>({version:APP_VERSION}));
