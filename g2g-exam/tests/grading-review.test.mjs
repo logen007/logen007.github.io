@@ -28,7 +28,9 @@ const data={exams:[exam],attempts:[{id:'ok',studentId:'s',status:'published',sub
 assert.deepEqual(gradingHistory(data,exam,attempt).map(p=>p.id),['ok']);
 assert.match(gradingHistoryHtml(data,exam,attempt),/70\/100/);
 assert.doesNotMatch(gradingHistoryHtml(data,exam,attempt),/polyline/);
-assert.match(gradingOutcomeHtml(summary,attempt),/Đang chấm/);
+assert.match(gradingOutcomeHtml(summary,attempt),/data-result-state="waiting"/);
+assert.match(gradingOutcomeHtml(summary,attempt),/CHỜ CHẤM/);
+assert.doesNotMatch(gradingOutcomeHtml(summary,attempt),/Đang chấm/);
 assert.doesNotMatch(gradingOutcomeHtml(summary,attempt),/passed/);
 assert.match(gradingOutcomeHtml(summary,{status:'published'}),/passed/);
 const writingExam={...exam,sections:[1,2,3].map(i=>({name:'Viết '+i,skill:'Viết',questionProfile:{manualPerPart:true},questionIds:['w'+i]}))};

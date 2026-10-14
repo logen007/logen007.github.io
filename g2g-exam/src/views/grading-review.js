@@ -3,6 +3,9 @@ import {buildAttemptReview,reviewCounts} from '../domain/attempt-review.js';
 import {isAutomaticWritingForm} from '../domain/writing-form.js';
 import {questionHtml,resultOutcomeHtml,bar,resultStatsHtml} from './attempt-result.js';
 import {SKILL_LABELS} from '../domain/result-summary.js';
+import {animateResultBadge} from '../ui/result-badge-motion.js';
+
+const animatedBadges=new WeakSet();
 
 // Teacher-only presentation: the caller already loaded the authorized grading detail.
 // Do not change the student review projection or its publication gate.
@@ -30,7 +33,7 @@ export function gradingIdentityHtml(data,attempt){
   return `<div class="grading-identity"><span class="result-avatar">${picture?`<img src="${esc(picture)}" alt="" referrerpolicy="no-referrer">`:esc(initials)}</span><div><h1>${esc(name)}</h1><span class="grading-class">${esc(classroom&&classroom.code!=='Extend'?classroom.code:'Chưa có lớp')}</span></div></div>`;
 }
 
-export function gradingOutcomeHtml(summary,attempt){return resultOutcomeHtml(summary,attempt.status,'Đang chấm');}
+export function gradingOutcomeHtml(summary,attempt){return resultOutcomeHtml(summary,attempt.status);}
 
 export function gradingStatsHtml(exam,questions,attempt,summary){
   const review=buildAttemptReview({exam,questions,attempt:{...attempt,status:'published'}});
@@ -70,6 +73,11 @@ export function gradingHistoryHtml(data,exam,attempt){
 }
 
 export function bindGradingReview(root){
+  root.querySelectorAll('.grading-hero .result-medal').forEach(badge=>{
+    if(animatedBadges.has(badge))return;
+    animatedBadges.add(badge);
+    animateResultBadge(badge);
+  });
   root.querySelectorAll('.manual-score').forEach(input=>input.addEventListener('invalid',()=>{
     let panel=input.closest('[role="tabpanel"]');
     while(panel){root.querySelector('#'+panel.getAttribute('aria-labelledby'))?.click();panel=panel.parentElement.closest('[role="tabpanel"]');}

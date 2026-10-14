@@ -558,7 +558,8 @@ theme application must not wait for a network response to render the page.
   and returning over 1.6s (Xuất sắc). Both solids share perspective, depth sorting,
   hidden-face culling and lighting. No particles or repeated loops.
   Other effects finish within 1.2 seconds. Honor reduced motion and stop
-  on hidden pages. Teacher unpublished “Đang chấm” stays neutral.
+  on hidden pages. Teacher unpublished outcomes use the same gray hourglass
+  “CHỜ CHẤM” emblem and symbol animation; never expose a draft verdict.
 
 - Student result lists have no Back button. Keep the exam count to the right
   of the page title on the same row, including mobile. Compact cards show the
