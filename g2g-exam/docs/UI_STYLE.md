@@ -533,6 +533,13 @@ theme application must not wait for a network response to render the page.
 
 ## Student result detail
 
+- Student result lists have no Back button. Keep the exam count to the right
+  of the page title on the same row, including mobile. Compact cards show the
+  actual exam name, shared provider/level badges, saved attempt number and date.
+  Published scores include the saved maximum when available and Vietnamese
+  decimal formatting. Pending results say “Chờ công bố”; the action is
+  “Xem kết quả”. Load metadata in the existing catalog request, never per card.
+
 - TELC written child skills share one rounded, thin-border inner frame with
   16px padding and gaps; no vertical guide line, no separate frame per skill.
 

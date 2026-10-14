@@ -22,8 +22,22 @@ export async function catalogBackendScenario({query,teacher,student}){
   assert.ok(studentCatalog.attempts.every(a=>a.studentId===student.id));
   assert.ok(studentCatalog.exams.every(e=>e.status==='published'));
   assert.ok(studentHomeHtml({data:studentCatalog,user:student}).includes('90 phút'));
+  await query(`INSERT INTO attempts(id,exam_id,student_id,status,attempt_no,public_data,private_data)
+    VALUES('catalog-result','catalog-large',$1,'published',3,$2,$3)`,[student.id,
+    JSON.stringify({totalScore:173.5,resultSummary:{skills:{reading:{max:75},grammar:{max:30},listening:{max:75},writing:{max:45},speaking:{max:75}}},answers:{secret:large}}),
+    JSON.stringify({examSnapshot:{title:'Frozen exam title',provider:'TELC',level:'B1',questionSnapshot:[{title:large}]},feedback:large})]);
+  const resultCatalog=await loadExamCatalog(student),listed=resultCatalog.attempts.find(a=>a.id==='catalog-result');
+  assert.equal(listed.examTitle,'Frozen exam title');
+  assert.equal(listed.attemptNo,3);
+  assert.equal(listed.provider,'TELC');
+  assert.equal(listed.level,'B1');
+  assert.equal(listed.totalMax,300);
+  assert.ok(!JSON.stringify(resultCatalog).includes('PRIVATE_CONTENT_'));
+  assert.ok(!JSON.stringify(resultCatalog).includes('questionSnapshot'));
+  await query("UPDATE attempts SET status='ready' WHERE id='catalog-result'");
+  assert.equal((await loadExamCatalog(student)).attempts.find(a=>a.id==='catalog-result').totalMax,null);
   const reply={header(){return this;},code(){return this;},send(){return null;}};
-  const revision=stateResponse(catalog,{headers:{}},reply).revision;
+  const revision=stateResponse(await loadExamCatalog(teacher),{headers:{}},reply).revision;
   assert.equal(stateResponse(await loadExamCatalog(teacher),{headers:{}},reply).revision,revision);
   await query("UPDATE exams SET data=jsonb_set(data,'{title}','\"Changed catalog title\"') WHERE id='catalog-large'");
   assert.notEqual(stateResponse(await loadExamCatalog(teacher),{headers:{}},reply).revision,revision);

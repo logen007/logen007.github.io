@@ -26,12 +26,18 @@ export async function loadExamCatalog(user){
       WHERE e.status=ANY($2::text[]) ORDER BY e.updated_at DESC,e.id`,
       [user.id,student?['published']:['published','draft'],student]),
     query("SELECT id,updated_at,jsonb_build_object('example',data->'example','maxScore',data->'maxScore') AS data FROM questions WHERE status<>'trash'"),
-    student?query(`SELECT id,exam_id,status,jsonb_build_object(
-      'studentId',student_id,'examId',exam_id,'status',status,
+    student?query(`SELECT a.id,a.exam_id,a.status,jsonb_build_object(
+      'studentId',student_id,'examId',exam_id,'status',a.status,'attemptNo',attempt_no,
+      'examTitle',coalesce(nullif(public_data->>'examTitle',''),private_data->'examSnapshot'->>'title',e.data->>'title'),
+      'provider',coalesce(private_data->'examSnapshot'->>'provider',e.data->>'provider'),
+      'level',coalesce(private_data->'examSnapshot'->>'level',e.data->>'level'),
+      'totalMax',CASE WHEN a.status='published' THEN
+        (SELECT sum((skill->>'max')::numeric) FROM jsonb_each(coalesce(public_data->'resultSummary'->'skills','{}'::jsonb)) AS skills(key,skill))
+        ELSE NULL END,
       'startedAt',public_data->'startedAt','submittedAt',public_data->'submittedAt',
       'publishedAt',public_data->'publishedAt','totalScore',public_data->'totalScore',
       'result',public_data->'result') AS data
-      FROM attempts WHERE student_id=$1 ORDER BY created_at DESC,id`,[user.id]):Promise.resolve({rows:[]}),
+      FROM attempts a LEFT JOIN exams e ON e.id=a.exam_id WHERE student_id=$1 ORDER BY a.created_at DESC,a.id`,[user.id]):Promise.resolve({rows:[]}),
     student?query('SELECT id,code,active FROM classes WHERE active=true ORDER BY lower(code),id'):Promise.resolve({rows:[]}),
     student?query('SELECT attempt_id AS "attemptId",from_level AS "fromLevel",to_level AS "toLevel" FROM level_promotions WHERE student_id=$1 AND acknowledged_at IS NULL ORDER BY created_at',[user.id]):Promise.resolve({rows:[]})
   ]);
