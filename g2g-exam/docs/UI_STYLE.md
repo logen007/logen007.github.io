@@ -536,11 +536,13 @@ theme application must not wait for a network response to render the page.
 - Approved hero result badges (14 October): geometric layered SVG emblems with
   beveled faces, an integrated white uppercase label and six presentations:
   Chờ chấm (gray), Chưa đạt (red), Đạt (violet), Khá (amber), Giỏi (blue),
-  Xuất sắc (teal). All labels use the same 12px/600 size at every breakpoint
+  Xuất sắc (teal). All labels use the same 11px/600 size at every breakpoint
   and stay on one line. Published assessment is the existing saved result,
   never recomputed from the animated total. Use 144px desktop and 116px mobile
-  artwork, without a background card. Opening a result plays one gentle entrance
-  and shine, honoring reduced motion. Teacher unpublished “Đang chấm” stays neutral.
+  artwork, without a background card. Opening a result assembles separated frame,
+  symbol facets, accents and label plate over 1.5 seconds, then rests. Fade the
+  label in as the pieces settle and finish with a shine. Honor reduced motion
+  and stop on hidden pages. Teacher unpublished “Đang chấm” stays neutral.
 
 - Student result lists have no Back button. Keep the exam count to the right
   of the page title on the same row, including mobile. Compact cards show the

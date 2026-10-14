@@ -53,18 +53,20 @@ export function resultBadgeHtml(summary,status='published'){
       </defs>
       ${extensions(key,id)}
       <g class="result-medal-frame">
-        <polygon points="${frame.outer}" fill="url(#${id}-rim)"/>
-        <polygon points="${frame.left}" fill="#fff" opacity=".25"/>
-        <polygon points="${frame.right}" fill="${deep}" opacity=".18"/>
-        <polygon points="${frame.inner}" fill="url(#${id}-face)" stroke="${light}" stroke-opacity=".6" stroke-width="1.3"/>
+        <polygon data-medal-piece="body" points="${frame.outer}" fill="url(#${id}-rim)"/>
+        <polygon data-medal-piece="left" points="${frame.left}" fill="#fff" opacity=".25"/>
+        <polygon data-medal-piece="right" points="${frame.right}" fill="${deep}" opacity=".18"/>
+        <polygon data-medal-piece="core" points="${frame.inner}" fill="url(#${id}-face)" stroke="${light}" stroke-opacity=".6" stroke-width="1.3"/>
         <path d="M120 40V172H52V79Z" fill="#fff" opacity=".055"/>
         <polyline points="${frame.outer}" fill="none" stroke="${light}" stroke-width="1" stroke-opacity=".65"/>
         <g class="result-medal-symbol">${mark(key,id)}</g>
+        <g data-medal-piece="plate">
         <path d="M48 172H192L208 191L182 239L120 260L58 239L32 191Z" fill="url(#${id}-plate)"/>
         <path d="M48 172H192L182 180H58Z" fill="${light}" opacity=".42"/>
         <path d="M48 172L32 191L58 239L120 260V251L64 231L44 191L58 180Z" fill="${mid}" opacity=".65"/>
         <path d="M192 172L208 191L182 239L120 260V251L176 231L196 191L182 180Z" fill="${deep}" opacity=".35"/>
         <path d="M48 172H192L208 191L182 239L120 260L58 239L32 191Z" fill="none" stroke="${light}" stroke-opacity=".45" stroke-width="1"/>
+        </g>
         <g clip-path="url(#${id}-clip)"><path class="result-medal-glint" d="M15 0H62L172 270H125Z" fill="url(#${id}-light)"/></g>
       </g>
     </svg>
