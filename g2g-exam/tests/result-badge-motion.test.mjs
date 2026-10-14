@@ -33,11 +33,11 @@ for(const state of ['waiting','failed','fair','good','excellent']){
   queries.length=0;
   const before=calls.length;
   animateResultBadge(node);
-  assert.equal(calls.length,before+(state==='good'?0:state==='excellent'?2:1),'Diamond uses a projection renderer instead of flat CSS transforms');
+  assert.equal(calls.length,before+(['good','excellent'].includes(state)?0:1),'Solid symbols use the shared projection renderer instead of flat CSS transforms');
   assert.ok(queries.every(selector=>!selector.includes('label')&&!selector.includes('cluster')));
-  if(state==='good')continue;
+  if(['good','excellent'].includes(state))continue;
   const animation=calls[before];
-  assert.ok(calls.slice(before).every(call=>call.options.duration+(call.options.delay||0)<=(state==='fair'?2400:1200)));
+  assert.ok(calls.slice(before).every(call=>call.options.duration+(call.options.delay||0)<=(state==='fair'?1400:1200)));
   if(state==='waiting'){
     assert.equal(animation.frames.at(-1).transform,'rotate(180deg)','Hourglass visibly flips');
     assert.equal(animation.options.fill,'forwards','Do not snap back after the flip');
@@ -47,11 +47,7 @@ for(const state of ['waiting','failed','fair','good','excellent']){
     assert.equal(animation.frames[1].transform,'scale(.86)');
     assert.ok(!JSON.stringify(animation.frames).includes('strokeDashoffset'),'Cross stays fully visible during one scale emphasis');
   }
-  if(state==='fair')assert.equal(animation.frames.at(-1).transform,'rotate(1080deg)');
-  if(state==='excellent'){
-    assert.equal(animation.frames.at(-1).transform,'none');
-  }
-  if(state==='excellent')assert.equal(calls.at(-1).frames.at(-1).opacity,0,'Radiant ring disappears completely');
+  if(state==='fair')assert.equal(animation.frames.at(-1).transform,'rotate(360deg)');
 }
 await new Promise(resolve=>setTimeout(resolve,0));
 assert.equal(listeners.size,0);

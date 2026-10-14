@@ -1,6 +1,7 @@
 import {resultLabel,resultClass} from '../domain/gradebook.js';
 import {esc} from './format.js';
 import {diamondMeshHtml} from './diamond-mesh.js';
+import {starMeshHtml} from './star-mesh.js';
 
 // Approved geometric result emblems. Artwork is decorative; the HTML label
 // remains selectable, accessible and the same size for every assessment.
@@ -26,8 +27,9 @@ function mark(key,id){
   if(key==='failed')return `<path d="M78 57L120 97L162 57L181 77L141 118L181 158L162 177L120 138L78 177L59 158L99 118L59 77Z" fill="${bright}"/><path d="M78 57L120 97V118L59 77Z" fill="#fff" opacity=".4"/><path d="M120 118L162 57L181 77L141 118Z" fill="#fff" opacity=".18"/><path d="M120 118L78 177L59 158L99 118Z" fill="#fff" opacity=".3"/>`;
   if(key==='passed')return `<path d="M60 109L81 88L110 117L160 64L181 85L110 160Z" fill="${bright}"/><path d="M60 109L81 88L110 117V138Z" fill="#fff" opacity=".45"/><path d="M110 138L160 64L181 85L110 160Z" fill="#fff" opacity=".14"/><path d="M81 88L110 117L160 64" fill="none" stroke="#fff" stroke-width="1.5" opacity=".6"/>`;
   if(key==='good')return diamondMeshHtml();
-  const points=key==='fair'?[[120,50],[138,94],[181,112],[138,130],[120,169],[102,130],[59,112],[102,94]]:[[120,48],[139,82],[177,77],[163,111],[180,144],[141,145],[120,174],[99,145],[60,144],[77,111],[63,77],[101,82]];
-  const center=key==='fair'?[120,112]:[120,111];
+  if(key==='excellent')return starMeshHtml();
+  const points=[[120,50],[138,94],[181,112],[138,130],[120,169],[102,130],[59,112],[102,94]];
+  const center=[120,112];
   return `<polygon points="${points.map(p=>p.join(',')).join(' ')}" fill="${bright}"/>`+points.map((p,i)=>`<polygon ${i===1?'data-medal-effect="gleam" ':''}points="${center.join(',')} ${p.join(',')} ${points[(i+1)%points.length].join(',')}" fill="${i%2?'#fff':'#163b42'}" opacity="${i%2?'.35':'.12'}"/>`).join('');
 }
 
@@ -61,7 +63,6 @@ export function resultBadgeHtml(summary,status='published'){
         <path d="M120 40V172H52V79Z" fill="#fff" opacity=".055"/>
         <polyline points="${frame.outer}" fill="none" stroke="${light}" stroke-width="1" stroke-opacity=".65"/>
         </g>
-        ${key==='excellent'?`<circle class="result-medal-aura" cx="120" cy="111" r="50" fill="none" stroke="${light}" stroke-width="3" opacity="0"/>`:''}
         <g class="result-medal-symbol" data-medal-cluster="symbol"${key==='passed'?` mask="url(#${id}-check)"`:''}>${mark(key,id)}</g>
         <g data-medal-cluster="plate">
         <path d="M48 172H192L208 191L182 239L120 260L58 239L32 191Z" fill="url(#${id}-plate)"/>

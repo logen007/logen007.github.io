@@ -543,10 +543,11 @@ theme application must not wait for a network response to render the page.
   still. On opening, animate only the symbol once: a 180-degree hourglass flip
   held at its final angle (pending), a drawn check (passed), one scale emphasis
   from 1 to .86 to 1.06 to 1 with the full cross visible (failed).
-  Successful ranks have distinct signatures: three star turns with a slowing
-  finish over 2.4s (Khá), a solid eight-face diamond rotating around its vertical
-  axis with perspective, face depth ordering and lighting over 1.5s (Giỏi), and a star bloom
-  with one expanding, fading ring (Xuất sắc). No particles or repeated loops.
+  Successful ranks have distinct signatures: one star turn with a slowing
+  finish over 1.4s (Khá), a solid eight-face diamond rotating around its vertical
+  axis over 1.5s (Giỏi), and a faceted, extruded star tilting to -32/+32 degrees
+  and returning over 1.6s (Xuất sắc). Both solids share perspective, depth sorting,
+  hidden-face culling and lighting. No particles or repeated loops.
   Other effects finish within 1.2 seconds. Honor reduced motion and stop
   on hidden pages. Teacher unpublished “Đang chấm” stays neutral.
 

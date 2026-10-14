@@ -1,5 +1,6 @@
 // Only the central symbol moves; frame and readable assessment stay still.
 import {animateDiamond} from './diamond-mesh.js';
+import {animateStar} from './star-mesh.js';
 export function animateResultBadge(node){
   if(typeof node?.animate!=='function'||globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return ()=>{};
   const animations=[];
@@ -25,23 +26,15 @@ export function animateResultBadge(node){
   }else if(state==='fair'){
     play(node.querySelector('.result-medal-symbol'),[
       {transform:'rotate(0deg)'},
-      {transform:'rotate(720deg)',offset:.6,easing:'cubic-bezier(.3,.4,.6,1)'},
-      {transform:'rotate(1080deg)'}
-    ],{duration:2400,easing:'linear',fill:'forwards'});
+      {transform:'rotate(240deg)',offset:.6,easing:'cubic-bezier(.3,.4,.6,1)'},
+      {transform:'rotate(360deg)'}
+    ],{duration:1400,easing:'linear',fill:'forwards'});
   }else if(state==='good'){
     const rotation=animateDiamond(node.querySelector('.result-medal-diamond'));
     if(rotation)animations.push(rotation);
   }else if(state==='excellent'){
-    play(node.querySelector('.result-medal-symbol'),[
-      {transform:'scale(.82)'},
-      {transform:'scale(1.12)',offset:.45},
-      {transform:'none'}
-    ],{duration:950,easing:'cubic-bezier(.22,1,.36,1)'});
-    play(node.querySelector('.result-medal-aura'),[
-      {opacity:0,transform:'scale(.72)'},
-      {opacity:.85,offset:.2},
-      {opacity:0,transform:'scale(1.45)'}
-    ],{duration:900,delay:250,easing:'ease-out'});
+    const rotation=animateStar(node.querySelector('.result-medal-star'));
+    if(rotation)animations.push(rotation);
   }
   const stop=()=>animations.forEach(animation=>animation.cancel());
   const hidden=()=>{if(document.hidden)stop();};
