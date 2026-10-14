@@ -1,6 +1,7 @@
 import {hasApiBackend} from './config.js';
 import {AI_PROVIDER_IDS,aiProviderLabel} from './domain/ai-providers.js';
 import {bindR2Settings} from './settings/r2.js';
+import {bindBackupSettings} from './settings/backup.js';
 import {
   loadPrivateSettings,refreshInfrastructure,
   updateSystemSettings,updateSmtpSecret,updateAiApiKey,testSmtp
@@ -235,6 +236,7 @@ async function sendTest(){
 
 function bindSettingsActions(){
   bindR2Settings();
+  bindBackupSettings();
   document.querySelectorAll('[data-asset-pick]').forEach(button=>{
     const input=document.getElementById(button.dataset.assetPick);
     button.onclick=()=>input.click();
