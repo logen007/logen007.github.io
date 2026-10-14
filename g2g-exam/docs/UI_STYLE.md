@@ -538,7 +538,7 @@ theme application must not wait for a network response to render the page.
   Chờ chấm (gray), Chưa đạt (red), Đạt (violet), Khá (amber), Giỏi (blue),
   Xuất sắc (teal). All labels use the same 11px/600 size at every breakpoint
   and stay on one line. Published assessment is the existing saved result,
-  never recomputed from the animated total. Use 144px desktop and 116px mobile
+  never recomputed from the animated total. Use 158.4px desktop and 127.6px mobile
   artwork, without a background card. Keep the frame, accents, plate and label
   still. On opening, animate only the symbol once: a 180-degree hourglass flip
   held at its final angle (pending), a drawn check (passed), one scale emphasis
