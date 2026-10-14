@@ -644,7 +644,8 @@ theme application must not wait for a network response to render the page.
   Teacher draft totals stay visible but block verdicts require publication.
   Pending speaking retains its neutral track and shared gray badge.
 
-- Place manual grading tabs first, with Back and Publish on the same toolbar.
+- Place manual grading tabs first, with Publish on the same toolbar; no Back
+  button beside Publish.
   Oral grading belongs in a tab too. Keep the outcome badge at the header right.
   Show Result's shared skill score bars below the workspace, then automatic
   answers and published history. Reuse Result tokens and controls.
