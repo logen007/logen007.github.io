@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const base=new URL('../scripts/backup/',import.meta.url);
+const read=name=>readFileSync(new URL(name,base),'utf8');
+const backup=read('backup.sh');
+const runner=read('runner.sh');
+const restore=read('restore.sh');
+assert.ok(backup.indexOf('validate-deployment.mjs')<backup.indexOf('pg_dump --dbname'), 'Deployment must be validated before dump');
+assert.match(backup,/media-final\.json/);
+assert.match(backup,/verify-staging\.mjs/);
+assert.match(backup,/remote_hash/);
+assert.match(backup,/age -r/);
+assert.match(runner,/flock -n/);
+assert.match(runner,/prepare-rclone\.mjs/);
+assert.match(restore,/age -d/);
+assert.match(restore,/safe-extract\.py/);
+assert.match(restore,/pg_restore --list/);
+console.log('Backup runner integration contracts passed');

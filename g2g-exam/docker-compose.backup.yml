@@ -1,0 +1,21 @@
+# Optional override. Provision directories and validate a real restore before use.
+# Does not install or enable the host service/timer.
+services:
+  app:
+    group_add:
+      - "${G2G_BACKUP_GID:?Set the actual g2g-backup host group ID}"
+    environment:
+      BACKUP_CONTROL_DIR: /data/backup-control
+      BACKUP_RUNNER_ENABLED: "${BACKUP_RUNNER_ENABLED:-false}"
+    volumes:
+      - type: bind
+        source: /var/lib/g2g-exam-backup
+        target: /data/backup-control
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/lib/g2g-exam-backup/requests
+        target: /data/backup-control/requests
+        bind:
+          create_host_path: false

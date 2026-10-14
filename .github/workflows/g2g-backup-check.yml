@@ -1,0 +1,42 @@
+name: G2G Backup isolated checks
+on:
+  push:
+    branches: [feature/g2g-drive-backup]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: isolated-ci-only
+        ports: [5432:5432]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: g2g-exam
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: sudo apt-get update -qq && sudo apt-get install -y age rclone postgresql-client-16
+      - run: npm ci --prefix server --ignore-scripts
+      - name: Backup unit tests and shell syntax
+        run: |
+          for f in tests/backup-*.test.mjs; do node "$f"; done
+          for f in scripts/backup/*.sh; do bash -n "$f"; done
+      - name: Mock failure coverage
+        run: |
+          bash tests/backup-integration-mock.sh
+          bash tests/backup-required-deployment.test.sh
+      - name: Real PostgreSQL, age and local Rclone restore
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: isolated-ci-only
+        run: bash tests/backup-real.integration.sh

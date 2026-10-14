@@ -1,44 +1,21 @@
 #!/usr/bin/env bash
-# Dedicated host-side G2G backup runner. Called by systemd timer, never by HTTP request.
 set -Eeuo pipefail
 umask 077
-: "${BACKUP_STATE_DIR:=/var/lib/g2g-exam-backup}"
-: "${BACKUP_CONTROL_DIR:=$BACKUP_STATE_DIR}"
-: "${BACKUP_SCRIPT_DIR:=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)}"
-mkdir -p -m 700 "$BACKUP_STATE_DIR"
+HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+: "${BACKUP_CONTROL_DIR:=/var/lib/g2g-exam-backup}"
+: "${BACKUP_PRIVATE_DIR:?Set a private directory outside the web control mount}"
 mkdir -p -m 700 "$BACKUP_CONTROL_DIR"
-rm -f -- "$BACKUP_CONTROL_DIR/request"
-exec 9>"$BACKUP_STATE_DIR/backup.lock"
-if ! flock -n 9; then echo "Backup already running; skipping overlapping invocation"; exit 0; fi
-started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-tmp="$(mktemp "$BACKUP_CONTROL_DIR/.status.XXXXXX")"
-status(){
-  printf '{"state":"%s","startedAt":"%s","finishedAt":"%s"}\n' "$1" "$started" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$tmp"
-  mv -f "$tmp" "$BACKUP_CONTROL_DIR/status.json"
-}
-status running
-if output="$(bash "$BACKUP_SCRIPT_DIR/backup.sh" 2>&1)"; then
-  status success
-  # Store a bounded, non-secret history for the admin UI.
-  BACKUP_OUTPUT="$output" BACKUP_CONTROL_DIR="$BACKUP_CONTROL_DIR" node --input-type=module -e '
-    import fs from "node:fs";
-    import path from "node:path";
-    const dir=process.env.BACKUP_CONTROL_DIR;
-    const file=path.join(dir,"history.json");
-    let items=[];try{items=JSON.parse(fs.readFileSync(file,"utf8"));}catch{}
-    const output=process.env.BACKUP_OUTPUT||"";
-    const match=output.match(/BACKUP_OK timestamp=([^ ]+) sha256=([^ ]+) file=([^ ]+)/);
-    if(match){
-      items.unshift({createdAt:match[1],hash:match[2],name:match[3],type:"daily"});
-      items=items.slice(0,8);
-      fs.writeFileSync(file+".tmp",JSON.stringify(items),{mode:0o600});
-      fs.renameSync(file+".tmp",file);
-    }
-  '
-  printf '%s\n' "$output"
-else
-  code="$?"
-  status failed
-  printf '%s\n' "$output" >&2
-  exit "$code"
+# Serialize credential preparation and the entire backup. backup.sh also locks direct calls.
+exec 8>"$BACKUP_CONTROL_DIR/runner.lock"
+flock -n 8 || { echo "Backup runner already active" >&2; exit 75; }
+# A request is acknowledged only after the runner owns the single-flight lock.
+rm -f -- "$BACKUP_CONTROL_DIR/requests/request"
+export RCLONE_CONFIG="$BACKUP_PRIVATE_DIR/rclone.conf"
+# Require a shared application-specific control mount.
+: "${DATABASE_URL:?Missing database URL}"
+if ! node "$HERE/prepare-rclone.mjs"; then
+  node "$HERE/runner-status.mjs" "$BACKUP_CONTROL_DIR" failed || true
+  echo "Could not prepare Google Drive authorization" >&2
+  exit 1
 fi
+exec bash "$HERE/backup.sh"

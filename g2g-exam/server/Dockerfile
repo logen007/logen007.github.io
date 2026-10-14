@@ -51,6 +51,7 @@ COPY server/runtime/runtime-config.js /app/public/runtime-config.js
 
 COPY server/schema.sql /app/server/schema.sql
 COPY server/src /app/server/src
+COPY scripts/backup /app/scripts/backup
 COPY --from=web-build /build/.web-build/ /app/public/
 
 WORKDIR /app/server

@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+const base=new URL('../scripts/backup/',import.meta.url);
+const preflight=await readFile(new URL('check-dependencies.sh',base),'utf8');
+const remote=await readFile(new URL('verify-remote.sh',base),'utf8');
+assert.match(preflight,/UPLOAD_DIR/);
+assert.match(preflight,/BACKUP_DEPLOY_DIR/);
+assert.match(preflight,/BACKUP_CONTROL_DIR/);
+assert.match(preflight,/BACKUP_AGE_RECIPIENT/);
+assert.match(remote,/rclone copyto/);
+assert.doesNotMatch(remote,/rclone deletefile/);
+console.log('Backup preflight and read-only remote verifier contracts passed');

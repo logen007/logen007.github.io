@@ -1,11 +1,8 @@
 [Unit]
-Description=G2G Exam daily backup at 03:00 Vietnam time
-
+Description=G2G Exam daily 03:00 Asia/Ho_Chi_Minh backup
 [Timer]
 OnCalendar=*-*-* 03:00:00 Asia/Ho_Chi_Minh
 Persistent=true
-RandomizedDelaySec=0
 Unit=g2g-backup.service
-
 [Install]
 WantedBy=timers.target

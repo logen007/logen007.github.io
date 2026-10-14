@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {retention,monthlyDue,parseArchive} from '../scripts/backup/retention.mjs';
+const names=Array.from({length:10},(_,i)=>`g2g-202610${String(i+1).padStart(2,'0')}T030000Z.tar.gz.age`);
+assert.equal(retention(names,7).keep.length,7);
+assert.deepEqual(retention(names,7).remove,names.slice(0,3));
+assert.equal(parseArchive('g2g-20260230T030000Z.tar.gz.age'),null);
+assert.equal(monthlyDue(names[0],Date.UTC(2026,9,31,3)),true);
+assert.equal(monthlyDue(names[0],Date.UTC(2026,9,30,3)),false);
+assert.equal(monthlyDue('bad',Date.now()),false);
+console.log('Backup retention tests passed');

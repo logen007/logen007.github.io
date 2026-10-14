@@ -1,18 +1,20 @@
 [Unit]
-Description=G2G Exam encrypted backup to Google Drive
+Description=G2G Exam independent encrypted backup
 Wants=network-online.target
 After=network-online.target
-
 [Service]
 Type=oneshot
 User=g2g-backup
 Group=g2g-backup
 EnvironmentFile=/etc/g2g-exam/backup.env
 Environment=BACKUP_CONTROL_DIR=/var/lib/g2g-exam-backup
-Environment=BACKUP_STATE_DIR=/var/lib/g2g-exam-backup
-ExecStart=/opt/g2g-exam/scripts/backup/runner.sh
+Environment=BACKUP_PRIVATE_DIR=/run/g2g-exam-backup
+ExecStart=/bin/bash /opt/g2g-source/g2g-exam/scripts/backup/runner.sh
 RuntimeDirectory=g2g-exam-backup
+RuntimeDirectoryMode=0700
 StateDirectory=g2g-exam-backup
+StateDirectoryMode=2750
+ExecStartPre=/usr/bin/install -d -m 2770 /var/lib/g2g-exam-backup/requests
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict

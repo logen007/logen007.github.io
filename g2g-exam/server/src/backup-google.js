@@ -1,6 +1,4 @@
 import crypto from 'node:crypto';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import {OAuth2Client} from 'google-auth-library';
 import {query,appError} from './db.js';
 import {encrypt,decrypt} from './settings-secrets.js';
@@ -46,21 +44,26 @@ export async function backupDriveStatus(user){
 export async function registerBackupGoogleRoutes(app){
   app.get('/api/backup/google/connect',async(request,reply)=>{
     const user=await admin(request),state=crypto.randomBytes(32).toString('hex');
+    const oauth=client();
     for(const [key,item] of states)if(item.expires<Date.now())states.delete(key);
     states.set(state,{userId:user.id,expires:Date.now()+600000});
-    const url=client().generateAuthUrl({access_type:'offline',prompt:'consent select_account',scope:[SCOPE,'openid','email'],state});
+    reply.setCookie('g2g_backup_oauth',state,{path:REDIRECT,httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',signed:true,maxAge:600});
+    const url=oauth.generateAuthUrl({access_type:'offline',prompt:'consent select_account',scope:[SCOPE,'openid','email'],state});
     return reply.redirect(url);
   });
   app.get(REDIRECT,async(request,reply)=>{
     const {code,state}=request.query||{},record=states.get(String(state||''));
+    const browser=request.unsignCookie(request.cookies?.g2g_backup_oauth||'');
+    reply.clearCookie('g2g_backup_oauth',{path:REDIRECT});
     states.delete(String(state||''));
     const user=await admin(request);
-    if(!code||!record||record.expires<Date.now()||record.userId!==user.id)throw appError(400,'Phiên kết nối Google Drive không hợp lệ.');
+    if(!code||!record||!browser.valid||browser.value!==state||record.expires<Date.now()||record.userId!==user.id)throw appError(400,'Phiên kết nối Google Drive không hợp lệ.');
     const oauth=client(),{tokens}=await oauth.getToken(String(code));
     if(!tokens.refresh_token)throw appError(400,'Google không cấp quyền truy cập dài hạn. Hãy kết nối lại.');
     const info=await fetch('https://openidconnect.googleapis.com/v1/userinfo',{headers:{Authorization:`Bearer ${tokens.access_token}`},signal:AbortSignal.timeout(15000)});
     if(!info.ok)throw appError(503,'Không xác minh được tài khoản Google.');
     const identity=await info.json();
+    if(identity.email_verified!==true)throw appError(400,'Email Google chưa được xác minh.');
     const config={refreshToken:tokens.refresh_token,email:identity.email||'',folderId:''};
     config.folderId=await ensureFolder(config);
     await save(config,user);
