@@ -543,6 +543,10 @@ theme application must not wait for a network response to render the page.
 
 ## Student result detail
 
+- Shared assessment colors: Đạt green, Khá violet, Giỏi blue, Xuất sắc teal,
+  Chưa đạt red; pending/temporary remain gray. Use this mapping for progress,
+  score badges, total scores and geometric emblems across grading and results.
+
 - Total score is emphasized at 34px/600 desktop and 28px/600 mobile; other
   statistics keep their existing sizing. Color follows the published assessment
   using shared progress fill tokens. Unpublished/missing totals stay neutral.
@@ -553,7 +557,7 @@ theme application must not wait for a network response to render the page.
 
 - Approved hero result badges (14 October): geometric layered SVG emblems with
   beveled faces, an integrated white uppercase label and six presentations:
-  Chờ chấm (gray), Chưa đạt (red), Đạt (violet), Khá (amber), Giỏi (blue),
+  Chờ chấm (gray), Chưa đạt (red), Đạt (green), Khá (violet), Giỏi (blue),
   Xuất sắc (teal). All labels use the same 11px/600 size at every breakpoint
   and stay on one line. Published assessment is the existing saved result,
   never recomputed from the animated total. Use 158.4px desktop and 127.6px mobile

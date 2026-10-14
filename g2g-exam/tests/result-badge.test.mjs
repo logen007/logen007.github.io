@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import {resultBadgeHtml} from '../src/ui/result-badge.js';
 import {resultOutcomeHtml} from '../src/views/attempt-result.js';
+import {readFileSync} from 'node:fs';
+const palette=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(palette,/--score-sufficient:#236343/);
+assert.match(palette,/--score-sufficient-bg:#e4f3e8/);
+assert.match(palette,/--score-sufficient-fill:#328a55/);
+assert.match(palette,/--score-satisfactory:#624780/);
+assert.match(palette,/--score-satisfactory-fill:#8057ad/);
+assert.match(resultBadgeHtml({result:'Đạt'}),/#3a945d/);
+assert.match(resultBadgeHtml({result:'Khá'}),/#7355b0/);
 const labels=[['Chưa đạt','failed'],['Đạt','passed'],['Khá','fair'],['Giỏi','good'],['Xuất sắc','excellent']];
 const all=[];
 for(const [label,key] of labels){

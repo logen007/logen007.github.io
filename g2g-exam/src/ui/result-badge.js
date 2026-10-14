@@ -8,8 +8,8 @@ import {starMeshHtml} from './star-mesh.js';
 const states={
   waiting:{label:'Chờ chấm',lines:['CHỜ CHẤM'],shape:'hex',colors:['#d4d9e2','#8993a3','#596271','#323b49']},
   failed:{label:'Chưa đạt',lines:['CHƯA ĐẠT'],shape:'octagon',colors:['#ffb3a7','#ec7166','#bd433a','#7d2628']},
-  passed:{label:'Đạt',lines:['ĐẠT'],shape:'hex',colors:['#d4c1ff','#a088df','#7355b0','#493471']},
-  fair:{label:'Khá',lines:['KHÁ'],shape:'diamond',colors:['#ffe8a3','#f5bf54','#c38420','#865210']},
+  passed:{label:'Đạt',lines:['ĐẠT'],shape:'hex',colors:['#b9ebc7','#74c691','#3a945d','#21613b']},
+  fair:{label:'Khá',lines:['KHÁ'],shape:'diamond',colors:['#d4c1ff','#a088df','#7355b0','#493471']},
   good:{label:'Giỏi',lines:['GIỎI'],shape:'hex',colors:['#b9e6ff','#69b8ec','#2c83bd','#175381']},
   excellent:{label:'Xuất sắc',lines:['XUẤT SẮC'],shape:'hex',colors:['#b1f0de','#64ccb3','#299879','#14634f']}
 };
@@ -35,7 +35,7 @@ function mark(key,id){
 
 function extensions(key,id){
   if(['passed','good'].includes(key))return `<g class="result-medal-wings" fill="url(#${id}-rim)"><path d="M16 96L34 106V169L16 184Z"/><path d="M224 96L206 106V169L224 184Z"/>${key==='good'?`<path d="M4 117L16 108V176L4 166Z"/><path d="M236 117L224 108V176L236 166Z"/><path d="M16 108L34 141L16 176Z" fill="#d8f2ff" opacity=".45"/><path d="M224 108L206 141L224 176Z" fill="#d8f2ff" opacity=".3"/>`:''}</g>`;
-  if(key==='fair')return `<g class="result-medal-wings" fill="url(#${id}-rim)"><path d="M25 102L3 134L25 164L40 134Z"/><path d="M215 102L237 134L215 164L200 134Z"/><path d="M3 134H40L25 164Z" fill="#905409" opacity=".3"/><path d="M237 134H200L215 164Z" fill="#905409" opacity=".3"/></g>`;
+  if(key==='fair')return `<g class="result-medal-wings" fill="url(#${id}-rim)"><path d="M25 102L3 134L25 164L40 134Z"/><path d="M215 102L237 134L215 164L200 134Z"/><path d="M3 134H40L25 164Z" fill="#493471" opacity=".3"/><path d="M237 134H200L215 164Z" fill="#493471" opacity=".3"/></g>`;
   if(key==='excellent')return `<g class="result-medal-crown" fill="url(#${id}-rim)"><path d="M120 0L106 23H134Z"/><path d="M83 23L73 44L93 38Z"/><path d="M157 23L167 44L147 38Z"/><path d="M120 0V23H134Z" fill="#166751" opacity=".4"/></g>`;
   return '';
 }
