@@ -6,7 +6,7 @@ export function backupSettingsCardHtml(){
   <div class="cai-dat-fields"><p id="sBackupStatus" role="status">Đang kiểm tra kết nối…</p>
   <div class="email-test"><button type="button" class="nut chinh" id="sBackupConnect">Kết nối Google Drive</button>
   <button type="button" class="nut" id="sBackupDisconnect" hidden>Ngắt kết nối</button></div>
-  <small>Chỉ Quản trị cấp cao có quyền. Backup tự động chưa được bật cho đến khi hoàn tất kiểm thử restore trên VPS.</small></div></section>`;
+  <small>Chỉ Quản trị cấp cao có quyền. Backup chỉ hoạt động sau khi cấu hình runner và kiểm thử restore trên VPS.</small></div></section>`;
 }
 export function bindBackupSettings(){
   const root=document.getElementById('sBackupCard');if(!root)return;
