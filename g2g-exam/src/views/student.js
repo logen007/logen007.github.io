@@ -146,18 +146,22 @@ const questionImageUrl=q=>String((Array.isArray(q.instructionBlocks)?q.instructi
 export function sectionPromptHtml(section,{position=null,questionCount=0,exampleCount=0}={}){
   return sectionInstructions(section).map((block,index)=>{
   if(position!==null&&instructionPosition(block,questionCount,exampleCount)!==position)return '';
-  const text=block.text,hasMarker=/\[img\]/i.test(text);
-  const image=block.imageUrl?`<img ${imageMaxWidth(block.imageMaxWidth)?`style="max-width:${imageMaxWidth(block.imageMaxWidth)}px"`:''} src="${esc(block.imageUrl)}" alt="Abbildung zur Aufgabenstellung">`:'';
+  return promptBlockHtml(block,{appendImage:index>0||block.afterQuestion>0||section.questionProfile?.layout!=='inline-gaps'});
+  }).join('');
+}
+
+function promptBlockHtml(block,{appendImage=true,hideImage=false}={}){
+  const text=block.text||'',hasMarker=/\[img\]/i.test(text);
+  const image=!hideImage&&block.imageUrl?`<img ${imageMaxWidth(block.imageMaxWidth)?`style="max-width:${imageMaxWidth(block.imageMaxWidth)}px"`:''} src="${esc(block.imageUrl)}" alt="Abbildung zur Aufgabenstellung">`:'';
   let inserted=false;
   const formatted=instructionTextHtml(text).replace(/\[img\]/gi,()=>{if(inserted)return '';inserted=true;return image;});
   const content=text?`<div><p>${formatted}</p></div>`:'';
-  return content+(!hasMarker&&(index>0||block.afterQuestion>0||section.questionProfile?.layout!=='inline-gaps')?image:'');
-  }).join('');
+  return content+(!hasMarker&&appendImage?image:'');
 }
 
 function questionStimulusHtml(q,{hideImage=false}={}){
   const blocks=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length?q.instructionBlocks:[{text:q.prompt||'',imageUrl:q.instructionImageUrl||''}];
-  return blocks.map(block=>{const text=block?.text||'',imageUrl=hideImage?'':String(block?.imageUrl||'').trim();return text||imageUrl?`<section class="question-stimulus">${text?`<div><p>${instructionTextHtml(text)}</p></div>`:''}${imageUrl?`<img src="${esc(imageUrl)}" ${imageMaxWidth(block.imageMaxWidth)?`style="max-width:${imageMaxWidth(block.imageMaxWidth)}px"`:''} alt="Abbildung zur Aufgabenstellung">`:''}</section>`:'';}).join('');
+  return blocks.map(block=>block?.text||(!hideImage&&block?.imageUrl)?`<section class="question-stimulus">${promptBlockHtml(block,{hideImage})}</section>`:'').join('');
 }
 
 function questionPromptHtml(text,q){

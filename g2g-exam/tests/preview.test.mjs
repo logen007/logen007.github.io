@@ -603,6 +603,31 @@ try{
     assert.doesNotMatch(html,/\[img\]/i);
   });
 
+  await test('Question-owned prompts place their own image between text and footnote',()=>{
+    for(const preview of [true,false])for(const splitLayout of [true,false]){
+      const input=fixture();
+      input.exam.sections[0].questionProfile={splitLayout};
+      input.questions[0].instructionBlocks=[
+        {text:'[b]Lesen Sie den Text[/b]\n[IMG]\n[i]Investionen - (Geld)Ausgaben[/i]\n[img]',imageUrl:'/images/kino.png',imageMaxWidth:420},
+        {text:'Second source [img] Second footnote <script>',imageUrl:'/images/second.png'}
+      ];
+      const before=JSON.stringify(input.questions);
+      const html=examHtml({...input,preview});
+      assert.doesNotMatch(html,/\[img\]|<script>/i);
+      assert.equal(html.split('src="/images/kino.png"').length-1,1);
+      assert.equal(html.split('src="/images/second.png"').length-1,1);
+      assert.ok(html.indexOf('Lesen Sie den Text')<html.indexOf('/images/kino.png'));
+      assert.ok(html.indexOf('/images/kino.png')<html.indexOf('Investionen'));
+      assert.ok(html.indexOf('Second source')<html.indexOf('/images/second.png'));
+      assert.ok(html.indexOf('/images/second.png')<html.indexOf('Second footnote'));
+      assert.match(html,/max-width:420px/);
+      assert.match(html,/&lt;script&gt;/);
+      assert.equal(JSON.stringify(input.questions),before);
+      input.questions[0].instructionBlocks[0].imageUrl='';
+      assert.doesNotMatch(examHtml({...input,preview}),/\[img\]|\/images\/kino.png/i);
+    }
+  });
+
   await test('Audio and illustrated answers retain their media and interaction hooks',()=>{
     const input=fixture();
     input.questions[0].audioUrl='/audio/choice.mp3?name="clip"';
