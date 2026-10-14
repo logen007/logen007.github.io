@@ -642,7 +642,11 @@ theme application must not wait for a network response to render the page.
   Oral grading belongs in a tab too. Keep the outcome badge at the header right.
   Show Result's shared skill score bars below the workspace, then automatic
   answers and published history. Reuse Result tokens and controls.
-- Grading identity uses one compact Result-style header. Submission and feedback
+- Grading identity uses one compact Result-style header. Reuse Result's heading,
+  identity, provider and exam-title classes; avatar/name
+  precede provider/title/date, with the emblem at the right and stats below.
+  Keep classroom and elapsed-time metadata, without changing grading controls.
+  Submission and feedback
   share a single split surface, stacked on mobile. Skill bars form a compact
   responsive grid. Automatic answer detail is a collapsed native disclosure;
   teachers open it when they need to inspect answers. Keep every filter available.

@@ -24,13 +24,13 @@ export function gradingAutomaticHtml(exam,questions,attempt){
   }).join('')}</div>${skills.map((skill,i)=>`<section role="tabpanel" id="grade-auto-panel-${i}" aria-labelledby="grade-auto-tab-${i}" ${i?'hidden':''}><div class="result-filter" role="group" aria-label="Lọc câu trả lời"><button class="nut" data-grade-filter="all" aria-pressed="true">Tất cả</button><button class="nut" data-grade-filter="wrong" aria-pressed="false">Câu sai (${reviewCounts(sections.filter(s=>s.skill===skill).flatMap(s=>s.questions)).wrong})</button><button class="nut" data-grade-filter="blank" aria-pressed="false">Chưa trả lời (${reviewCounts(sections.filter(s=>s.skill===skill).flatMap(s=>s.questions)).blank})</button></div>${sections.filter(s=>s.skill===skill).map(s=>`<div class="result-part"><h3>${esc(s.name)}</h3><div class="grading-question-grid">${s.questions.map(q=>questionHtml(q,true,'Học viên trả lời')).join('')}</div></div>`).join('')}<p class="phu-de" data-grade-empty hidden>Không có câu phù hợp.</p></section>`).join('')}</div>`;
 }
 
-export function gradingIdentityHtml(data,attempt){
+export function gradingIdentityHtml(data,attempt,level=attempt.level||''){
   const student=(data.users||[]).find(u=>u.id===attempt.studentId);
   const classroom=(data.classes||[]).find(c=>c.id===student?.classId);
   const name=student?.name||attempt.studentName||'Học viên';
   const picture=/^https?:\/\//i.test(student?.picture||'')?student.picture:null;
   const initials=name.trim().split(/\s+/).slice(-2).map(p=>p[0]).join('').toUpperCase();
-  return `<div class="grading-identity"><span class="result-avatar">${picture?`<img src="${esc(picture)}" alt="" referrerpolicy="no-referrer">`:esc(initials)}</span><div><h1>${esc(name)}</h1><span class="grading-class">${esc(classroom&&classroom.code!=='Extend'?classroom.code:'Chưa có lớp')}</span></div></div>`;
+  return `<div class="result-identity grading-identity"><span class="result-avatar">${picture?`<img src="${esc(picture)}" alt="" referrerpolicy="no-referrer">`:esc(initials)}</span><div><div class="phu-de">Bài thi ${esc(level)}</div><div class="result-name"><h1>${esc(name)}</h1></div><span class="grading-class">${esc(classroom&&classroom.code!=='Extend'?classroom.code:'Chưa có lớp')}</span></div></div>`;
 }
 
 export function gradingOutcomeHtml(summary,attempt){return resultOutcomeHtml(summary,attempt.status);}

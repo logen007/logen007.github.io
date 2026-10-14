@@ -119,8 +119,8 @@ assert.ok(html.indexOf('<th>Bài thi</th>')<html.indexOf('<th>Học viên</th>')
 assert.ok(!detail.includes('Lưu tạm'));
 assert.ok(detail.includes('>Công bố</button>'));
 const timedDetail=gradingDetailHtml({data:gradingData,exam:gradingExam,attempt:{...gradingAttempt,examTitle:'Đề kiểm tra',durationSeconds:750,attemptNo:1}});
-assert.ok(timedDetail.includes('Lần #1 · 12 phút 30s ·'));
-assert.ok(timedDetail.includes('<p>Đề kiểm tra</p>'));
+assert.ok(timedDetail.includes(' · Lần 1 · 12 phút 30s'));
+assert.ok(timedDetail.includes('<h2>Đề kiểm tra</h2>'));
 assert.ok(detail.indexOf('id="gradeFeedback"')<detail.indexOf('grading-automatic'));
 assert.ok(detail.includes('grading-workspace'));
 assert.equal((detail.match(/id="gradeFeedback"/g)||[]).length,1);
