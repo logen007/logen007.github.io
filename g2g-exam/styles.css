@@ -38,6 +38,12 @@
 .result-stats>div{display:flex;flex-direction:column;min-width:0;gap:4px}
 .result-stats>div+div{border-left:1px solid var(--vien);padding-left:20px}
 .result-stats strong{font-size:30px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.2}
+.result-stats .result-stat-total>strong{font-size:34px;font-weight:600}
+.result-stat-total[data-assessment="Chưa đạt"]>strong{color:var(--score-failed-fill)}
+.result-stat-total[data-assessment="Đạt"]>strong{color:var(--score-sufficient-fill)}
+.result-stat-total[data-assessment="Khá"]>strong{color:var(--score-satisfactory-fill)}
+.result-stat-total[data-assessment="Giỏi"]>strong{color:var(--score-good-fill)}
+.result-stat-total[data-assessment="Xuất sắc"]>strong{color:var(--score-excellent-fill)}
 .result-stats small,.result-bar-label small{font-size:14px;color:var(--phu);font-weight:400}
 .result-stats span{font-size:13px;color:var(--phu)}
 .result-tabs{display:flex;flex-wrap:wrap;gap:8px;padding:6px;background:var(--mat);border:1px solid var(--vien);border-radius:var(--pill);width:fit-content;max-width:100%;margin:24px 0 20px}
@@ -898,6 +904,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 @media(max-width:700px){
   .grading-hero .result-stats,.result-hero .result-stats{grid-template-columns:minmax(0,1.8fr) repeat(3,minmax(0,1fr));gap:10px}
   .grading-hero .result-stats strong,.result-hero .result-stats strong{font-size:24px}
+  .grading-hero .result-stats .result-stat-total>strong,.result-hero .result-stats .result-stat-total>strong{font-size:28px}
   .grading-hero .result-stats small,.result-hero .result-stats small{font-size:12px}
   .grading-hero .result-stats>div>span,.result-hero .result-stats>div>span{font-size:12px}
   .result-hero .result-identity{flex-direction:row;align-items:center;gap:10px}

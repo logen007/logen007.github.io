@@ -33,6 +33,7 @@ assert.match(gradingOutcomeHtml(summary,attempt),/CHỜ CHẤM/);
 assert.doesNotMatch(gradingOutcomeHtml(summary,attempt),/Đang chấm/);
 assert.doesNotMatch(gradingOutcomeHtml(summary,attempt),/passed/);
 assert.match(gradingOutcomeHtml(summary,{status:'published'}),/passed/);
+assert.match(gradingDetailHtml({data:{questions},attempt,exam}),/result-stat-total" data-assessment=""/,'Teacher draft total stays neutral');
 const writingExam={...exam,sections:[1,2,3].map(i=>({name:'Viết '+i,skill:'Viết',questionProfile:{manualPerPart:true},questionIds:['w'+i]}))};
 const writingQuestions=[1,2,3].map(i=>({id:'w'+i,type:'writing',skill:'Viết',maxScore:10}));
 const detail=gradingDetailHtml({data:{questions:writingQuestions},attempt,exam:writingExam});

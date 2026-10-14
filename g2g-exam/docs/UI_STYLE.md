@@ -538,6 +538,10 @@ theme application must not wait for a network response to render the page.
 
 ## Student result detail
 
+- Total score is emphasized at 34px/600 desktop and 28px/600 mobile; other
+  statistics keep their existing sizing. Color follows the published assessment
+  using shared progress fill tokens. Unpublished/missing totals stay neutral.
+
 - Every skill detail tab keeps its title visible on the left of the score row,
   with score/status on the right and progress below, both before publication and
   after publication. Background updates preserve this label.

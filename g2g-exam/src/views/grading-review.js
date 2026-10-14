@@ -39,7 +39,7 @@ export function gradingStatsHtml(exam,questions,attempt,summary){
   const review=buildAttemptReview({exam,questions,attempt:{...attempt,status:'published'}});
   const counts=reviewCounts(review.sections.flatMap(s=>s.questions));
   const max=summary.complete?Object.values(summary.skills||{}).reduce((sum,s)=>sum+Number(s.max||0),0):null;
-  return resultStatsHtml({counts,total:summary.total,max,totalId:'gradeHeaderTotal'});
+  return resultStatsHtml({counts,total:summary.total,max,totalId:'gradeHeaderTotal',totalResult:attempt.status==='published'?summary.result:null});
 }
 
 export function gradingScoreBarsHtml(summary){

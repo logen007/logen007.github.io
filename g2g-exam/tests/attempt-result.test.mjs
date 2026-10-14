@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {buildAttemptReview,reviewCounts} from '../src/domain/attempt-review.js';
-import {attemptResultHtml,resultShareText,bindAttemptResult} from '../src/views/attempt-result.js';
+import {attemptResultHtml,resultShareText,bindAttemptResult,resultStatsHtml} from '../src/views/attempt-result.js';
 
 const questions=[
   {id:'example',type:'single',example:true,maxScore:0,correctAnswer:0},
@@ -14,6 +14,12 @@ const exam={provider:'GOETHE',level:'A1',title:'Test',sections:[{name:'Đọc 1'
 const attempt={id:'mine',status:'published',studentName:'An',answers:{a:0,b:0,d:'Bài viết riêng'},sectionScores:{'Đọc 1':5,'Viết 1':10},feedback:'Nhận xét riêng',reviewerName:'Cô Lan',oralScore:12,oralMax:15,result:'Chưa đạt',totalScore:27};
 const make=(status='published')=>buildAttemptReview({exam,questions,attempt:{...attempt,status},student:{name:'An <x>',picture:'javascript:alert(1)'}});
 const review=make(),counts=reviewCounts(review.sections.flatMap(s=>s.questions));
+for(const result of ['Chưa đạt','Đạt','Khá','Giỏi','Xuất sắc']){
+  const stats=resultStatsHtml({counts,total:290,max:300,totalResult:result});
+  assert.ok(stats.includes(`class="result-stat-total" data-assessment="${result}"`),'Total uses saved assessment, not numeric ratio');
+}
+assert.match(resultStatsHtml({counts,total:60}),/result-stat-total" data-assessment=""/);
+assert.match(resultStatsHtml({counts,total:60,visible:false,totalResult:'Đạt'}),/result-stat-total" data-assessment=""/);
 assert.deepEqual(counts,{total:5,objective:3,correct:1,wrong:1,blank:1});
 assert.equal(review.sections[0].questions[0].number,1);
 assert.equal(review.attempt.level,'A1');
