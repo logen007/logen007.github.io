@@ -1235,6 +1235,11 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .gap-options-editor [data-gap-options] { --textarea-min-height:320px; min-height:320px; }
 .thi .viet.lined-writing-paper,.grading-submissions .bai-lam.lined-writing-paper { line-height:32px; padding:16px 20px; border:1px solid var(--vien,#dfe1e5); border-radius:12px; font-family:"Bradley Hand","Segoe Print","Comic Sans MS",cursive; font-size:18px; background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,var(--vien,#dfe1e5) 31px,var(--vien,#dfe1e5) 32px); background-origin:content-box; }
 .thi .viet.lined-writing-paper { --textarea-min-height:400px; min-height:400px; }
+.exam-writing-prompt{display:grid;gap:24px;align-content:start;min-width:0}
+.exam-paper .exam-writing-prompt .exam-instruction{padding-bottom:0;margin:0}
+.exam-writing-prompt .preview-question-heading{display:block}
+.exam-writing-response .viet{margin-top:0;--textarea-min-height:400px;min-height:400px}
+.exam-paper .exam-writing-response .cau-thi{padding:0}
 .goethe-score.goethe-score--writing { grid-template-columns:minmax(80px,1fr) repeat(4,var(--editor-control)); }
 .goethe-question-row:has(.goethe-score--audio) { grid-template-columns:minmax(0,1fr); }
 .goethe-question-side:has(.goethe-score--audio) { grid-template-rows:auto; }

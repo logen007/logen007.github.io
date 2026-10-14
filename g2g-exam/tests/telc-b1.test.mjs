@@ -72,6 +72,41 @@ const state=structuredClone(seedState),teacher=state.users.find(u=>u.id==='teach
 globalThis.sessionStorage={getItem:()=>null};
 const {exam,rows}=telcFixture(state,teacher);
 {
+  const writingExam=structuredClone(exam);
+  const index=writingExam.sections.findIndex(s=>s.skillKey==='writing');
+  const section=writingExam.sections[index];
+  section.instruction='Section writing task [img]';
+  section.instructionImageUrl='/writing-overview.png';
+  section.additionalInstructions=[{text:'Following writing instruction',afterQuestion:1}];
+  const questions=structuredClone(rows(exam.sections[index]));
+  const question=questions[0];
+  question.title='Specific writing task';
+  question.instruction='Specific writing instruction';
+  question.instructionBlocks=[{text:'A letter to answer',imageUrl:'/writing-source.png'}];
+  const saved='Meine gespeicherte Antwort <Brief>';
+  const before=JSON.stringify({writingExam,questions});
+  for(const preview of [false,true]){
+    const html=examHtml({attempt:{id:'writing-split',answers:{[question.id]:saved}},exam:writingExam,sectionIndex:index,questions,allQuestions:state.questions,online:true,preview});
+    assert.match(html,/exam-reading-split exam-writing-split/);
+    const left=html.split('class="exam-writing-prompt"')[1].split('class="exam-writing-response"')[0];
+    const right=html.split('class="exam-writing-response"')[1];
+    for(const text of ['Section writing task','Specific writing task','Specific writing instruction','A letter to answer','Following writing instruction','/writing-overview.png','/writing-source.png']){
+      assert.ok(left.includes(text),`${text} belongs to the prompt column`);
+      assert.ok(!right.includes(text),`${text} must not repeat in the response column`);
+      assert.equal(html.split(text).length-1,1,`${text} appears once`);
+    }
+    assert.doesNotMatch(left,/<textarea/);
+    assert.match(right,/<textarea[^>]*answer-text[^>]*data-q=/);
+    assert.match(right,/Meine gespeicherte Antwort &lt;Brief&gt;/);
+    assert.match(right,/<span class="word-count">4<\/span>/);
+    assert.equal((right.match(/<textarea/g)||[]).length,1);
+  }
+  assert.equal(JSON.stringify({writingExam,questions}),before,'Rendering preserves authored content and questions');
+  for(const otherExam of [{...writingExam,level:'B2'},{...writingExam,provider:'GOETHE'}]){
+    assert.doesNotMatch(examHtml({attempt:{answers:{}},exam:otherExam,sectionIndex:index,questions,online:true,preview:true}),/exam-writing-split/,'Only TELC B1 uses this writing layout');
+  }
+}
+{
   const part=structuredClone(exam.sections.find(s=>s.questionProfile?.layout==='true-false'));
   part.skill='Đọc';part.skillKey='reading';part.questionProfile.audio=false;part.questionProfile.questionImage=true;
   const html=renderBuilder({data:state,exam,section:part});

@@ -308,6 +308,11 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Preview layout
 
+- TELC B1 student Writing and its preview use the shared equal-width split:
+  all section and question prompts/images on the left, response fields and word
+  count on the right. Preserve authored content, answer hooks and values.
+  At 760px and below, stack prompt above response using the shared split rules.
+
 - Every student room entry uses the shared entry transition: normal start, code
   entry and resuming through a direct link. Reload/F5 during an exam skips the entry
   animation. Resuming never creates another
