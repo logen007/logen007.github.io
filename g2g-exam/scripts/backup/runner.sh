@@ -19,6 +19,22 @@ status(){
 status running
 if output="$(bash "$BACKUP_SCRIPT_DIR/backup.sh" 2>&1)"; then
   status success
+  # Store a bounded, non-secret history for the admin UI.
+  BACKUP_OUTPUT="$output" BACKUP_CONTROL_DIR="$BACKUP_CONTROL_DIR" node --input-type=module -e '
+    import fs from "node:fs";
+    import path from "node:path";
+    const dir=process.env.BACKUP_CONTROL_DIR;
+    const file=path.join(dir,"history.json");
+    let items=[];try{items=JSON.parse(fs.readFileSync(file,"utf8"));}catch{}
+    const output=process.env.BACKUP_OUTPUT||"";
+    const match=output.match(/BACKUP_OK timestamp=([^ ]+) sha256=([^ ]+) file=([^\\s]+)/);
+    if(match){
+      items.unshift({createdAt:match[1],hash:match[2],name:match[3],type:"daily"});
+      items=items.slice(0,8);
+      fs.writeFileSync(file+".tmp",JSON.stringify(items),{mode:0o600});
+      fs.renameSync(file+".tmp",file);
+    }
+  '
   printf '%s\n' "$output"
 else
   code="$?"
