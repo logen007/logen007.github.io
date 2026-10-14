@@ -1,0 +1,9 @@
+[Unit]
+Description=Run G2G Exam backup when requested by Master Admin
+
+[Path]
+PathExists=/var/lib/g2g-exam-backup/request
+Unit=g2g-backup.service
+
+[Install]
+WantedBy=multi-user.target
