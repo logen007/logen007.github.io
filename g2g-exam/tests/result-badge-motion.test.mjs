@@ -4,18 +4,25 @@ const saved={document:globalThis.document,matchMedia:globalThis.matchMedia};
 const calls=[],listeners=new Map();
 globalThis.document={hidden:false,addEventListener:(key,fn)=>listeners.set(key,fn),removeEventListener:key=>listeners.delete(key)};
 globalThis.matchMedia=()=>({matches:false});
-const element=(opacity=1)=>({dataset:{medalPiece:'left'},getAttribute:()=>String(opacity),animate(frames,options){
+const element=()=>({animate(frames,options){
   const call={frames,options,canceled:false};
   calls.push(call);
   return {finished:Promise.resolve(),cancel(){call.canceled=true;}};
 }});
-const facet=element(.25),label=element(),shine=element();
-const node={...element(),querySelectorAll:selector=>selector==='[data-medal-piece]'?[facet]:[],querySelector:selector=>selector==='.result-medal-label'?label:shine};
+const elements=new Map([
+  ['[data-medal-cluster="shell"]',element()],
+  ['[data-medal-cluster="symbol"]',element()],
+  ['[data-medal-cluster="plate"]',element()],
+  ['.result-medal-label',element()]
+]);
+const node={...element(),querySelector:selector=>elements.get(selector)};
 const stop=animateResultBadge(node);
 assert.equal(calls.length,4);
-assert.equal(calls[1].frames.at(-1).opacity,.25,'Facet shading must not flash opaque then jump back');
-assert.equal(calls[1].frames.at(-1).transform,'none');
-assert.ok(calls[1].frames[0].transform.includes('translate(-13px'));
+assert.deepEqual(calls.map(call=>call.options.delay),[0,170,340,340],'Intact clusters arrive in readable order');
+assert.deepEqual(calls[2].frames,calls[3].frames,'Plate and label move together');
+assert.deepEqual(calls[2].options,calls[3].options);
+assert.ok(calls.every(call=>call.frames.at(-1).transform==='none'));
+assert.ok(calls.every(call=>!JSON.stringify(call.frames).includes('rotate')));
 globalThis.document.hidden=true;
 listeners.get('visibilitychange')();
 assert.ok(calls.every(call=>call.canceled),'Background tabs stop the complete assembly');
@@ -27,4 +34,4 @@ const count=calls.length;
 animateResultBadge(node);
 assert.equal(calls.length,count,'Reduced motion keeps the finished, readable badge');
 Object.assign(globalThis,saved);
-console.log('Badge motion: stable facet shading, assembly completion, hidden-tab cleanup and reduced motion passed.');
+console.log('Badge motion: grouped assembly, attached label, hidden-tab cleanup and reduced motion passed.');
