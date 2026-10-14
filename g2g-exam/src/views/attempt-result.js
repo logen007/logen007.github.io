@@ -38,8 +38,8 @@ export function questionHtml(q,published,answerLabel='Bạn trả lời'){
   }
   return `<article class="result-question" data-result-verdict="${verdict||'manual'}"><div class="result-question-heading"><strong>Câu ${esc(q.number||'')} ${q.title?`· ${textHtml(q.title)}`:''}</strong>${verdict?`<span class="result-${verdict}">${labels[verdict]}</span>`:''}</div>${body}</article>`;
 }
-export function resultOutcomeHtml(summary,status='published',pendingLabel='Chờ công bố'){
-  if(status!=='published'&&pendingLabel!=='Chờ công bố')return `<div class="result-outcome">${iconHtml('grading')}<strong>${esc(pendingLabel)}</strong></div>`;
+export function resultOutcomeHtml(summary,status='published',pendingLabel='Chờ chấm'){
+  if(status!=='published'&&pendingLabel!=='Chờ chấm')return `<div class="result-outcome">${iconHtml('grading')}<strong>${esc(pendingLabel)}</strong></div>`;
   return resultBadgeHtml(summary,status);
 }
 function feedback(score){return `<div class="result-feedback"><p>${textHtml(score.feedback||'Chưa có nhận xét.')}</p>${score.reviewerName?`<div class="result-reviewer">${iconHtml('teacher')}<span>${esc(score.reviewerName)}</span></div>`:''}</div>`;}

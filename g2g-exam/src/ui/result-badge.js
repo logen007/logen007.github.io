@@ -4,12 +4,12 @@ import {esc} from './format.js';
 // Approved geometric result emblems. Artwork is decorative; the HTML label
 // remains selectable, accessible and the same size for every assessment.
 const states={
-  waiting:{label:'Chờ công bố',lines:['CHỜ','CÔNG BỐ'],shape:'hex',colors:['#d4d9e2','#8993a3','#596271','#323b49']},
-  failed:{label:'Chưa đạt',lines:['CHƯA','ĐẠT'],shape:'octagon',colors:['#ffb3a7','#ec7166','#bd433a','#7d2628']},
+  waiting:{label:'Chờ chấm',lines:['CHỜ CHẤM'],shape:'hex',colors:['#d4d9e2','#8993a3','#596271','#323b49']},
+  failed:{label:'Chưa đạt',lines:['CHƯA ĐẠT'],shape:'octagon',colors:['#ffb3a7','#ec7166','#bd433a','#7d2628']},
   passed:{label:'Đạt',lines:['ĐẠT'],shape:'hex',colors:['#d4c1ff','#a088df','#7355b0','#493471']},
   fair:{label:'Khá',lines:['KHÁ'],shape:'diamond',colors:['#ffe8a3','#f5bf54','#c38420','#865210']},
   good:{label:'Giỏi',lines:['GIỎI'],shape:'hex',colors:['#b9e6ff','#69b8ec','#2c83bd','#175381']},
-  excellent:{label:'Xuất sắc',lines:['XUẤT','SẮC'],shape:'hex',colors:['#b1f0de','#64ccb3','#299879','#14634f']}
+  excellent:{label:'Xuất sắc',lines:['XUẤT SẮC'],shape:'hex',colors:['#b1f0de','#64ccb3','#299879','#14634f']}
 };
 const resultKeys={'Chưa đạt':'failed','Đạt':'passed','Khá':'fair','Giỏi':'good','Xuất sắc':'excellent'};
 const frames={

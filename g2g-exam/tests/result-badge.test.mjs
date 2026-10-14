@@ -11,7 +11,7 @@ for(const [label,key] of labels){
   for(const status of ['grading','ready','submitted']){
     const pending=resultBadgeHtml({result:label,total:300},status);
     assert.ok(pending.includes('data-result-state="waiting"'),'Do not expose an unpublished verdict');
-    assert.ok(pending.includes('aria-label="Chờ công bố"'));
+    assert.ok(pending.includes('aria-label="Chờ chấm"'));
   }
 }
 assert.match(resultBadgeHtml({result:'sehr gut'}),/data-result-state="excellent"/);
