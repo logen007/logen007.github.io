@@ -8,6 +8,8 @@ Type=oneshot
 User=g2g-backup
 Group=g2g-backup
 EnvironmentFile=/etc/g2g-exam/backup.env
+Environment=BACKUP_CONTROL_DIR=/var/lib/g2g-exam-backup
+Environment=BACKUP_STATE_DIR=/var/lib/g2g-exam-backup
 ExecStart=/opt/g2g-exam/scripts/backup/runner.sh
 RuntimeDirectory=g2g-exam-backup
 StateDirectory=g2g-exam-backup
