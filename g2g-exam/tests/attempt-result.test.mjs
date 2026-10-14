@@ -20,6 +20,13 @@ assert.equal(review.attempt.level,'A1');
 const numbered=buildAttemptReview({exam:{...exam,sections:[...exam.sections,{name:'Nghe 1',skillKey:'listening',questionProfile:{numberWithinSkill:true},questionIds:['next']}]},questions:[...questions,{...questions[1],id:'next'}],attempt});
 assert.equal(numbered.sections[2].questions[0].number,6);
 const html=attemptResultHtml({review});
+const assertVisibleSkillLabels=view=>{
+  for(const skill of ['reading','writing','speaking']){
+    const panel=view.split(`id="result-panel-${skill}"`)[1].split('</section>')[0];
+    assert.match(panel,/<div class="result-bar-label"><span>(Đọc|Viết|Nói)<\/span>/,'Skill title stays visible beside score above progress');
+  }
+};
+assertVisibleSkillLabels(html);
 assert.match(html,/Kết quả thi A1/);assert.match(html,/An &lt;x&gt;/);assert.doesNotMatch(html,/<script>|javascript:/);
 assert.match(html,/Cô Lan/);assert.match(html,/Nhận xét riêng/);assert.match(html,/Đáp án đúng/);
 assert.doesNotMatch(html,/Người chấm|Chưa có thông tin người chấm/);
@@ -34,6 +41,7 @@ for(const status of ['submitted','grading','ready','incomplete']){
   const pending=make(status);assert.equal(pending.score,null);assert.equal(pending.sections[0].questions[0].correct,status==='incomplete'?null:0);
   assert.equal(pending.sections[1].questions[1].fields[0].expected,null);
   const view=attemptResultHtml({review:pending});assert.doesNotMatch(view,/Nhận xét riêng|data-result-share aria/);
+  if(status!=='incomplete')assertVisibleSkillLabels(view);
   if(status==='incomplete')assert.doesNotMatch(view,/Đáp án đúng|result-donut/);
   else{assert.match(view,/Đáp án đúng/);assert.match(view,/result-donut/);assert.match(view,/result-stats/);}
   assert.equal(resultShareText(pending),null);

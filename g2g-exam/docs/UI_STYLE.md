@@ -538,6 +538,10 @@ theme application must not wait for a network response to render the page.
 
 ## Student result detail
 
+- Every skill detail tab keeps its title visible on the left of the score row,
+  with score/status on the right and progress below, both before publication and
+  after publication. Background updates preserve this label.
+
 - Approved hero result badges (14 October): geometric layered SVG emblems with
   beveled faces, an integrated white uppercase label and six presentations:
   Chờ chấm (gray), Chưa đạt (red), Đạt (violet), Khá (amber), Giỏi (blue),

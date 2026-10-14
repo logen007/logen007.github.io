@@ -33,6 +33,6 @@ export function provisionalResultHtml(result,renderBar,skill){
   return keys.map(key=>{
     const entry=skills[key];
     return renderBar(SKILL_LABELS[key]||key,entry?.score!=null?entry:null,
-      {hideLabel:Boolean(skill),showBand:!entry?.temporary,temporary:Boolean(entry?.temporary)});
+      {showBand:!entry?.temporary,temporary:Boolean(entry?.temporary)});
   }).join('')+(!skill?'<p class="phu-de">Chờ giáo viên chấm và công bố kết quả chính thức.</p>':'');
 }
