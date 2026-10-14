@@ -648,6 +648,10 @@ theme application must not wait for a network response to render the page.
   button beside Publish.
   No save/status text beside Publish; preserve autosave, flush-before-publish,
   validation and error notifications.
+  Published attempts remain editable without reverting publication status.
+  Each explicit Publish, including republishing unchanged results, prepares a
+  fresh result email. Autosave never resends email. Keep prior delivery records;
+  preserve permission checks and one-time level promotion.
   Oral grading belongs in a tab too. Keep the outcome badge at the header right.
   Show Result's shared skill score bars below the workspace, then automatic
   answers and published history. Reuse Result tokens and controls.

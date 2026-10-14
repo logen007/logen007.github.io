@@ -1,4 +1,4 @@
-import {query,withTx,audit,now,appError} from '../db.js';
+import {query,withTx,audit,now,uid,appError} from '../db.js';
 import {sendConfiguredMail} from '../mail.js';
 import {isTeacher,attemptExam,canGrade,questionMap} from './shared.js';
 import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
@@ -112,18 +112,18 @@ export async function publishAttemptResult(user,{attemptId}){
     if(!result.rowCount)throw appError(404,'Không tìm thấy lượt thi.');
     const attempt=result.rows[0],exam=await attemptExam(attempt,client);
     if(!(await canGrade(user,exam)))throw appError(403,'Không có quyền công bố kết quả.');
-    if(attempt.status==='published')return {alreadyPublished:true};
-    if(attempt.status!=='ready')throw appError(409,'Bài chưa được chấm đủ.');
+    const republished=attempt.status==='published';
+    if(!['ready','published'].includes(attempt.status))throw appError(409,'Bài chưa được chấm đủ.');
     const marks=attempt.private_data||{};
     if(marks.totalScore==null||!Number.isFinite(Number(marks.totalScore)))throw appError(409,'Bài chưa có tổng điểm hợp lệ.');
-    const {patch,notificationStatus}=await finalizeOutcome(client,attempt,exam,marks,user);
+    const {patch,notificationStatus}=await finalizeOutcome(client,attempt,exam,marks,user,republished?{notificationId:uid('result')}:{});
     const publicData={...attempt.public_data,status:'published',publishedAt:now(),updatedAt:now(),
       autoScore:Number(marks.autoScore||0),manualScores:marks.manualScores||{},scoringVersion:marks.scoringVersion,
       sectionScores:marks.sectionScores||{},oralScore:marks.oralScore,oralMax:marks.oralMax,
       reviewerId:user.id,reviewerName:user.name||'',feedback:marks.feedback||'',...patch};
     await client.query('UPDATE attempts SET status=\'published\',public_data=$2::jsonb,private_data=private_data||$3::jsonb,updated_at=now() WHERE id=$1',[attemptId,JSON.stringify(publicData),JSON.stringify(patch)]);
-    await audit(user,'publish_result','attempt',attemptId,{studentId:attempt.student_id,notificationStatus},client);
-    return {alreadyPublished:false,notificationStatus};
+    await audit(user,'publish_result','attempt',attemptId,{studentId:attempt.student_id,notificationStatus,republished},client);
+    return {alreadyPublished:false,republished,notificationStatus};
   });
   // The publication transaction is durable. SMTP latency must not block the
   // teacher; failures stay recorded on the notification for retry/inspection.

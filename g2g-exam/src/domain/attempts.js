@@ -159,7 +159,8 @@ export function saveManualScore(state,user,attemptId,payload={}){
   const exam=attempt.examSnapshot||byId(state.exams,attempt.examId);
   if(exam.questionSnapshot)state={...state,questions:exam.questionSnapshot};
   if(!canGradeExam(state,user,exam))throw new Error('Bạn chưa có quyền chấm bài thi này.');
-  if(![ATTEMPT_STATUS.GRADING,ATTEMPT_STATUS.READY].includes(attempt.status))throw new Error('Bài này không ở trạng thái chấm.');
+  if(![ATTEMPT_STATUS.GRADING,ATTEMPT_STATUS.READY,ATTEMPT_STATUS.PUBLISHED].includes(attempt.status))throw new Error('Bài này không ở trạng thái chấm.');
+  const published=attempt.status===ATTEMPT_STATUS.PUBLISHED;
   if(!attempt.scoringVersion){
     attempt.sectionScores||={};
     for(const section of exam.sections||[])for(const id of section.questionIds||[]){
@@ -188,7 +189,7 @@ export function saveManualScore(state,user,attemptId,payload={}){
   if(complete){
     attempt.totalScore=Number(attempt.autoScore||0)+Object.values(attempt.manualScores).reduce((sum,n)=>sum+(Number(n)||0),0);
     attempt.result=resultBySkill(state,exam,attempt.sectionScores,attempt.manualScores);
-    attempt.status=ATTEMPT_STATUS.READY;
+    attempt.status=published?ATTEMPT_STATUS.PUBLISHED:ATTEMPT_STATUS.READY;
   }else{
     attempt.totalScore=null;
     attempt.result=null;
@@ -203,7 +204,7 @@ export function publishAttempt(state,user,attemptId){
   if(!attempt)throw new Error('Không tìm thấy lượt thi.');
   const exam=byId(state.exams,attempt.examId);
   if(!canPublishExamResult(user,exam))throw new Error('Bạn không có quyền công bố kết quả.');
-  if(attempt.status!==ATTEMPT_STATUS.READY)throw new Error('Bài thi chưa được chấm đủ để công bố.');
+  if(![ATTEMPT_STATUS.READY,ATTEMPT_STATUS.PUBLISHED].includes(attempt.status))throw new Error('Bài thi chưa được chấm đủ để công bố.');
   attempt.status=ATTEMPT_STATUS.PUBLISHED;
   attempt.publishedAt=nowIso();
   attempt.updatedAt=nowIso();

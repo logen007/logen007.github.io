@@ -1468,7 +1468,7 @@ async function saveGrade(andPublish){
   if(oralInput?.value){
     if(!oralInput.checkValidity()){oralInput.reportValidity();return;}
     if(repo.mode==='api'){
-      const result=await act(()=>repo.call('saveOralScore',{attemptId:attempt.id,score:Number(oralInput.value)}),null,{rerender:false});
+      const result=await act(()=>repo.call('saveOralScore',{attemptId:attempt.id,score:Number(oralInput.value),notifyResult:false}),null,{rerender:false});
       if(!result)return;
       await repo.reload();
     }else await repo.transaction(st=>{const a=byId(st.attempts,attempt.id);a.oralScore=Number(oralInput.value);a.oralMax=Number(oralInput.max);});
@@ -1482,12 +1482,8 @@ async function saveGrade(andPublish){
   const fresh=byId(data.attempts,attempt.id);
   if(andPublish){
     if(![ATTEMPT_STATUS.READY,ATTEMPT_STATUS.PUBLISHED].includes(fresh.status)){notify('Cần chấm đủ các phần trước khi công bố.');render();return;}
-    if(fresh.status===ATTEMPT_STATUS.PUBLISHED){
-      notify('Đã cập nhật kết quả đã công bố.');
-      render();
-      return true;
-    }
-    const published=await act(()=>repo.transaction(st=>publishAttempt(st,user,attempt.id)),'Đã công bố kết quả và xếp email thông báo.',{rerender:false});
+    const published=await act(()=>repo.mode==='api'?repo.call('publishAttemptResult',{attemptId:attempt.id}):repo.transaction(st=>publishAttempt(st,user,attempt.id)),'Đã công bố kết quả và xếp email thông báo.',{rerender:false});
+    if(published&&repo.mode==='api')await repo.reload();
     if(published){data=await repo.getState();const next=gradingNeighbors(data,user,attempt).nextPending;gradeAutosave=null;if(next)ui.gradeAttemptId=next.id;ui.view='grading-detail';render();if(next)window.scrollTo(0,0);}
   }
   return true;

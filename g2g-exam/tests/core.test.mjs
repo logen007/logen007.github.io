@@ -169,6 +169,23 @@ test('Điểm chấm tay bị chặn nếu vượt điểm tối đa',()=>{
   assert.throws(()=>saveManualScore(s,u.lan,a.id,{scores:{'Viết':999,'Nói':60}}));
 });
 
+test('Sửa bài đã công bố giữ trạng thái; chỉ công bố lại mới tạo email mới',()=>{
+  const s=fresh(),u=users(s),a=startAttempt(s,u.student,'exam-b1-03');
+  completeWrongAnswers(s,a);submitAttempt(s,u.student,a.id);
+  saveManualScore(s,u.lan,a.id,{scores:{'Viết':35,'Nói':60}});
+  publishAttempt(s,u.lan,a.id);
+  const count=s.notifications.length,firstId=s.notifications.at(-1).id;
+  saveManualScore(s,u.lan,a.id,{scores:{'Viết':30,'Nói':60},feedback:'Đã chỉnh lại'});
+  assert.equal(a.status,ATTEMPT_STATUS.PUBLISHED);
+  assert.equal(a.feedback,'Đã chỉnh lại');
+  assert.equal(s.notifications.length,count,'Autosave never sends another email');
+  publishAttempt(s,u.lan,a.id);
+  assert.equal(a.status,ATTEMPT_STATUS.PUBLISHED);
+  assert.equal(s.notifications.length,count+1);
+  assert.notEqual(s.notifications.at(-1).id,firstId);
+  assert.throws(()=>saveManualScore(s,u.student,a.id,{scores:{'Viết':30}}));
+});
+
 test('Chấm đủ Viết/Nói -> sẵn sàng; chủ bài công bố -> có điểm và notification email',()=>{
   const s=fresh(),u=users(s);const a=startAttempt(s,u.student,'exam-b1-03');completeWrongAnswers(s,a);submitAttempt(s,u.student,a.id);
   saveManualScore(s,u.lan,a.id,{scores:{'Viết':35,'Nói':60},feedback:'Ổn'});assert.equal(a.status,ATTEMPT_STATUS.READY);assert.equal(typeof a.totalScore,'number');

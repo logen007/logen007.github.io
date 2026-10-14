@@ -3,8 +3,9 @@ import {isTeacher,attemptExam,questionMap,canGrade} from './shared.js';
 import {skillScores,examResult,oralMaximum} from '../../../src/domain/gradebook.js';
 import {finalizeOutcome} from '../result-outcome.js';
 import {deliverResultEmail} from './grading.js';
+import {resultSummary} from '../../../src/domain/result-summary.js';
 
-export async function saveOralScore(user,{attemptId,score}){
+export async function saveOralScore(user,{attemptId,score,notifyResult=true}){
   if(!isTeacher(user))throw appError(403,'Chỉ giáo viên được nhập điểm Nói.');
   if(typeof score!=='number'||!Number.isFinite(score))throw appError(400,'Điểm Nói không hợp lệ.');
   const out=await withTx(async client=>{
@@ -23,10 +24,12 @@ export async function saveOralScore(user,{attemptId,score}){
     patch.totalScore=Number(Object.values(skills).reduce((sum,item)=>sum+item.score,0).toFixed(2));
     patch.result=examResult(exam,skills);
     let notificationId;
-    if(row.status==='published'){
+    if(row.status==='published'&&notifyResult!==false){
       notificationId=`result-${attemptId}-${uid('oral')}`;
       const result=await finalizeOutcome(client,row,exam,{...attempt,...patch},user,{notificationId});
       Object.assign(patch,result.patch);
+    }else if(row.status==='published'){
+      patch.resultSummary=resultSummary(exam,questions,{...attempt,...patch});
     }
     await client.query('UPDATE attempts SET private_data=private_data||$2::jsonb,public_data=public_data||$3::jsonb,updated_at=now() WHERE id=$1',[attemptId,JSON.stringify(patch),JSON.stringify(row.status==='published'?patch:{})]);
     await audit(user,'save_oral_score','attempt',attemptId,{previous:prior.speaking?.score??null,score,max},client);
