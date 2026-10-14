@@ -27,6 +27,8 @@ const summary={provider:'GOETHE',level:'A1',complete:true,total:70,result:'Đạ
 const data={exams:[exam],attempts:[{id:'ok',studentId:'s',status:'published',submittedAt:'2026-10-01',resultSummary:summary},{id:'other',studentId:'other',status:'published',resultSummary:summary},{id:'pending',studentId:'s',status:'grading',resultSummary:summary},{id:'level',studentId:'s',status:'published',resultSummary:{...summary,level:'B1'}},{id:'provider',studentId:'s',status:'published',resultSummary:{...summary,provider:'TELC'}},{id:'incomplete',studentId:'s',status:'published',resultSummary:{...summary,complete:false}}]};
 assert.deepEqual(gradingHistory(data,exam,attempt).map(p=>p.id),['ok']);
 assert.match(gradingHistoryHtml(data,exam,attempt),/70\/100/);
+assert.match(gradingHistoryHtml(data,exam,attempt),/Lần 1 <b>70<\/b>/);
+assert.doesNotMatch(gradingHistoryHtml(data,exam,attempt),/<b>70\/100<\/b>/);
 assert.doesNotMatch(gradingHistoryHtml(data,exam,attempt),/polyline/);
 assert.match(gradingOutcomeHtml(summary,attempt),/data-result-state="waiting"/);
 assert.match(gradingOutcomeHtml(summary,attempt),/CHỜ CHẤM/);

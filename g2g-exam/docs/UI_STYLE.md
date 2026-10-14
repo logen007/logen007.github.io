@@ -670,7 +670,9 @@ theme application must not wait for a network response to render the page.
   navigate authorized submissions in that class after flushing pending grades.
   Before publication display “Đang chấm”, never a final pass/fail verdict.
 - Plot only published, complete scores for the same student/provider/level;
-  normalize differing totals to percentages and expose the native point scales.
+  history labels show only earned points, without a /maximum suffix.
+  Preserve maximum scores for chart normalization and accessible chart details.
+  Normalize differing totals to percentages and expose the native point scales.
   No extra polling or fabricated historical values.
 
 ## Verification
