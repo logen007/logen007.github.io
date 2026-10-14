@@ -4,12 +4,13 @@ import {appError} from './db.js';
 import {backupDriveStatus} from './backup-google.js';
 import {readStatus} from '../../scripts/backup/status.mjs';
 import {readHistory} from '../../scripts/backup/history.mjs';
+import {parseArchive} from '../../scripts/backup/retention.mjs';
 const folder=()=>path.resolve(process.env.BACKUP_CONTROL_DIR||'/data/backup-control');
 export async function backupSummary(){
  const directory=folder(),status=await readStatus(directory),history=await readHistory(directory);
  const latest=history.filter(item=>item.type==='daily').sort((a,b)=>b.name.localeCompare(a.name))[0]||null;
  let queued=false;try{await fs.access(path.join(directory,'requests','request'));queued=true;}catch(error){if(error.code!=='ENOENT')throw error;}
- return {status:queued&&status?.state!=='running'?{state:'queued',updatedAt:new Date().toISOString()}:status,latest,history};
+ return {status:queued&&status?.state!=='running'?{state:'queued',updatedAt:new Date().toISOString()}:status,latest:latest?{...latest,createdAt:new Date(parseArchive(latest.name)).toISOString()}:null,history};
 }
 export async function backupAction(user,name){
  if(user?.role!=='master')throw appError(403,'Không có quyền quản lý Backup.');

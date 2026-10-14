@@ -17,11 +17,12 @@ import {createStateCache} from '../state-cache.js';
 import {getDataRevision} from '../db.js';
 import {AI_PROVIDER_IDS,normalizeAiProvider} from '../../../src/domain/ai-providers.js';
 import {writingAiWorkerStatus,wakeWritingAiWorker} from '../writing-ai-queue.js';
+import {backupSummary as backupJobSummary} from '../backup-control.js';
 
 const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||''));
 const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||''));
 const uploadDir=path.resolve(process.env.UPLOAD_DIR||'/data/uploads');
-async function backupSummary(){try{return JSON.parse(await fs.readFile(path.resolve(process.env.BACKUP_CONTROL_DIR||'/data/backup-control','status.json'),'utf8'));}catch{return null;}}
+async function backupSummary(){try{const {status,latest}=await backupJobSummary();return {...status,lastVerified:latest?.createdAt||null};}catch{return {state:'failed'};}}
 const uploadPattern=/\/uploads\/([A-Za-z0-9._-]+)/g;
 let infrastructureCache={value:null,expiresAt:0};
 let infrastructurePending=null;

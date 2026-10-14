@@ -1,5 +1,9 @@
 # G2G Exam — Backup & Disaster Recovery (work in progress)
 
+Current candidate: v12 integration. Start with ACCEPTANCE.md for current state,
+INSTALL.md for prerequisites and RESTORE.md for the recovery procedure.
+The older outstanding-work list below describes the original prototype.
+
 > This branch is a **foundation**, not a production-ready integration. Do not enable unattended backups or assume disaster recovery is complete until a real restore drill passes.
 
 ## Architecture

@@ -1,5 +1,10 @@
 # Backup deployment checklist (not an automatic installer)
 
+Read ACCEPTANCE.md first: it supersedes the older shared-directory instructions
+below. The web mounts control read-only and only requests/ writable. Rclone
+credentials live in BACKUP_PRIVATE_DIR=/run/g2g-exam-backup, never in control.
+Use docker-compose.backup.yml only after provisioning and verifying permissions.
+
 1. Copy the `scripts/backup` directory into the deployed G2G Exam app tree. Verify app-specific database/volume paths on the VPS. Do not touch shared Traefik or other services.
 2. Create dedicated `g2g-backup` user with **read-only** PostgreSQL dump access, read-only uploads, and write access only to `/var/lib/g2g-exam-backup` and an isolated scratch area. It needs access to the application's encrypted secrets and the matching `SETTINGS_ENCRYPTION_KEY` for OAuth credential handoff.
 3. Install `pg_dump`, `pg_restore`, `node`, `age`, `rclone`, `tar`, `sha256sum`, `flock`, `python3`. Configure an OAuth client specifically for Backup with redirect URI `https://exam.g2gcareer.com/api/backup/google/callback` and Drive scope `drive.file`.

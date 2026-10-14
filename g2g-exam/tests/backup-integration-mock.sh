@@ -59,4 +59,4 @@ if MOCK_FAIL_UPLOAD=1 bash "$ROOT/scripts/backup/backup.sh" >/dev/null 2>&1; the
 fi
 [[ -f "$previous" && "$(sha256sum "$previous" | cut -d' ' -f1)" == "$previous_hash" ]]
 [[ "$(find "$TMP/remote/daily" -type f | wc -l)" -eq 1 ]]
-printf 'MOCK_INTEGRATION_OK_AND_UPLOAD_FAILURE_SAFE\n' 
+printf 'MOCK_INTEGRATION_OK_AND_UPLOAD_FAILURE_SAFE\n'

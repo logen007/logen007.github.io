@@ -20,6 +20,19 @@ Do not enable scheduled backup or merge to main until the remaining gates pass.
 
 ## Required production gates
 
+## Verified evidence
+
+- Linux CI at commit 1168519: G2G Exam Check passed.
+- G2G Backup isolated checks passed: all backup Node tests, shell syntax,
+  mocked failure tests and the real PostgreSQL 16/age/Rclone-local restore drill.
+- Real drill verified restored relational rows and UTF-8 answers, byte-identical
+  media, manifest digests, rejection of the wrong age identity and tampered archive.
+- Drive OAuth tests use controlled doubles. No Google Drive connection, live VPS
+  permissions, production data restore or scheduled run has been verified.
+- Current main remains v1.3.149. No backup release/version bump is claimed.
+
+## Production prerequisites still outstanding
+
 The owner reports no configured VPS access, Backup OAuth client or age key yet.
 No production changes or timer activation have been made by this task.
 
