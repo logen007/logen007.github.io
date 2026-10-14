@@ -14,7 +14,10 @@ export function bindBackupSettings(){
   const report=(value,bad=false)=>{status.textContent=value;status.classList.toggle('loi',bad);};
   async function load(){
     try{
-      const c=await r2SettingsAction('getBackupDriveStatus');
+      const {drive:c,status,enabled}=await r2SettingsAction('getBackupStatus');
+      const last=root.querySelector('#sBackupLast');
+      last.textContent=!enabled?'Chưa bật backup trên VPS.':status?.state==='success'?'Backup thành công · '+new Date(status.finishedAt).toLocaleString('vi-VN'):status?.state==='failed'?'Backup gần nhất thất bại.':status?.state==='running'?'Đang backup…':'Chưa có bản backup.';
+      root.querySelector('#sBackupNow').disabled=!enabled||!c.connected;
       connect.hidden=c.connected;disconnect.hidden=!c.connected;
       report(c.connected?`Đã kết nối: ${c.email||'Google Drive'} · Thư mục G2G Exam`:c.oauthConfigured?'Chưa kết nối Google Drive.':'Chưa cấu hình OAuth Backup trên máy chủ.');
       connect.disabled=!c.oauthConfigured;
