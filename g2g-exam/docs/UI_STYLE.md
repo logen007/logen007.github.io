@@ -239,6 +239,11 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   widths; do not rely on incidental text/label margins to separate blocks.
 - Roster search fields are compact (maximum 360px, capped at 100% on mobile),
   with an accessible name even when the visible label is omitted.
+- Class list and class/visitor roster tables use content-driven column widths
+  without the generic 760px table minimum, with 12px horizontal cell padding
+  (10px on phones). Keep identity columns readable and wrap long emails locally;
+  compact level/code/action columns without reducing button touch targets.
+  Preserve local horizontal scrolling when content still needs more width.
 
 - Tooltips always appear above and horizontally centered on their triggering
   button/control, never anchored to a table cell or full-width action row.

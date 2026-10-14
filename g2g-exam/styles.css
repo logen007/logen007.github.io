@@ -991,6 +991,13 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .confirmation-copy { position:relative; display:inline-flex; flex:none; }
 .confirmation-copy-tooltip { position:absolute; left:50%; transform:translateX(-50%); bottom:calc(100% + 4px); z-index:3; padding:5px 10px; border-radius:8px; background:var(--chu); color:var(--mat); font-size:12px; white-space:nowrap; pointer-events:none; }
 .roster-search { width:min(360px,100%); margin-bottom:20px; }
+.bang.classes-compact-table { min-width:0;table-layout:auto; }
+.bang.classes-compact-table th,.bang.classes-compact-table td { padding:14px 12px; }
+.class-list-table td:first-child { min-width:72px; }
+.class-list-table .class-description { max-width:240px; }
+.roster-table td:first-child { min-width:160px;max-width:220px;overflow-wrap:anywhere; }
+.roster-table th:not(:first-child),.roster-table td:not(:first-child) { width:1%;white-space:nowrap; }
+@media(max-width:700px){.bang.classes-compact-table th,.bang.classes-compact-table td{padding:12px 10px}}
 .user-list-filters { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px; }
 .user-list-filters #userSearch { width:min(360px,100%); margin-left:auto; }
 @media(max-width:680px) { .user-list-filters #userSearch { width:100%; margin-left:0; } }

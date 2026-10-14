@@ -196,6 +196,14 @@ const rosterData={classes:[classItem,{id:'ext',code:'Extend'}],users:[
   {id:'inside',name:'Class Student',email:'in@example.test',role:'student',classId:'c',level:'B1'}
 ]};
 const classList=classesHtml({data:rosterData});
+assert.ok(classList.includes('bang classes-compact-table class-list-table'));
+assert.ok(classList.includes('bang classes-compact-table roster-table'));
+{
+  const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+  assert.match(css,/\.bang\.classes-compact-table\s*\{[^}]*min-width:0;table-layout:auto/);
+  assert.match(css,/\.bang\.classes-compact-table th,\.bang\.classes-compact-table td\s*\{[^}]*padding:14px 12px/);
+  assert.match(css,/\.roster-table td:first-child\s*\{[^}]*min-width:160px;[^}]*overflow-wrap:anywhere/);
+}
 assert.ok(classList.includes('data-open-class="c"'));
 assert.ok(!classList.includes('data-open-class="ext"'));
 assert.ok(classList.includes('Học viên Vãng lai'));
@@ -207,6 +215,7 @@ assert.ok(classList.includes('data-copy-confirmation="ABCDE"'));
 assert.ok(classList.includes('Nguyen &amp; Lan'));
 assert.ok(!classList.includes('Class Student'));
 const roster=classesHtml({data:rosterData,classId:'c'});
+assert.ok(roster.includes('bang classes-compact-table roster-table'));
 assert.ok(roster.includes('Class Student'));
 assert.ok(!roster.includes('lan@example.test'));
 assert.ok(roster.includes('data-class-back'));
