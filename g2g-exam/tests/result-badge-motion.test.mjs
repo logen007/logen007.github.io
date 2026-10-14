@@ -33,10 +33,10 @@ for(const state of ['waiting','failed','fair','good','excellent']){
   queries.length=0;
   const before=calls.length;
   animateResultBadge(node);
-  assert.equal(calls.length,before+1,'Exactly one symbol animation per state');
+  assert.equal(calls.length,before+(['good','excellent'].includes(state)?2:1),'Each state uses its own compact effect');
   assert.ok(queries.every(selector=>!selector.includes('label')&&!selector.includes('cluster')));
-  const animation=calls.at(-1);
-  assert.ok(animation.options.duration<=1200);
+  const animation=calls[before];
+  assert.ok(calls.slice(before).every(call=>call.options.duration+(call.options.delay||0)<=1200));
   if(state==='waiting'){
     assert.equal(animation.frames.at(-1).transform,'rotate(180deg)','Hourglass visibly flips');
     assert.equal(animation.options.fill,'forwards','Do not snap back after the flip');
@@ -46,10 +46,12 @@ for(const state of ['waiting','failed','fair','good','excellent']){
     assert.equal(animation.frames[1].transform,'scale(.86)');
     assert.ok(!JSON.stringify(animation.frames).includes('strokeDashoffset'),'Cross stays fully visible during one scale emphasis');
   }
-  if(['fair','good','excellent'].includes(state)){
-    assert.equal(animation.frames[0].transform,'none');
+  if(state==='fair')assert.equal(animation.frames.at(-1).transform,'rotate(90deg)');
+  if(['good','excellent'].includes(state)){
     assert.equal(animation.frames.at(-1).transform,'none');
   }
+  if(state==='good')assert.ok(animation.frames[1].transform.includes('scaleX(.08)'));
+  if(state==='excellent')assert.equal(calls.at(-1).frames.at(-1).opacity,0,'Radiant ring disappears completely');
 }
 await new Promise(resolve=>setTimeout(resolve,0));
 assert.equal(listeners.size,0);

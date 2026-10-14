@@ -60,6 +60,7 @@ export function resultBadgeHtml(summary,status='published'){
         <path d="M120 40V172H52V79Z" fill="#fff" opacity=".055"/>
         <polyline points="${frame.outer}" fill="none" stroke="${light}" stroke-width="1" stroke-opacity=".65"/>
         </g>
+        ${key==='excellent'?`<circle class="result-medal-aura" cx="120" cy="111" r="50" fill="none" stroke="${light}" stroke-width="3" opacity="0"/>`:''}
         <g class="result-medal-symbol" data-medal-cluster="symbol"${key==='passed'?` mask="url(#${id}-check)"`:''}>${mark(key,id)}</g>
         <g data-medal-cluster="plate">
         <path d="M48 172H192L208 191L182 239L120 260L58 239L32 191Z" fill="url(#${id}-plate)"/>

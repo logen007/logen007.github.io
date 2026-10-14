@@ -542,8 +542,10 @@ theme application must not wait for a network response to render the page.
   artwork, without a background card. Keep the frame, accents, plate and label
   still. On opening, animate only the symbol once: a 180-degree hourglass flip
   held at its final angle (pending), a drawn check (passed), one scale emphasis
-  from 1 to .86 to 1.06 to 1 with the full cross visible (failed), or a
-  visible 18–24-degree tilt with a small scale and return (star/diamond).
+  from 1 to .86 to 1.06 to 1 with the full cross visible (failed).
+  Successful ranks have distinct signatures: a held quarter-turn (Khá), a
+  horizontal diamond flip followed by a facet gleam (Giỏi), and a star bloom
+  with one expanding, fading ring (Xuất sắc). No particles or repeated loops.
   Finish within 1.2 seconds. Honor reduced motion and stop
   on hidden pages. Teacher unpublished “Đang chấm” stays neutral.
 
