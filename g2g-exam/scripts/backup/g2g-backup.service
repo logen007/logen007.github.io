@@ -1,0 +1,19 @@
+[Unit]
+Description=G2G Exam encrypted backup to Google Drive
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=g2g-backup
+Group=g2g-backup
+EnvironmentFile=/etc/g2g-exam/backup.env
+ExecStart=/opt/g2g-exam/scripts/backup/runner.sh
+RuntimeDirectory=g2g-exam-backup
+StateDirectory=g2g-exam-backup
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/g2g-exam-backup
+TimeoutStartSec=30min
