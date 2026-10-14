@@ -30,7 +30,7 @@
 .result-outcome.failed{background:color-mix(in srgb,var(--do) 8%,var(--mat));color:var(--do)}
 .result-outcome.result-medal{position:relative;display:block;flex:none;width:144px;aspect-ratio:240/270;min-width:0;max-width:none;padding:0;border:0;border-radius:0;background:transparent;color:#fff;isolation:isolate}
 .result-medal-art{display:block;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 4px 3px #1824371c)}
-.result-outcome.result-medal strong.result-medal-label{position:absolute;inset:71% 14% 9%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;margin:0;padding:0;font-family:inherit;font-size:14px;font-weight:600;line-height:1.15;letter-spacing:0;text-transform:uppercase;color:#fff;text-align:center;text-shadow:0 1px 1px #0003;pointer-events:none}
+.result-outcome.result-medal strong.result-medal-label{position:absolute;inset:auto 14% 9.5%;height:34px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;margin:0;padding:0;font-family:inherit;font-size:14px;font-weight:600;line-height:1.15;letter-spacing:0;text-transform:uppercase;color:#fff;text-align:center;text-shadow:0 1px 1px #0003;pointer-events:none}
 .result-medal-label>span{display:block;white-space:nowrap}
 .result-medal-glint{opacity:0}
 @media(max-width:700px){.result-outcome.result-medal{width:116px}}
