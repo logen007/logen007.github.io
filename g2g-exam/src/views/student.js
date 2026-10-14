@@ -1,5 +1,5 @@
 import {sectionLabel} from '../ui/section-label.js';
-import {sectionInstructions,supportsInstructionPositions,instructionPosition,instructionSlotCount} from '../domain/section-instructions.js';
+import {sectionInstructions,supportsInstructionPositions,instructionPosition,instructionSlotCount,instructionExampleCount} from '../domain/section-instructions.js';
 import {sectionQuestionOffset} from '../domain/question-numbering.js';
 import {isPrefilledQuestion,imageMaxWidth,shortChoiceColumns,compactBinaryChoices} from '../domain/question-display.js';
 import {answerPresent,MIN_COMPLETION_PERCENT} from '../domain/exam-completion.js';
@@ -69,7 +69,7 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const nextAction=preview?(sectionIndex===exam.sections.length-1?'close-preview':'preview-next-section'):(sectionIndex===exam.sections.length-1?'submit-exam':'next-section');
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Kết thúc':'Abgeben'):'Weiter';
   const splitHeadings=splitLayout&&sec.questionProfile?.layout==='heading-match';
-  const positioned=supportsInstructionPositions(sec),promptAt=position=>sectionPromptHtml(sec,{position,questionCount:instructionSlotCount(sec,requiredQuestions.length)});
+  const positioned=supportsInstructionPositions(sec),promptAt=position=>sectionPromptHtml(sec,{position,questionCount:instructionSlotCount(sec,questions.length),exampleCount:instructionExampleCount(sec,questions)});
   const afterPrompt=position=>{const content=positioned?promptAt(position):'';return content?`<section class="exam-instruction positioned-section-prompt">${content}</section>`:'';};
 const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additionalInstructions?.length||sec.readingBlocks?.length||splitHeadings?`<section class="exam-instruction">${positioned?promptAt(0):sectionPromptHtml(sec)}${readingBlocksHtml(sec)}${splitHeadings?headingOptionsHtml(sec):''}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview,startNumber:sectionQuestionOffset(exam,sec,[...allQuestions,...questions])});
@@ -90,7 +90,7 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additiona
       if(displayIndex>0&&!example&&(!paired||scoredIndex%2===0))stimulusGroups.push({left:'',right:''});
       stimulusGroups.at(-1).left+=questionStimulusHtml(q);
     }
-    const followingPrompt=example?'':afterPrompt(scoredIndex+1);
+    const followingPrompt=afterPrompt(displayIndex+1);
     const rendered=pairStart+renderQuestionHtml(q,attempt.answers?.[q.id],attempt,{singleQuestion:questions.filter(q=>!isPrefilledQuestion(q)).length===1,linedPaper:sec.questionProfile?.linedPaper,wordRange:sec.questionProfile?.wordRange,sectionInstruction:sec.instruction||'',preview,hideAudio:Boolean(sectionAudio),hasStimulus,hideStimulus:movedStimulus,questionNumber:example?null:++questionNumber,showExampleTitle:false,formFrame:sec.questionProfile?.formFrame===true,mobileThreeChoices:sec.templateType==='A1_LISTENING_PART_1',captureWritingPrompt:splitWriting?html=>writingPrompts.push(html):null})+pairEnd+(splitWriting?'':followingPrompt);
     if(splitWriting&&followingPrompt)writingPrompts.push(followingPrompt);
     if(groupStimuli)stimulusGroups.at(-1).right+=rendered;
@@ -143,9 +143,9 @@ function sectionAudioHtml(section,questions,attempt,{preview=false,startNumber=0
 
 const questionImageUrl=q=>String((Array.isArray(q.instructionBlocks)?q.instructionBlocks[0]?.imageUrl:'')||q.instructionImageUrl||'').trim();
 
-export function sectionPromptHtml(section,{position=null,questionCount=0}={}){
+export function sectionPromptHtml(section,{position=null,questionCount=0,exampleCount=0}={}){
   return sectionInstructions(section).map((block,index)=>{
-  if(position!==null&&instructionPosition(block,questionCount)!==position)return '';
+  if(position!==null&&instructionPosition(block,questionCount,exampleCount)!==position)return '';
   const text=block.text,hasMarker=/\[img\]/i.test(text);
   const image=block.imageUrl?`<img ${imageMaxWidth(block.imageMaxWidth)?`style="max-width:${imageMaxWidth(block.imageMaxWidth)}px"`:''} src="${esc(block.imageUrl)}" alt="Abbildung zur Aufgabenstellung">`:'';
   let inserted=false;
@@ -185,7 +185,8 @@ export function renderQuestionHtml(q,answer,attempt,{singleQuestion=false,linedP
   if(q.type==='writing'&&(formFrame||q.writingFormVersion===1))return `<div class="cau-thi writing-form-question ${isExample?'is-example':''}" data-q="${esc(q.id)}">${exampleTitle}${writingFormDisplay(q,answer,{readOnly:isExample})}</div>`;
   const played=sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`);
   const audio=!hideAudio&&q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" title="Das Audio wird gemäß den Prüfungsregeln abgespielt." ${played?'disabled':''}>${played?'Audio abgespielt':'Audio abspielen'}</button>${preview?'':'<span class="phu-de">Das Audio wird gemäß den Prüfungsregeln abgespielt.</span>'}</div>`:'';
-  const rawPrompt=String(hasStimulus?q.title||'':q.prompt||q.title||'').trim();
+  const publicTitle=q.type==='writing'&&q.aiGradingRules&&q.title===q.aiGradingRules?'':q.title||'';
+  const rawPrompt=String(hasStimulus?publicTitle:q.prompt||publicTitle).trim();
   const normalizedPrompt=rawPrompt.toLocaleLowerCase(),normalizedSection=String(sectionInstruction||'').toLocaleLowerCase();
   const isSharedInstruction=normalizedPrompt.length>12&&normalizedSection.includes(normalizedPrompt);
   const questionText=rawPrompt==='Nháp'||isSharedInstruction?'':rawPrompt;

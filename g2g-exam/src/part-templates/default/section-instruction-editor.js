@@ -1,6 +1,5 @@
 import {imageWidthInput} from '../../ui/image-width.js';
-import {sectionInstructions,instructionAudioKey,instructionPosition} from '../../domain/section-instructions.js';
-import {isPrefilledQuestion} from '../../domain/question-display.js';
+import {sectionInstructions,instructionAudioKey,instructionPosition,instructionExampleCount} from '../../domain/section-instructions.js';
 import {esc} from '../../ui/format.js';
 import {iconHtml} from '../../ui/icons.js';
 import {modernInstructionText} from '../../domain/text-markup.js';
@@ -55,10 +54,11 @@ export async function collectAdditionalInstructions(root,section,pendingAudioUpl
 export function placeInstructionEditors(root,section,exam,questions){
   const questionMap=new Map(questions.map(q=>[q.id,q]));
   const grouped=['inline-gaps','letter-table'].includes(section.questionProfile?.layout);
-  const cards=grouped?[root.querySelector(section.questionProfile.layout==='inline-gaps'?'.inline-gap-editor':'.letter-group-editor')].filter(Boolean):[...root.querySelectorAll('article.part-question')].filter(card=>!isPrefilledQuestion(questionMap.get(card.dataset.questionId)));
+  const cards=grouped?[root.querySelector(section.questionProfile.layout==='inline-gaps'?'.inline-gap-editor':'.letter-group-editor')].filter(Boolean):[...root.querySelectorAll('article.part-question')];
+  const examples=instructionExampleCount(section,cards.map(card=>questionMap.get(card.dataset.questionId)));
   const blocks=sectionInstructions(section),tails=new Map();
   for(const control of root.querySelectorAll('[data-section-prompt]')){
-    const block=blocks.find(item=>item.id===control.dataset.sectionPrompt),position=instructionPosition(block||{},cards.length);
+    const block=blocks.find(item=>item.id===control.dataset.sectionPrompt),position=instructionPosition(block||{},cards.length,examples);
     const index=blocks.indexOf(block),up=control.querySelector('[data-section-instruction-action="up"]'),down=control.querySelector('[data-section-instruction-action="down"]');
     if(up&&!control.querySelector('textarea')?.disabled)up.disabled=position===0&&index===0;
     if(down&&!control.querySelector('textarea')?.disabled)down.disabled=position===cards.length&&index===blocks.length-1;

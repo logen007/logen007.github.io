@@ -5,7 +5,7 @@ import {partAudioSegments} from '../src/domain/part-audio.js';
 import {sectionPromptHtml,examHtml} from '../src/views/student.js';
 import {imageMaxWidth} from '../src/domain/question-display.js';
 import {renderBuilder} from '../src/part-templates/default/builder.js';
-import {collectAdditionalInstructions,questionPromptEditor} from '../src/part-templates/default/section-instruction-editor.js';
+import {collectAdditionalInstructions,questionPromptEditor,placeInstructionEditors} from '../src/part-templates/default/section-instruction-editor.js';
 import {seedState} from '../src/seed.js';
 import {referencedUploadNames} from '../server/src/media-gc.js';
 
@@ -112,5 +112,47 @@ console.log('Independent section prompts: add, move, remove, media, copy, render
   assert.equal(imageMaxWidth(1),null);
   assert.equal(imageMaxWidth(600),600);
   assert.match(renderBuilder({data:{questions},exam:paper,section:part}),/data-tooltip="Chiều rộng tối đa/);
+}
+{
+  const questions=[{id:'example-a',type:'single',title:'Example A',example:true,maxScore:0,choices:['A','B'],correctAnswer:0,audioUrl:'/example-a.mp3'},
+    {id:'example-b',type:'single',title:'Example B',maxScore:0,choices:['A','B'],correctAnswer:0,audioUrl:'/example-b.mp3'},
+    {id:'scored',type:'single',title:'Scored task',maxScore:1,choices:['A','B'],audioUrl:'/scored.mp3'}];
+  let part={id:'examples',skillKey:'listening',skill:'Nghe',name:'Nghe 1',questionIds:questions.map(q=>q.id),instruction:'Movable example prompt',instructionImageUrl:'/prompt.png',instructionAudioUrl:'/prompt.mp3',questionProfile:{layout:'choices'}};
+  const original=structuredClone(part);
+  for(const [step,nextTitle] of [[1,'Example B'],[2,'Scored task']]){
+    part={...part,...changeInstructions(part,0,'down',questions)};
+    assert.equal(part.instructionAfterExample,step);
+    assert.equal(part.instructionAfterQuestion,0);
+    for(const preview of [true,false]){
+      const html=examHtml({exam:{provider:'TELC',level:'B1',sections:[part]},attempt:{answers:{}},sectionIndex:0,questions,online:true,preview});
+      assert.ok(html.indexOf(step===1?'Example A':'Example B')<html.indexOf('Movable example prompt'));
+      assert.ok(html.indexOf('Movable example prompt')<html.indexOf(nextTitle));
+      assert.equal(html.split('/prompt.png').length-1,1);
+    }
+  }
+  assert.deepEqual(partAudioSegments(part,questions).map(item=>item.url),['/example-a.mp3','/example-b.mp3','/prompt.mp3','/scored.mp3']);
+  state.questions.push(...questions);
+  updateSection(state,teacher,exam.id,section.id,part);
+  assert.equal(section.instructionAfterExample,2,'Example position survives section normalization');
+  assert.equal(duplicateExam(state,teacher,exam.id).sections[0].instructionAfterExample,2);
+  const placements=[],control={dataset:{sectionPrompt:'main'},querySelector:()=>null};
+  const cards=questions.map(q=>({dataset:{questionId:q.id},after:item=>placements.push([q.id,item])}));
+  placeInstructionEditors({querySelectorAll:selector=>selector==='article.part-question'?cards:[control]},part,exam,questions);
+  assert.deepEqual(placements,[['example-b',control]],'Editor places the prompt directly after the last example');
+  part={...part,...changeInstructions(part,0,'down',questions)};
+  assert.equal(part.instructionAfterQuestion,1);
+  assert.equal(part.instructionAfterExample,0);
+  part={...part,...changeInstructions(part,0,'up',questions)};
+  assert.equal(part.instructionAfterExample,2);
+  const legacy={...original,instructionAfterQuestion:1};
+  assert.deepEqual(partAudioSegments(legacy,questions).map(item=>item.url),['/example-a.mp3','/example-b.mp3','/scored.mp3','/prompt.mp3'],'Legacy offsets remain after the same scored question');
+  const moved=moveLegacyInstruction(original,{...questions[1],instructionBlocks:[{text:'Legacy example prompt'}]},0,'down',questions);
+  assert.equal(moved.sectionPatch.additionalInstructions[0].afterExample,2);
+  for(const layout of ['heading-match','letter-select']){
+    const changed={...original,instructionAfterExample:2,questionProfile:{layout,uniqueLetters:true},headingOptions:['A','B']};
+    const html=examHtml({exam:{provider:'TELC',level:'B1',sections:[changed]},attempt:{answers:{}},sectionIndex:0,questions,online:true,preview:true});
+    assert.ok(html.indexOf('Example B')<html.indexOf('Movable example prompt'));
+    assert.ok(html.indexOf('Movable example prompt')<html.indexOf('Scored task'));
+  }
 }
 globalThis.sessionStorage=originalStorage;

@@ -8,11 +8,11 @@ export function moveLegacyInstruction(section,question,index,direction,questions
   let sectionPatch=null;
   if(neighbor>=0&&neighbor<source.length)[source[index],source[neighbor]]=[source[neighbor],source[index]];
   else{
-    const map=new Map(questions.map(q=>[q.id,q])),scored=(section.questionIds||[]).filter(id=>!isPrefilledQuestion(map.get(id)));
-    const at=Math.max(0,scored.indexOf(question.id)),count=instructionSlotCount(section,scored.length);
+    const map=new Map(questions.map(q=>[q.id,q])),ordered=(section.questionIds||[]).map(id=>map.get(id)).filter(Boolean).sort((a,b)=>Number(isPrefilledQuestion(b))-Number(isPrefilledQuestion(a)));
+    const examples=instructionExampleCount(section,ordered),at=Math.max(0,ordered.findIndex(q=>q.id===question.id)),count=instructionSlotCount(section,ordered.length);
     source.splice(index,1);
-    const prompts=[...sectionInstructions(section),{...block,afterQuestion:Math.max(0,Math.min(count,at+delta))}];
-    prompts.sort((a,b)=>(a.afterQuestion||0)-(b.afterQuestion||0));sectionPatch=instructionPatch(prompts);
+    const prompts=[...sectionInstructions(section),{...block,...positionFields(Math.max(0,Math.min(count,at+delta)),examples)}];
+    prompts.sort((a,b)=>instructionPosition(a,count,examples)-instructionPosition(b,count,examples));sectionPatch=instructionPatch(prompts);
   }
   const first=source[0]||{};
   return {sectionPatch,questionPatch:{instructionBlocks:source,prompt:first.text||'',instructionImageUrl:first.imageUrl||''}};
@@ -24,6 +24,7 @@ export function normalizeInstructions(blocks){
     imageUrl:String(block.imageUrl||''),imageMaxWidth:imageMaxWidth(block.imageMaxWidth),
     audioUrl:String(block.audioUrl||''),audioName:String(block.audioName||''),
     afterQuestion:Math.max(0,Math.floor(Number(block.afterQuestion)||0)),
+    afterExample:Math.max(0,Math.floor(Number(block.afterExample)||0)),
   }));
 }
 
@@ -31,21 +32,22 @@ export function normalizeInstructions(blocks){
 export function sectionInstructions(section){
   return normalizeInstructions([{id:'main',text:section.instruction||'',imageUrl:section.instructionImageUrl||'',
     imageMaxWidth:section.instructionImageMaxWidth,audioUrl:section.instructionAudioUrl||'',
-    audioName:section.instructionAudioName||'',afterQuestion:section.instructionAfterQuestion},...normalizeInstructions(section.additionalInstructions)]);
+    audioName:section.instructionAudioName||'',afterQuestion:section.instructionAfterQuestion,afterExample:section.instructionAfterExample},...normalizeInstructions(section.additionalInstructions)]);
 }
 
 export function instructionPatch(blocks){
   const [first,...rest]=normalizeInstructions(blocks);
   return {instruction:first?.text||'',instructionImageUrl:first?.imageUrl||'',instructionAfterQuestion:first?.afterQuestion||0,
+    instructionAfterExample:first?.afterExample||0,
     instructionImageMaxWidth:first?.imageMaxWidth??null,instructionAudioUrl:first?.audioUrl||'',
     instructionAudioName:first?.audioName||'',additionalInstructions:rest.map((block,index)=>({...block,id:`prompt-${index+1}`}))};
 }
 
-export function changeInstructions(section,index,action,questionCount=0){
+export function changeInstructions(section,index,action,questions=0){
   const blocks=sectionInstructions(section);
   if(!Number.isInteger(index)||index<0||index>=blocks.length)return instructionPatch(blocks);
-  const count=instructionSlotCount(section,questionCount);
-  blocks.forEach(block=>{block.afterQuestion=instructionPosition(block,count);});
+  const count=instructionSlotCount(section,Array.isArray(questions)?questions.length:questions),examples=instructionExampleCount(section,Array.isArray(questions)?questions:[]);
+  blocks.forEach(block=>{block.afterQuestion=instructionPosition(block,count,examples);});
   if(action==='add')blocks.splice(index+1,0,{text:'',afterQuestion:blocks[index].afterQuestion});
   if(action==='remove')blocks.splice(index,1);
   if(['up','down'].includes(action)){
@@ -57,7 +59,7 @@ export function changeInstructions(section,index,action,questionCount=0){
     }else current.afterQuestion=Math.max(0,Math.min(count,current.afterQuestion+direction));
   }
   blocks.sort((a,b)=>a.afterQuestion-b.afterQuestion);
-  return instructionPatch(blocks);
+  return instructionPatch(blocks.map(block=>({...block,...positionFields(block.afterQuestion,examples)})));
 }
 
 export const instructionAudioKey=(section,id)=>id==='main'?`section:${section.id}`:`instruction:${section.id}:${id}`;
@@ -65,4 +67,7 @@ export const instructionAudioKey=(section,id)=>id==='main'?`section:${section.id
 // Embedded gaps and horizontal tables move as one content block.
 export const instructionSlotCount=(section,count)=>['inline-gaps','letter-table'].includes(section.questionProfile?.layout)?(count?1:0):count;
 export const supportsInstructionPositions=()=>true;
-export const instructionPosition=(block,count)=>Math.min(count,Math.max(0,Number(block.afterQuestion)||0));
+export const instructionExampleCount=(section,questions)=>['inline-gaps','letter-table'].includes(section.questionProfile?.layout)?0:questions.filter(isPrefilledQuestion).length;
+const positionFields=(position,examples)=>({afterQuestion:Math.max(0,position-examples),afterExample:position<=examples?position:0});
+// Keep legacy scored-question offsets intact; example positions are stored separately.
+export const instructionPosition=(block,count,examples=0)=>Math.min(count,Math.max(0,Number(block.afterQuestion)>0?Number(block.afterQuestion)+examples:Math.min(examples,Number(block.afterExample)||0)));

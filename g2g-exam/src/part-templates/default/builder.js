@@ -164,7 +164,7 @@ function questionInstructionHtml(q,block,index,readOnly,options={}){
 export function renderBuilder({data,exam,section,readOnly=false}={}){
   if(!section)return '<div class="rong">Chọn một phần để cấu hình.</div>';
   const defaultScore=Number(exam.settings?.skillSettings?.[section.skill]?.defaultQuestionScore??exam.settings?.defaultQuestionScore??1);
-  const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).sort((a,b)=>Number(Boolean(b.example))-Number(Boolean(a.example)));
+  const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean).sort((a,b)=>Number(isPrefilledQuestion(b))-Number(isPrefilledQuestion(a)));
   const choiceProfile=profileFor(section);
   const numbers=examQuestionNumbers(exam,data.questions);
   const listening=section.skillKey==='listening'||/nghe|hören|listening/i.test(section.skill||'');

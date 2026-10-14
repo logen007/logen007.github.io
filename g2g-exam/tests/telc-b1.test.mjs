@@ -102,6 +102,14 @@ const {exam,rows}=telcFixture(state,teacher);
     assert.equal((right.match(/<textarea/g)||[]).length,1);
   }
   assert.equal(JSON.stringify({writingExam,questions}),before,'Rendering preserves authored content and questions');
+  const privateQuestion={...question,title:'PRIVATE AI RUBRIC',aiGradingRules:'PRIVATE AI RUBRIC'};
+  for(const preview of [true,false])for(const instructionBlocks of [privateQuestion.instructionBlocks,[]]){
+    const html=examHtml({attempt:{answers:{}},exam:writingExam,sectionIndex:index,questions:[{...privateQuestion,instructionBlocks,prompt:'Public writing task'}],online:true,preview});
+    assert.doesNotMatch(html,/PRIVATE AI RUBRIC/,'AI rules stay private in preview and student rendering');
+    assert.match(html,/exam-reading-split exam-writing-split/);
+    assert.match(html,/answer-text/);
+    assert.ok(html.includes(instructionBlocks.length?'A letter to answer':'Public writing task'));
+  }
   for(const otherExam of [{...writingExam,level:'B2'},{...writingExam,provider:'GOETHE'}]){
     assert.doesNotMatch(examHtml({attempt:{answers:{}},exam:otherExam,sectionIndex:index,questions,online:true,preview:true}),/exam-writing-split/,'Only TELC B1 uses this writing layout');
   }

@@ -21,6 +21,7 @@ function normalizeSection(input={},index=0){
     audioFlow:normalizeAudioFlow(input.audioFlow),
     instruction:String(input.instruction||''),
     instructionAfterQuestion:Math.max(0,Math.floor(Number(input.instructionAfterQuestion)||0)),
+    instructionAfterExample:Math.max(0,Math.floor(Number(input.instructionAfterExample)||0)),
     additionalInstructions:normalizeInstructions(input.additionalInstructions),
     instructionImageUrl:String(input.instructionImageUrl||''),
     instructionAudioUrl:String(input.instructionAudioUrl||''),

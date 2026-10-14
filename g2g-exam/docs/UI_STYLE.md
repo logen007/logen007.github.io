@@ -318,6 +318,13 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   count on the right. Preserve authored content, answer hooks and values.
   At 760px and below, stack prompt above response using the shared split rules.
 
+- AI grading rules are private authoring content, including legacy copies in
+  the writing question title. Never render those copies in preview or student
+  questions; preserve the actual task prompts and images.
+- Section prompts can move before and after each example as well as scored
+  questions. Preserve legacy scored-question positions and keep prompt media
+  and audio in the same order. Inline passages and horizontal tables remain whole.
+
 - Every student room entry uses the shared entry transition: normal start, code
   entry and resuming through a direct link. Reload/F5 during an exam skips the entry
   animation. Resuming never creates another

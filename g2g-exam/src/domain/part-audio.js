@@ -1,5 +1,5 @@
 import {isPrefilledQuestion} from './question-display.js';
-import {sectionInstructions,supportsInstructionPositions,instructionPosition,instructionSlotCount} from './section-instructions.js';
+import {sectionInstructions,supportsInstructionPositions,instructionPosition,instructionSlotCount,instructionExampleCount} from './section-instructions.js';
 export function normalizeAudioFlow(value){
   if(value==null)return null;
   // Compact settings; keep the legacy format readable for frozen attempts.
@@ -32,10 +32,10 @@ export function partAudioQuestions(section,questions){
 export function partAudioSegments(section,questions,{startNumber=0}={}){
   const policy=effectiveAudioPolicy(section),prefix=[],tasks=[];
   let taskNumber=startNumber;
-  const count=questions.filter(q=>!isPrefilledQuestion(q)).length,positioned=supportsInstructionPositions(section);
+  const count=questions.length,examples=instructionExampleCount(section,questions),positioned=supportsInstructionPositions(section);
   const prompts=sectionInstructions(section).filter(block=>block.audioUrl);
   const slots=instructionSlotCount(section,count);
-  const promptSegments=position=>prompts.filter(block=>{const slot=positioned?instructionPosition(block,slots):0;return (slots!==count&&slot?count:slot)===position;}).map(block=>({url:block.audioUrl,repeat:policy.instructionRepeat||1,label:'Aufgabenstellung'}));
+  const promptSegments=position=>prompts.filter(block=>{const slot=positioned?instructionPosition(block,slots,examples):0;return (slots!==count&&slot?count:slot)===position;}).map(block=>({url:block.audioUrl,repeat:policy.instructionRepeat||1,label:'Aufgabenstellung'}));
   prefix.push(...promptSegments(0));
   // Explicit recordings on any question are playable, including legacy non-carriers.
   const recordings=[...questions].sort((a,b)=>Number(isPrefilledQuestion(b))-Number(isPrefilledQuestion(a)));
@@ -47,7 +47,7 @@ export function partAudioSegments(section,questions,{startNumber=0}={}){
       (example?prefix:tasks).push(segment);instructionSegments.add(segment);
     }
     if(q.audioUrl)(example?prefix:tasks).push({url:q.audioUrl,repeat:example?(policy.exampleRepeat||1):Math.max(1,Number(policy.segmentRepeat)||1),label:example?'Beispiel':policy.sharedPart?'Hörtext':`Aufgabe ${taskNumber}`});
-    if(!example)for(const segment of promptSegments(++questionIndex)){tasks.push(segment);instructionSegments.add(segment);}
+    for(const segment of promptSegments(++questionIndex)){(example?prefix:tasks).push(segment);instructionSegments.add(segment);}
   }
   return [...prefix,...(policy.repeatOrder==='round'?Array.from({length:Math.max(1,Number(policy.segmentRepeat)||1)},(_,round)=>tasks.filter(segment=>!round||!instructionSegments.has(segment)).map(segment=>instructionSegments.has(segment)?segment:{...segment,repeat:1})).flat():tasks)];
 }

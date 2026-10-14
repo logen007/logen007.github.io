@@ -1397,7 +1397,7 @@ function bindBuilder(){
     if(button.disabled||!await flushBuilderDraft())return;
     await act(()=>repo.transaction(st=>{
       const current=byId(st.exams,exam.id)?.sections.find(item=>item.id===section.id);
-      if(current)updateSection(st,user,exam.id,section.id,changeInstructions(current,Number(button.dataset.index),button.dataset.sectionInstructionAction,(current.questionIds||[]).filter(id=>!isPrefilledQuestion(byId(st.questions,id))).length));
+      if(current)updateSection(st,user,exam.id,section.id,changeInstructions(current,Number(button.dataset.index),button.dataset.sectionInstructionAction,(current.questionIds||[]).map(id=>byId(st.questions,id)).filter(Boolean)));
     }));
   });
   app.querySelectorAll('[data-gap-resize]').forEach(button=>button.onclick=async()=>{
