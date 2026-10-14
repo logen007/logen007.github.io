@@ -4,6 +4,8 @@ import {isAutomaticWritingForm} from '../domain/writing-form.js';
 import {questionHtml,resultOutcomeHtml,bar,resultStatsHtml} from './attempt-result.js';
 import {SKILL_LABELS} from '../domain/result-summary.js';
 import {animateResultBadge} from '../ui/result-badge-motion.js';
+import {isStandardTelc} from '../domain/gradebook.js';
+import {telcResultHtml} from './telc-result.js';
 
 const animatedBadges=new WeakSet();
 
@@ -42,8 +44,12 @@ export function gradingStatsHtml(exam,questions,attempt,summary){
   return resultStatsHtml({counts,total:summary.total,max,totalId:'gradeHeaderTotal',totalResult:attempt.status==='published'?summary.result:null});
 }
 
-export function gradingScoreBarsHtml(summary){
-  return `<section class="the grading-panel grading-scores"><h2>Điểm từng phần</h2><div class="grading-score-grid">${['reading','grammar','listening','writing','speaking'].filter(key=>summary.skills?.[key]).map(key=>bar(SKILL_LABELS[key],summary.skills[key],{showBand:true})).join('')}</div></section>`;
+export function gradingScoreBarsHtml(summary,attempt={}){
+  if(isStandardTelc(summary)){
+    const review={attempt,score:{summary},provisional:{parts:Object.entries(summary.skills||{}).map(([skill,entry])=>({...entry,skill,source:'teacher'}))}};
+    return `<div class="grading-scores">${telcResultHtml(review,bar,null,{showPendingNote:false})}</div>`;
+  }
+  return `<section class="the grading-panel grading-scores">${['reading','grammar','listening','writing','speaking'].filter(key=>summary.skills?.[key]||key==='speaking').map(key=>bar(SKILL_LABELS[key],summary.skills?.[key],{showBand:true})).join('')}</section>`;
 }
 
 export function gradingPanelsHtml(items,prefix,{actions='',wrap=html=>html}={}){

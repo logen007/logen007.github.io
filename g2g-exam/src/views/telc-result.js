@@ -15,7 +15,7 @@ export function telcResultSkills(review){
   return skills;
 }
 
-export function telcResultHtml(review,bar,skill){
+export function telcResultHtml(review,bar,skill,{showPendingNote=true}={}){
   const skills=telcResultSkills(review),published=review.attempt?.status==='published';
   const row=(key,entry=skills[key])=>entry?.score!=null
     ?bar(label(key),entry,{showBand:false,temporary:Boolean(entry.temporary)})
@@ -32,5 +32,5 @@ export function telcResultHtml(review,bar,skill){
   return '<section class="the telc-result-card">'+block('Khối thi viết',written,TELC_SCORING.writtenMax,TELC_SCORING.writtenPass,
     `<div class="telc-result-children">${writtenKeys.map(key=>row(key)).join('')}</div>`)+
     block('Khối thi nói',skills.speaking,TELC_SCORING.oralMax,TELC_SCORING.oralPass)+
-    (!published?'<p class="phu-de">Chờ giáo viên chấm và công bố kết quả chính thức.</p>':'')+'</section>';
+    (!published&&showPendingNote?'<p class="phu-de">Chờ giáo viên chấm và công bố kết quả chính thức.</p>':'')+'</section>';
 }

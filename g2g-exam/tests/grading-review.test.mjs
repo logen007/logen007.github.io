@@ -9,7 +9,7 @@ assert.equal(gradingNeighbors(navData,teacher,navData.attempts[1]).nextPending,u
 assert.deepEqual(gradingNeighbors(navData,{role:'student'},navData.attempts[0]),{});
 assert.deepEqual(gradingNeighbors({...navData,classes:[]},teacher,navData.attempts[0]),{});
 assert.equal(gradingNeighbors({...navData,attempts:navData.attempts.map(a=>({...a,status:'published'}))},teacher,navData.attempts[0]).nextPending,undefined);
-import {gradingAutomaticHtml,gradingHistory,gradingHistoryHtml,gradingIdentityHtml,gradingOutcomeHtml,gradingPanelsHtml,bindGradingReview} from '../src/views/grading-review.js';
+import {gradingAutomaticHtml,gradingHistory,gradingHistoryHtml,gradingIdentityHtml,gradingOutcomeHtml,gradingPanelsHtml,gradingScoreBarsHtml,bindGradingReview} from '../src/views/grading-review.js';
 import {gradingDetailHtml} from '../src/views/builder.js';
 const questions=[{id:'a',type:'single',autoGrade:true,correctAnswer:1,choices:['Nein','Ja'],maxScore:1},{id:'b',type:'single',autoGrade:true,correctAnswer:0,choices:['Berlin','Bonn'],maxScore:1},{id:'c',type:'single',autoGrade:true,correctAnswer:1,choices:['A','B'],maxScore:1}];
 const exam={id:'exam',provider:'GOETHE',level:'A1',sections:[{name:'Nghe 1',skill:'Nghe',questionIds:['a','b','c']}]};
@@ -34,6 +34,27 @@ assert.doesNotMatch(gradingOutcomeHtml(summary,attempt),/Đang chấm/);
 assert.doesNotMatch(gradingOutcomeHtml(summary,attempt),/passed/);
 assert.match(gradingOutcomeHtml(summary,{status:'published'}),/passed/);
 assert.match(gradingDetailHtml({data:{questions},attempt,exam}),/result-stat-total" data-assessment=""/,'Teacher draft total stays neutral');
+{
+  const telcSummary={provider:'TELC',level:'B1',skills:{
+    reading:{score:17.5,max:75},grammar:{score:6,max:30},listening:{score:45,max:75},writing:{score:0,max:45}
+  }};
+  const draft=gradingScoreBarsHtml(telcSummary,{status:'grading'});
+  assert.equal((draft.match(/class="the telc-result-card"/g)||[]).length,1);
+  assert.match(draft,/Khối thi viết/);
+  assert.match(draft,/Khối thi nói/);
+  assert.match(draft,/telc-result-children/);
+  assert.match(draft,/68.5<small> \/ 225/,'Teacher draft marks remain visible');
+  assert.match(draft,/aria-label="Khối thi nói: Chờ điểm"/);
+  assert.doesNotMatch(draft,/Điểm từng phần|grading-score-grid|Chưa đạt|>Đạt<|Chờ giáo viên/);
+  for(const level of ['B1','B2']){
+    const published=gradingScoreBarsHtml({...telcSummary,level,skills:{...telcSummary.skills,speaking:{score:70,max:75}}},{status:'published'});
+    const children=published.split('class="telc-result-children"')[1].split('</div></section>')[0];
+    assert.doesNotMatch(children,/score-badge/,'TELC children have no separate verdicts');
+    assert.equal((published.match(/data-fixed-assessment/g)||[]).length,2);
+    assert.match(published,/score-failed" data-fixed-assessment>Chưa đạt/);
+    assert.match(published,/score-sufficient" data-fixed-assessment>Đạt/);
+  }
+}
 const writingExam={...exam,sections:[1,2,3].map(i=>({name:'Viết '+i,skill:'Viết',questionProfile:{manualPerPart:true},questionIds:['w'+i]}))};
 const writingQuestions=[1,2,3].map(i=>({id:'w'+i,type:'writing',skill:'Viết',maxScore:10}));
 const detail=gradingDetailHtml({data:{questions:writingQuestions},attempt,exam:writingExam});
@@ -50,11 +71,12 @@ assert.match(typedDetail,/bai-lam grading-typed-paper/);
 assert.doesNotMatch(typedDetail,/lined-writing-paper/);
 assert.ok(detail.indexOf('grading-toolbar')<detail.indexOf('grading-workspace'));
 assert.ok(detail.indexOf('data-action="publish-result"')<detail.indexOf('grading-workspace'));
-assert.ok(detail.indexOf('Điểm từng phần')>detail.indexOf('gradeFeedback'));
+assert.ok(detail.indexOf('grading-scores')>detail.indexOf('gradeFeedback'));
+assert.doesNotMatch(detail,/Điểm từng phần/);
 assert.ok(detail.indexOf('grading-history')>detail.indexOf('grading-automatic'));
 assert.match(detail,/result-track/);
 assert.match(detail,/<details class="the grading-panel grading-automatic">/);
-assert.match(detail,/grading-score-grid/);
+assert.doesNotMatch(detail,/grading-score-grid/);
 assert.match(detail,/grading-hero/);
 const hero=detail.split('<section class="the grading-hero result-hero">')[1].split('</section>')[0];
 assert.match(hero,/<div class="result-heading">/);

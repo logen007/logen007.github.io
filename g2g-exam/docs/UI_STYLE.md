@@ -638,6 +638,12 @@ theme application must not wait for a network response to render the page.
 
 ## Teacher grading
 
+- Score breakdown reuses Result's structure without the “Điểm từng phần”
+  heading or a multi-column skill grid. Standard TELC B1/B2 use the shared
+  written/oral blocks and nested child frame, with no child assessments.
+  Teacher draft totals stay visible but block verdicts require publication.
+  Pending speaking retains its neutral track and shared gray badge.
+
 - Place manual grading tabs first, with Back and Publish on the same toolbar.
   Oral grading belongs in a tab too. Keep the outcome badge at the header right.
   Show Result's shared skill score bars below the workspace, then automatic
