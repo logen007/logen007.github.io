@@ -1,4 +1,5 @@
 // Only the central symbol moves; frame and readable assessment stay still.
+import {animateDiamond} from './diamond-mesh.js';
 export function animateResultBadge(node){
   if(typeof node?.animate!=='function'||globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return ()=>{};
   const animations=[];
@@ -23,17 +24,13 @@ export function animateResultBadge(node){
     ],{duration:850,easing:'ease-in-out'});
   }else if(state==='fair'){
     play(node.querySelector('.result-medal-symbol'),[
-      {transform:'rotate(0deg)'},{transform:'rotate(90deg)'}
-    ],{duration:1050,easing:'ease-in-out',fill:'forwards'});
+      {transform:'rotate(0deg)'},
+      {transform:'rotate(720deg)',offset:.6,easing:'cubic-bezier(.3,.4,.6,1)'},
+      {transform:'rotate(1080deg)'}
+    ],{duration:2400,easing:'linear',fill:'forwards'});
   }else if(state==='good'){
-    play(node.querySelector('.result-medal-symbol'),[
-      {transform:'scaleX(1)'},
-      {transform:'scaleX(.08) scaleY(1.05)',offset:.5},
-      {transform:'none'}
-    ],{duration:1000,easing:'ease-in-out'});
-    const face=node.querySelector('[data-medal-effect="gleam"]');
-    const opacity=Number(face?.getAttribute('opacity')??.58);
-    play(face,[{opacity},{opacity:.9},{opacity}],{duration:450,delay:650,easing:'ease-in-out'});
+    const rotation=animateDiamond(node.querySelector('.result-medal-diamond'));
+    if(rotation)animations.push(rotation);
   }else if(state==='excellent'){
     play(node.querySelector('.result-medal-symbol'),[
       {transform:'scale(.82)'},

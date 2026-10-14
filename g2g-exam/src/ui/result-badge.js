@@ -1,5 +1,6 @@
 import {resultLabel,resultClass} from '../domain/gradebook.js';
 import {esc} from './format.js';
+import {diamondMeshHtml} from './diamond-mesh.js';
 
 // Approved geometric result emblems. Artwork is decorative; the HTML label
 // remains selectable, accessible and the same size for every assessment.
@@ -24,7 +25,7 @@ function mark(key,id){
   if(key==='waiting')return `<path d="M74 54H166L125 103V112L166 157H74L115 112V103Z" fill="${bright}"/><path d="M74 54L120 76L166 54L120 106Z" fill="#fff" opacity=".4"/><path d="M120 106L120 157H74L115 112Z" fill="#fff" opacity=".42"/><path d="M74 54H166M74 157H166" stroke="#f4f7fb" stroke-width="4" stroke-linecap="round" opacity=".8"/><path data-medal-effect="sand" d="M120 96V133" stroke="#465468" stroke-width="2.5" stroke-dasharray="2 5" opacity="0"/>`;
   if(key==='failed')return `<path d="M78 57L120 97L162 57L181 77L141 118L181 158L162 177L120 138L78 177L59 158L99 118L59 77Z" fill="${bright}"/><path d="M78 57L120 97V118L59 77Z" fill="#fff" opacity=".4"/><path d="M120 118L162 57L181 77L141 118Z" fill="#fff" opacity=".18"/><path d="M120 118L78 177L59 158L99 118Z" fill="#fff" opacity=".3"/>`;
   if(key==='passed')return `<path d="M60 109L81 88L110 117L160 64L181 85L110 160Z" fill="${bright}"/><path d="M60 109L81 88L110 117V138Z" fill="#fff" opacity=".45"/><path d="M110 138L160 64L181 85L110 160Z" fill="#fff" opacity=".14"/><path d="M81 88L110 117L160 64" fill="none" stroke="#fff" stroke-width="1.5" opacity=".6"/>`;
-  if(key==='good')return `<path d="M120 49L172 110L120 171L68 110Z" fill="${bright}"/><path data-medal-effect="gleam" d="M120 49V110H68Z" fill="#fff" opacity=".58"/><path d="M120 49L172 110H120Z" fill="#fff" opacity=".23"/><path d="M68 110H120V171Z" fill="#fff" opacity=".28"/><path d="M120 110H172L120 171Z" fill="#063965" opacity=".17"/><path d="M120 49L172 110L120 171L68 110Z" fill="none" stroke="#e2f5ff" stroke-width="1.5" opacity=".7"/>`;
+  if(key==='good')return diamondMeshHtml();
   const points=key==='fair'?[[120,50],[138,94],[181,112],[138,130],[120,169],[102,130],[59,112],[102,94]]:[[120,48],[139,82],[177,77],[163,111],[180,144],[141,145],[120,174],[99,145],[60,144],[77,111],[63,77],[101,82]];
   const center=key==='fair'?[120,112]:[120,111];
   return `<polygon points="${points.map(p=>p.join(',')).join(' ')}" fill="${bright}"/>`+points.map((p,i)=>`<polygon ${i===1?'data-medal-effect="gleam" ':''}points="${center.join(',')} ${p.join(',')} ${points[(i+1)%points.length].join(',')}" fill="${i%2?'#fff':'#163b42'}" opacity="${i%2?'.35':'.12'}"/>`).join('');
