@@ -21,6 +21,7 @@ import {writingAiWorkerStatus,wakeWritingAiWorker} from '../writing-ai-queue.js'
 const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||''));
 const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||''));
 const uploadDir=path.resolve(process.env.UPLOAD_DIR||'/data/uploads');
+async function backupSummary(){try{return JSON.parse(await fs.readFile(path.resolve(process.env.BACKUP_CONTROL_DIR||'/data/backup-control','status.json'),'utf8'));}catch{return null;}}
 const uploadPattern=/\/uploads\/([A-Za-z0-9._-]+)/g;
 let infrastructureCache={value:null,expiresAt:0};
 let infrastructurePending=null;
@@ -180,7 +181,7 @@ async function buildInfrastructureStatus({summaryOnly}){
   const [secret,ai]=await Promise.all([smtpSecretStatus(),aiApiKeyStatus()]);
   let database=true;
   try{await query('SELECT 1');}catch{database=false;}
-  const connectionStatus={backend:'VPS',postgresql:database,googleLoginConfigured:Boolean(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET),smtp:{enabled:Boolean(settings.smtp.enabled),configured:Boolean(settings.smtp.host&&settings.smtp.fromEmail&&(!settings.smtp.username||secret.configured)),secretConfigured:secret.configured,secretUpdatedAt:secret.updatedAt},ai};
+  const connectionStatus={backup:await backupSummary(),backend:'VPS',postgresql:database,googleLoginConfigured:Boolean(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET),smtp:{enabled:Boolean(settings.smtp.enabled),configured:Boolean(settings.smtp.host&&settings.smtp.fromEmail&&(!settings.smtp.username||secret.configured)),secretConfigured:secret.configured,secretUpdatedAt:secret.updatedAt},ai};
   // Settings needs connection status, not a scan of every exam and uploaded file.
   if(summaryOnly===true)return connectionStatus;
   const [cpu,history,databaseSize,tableSizes,examRows,questionRows,uploadBytes,applicationBytes,disk,aiJobs,aiFailures]=await Promise.all([
@@ -207,6 +208,7 @@ async function buildInfrastructureStatus({summaryOnly}){
   }));
   const memoryTotal=os.totalmem(),memoryFree=os.freemem(),uptimeSeconds=Math.max(1,process.uptime());
   const result={
+    backup:await backupSummary(),
     backend:'VPS',
     r2:r2Settings.status(),
     postgresql:database,
