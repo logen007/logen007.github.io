@@ -48,7 +48,7 @@ assert.doesNotMatch(publishedResult,/<table|Private reviewer|Trạng thái|Ngư�
 const pendingResult=resultView([{...resultAttempt,status:'ready',totalScore:999}]);
 assert.match(pendingResult,/Chờ công bố/);
 assert.doesNotMatch(publishedResult,/navigation-arrow|Về danh sách đề|>Xem bài</);
-assert.match(publishedResult,/student-results-heading.*<h1>Kết quả của bạn<\/h1><span>1 bài thi<\/span>/);
+assert.match(publishedResult,/student-results-heading.*<h1>Kết quả thi<\/h1><span>1 bài thi<\/span>/);
 assert.match(resultView([{...resultAttempt,totalScore:173.5,totalMax:300,provider:'TELC',level:'B1'}]),/173,5<\/strong><span>\/ 300/);
 assert.match(resultView([{...resultAttempt,provider:'TELC',level:'B1'}]),/data-provider="TELC">Telc/);
 assert.doesNotMatch(pendingResult,/999|student-result-score|Chưa đạt/);
