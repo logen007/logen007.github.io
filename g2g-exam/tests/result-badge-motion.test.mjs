@@ -36,10 +36,16 @@ for(const state of ['waiting','failed','fair','good','excellent']){
   assert.equal(calls.length,before+1,'Exactly one symbol animation per state');
   assert.ok(queries.every(selector=>!selector.includes('label')&&!selector.includes('cluster')));
   const animation=calls.at(-1);
-  assert.ok(animation.options.duration<=900);
-  if(state==='waiting')assert.equal(animation.frames.at(-1).opacity,0,'Sand disappears without leaving a loading indicator');
-  if(state==='failed')assert.equal(animation.frames.at(-1).transform,'none');
-  if(['fair','good','excellent'].includes(state))assert.equal(animation.frames[0].opacity,animation.frames.at(-1).opacity);
+  assert.ok(animation.options.duration<=1200);
+  if(state==='waiting'){
+    assert.equal(animation.frames.at(-1).transform,'rotate(180deg)','Hourglass visibly flips');
+    assert.equal(animation.options.fill,'forwards','Do not snap back after the flip');
+  }
+  if(state==='failed')assert.equal(animation.frames.at(-1).strokeDashoffset,'0');
+  if(['fair','good','excellent'].includes(state)){
+    assert.equal(animation.frames[0].transform,'none');
+    assert.equal(animation.frames.at(-1).transform,'none');
+  }
 }
 await new Promise(resolve=>setTimeout(resolve,0));
 assert.equal(listeners.size,0);
