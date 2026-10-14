@@ -73,9 +73,10 @@ export function gradingHistoryHtml(data,exam,attempt){
   const points=gradingHistory(data,exam,attempt);
   const label=`Lịch sử điểm · ${exam.provider||''} ${exam.level||''}`;
   if(!points.length)return `<section class="the grading-history"><h2>${esc(label)}</h2><p class="phu-de">Chưa có kết quả đã công bố.</p></section>`;
-  // Scroll-free chart plus an accessible list of exact scores; no simulated history.
-  const shown=points.slice(-8),x=i=>shown.length===1?300:42+i*516/(shown.length-1),y=p=>112-p*.85;
-  return `<section class="the grading-history"><h2>${esc(label)}</h2><svg viewBox="0 0 600 140" role="img" aria-label="${esc(shown.map((p,i)=>`Lần ${points.length-shown.length+i+1}: ${p.score}/${p.max}`).join(', '))}"><line class="history-axis" x1="42" y1="112" x2="558" y2="112"/><text x="6" y="30">100%</text><text x="16" y="116">0%</text>${shown.length>1?`<polyline class="history-line" points="${shown.map((p,i)=>`${x(i)},${y(p.percent)}`).join(' ')}"/>`:''}${shown.map((p,i)=>`<circle class="history-point" cx="${x(i)}" cy="${y(p.percent)}" r="4"><title>${esc(fmtDate(p.date))}: ${p.score}/${p.max}</title></circle><text text-anchor="middle" x="${x(i)}" y="${y(p.percent)-10}">${Math.round(p.percent)}%</text><text text-anchor="middle" x="${x(i)}" y="135">${points.length-shown.length+i+1}</text>`).join('')}</svg><div class="grading-history-values">${shown.map((p,i)=>`<span title="${esc(fmtDate(p.date))}">Lần ${points.length-shown.length+i+1} <b>${p.score}</b></span>`).join('')}</div></section>`;
+  // Native earned points, not normalized percentages; no simulated history.
+  const shown=points.slice(-8),maximum=Math.max(...shown.flatMap(p=>[p.max,p.score]));
+  const x=i=>shown.length===1?300:42+i*516/(shown.length-1),y=score=>112-score/maximum*85;
+  return `<section class="the grading-history"><h2>${esc(label)}</h2><svg viewBox="0 0 600 160" role="img" aria-label="${esc('Trục X: lần thi. Trục Y: điểm. '+shown.map((p,i)=>`Lần ${points.length-shown.length+i+1}: ${p.score} điểm`).join(', '))}"><line class="history-axis" x1="42" y1="112" x2="558" y2="112"/><text x="6" y="16">Điểm</text><text x="6" y="30">${maximum}</text><text x="16" y="116">0</text>${shown.length>1?`<polyline class="history-line" points="${shown.map((p,i)=>`${x(i)},${y(p.score)}`).join(' ')}"/>`:''}${shown.map((p,i)=>`<circle class="history-point" cx="${x(i)}" cy="${y(p.score)}" r="4"><title>${esc(fmtDate(p.date))}: ${p.score} điểm</title></circle><text text-anchor="middle" x="${x(i)}" y="${y(p.score)-10}">${p.score}</text><text text-anchor="middle" x="${x(i)}" y="135">${points.length-shown.length+i+1}</text>`).join('')}<text text-anchor="middle" x="300" y="157">Lần thi</text></svg></section>`;
 }
 
 export function bindGradingReview(root){

@@ -26,10 +26,22 @@ assert.match(gradingIdentityHtml({users:[{id:'s',name:'A < B'}]},attempt),/A &lt
 const summary={provider:'GOETHE',level:'A1',complete:true,total:70,result:'Đạt',skills:{reading:{score:70,max:100}}};
 const data={exams:[exam],attempts:[{id:'ok',studentId:'s',status:'published',submittedAt:'2026-10-01',resultSummary:summary},{id:'other',studentId:'other',status:'published',resultSummary:summary},{id:'pending',studentId:'s',status:'grading',resultSummary:summary},{id:'level',studentId:'s',status:'published',resultSummary:{...summary,level:'B1'}},{id:'provider',studentId:'s',status:'published',resultSummary:{...summary,provider:'TELC'}},{id:'incomplete',studentId:'s',status:'published',resultSummary:{...summary,complete:false}}]};
 assert.deepEqual(gradingHistory(data,exam,attempt).map(p=>p.id),['ok']);
-assert.match(gradingHistoryHtml(data,exam,attempt),/70\/100/);
-assert.match(gradingHistoryHtml(data,exam,attempt),/Lần 1 <b>70<\/b>/);
-assert.doesNotMatch(gradingHistoryHtml(data,exam,attempt),/<b>70\/100<\/b>/);
+assert.match(gradingHistoryHtml(data,exam,attempt),/>70<\/text>/);
+assert.match(gradingHistoryHtml(data,exam,attempt),/>Điểm<\/text>/);
+assert.match(gradingHistoryHtml(data,exam,attempt),/>Lần thi<\/text>/);
+assert.doesNotMatch(gradingHistoryHtml(data,exam,attempt),/%|70\/100|grading-history-values/);
 assert.doesNotMatch(gradingHistoryHtml(data,exam,attempt),/polyline/);
+{
+  const chartData={...data,attempts:[
+    {id:'first',studentId:'s',status:'published',submittedAt:'2026-10-01',resultSummary:summary},
+    {id:'second',studentId:'s',status:'published',submittedAt:'2026-10-02',resultSummary:{...summary,skills:{reading:{score:70,max:200}}}}
+  ]};
+  const chart=gradingHistoryHtml(chartData,exam,attempt);
+  const heights=[...chart.matchAll(/class="history-point" cx="[^"]+" cy="([^"]+)"/g)].map(m=>Number(m[1]));
+  assert.deepEqual(heights,[82.25,82.25],'Equal native scores have equal heights even with different maxima');
+  assert.match(chart,/>200<\/text>/);
+  assert.doesNotMatch(chart,/%|grading-history-values/);
+}
 assert.match(gradingOutcomeHtml(summary,attempt),/data-result-state="waiting"/);
 assert.match(gradingOutcomeHtml(summary,attempt),/CHỜ CHẤM/);
 assert.doesNotMatch(gradingOutcomeHtml(summary,attempt),/Đang chấm/);

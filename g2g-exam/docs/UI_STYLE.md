@@ -669,10 +669,11 @@ theme application must not wait for a network response to render the page.
   if none remains, stay on the published detail. Bottom previous/next arrows
   navigate authorized submissions in that class after flushing pending grades.
   Before publication display “Đang chấm”, never a final pass/fail verdict.
-- Plot only published, complete scores for the same student/provider/level;
-  history labels show only earned points, without a /maximum suffix.
-  Preserve maximum scores for chart normalization and accessible chart details.
-  Normalize differing totals to percentages and expose the native point scales.
+- Plot only published, complete scores for the same student/provider/level.
+  History uses attempt order on X and native earned points on Y, not percentages.
+  Show exact points beside each mark without a /maximum suffix or a repeated
+  “Lần 1, Lần 2…” list beneath the chart. Keep numeric attempt ticks on X.
+  The Y scale spans zero to the largest native maximum/score among shown attempts.
   No extra polling or fabricated historical values.
 
 ## Verification
