@@ -27,7 +27,7 @@ if output="$(bash "$BACKUP_SCRIPT_DIR/backup.sh" 2>&1)"; then
     const file=path.join(dir,"history.json");
     let items=[];try{items=JSON.parse(fs.readFileSync(file,"utf8"));}catch{}
     const output=process.env.BACKUP_OUTPUT||"";
-    const match=output.match(/BACKUP_OK timestamp=([^ ]+) sha256=([^ ]+) file=([^\\s]+)/);
+    const match=output.match(/BACKUP_OK timestamp=([^ ]+) sha256=([^ ]+) file=([^ ]+)/);
     if(match){
       items.unshift({createdAt:match[1],hash:match[2],name:match[3],type:"daily"});
       items=items.slice(0,8);
