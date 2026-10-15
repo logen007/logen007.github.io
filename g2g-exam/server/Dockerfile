@@ -6,6 +6,7 @@ COPY scripts /build/scripts
 COPY src /build/src
 COPY specs /build/specs
 COPY vi.html styles.css enhancements.css media-worker.js /build/
+COPY privacy.html terms.html legal.css /build/
 COPY server/runtime /build/server/runtime
 RUN npm run build:web
 
