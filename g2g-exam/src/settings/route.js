@@ -10,7 +10,7 @@ export function writeSettingsRoute(url,tab){
 }
 export function settingsHref(tab,href=globalThis.location?.href){
   const url=new URL(href||'https://local.invalid/adm');
-  for(const key of ['edit','preview','section','view','attempt'])url.searchParams.delete(key);
+  for(const key of ['edit','preview','section','view','attempt','class'])url.searchParams.delete(key);
   writeSettingsRoute(url,tab);
   return url.pathname+url.search+url.hash;
 }

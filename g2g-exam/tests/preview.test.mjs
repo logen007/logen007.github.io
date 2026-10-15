@@ -69,7 +69,7 @@ assert.ok(publicStatsSource.includes("FROM users WHERE role='teacher'"));
 assert.ok(publicStatsSource.includes("FROM attempts WHERE status IN ('grading','ready','published')"));
 assert.match(readFileSync(new URL('../src/exam-specs/goethe.js',import.meta.url),'utf8'),/Promise.all/);
 const touchStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
-assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea, \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);
+assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea:not\(\.exam-title-input\), \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);
 assert.doesNotMatch(readFileSync(new URL('../vi.html',import.meta.url),'utf8'),/user-scalable\s*=\s*no|maximum-scale\s*=/);
 assert.match(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/initialFocus\?\.focus\(\{preventScroll:true\}\)/);
 let passed=0;
@@ -304,7 +304,7 @@ try{
       assert.match(html,/data-tab="exams"/);
     }
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-    assert.match(source,/\[data-action="admin-tab"\][^\n]+await flushBuilderDraft\(\)[^\n]+clearBuilderEditUrl\(\)/);
+    assert.match(source,/\[data-action="admin-tab"\][^\n]+await flushBuilderDraft\(\)[^\n]+ui.adminTab/);
   });
   await test('Admin utility tabs show accessible icons without visible labels',()=>{
     for(const adminTab of ['dashboard','exams','teachers']){

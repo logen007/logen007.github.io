@@ -11,7 +11,7 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
 
 ## Visual hierarchy
 
-- Exam-list published titles use primary with no tinted row background (15 October 2026).
+- Exam-list published titles use success green with no tinted row background (15 October 2026).
   Elsewhere use success green, draft/pending neutral, failed/error red. Preserve a
   readable status description (accessible name or concise text); never rely on
   color alone.
@@ -70,6 +70,13 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   semantics fixed. Do not hard-code purple or blue selection states.
 
 ## Navigation and forms
+
+- Page navigation creates browser history entries; repeat renders do not. Class
+  detail, result, grading, editor/preview parts and settings tabs have direct URLs.
+  Back/Forward flush pending edits before restoring the authorized destination.
+- The exam title in the builder uses page-heading sizing, including on touch
+  screens; the 16px form-control override excludes this title.
+
 
 - Published exams must be unpublished before editing content. The editor remains
   available read-only for preview and unpublishing; the server also rejects stale

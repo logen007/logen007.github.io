@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './page-history.test.mjs';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 const source=readFileSync(new URL('../src/ui/boot-layout.js',import.meta.url),'utf8');
