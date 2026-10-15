@@ -1075,7 +1075,7 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="preview-next-section"]').forEach(b=>b.onclick=()=>showPreviewSection(ui.previewSectionIndex+1));
   app.querySelectorAll('[data-action="preview-select-section"]').forEach(select=>select.onchange=()=>showPreviewSection(Number(select.value)||0));
   app.querySelectorAll('[data-action="reset-preview"]').forEach(b=>b.onclick=()=>{ui.previewAnswers={};ui.previewSectionIndex=0;window.scrollTo(0,0);render();notify('Đã làm lại phần xem trước.');});
-  app.querySelectorAll('[data-action="close-preview"]').forEach(b=>b.onclick=()=>{ui.builderExamId=ui.previewExamId;ui.previewAnswers={};ui.view='builder';render();window.scrollTo(0,0);});
+  app.querySelectorAll('[data-action="close-preview"]').forEach(b=>b.onclick=()=>{ui.builderExamId=ui.previewExamId;ui.previewAnswers={};ui.view=ui.previewReturnView==='admin'?'admin':'builder';render();window.scrollTo(0,0);});
   app.querySelectorAll('[data-action="admin-tab"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;ui.adminTab=b.dataset.tab;ui.view='admin';render();});
   app.querySelectorAll('[data-action="retry-ai-grading"]').forEach(button=>button.onclick=async()=>{
     button.disabled=true;
@@ -1149,7 +1149,7 @@ function bindViewSpecific(){
     if(!await flushBuilderDraft())return;
     const exam=byId(data.exams,b.dataset.id);
     const sectionIndex=Math.max(0,(exam?.sections||[]).findIndex(section=>section.id===ui.builderSectionId));
-    ui.previewExamId=b.dataset.id;ui.previewSectionIndex=sectionIndex;ui.previewAnswers={};ui.view='preview-exam';render();
+    ui.previewReturnView=ui.view;ui.previewExamId=b.dataset.id;ui.previewSectionIndex=sectionIndex;ui.previewAnswers={};ui.view='preview-exam';render();
   });
   app.querySelectorAll('[data-action="open-exam-settings"]').forEach(b=>b.onclick=async()=>{
     if(!await flushBuilderDraft())return;
@@ -1463,6 +1463,10 @@ function bindGrading(){
   });
   app.querySelectorAll('[data-action="back-grading"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;gradeAutosave=null;ui.view='admin';ui.adminTab='grades';render();});
   app.querySelectorAll('[data-action="publish-result"]').forEach(b=>b.onclick=async()=>{
+    const scoreInputs=[...app.querySelectorAll('.manual-score,#gradeOralScore')];
+    const missing=scoreInputs.filter(input=>input.value==='');
+    if(missing.length){notify('Vui lòng nhập đủ điểm trước khi công bố: '+missing.map(input=>input.id==='gradeOralScore'?'Nói':input.dataset.skill).join(', ')+'. Nhập 0 nếu không có điểm.');return;}
+    for(const input of scoreInputs){input.setCustomValidity('');if(!input.checkValidity()){input.reportValidity();return;}}
     b.disabled=true;
     const inputs=[...app.querySelectorAll('.manual-score,#gradeOralScore,#gradeFeedback')];
     try{

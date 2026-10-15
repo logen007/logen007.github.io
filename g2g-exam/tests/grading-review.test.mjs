@@ -1,4 +1,26 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+
+// Exercise the actual publish handler with unsaved inputs, including zero marks.
+{
+  const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+  const start=source.indexOf("  app.querySelectorAll('[data-action=\"publish-result\"]').forEach");
+  const handler=source.slice(start,source.indexOf('\n  });',start)+6);
+  for(const values of [['',''],['10',''],['0','0'],['10','20'],['101','20']]){
+    let saved=0,flushed=0,reported=0;const messages=[],button={disabled:false};
+    const inputs=values.map((value,index)=>({value,id:index?'gradeOralScore':'',dataset:{skill:'Viết'},setCustomValidity(){},checkValidity(){return Number(this.value)<=100;},reportValidity(){reported++;}}));
+    const context={app:{querySelectorAll:selector=>selector.includes('publish-result')?[button]:inputs},notify:message=>messages.push(message),flushBuilderDraft:async()=>{flushed++;return true;},saveGrade:async publish=>{assert.equal(publish,true);saved++;},gradePublishing:false};
+    vm.runInNewContext(handler,context);await button.onclick();
+    const missing=values.includes(''),invalid=values.includes('101');
+    assert.equal(saved,missing||invalid?0:1);
+    assert.equal(flushed,missing||invalid?0:1);
+    assert.equal(messages.length,missing?1:0);
+    if(missing)assert.match(messages[0],/nhập đủ điểm.*Nói/);
+    assert.equal(reported,invalid?1:0);
+    assert.equal(button.disabled,false);
+  }
+}
 import {gradingNeighbors} from '../src/domain/grading-navigation.js';
 const navData={classes:[{id:'c',code:'A1'}],users:[{id:'s1',classId:'c'},{id:'s2',classId:'c'},{id:'s3',classId:'other'}],exams:[{id:'e'}],attempts:[{id:'1',studentId:'s1',examId:'e',status:'published',submittedAt:'2026-01-01'},{id:'2',studentId:'s2',examId:'e',status:'grading',submittedAt:'2026-01-02'},{id:'3',studentId:'s3',examId:'e',status:'grading',submittedAt:'2026-01-03'}]};
 const teacher={role:'teacher'};
@@ -112,6 +134,8 @@ assert.match(detail,/>Nói<\/button>/);
 assert.equal((detail.match(/id="gradeOralScore"/g)||[]).length,1);
 const publishedDetail=gradingDetailHtml({data:{questions:writingQuestions},attempt:{...attempt,status:'published',resultSummary:summary},exam:writingExam});
 assert.match(publishedDetail,/data-action="publish-result"/);
+assert.doesNotMatch(detail,/<button[^>]*data-action="publish-result"[^>]*(disabled|hidden)/);
+assert.doesNotMatch(publishedDetail,/<button[^>]*data-action="publish-result"[^>]*(disabled|hidden)/);
 assert.match(publishedDetail,/result-outcome passed/);
 assert.doesNotMatch(publishedDetail,/id="gradeOralScore"[^>]*disabled/);
 assert.doesNotMatch(publishedDetail,/class="manual-score"[^>]*disabled/);

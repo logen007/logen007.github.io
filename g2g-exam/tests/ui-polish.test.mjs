@@ -32,6 +32,11 @@ assert.match(trashAdminHtml({data}),/>Câu hỏi</);
 html=teachersAdminHtml({data,user:teacher});
 assert.match(html,/<th>Lần thi<\/th><th>Lớp<\/th>/);assert.doesNotMatch(html,/>Đặt làm Giáo viên</);
 assert.match(examAdminHtml({data,user:teacher}),/class="nhan exam-provider" data-provider="TELC"/);
+for(const status of ['draft','published']){
+  const listing=examAdminHtml({data:{...data,exams:data.exams.map(ex=>({...ex,status}))},user:teacher});
+  assert.match(listing,/data-action="preview-exam"/);
+  assert.doesNotMatch(listing,/data-action="(?:publish-exam|unpublish-exam)"/);
+}
 const section={id:'part',name:'Nghe 1',skill:'Nghe',skillKey:'listening',questionIds:['q'],instruction:'First prompt',additionalInstructions:[{id:'p2',text:'Second prompt',afterQuestion:1}],audioPolicy:{segmentRepeat:2}};
 assert.match(partDisplayHtml({},section,false),/Lặp 1 lần/);
 assert.match(partDisplayHtml({},{...section,audioFlow:{segmentRepeat:1}},false),/Không lặp/);
