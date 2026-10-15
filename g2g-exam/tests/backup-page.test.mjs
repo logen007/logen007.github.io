@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {backupPageHtml,backupItemHtml,backupSettingsHtml,backupStatusDetailsHtml,mountBackupPage} from '../src/views/backup-page.js';
+import {backupPageHtml,backupItemHtml,backupSettingsHtml,backupStatusDetailsHtml,backupProgressText,backupStepsHtml,mountBackupPage} from '../src/views/backup-page.js';
 
 const page=backupPageHtml(),settings=backupSettingsHtml();
 assert.match(page,/tieu-de-trang backup-heading/);
@@ -25,6 +25,9 @@ assert.match(settings,/data-disconnect[^>]* hidden/);
 assert.match(settings,/data-close[^>]*aria-label="Đóng"/);
 assert.equal((settings.match(/class="truong"/g)||[]).length,4);
 assert.match(settings,/data-cancel/);
+assert.equal((settings.match(/class="backup-setting-row"/g)||[]).length,4);
+assert.match(backupProgressText({startedAt:'2026-10-16T00:00:00Z',phaseStartedAt:'2026-10-16T00:01:00Z',stepCount:10,completedSteps:2},Date.parse('2026-10-16T00:01:12Z')),/2\/10 bước hoàn tất · Tổng 1:12 · Bước này 0:12/);
+assert.match(backupStepsHtml({steps:[{id:'upload',label:'Tải lên'}],phase:'upload',state:'failed'}),/Lỗi/);
 
 const item=backupItemHtml({id:'a/b',name:'<img onerror="bad">',size:1048576,createdTime:'2026-10-15T20:00:00Z'});
 assert.equal((item.match(/<td[ >]/g)||[]).length,3);
@@ -52,8 +55,9 @@ assert.ok(!css.includes('.backup-item'));
 console.log('Backup UI: compact layout, popup, real status, escaping and accessibility passed');
 
 // Exercise async status updates without opening a browser or making API requests.
-const originals={document:globalThis.document,fetch:globalThis.fetch,setTimeout:globalThis.setTimeout};
+const originals={document:globalThis.document,fetch:globalThis.fetch,setTimeout:globalThis.setTimeout,setInterval:globalThis.setInterval,clearInterval:globalThis.clearInterval};
 function node(){return {hidden:false,disabled:false,dataset:{},textContent:'',innerHTML:'',children:[],replacements:0,
+ setAttribute(key,value){this[key]=value;},removeAttribute(key){delete this[key];},
  replaceChildren(){this.children=[];this.replacements++;},append(child){this.children.push(child);},
  querySelector(selector){this.nodes??=new Map();if(!this.nodes.has(selector))this.nodes.set(selector,node());return this.nodes.get(selector);}};}
 const root={...node(),isConnected:true};let nextPoll;
@@ -63,6 +67,7 @@ const settle=()=>new Promise(resolve=>setImmediate(resolve));
 try{
  globalThis.document={hidden:false,createElement:tag=>({...node(),tagName:tag})};
  globalThis.setTimeout=fn=>{nextPoll=fn;return 1;};
+ globalThis.setInterval=()=>1;globalThis.clearInterval=()=>{};
  globalThis.fetch=async url=>({ok:true,json:async()=>url.endsWith('getBackupStatus')?live:{files}});
  mountBackupPage(root);await settle();
  const el=selector=>root.querySelector(selector),body=el('[data-files]');
@@ -72,15 +77,19 @@ try{
  const first=body.children[0],replacements=body.replacements;
  assert.equal(first.tagName,'tr');
  await nextPoll();assert.equal(body.children[0],first);assert.equal(body.replacements,replacements);
- live={...live,status:{state:'running',kind:'backup',startedAt:'2026-10-15T20:00:00Z',message:'Đang tải lên Drive…'}};
+ live={...live,status:{state:'running',kind:'backup',startedAt:'2026-10-15T20:00:00Z',phase:'upload',step:6,stepCount:10,completedSteps:5,steps:[...['prepare','database','uploads','inventory','compress'].map(id=>({id,label:id})),{id:'upload',label:'Tải lên Drive'}],message:'Đang tải lên Drive…'}};
  await nextPoll();
  assert.equal(el('[data-progress]').hidden,false);assert.equal(el('[data-now]').disabled,true);
+ assert.equal(el('[data-progress]').value,5);assert.equal(el('[data-progress]').max,10);
+ assert.match(el('[data-progress-meta]').textContent,/5\/10 bước hoàn tất/);
+ assert.match(el('[data-steps]').innerHTML,/Đang chạy/);
  assert.equal(body.children[0].querySelector('[data-restore]').disabled,true);
  assert.equal(body.children[0].querySelector('[data-delete]').disabled,true);
  el('[data-details]').open=true;
  live={...live,status:{...live.status,state:'failed',message:'Không thể kết nối Drive.'}};
  await nextPoll();
  assert.equal(el('[data-progress]').hidden,true);
+ assert.equal(el('[data-progress-meta]').hidden,true);
  assert.equal(el('[data-job]').dataset.state,'failed');
  assert.equal(el('[data-status]').textContent,'Không thể kết nối Drive.');
  assert.equal(el('[data-details]').open,true);

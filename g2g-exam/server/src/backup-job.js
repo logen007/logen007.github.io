@@ -13,6 +13,7 @@ import {inventorySnapshot} from '../../scripts/backup/inventory.mjs';
 import {verifyStaging} from '../../scripts/backup/verify-staging.mjs';
 import {backupDefaults,backupDue,retainedBackupIds} from './backup-policy.js';
 import {APP_VERSION} from '../../src/release.js';
+import {createBackupProgress} from './backup-progress.js';
 
 const run=promisify(execFile),master={role:'master'},jobLock=[1398705745,2];
 let active=null;
@@ -53,52 +54,62 @@ async function downloadChecked(file,destination){
  const expected=file.description?.match(/^g2g-backup-v2 sha256=([a-f0-9]{64})$/)?.[1];
  if(!expected||await hash(destination)!==expected)throw Error('Bản trên Drive không khớp checksum.');
 }
-async function execute(kind,id,client,startedAt){
- const previous=await jobStatus(),work=await fs.mkdtemp(path.join(os.tmpdir(),'g2g-job-'));
- await fs.chmod(work,0o700);
- const payload=path.join(work,'payload'),archive=path.join(work,'backup.tar.gz');
- let mediaLocked=false;
+async function execute(kind,id,client,progress){
+ let mediaLocked=false,work;
  try{
-  await state({state:'running',kind,startedAt,lastBackupAt:previous.lastBackupAt,message:kind==='backup'?'Đang tạo bản sao…':'Đang kiểm tra phục hồi…'});
+  work=await fs.mkdtemp(path.join(os.tmpdir(),'g2g-job-'));
+  await fs.chmod(work,0o700);
+  const payload=path.join(work,'payload'),archive=path.join(work,'backup.tar.gz');
   await fs.mkdir(payload,{mode:0o700});
   if(kind==='backup'){
    const lock=await client.query('SELECT pg_try_advisory_lock($1,$2) AS locked',MEDIA_BACKUP_LOCK);
    if(!lock.rows[0].locked)throw Error('Đang có file được cập nhật. Thử backup lại sau.');
    mediaLocked=true;
    const uploads=process.env.UPLOAD_DIR||'/data/uploads';
+   await progress.phase('database');
    await command('pg_dump',['--format=custom','--file',path.join(payload,'database.dump')],pgEnv());
+   await progress.phase('uploads');
    await fs.cp(uploads,path.join(payload,'uploads'),{recursive:true});
    await client.query('SELECT pg_advisory_unlock($1,$2)',MEDIA_BACKUP_LOCK);mediaLocked=false;
    await fs.mkdir(path.join(payload,'deployment'));
    const recovery={version:APP_VERSION,repository:'https://github.com/logen007/logen007.github.io',settingsEncryptionKey:process.env.SETTINGS_ENCRYPTION_KEY||'',instructions:'Restore database.dump with PostgreSQL 16 pg_restore; restore uploads directory. Set SETTINGS_ENCRYPTION_KEY from this file to read the restored encrypted service settings. Reconfigure Google OAuth and other deployment environment values.'};
    await fs.writeFile(path.join(payload,'deployment','recovery.json'),JSON.stringify(recovery,null,2),{mode:0o600});
+   await progress.phase('inventory');
    const manifest=await inventorySnapshot({databaseDump:path.join(payload,'database.dump'),uploadsDir:path.join(payload,'uploads'),deploymentDir:path.join(payload,'deployment'),commit:process.env.BACKUP_GIT_COMMIT||'0'.repeat(40)});
    await fs.writeFile(path.join(payload,'manifest.json'),JSON.stringify(manifest));
+   await progress.phase('compress');
    await command('tar',['-czf',archive,'-C',payload,'.']);
    const checksum=await hash(archive),name='g2g-'+new Date().toISOString().replace(/[:.]/g,'-')+'.tar.gz';
+   await progress.phase('upload');
    const file=await uploadBackupArchive(archive,name,checksum);
-   await state({state:'running',kind,startedAt,lastBackupAt:previous.lastBackupAt,message:'Đã tải lên Drive. Đang tải lại và kiểm tra phục hồi…'});
+   await progress.phase('download');
    const downloaded=path.join(work,'download.tar.gz');await downloadChecked({...file,description:'g2g-backup-v2 sha256='+checksum},downloaded);
    const restored=path.join(work,'restored');await fs.mkdir(restored);
+   await progress.phase('extract');
    await command('python3',['/app/scripts/backup/safe-extract.py',downloaded,restored]);
+   await progress.phase('verify');
    const result=await restoreCheck(restored,client);
    // Only prune after remote download and isolated restore have succeeded.
+   await progress.phase('retention');
    const p=await preferences(),{keep,ordered}=retainedBackupIds(await listBackupFiles(master),p);
    for(const old of ordered)if(!keep.has(old.id))await deleteBackupFile(master,old.id);
-   await state({state:'success',kind,startedAt,finishedAt:new Date().toISOString(),lastBackupAt:new Date().toISOString(),fileId:file.id,name,sha256:checksum,...result,message:'Backup đã lên Drive và phục hồi thử thành công.'});
+   await state({...progress.snapshot(),state:'success',completedSteps:progress.snapshot().stepCount,finishedAt:new Date().toISOString(),lastBackupAt:new Date().toISOString(),fileId:file.id,name,sha256:checksum,...result,message:'Backup đã lên Drive và phục hồi thử thành công.'});
   }else{
    const file=(await listBackupFiles(master)).find(f=>f.id===id);
    if(!file)throw Error('Không tìm thấy bản backup.');
+   await progress.phase('download');
    await downloadChecked(file,archive);
+   await progress.phase('extract');
    await command('python3',['/app/scripts/backup/safe-extract.py',archive,payload]);
+   await progress.phase('verify');
    const result=await restoreCheck(payload,client);
-   await state({state:'success',kind,startedAt,finishedAt:new Date().toISOString(),lastBackupAt:previous.lastBackupAt,...result,message:'Phục hồi thử thành công. Dữ liệu đang dùng được giữ nguyên.'});
+   await state({...progress.snapshot(),state:'success',completedSteps:progress.snapshot().stepCount,finishedAt:new Date().toISOString(),...result,message:'Phục hồi thử thành công. Dữ liệu đang dùng được giữ nguyên.'});
   }
  }catch(error){
-  await state({state:'failed',kind,startedAt,finishedAt:new Date().toISOString(),lastBackupAt:previous.lastBackupAt,message:error.message?.startsWith('Không')||error.message?.startsWith('Bản')||error.message?.startsWith('Đang')?error.message:'Không hoàn tất backup hoặc phục hồi. Kiểm tra kết nối Drive và dung lượng VPS.'});
+  await state({...progress.snapshot(),state:'failed',finishedAt:new Date().toISOString(),message:error.message?.startsWith('Không')||error.message?.startsWith('Bản')||error.message?.startsWith('Đang')?error.message:'Không hoàn tất backup hoặc phục hồi. Kiểm tra kết nối Drive và dung lượng VPS.'});
  }finally{
   if(mediaLocked)await client.query('SELECT pg_advisory_unlock($1,$2)',MEDIA_BACKUP_LOCK);
-  await fs.rm(work,{recursive:true,force:true});
+  if(work)await fs.rm(work,{recursive:true,force:true});
  }
 }
 export async function startBackupJob(kind='backup',id){
@@ -111,7 +122,10 @@ export async function startBackupJob(kind='backup',id){
   const r=await client.query('SELECT pg_try_advisory_lock($1,$2) AS locked',jobLock);locked=r.rows[0].locked;
   if(!locked)throw appError(409,'Backup đang chạy.');
   const startedAt=new Date().toISOString();
-  active=execute(kind,id,client,startedAt).catch(()=>{}).finally(async()=>{try{await client.query('SELECT pg_advisory_unlock($1,$2)',jobLock);}finally{client.release();active=null;}});
+  const previous=await jobStatus(),progress=createBackupProgress({kind,startedAt,lastBackupAt:previous.lastBackupAt,write:state});
+  // Persist before acknowledging the click so the first poll cannot see the previous job.
+  await progress.phase('prepare');
+  active=execute(kind,id,client,progress).catch(()=>{}).finally(async()=>{try{await client.query('SELECT pg_advisory_unlock($1,$2)',jobLock);}finally{client.release();active=null;}});
   return {queued:true};
  }catch(error){if(client){if(locked)await client.query('SELECT pg_advisory_unlock($1,$2)',jobLock);client.release();}active=null;throw error;}
 }
