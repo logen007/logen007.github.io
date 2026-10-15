@@ -20,6 +20,8 @@ export async function handleAction(user,name,data={}){
   switch(name){
     case 'getBackupDriveStatus': return backupDriveStatus(user);
     case 'getBackupStatus':
+    case 'getBackupPreferences':
+    case 'saveBackupPreferences':
     case 'runBackupNow':
     case 'requestBackupRestore': return backupAction(user,name,data);
     case 'listBackupFiles': return {files:await listBackupFiles(user)};

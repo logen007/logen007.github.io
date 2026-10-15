@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {appError} from './db.js';
+import {appError,query} from './db.js';
 import {backupDriveStatus} from './backup-google.js';
 import {readStatus} from '../../scripts/backup/status.mjs';
 import {readHistory} from '../../scripts/backup/history.mjs';
@@ -14,6 +14,17 @@ export async function backupSummary(){
 }
 export async function backupAction(user,name,data={}){
  if(user?.role!=='master')throw appError(403,'Không có quyền quản lý Backup.');
+ if(name==='getBackupPreferences'){
+  const result=await query("SELECT data FROM settings WHERE id='backup'");
+  return {preferences:result.rows[0]?.data||{time:'03:00',intervalDays:1,dailyCopies:7,monthlyCopies:1},active:false};
+ }
+ if(name==='saveBackupPreferences'){
+  const {time,intervalDays,dailyCopies,monthlyCopies}=data;
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time||'')||!Number.isInteger(intervalDays)||intervalDays<1||intervalDays>30||!Number.isInteger(dailyCopies)||dailyCopies<1||dailyCopies>90||!Number.isInteger(monthlyCopies)||monthlyCopies<0||monthlyCopies>24)throw appError(400,'Giờ hoặc số bản lưu không hợp lệ.');
+  const preferences={time,intervalDays,dailyCopies,monthlyCopies,timeZone:'Asia/Ho_Chi_Minh'};
+  await query("INSERT INTO settings(id,data,updated_by) VALUES('backup',$1::jsonb,$2) ON CONFLICT(id) DO UPDATE SET data=EXCLUDED.data,updated_by=EXCLUDED.updated_by,updated_at=now()",[JSON.stringify(preferences),user.id]);
+  return {preferences,active:false};
+ }
  if(name==='getBackupStatus'){
   const [drive,summary]=await Promise.all([backupDriveStatus(user),backupSummary()]);
   return {drive,...summary,enabled:process.env.BACKUP_RUNNER_ENABLED==='true'};
@@ -29,6 +40,7 @@ export async function backupAction(user,name,data={}){
   return {queued:true};
  }
  if(name==='requestBackupRestore'){
+  throw appError(503,'Chức năng phục hồi chưa được kích hoạt.');
   if(!(await backupDriveStatus(user)).connected)throw appError(409,'Chưa kết nối Google Drive.');
   const id=String(data.id||'');if(!/^[A-Za-z0-9_-]+$/.test(id))throw appError(400,'Mã backup không hợp lệ.');
   await fs.mkdir(path.join(folder(),'requests'),{recursive:true,mode:0o770});

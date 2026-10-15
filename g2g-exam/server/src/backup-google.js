@@ -72,7 +72,7 @@ export async function registerBackupGoogleRoutes(app){
     const config={refreshToken:tokens.refresh_token,email:identity.email||'',folderId:''};
     config.folderId=await ensureFolder(config);
     await save(config,user);
-    return reply.redirect('/adm?tab=settings&settings=advanced');
+    return reply.redirect('/adm?tab=backup');
   });
   app.post('/api/backup/google/disconnect',async request=>{
     const user=await admin(request),config=await read();

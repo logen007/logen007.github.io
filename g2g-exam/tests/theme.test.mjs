@@ -44,7 +44,7 @@ assert.match(page,/id="sSaveBottom"/);
 assert.match(page,/data-asset-pick="sLogo"/);
 assert.match(page,/data-asset-pick="sFavicon"/);
 assert.equal((page.match(/type="file" hidden data-image-picker-direct/g)||[]).length,2);
-assert.ok(readFileSync(new URL('../src/settings/tabs.js',import.meta.url),'utf8').includes("advanced:['sGoogle','sR2Enabled','sAiGroq','sBackupCard']"));
+assert.ok(readFileSync(new URL('../src/settings/tabs.js',import.meta.url),'utf8').includes("advanced:['sGoogle','sR2Enabled','sAiGroq']"));
 assert.ok(!page.includes('sRestart'));
 for(const id of ['sContentWidth','sCardRadius','sBackground'])assert.ok(page.includes(id));
 assert.ok(!page.includes('cai-dat-card-rong'));
