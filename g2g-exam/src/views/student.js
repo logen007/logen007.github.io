@@ -1,4 +1,5 @@
 import {sectionLabel} from '../ui/section-label.js';
+import {partUsesSplit} from '../ui/part-display.js';
 import {sectionInstructions,supportsInstructionPositions,instructionPosition,instructionSlotCount,instructionExampleCount} from '../domain/section-instructions.js';
 import {sectionQuestionOffset} from '../domain/question-numbering.js';
 import {isPrefilledQuestion,imageMaxWidth,shortChoiceColumns,compactBinaryChoices} from '../domain/question-display.js';
@@ -47,7 +48,7 @@ export function studentExamCardHtml(ex,attempts,data){
   const provider=String(ex.provider||'').trim();
   const latestResult=resultLabel(latest?.result)||'Chưa đạt';
   const latestLine=latest?`Lần thi gần nhất <strong>${esc(latest.totalScore??'—')}</strong> điểm - <span class="exam-latest-result ${resultClass(latestResult)}">${esc(latestResult)}</span>`:'';
-  return `<article class="the the-de">${mine.some(a=>a.status!==ATTEMPT_STATUS.ABANDONED)?'':'<span class="the-de-new">Mới</span>'}<h3 title="${esc(ex.title)}">${textHtml(ex.title)}</h3><div class="exam-card-details"><div class="exam-card-tags">${provider?`<span class="nhan exam-provider" data-provider="${esc(provider.toUpperCase())}">${esc(provider==='FID'?'FID':provider.charAt(0).toUpperCase()+provider.slice(1).toLowerCase())}</span>`:''}<span class="nhan exam-level" data-level="${esc(ex.level)}">${esc(ex.level)}</span></div><span class="meta">${sum.sections} phần · ${ex.questionCount??sum.questions} câu</span></div><div class="exam-card-footer">${latestLine?`<span class="exam-card-status">${latestLine}</span>`:''}${ex.hidden?`<button class="nut chinh" data-action="enter-code" data-exam="${esc(ex.id)}" ${ex.hasActiveCodes&&!ex.allCodesUsed?'':'disabled'}><span>${ex.allCodesUsed?'Đã sử dụng lượt thi':ex.hasActiveCodes?'Nhập mã':'Không có mã thi'}</span>${iconHtml('arrowRight')}</button>`:`<button class="nut chinh" data-action="start" data-exam="${esc(ex.id)}"><span>Bắt đầu thi · ${mins} phút</span>${iconHtml('arrowRight')}</button>`}</div></article>`;
+  return `<article class="the the-de"><h3 title="${esc(ex.title)}">${textHtml(ex.title)}</h3><div class="exam-card-details"><div class="exam-card-tags">${provider?`<span class="nhan exam-provider" data-provider="${esc(provider.toUpperCase())}">${esc(provider==='FID'?'FID':provider.charAt(0).toUpperCase()+provider.slice(1).toLowerCase())}</span>`:''}<span class="nhan exam-level" data-level="${esc(ex.level)}">${esc(ex.level)}</span></div><span class="meta">${mine.some(a=>a.status!==ATTEMPT_STATUS.ABANDONED)?'':'<span class="the-de-new">Mới</span>'}${sum.sections} phần · ${ex.questionCount??sum.questions} câu</span></div><div class="exam-card-footer">${latestLine?`<span class="exam-card-status">${latestLine}</span>`:''}${ex.hidden?`<button class="nut chinh" data-action="enter-code" data-exam="${esc(ex.id)}" ${ex.hasActiveCodes&&!ex.allCodesUsed?'':'disabled'}><span>${ex.allCodesUsed?'Đã sử dụng lượt thi':ex.hasActiveCodes?'Nhập mã':'Không có mã thi'}</span>${iconHtml('arrowRight')}</button>`:`<button class="nut chinh" data-action="start" data-exam="${esc(ex.id)}"><span>Bắt đầu thi · ${mins} phút</span>${iconHtml('arrowRight')}</button>`}</div></article>`;
 }
 
 export {studentResultsHtml} from './student-results.js';
@@ -60,8 +61,8 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
     .find(skill=>skill.key===sec.skillKey||skill.label===sec.skill)?.parts.find(part=>part.name===sec.name);
   const compactGaps=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&sec.name==='Đọc 4';
   const compactHeadings=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&sec.questionProfile?.layout==='heading-match';
-  const splitWriting=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&(sec.skillKey==='writing'||sec.skill==='Viết');
-  const splitLayout=splitWriting||(!compactHeadings&&!compactGaps&&(configuredPart?.questionProfile?.splitLayout??sec.questionProfile?.splitLayout));
+  const splitWriting=partUsesSplit(exam,sec)&&(sec.skillKey==='writing'||sec.skill==='Viết');
+  const splitLayout=sec.displaySplit??(splitWriting||(!compactHeadings&&!compactGaps&&(configuredPart?.questionProfile?.splitLayout??sec.questionProfile?.splitLayout)));
   const orderedQuestions=questions.map((q,originalIndex)=>({q,originalIndex})).sort((a,b)=>Number(Boolean(isPrefilledQuestion(b.q)))-Number(Boolean(isPrefilledQuestion(a.q))));
   const requiredQuestions=questions.filter(q=>!isPrefilledQuestion(q));
   const answered=requiredQuestions.filter(q=>answerPresent(attempt.answers?.[q.id],q)).length;
@@ -70,16 +71,16 @@ export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],on
   const nextLabel=sectionIndex===exam.sections.length-1?(preview?'Kết thúc':'Abgeben'):'Weiter';
   const splitHeadings=splitLayout&&sec.questionProfile?.layout==='heading-match';
   const positioned=supportsInstructionPositions(sec),promptAt=position=>sectionPromptHtml(sec,{position,questionCount:instructionSlotCount(sec,questions.length),exampleCount:instructionExampleCount(sec,questions)});
-  const afterPrompt=position=>{const content=positioned?promptAt(position):'';return content?`<section class="exam-instruction positioned-section-prompt">${content}</section>`:'';};
-const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additionalInstructions?.length||sec.readingBlocks?.length||splitHeadings?`<section class="exam-instruction">${positioned?promptAt(0):sectionPromptHtml(sec)}${readingBlocksHtml(sec)}${splitHeadings?headingOptionsHtml(sec):''}</section>`:'';
+  const afterPrompt=position=>{const content=positioned&&sec.displaySplit!==true?promptAt(position):'';return content?`<section class="exam-instruction positioned-section-prompt">${content}</section>`:'';};
+const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additionalInstructions?.length||sec.readingBlocks?.length||splitHeadings?`<section class="exam-instruction">${positioned&&sec.displaySplit!==true?promptAt(0):sectionPromptHtml(sec)}${readingBlocksHtml(sec)}${splitHeadings?headingOptionsHtml(sec):''}</section>`:'';
   const sectionAudio=sectionAudioHtml(sec,orderedQuestions.map(item=>item.q),attempt,{preview,startNumber:sectionQuestionOffset(exam,sec,[...allQuestions,...questions])});
   const currentCount=`<span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${requiredQuestions.length}</span>`;
   let questionNumber=sectionQuestionOffset(exam,sec,[...allQuestions,...questions]);
   const exampleCount=orderedQuestions.length-requiredQuestions.length;
   const stimulusGroups=[{left:sectionInstruction,right:sectionAudio}];
   const writingPrompts=[sectionInstruction];
-  const groupStimuli=splitLayout&&!splitWriting&&!['heading-match','inline-gaps','letter-select'].includes(sec.questionProfile?.layout)&&!sec.questionProfile?.uniqueLetters&&questions.some(q=>q.instructionBlocks?.length);
-  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber,{separateOptions:splitHeadings||compactHeadings,afterQuestion:afterPrompt}):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber,{compact:compactGaps,splitLayout:configuredPart?.questionProfile?.gapSplitLayout??sec.questionProfile?.gapSplitLayout})+afterPrompt(1):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber,{afterQuestion:afterPrompt})+(sec.questionProfile?.layout==='letter-table'?afterPrompt(1):''):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
+  const groupStimuli=splitLayout&&!splitWriting&&!['heading-match','inline-gaps','letter-select'].includes(sec.questionProfile?.layout)&&!sec.questionProfile?.uniqueLetters&&(sec.displaySplit===true||questions.some(q=>q.instructionBlocks?.length));
+  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber,{separateOptions:splitHeadings||compactHeadings,afterQuestion:afterPrompt}):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber,{compact:compactGaps,splitLayout:typeof sec.displaySplit==='boolean'?false:(configuredPart?.questionProfile?.gapSplitLayout??sec.questionProfile?.gapSplitLayout)})+afterPrompt(1):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber,{afterQuestion:afterPrompt})+(sec.questionProfile?.layout==='letter-table'?afterPrompt(1):''):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
     const example=isPrefilledQuestion(q),scoredIndex=displayIndex-exampleCount;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
     const paired=sec.questionProfile?.pairedQuestions;

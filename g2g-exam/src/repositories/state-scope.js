@@ -1,6 +1,6 @@
 export function initialStateScope(user,href=globalThis.location?.href){
   const params=new URL(href||'https://local.invalid/').searchParams;
-  if(user?.role==='student'&&params.get('view')==='results')return 'catalog';
+  if(user?.role==='student'&&['results','home'].includes(params.get('view')))return 'catalog';
   if(params.has('edit')||params.has('preview')||params.has('view'))return 'full';
   if(user?.role==='student')return 'catalog';
   if(['dashboard','grades'].includes(params.get('tab')||(user?.role==='master'?'dashboard':'exams')))return 'summary';

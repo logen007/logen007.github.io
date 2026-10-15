@@ -7,7 +7,7 @@ import {
   createQuestion, updateQuestion, softDeleteQuestion, restoreQuestion, permanentlyDeleteQuestion,
   createExam, duplicateExam, detachLockedDraftQuestions, addSection, removeSection, moveSection, addQuestionsToSection, removeQuestionFromSection,
   startAttempt, saveAnswer, setAttemptSection, getSectionRemainingSeconds, abandonAttempt,
-  submitAttempt, saveManualScore, publishAttempt, getStudentResults, validateExamForPublish, publishExam,
+  submitAttempt, saveManualScore, publishAttempt, getStudentResults, validateExamForPublish, publishExam, unpublishExam,
   ATTEMPT_STATUS,summarizeExam
 } from '../src/core.js';
 
@@ -212,9 +212,9 @@ test('Xuất bản bài giữ quyền chỉnh sửa của người tạo',()=>{
   publishExam(s,u.lan,ex.id);assert.equal(Boolean(byId(s.questions,'q-read-1').locked),false);assert.equal(canEditQuestion(u.lan,byId(s.questions,'q-read-1')),true);assert.equal(canEditQuestion(u.master,byId(s.questions,'q-read-1')),true);
 });
 
-test('Sau khi học viên bắt đầu, chủ đề vẫn được đổi cấu trúc bài',()=>{
+test('Đề đã xuất bản phải bỏ xuất bản trước khi chỉnh sửa, kể cả khi có lượt thi',()=>{
   const s=fresh(),u=users(s);const ex=createExam(s,u.lan,{title:'Đề đang thi',sections:[{id:'s1',name:'Đọc',timeMinutes:10,questionIds:['q-read-1']}]});
-  publishExam(s,u.lan,ex.id);startAttempt(s,u.student,ex.id);assert.doesNotThrow(()=>addSection(s,u.lan,ex.id,{name:'Phần mới'}));assert.doesNotThrow(()=>removeQuestionFromSection(s,u.lan,ex.id,'s1','q-read-1'));
+  publishExam(s,u.lan,ex.id);startAttempt(s,u.student,ex.id);assert.throws(()=>addSection(s,u.lan,ex.id,{name:'Bị khóa'}),/Bỏ xuất bản/);unpublishExam(s,u.lan,ex.id);assert.doesNotThrow(()=>addSection(s,u.lan,ex.id,{name:'Phần mới'}));assert.doesNotThrow(()=>removeQuestionFromSection(s,u.lan,ex.id,'s1','q-read-1'));
 });
 
 test('Không xuất bản được bài trống hoặc bài lặp cùng câu ở nhiều phần',()=>{

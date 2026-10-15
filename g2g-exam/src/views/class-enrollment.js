@@ -3,9 +3,9 @@ import {esc} from '../ui/format.js';
 import {bindClassPickerClear} from '../ui/class-picker-clear.js';
 
 export function openClassEnrollment({repo,user,onSaved,initialCode=''}){
-  const modal=mountDialog('Xác nhận lớp',`<form class="profile-form">
+  const modal=mountDialog('Xác nhận lớp',`<form class="profile-form account-profile-form">
     <p>Nhập mã đã được giáo viên cung cấp</p>
-    <label><input aria-label="Mã xác nhận" value="${esc(initialCode)}" name="code" required minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters" placeholder="ABCDE"></label>
+    <div class="account-profile-field"><label>Mã xác nhận lớp<input aria-label="Mã xác nhận" value="${esc(initialCode)}" name="code" required minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters" placeholder="Nhập mã giáo viên cung cấp"></label></div>
     <div data-class-choice hidden></div><p data-error role="alert"></p>
     <button class="nut chinh" type="submit">Xác nhận mã</button></form>`,{compact:true});
   const form=modal.querySelector('form'),choice=form.querySelector('[data-class-choice]'),button=form.querySelector('button');

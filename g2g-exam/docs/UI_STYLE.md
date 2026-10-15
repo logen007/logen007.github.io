@@ -11,8 +11,8 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
 
 ## Visual hierarchy
 
-- Show status through the title color instead of a separate status column:
-  published/success green, draft/pending neutral, failed/error red. Preserve a
+- Exam-list published titles use success green with no tinted row background (15 October 2026).
+  Elsewhere use success green, draft/pending neutral, failed/error red. Preserve a
   readable status description (accessible name or concise text); never rely on
   color alone.
 - Table column headings (e.g. Người tạo, Lượt thi) stay on one line
@@ -70,6 +70,17 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   semantics fixed. Do not hard-code purple or blue selection states.
 
 ## Navigation and forms
+
+- Page navigation creates browser history entries; repeat renders do not. Class
+  detail, result, grading, editor/preview parts and settings tabs have direct URLs.
+  Back/Forward flush pending edits before restoring the authorized destination.
+- The exam title in the builder uses page-heading sizing, including on touch
+  screens; the 16px form-control override excludes this title.
+
+
+- Published exams must be unpublished before editing content. The editor remains
+  available read-only for preview and unpublishing; the server also rejects stale
+  content saves. Existing attempt snapshots remain unchanged.
 
 - Publishing keeps one button toggling Xuất bản / Bỏ xuất bản immediately on
   success without rebuilding the editor. Unpublish uses an explicit authorized
@@ -215,9 +226,11 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   at the available mobile viewport width. Larger editors retain their own size.
 - Popup close icons sit absolutely at the top-right inset (8px), with 44px
   targets and reserved title space. They do not occupy a separate header row.
-- Listening settings show all parts as compact rows, each with one toggle:
-  “Không lặp” / “Lặp 1 lần”. No tabs, flow diagram, advanced controls or
-  default-score field. Instructions/examples play once; grouping follows the spec.
+- The part editor header shows its name, then icon toggles for one/two pages
+  and (listening only) “Không lặp” / “Lặp 1 lần”, above a divider. Two pages
+  places prompts on the left on desktop; mobile remains one column. Skill
+  settings retain the time field only. Instructions/examples play once;
+  grouping follows the spec.
 
 - Header account controls use one avatar opening a menu: Profile, other role
   options for authorized admins (Student, Teacher, Admin; omit current role),

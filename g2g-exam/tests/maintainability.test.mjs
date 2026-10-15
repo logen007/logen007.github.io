@@ -28,11 +28,12 @@ assert.deepEqual(calculateAutomaticScores({exams:[exam],questions},attempt),{aut
 
 const student={id:'student',name:'Học viên'};
 const data={attempts:[attempt],exams:[exam],questions};
-const local=await loadStudentReview({repo:{mode:'local'},data,user:student,attemptId:'mine'});
+const localRepo={mode:'local',transaction:async fn=>fn(data)};
+const local=await loadStudentReview({repo:localRepo,data,user:student,attemptId:'mine'});
 assert.equal(local.attempt.id,'mine');
 for(const id of ['missing','mine'])await assert.rejects(loadStudentReview({repo:{mode:'local'},data,user:{id:'other'},attemptId:id}),/Không tìm thấy/);
 const snapshot={...exam,title:'Frozen title',questionSnapshot:questions};
-const frozen=await loadStudentReview({repo:{mode:'local'},data:{...data,attempts:[{...attempt,examSnapshot:snapshot}],exams:[],questions:[]},user:student,attemptId:'mine'});
+const frozen=await loadStudentReview({repo:localRepo,data:{...data,attempts:[{...attempt,examSnapshot:snapshot}],exams:[],questions:[]},user:student,attemptId:'mine'});
 assert.equal(frozen.attempt.examTitle,'Frozen title');
 const apiResult={from:'server'};
 assert.equal(await loadStudentReview({repo:{mode:'api',call:async(name,args)=>{assert.equal(name,'getAttemptReview');assert.deepEqual(args,{attemptId:'mine'});return apiResult;}},user:student,attemptId:'mine'}),apiResult);
@@ -48,9 +49,9 @@ for(const missing of [true,false]){
 }
 for(const status of ['published','ready','grading','submitted']){
   let calls=0;
-  const row={student_id:student.id,status,exam_id:exam.id,public_data:{...attempt,status:'published'},private_data:{examSnapshot:snapshot,feedback:'Private feedback'}};
+  const row={student_id:student.id,status,exam_id:exam.id,public_data:{...attempt,status:'published',viewedPublication:null},private_data:{examSnapshot:snapshot,feedback:'Private feedback'}};
   const review=await context.getAttemptReview(student,{attemptId:'mine'},{runQuery:async()=>++calls===1?{rowCount:1,rows:[row]}:{rows:[]}});
-  assert.equal(calls,2,'A frozen snapshot should not query the question bank');
+  assert.equal(calls,status==='published'?3:2,'Frozen snapshots need only exam metadata plus the published-result read receipt');
   assert.equal(review.attempt.status,status);
   assert.equal(review.sections[0].questions[0].correct,0);
   assert.equal(review.score?.feedback??null,status==='published'?'Private feedback':null);

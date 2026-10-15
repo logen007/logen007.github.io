@@ -138,14 +138,14 @@ export class ApiRepository{
     return clone(this.user);
   }
 
-  async reload(){
+  async reload({timeoutMs=10000}={}){
     if(!this.user){this.state=normalizeState({});this.emit();return this.state;}
     const scope=this.pollScope;
     const path=this.user.role==='student'&&scope==='full'&&this.pollingAttempt?`/attempts/${encodeURIComponent(this.pollingAttempt)}/session`:statePath(scope);
     if(this.stateLoad?.path===path&&this.stateLoad.generation===this.generation)return this.stateLoad.promise;
     const generation=++this.generation,load={path,generation};
     load.promise=(async()=>{
-      const next=await request(path,{timeoutMs:10000});
+      const next=await request(path,{timeoutMs});
       if(generation!==this.generation)return this.state;
       this.state=normalizeState(next);this.emit();return this.state;
     })().finally(()=>{if(this.stateLoad===load)this.stateLoad=null;});
@@ -161,9 +161,15 @@ export class ApiRepository{
   async ensureFull({refresh=false}={}){
     this.setPollingScope('full');
     if(!refresh&&!['catalog','summary'].includes(this.state.scope))return;
-    if(!this.fullLoad)this.fullLoad=this.reload().finally(()=>{this.fullLoad=null;});
+    if(!this.fullLoad)this.fullLoad=(async()=>{
+      // A metadata render can change scope while the detail request is in flight.
+      // Retry a superseded response instead of treating it as missing content.
+      do{
+        this.setPollingScope('full');
+        await this.reload({timeoutMs:0});
+      }while(this.user&&['catalog','summary'].includes(this.state.scope));
+    })().finally(()=>{this.fullLoad=null;});
     await this.fullLoad;
-    if(['catalog','summary'].includes(this.state.scope))throw new Error('Chưa tải được nội dung. Vui lòng thử lại.');
   }
 
   async signInGoogle(){

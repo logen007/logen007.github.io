@@ -88,7 +88,7 @@ test('Xem lại bài làm chỉ mở cho đúng học viên; kết quả tự ch
   const review=read('server/src/actions/attempt-review.js');
   assert.ok(review.includes('found.rows[0].student_id!==user.id'));
   assert.ok(review.includes("row.status==='published'"));
-  assert.ok(review.includes('return buildAttemptReview('));
+  assert.ok(review.includes('const review=buildAttemptReview(')&&review.includes('return review;'));
   const projection=read('src/domain/attempt-review.js');
   assert.ok(projection.includes("const published=attempt.status==='published'"));
   assert.ok(projection.includes("const submitted=['submitted','grading','ready'].includes(attempt.status)"));

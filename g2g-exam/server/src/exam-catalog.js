@@ -35,7 +35,7 @@ export async function loadExamCatalog(user){
         (SELECT sum((skill->>'max')::numeric) FROM jsonb_each(coalesce(public_data->'resultSummary'->'skills','{}'::jsonb)) AS skills(key,skill))
         ELSE NULL END,
       'startedAt',public_data->'startedAt','submittedAt',public_data->'submittedAt',
-      'publishedAt',public_data->'publishedAt','totalScore',public_data->'totalScore',
+      'publishedAt',public_data->'publishedAt','viewedPublication',public_data->'viewedPublication','totalScore',public_data->'totalScore',
       'result',public_data->'result') AS data
       FROM attempts a LEFT JOIN exams e ON e.id=a.exam_id WHERE student_id=$1 ORDER BY a.created_at DESC,a.id`,[user.id]):Promise.resolve({rows:[]}),
     student?query('SELECT id,code,active FROM classes WHERE active=true ORDER BY lower(code),id'):Promise.resolve({rows:[]}),

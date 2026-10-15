@@ -166,7 +166,7 @@ test('Builder có preview và hỗ trợ link mở lại đề đang sửa',()=>
   const app=read('src/app.js'),builder=read('src/views/builder.js');
   assert.ok(builder.includes('data-action="preview-exam"'));
   assert.ok(app.includes('function previewExamView'));
-  assert.ok(app.includes('function builderEditUrl'));
+  assert.ok(app.includes('pageHistory.sync(url)'));
   assert.ok(app.includes('searchParams.get(\'edit\')'));
 });
 

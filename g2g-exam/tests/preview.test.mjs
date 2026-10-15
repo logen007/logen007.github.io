@@ -69,7 +69,7 @@ assert.ok(publicStatsSource.includes("FROM users WHERE role='teacher'"));
 assert.ok(publicStatsSource.includes("FROM attempts WHERE status IN ('grading','ready','published')"));
 assert.match(readFileSync(new URL('../src/exam-specs/goethe.js',import.meta.url),'utf8'),/Promise.all/);
 const touchStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
-assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea, \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);
+assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea:not\(\.exam-title-input\), \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);
 assert.doesNotMatch(readFileSync(new URL('../vi.html',import.meta.url),'utf8'),/user-scalable\s*=\s*no|maximum-scale\s*=/);
 assert.match(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/initialFocus\?\.focus\(\{preventScroll:true\}\)/);
 let passed=0;
@@ -260,13 +260,13 @@ try{
     assert.match(source,/async function moveAttemptSection\(delta\)[\s\S]*?if\(result\)\{[^}]*render\(\);scrollExamToTop\(\)/);
     assert.match(source,/function showPreviewSection\(index\)[\s\S]*?scrollExamToTop\(\)/);
   });
-  await test('Student exam card shows provider, exact duration and a corner new badge',()=>{
+  await test('Student exam card shows provider, exact duration and a new badge before part counts',()=>{
     const exam={id:'goethe-a1',provider:'GOETHE',level:'A1',title:'Modelltest 1',sections:[{timeMinutes:20,questionIds:[]},{timeMinutes:15,questionIds:[]}]};
     const html=studentExamCardHtml(exam,[],{questions:[]});
     assert.match(html,/class="nhan exam-provider" data-provider="GOETHE">Goethe<\/span>/);
     assert.match(html,/class="nhan exam-level" data-level="A1">A1<\/span>/);
     assert.doesNotMatch(html,/>Goethe A1<\/span>/);
-    assert.match(html,/<div class="exam-card-details"><div class="exam-card-tags">[^]*?<\/div><span class="meta">2 phần · 0 câu<\/span><\/div>/);
+    assert.match(html,/<div class="exam-card-details"><div class="exam-card-tags">[^]*?<\/div><span class="meta"><span class="the-de-new">Mới<\/span>2 phần · 0 câu<\/span><\/div>/);
     const telc=studentExamCardHtml({...exam,provider:'TELC',level:'B2'},[],{questions:[]});
     assert.match(telc,/data-provider="TELC">Telc<\/span>/);
     assert.match(telc,/data-level="B2">B2<\/span>/);
@@ -304,7 +304,7 @@ try{
       assert.match(html,/data-tab="exams"/);
     }
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-    assert.match(source,/\[data-action="admin-tab"\][^\n]+await flushBuilderDraft\(\)[^\n]+clearBuilderEditUrl\(\)/);
+    assert.match(source,/\[data-action="admin-tab"\][^\n]+await flushBuilderDraft\(\)[^\n]+ui.adminTab/);
   });
   await test('Admin utility tabs show accessible icons without visible labels',()=>{
     for(const adminTab of ['dashboard','exams','teachers']){

@@ -30,8 +30,10 @@ export async function telcB1BackendScenario({query,teacher,student}){
   // Editing public bank/source keys after start must not change the active snapshot.
   const changed=structuredClone(exam);changed.sections[0].headingOptions[0]='Changed heading';
   const q=structuredClone(rows(exam.sections[0])[0]);q.correctAnswer=(q.correctAnswer+1)%5;
-  await commitOperations(teacher,[{collection:'exams',id:exam.id,item:changed},{collection:'questions',id:q.id,item:q}]);
-  assert.deepEqual((await loadState(student)).exams.find(e=>e.id===exam.id).sections[0].headingOptions,exam.sections[0].headingOptions);
+  const {unpublishExamRelease}=await import('../server/src/exam-releases.js');
+  await unpublishExamRelease(teacher,{examId:exam.id});
+  await commitOperations(teacher,[{collection:'exams',id:exam.id,item:{...changed,status:'draft'}},{collection:'questions',id:q.id,item:q}]);
+  assert.deepEqual((await loadState(student,{attemptId:id})).exams.find(e=>e.id===exam.id).sections[0].headingOptions,exam.sections[0].headingOptions);
   await submitAttempt(student,{attemptId:id});
   assert.equal((await query('SELECT private_data FROM attempts WHERE id=$1',[id])).rows[0].private_data.autoScore,180);
   await assert.rejects(()=>saveManualGrade(teacher,{attemptId:id,scores:{'Viết 1':46}}),/0–45/);
