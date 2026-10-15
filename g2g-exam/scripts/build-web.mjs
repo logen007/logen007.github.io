@@ -44,6 +44,7 @@ for(const file of ['styles.css','enhancements.css']){
 }
 await fs.writeFile(path.join(out,'vi.html'),html);
 await fs.writeFile(path.join(out,'index.html'),html);
+for(const file of ['privacy.html','terms.html','legal.css'])await fs.copyFile(path.join(root,file),path.join(out,file));
 await fs.copyFile(path.join(root,'server/runtime/runtime-config.js'),path.join(out,'runtime-config.js'));
 await fs.copyFile(path.join(root,'media-worker.js'),path.join(out,'media-worker.js'));
 await fs.mkdir(path.join(out,'src/ui'),{recursive:true});

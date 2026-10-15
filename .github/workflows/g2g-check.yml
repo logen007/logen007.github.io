@@ -21,7 +21,7 @@ jobs:
         run: npm ci --prefix g2g-exam/server --ignore-scripts
       - name: Run tests
         working-directory: g2g-exam
-        run: npm test
+        run: npm test && node tests/legal-pages.test.mjs
       - name: Check R2 settings and VPS fallback
         working-directory: g2g-exam
         run: npm run test:r2
