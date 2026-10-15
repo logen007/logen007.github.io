@@ -3,6 +3,10 @@
 .settings-tabs { display:flex; gap:8px; flex-wrap:nowrap; margin-bottom:24px; }
 .settings-tabs .nut { min-width:0; white-space:nowrap; }
 @media(max-width:700px){.settings-tabs { gap:6px; }.settings-tabs .nut { flex:1; padding-inline:8px; font-size:14px; }}
+.settings-tab-panel.cai-dat-grid { display:block; columns:2; column-gap:20px; }
+.settings-tab-panel > .cai-dat-card { break-inside:avoid; margin:0 0 20px; }
+.settings-tab-panel > .tich-hop-tong-quan { column-span:all; }
+@media(max-width:700px){.settings-tab-panel.cai-dat-grid{columns:1}}
 .settings-tab-panel[hidden] { display:none!important; }
 .settings-tab-panel > .tich-hop-tong-quan { grid-column:1/-1; margin:0; }
 .cai-dat-card { padding:0; overflow:hidden; }

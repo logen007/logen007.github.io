@@ -17,7 +17,7 @@ export function buildAttemptReview({exam={},questions=[],attempt={},privateData=
     attempt:{id:attempt.id,status:attempt.status,examTitle:attempt.examTitle||exam.title,
       studentName:student.name||attempt.studentName,studentPicture:student.picture||'',
       provider:exam.provider,level:exam.level,attemptNo:attempt.attemptNo,
-      submittedAt:attempt.submittedAt,startedAt:attempt.startedAt,completion:attempt.completion},
+      publishedAt:attempt.publishedAt,submittedAt:attempt.submittedAt,startedAt:attempt.startedAt,completion:attempt.completion},
     sections:(exam.sections||[]).map((section,sectionIndex)=>({name:section.name,
       skill:canonicalSkill(section.questionProfile?.scoringSkill||section.skillKey||section.skill||section.name),
       questions:scoredIds(section).map(id=>map.get(id)).map((q,index)=>({

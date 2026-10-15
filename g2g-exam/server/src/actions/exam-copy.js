@@ -35,6 +35,7 @@ export async function prepareExamForEditing(user,{examId}){
   return withTx(async client=>{
     const row=(await client.query('SELECT * FROM exams WHERE id=$1 FOR UPDATE',[examId])).rows[0];
     if(!row||row.status==='trash')throw appError(404,'Không tìm thấy đề.');
+    if(row.status==='published')throw appError(409,'Bỏ xuất bản trước khi chỉnh sửa bài thi.');
     if(user.role!=='master'&&row.owner_id!==user.id)throw appError(403,'Không có quyền sửa đề.');
     const ids=[...new Set((row.data.sections||[]).flatMap(s=>s.questionIds||[]))];
     const questions=ids.length?(await client.query('SELECT * FROM questions WHERE id=ANY($1::text[]) FOR SHARE',[ids])).rows:[];

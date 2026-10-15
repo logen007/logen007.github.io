@@ -18,5 +18,7 @@ export async function getAttemptReview(user,{attemptId,progressOnly=false},{runQ
     if(reviewer?.name)row.public_data.reviewerName=reviewer.name;
   }
   row.public_data.studentName=user.name||row.public_data.studentName;
-  return buildAttemptReview({exam:examData,questions:questions.rows.map(q=>({...q.data,id:q.id})),attempt:{...row.public_data,id:attemptId,status:row.status},privateData:row.private_data,student:user});
+  const review=buildAttemptReview({exam:examData,questions:questions.rows.map(q=>({...q.data,id:q.id})),attempt:{...row.public_data,id:attemptId,status:row.status},privateData:row.private_data,student:user});
+  if(row.status==='published'&&row.public_data.viewedPublication!==(row.public_data.publishedAt||'published'))await runQuery(`UPDATE attempts SET public_data=jsonb_set(public_data,'{viewedPublication}',to_jsonb($3::text)) WHERE id=$1 AND student_id=$2 AND status='published' AND public_data->>'publishedAt' IS NOT DISTINCT FROM $4`,[attemptId,user.id,row.public_data.publishedAt||'published',row.public_data.publishedAt||null]);
+  return review;
 }

@@ -17,6 +17,7 @@ function normalizeSection(input={},index=0){
     skillKey:String(input.skillKey||''),
     templateType:String(input.templateType||'GENERIC'),
     questionProfile:clone(input.questionProfile||null),
+    ...(typeof input.displaySplit==='boolean'?{displaySplit:input.displaySplit}:{}),
     audioPolicy:clone(input.audioPolicy||null),
     audioFlow:normalizeAudioFlow(input.audioFlow),
     instruction:String(input.instruction||''),
@@ -49,6 +50,7 @@ function structuralAttemptExists(state,examId){
 }
 
 function assertExamStructureEditable(state,user,exam){
+  if(exam.status==='published')throw new Error('Bỏ xuất bản trước khi chỉnh sửa bài thi.');
   if(!canEditExam(user,exam))throw new Error('Bạn không có quyền chỉnh sửa bài thi này.');
 }
 
@@ -124,6 +126,7 @@ export function updateExam(state,user,id,patch){
   const exam=byId(state.exams,id);
   if(!exam)throw new Error('Không tìm thấy bài thi.');
   if(!canEditExam(user,exam))throw new Error('Bạn không có quyền chỉnh sửa bài thi này.');
+  if(exam.status==='published')throw new Error('Bỏ xuất bản trước khi chỉnh sửa bài thi.');
   const structural=['level','provider','passScore','sections','status'].some(key=>key in patch&&patch[key]!==exam[key]);
   if(structural)assertExamStructureEditable(state,user,exam);
   if('title' in patch)exam.title=String(patch.title||'').trim();

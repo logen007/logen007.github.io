@@ -2,7 +2,7 @@ import {resolveAccountNames} from '../../src/domain/account-name.js';
 import {normalizeAudioFlow} from '../../src/domain/part-audio.js';
 import {isPrefilledQuestion} from '../../src/domain/question-display.js';
 import {manualGroups} from '../../src/domain/manual-grading.js';
-import {query,withTx,audit,appError} from './db.js';
+import {query,withTx,audit,appError,getSettings} from './db.js';
 import {deleteTrashedExam} from './trash-delete.js';
 import {publicWritingRows,writingFormScore,normalizeWritingRows} from './writing-form.js';
 import {expireCodes} from './actions/exam-access.js';
@@ -77,6 +77,7 @@ export async function loadState(user,{summaryOnly=false,attemptId=null}={}){
     return resolveAccountNames(state,names);
   }
   if(!summaryOnly)await ensureClassCodes();
+  state.trashRetentionDays=(await getSettings()).operations.trashRetentionDays;
   state.users=(await rows(`SELECT u.id,u.email,u.role,u.active,u.data,k.code AS confirmation_code FROM users u
     LEFT JOIN class_confirmation_codes k ON k.student_id=u.id AND k.used_at IS NULL AND k.email=lower(u.email)
       AND u.role='student' AND coalesce(u.data->>'classId','')=''
@@ -142,6 +143,13 @@ async function applyUser(c,user,op){if(user.role!=='master')throw appError(403,'
 export async function commitOperations(user,ops=[]){
   if(!Array.isArray(ops)||ops.length>250)throw appError(400,'Danh sách thay đổi không hợp lệ.');
   return withTx(async c=>{
+    const examIds=ops.filter(op=>op.collection==='exams'&&op.kind!=='delete'&&op.item?.status!=='trash').map(op=>op.id);
+    const questionIds=ops.filter(op=>op.collection==='questions').map(op=>op.id);
+    const locked=await c.query(`SELECT id,status FROM exams WHERE id=ANY($1::text[]) OR EXISTS (
+      SELECT 1 FROM jsonb_array_elements(coalesce(data->'sections','[]'::jsonb)) s,
+      jsonb_array_elements_text(coalesce(s->'questionIds','[]'::jsonb)) q WHERE q=ANY($2::text[])
+    ) ORDER BY id FOR UPDATE`,[examIds,questionIds]);
+    if(locked.rows.some(exam=>exam.status==='published'))throw appError(409,'Bỏ xuất bản trước khi chỉnh sửa bài thi.');
     await preserveAttemptSnapshots(c,ops);
     for(const op of ops){
       if(!op?.collection||!op.id)throw appError(400,'Thay đổi thiếu dữ liệu.');

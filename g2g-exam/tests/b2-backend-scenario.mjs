@@ -50,8 +50,11 @@ export async function b2BackendScenario({query,teacher,student}){
   await saveAnswers(student,{attemptId:id,answers:Object.fromEntries(ids.map(qid=>[qid,snapshot.questionSnapshot.find(q=>q.id===qid).correctAnswer]))});
   // Editing the source cannot alter a running student's passage or grading key.
   const edited=structuredClone(exam);edited.sections[1].gapExample='Changed after start';
-  await commitOperations(teacher,[{collection:'exams',id:exam.id,item:edited}]);
-  assert.equal((await loadState(student)).exams.find(e=>e.id===exam.id).sections[1].gapExample,'Demo sentence');
+  await assert.rejects(()=>commitOperations(teacher,[{collection:'exams',id:exam.id,item:edited}]),/Bỏ xuất bản/);
+  const {unpublishExamRelease}=await import('../server/src/exam-releases.js');
+  await unpublishExamRelease(teacher,{examId:exam.id});
+  await commitOperations(teacher,[{collection:'exams',id:exam.id,item:{...edited,status:'draft'}}]);
+  assert.equal((await loadState(student,{attemptId:id})).exams.find(e=>e.id===exam.id).sections[1].gapExample,'Demo sentence');
   await setAttemptSection(student,{attemptId:id,index:3});
   const matching=rows(exam.sections[3]).filter(q=>!q.example);
   await saveAnswers(student,{attemptId:id,answers:{[matching[0].id]:8}});

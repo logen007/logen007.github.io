@@ -3,9 +3,19 @@ import {buildAttemptReview} from '../domain/attempt-review.js';
 // API owns production authorization; local previews enforce the same ownership.
 // Never use the metadata-only result list as the production detail payload.
 export async function loadStudentReview({repo,data,user,attemptId}){
-  if(repo.mode==='api')return repo.call('getAttemptReview',{attemptId});
+  if(repo.mode==='api'){
+    const review=await repo.call('getAttemptReview',{attemptId});
+    const listed=data?.attempts?.find(item=>item.id===attemptId);
+    if(listed&&review.attempt.status==='published')listed.viewedPublication=review.attempt.publishedAt||'published';
+    return review;
+  }
   const attempt=data.attempts.find(item=>item.id===attemptId);
   if(!attempt||attempt.studentId!==user.id)throw new Error('Không tìm thấy bài làm.');
   const exam=attempt.examSnapshot||data.exams.find(item=>item.id===attempt.examId)||{};
-  return buildAttemptReview({exam,questions:exam.questionSnapshot||data.questions,attempt,student:user});
+  const review=buildAttemptReview({exam,questions:exam.questionSnapshot||data.questions,attempt,student:user});
+  if(attempt.status==='published')await repo.transaction(state=>{
+    const current=state.attempts.find(item=>item.id===attemptId);
+    if(current)current.viewedPublication=attempt.publishedAt||'published';
+  });
+  return review;
 }

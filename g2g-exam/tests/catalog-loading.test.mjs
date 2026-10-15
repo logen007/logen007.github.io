@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './ui-polish.test.mjs';
 import {ApiRepository} from '../src/repositories/api.js';
 import {initialStateScope,viewStateScope} from '../src/repositories/state-scope.js';
 import {stateResponse} from '../server/src/state-response.js';
@@ -71,6 +72,14 @@ try{
   repo.state={...catalog,scope:'summary'};
   await repo.ensureFull();
   assert.equal(repo.state.questions[0].title,'Keep question','Summary must hydrate before editing');
+  repo.state={...catalog};repo.setPollingScope('catalog');defer={};
+  const opening=repo.ensureFull();
+  await Promise.resolve();
+  repo.setPollingScope('catalog');
+  const superseded=defer;defer=null;
+  superseded.resolve({ok:true,json:async()=>structuredClone(full)});
+  await opening;
+  assert.equal(repo.state.questions[0].title,'Keep question','A scope change during editor loading retries the superseded response');
   console.log('Catalog loading: conditional reads, deep links, deduplication, stale responses and safe hydration passed.');
 }finally{Object.assign(globalThis,saved);}
 await import('./attempt-result.test.mjs');

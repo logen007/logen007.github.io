@@ -3,6 +3,8 @@ import {changeInstructions,moveLegacyInstruction} from './domain/section-instruc
 import {collectAdditionalInstructions} from './part-templates/default/section-instruction-editor.js';
 import {gradingNeighbors} from './domain/grading-navigation.js';
 import {isPrefilledQuestion} from './domain/question-display.js';
+import {partUsesSplit} from './ui/part-display.js';
+import {effectiveAudioPolicy} from './domain/part-audio.js';
 import {openSkillSettings} from './ui/skill-settings.js';
 import {registerMediaDelivery} from './ui/media-delivery.js';
 void registerMediaDelivery();
@@ -125,6 +127,7 @@ repo.subscribe(next=>{
   data=next;
   if(!startupGate.isReady())return;
   if(startingAttempt||submitBusy||timerBusy)return;
+  if(openingBuilder)return;
   if(ui.view==='exam'&&byId(next.attempts,ui.attemptId)?.status!==ATTEMPT_STATUS.IN_PROGRESS){
     ui.view='student-home';
     clearTimeout(realtimeRenderTimer);
@@ -612,7 +615,7 @@ function adminView(cachedAt=null){
   else if(ui.adminTab==='grades')content=gradebookHtml({data,ui});
   else if(ui.adminTab==='teachers')content=teachersAdminHtml({data,user});
   else if(ui.adminTab==='classes')content=classesHtml({data,classId:ui.classId});
-  else if(ui.adminTab==='trash')content=trashAdminHtml({data});
+  else if(ui.adminTab==='trash')content=trashAdminHtml({data,retentionDays:data.trashRetentionDays??30});
   else if(ui.adminTab==='settings'&&isMaster(user))content='<div data-settings-route><p role="status">Đang tải cài đặt…</p></div>';
   const current=app.querySelector('.admin-dashboard');
   if(current&&ui.adminTab==='dashboard'&&isMaster(user)){
@@ -631,7 +634,7 @@ function examBuilderView(){
   if(!exam||isStudent(user)){ui.view='admin';render();return;}
   const section=exam.sections.find(s=>s.id===ui.builderSectionId)||exam.sections[0];
   if(section)ui.builderSectionId=section.id;
-  const readOnly=!canEditExam(user,exam);
+  const readOnly=exam.status==='published'||!canEditExam(user,exam);
   app.innerHTML=layout(examBuilderHtml({data,user,exam,section,readOnly}));
 }
 
@@ -743,7 +746,7 @@ function render(){
   if(!user||ui.view!=='exam')examPreloader.stop();
   updateFeedbackUser(authenticatedUser||user);
   if(user&&repo.mode==='api'){
-    const scope=viewStateScope(ui.view,ui.adminTab);
+    const scope=openingBuilder?'full':viewStateScope(ui.view,ui.adminTab);
     repo.setPollingScope(scope,{attemptId:ui.view==='exam'?ui.attemptId:null});
     if(needsStateLoad(scope,data.scope)){
       if(!viewLoadPromise){
@@ -1020,7 +1023,9 @@ function bindGlobal(){
   });
   app.querySelectorAll('[data-action="student-home"]').forEach(b=>b.onclick=()=>{ui.view='student-home';render();});
   app.querySelectorAll('[data-action="student-results"]').forEach(b=>b.onclick=()=>{ui.view='student-results';render();});
-  app.querySelectorAll('[data-action="student-attempt-detail"]').forEach(b=>b.onclick=async()=>{
+  app.querySelectorAll('[data-action="student-attempt-detail"]').forEach(b=>b.onclick=async event=>{
+    if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+    event.preventDefault();
     const attempt=byId(data.attempts,b.dataset.id);
     if(!attempt||attempt.studentId!==user.id)return;
     try{
@@ -1112,6 +1117,7 @@ function bindViewSpecific(){
         if(repo.mode==='api')repo.applyUnpublicationReceipt(await repo.call('unpublishExam',{examId:b.dataset.id}));
         else await repo.transaction(st=>unpublishExam(st,user,b.dataset.id));
         data=await repo.getState();syncExamPublishButtons(app,byId(data.exams,b.dataset.id));
+        if(ui.view==='builder')await withNavigationLoading(()=>openBuilder(b.dataset.id,ui.builderSectionId));
         return;
       }
       let receipt;
@@ -1124,6 +1130,7 @@ function bindViewSpecific(){
       }
       data=await repo.getState();
       syncExamPublishButtons(app,byId(data.exams,b.dataset.id));
+      if(ui.view==='builder')render();
     }catch(error){showPublishErrors(error);}
     finally{publishingExams.delete(b.dataset.id);if(b.isConnected)b.disabled=false;}
   });
@@ -1137,12 +1144,11 @@ function bindViewSpecific(){
     if(!await flushBuilderDraft())return;
     const exam=byId(data.exams,ui.builderExamId),skill=b.dataset.skill;
     if(!exam||!skill)return;
-    openSkillSettings({exam,skill,onSave:async({timeMinutes,flows})=>{
+    openSkillSettings({exam,skill,onSave:async({timeMinutes})=>{
       await repo.transaction(st=>{
         const current=byId(st.exams,exam.id);
         updateExam(st,user,exam.id,{
           settings:{skillSettings:{...(current.settings?.skillSettings||{}),[skill]:{...(current.settings?.skillSettings?.[skill]||{}),timeMinutes}}},
-          ...(flows.size?{sections:current.sections.map(section=>flows.has(section.id)?{...section,audioFlow:flows.get(section.id)}:section)}:{})
         });
       });
       data=await repo.getState();render();
@@ -1249,21 +1255,27 @@ function clearBuilderEditUrl(){
 }
 
 async function openBuilder(id,sectionId=null){
+  const navigation={view:ui.view,tab:ui.adminTab};
+  const stillHere=()=>ui.view===navigation.view&&ui.adminTab===navigation.tab;
   if(repo.mode==='api'&&!await act(async()=>{await repo.ensureFull();return true;},null,{rerender:false}))return false;
+  if(!stillHere())return false;
   let exam=byId(data.exams,id);
   if(!exam||isStudent(user))return;
-  if(repo.mode==='api'&&canEditExam(user,exam)){
+  if(repo.mode==='api'&&canEditExam(user,exam)&&exam.status!=='published'){
     const prepared=await act(()=>repo.call('prepareExamForEditing',{examId:id}),null,{rerender:false});
     if(!prepared)return false;
-    await repo.reload();data=await repo.getState();exam=byId(data.exams,id);
+    if(prepared.changed)await repo.ensureFull({refresh:true});
+    data=await repo.getState();exam=byId(data.exams,id);
+    if(!stillHere())return false;
   }
-  const changed=canEditExam(user,exam)?await repo.transaction(st=>{
+  const changed=canEditExam(user,exam)&&exam.status!=='published'?await repo.transaction(st=>{
     const detached=detachLockedDraftQuestions(st,user,id);
     const migrated=ensureExamMatchesConfiguredSpec(st,user,id);
     const populated=repo.mode==='local'&&populateGoetheA1TestFixture(st,user,id);
     return detached||migrated||populated;
   }):false;
   if(changed){data=await repo.getState();exam=byId(data.exams,id);}
+  if(!stillHere())return false;
   ui.builderExamId=id;
   ui.builderSectionId=resolveBuilderSection(exam,sectionId);
   ui.view='builder';
@@ -1275,6 +1287,14 @@ async function openBuilder(id,sectionId=null){
 function bindBuilder(){
   const exam=byId(data.exams,ui.builderExamId);
   if(!exam)return;
+  app.querySelectorAll('[data-part-display]').forEach(button=>button.onclick=async()=>{
+    if(!await flushBuilderDraft())return;
+    await act(()=>repo.transaction(st=>{
+      const current=byId(st.exams,exam.id),section=current.sections.find(s=>s.id===ui.builderSectionId);
+      const patch=button.dataset.partDisplay==='layout'?{displaySplit:!partUsesSplit(current,section)}:{audioFlow:{segmentRepeat:Number(effectiveAudioPolicy(section).segmentRepeat)>1?1:2}};
+      updateSection(st,user,current.id,section.id,patch);
+    }));
+  });
   app.querySelectorAll('[data-action="edit-part-template"]').forEach(button=>{
     const section=exam.sections.find(item=>item.id===ui.builderSectionId);
     if(!hasPartTemplate(section?.templateType)){button.disabled=true;button.textContent='Template phần này chưa cấu hình';}

@@ -1,5 +1,9 @@
 // Shared outline icons: the control owns its border, size and interaction state.
 const paths={
+  twoPages:'<rect x="2" y="4" width="9" height="16" rx="1"/><rect x="13" y="4" width="9" height="16" rx="1"/>',
+  onePage:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8"/>',
+  repeat:'<path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4M21 13v3a2 2 0 0 1-2 2H3"/>',
+  playOnce:'<path d="m8 4 12 8-12 8V4Z"/>',
   preview:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
   share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m9 10 6-3M9 14l6 3"/>',
   type:'<path d="M4 6V4h16v2M12 4v16M8 20h8"/>',

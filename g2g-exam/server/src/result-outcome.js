@@ -18,12 +18,16 @@ export async function finalizeOutcome(client,row,exam,marks,actor,{notificationI
   }
   const patch={result:summary.result,totalScore:summary.total,resultSummary:summary,promotion};
   const settings=await getSettings(client);
-  const vars={exam:row.public_data.examTitle||exam.title,student:profile.name||row.public_data.studentName||'học viên',score:String(summary.total),result:summary.result,url:settings.general.publicUrl,
+  const resultUrl=new URL(settings.general.publicUrl);
+  resultUrl.searchParams.set('view','results');resultUrl.searchParams.set('attempt',row.id);
+  const vars={exam:row.public_data.examTitle||exam.title,student:profile.name||row.public_data.studentName||'học viên',score:String(summary.total),result:summary.result,url:resultUrl.toString(),reviewer:actor?.name||row.public_data.reviewerName||'',
     scoreDetails:scoreDetails(summary),passCondition:summary.condition,
     previousLevel:promotion?.fromLevel||'',newLevel:promotion?.toLevel||'',
     promotion:promotion&&summary.passed?`Chúc mừng bạn đã đạt trình độ ${promotion.toLevel}! (${promotion.fromLevel} → ${promotion.toLevel})`:''};
-  let html=settings.email.resultHtml||'',text=settings.email.resultText||'';
-  for(const [key,label] of [['scoreDetails','Điểm từng kỹ năng'],['passCondition','Điều kiện đạt'],['promotion','']]){
+  let html=(settings.email.resultHtml||'').replace(/Đăng nhập để xem chi tiết/g,'Xem chi tiết'),text=(settings.email.resultText||'').replace(/Đăng nhập để xem chi tiết/g,'Xem chi tiết');
+  if(!html.includes('{reviewer}'))html=html.includes('<p><a ')?html.replace('<p><a ','<p>Người chấm: {reviewer}</p><p><a '):html+'<p>Người chấm: {reviewer}</p>';
+  if(!text.includes('{reviewer}'))text=text.includes('Xem chi tiết:')?text.replace('Xem chi tiết:','Người chấm: {reviewer}\n\nXem chi tiết:'):text+'\nNgười chấm: {reviewer}';
+  for(const [key,label] of (vars.promotion?[['promotion','']]:[])){
     if(!html.includes(`{${key}}`))html+=`<div style="margin-top:20px;padding:16px;background:#f3f7f5;border-radius:12px;white-space:pre-line"><strong>${label}</strong><br>{${key}}</div>`;
     if(!text.includes(`{${key}}`))text+=`\n\n${label}\n{${key}}`;
   }

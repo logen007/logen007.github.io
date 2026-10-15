@@ -260,13 +260,13 @@ try{
     assert.match(source,/async function moveAttemptSection\(delta\)[\s\S]*?if\(result\)\{[^}]*render\(\);scrollExamToTop\(\)/);
     assert.match(source,/function showPreviewSection\(index\)[\s\S]*?scrollExamToTop\(\)/);
   });
-  await test('Student exam card shows provider, exact duration and a corner new badge',()=>{
+  await test('Student exam card shows provider, exact duration and a new badge before part counts',()=>{
     const exam={id:'goethe-a1',provider:'GOETHE',level:'A1',title:'Modelltest 1',sections:[{timeMinutes:20,questionIds:[]},{timeMinutes:15,questionIds:[]}]};
     const html=studentExamCardHtml(exam,[],{questions:[]});
     assert.match(html,/class="nhan exam-provider" data-provider="GOETHE">Goethe<\/span>/);
     assert.match(html,/class="nhan exam-level" data-level="A1">A1<\/span>/);
     assert.doesNotMatch(html,/>Goethe A1<\/span>/);
-    assert.match(html,/<div class="exam-card-details"><div class="exam-card-tags">[^]*?<\/div><span class="meta">2 phần · 0 câu<\/span><\/div>/);
+    assert.match(html,/<div class="exam-card-details"><div class="exam-card-tags">[^]*?<\/div><span class="meta"><span class="the-de-new">Mới<\/span>2 phần · 0 câu<\/span><\/div>/);
     const telc=studentExamCardHtml({...exam,provider:'TELC',level:'B2'},[],{questions:[]});
     assert.match(telc,/data-provider="TELC">Telc<\/span>/);
     assert.match(telc,/data-level="B2">B2<\/span>/);
