@@ -16,6 +16,20 @@ const env=()=>({
 const client=()=>{const c=env();if(!c.clientId||!c.clientSecret)throw appError(503,'Chưa cấu hình Google OAuth dành cho Backup.');return new OAuth2Client(c.clientId,c.clientSecret,c.redirect);};
 const admin=async request=>{const user=await currentUser(request);if(user?.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được quản lý Backup.');return user;};
 async function read(){const result=await query('SELECT value_enc FROM secrets WHERE key=$1',[KEY]);return result.rows[0]?JSON.parse(decrypt(result.rows[0].value_enc)):null;}
+export async function uploadBackupArchive(filename,name,sha256){
+  const config=await getBackupDriveCredentials(),oauth=client();oauth.setCredentials({refresh_token:config.refreshToken});
+  const {token}=await oauth.getAccessToken();
+  const {stat}=await import('node:fs/promises'),{createReadStream}=await import('node:fs');
+  const size=(await stat(filename)).size;
+  const init=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name,size,createdTime,description',{
+    method:'POST',headers:{Authorization:`Bearer ${token}`,'content-type':'application/json','X-Upload-Content-Type':'application/gzip','X-Upload-Content-Length':String(size)},
+    body:JSON.stringify({name,parents:[config.folderId],description:'g2g-backup-v2 sha256='+sha256}),signal:AbortSignal.timeout(30000)});
+  const location=init.headers.get('location');
+  if(!init.ok||!location||new URL(location).origin!=='https://www.googleapis.com')throw appError(503,'Không tạo được bản backup trên Drive.');
+  const result=await fetch(location,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'content-length':String(size)},body:createReadStream(filename),duplex:'half',signal:AbortSignal.timeout(1800000)});
+  if(!result.ok)throw appError(503,'Tải bản backup lên Drive thất bại.');
+  return result.json();
+}
 async function save(config,user){await query(`INSERT INTO secrets(key,value_enc,updated_by) VALUES($1,$2,$3) ON CONFLICT(key) DO UPDATE SET value_enc=EXCLUDED.value_enc,updated_by=EXCLUDED.updated_by,updated_at=now()`,[KEY,encrypt(JSON.stringify(config)),user.id]);}
 async function drive(config,method,url,body){
   const oauth=client();oauth.setCredentials({refresh_token:config.refreshToken});
@@ -90,8 +104,12 @@ export async function getBackupDriveCredentials(){
 export async function listBackupFiles(user){
   if(user?.role!=='master')throw appError(403,'Không có quyền.');
   const config=await read();if(!config?.folderId)throw appError(409,'Chưa kết nối Google Drive.');
-  const result=await drive(config,'GET',`/files?q=${encodeURIComponent(`'${config.folderId}' in parents and trashed = false`)}&fields=files(id,name,size,createdTime,mimeType,description)&orderBy=createdTime desc&pageSize=100`);
-  return (result.files||[]).filter(file=>file.mimeType!=='application/vnd.google-apps.folder').map(file=>({...file,size:Number(file.size||0)}));
+  const files=[];let next='';
+  do{
+    const result=await drive(config,'GET',`/files?q=${encodeURIComponent(`'${config.folderId}' in parents and trashed = false`)}&fields=nextPageToken,files(id,name,size,createdTime,mimeType,description)&orderBy=createdTime desc&pageSize=1000`+(next?'&pageToken='+encodeURIComponent(next):''));
+    files.push(...result.files||[]);next=result.nextPageToken||'';
+  }while(next);
+  return files.filter(file=>file.mimeType!=='application/vnd.google-apps.folder').map(file=>({...file,size:Number(file.size||0)}));
 }
 export async function deleteBackupFile(user,id){
   if(user?.role!=='master')throw appError(403,'Không có quyền.');

@@ -98,3 +98,20 @@
 .letter-builder-answer select{width:100px}
 .part-audio-guide{margin:0 0 20px;line-height:1.6}
 @media(max-width:760px){.exam-reading-split{grid-template-columns:minmax(0,1fr);gap:24px}}
+.backup-page{padding:24px}
+.backup-heading,.backup-actions{display:flex;align-items:center;gap:12px}
+.backup-heading{justify-content:space-between;margin-bottom:16px}
+.backup-heading h1,.backup-heading h2{margin:0}
+.backup-item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0;border-top:1px solid var(--line,#ddd)}
+.backup-item p{margin:4px 0;overflow-wrap:anywhere}
+.backup-item>div:first-child{min-width:0}
+.backup-actions{flex-shrink:0}
+.backup-dialog{width:min(500px,calc(100% - 32px));max-height:85dvh;overflow:auto;padding:24px;border:1px solid var(--line,#ddd);border-radius:24px;background:var(--surface,#fff);color:inherit}
+.backup-dialog::backdrop{background:rgba(0,0,0,.35)}
+.backup-dialog [hidden]{display:none!important}
+.backup-form fieldset{border:0;padding:0;margin:24px 0 0;min-width:0}
+.backup-toggle{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.backup-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.backup-form-grid label{display:flex;flex-direction:column;gap:8px;min-width:0}
+.backup-form-grid input{width:100%;min-width:0;box-sizing:border-box}
+@media(max-width:600px){.backup-page{padding:20px}.backup-item{align-items:flex-start;flex-direction:column}.backup-heading{gap:8px}.backup-heading .nut{padding-inline:14px}}

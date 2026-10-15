@@ -135,7 +135,7 @@ repo.subscribe(next=>{
     realtimeRenderTimer=setTimeout(()=>render(),80);
     return;
   }
-  if(['exam','preview-exam','builder','grading-detail'].includes(ui.view)||(ui.view==='admin'&&ui.adminTab==='settings')||document.getElementById('modal')||document.querySelector('.g2g-settings-page')||document.querySelector('[data-name-form]:not([hidden])')||document.activeElement?.matches('[data-student-search]'))return;
+  if(['exam','preview-exam','builder','grading-detail'].includes(ui.view)||(ui.view==='admin'&&['settings','backup'].includes(ui.adminTab))||document.getElementById('modal')||document.querySelector('.g2g-settings-page')||document.querySelector('[data-name-form]:not([hidden])')||document.activeElement?.matches('[data-student-search]'))return;
   clearTimeout(realtimeRenderTimer);
   realtimeRenderTimer=setTimeout(()=>render(),80);
 });

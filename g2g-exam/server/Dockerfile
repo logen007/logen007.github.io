@@ -12,6 +12,7 @@ RUN npm run build:web
 
 FROM node:22-alpine
 
+RUN apk add --no-cache postgresql16-client python3 tar
 WORKDIR /app/server
 COPY server/package.json server/package-lock.json ./
 RUN npm ci --omit=dev

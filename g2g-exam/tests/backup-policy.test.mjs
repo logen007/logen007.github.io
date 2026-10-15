@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {backupDefaults,validateBackupPreferences,backupDue,retainedBackupIds} from '../server/src/backup-policy.js';
+assert.throws(()=>validateBackupPreferences({...backupDefaults,time:'24:00'}));
+assert.throws(()=>validateBackupPreferences({...backupDefaults,dailyCopies:0}));
+assert.throws(()=>validateBackupPreferences({...backupDefaults,enabled:'true'}));
+const p={...backupDefaults,enabled:true};
+assert.equal(backupDue(p,null,new Date('2026-10-15T19:59:00Z')),false);
+assert.equal(backupDue(p,null,new Date('2026-10-15T20:00:00Z')),true);
+assert.equal(backupDue(p,'2026-10-15T20:00:00Z',new Date('2026-10-16T00:00:00Z')),false);
+assert.equal(backupDue(p,'2026-10-14T20:00:00Z',new Date('2026-10-15T20:00:00Z')),true);
+const files=['2026-10-16','2026-10-15','2026-09-15','2026-08-15'].map((date,i)=>({id:String(i),createdTime:date,name:'g2g-'+date+'.tar.gz',description:'g2g-backup-v2 sha256='+'a'.repeat(64)}));
+const {keep}=retainedBackupIds(files,{dailyCopies:1,monthlyCopies:2});
+assert.deepEqual([...keep],['0','2']);
+assert.equal(retainedBackupIds([{...files[0],description:'unrelated'}],p).ordered.length,0);
+console.log('Backup scheduling: Vietnam midnight boundaries, validation, retention and unrelated-file exclusion passed.');
