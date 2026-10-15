@@ -6,6 +6,7 @@ COPY scripts /build/scripts
 COPY src /build/src
 COPY specs /build/specs
 COPY vi.html styles.css enhancements.css media-worker.js /build/
+COPY privacy.html terms.html legal.css /build/
 COPY server/runtime /build/server/runtime
 RUN npm run build:web
 
@@ -19,6 +20,7 @@ WORKDIR /app
 COPY package.json /app/package.json
 RUN mkdir -p /app/public/src /data/uploads
 COPY vi.html styles.css enhancements.css runtime-config.js /app/public/
+COPY privacy.html terms.html legal.css /app/public/
 COPY media-worker.js /app/public/media-worker.js
 RUN cp /app/public/vi.html /app/public/index.html
 COPY src /app/public/src
