@@ -1,5 +1,6 @@
 // Shared outline icons: the control owns its border, size and interaction state.
 const paths={
+  backup:'<path d="M7 18H6a4 4 0 0 1-.6-8A7 7 0 0 1 19 9a4.5 4.5 0 0 1 0 9h-2M12 21V11m-4 4 4-4 4 4"/>',
   twoPages:'<rect x="2" y="4" width="9" height="16" rx="1"/><rect x="13" y="4" width="9" height="16" rx="1"/>',
   onePage:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8"/>',
   repeat:'<path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4M21 13v3a2 2 0 0 1-2 2H3"/>',

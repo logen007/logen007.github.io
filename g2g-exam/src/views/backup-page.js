@@ -4,18 +4,17 @@ import {iconHtml} from '../ui/icons.js';
 import {esc} from '../ui/format.js';
 const dateText=value=>value&&Number.isFinite(Date.parse(value))?new Date(value).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short'}):'—';
 export function backupPageHtml(){return `<section class="backup-page">
- <header class="tieu-de-trang backup-heading"><h1>Backup</h1><div class="backup-actions">
+ <header class="tieu-de-trang backup-heading"><div class="backup-title"><h1>Backup</h1><span data-count></span></div><div class="backup-actions">
  <button class="icon-btn" data-settings title="Cài đặt Backup" aria-label="Cài đặt Backup">${iconHtml('settings')}</button>
- <button class="nut chinh icon-btn" data-now title="Backup ngay" aria-label="Backup ngay" disabled>${iconHtml('upload')}</button></div></header>
- <div class="the backup-panel"><div class="backup-overview"><span data-connection></span><span data-count></span></div>
+ <button class="nut chinh icon-btn" data-now title="Backup ngay" aria-label="Backup ngay" disabled>${iconHtml('backup')}</button></div></header>
  <div class="backup-job" data-job hidden><p data-status role="status" aria-live="polite"></p><progress data-progress aria-label="Backup đang xử lý" hidden></progress>
  <details data-details hidden><summary>Chi tiết</summary><dl data-job-details></dl></details></div>
- <div data-files></div></div></section>`;}
+ <div class="table-wrap backup-table-wrap" role="region" aria-label="Danh sách bản backup" tabindex="0"><table class="bang backup-table" aria-label="Các bản backup trên Google Drive"><thead><tr><th scope="col">Ngày tạo</th><th scope="col">Dung lượng</th><th scope="col">Thao tác</th></tr></thead><tbody data-files></tbody></table></div></section>`;}
 export function backupStatusDetailsHtml(status={}){
- const rows=[['Tác vụ',status.kind==='restore'?'Phục hồi thử':'Backup'],['Trạng thái',status.message],['Bắt đầu',dateText(status.startedAt)],['Kết thúc',status.finishedAt?dateText(status.finishedAt):null],['Backup thành công gần nhất',status.lastBackupAt?dateText(status.lastBackupAt):null],['Bản lưu',status.name],['Bảng đã phục hồi',status.tables],['SHA-256',status.sha256]];
+ const rows=[['Tác vụ',status.kind==='restore'?'Phục hồi thử':'Backup'],['Trạng thái',status.state==='success'?null:status.message],['Bắt đầu',dateText(status.startedAt)],['Kết thúc',status.finishedAt?dateText(status.finishedAt):null],['Backup thành công gần nhất',status.lastBackupAt?dateText(status.lastBackupAt):null],['Bản lưu',status.name],['Bảng đã phục hồi',status.tables],['SHA-256',status.sha256]];
  return rows.filter(([,value])=>value!==undefined&&value!==null&&value!=='').map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(String(value))}</dd></div>`).join('');
 }
-export function backupItemHtml(file){return `<div class="backup-file-info"><strong>${esc(dateText(file.createdTime))}</strong><span title="${esc(file.name)}">${Number.isFinite(Number(file.size))?(Number(file.size)/1048576).toFixed(1)+' MB':'—'}</span></div><div class="backup-actions"><a class="icon-btn" aria-label="Tải xuống ${esc(file.name)}" title="Tải xuống" href="/api/backup/files/${encodeURIComponent(file.id)}/download">${iconHtml('arrowDown')}</a><button class="icon-btn" data-restore title="Phục hồi thử" aria-label="Phục hồi thử ${esc(file.name)}">${iconHtml('repeat')}</button><button class="icon-btn" data-delete title="Xoá bản backup" aria-label="Xoá bản backup ${esc(file.name)}">${iconHtml('trash')}</button></div>`;}
+export function backupItemHtml(file){return `<td title="${esc(file.name)}">${esc(dateText(file.createdTime))}</td><td>${Number.isFinite(Number(file.size))?(Number(file.size)/1048576).toFixed(1)+' MB':'—'}</td><td><div class="hanh-dong-bang backup-actions"><a class="icon-btn" aria-label="Tải xuống ${esc(file.name)}" title="Tải xuống" href="/api/backup/files/${encodeURIComponent(file.id)}/download">${iconHtml('arrowDown')}</a><button class="icon-btn" data-restore title="Phục hồi thử" aria-label="Phục hồi thử ${esc(file.name)}">${iconHtml('repeat')}</button><button class="icon-btn" data-delete title="Xoá bản backup" aria-label="Xoá bản backup ${esc(file.name)}">${iconHtml('trash')}</button></div></td>`;}
 export function backupSettingsHtml(){return `<form class="backup-form"><header class="dau-hop"><h2 id="backup-dialog-title">Cài đặt Backup</h2><button type="button" class="icon-btn" data-close title="Đóng" aria-label="Đóng">${iconHtml('close')}</button></header>
  <section class="backup-google"><div><strong>Google Drive</strong><small data-google>Đang kiểm tra…</small></div><button type="button" class="nut" data-connect disabled>Kết nối</button><button type="button" class="icon-btn" data-disconnect title="Ngắt kết nối Google Drive" aria-label="Ngắt kết nối Google Drive" hidden>${iconHtml('logout')}</button></section>
  <fieldset disabled><label class="backup-toggle"><span>Backup tự động</span><input type="checkbox" name="enabled" role="switch"></label>
@@ -24,7 +23,7 @@ export function backupSettingsHtml(){return `<form class="backup-form"><header c
 export function mountBackupPage(root){
  if(!root?.isConnected)return;root.innerHTML=backupPageHtml();
  const el=s=>root.querySelector(s);let busy=false,jobBusy=false,listSignature;
- const report=e=>{el('[data-job]').hidden=false;el('[data-status]').textContent=e.message||String(e);el('[data-job]').dataset.state=e instanceof Error?'failed':'notice';};
+ const report=e=>{el('[data-job]').hidden=false;el('[data-status]').hidden=false;el('[data-status]').textContent=e.message||String(e);el('[data-job]').dataset.state=e instanceof Error?'failed':'notice';};
  async function load(){
   if(busy||!root.isConnected||document.hidden)return;busy=true;
   try{
@@ -32,10 +31,9 @@ export function mountBackupPage(root){
    if(!root.isConnected)return;
    jobBusy=['queued','running'].includes(status?.state);
    el('[data-now]').disabled=!enabled||!drive.connected||jobBusy;
-   el('[data-connection]').textContent=drive.connected?'Google Drive · Đã kết nối':'Google Drive · Chưa kết nối';
-   el('[data-connection]').dataset.connected=String(drive.connected);
-   const message=status?.message||(!enabled?'Backup chưa sẵn sàng.':!drive.connected?'Mở cài đặt để kết nối Google Drive.':'');
-   el('[data-job]').hidden=!message;el('[data-job]').dataset.state=status?.state||'idle';
+   const message=(status?.state==='success'?'':status?.message)||(!enabled?'Backup chưa sẵn sàng.':!drive.connected?'Mở cài đặt để kết nối Google Drive.':'');
+   el('[data-job]').hidden=!message&&!status?.startedAt;el('[data-job]').dataset.state=status?.state||'idle';
+   el('[data-status]').hidden=!message;
    el('[data-status]').textContent=message;
    el('[data-progress]').hidden=!jobBusy;
    el('[data-details]').hidden=!status?.startedAt;
@@ -48,15 +46,15 @@ export function mountBackupPage(root){
    if(signature===listSignature)return;
    listSignature=signature;
    const body=el('[data-files]');body.replaceChildren();
-   if(!files.length){body.innerHTML='<div class="rong">Chưa có bản backup.</div>';return;}
+   if(!files.length){body.innerHTML='<tr><td colspan="3"><div class="rong">Chưa có bản backup.</div></td></tr>';return;}
    for(const file of files){
-    const card=document.createElement('article');card.className='backup-item';
-    card.innerHTML=backupItemHtml(file);
-    card.querySelector('[data-restore]').disabled=jobBusy||!enabled;
-    card.querySelector('[data-delete]').disabled=jobBusy;
-    card.querySelector('[data-delete]').onclick=()=>confirmAction('Xoá bản backup '+file.name+' khỏi Drive?',async()=>{try{await action('deleteBackupFile',{id:file.id});await load();}catch(e){report(e);}},{confirmLabel:'Xoá',danger:true});
-    card.querySelector('[data-restore]').onclick=()=>confirmAction('Tải bản này và phục hồi thử vào database kiểm tra? Dữ liệu đang chạy được giữ nguyên; database kiểm tra sẽ được dọn sau khi xác minh.',async()=>{try{await action('requestBackupRestore',{id:file.id});report('Đang phục hồi thử…');await load();}catch(e){report(e);}},{confirmLabel:'Phục hồi thử'});
-    body.append(card);
+    const row=document.createElement('tr');
+    row.innerHTML=backupItemHtml(file);
+    row.querySelector('[data-restore]').disabled=jobBusy||!enabled;
+    row.querySelector('[data-delete]').disabled=jobBusy;
+    row.querySelector('[data-delete]').onclick=()=>confirmAction('Xoá bản backup '+file.name+' khỏi Drive?',async()=>{try{await action('deleteBackupFile',{id:file.id});await load();}catch(e){report(e);}},{confirmLabel:'Xoá',danger:true});
+    row.querySelector('[data-restore]').onclick=()=>confirmAction('Tải bản này và phục hồi thử vào database kiểm tra? Dữ liệu đang chạy được giữ nguyên; database kiểm tra sẽ được dọn sau khi xác minh.',async()=>{try{await action('requestBackupRestore',{id:file.id});report('Đang phục hồi thử…');await load();}catch(e){report(e);}},{confirmLabel:'Phục hồi thử'});
+    body.append(row);
    }
   }catch(e){report(e);}finally{busy=false;}
  }

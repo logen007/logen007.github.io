@@ -4,6 +4,14 @@ import {backupPageHtml,backupItemHtml,backupSettingsHtml,backupStatusDetailsHtml
 
 const page=backupPageHtml(),settings=backupSettingsHtml();
 assert.match(page,/tieu-de-trang backup-heading/);
+assert.match(page,/<table class="bang backup-table"/);
+assert.match(page,/<tbody data-files><\/tbody>/);
+assert.equal((page.match(/<th scope="col">/g)||[]).length,3);
+assert.match(page,/role="region" aria-label="Danh sách bản backup" tabindex="0"/);
+assert.ok(!page.includes('the backup-panel'));
+assert.ok(!page.includes('data-connection'));
+const layout=readFileSync(new URL('../src/ui/layout.js',import.meta.url),'utf8');
+assert.match(layout,/\['backup','Backup','backup'\]/);
 assert.match(page,/class="nut chinh icon-btn"[^>]*aria-label="Backup ngay"/);
 assert.ok(!page.includes('<fieldset'));
 assert.ok(!page.includes('name="time"'));
@@ -19,6 +27,7 @@ assert.equal((settings.match(/class="truong"/g)||[]).length,4);
 assert.match(settings,/data-cancel/);
 
 const item=backupItemHtml({id:'a/b',name:'<img onerror="bad">',size:1048576,createdTime:'2026-10-15T20:00:00Z'});
+assert.equal((item.match(/<td[ >]/g)||[]).length,3);
 assert.match(item,/16\/10\/26/);
 assert.match(item,/03:00/);
 assert.match(item,/1\.0 MB/);
@@ -38,6 +47,8 @@ assert.match(source,/\[data-close\]'\)\.focus\(\)/);
 const css=readFileSync(new URL('../enhancements.css',import.meta.url),'utf8');
 assert.match(css,/\.backup-page \[hidden\],\.backup-dialog \[hidden\]/);
 assert.match(css,/\.backup-page \.icon-btn,\.backup-dialog \.icon-btn\{--editor-control:44px\}/);
+assert.match(css,/\.backup-table-wrap\{max-width:100%;overflow-x:auto\}/);
+assert.ok(!css.includes('.backup-item'));
 console.log('Backup UI: compact layout, popup, real status, escaping and accessibility passed');
 
 // Exercise async status updates without opening a browser or making API requests.
@@ -50,7 +61,7 @@ let live={drive:{connected:true,email:'private@example.com'},enabled:true,status
 const files=[{id:'one',name:'g2g-test.tar.gz',size:100,createdTime:'2026-10-15T20:00:00Z'}];
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 try{
- globalThis.document={hidden:false,createElement:()=>node()};
+ globalThis.document={hidden:false,createElement:tag=>({...node(),tagName:tag})};
  globalThis.setTimeout=fn=>{nextPoll=fn;return 1;};
  globalThis.fetch=async url=>({ok:true,json:async()=>url.endsWith('getBackupStatus')?live:{files}});
  mountBackupPage(root);await settle();
@@ -58,8 +69,8 @@ try{
  assert.equal(el('[data-now]').disabled,false);
  assert.equal(el('[data-progress]').hidden,true);
  assert.equal(el('[data-job]').hidden,true);
- assert.ok(!el('[data-connection]').textContent.includes('private@'));
  const first=body.children[0],replacements=body.replacements;
+ assert.equal(first.tagName,'tr');
  await nextPoll();assert.equal(body.children[0],first);assert.equal(body.replacements,replacements);
  live={...live,status:{state:'running',kind:'backup',startedAt:'2026-10-15T20:00:00Z',message:'Đang tải lên Drive…'}};
  await nextPoll();
@@ -73,6 +84,16 @@ try{
  assert.equal(el('[data-job]').dataset.state,'failed');
  assert.equal(el('[data-status]').textContent,'Không thể kết nối Drive.');
  assert.equal(el('[data-details]').open,true);
+ live={...live,status:{state:'success',startedAt:'2026-10-15T20:00:00Z',message:'Backup đã lên Drive và phục hồi thử thành công.',tables:32}};
+ await nextPoll();
+ assert.equal(el('[data-status]').hidden,true);
+ assert.equal(el('[data-status]').textContent,'');
+ assert.ok(!el('[data-job-details]').innerHTML.includes('Backup đã lên Drive'));
+ assert.equal(el('[data-details]').hidden,false);
+ live={...live,drive:{connected:false}};
+ await nextPoll();
+ assert.match(body.innerHTML,/<tr><td colspan="3">/);
+ assert.equal(el('[data-now]').disabled,true);
  globalThis.document.hidden=true;const before=body.replacements;
  await nextPoll();assert.equal(body.replacements,before);
  console.log('Backup UI: polling preserves nodes and disclosure, real running/failure states and action locks passed');

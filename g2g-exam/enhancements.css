@@ -98,22 +98,25 @@
 .letter-builder-answer select{width:100px}
 .part-audio-guide{margin:0 0 20px;line-height:1.6}
 @media(max-width:760px){.exam-reading-split{grid-template-columns:minmax(0,1fr);gap:24px}}
-/* Backup reuses the catalog heading, shared controls and one quiet list surface. */
+/* Backup reuses the catalog heading, table and shared controls. */
 .backup-page .backup-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:16px;margin-bottom:20px}
 .backup-heading h1{margin:0;min-width:0}
 .backup-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .backup-page .icon-btn,.backup-dialog .icon-btn{--editor-control:44px}
-.backup-overview{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--phu);font-size:13px;padding-bottom:20px}
-.backup-overview [data-count]{white-space:nowrap}
-.backup-overview [data-connection]{min-width:0}
-.backup-overview [data-connected=true]::before{content:'';display:inline-block;width:6px;height:6px;margin-right:8px;border-radius:50%;background:var(--xanh)}
-.backup-item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-top:1px solid var(--vien)}
-.backup-item:last-child{padding-bottom:0}
-.backup-file-info{display:grid;gap:4px;min-width:0}
-.backup-file-info strong{font-size:14px;font-weight:500;font-variant-numeric:tabular-nums}
-.backup-file-info span{color:var(--phu);font-size:13px}
+.backup-title{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 12px}
+.backup-title [data-count]{color:var(--phu);font-size:13px;white-space:nowrap}
+.backup-page{min-width:0;max-width:100%}
+.backup-table-wrap{max-width:100%;overflow-x:auto}
+.backup-table{min-width:480px}
+.backup-table th,.backup-table td:not([colspan]){white-space:nowrap}
+.backup-table td{font-variant-numeric:tabular-nums}
+.backup-table th:nth-child(2),.backup-table td:nth-child(2){text-align:right}
+.backup-table th:last-child,.backup-table td:last-child:not([colspan]){width:1%;text-align:right}
+.backup-table .backup-actions{justify-content:flex-end;flex-wrap:nowrap}
 .backup-job{margin:0 0 20px;padding:16px;border-radius:var(--r-sm);background:var(--surface-muted);font-size:13px}
 .backup-job p{margin:0;overflow-wrap:anywhere}
+.backup-job[data-state=success]{background:transparent;padding:0}
+.backup-job[data-state=success] details{margin-top:0}
 .backup-job[data-state=failed] [data-status],.backup-job[data-state=interrupted] [data-status]{color:var(--do)}
 .backup-job progress{display:block;width:100%;height:6px;margin-top:12px;accent-color:var(--brand-primary)}
 .backup-job details{margin-top:12px;color:var(--phu)}
@@ -140,5 +143,4 @@
 .backup-footer{display:flex;justify-content:flex-end;gap:12px;margin-top:24px}
 .backup-form [data-error]{color:var(--do);font-size:13px;margin:16px 0 0}
 .backup-form [data-error]:empty{display:none}
-@media(max-width:600px){.backup-panel{padding:20px}.backup-item{gap:12px}.backup-actions{gap:4px}.backup-dialog{padding:24px 20px}.backup-job dl>div{grid-template-columns:1fr;gap:4px}}
-@media(max-width:360px){.backup-item{align-items:flex-start;flex-direction:column}.backup-item .backup-actions{align-self:flex-end}.backup-overview{align-items:flex-start;flex-direction:column;gap:4px}}
+@media(max-width:600px){.backup-actions{gap:4px}.backup-dialog{padding:24px 20px}.backup-job dl>div{grid-template-columns:1fr;gap:4px}}
