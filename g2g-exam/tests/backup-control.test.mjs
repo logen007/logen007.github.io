@@ -1,43 +1,52 @@
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,readFile,rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
 import {registerHooks} from 'node:module';
-import {writeStatus} from '../scripts/backup/status.mjs';
-import {writeHistory} from '../scripts/backup/history.mjs';
-const directory=await mkdtemp(join(tmpdir(),'g2g-control-'));
-await mkdir(join(directory,'requests'));
-process.env.BACKUP_CONTROL_DIR=directory;
-process.env.BACKUP_RUNNER_ENABLED='false';
-globalThis.__backupConnected=true;
+let connected=true,busy=false,preferences,job={state:'idle'},lastWrite;
+const jobs=[];
+globalThis.__backupControlTest={
+ async query(sql,args){lastWrite={sql,args};preferences=JSON.parse(args[0]);return {rows:[]};},
+ drive:async()=>({connected}),files:async()=>[{id:'owned-backup'}],
+ preferences:async()=>preferences||{enabled:false,time:'03:00',intervalDays:1,dailyCopies:7,monthlyCopies:1},
+ status:async()=>job,
+ async start(kind,id){
+  if(process.env.BACKUP_RUNNER_ENABLED!=='true')throw Object.assign(Error('Disabled'),{statusCode:503});
+  if(busy)throw Object.assign(Error('Busy'),{statusCode:409});
+  busy=true;jobs.push({kind,id});job={state:'running'};return {queued:true};
+ }
+};
+const fake=code=>({shortCircuit:true,url:'data:text/javascript,'+encodeURIComponent(code)});
 const hooks=registerHooks({resolve(specifier,ctx,next){
  if(ctx.parentURL?.endsWith('/backup-control.js')){
-  if(specifier==='./db.js')return {shortCircuit:true,url:'data:text/javascript,export const appError=(statusCode,message)=>Object.assign(new Error(message),{statusCode});'};
-  if(specifier==='./backup-google.js')return {shortCircuit:true,url:'data:text/javascript,export const backupDriveStatus=async()=>({connected:globalThis.__backupConnected});'};
+  const t='globalThis.__backupControlTest';
+  if(specifier==='./db.js')return fake(`export const query=(...args)=>${t}.query(...args),appError=(statusCode,message)=>Object.assign(Error(message),{statusCode});`);
+  if(specifier==='./backup-google.js')return fake(`export const backupDriveStatus=()=>${t}.drive(),listBackupFiles=()=>${t}.files();`);
+  if(specifier==='./backup-job.js')return fake(`export const preferences=()=>${t}.preferences(),jobStatus=()=>${t}.status(),startBackupJob=(...args)=>${t}.start(...args);`);
  }
  return next(specifier,ctx);
 }});
+const oldEnabled=process.env.BACKUP_RUNNER_ENABLED;
 try{
  const {backupAction}=await import('../server/src/backup-control.js');
- const master={role:'master'};
- await assert.rejects(backupAction({role:'teacher'},'getBackupStatus'),e=>e.statusCode===403);
+ const master={id:'master',role:'master'};
+ for(const name of ['getBackupStatus','getBackupPreferences','saveBackupPreferences','runBackupNow','requestBackupRestore'])await assert.rejects(backupAction({role:'teacher'},name),e=>e.statusCode===403);
+ process.env.BACKUP_RUNNER_ENABLED='false';
  await assert.rejects(backupAction(master,'runBackupNow'),e=>e.statusCode===503);
- process.env.BACKUP_RUNNER_ENABLED='true';
- globalThis.__backupConnected=false;
+ process.env.BACKUP_RUNNER_ENABLED='true';connected=false;
  await assert.rejects(backupAction(master,'runBackupNow'),e=>e.statusCode===409);
- globalThis.__backupConnected=true;
+ connected=true;
+ await assert.rejects(backupAction(master,'requestBackupRestore',{id:'foreign-backup'}),e=>e.statusCode===404);
  const results=await Promise.allSettled([backupAction(master,'runBackupNow'),backupAction(master,'runBackupNow')]);
  assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
- assert.equal((await backupAction(master,'getBackupStatus')).status.state,'queued');
- assert.ok(await readFile(join(directory,'requests','request'),'utf8'));
- await rm(join(directory,'requests','request'));
- const now=new Date().toISOString();
- await writeStatus(directory,{state:'running',updatedAt:now,startedAt:now});
- await assert.rejects(backupAction(master,'runBackupNow'),e=>e.statusCode===409);
- await writeStatus(directory,{state:'success',updatedAt:now,startedAt:now,finishedAt:now});
- await writeHistory(directory,[{name:'g2g-20261014T030000Z.tar.gz.age',type:'daily',sha256:'a'.repeat(64),size:123}]);
- const status=await backupAction(master,'getBackupStatus');
- assert.equal(status.latest.size,123);assert.equal(status.history[0].sha256,'a'.repeat(64));
- assert.doesNotMatch(JSON.stringify(status),/rclone.conf|refreshToken/);
- console.log('Backup API: permissions, disabled gate, exclusive queue, running guard and verified history passed.');
-}finally{hooks.deregister();delete globalThis.__backupConnected;await rm(directory,{recursive:true,force:true});}
+ assert.equal((await backupAction(master,'getBackupStatus')).status.state,'running');
+ busy=false;await backupAction(master,'requestBackupRestore',{id:'owned-backup'});
+ assert.deepEqual(jobs.at(-1),{kind:'restore',id:'owned-backup'});
+ const prefs={enabled:false,time:'04:30',intervalDays:2,dailyCopies:5,monthlyCopies:2};
+ await backupAction(master,'saveBackupPreferences',prefs);
+ assert.equal(lastWrite.args[1],'master');
+ assert.equal((await backupAction(master,'getBackupPreferences')).preferences.time,'04:30');
+ await assert.rejects(backupAction(master,'saveBackupPreferences',{...prefs,intervalDays:0}),e=>e.statusCode===400);
+ await assert.rejects(backupAction(master,'unknown'),e=>e.statusCode===404);
+ console.log('Backup API: master permissions, runner gate, Drive ownership, exclusive jobs and validated preferences passed');
+}finally{
+ hooks.deregister();delete globalThis.__backupControlTest;
+ if(oldEnabled===undefined)delete process.env.BACKUP_RUNNER_ENABLED;else process.env.BACKUP_RUNNER_ENABLED=oldEnabled;
+}

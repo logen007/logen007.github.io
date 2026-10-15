@@ -25,6 +25,9 @@ jobs:
       - name: Check R2 settings and VPS fallback
         working-directory: g2g-exam
         run: npm run test:r2
+      - name: Check Backup API, job progress and UI
+        working-directory: g2g-exam
+        run: node tests/backup-control.test.mjs && node tests/backup-policy.test.mjs && node tests/backup-progress.test.mjs && node tests/backup-page.test.mjs
       - name: Install isolated SQL test runtime
         run: npm install --prefix "$RUNNER_TEMP/g2g-test-db" --no-save --ignore-scripts @electric-sql/pglite@0.5.8
       - name: Check exam codes and promotions against SQL
