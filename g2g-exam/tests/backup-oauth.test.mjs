@@ -25,7 +25,8 @@ const hooks=registerHooks({resolve(specifier,ctx,next){
 const originalFetch=globalThis.fetch;
 process.env.BACKUP_GOOGLE_CLIENT_ID='test-client';
 process.env.BACKUP_GOOGLE_CLIENT_SECRET='test-secret';
-globalThis.fetch=async url=>({ok:true,json:async()=>url.includes('userinfo')?{email:'admin@example.test',email_verified:true}:url.includes('/files?q=')?{files:[]}:{id:'folder-id'}});
+let revokedAccess=false;
+globalThis.fetch=async url=>({ok:!revokedAccess,json:async()=>url.includes('userinfo')?{email:'admin@example.test',email_verified:true}:url.includes('/files?q=')?{files:[]}:{id:'folder-id',mimeType:'application/vnd.google-apps.folder'}});
 try{
  const {registerBackupGoogleRoutes,backupDriveStatus}=await import('../server/src/backup-google.js');
  await registerBackupGoogleRoutes({get:(p,fn)=>routes.set(p,fn),post:(p,fn)=>routes.set(p,fn)});
@@ -45,6 +46,10 @@ try{
  assert.equal(status.folderId,'folder-id');
  assert.equal(status.connected,true);
  assert.doesNotMatch(JSON.stringify(status),/private-refresh|private-access|test-secret/);
+ revokedAccess=true;
+ const expired=await backupDriveStatus(master);
+ assert.equal(expired.connected,false);assert.equal(expired.needsReconnect,true);
+ revokedAccess=false;
  await assert.rejects(backupDriveStatus({role:'teacher'}),e=>e.statusCode===403);
  await routes.get('/api/backup/google/disconnect')({user:master});
  assert.equal(revoked,true);assert.equal((await backupDriveStatus(master)).connected,false);

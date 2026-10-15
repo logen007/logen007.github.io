@@ -27,6 +27,7 @@ import {r2Settings} from './r2-settings.js';
 import {registerMediaDeliveryRoutes} from './media-routes.js';
 import {APP_VERSION} from '../../src/release.js';
 import {registerBackupGoogleRoutes} from './backup-google.js';
+import {withMediaMutation} from './media-backup-lock.js';
 import {startWritingAiWorker} from './writing-ai-queue.js';
 import {startResultEmailWorker} from './actions/grading.js';
 
@@ -137,8 +138,10 @@ async function saveUpload(request,{kind,maxBytes,mimePrefix,defaultExt},user=nul
     :`${Date.now()}-${randomUUID()}${ext||defaultExt}`;
   const dest=path.join(uploadDir,name);let size=0;
   part.file.on('data',chunk=>{size+=chunk.length;if(size>maxBytes)part.file.destroy(appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`));});
-  try{await pipeline(part.file,createWriteStream(dest,{flags:'wx'}));}catch(error){await fs.rm(dest,{force:true});throw error;}
-  if(part.file.truncated||size>maxBytes){await fs.rm(dest,{force:true});throw appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`);}
+  await withMediaMutation(async()=>{
+    try{await pipeline(part.file,createWriteStream(dest,{flags:'wx'}));}catch(error){await fs.rm(dest,{force:true});throw error;}
+    if(part.file.truncated||size>maxBytes){await fs.rm(dest,{force:true});throw appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`);}
+  });
   app.log.info({user:user.id,file:name,kind},'media uploaded');return {url:`/uploads/${name}`};
 }
 

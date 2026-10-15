@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
+import {withMediaMutation} from './media-backup-lock.js';
 
 export const validMediaName=name=>typeof name==='string'&&/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)&&name.length<=240;
 const fingerprint=stat=>`${stat.size}:${stat.mtimeMs}`;
@@ -49,9 +50,11 @@ export function createMediaMirror({uploadDir,store,logger=console,namespace='def
         status.syncedFiles++;status.syncedBytes+=stat.size;status.pendingFiles=Math.max(0,status.pendingFiles-1);
       }
       if(changed){
-        await fs.mkdir(manifestDir,{recursive:true});
-        await fs.writeFile(manifestFile+'.tmp',JSON.stringify(entries),{mode:0o600});
-        await fs.rename(manifestFile+'.tmp',manifestFile);
+        await withMediaMutation(async()=>{
+          await fs.mkdir(manifestDir,{recursive:true});
+          await fs.writeFile(manifestFile+'.tmp',JSON.stringify(entries),{mode:0o600});
+          await fs.rename(manifestFile+'.tmp',manifestFile);
+        });
       }
       if(!stopped)status.lastSuccessAt=new Date().toISOString();
     }catch{status.error='Đồng bộ chưa hoàn tất; VPS vẫn phục vụ. Hệ thống sẽ thử lại ở lượt quét sau.';logger.warn?.('R2 mirror incomplete; local files remain available and next scan will retry.');}

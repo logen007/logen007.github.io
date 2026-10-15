@@ -30,7 +30,7 @@ async function drive(config,method,url,body){
 }
 async function ensureFolder(config){
   if(config.folderId)return config.folderId;
-  const search=await drive(config,'GET',"/files?q="+encodeURIComponent("name = 'G2G Exam' and mimeType = 'application/vnd.google-apps.folder' and trashed = false")+"&fields=files(id,name)&page_size=20");
+  const search=await drive(config,'GET',"/files?q="+encodeURIComponent("name = 'G2G Exam' and mimeType = 'application/vnd.google-apps.folder' and trashed = false")+"&fields=files(id,name)&pageSize=20");
   const id=search.files?.[0]?.id;
   if(id)return id;
   const folder=await drive(config,'POST','/files?fields=id',{name:'G2G Exam',mimeType:'application/vnd.google-apps.folder'});
@@ -39,7 +39,12 @@ async function ensureFolder(config){
 export async function backupDriveStatus(user){
   if(user?.role!=='master')throw appError(403,'Không có quyền.');
   const config=await read();
-  return {connected:Boolean(config?.refreshToken),email:config?.email||'',folderId:config?.folderId||'',oauthConfigured:Boolean(env().clientId&&env().clientSecret)};
+  let accessible=false;
+  if(config?.refreshToken&&config.folderId)try{
+    const folder=await drive(config,'GET',`/files/${encodeURIComponent(config.folderId)}?fields=id,mimeType,trashed`);
+    accessible=folder.trashed!==true&&folder.mimeType==='application/vnd.google-apps.folder';
+  }catch{/* Revoked access must not look like a working connection. */}
+  return {connected:accessible,needsReconnect:Boolean(config?.refreshToken)&&!accessible,email:config?.email||'',folderId:config?.folderId||'',oauthConfigured:Boolean(env().clientId&&env().clientSecret)};
 }
 export async function registerBackupGoogleRoutes(app){
   app.get('/api/backup/google/connect',async(request,reply)=>{

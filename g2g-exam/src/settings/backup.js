@@ -24,8 +24,9 @@ export function bindBackupSettings(){
       if(status?.state==='queued')last.textContent='Đang chờ backup…';
       const list=root.querySelector('#sBackupHistory');list.replaceChildren();
       for(const item of history||[]){const p=document.createElement('p');p.textContent=(item.type==='monthly'?'Bản 30 ngày':'Hằng ngày')+' · '+item.name+' · '+(item.size/1048576).toFixed(1)+' MB';p.title='SHA-256: '+item.sha256;list.append(p);}
-      connect.hidden=c.connected;disconnect.hidden=!c.connected;
-      report(c.connected?`Đã kết nối: ${c.email||'Google Drive'} · Thư mục G2G Exam`:c.oauthConfigured?'Chưa kết nối Google Drive.':'Chưa cấu hình OAuth Backup trên máy chủ.');
+      connect.hidden=c.connected;disconnect.hidden=!c.connected&&!c.needsReconnect;
+      connect.textContent=c.needsReconnect?'Kết nối lại Google Drive':'Kết nối Google Drive';
+      report(c.connected?`Đã kết nối: ${c.email||'Google Drive'} · Thư mục G2G Exam`:c.needsReconnect?'Quyền Google Drive đã hết hạn hoặc không còn truy cập được thư mục. Hãy kết nối lại.':c.oauthConfigured?'Chưa kết nối Google Drive.':'Chưa cấu hình OAuth Backup trên máy chủ.',Boolean(c.needsReconnect));
       connect.disabled=!c.oauthConfigured;
     }catch(error){report(error.message,true);root.querySelector('#sBackupNow').disabled=true;}finally{loading=false;}
   }

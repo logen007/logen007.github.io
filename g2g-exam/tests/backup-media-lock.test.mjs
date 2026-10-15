@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {withMediaMutation,MEDIA_BACKUP_LOCK} from '../server/src/media-backup-lock.js';
+const calls=[];let released=0,allowed=true,writes=0;
+const connect=async()=>({query:async(sql,args)=>{calls.push([sql,args]);return {rows:[{locked:allowed}]};},release:()=>released++});
+await withMediaMutation(()=>writes++,{enabled:true,connect});
+assert.equal(writes,1);assert.equal(released,1);assert.deepEqual(calls[0][1],MEDIA_BACKUP_LOCK);
+assert.match(calls[1][0],/unlock_shared/);
+allowed=false;calls.length=0;
+await assert.rejects(withMediaMutation(()=>writes++,{enabled:true,connect}),e=>e.statusCode===503);
+assert.equal(writes,1);assert.equal(calls.length,1);assert.equal(released,2);
+allowed=true;
+await assert.rejects(withMediaMutation(()=>{throw Error('write failed');},{enabled:true,connect}),/write failed/);
+assert.equal(released,3);assert.match(calls.at(-1)[0],/unlock_shared/);
+console.log('Media barrier: blocks writes during snapshot and releases lock on every exit.');

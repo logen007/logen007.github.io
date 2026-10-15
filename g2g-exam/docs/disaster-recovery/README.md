@@ -1,10 +1,12 @@
-# G2G Exam — Backup & Disaster Recovery (work in progress)
+# G2G Exam — Backup & Disaster Recovery
 
-Current candidate: v12 integration. Start with ACCEPTANCE.md for current state,
-INSTALL.md for prerequisites and RESTORE.md for the recovery procedure.
-The older outstanding-work list below describes the original prototype.
+Candidate implementation for G2G Exam only. Start with ACCEPTANCE.md for the
+current gates, INSTALL.md for host prerequisites, and RESTORE.md for the
+operator/AI recovery procedure.
 
-> This branch is a **foundation**, not a production-ready integration. Do not enable unattended backups or assume disaster recovery is complete until a real restore drill passes.
+> An isolated PostgreSQL 16 + age + local-Rclone restore drill has passed.
+> Google Drive, the production VPS permissions, and production-data recovery
+> are still unverified. Do not enable the systemd timer yet.
 
 ## Architecture
 
@@ -17,9 +19,9 @@ The older outstanding-work list below describes the original prototype.
 
 Ubuntu with `bash`, `postgresql-client` (pg_dump compatible with server), `age`, `rclone`, `tar`, `sha256sum`. Rclone must be configured with a private Google OAuth client and a remote named `gdrive`.
 
-Store `BACKUP_AGE_RECIPIENT` and Rclone OAuth credentials **outside** the database and backups, with restrictive file permissions. Preserve these recovery secrets offline; without the password encrypted backups cannot be recovered.
+Store `BACKUP_AGE_RECIPIENT` and Rclone OAuth credentials **outside** the database and backups, with restrictive file permissions. Preserve the age private identity offline; without that identity encrypted backups cannot be recovered.
 
-Example manual run (not yet automated):
+Example manual run (only after the production gates):
 
 ```bash
 export DATABASE_URL='postgresql://...'
@@ -39,14 +41,12 @@ pg_restore --list ./staging/database.dump
 
 **Stop here for human/AI verification.** Provision a fresh database, match application commit/schema and required secrets, then import using `pg_restore` only after explicit approval. Uploads should be restored into a new application-specific volume, not a shared VPS directory. Validate health, login, exam questions, attempts, media, and R2 before switching DNS/Traefik.
 
-## Outstanding production work
+## Current production gates
 
-1. Wire master-admin-only Backup settings and Google OAuth with secure token storage.
-2. Add scheduler with lock, persisted job statuses, manual trigger and dashboard status.
-3. Inventory all deployment secrets/configuration, exclude credentials that must not be copied, and provide a safe encrypted export strategy.
-4. Add application-level tests and a full restore drill on an isolated instance.
-5. Validate 30-day retention behavior, upload failure recovery, and correct handling of database/media consistency.
-6. Confirm volume mounts and backup utilities in the actual VPS runtime before enabling.
+The app integration includes master-admin control/status, Google OAuth flow,
+systemd templates, 7-daily/1-monthly retention, a media-write barrier and an
+isolated restore drill. The remaining gates are a real Drive upload/download
+and a real VPS permission + isolated restore check. See ACCEPTANCE.md.
 
 ## Encryption key setup
 
@@ -54,4 +54,5 @@ Install `age` on both backup and recovery hosts. On a trusted administrator mach
 
 The restore script requires `BACKUP_AGE_IDENTITY=/path/to/private-identity.txt`. The backup server does not need the private identity.
 
-**Important:** Current scripts have not passed an isolated restore drill. Do not run them as a production backup service yet.
+**Important:** The isolated drill is not a production approval. The backup host
+must receive only the public recipient; keep the private identity off the VPS.

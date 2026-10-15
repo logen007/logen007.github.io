@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {withMediaMutation} from './media-backup-lock.js';
 
 const UPLOAD_RE=/\/uploads\/([A-Za-z0-9._-]+)/g;
 let lastStatus={lastRunAt:null,lastSuccessAt:null,error:null,scanned:0,deleted:0,deletedBytes:0,referenced:0};
@@ -39,6 +40,10 @@ export function getMediaGarbageCollectionStatus(){return {...lastStatus};}
 
 export async function runMediaGarbageCollection({uploadDir,graceHours=Number(process.env.MEDIA_GC_GRACE_HOURS||24),logger=console,referenceLoader=referencedUploadNames}={}){
   if(process.env.MEDIA_GC_ENABLED==='false')return {disabled:true,scanned:0,deleted:0};
+  return withMediaMutation(()=>collectMedia({uploadDir,graceHours,logger,referenceLoader}));
+}
+
+async function collectMedia({uploadDir,graceHours,logger,referenceLoader}){
   const root=path.resolve(uploadDir||process.env.UPLOAD_DIR||'/data/uploads');
   const graceMs=Math.max(1,Number(graceHours)||24)*60*60*1000;
   const cutoff=Date.now()-graceMs;

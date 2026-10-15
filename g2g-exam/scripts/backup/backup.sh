@@ -21,32 +21,20 @@ flock -n 9 || { echo 'Backup already running' >&2; exit 75; }
 work="$(mktemp -d "${BACKUP_WORKDIR%/}/g2g-backup.XXXXXXXX")"
 trap 'rm -rf -- "$work"' EXIT
 mkdir -m 700 "$work/payload"
-# Compare original media inventory before and after dump/copy to reject
-# snapshots created while uploads were added, removed, or changed.
-# Do not start a dump when deployment configuration is unsafe.
-node "$HERE/validate-deployment.mjs" "$BACKUP_DEPLOY_DIR"
-node "$HERE/media-inventory.mjs" "$UPLOAD_DIR" "$work/media-before.json"
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 file="g2g-${stamp}.tar.gz.age"
 node "$HERE/runner-status.mjs" "$BACKUP_CONTROL_DIR" running || true
 fail(){ node "$HERE/runner-status.mjs" "$BACKUP_CONTROL_DIR" failed || true; }
 trap 'fail; rm -rf -- "$work"' ERR
-pg_dump --dbname="$DATABASE_URL" --format=custom --file="$work/payload/database.dump"
-pg_restore --list "$work/payload/database.dump" >/dev/null
-mkdir -m 700 "$work/payload/uploads"
-cp -a "$UPLOAD_DIR"/. "$work/payload/uploads"/
-node "$HERE/media-inventory.mjs" "$UPLOAD_DIR" "$work/media-after.json"
-node "$HERE/compare-inventory.mjs" "$work/media-before.json" "$work/media-after.json"
-mkdir -m 700 "$work/payload/deployment"
-node "$HERE/validate-deployment.mjs" "$BACKUP_DEPLOY_DIR"
-cp -a "$BACKUP_DEPLOY_DIR"/. "$work/payload/deployment"/
-node "$HERE/make-manifest.mjs" "$work/payload" "$BACKUP_GIT_COMMIT"
-node "$HERE/verify-staging.mjs" "$work/payload" >/dev/null
-node "$HERE/verify-media-copy.mjs" "$work/media-after.json" "$work/payload/uploads"
-# Detect uploads that changed while the staged copy and manifest were built.
-node "$HERE/media-inventory.mjs" "$UPLOAD_DIR" "$work/media-final.json"
-node "$HERE/compare-inventory.mjs" "$work/media-after.json" "$work/media-final.json"
-tar -czf "$work/archive.tar.gz" -C "$work/payload" .
+if [[ "${BACKUP_MEDIA_GUARD_ENABLED:-false}" == true ]]; then
+  node "$HERE/capture.mjs" "$work"
+else
+  [[ "${NODE_ENV:-}" != production ]] || { echo 'Production requires the media-write barrier' >&2; exit 1; }
+  bash "$HERE/capture.sh" "$work"
+fi
+# Do not persist macOS resource-fork sidecars or platform ACL/xattr metadata:
+# they are not payload files and would correctly fail staging-manifest checks.
+tar --no-acls --no-xattrs --exclude='._*' --exclude='./._*' --exclude='*/._*' --exclude='./*/._*' -czf "$work/archive.tar.gz" -C "$work/payload" .
 age -r "$BACKUP_AGE_RECIPIENT" -o "$work/$file" "$work/archive.tar.gz"
 remote="${BACKUP_RCLONE_REMOTE%/}"
 rclone mkdir "$remote/daily"

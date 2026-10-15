@@ -15,6 +15,11 @@ cat > "$TMP/bin/pg_restore" <<'STUB'
 #!/bin/bash
 [[ -s "${@: -1}" ]]
 STUB
+cat > "$TMP/bin/flock" <<'STUB'
+#!/bin/bash
+# The mock has no concurrent runner; backup.sh already opened the lock FD.
+exit 0
+STUB
 cat > "$TMP/bin/age" <<'STUB'
 #!/bin/bash
 input=''; output=''; prev=''
@@ -34,14 +39,14 @@ case "$cmd" in
  mkdir) mkdir -p "$1";;
  copyto) [[ "${MOCK_FAIL_UPLOAD:-}" != 1 ]] || { echo "Simulated Drive upload failure" >&2; exit 31; };mkdir -p "$(dirname "$2")";cp "$1" "$2";;
  cat) cat "$1";;
- lsf) folder="$1"; pattern="${@: -1}"; find "$folder" -maxdepth 1 -type f -name "$pattern" -printf '%f\n';;
+ lsf) folder="$1"; pattern="${@: -1}"; find "$folder" -maxdepth 1 -type f -name "$pattern" -exec basename {} \;;;
  moveto) mv "$1" "$2";;
  deletefile) rm -f "$1";;
  *) echo "unsupported rclone $cmd" >&2;exit 1;;
 esac
 STUB
 chmod +x "$TMP/bin/"*
-export PATH="$TMP/bin:$PATH" DATABASE_URL='postgres://mock' UPLOAD_DIR="$TMP/uploads" BACKUP_AGE_RECIPIENT='age1mock' BACKUP_GIT_COMMIT='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' BACKUP_RCLONE_REMOTE="$TMP/remote" BACKUP_CONTROL_DIR="$TMP/control" BACKUP_WORKDIR="$TMP/work" BACKUP_DEPLOY_DIR="$TMP/deployment"
+export PATH="$TMP/bin:$PATH" DATABASE_URL='postgres://mock/g2g_mock' UPLOAD_DIR="$TMP/uploads" BACKUP_AGE_RECIPIENT='age1mock' BACKUP_GIT_COMMIT='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' BACKUP_RCLONE_REMOTE="$TMP/remote" BACKUP_CONTROL_DIR="$TMP/control" BACKUP_WORKDIR="$TMP/work" BACKUP_DEPLOY_DIR="$TMP/deployment"
 bash "$ROOT/scripts/backup/backup.sh"
 [[ "$(find "$TMP/remote/daily" -type f | wc -l)" -eq 1 ]]
 [[ "$(find "$TMP/remote/monthly" -type f | wc -l)" -eq 1 ]]

@@ -14,6 +14,10 @@ work="$(mktemp -d)"; trap 'rm -rf -- "$work"' EXIT
 age -d -i "$BACKUP_AGE_IDENTITY" -o "$work/archive.tar.gz" "$archive"
 mkdir -m 700 -- "$target"
 python3 "$HERE/safe-extract.py" "$work/archive.tar.gz" "$target"
+# The macOS filesystem can synthesize AppleDouble sidecars while Python writes
+# verified files. They were not archive members and do not exist on the Linux
+# backup host; remove only those local artifacts before manifest verification.
+if [[ "$(uname -s)" == Darwin ]]; then find "$target" -name '._*' -type f -delete; fi
 node "$HERE/verify-staging.mjs" "$target"
 pg_restore --list "$target/database.dump" >/dev/null
 printf 'RESTORE_STAGING_OK: %s\n' "$target"

@@ -1,4 +1,4 @@
-# Integration status — 14 October 2026
+# Integration status — 16 October 2026
 
 Candidate branch: feature/g2g-drive-backup. Overlay: g2g-exam-backup-v12.zip.
 Do not enable scheduled backup or merge to main until the remaining gates pass.
@@ -22,23 +22,25 @@ Do not enable scheduled backup or merge to main until the remaining gates pass.
 
 ## Verified evidence
 
-- Linux CI at commit 1168519: G2G Exam Check passed.
-- G2G Backup isolated checks passed: all backup Node tests, shell syntax,
-  mocked failure tests and the real PostgreSQL 16/age/Rclone-local restore drill.
-- Real drill verified restored relational rows and UTF-8 answers, byte-identical
-  media, manifest digests, rejection of the wrong age identity and tampered archive.
+- The local isolated drill passed with PostgreSQL 16, age and Rclone local
+  storage: dump, encrypted archive, checksum verification, staging restore,
+  relational rows, UTF-8 answers, settings, media bytes, wrong-key rejection
+  and tamper rejection.
 - Drive OAuth tests use controlled doubles. No Google Drive connection, live VPS
   permissions, production data restore or scheduled run has been verified.
-- Current main remains v1.3.149. No backup release/version bump is claimed.
+- Public-policy main is already v1.3.153; do not revert that version when
+  merging this backup branch. No backup release/version bump is claimed.
 
 ## Production prerequisites still outstanding
 
-The owner reports no configured VPS access, Backup OAuth client or age key yet.
-No production changes or timer activation have been made by this task.
+The VPS has been inspected read-only. OAuth publishing is in production, but
+Drive API/scope, redirect configuration, credentials and a connected Drive have
+not been verified. No production changes or timer activation have been made.
 
-1. Establish owner-authorized VPS access. Inspect only G2G containers, network,
-   volumes, installed utilities and service identity. Never change shared services.
-2. Create the dedicated Google OAuth client and authorize the master account.
+1. Use the already authorized VPS session only to continue read-only inspection
+   until the remaining gates pass; never change shared services.
+2. Reuse the existing Google OAuth Web client without removing login callbacks.
+   Add the Backup callback and drive.file scope, then authorize the master account.
    Verify drive.file, the created G2G Exam folder ID, token refresh, upload,
    download, checksum and revoked-token failure on the actual Drive.
 3. Generate an age identity on the owner's trusted recovery machine. Preserve
