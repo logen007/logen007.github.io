@@ -627,6 +627,7 @@ function adminView(cachedAt=null){
   else if(ui.adminTab==='teachers')content=teachersAdminHtml({data,user});
   else if(ui.adminTab==='classes')content=classesHtml({data,classId:ui.classId});
   else if(ui.adminTab==='trash')content=trashAdminHtml({data,retentionDays:data.trashRetentionDays??30});
+  else if(ui.adminTab==='backup'&&isMaster(user))content='<div data-backup-page><p role="status">Đang tải trang Backup…</p></div>';
   else if(ui.adminTab==='settings'&&isMaster(user))content='<div data-settings-route><p role="status">Đang tải cài đặt…</p></div>';
   const current=app.querySelector('.admin-dashboard');
   if(current&&ui.adminTab==='dashboard'&&isMaster(user)){
@@ -637,6 +638,10 @@ function adminView(cachedAt=null){
     const target=app.querySelector('[data-settings-route]');
     import('./settings.js').then(({mountSettingsPage})=>mountSettingsPage(target,ui.settingsTab,tab=>{ui.settingsTab=tab;syncViewUrl();}))
       .catch(()=>{if(target.isConnected)target.textContent='Không tải được cài đặt. Hãy tải lại trang.';});
+  }
+  if(ui.adminTab==='backup'&&isMaster(user)){
+    const target=app.querySelector('[data-backup-page]');
+    import('./views/backup-page.js').then(({mountBackupPage})=>mountBackupPage(target)).catch(()=>{if(target.isConnected)target.textContent='Không tải được trang Backup.';});
   }
 }
 

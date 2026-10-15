@@ -2,7 +2,7 @@ import {appError} from '../db.js';
 import {unpublishExamRelease} from '../exam-releases.js';
 import {getAttemptReview} from './attempt-review.js';
 import {r2Settings} from '../r2-settings.js';
-import {backupDriveStatus} from '../backup-google.js';
+import {backupDriveStatus,listBackupFiles,deleteBackupFile} from '../backup-google.js';
 import {backupAction} from '../backup-control.js';
 import {submitFeedback} from './feedback.js';
 import {copyExam,prepareExamForEditing} from './exam-copy.js';
@@ -20,7 +20,10 @@ export async function handleAction(user,name,data={}){
   switch(name){
     case 'getBackupDriveStatus': return backupDriveStatus(user);
     case 'getBackupStatus':
-    case 'runBackupNow': return backupAction(user,name);
+    case 'runBackupNow':
+    case 'requestBackupRestore': return backupAction(user,name,data);
+    case 'listBackupFiles': return {files:await listBackupFiles(user)};
+    case 'deleteBackupFile': return deleteBackupFile(user,data.id);
     case 'unpublishExam': return unpublishExamRelease(user,data);
     case 'getR2Settings':
     case 'saveR2Settings':

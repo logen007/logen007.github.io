@@ -26,7 +26,7 @@ async function drive(config,method,url,body){
     body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(20000)
   });
   if(!response.ok)throw appError(503,'Google Drive không phản hồi hoặc quyền truy cập đã hết hạn.');
-  return response.json();
+  return response.status===204?{}:response.json();
 }
 async function ensureFolder(config){
   if(config.folderId)return config.folderId;
@@ -86,4 +86,30 @@ export async function registerBackupGoogleRoutes(app){
 export async function getBackupDriveCredentials(){
   const config=await read();if(!config?.refreshToken)throw appError(503,'Chưa kết nối Google Drive Backup.');
   return {...config,clientId:env().clientId,clientSecret:env().clientSecret};
+}
+export async function listBackupFiles(user){
+  if(user?.role!=='master')throw appError(403,'Không có quyền.');
+  const config=await read();if(!config?.folderId)throw appError(409,'Chưa kết nối Google Drive.');
+  const result=await drive(config,'GET',`/files?q=${encodeURIComponent(`'${config.folderId}' in parents and trashed = false`)}&fields=files(id,name,size,createdTime,mimeType,description)&orderBy=createdTime desc&pageSize=100`);
+  return (result.files||[]).filter(file=>file.mimeType!=='application/vnd.google-apps.folder').map(file=>({...file,size:Number(file.size||0)}));
+}
+export async function deleteBackupFile(user,id){
+  if(user?.role!=='master')throw appError(403,'Không có quyền.');
+  if(!/^[A-Za-z0-9_-]+$/.test(String(id||'')))throw appError(400,'Mã backup không hợp lệ.');
+  const config=await read();if(!config?.folderId)throw appError(409,'Chưa kết nối Google Drive.');
+  const item=await drive(config,'GET',`/files/${encodeURIComponent(id)}?fields=id,parents`);
+  if(!item.parents?.includes(config.folderId))throw appError(404,'Không tìm thấy backup.');
+  await drive(config,'DELETE',`/files/${encodeURIComponent(id)}`);
+  return {ok:true};
+}
+export async function downloadBackupFile(user,id){
+  if(user?.role!=='master')throw appError(403,'Không có quyền.');
+  if(!/^[A-Za-z0-9_-]+$/.test(String(id||'')))throw appError(400,'Mã backup không hợp lệ.');
+  const config=await read();if(!config?.folderId)throw appError(409,'Chưa kết nối Google Drive.');
+  const item=await drive(config,'GET',`/files/${encodeURIComponent(id)}?fields=id,name,parents,mimeType`);
+  if(!item.parents?.includes(config.folderId)||item.mimeType==='application/vnd.google-apps.folder')throw appError(404,'Không tìm thấy backup.');
+  const oauth=client();oauth.setCredentials({refresh_token:config.refreshToken});const token=await oauth.getAccessToken();
+  const response=await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media`,{headers:{Authorization:`Bearer ${token.token}`},signal:AbortSignal.timeout(120000)});
+  if(!response.ok)throw appError(503,'Không tải được backup từ Google Drive.');
+  return {name:item.name,body:response.body};
 }
