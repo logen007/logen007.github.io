@@ -52,7 +52,7 @@ export function mountBackupPage(root,{owner=null}={}){
    el('[data-count]').textContent=files.length+' bản lưu';
    const enabled=readBackupData(owner).status?.enabled;
    for(const row of rows.values()){row.querySelector('[data-restore]').disabled=jobBusy||!enabled;row.querySelector('[data-delete]').disabled=jobBusy;}
-   const signature=JSON.stringify(files);
+   const signature=JSON.stringify([files,files.length?null:jobBusy]);
    if(signature===listSignature)return;
    listSignature=signature;
    const body=el('[data-files]'),ids=new Set(files.map(file=>file.id));
