@@ -3,6 +3,7 @@ import {iconHtml} from '../ui/icons.js';
 import {speakingApi,sessionLink} from './api.js';
 import {LAB_STATES,clockText} from './model.js';
 import {confirmAction} from '../ui/confirm.js';
+import {drawQr} from './qr.js';
 
 const date=value=>new Date(value).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short'});
 export const trialDefaults=()=>[
@@ -43,7 +44,7 @@ export async function mountSpeakingAdmin(root,{user}={}){
   const s=await speakingApi('sessions/'+id),url=sessionLink(id);
   if(!root.isConnected)return;
   const d=modal(s.title,`<div class="speaking-form"><p>${esc(date(s.scheduledAt))} · ${esc(LAB_STATES[s.state])}</p><p>${s.members.map(m=>esc(m.seat+' · '+m.name)).join('<br>')}</p><canvas data-qr aria-label="QR mở ca thử trên điện thoại"></canvas><a class="text-link" href="${esc(url)}" target="_blank" rel="noopener">Mở trang thi / hướng dẫn</a><button class="nut" data-copy>Sao chép link cho thí sinh</button><p class="speaking-note">QR chỉ mở ca thi, không chứa khóa truy cập. Điện thoại phải đăng nhập đúng tài khoản. Mỗi thí sinh chỉ vào trên một điện thoại.</p>${s.hasRecording?`<video data-recording controls playsinline preload="none" src="/api/speaking-lab/sessions/${encodeURIComponent(id)}/recording"></video><a href="/api/speaking-lab/sessions/${encodeURIComponent(id)}/recording" target="_blank" rel="noopener">Mở / tải bản ghi</a><div class="backup-actions">${s.markers.map(m=>`<button class="nut" data-seek="${Math.max(0,(m.start-s.recordingStartedAt)/1000)}">${esc(m.title)} · ${clockText((m.start-s.recordingStartedAt)/1000)}</button>`).join('')}</div>`:'<p>Bản ghi chưa sẵn sàng. Đóng và mở lại ca để cập nhật.</p>'}${s.error?`<p role="alert">${esc(s.error)}</p>`:''}${['completed','interrupted'].includes(s.state)?`<form class="speaking-form" data-review>${s.members.map(m=>`<label>Nhận xét · ${esc(m.name)}<textarea class="truong" name="${esc(m.id)}" maxlength="10000">${esc(s.reviews[m.id]||'')}</textarea></label>`).join('')}<p class="speaking-note">Nhận xét thử lưu riêng, không công bố điểm thật. AI chấm chưa bật.</p><p data-error role="alert"></p><button class="nut chinh" type="submit">Lưu nhận xét</button></form>`:''}${!['completed','cancelled','interrupted'].includes(s.state)?'<button class="nut nguy" data-end>Huỷ / dừng ca thử</button>':''}</div>`);
-  const QR=await import('qrcode');if(d.isConnected)await QR.toCanvas(d.querySelector('[data-qr]'),url,{width:208,margin:2});
+  if(d.isConnected)await drawQr(d.querySelector('[data-qr]'),url,208);
   d.querySelector('[data-copy]').onclick=async()=>{try{await navigator.clipboard.writeText(url);d.querySelector('[data-copy]').textContent='Đã sao chép';}catch{d.querySelector('[data-copy]').textContent='Hãy mở link và sao chép từ thanh địa chỉ';}};
   d.querySelectorAll('[data-seek]').forEach(b=>b.onclick=()=>{d.querySelector('[data-recording]').currentTime=Number(b.dataset.seek);});
   if(d.querySelector('[data-review]'))bindForm(d,async f=>{await speakingApi('sessions/'+id+'/review',{reviews:Object.fromEntries(f)});});
