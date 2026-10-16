@@ -23,10 +23,11 @@ const hooks=registerHooks({resolve(specifier,ctx,next){
  return next(specifier,ctx);
 }});
 const originalFetch=globalThis.fetch;
+const originalNow=Date.now;let now=Date.now(),requests=0;Date.now=()=>now;
 process.env.BACKUP_GOOGLE_CLIENT_ID='test-client';
 process.env.BACKUP_GOOGLE_CLIENT_SECRET='test-secret';
 let revokedAccess=false;
-globalThis.fetch=async url=>({ok:!revokedAccess,json:async()=>url.includes('userinfo')?{email:'admin@example.test',email_verified:true}:url.includes('/files?q=')?{files:[]}:{id:'folder-id',mimeType:'application/vnd.google-apps.folder'}});
+globalThis.fetch=async url=>{requests++;return {ok:!revokedAccess,json:async()=>url.includes('userinfo')?{email:'admin@example.test',email_verified:true}:url.includes('/files?q=')?{files:[]}:{id:'folder-id',mimeType:'application/vnd.google-apps.folder'}};};
 try{
  const {registerBackupGoogleRoutes,backupDriveStatus}=await import('../server/src/backup-google.js');
  await registerBackupGoogleRoutes({get:(p,fn)=>routes.set(p,fn),post:(p,fn)=>routes.set(p,fn)});
@@ -46,7 +47,9 @@ try{
  assert.equal(status.folderId,'folder-id');
  assert.equal(status.connected,true);
  assert.doesNotMatch(JSON.stringify(status),/private-refresh|private-access|test-secret/);
+ const before=requests;await Promise.all([backupDriveStatus(master),backupDriveStatus(master)]);assert.equal(requests,before,'Frequent status polling reuses the folder check');
  revokedAccess=true;
+ now+=60001;
  const expired=await backupDriveStatus(master);
  assert.equal(expired.connected,false);assert.equal(expired.needsReconnect,true);
  revokedAccess=false;
@@ -54,4 +57,4 @@ try{
  await routes.get('/api/backup/google/disconnect')({user:master});
  assert.equal(revoked,true);assert.equal((await backupDriveStatus(master)).connected,false);
  console.log('Backup OAuth: master-only, browser binding, replay rejection, private credentials, disconnect passed.');
-}finally{hooks.deregister();globalThis.fetch=originalFetch;delete globalThis.__backupMocks;}
+}finally{hooks.deregister();globalThis.fetch=originalFetch;Date.now=originalNow;delete globalThis.__backupMocks;}

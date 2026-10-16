@@ -83,6 +83,7 @@ import {collectReadingBlocks,bindReadingBlocks} from './ui/reading-blocks.js';
 import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
 import {readCachedInfrastructure,refreshInfrastructure,setInfrastructureOwner,clearInfrastructureCache} from './settings/api.js';
+import {clearBackupData} from './settings/backup-data.js';
 import {readDashboardCache,writeDashboardCache,clearDashboardCache,patchDashboard} from './ui/dashboard-cache.js';
 import {streamPublication} from './ui/publication-progress.js';
 import {syncExamPublishButtons} from './ui/exam-publish-button.js';
@@ -627,7 +628,7 @@ function adminView(cachedAt=null){
   else if(ui.adminTab==='teachers')content=teachersAdminHtml({data,user});
   else if(ui.adminTab==='classes')content=classesHtml({data,classId:ui.classId});
   else if(ui.adminTab==='trash')content=trashAdminHtml({data,retentionDays:data.trashRetentionDays??30});
-  else if(ui.adminTab==='backup'&&isMaster(user))content='<div data-backup-page><p role="status">Đang tải trang Backup…</p></div>';
+  else if(ui.adminTab==='backup'&&isMaster(user))content='<div data-backup-page></div>';
   else if(ui.adminTab==='settings'&&isMaster(user))content='<div data-settings-route><p role="status">Đang tải cài đặt…</p></div>';
   const current=app.querySelector('.admin-dashboard');
   if(current&&ui.adminTab==='dashboard'&&isMaster(user)){
@@ -641,7 +642,7 @@ function adminView(cachedAt=null){
   }
   if(ui.adminTab==='backup'&&isMaster(user)){
     const target=app.querySelector('[data-backup-page]');
-    import('./views/backup-page.js').then(({mountBackupPage})=>mountBackupPage(target)).catch(()=>{if(target.isConnected)target.textContent='Không tải được trang Backup.';});
+    import('./views/backup-page.js').then(({mountBackupPage})=>mountBackupPage(target,{owner:user.id})).catch(()=>{if(target.isConnected)target.textContent='Không tải được trang Backup.';});
   }
 }
 
@@ -1016,7 +1017,7 @@ async function loadStudentReview(attemptId){
 }
 
 function bindGlobal(){
-  app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await repo.signOut();clearDashboardCache();clearInfrastructureCache();ui.infrastructure=null;infrastructureRefreshStarted=false;stopGoogleOneTap({logout:true});user=null;authenticatedUser=null;ui.view='login';render();});
+  app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await repo.signOut();clearDashboardCache();clearInfrastructureCache();clearBackupData();ui.infrastructure=null;infrastructureRefreshStarted=false;stopGoogleOneTap({logout:true});user=null;authenticatedUser=null;ui.view='login';render();});
   app.querySelectorAll('[data-action="toggle-role-menu"]').forEach(button=>button.onclick=event=>{
     event.stopPropagation();const account=button.closest('.header-account'),menu=account?.querySelector('[data-role-menu]');if(!menu)return;
     menu.hidden=!menu.hidden;account.querySelectorAll('[data-action="toggle-role-menu"]').forEach(trigger=>trigger.setAttribute('aria-expanded',String(!menu.hidden)));

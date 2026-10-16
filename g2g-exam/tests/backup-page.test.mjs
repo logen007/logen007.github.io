@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {backupPageHtml,backupItemHtml,backupSettingsHtml,backupProgressText,mountBackupPage} from '../src/views/backup-page.js';
+import {clearBackupData} from '../src/settings/backup-data.js';
 
 const page=backupPageHtml(),settings=backupSettingsHtml();
 assert.match(page,/tieu-de-trang backup-heading/);
@@ -53,55 +54,65 @@ assert.ok(!css.includes('.backup-item'));
 console.log('Backup UI: compact layout, popup, real status, escaping and accessibility passed');
 
 // Exercise async status updates without opening a browser or making API requests.
-const originals={document:globalThis.document,fetch:globalThis.fetch,setTimeout:globalThis.setTimeout,setInterval:globalThis.setInterval,clearInterval:globalThis.clearInterval};
+const originals={document:globalThis.document,fetch:globalThis.fetch,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout,setInterval:globalThis.setInterval,clearInterval:globalThis.clearInterval};
+const originalNow=Date.now;let time=Date.now();
 function node(){return {hidden:false,disabled:false,dataset:{},textContent:'',innerHTML:'',children:[],replacements:0,
  setAttribute(key,value){this[key]=value;},removeAttribute(key){delete this[key];},
  replaceChildren(){this.children=[];this.replacements++;},append(child){this.children.push(child);},
+ insertBefore(child,before){if(child.parent){const index=child.parent.children.indexOf(child);child.parent.children.splice(index,1);}const at=before?this.children.indexOf(before):this.children.length;this.children.splice(at,0,child);child.parent=this;},
+ remove(){if(this.parent){this.parent.children.splice(this.parent.children.indexOf(this),1);this.parent=null;}},
  querySelector(selector){this.nodes??=new Map();if(!this.nodes.has(selector))this.nodes.set(selector,node());return this.nodes.get(selector);}};}
 const root={...node(),isConnected:true};let nextPoll;
 let live={drive:{connected:true,email:'private@example.com'},enabled:true,status:{state:'idle'}};
 const files=[{id:'one',name:'g2g-test.tar.gz',size:100,createdTime:'2026-10-15T20:00:00Z'}];
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
+const poll=async(ms=60001)=>{time+=ms;await nextPoll();};
 try{
- globalThis.document={hidden:false,createElement:tag=>({...node(),tagName:tag})};
+ clearBackupData();Date.now=()=>time;
+ globalThis.document={hidden:false,createElement:tag=>({...node(),tagName:tag}),addEventListener(){},removeEventListener(){}};
  globalThis.setTimeout=fn=>{nextPoll=fn;return 1;};
+ globalThis.clearTimeout=()=>{};
  globalThis.setInterval=()=>1;globalThis.clearInterval=()=>{};
- globalThis.fetch=async url=>({ok:true,json:async()=>url.endsWith('getBackupStatus')?live:{files}});
+ let requests=0;globalThis.fetch=async url=>{requests++;return {ok:true,json:async()=>structuredClone(url.endsWith('getBackupStatus')?live:{files})};};
  mountBackupPage(root);await settle();
  const el=selector=>root.querySelector(selector),body=el('[data-files]');
  assert.equal(el('[data-now]').disabled,false);
  assert.equal(el('[data-job]').hidden,true);
  const first=body.children[0],replacements=body.replacements;
  assert.equal(first.tagName,'tr');
- await nextPoll();assert.equal(body.children[0],first);assert.equal(body.replacements,replacements);
+ await poll();assert.equal(body.children[0],first);assert.equal(body.replacements,replacements);
+ const warm={...node(),isConnected:true},beforeWarm=requests,originalPoll=nextPoll;
+ mountBackupPage(warm);assert.equal(warm.querySelector('[data-files]').children.length,1,'Warm navigation paints the cached rows synchronously');await settle();assert.equal(requests,beforeWarm,'Warm navigation makes no duplicate requests');warm.isConnected=false;
+ // Return polling control to the still-connected page.
+ nextPoll=originalPoll;await poll();
  live={...live,status:{state:'running',kind:'backup',startedAt:'2026-10-15T20:01:00Z',phase:'upload',message:'Đang tải lên Drive…'}};
- await nextPoll();
+ await poll();
  assert.equal(el('[data-job]').hidden,false);assert.equal(el('[data-now]').disabled,true);
  assert.equal(el('[data-status]').textContent,'Đang tải lên Drive…');
  assert.match(el('[data-elapsed]').textContent,/^\d+:\d{2}$/);
  assert.equal(body.children[0].querySelector('[data-restore]').disabled,true);
  assert.equal(body.children[0].querySelector('[data-delete]').disabled,true);
  live={...live,status:{...live.status,state:'failed',message:'Không thể kết nối Drive.'}};
- await nextPoll();
+ await poll(3001);
  assert.equal(el('[data-job]').dataset.state,'failed');
  assert.equal(el('[data-status]').textContent,'Không thể kết nối Drive.');
  live={...live,status:{...live.status,state:'running'}};
  files.unshift({id:'two',name:'g2g-new.tar.gz',size:200,createdTime:'2026-10-15T20:02:00Z'});
- await nextPoll();
+ await poll();
  assert.equal(body.children.length,1,'An uploaded archive stays out of the table until verification succeeds');
  live={...live,status:{...live.status,state:'success',fileId:'two',finishedAt:'2026-10-15T20:03:00Z',message:'Backup đã lên Drive và phục hồi thử thành công.'}};
- await nextPoll();
+ await poll(3001);
  assert.equal(el('[data-job]').hidden,true);
  assert.equal(el('[data-status]').textContent,'');
  assert.equal(body.children.length,2);
  assert.match(body.children[0].innerHTML,/g2g-new/);
  assert.equal(body.children[0].className,'backup-row-enter','The completed backup replaces the status at the top');
- const completedRow=body.children[0];await nextPoll();assert.equal(body.children[0],completedRow,'Completion animation must not replay on unchanged polls');
+ const completedRow=body.children[0];await poll();assert.equal(body.children[0],completedRow,'Completion animation must not replay on unchanged polls');
  live={...live,drive:{connected:false}};
- await nextPoll();
+ await poll();
  assert.match(body.innerHTML,/<tr><td colspan="3">/);
  assert.equal(el('[data-now]').disabled,true);
  globalThis.document.hidden=true;const before=body.replacements;
- await nextPoll();assert.equal(body.replacements,before);
+ const beforeHidden=requests;await poll();assert.equal(body.replacements,before);assert.equal(requests,beforeHidden);
  console.log('Backup UI: in-table status, elapsed clock, verified newest-first transition and stable polling passed');
-}finally{Object.assign(globalThis,originals);}
+}finally{Object.assign(globalThis,originals);Date.now=originalNow;clearBackupData();}

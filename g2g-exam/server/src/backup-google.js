@@ -8,6 +8,7 @@ const KEY='backup_google_drive';
 const REDIRECT='/api/backup/google/callback';
 const SCOPE='https://www.googleapis.com/auth/drive.file';
 const states=new Map();
+let folderCheck;
 const env=()=>({
   clientId:process.env.BACKUP_GOOGLE_CLIENT_ID||'',
   clientSecret:process.env.BACKUP_GOOGLE_CLIENT_SECRET||'',
@@ -30,7 +31,7 @@ export async function uploadBackupArchive(filename,name,sha256){
   if(!result.ok)throw appError(503,'Tải bản backup lên Drive thất bại.');
   return result.json();
 }
-async function save(config,user){await query(`INSERT INTO secrets(key,value_enc,updated_by) VALUES($1,$2,$3) ON CONFLICT(key) DO UPDATE SET value_enc=EXCLUDED.value_enc,updated_by=EXCLUDED.updated_by,updated_at=now()`,[KEY,encrypt(JSON.stringify(config)),user.id]);}
+async function save(config,user){await query(`INSERT INTO secrets(key,value_enc,updated_by) VALUES($1,$2,$3) ON CONFLICT(key) DO UPDATE SET value_enc=EXCLUDED.value_enc,updated_by=EXCLUDED.updated_by,updated_at=now()`,[KEY,encrypt(JSON.stringify(config)),user.id]);folderCheck=null;}
 async function drive(config,method,url,body){
   const oauth=client();oauth.setCredentials({refresh_token:config.refreshToken});
   const token=await oauth.getAccessToken();
@@ -39,7 +40,7 @@ async function drive(config,method,url,body){
     method,headers:{Authorization:`Bearer ${token.token}`,...(body?{'content-type':'application/json'}:{})},
     body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(20000)
   });
-  if(!response.ok)throw appError(503,'Google Drive không phản hồi hoặc quyền truy cập đã hết hạn.');
+  if(!response.ok){folderCheck=null;throw appError(503,'Google Drive không phản hồi hoặc quyền truy cập đã hết hạn.');}
   return response.status===204?{}:response.json();
 }
 async function ensureFolder(config){
@@ -54,10 +55,17 @@ export async function backupDriveStatus(user){
   if(user?.role!=='master')throw appError(403,'Không có quyền.');
   const config=await read();
   let accessible=false;
-  if(config?.refreshToken&&config.folderId)try{
-    const folder=await drive(config,'GET',`/files/${encodeURIComponent(config.folderId)}?fields=id,mimeType,trashed`);
-    accessible=folder.trashed!==true&&folder.mimeType==='application/vnd.google-apps.folder';
-  }catch{/* Revoked access must not look like a working connection. */}
+  if(config?.refreshToken&&config.folderId){
+    const key=crypto.createHash('sha256').update(config.refreshToken+'\n'+config.folderId).digest('hex');
+    if(!folderCheck||folderCheck.key!==key||folderCheck.expires<=Date.now()){
+      const check={key,expires:Infinity};
+      check.pending=drive(config,'GET',`/files/${encodeURIComponent(config.folderId)}?fields=id,mimeType,trashed`)
+        .then(folder=>folder.trashed!==true&&folder.mimeType==='application/vnd.google-apps.folder').catch(()=>false)
+        .then(ok=>{check.expires=Date.now()+(ok?60000:10000);return ok;});
+      folderCheck=check;
+    }
+    accessible=await folderCheck.pending;
+  }
   return {connected:accessible,needsReconnect:Boolean(config?.refreshToken)&&!accessible,email:config?.email||'',folderId:config?.folderId||'',oauthConfigured:Boolean(env().clientId&&env().clientSecret)};
 }
 export async function registerBackupGoogleRoutes(app){
@@ -94,6 +102,7 @@ export async function registerBackupGoogleRoutes(app){
       try{const oauth=client();await oauth.revokeToken(config.refreshToken);}catch{/* local disconnect must still succeed */}
     }
     await query('DELETE FROM secrets WHERE key=$1',[KEY]);
+    folderCheck=null;
     return {ok:true};
   });
 }

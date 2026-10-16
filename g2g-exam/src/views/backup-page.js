@@ -2,6 +2,7 @@ import {r2SettingsAction as action} from '../settings/api.js';
 import {confirmAction} from '../ui/confirm.js';
 import {iconHtml} from '../ui/icons.js';
 import {esc} from '../ui/format.js';
+import {readBackupData,loadBackupData,invalidateBackupData} from '../settings/backup-data.js';
 const dateText=(value,part)=>value&&Number.isFinite(Date.parse(value))?new Date(value).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',...(part==='date'?{dateStyle:'short'}:{timeStyle:'short'})}):'—';
 export function backupPageHtml(){return `<section class="backup-page">
  <header class="tieu-de-trang backup-heading"><div class="backup-title"><h1>Backup</h1><span data-count></span></div><div class="backup-actions">
@@ -19,20 +20,18 @@ export function backupSettingsHtml(){return `<form class="backup-form"><header c
  <div class="backup-form-grid"><label class="backup-setting-row"><span>Giờ chạy<small>Giờ Việt Nam</small></span><input class="truong" type="time" name="time" required></label><label class="backup-setting-row"><span>Chu kỳ<small>Số ngày giữa mỗi lần</small></span><input class="truong" type="number" min="1" max="30" name="intervalDays" required></label></div>
  <section class="backup-retention"><h3>Số bản giữ lại</h3><div class="backup-form-grid"><label class="backup-setting-row"><span>Gần nhất</span><input class="truong" type="number" min="1" max="90" name="dailyCopies" required></label><label class="backup-setting-row"><span>Theo tháng<small>Giữ thêm 1 bản mỗi tháng</small></span><input class="truong" type="number" min="0" max="24" name="monthlyCopies" required></label></div></section>
  <footer class="backup-footer"><button type="button" class="nut" data-cancel>Huỷ</button><button class="nut chinh" type="submit">Lưu</button></footer></fieldset><p data-error role="alert"></p></form>`;}
-export function mountBackupPage(root){
+export function mountBackupPage(root,{owner=null}={}){
  if(!root?.isConnected)return;root.innerHTML=backupPageHtml();
- const el=s=>root.querySelector(s);let busy=false,jobBusy=false,listSignature,currentStatus={},pendingCompletion;
+ const el=s=>root.querySelector(s);let busy=false,reload=false,jobBusy=false,listSignature,currentStatus={},pendingCompletion,pollTimer;
+ const rows=new Map();
  const updateClock=()=>{if(root.isConnected&&!document.hidden){el('[data-elapsed]').hidden=!currentStatus.startedAt;el('[data-elapsed]').textContent=backupProgressText(currentStatus);}};
  const report=e=>{if(!root.isConnected)return;el('[data-job]').hidden=false;el('[data-status]').textContent=e.message||String(e);el('[data-job]').dataset.state=e instanceof Error?'failed':'notice';updateClock();};
  const beginJob=async(name,data,message)=>{
   jobBusy=true;currentStatus={state:'queued',startedAt:new Date().toISOString()};el('[data-now]').disabled=true;report(message);el('[data-job]').dataset.state='running';
-  try{await action(name,data);await load();}catch(e){jobBusy=false;currentStatus={...currentStatus,finishedAt:new Date().toISOString()};report(e);el('[data-now]').disabled=false;}
+  invalidateBackupData(owner,['status']);paintFiles(readBackupData(owner).files?.files||[]);
+  try{await action(name,data);invalidateBackupData(owner,['status']);await load({force:true});}catch(e){jobBusy=false;currentStatus={...currentStatus,finishedAt:new Date().toISOString()};report(e);el('[data-now]').disabled=false;}finally{poll();}
  };
- async function load(){
-  if(busy||!root.isConnected||document.hidden)return;busy=true;
-  try{
-   const {drive,status,enabled}=await action('getBackupStatus');
-   if(!root.isConnected)return;
+ function paintStatus({drive,status,enabled}){
    const wasRunning=jobBusy;
    jobBusy=['queued','running'].includes(status?.state);
    if(wasRunning&&status?.state==='success'&&status.kind==='backup')pendingCompletion=status.fileId;
@@ -40,31 +39,47 @@ export function mountBackupPage(root){
    el('[data-now]').disabled=!enabled||!drive.connected||jobBusy;
    const message=(status?.state==='success'?'':status?.message)||(!enabled?'Backup chưa sẵn sàng.':!drive.connected?'Mở cài đặt để kết nối Google Drive.':'');
    el('[data-job]').hidden=!message;el('[data-job]').dataset.state=status?.state||'idle';
-   el('[data-status]').textContent=message;el('[data-status]').title=message;
+   if(el('[data-status]').textContent!==message){el('[data-status]').textContent=message;el('[data-status]').title=message;}
    updateClock();
-   const result=drive.connected?await action('listBackupFiles'):{files:[]};
-   if(!root.isConnected)return;
+   if(wasRunning!==jobBusy)poll();
+   return wasRunning&&!jobBusy;
+ }
+ function paintFiles(source){
    // The uploading archive becomes visible on Drive before verification finishes.
    // Keep that candidate in the status row until the complete job succeeds.
-   const files=result.files.filter(file=>!(jobBusy&&status.kind==='backup'&&file.name?.startsWith('g2g-')&&Date.parse(file.createdTime)>=Date.parse(status.startedAt))).sort((a,b)=>Date.parse(b.createdTime)-Date.parse(a.createdTime));
+   const files=source.filter(file=>!(jobBusy&&currentStatus.kind==='backup'&&file.name?.startsWith('g2g-')&&Date.parse(file.createdTime)>=Date.parse(currentStatus.startedAt))).sort((a,b)=>Date.parse(b.createdTime)-Date.parse(a.createdTime));
    if(pendingCompletion&&!files.some(file=>file.id===pendingCompletion)){report('Đang cập nhật bản backup mới…');}
    el('[data-count]').textContent=files.length+' bản lưu';
-   const signature=JSON.stringify([files,jobBusy,enabled]);
+   const enabled=readBackupData(owner).status?.enabled;
+   for(const row of rows.values()){row.querySelector('[data-restore]').disabled=jobBusy||!enabled;row.querySelector('[data-delete]').disabled=jobBusy;}
+   const signature=JSON.stringify(files);
    if(signature===listSignature)return;
    listSignature=signature;
-   const body=el('[data-files]');body.replaceChildren();
+   const body=el('[data-files]'),ids=new Set(files.map(file=>file.id));
+   for(const [id,row] of rows)if(!ids.has(id)){row.remove();rows.delete(id);}
    if(!files.length){body.innerHTML=jobBusy?'':'<tr><td colspan="3"><div class="rong">Chưa có bản backup.</div></td></tr>';return;}
-   for(const file of files){
-    const row=document.createElement('tr');
+   if(!rows.size)body.replaceChildren();
+   for(const [index,file] of files.entries()){
+    const row=rows.get(file.id)||document.createElement('tr');rows.set(file.id,row);
     if(file.id===pendingCompletion){row.className='backup-row-enter';pendingCompletion=null;el('[data-job]').hidden=true;}
-    row.innerHTML=backupItemHtml(file);
+    const html=backupItemHtml(file);if(row.backupHtml!==html){row.innerHTML=html;row.backupHtml=html;}
     row.querySelector('[data-restore]').disabled=jobBusy||!enabled;
     row.querySelector('[data-delete]').disabled=jobBusy;
-    row.querySelector('[data-delete]').onclick=()=>confirmAction('Xoá bản backup '+file.name+' khỏi Drive?',async()=>{try{await action('deleteBackupFile',{id:file.id});await load();}catch(e){report(e);}},{confirmLabel:'Xoá',danger:true});
+    row.querySelector('[data-delete]').onclick=()=>confirmAction('Xoá bản backup '+file.name+' khỏi Drive?',async()=>{try{await action('deleteBackupFile',{id:file.id});invalidateBackupData(owner);await load({force:true});}catch(e){report(e);}},{confirmLabel:'Xoá',danger:true});
     row.querySelector('[data-restore]').onclick=()=>confirmAction('Tải bản này và phục hồi thử vào database kiểm tra? Dữ liệu đang chạy được giữ nguyên; database kiểm tra sẽ được dọn sau khi xác minh.',()=>beginJob('requestBackupRestore',{id:file.id},'Đang chuẩn bị phục hồi thử…'),{confirmLabel:'Phục hồi thử'});
-    body.append(row);
+    if(body.children[index]!==row)body.insertBefore(row,body.children[index]||null);
    }
-  }catch(e){report(e);}finally{busy=false;}
+ }
+ async function load({force=false}={}){
+  if(!root.isConnected||document.hidden)return;
+  if(busy){reload=reload||force;return;}busy=true;
+  try{
+   const snapshot=await loadBackupData(owner,'status',{force:force||jobBusy});
+   if(!root.isConnected)return;
+   const completed=paintStatus(snapshot);
+   const result=snapshot.drive.connected?await loadBackupData(owner,'files',{force:force||completed}):{files:[]};
+   if(root.isConnected)paintFiles(result.files);
+  }catch(e){if(e.name!=='AbortError')report(e);}finally{busy=false;if(reload){reload=false;void load({force:true});}}
  }
  el('[data-now]').onclick=()=>beginJob('runBackupNow',{},'Đang chuẩn bị backup…');
  el('[data-settings]').onclick=async()=>{
@@ -78,9 +93,9 @@ export function mountBackupPage(root){
   dialog.querySelector('[data-close]').onclick=close;dialog.querySelector('[data-cancel]').onclick=close;dialog.oncancel=e=>{e.preventDefault();close();};
   dialog.querySelector('[data-close]').focus();
   dialog.querySelector('[data-connect]').onclick=()=>location.assign('/api/backup/google/connect');
-  dialog.querySelector('[data-disconnect]').onclick=async()=>{try{const r=await fetch('/api/backup/google/disconnect',{method:'POST',credentials:'include'});if(!r.ok)throw Error('Không thể ngắt kết nối.');close();await load();}catch(e){err(e);}};
+  dialog.querySelector('[data-disconnect]').onclick=async()=>{try{const r=await fetch('/api/backup/google/disconnect',{method:'POST',credentials:'include'});if(!r.ok)throw Error('Không thể ngắt kết nối.');invalidateBackupData(owner);close();await load({force:true});}catch(e){err(e);}};
   try{
-   const [{preferences:p},{drive}]=await Promise.all([action('getBackupPreferences'),action('getBackupStatus')]);
+   const [{preferences:p},{drive}]=await Promise.all([action('getBackupPreferences'),loadBackupData(owner,'status')]);
    if(!dialog.isConnected)return;
    for(const key of ['time','intervalDays','dailyCopies','monthlyCopies'])form.elements[key].value=p[key];
    form.elements.enabled.checked=p.enabled===true;
@@ -91,8 +106,13 @@ export function mountBackupPage(root){
   }catch(e){err(e);}
   form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('[type=submit]');button.disabled=true;try{await action('saveBackupPreferences',{enabled:form.elements.enabled.checked,time:form.elements.time.value,...Object.fromEntries(['intervalDays','dailyCopies','monthlyCopies'].map(k=>[k,Number(form.elements[k].value)]))});close();report('Đã lưu cài đặt Backup.');}catch(e){err(e);}finally{button.disabled=false;}};
  };
+ const stop=()=>{clearInterval(clock);clearTimeout(pollTimer);document.removeEventListener('visibilitychange',onVisibility);};
+ const clock=setInterval(()=>{if(!root.isConnected){stop();return;}updateClock();},1000);
+ const poll=()=>{clearTimeout(pollTimer);if(!root.isConnected)return;pollTimer=setTimeout(async()=>{if(!root.isConnected){stop();return;}await load();poll();},jobBusy?3000:60000);};
+ const onVisibility=()=>{if(!root.isConnected){stop();return;}if(!document.hidden)void load().finally(poll);};
+ document.addEventListener('visibilitychange',onVisibility);
+ const cached=readBackupData(owner);
+ if(cached.status){paintStatus(cached.status);if(cached.files)paintFiles(cached.status.drive.connected?cached.files.files:[]);}
  void load();
- const clock=setInterval(()=>{if(!root.isConnected){clearInterval(clock);return;}updateClock();},1000);
- const poll=()=>{setTimeout(async()=>{if(!root.isConnected)return;await load();poll();},5000);};
  poll();
 }
