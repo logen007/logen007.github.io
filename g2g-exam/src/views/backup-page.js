@@ -8,12 +8,12 @@ export function backupPageHtml(){return `<section class="backup-page">
  <header class="tieu-de-trang backup-heading"><div class="backup-title"><h1>Backup</h1><span data-count></span></div><div class="backup-actions">
  <button class="icon-btn" data-settings title="Cài đặt Backup" aria-label="Cài đặt Backup">${iconHtml('settings')}</button>
  <button class="nut chinh" data-now title="Tạo bản sao lưu" disabled>Sao lưu</button></div></header>
- <div class="table-wrap backup-table-wrap" role="region" aria-label="Danh sách bản backup" tabindex="0"><table class="bang backup-table" aria-label="Các bản backup trên Google Drive"><thead><tr><th scope="col">Ngày tạo</th><th scope="col">Dung lượng</th><th scope="col">Thao tác</th></tr></thead><tbody data-job hidden><tr class="backup-job-row"><td colspan="3"><div class="backup-job"><span data-status role="status" aria-live="polite"></span><time data-elapsed aria-label="Tổng thời gian" hidden></time></div></td></tr></tbody><tbody data-files></tbody></table></div></section>`;}
+ <div class="table-wrap backup-table-wrap" role="region" aria-label="Danh sách bản backup" tabindex="0"><table class="bang backup-table" aria-label="Các bản backup trên Google Drive"><thead><tr><th scope="col">Ngày tạo</th><th scope="col">Dung lượng</th><th scope="col">Thao tác</th></tr></thead><tbody data-job hidden><tr class="backup-job-row"><td colspan="3"><div class="backup-job"><div class="backup-job-heading"><span data-status role="status" aria-live="polite"></span><time data-elapsed aria-label="Tổng thời gian" hidden></time></div><progress data-progress aria-label="Tiến trình sao lưu" hidden></progress></div></td></tr></tbody><tbody data-files></tbody></table></div></section>`;}
 export function backupProgressText(status,now=Date.now()){
  const seconds=Math.max(0,Math.floor(((status.finishedAt?Date.parse(status.finishedAt):now)-Date.parse(status.startedAt))/1000));
  return Number.isFinite(seconds)?Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0'):'0:00';
 }
-export function backupItemHtml(file){return `<td class="backup-created" title="${esc(file.name)}"><time datetime="${esc(file.createdTime||'')}"><span>${esc(dateText(file.createdTime,'date'))}</span><span class="backup-time">${esc(dateText(file.createdTime,'time'))}</span></time></td><td>${Number.isFinite(Number(file.size))?(Number(file.size)/1048576).toFixed(1)+' MB':'—'}</td><td><div class="hanh-dong-bang backup-actions"><a class="icon-btn" aria-label="Tải xuống ${esc(file.name)}" title="Tải xuống" href="/api/backup/files/${encodeURIComponent(file.id)}/download">${iconHtml('arrowDown')}</a><button class="icon-btn" data-restore title="Phục hồi thử" aria-label="Phục hồi thử ${esc(file.name)}">${iconHtml('repeat')}</button><button class="icon-btn" data-delete title="Xoá bản backup" aria-label="Xoá bản backup ${esc(file.name)}">${iconHtml('trash')}</button></div></td>`;}
+export function backupItemHtml(file){return `<td class="backup-created"><a class="backup-download" aria-label="Tải xuống ${esc(file.name)}" title="${esc(file.name)}" href="/api/backup/files/${encodeURIComponent(file.id)}/download"><time datetime="${esc(file.createdTime||'')}"><span>${esc(dateText(file.createdTime,'date'))}</span><span class="backup-time">${esc(dateText(file.createdTime,'time'))}</span></time></a></td><td>${Number.isFinite(Number(file.size))?(Number(file.size)/1048576).toFixed(1)+' MB':'—'}</td><td><div class="hanh-dong-bang backup-actions"><button class="icon-btn" data-restore title="Phục hồi thử" aria-label="Phục hồi thử ${esc(file.name)}">${iconHtml('repeat')}</button><button class="icon-btn" data-delete title="Xoá bản backup" aria-label="Xoá bản backup ${esc(file.name)}">${iconHtml('trash')}</button></div></td>`;}
 export function backupSettingsHtml(){return `<form class="backup-form"><header class="dau-hop"><h2 id="backup-dialog-title">Cài đặt Backup</h2><button type="button" class="icon-btn" data-close title="Đóng" aria-label="Đóng">${iconHtml('close')}</button></header>
  <section class="backup-google"><div><strong>Google Drive</strong><small data-google>Đang kiểm tra…</small></div><button type="button" class="nut" data-connect disabled>Kết nối</button><button type="button" class="icon-btn" data-disconnect title="Ngắt kết nối Google Drive" aria-label="Ngắt kết nối Google Drive" hidden>${iconHtml('logout')}</button></section>
  <fieldset disabled><label class="backup-toggle"><span>Backup tự động</span><input type="checkbox" name="enabled" role="switch"></label>
@@ -24,8 +24,9 @@ export function mountBackupPage(root,{owner=null}={}){
  if(!root?.isConnected)return;root.innerHTML=backupPageHtml();
  const el=s=>root.querySelector(s);let busy=false,reload=false,jobBusy=false,listSignature,currentStatus={},pendingCompletion,pollTimer;
  const rows=new Map();
+ const updateProgress=()=>{const bar=el('[data-progress]');bar.hidden=!jobBusy;if(Number.isInteger(currentStatus.stepCount)&&currentStatus.stepCount>0){bar.max=currentStatus.stepCount;bar.value=Math.max(0,Math.min(currentStatus.stepCount,currentStatus.completedSteps||0));bar.setAttribute('aria-valuetext',bar.value+'/'+bar.max+' bước hoàn tất');}else{bar.removeAttribute('value');bar.removeAttribute('aria-valuetext');}};
  const updateClock=()=>{if(root.isConnected&&!document.hidden){el('[data-elapsed]').hidden=!currentStatus.startedAt;el('[data-elapsed]').textContent=backupProgressText(currentStatus);}};
- const report=e=>{if(!root.isConnected)return;el('[data-job]').hidden=false;el('[data-status]').textContent=e.message||String(e);el('[data-job]').dataset.state=e instanceof Error?'failed':'notice';updateClock();};
+ const report=e=>{if(!root.isConnected)return;el('[data-job]').hidden=false;el('[data-status]').textContent=e.message||String(e);el('[data-job]').dataset.state=e instanceof Error?'failed':'notice';updateClock();updateProgress();};
  const beginJob=async(name,data,message)=>{
   jobBusy=true;currentStatus={state:'queued',startedAt:new Date().toISOString()};el('[data-now]').disabled=true;report(message);el('[data-job]').dataset.state='running';
   invalidateBackupData(owner,['status']);paintFiles(readBackupData(owner).files?.files||[]);
@@ -41,6 +42,7 @@ export function mountBackupPage(root,{owner=null}={}){
    el('[data-job]').hidden=!message;el('[data-job]').dataset.state=status?.state||'idle';
    if(el('[data-status]').textContent!==message){el('[data-status]').textContent=message;el('[data-status]').title=message;}
    updateClock();
+   updateProgress();
    if(wasRunning!==jobBusy)poll();
    return wasRunning&&!jobBusy;
  }

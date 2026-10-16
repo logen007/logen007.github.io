@@ -13,13 +13,22 @@ const date=value=>value&&Number.isFinite(new Date(value).getTime())?esc(new Date
 const status=(text,tone='neutral')=>`<span class="dashboard-state dashboard-state--${tone}">${esc(text)}</span>`;
 const count=value=>Number(value||0).toLocaleString('vi-VN');
 
+export function dashboardBackupHtml(backup={}){
+ const running=['running','queued'].includes(backup.state),failed=['failed','interrupted'].includes(backup.state);
+ const recorded=backup.lastBackupAt||(backup.state==='success'&&backup.kind!=='restore'?backup.finishedAt:null);
+ const latest=recorded&&Number.isFinite(Date.parse(recorded))?recorded:null;
+ const label=running?(backup.kind==='restore'?'Đang phục hồi thử':'Đang sao lưu'):failed?'Cần kiểm tra':latest?'Đã sao lưu':'Chưa ghi nhận';
+ const stamp=latest?new Date(latest).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short'}):'Chưa có bản thành công';
+ return `<section class="the dashboard-backup-card"><span class="dashboard-backup-icon" aria-hidden="true">${iconHtml('backup')}</span><div class="dashboard-backup-info"><h3>Sao lưu</h3><p>${esc(stamp)}</p></div>${status(label,failed?'error':!running&&latest?'success':'neutral')}<button type="button" class="nut navigation-arrow" data-action="admin-tab" data-tab="backup" title="Mở Sao lưu" aria-label="Mở Sao lưu">${iconHtml('arrowRight')}</button></section>`;
+}
+
 function dashboardAiQueueHtml(ai,overview={}){
   const jobs=ai?.jobs||{},failed=Number(jobs.failed?.count||0);
   const preferred=normalizeAiProvider(ai?.providerPreference);
   const providerPills=AI_PROVIDERS.map(({id,label})=>`<i class="dashboard-ai-provider ${(jobs.processing?.models?.length?jobs.processing.models.includes(id):preferred===id)?'is-active':''}" data-provider="${id}" title="Số bài chấm thành công">${label} <b>${ai?.successfulByProvider?.[id]==null?'—':count(ai.successfulByProvider[id])}</b></i>`).join('');
   const failures=[...(ai?.failures||[]),...(ai?.providerStates||[]).filter(item=>item.error).map(item=>({error:item.error,at:item.retryAt}))];
   const accuracy=overview.aiAccuracy||[];
-  const accuracyHtml=accuracy.length?`<div class="dashboard-ai-accuracy"><strong>Độ chính xác AI</strong><ul>${accuracy.map(item=>`<li>${item.examId?`<button type="button" class="dashboard-ai-exam" data-action="edit-exam" data-id="${esc(item.examId)}" title="Mở đề thi: ${esc(item.examName)}">${esc(item.examName)}</button>`:`<span class="dashboard-ai-exam">${esc(item.examName)}</span>`}<span class="dashboard-ai-accuracy-meta"><i class="dashboard-ai-part">${esc(item.part)}</i><b>${count(item.correct)}/${count(item.total)}</b></span></li>`).join('')}</ul></div>`:'';
+  const accuracyHtml=accuracy.length?`<div class="dashboard-ai-accuracy"><strong>Độ chính xác AI</strong><ul>${accuracy.map(item=>`<li>${item.examId?`<button type="button" class="dashboard-ai-exam" data-action="edit-exam" data-id="${esc(item.examId)}" title="Mở đề thi: ${esc(item.examName)}">${esc(item.examName)}</button>`:`<span class="dashboard-ai-exam">${esc(item.examName)}</span>`}<span class="dashboard-ai-accuracy-meta"><i class="dashboard-ai-part">${esc(item.part)}</i><b>${count(item.correct)}/${count(item.total)}</b></span></li>`).join('')}</ul></div>`:'<p class="dashboard-ai-empty">Chưa có bài viết được đối chiếu.</p>';
   return `<section class="the dashboard-ai-queue"><header class="dashboard-section-heading"><h2>Chấm bài AI</h2><span class="dashboard-ai-providers" aria-label="Số bài chấm thành công theo AI">${providerPills}</span></header>${accuracyHtml}${failed||failures.length?`<div class="dashboard-ai-errors" role="alert"><div class="dashboard-ai-error-head"><strong>${failed?count(failed)+' bài lỗi AI':'Thông báo chấm AI'}</strong>${failed?`<button type="button" class="nut nho" data-action="retry-ai-grading">Chạy lại ${count(failed)} bài lỗi</button>`:''}</div>${failures.map(item=>`<p>${esc(item.error)}<small>${date(item.at)}</small></p>`).join('')}</div>`:''}</section>`;
 }
 
@@ -46,7 +55,7 @@ export function dashboardInfrastructureHtml(infrastructure,error='',overview={})
   const warnings=[memoryPercent>=85?'RAM cao':null,diskPercent>=85?'Ổ đĩa gần đầy':null,gc.error?'Dọn tệp gặp lỗi':null].filter(Boolean);
   const storage=[...(infrastructure.examStorage||[])].sort((a,b)=>Number(b.totalBytes||0)-Number(a.totalBytes||0));
   const parts=[['PostgreSQL',usage.databaseBytes],['Ảnh & audio',usage.uploadsBytes],['Mã nguồn',usage.applicationBytes]];
-  return `${dashboardAiQueueHtml(infrastructure.writingAi,overview)}<section class="dashboard-infrastructure"><div class="dashboard-section-heading dashboard-system-heading"><h2>Hệ thống</h2><a href="/adm?tab=settings&amp;settings=advanced" class="dashboard-caption" title="Mở Backup">Backup · ${infrastructure.backup?.state==='success'?'OK · '+date(infrastructure.backup.finishedAt):infrastructure.backup?.state==='failed'?'Thất bại':infrastructure.backup?.state==='running'?'Đang chạy':infrastructure.backup?.state==='queued'?'Đang chờ':'Chưa có'}${infrastructure.backup?.lastVerified?` · ${date(infrastructure.backup.lastVerified)}`:''}</a><div class="dashboard-services" aria-label="Trạng thái kết nối">${connectionStatusHtml(infrastructure,{compact:true})}</div></div>
+  return `${dashboardAiQueueHtml(infrastructure.writingAi,overview)}<section class="dashboard-infrastructure"><div class="dashboard-section-heading dashboard-system-heading"><h2>Hệ thống</h2><div class="dashboard-services" aria-label="Trạng thái kết nối">${connectionStatusHtml(infrastructure,{compact:true})}</div></div>
     ${warnings.length?`<div class="dashboard-alerts" role="status">${warnings.map(text=>status(text,'error')).join('')}</div>`:''}
     <div class="dashboard-system-grid">
       <section class="the dashboard-cpu-card"><header class="dashboard-section-heading"><h3>CPU</h3>${monitorRangePicker()}</header><div class="dashboard-cpu-history">
@@ -61,6 +70,7 @@ export function dashboardInfrastructureHtml(infrastructure,error='',overview={})
       </section>
       ${dashboardR2Html(infrastructure.r2)}
     </div>
+    ${dashboardBackupHtml(infrastructure.backup)}
   </section>
   <section class="dashboard-storage-card"><div class="dashboard-section-heading"><h2>Dung lượng đề thi</h2>${status(storage.length+' đề')}</div>
     <div class="dashboard-exam-storage"><div class="table-wrap"><table class="bang"><thead><tr><th scope="col">Đề thi</th><th scope="col">Last edit</th><th scope="col">Câu</th><th scope="col">Media</th><th scope="col">Dữ liệu</th><th scope="col">Tổng</th></tr></thead><tbody>${storage.map(item=>`<tr><td><button type="button" class="table-link" data-action="edit-exam" data-id="${esc(item.id)}" title="Mở đề thi">${esc(item.title)}</button><span class="phu">${esc([item.provider,item.level].filter(Boolean).join(' '))}</span></td><td>${fmtDate(item.updatedAt)}</td><td>${Number(item.questions)||0}</td><td>${Number(item.mediaFiles)||0} tệp · ${bytes(item.mediaBytes)}</td><td>${bytes(item.dataBytes)}</td><td><b>${bytes(item.totalBytes)}</b></td></tr>`).join('')||'<tr><td colspan="6" class="rong">Chưa có đề thi.</td></tr>'}</tbody></table></div></div>

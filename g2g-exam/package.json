@@ -10,6 +10,6 @@
     "test:preview": "node tests/preview.test.mjs",
     "test:sync": "node tests/attempt-sync.test.mjs",
     "test:r2": "node tests/r2-media.test.mjs && node tests/r2-routes.test.mjs && node tests/r2-settings.test.mjs",
-    "pretest": "node tests/monitor-chart.test.mjs && node tests/dashboard.test.mjs && node tests/cpu-metrics.test.mjs && node tests/catalog-loading.test.mjs && node tests/telc-b1.test.mjs && node tests/image-paste.test.mjs && node tests/exam-completion.test.mjs && node tests/boot-layout.test.mjs && node tests/text-markup.test.mjs && node tests/gradebook.test.mjs && node tests/exam-access.test.mjs && node tests/exam-clock.test.mjs"
+    "pretest": "node tests/published-editor.test.mjs && node tests/monitor-chart.test.mjs && node tests/dashboard.test.mjs && node tests/cpu-metrics.test.mjs && node tests/catalog-loading.test.mjs && node tests/telc-b1.test.mjs && node tests/image-paste.test.mjs && node tests/exam-completion.test.mjs && node tests/boot-layout.test.mjs && node tests/text-markup.test.mjs && node tests/gradebook.test.mjs && node tests/exam-access.test.mjs && node tests/exam-clock.test.mjs"
   }
 }

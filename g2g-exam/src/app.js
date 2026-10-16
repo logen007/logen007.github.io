@@ -87,6 +87,7 @@ import {clearBackupData} from './settings/backup-data.js';
 import {readDashboardCache,writeDashboardCache,clearDashboardCache,patchDashboard} from './ui/dashboard-cache.js';
 import {streamPublication} from './ui/publication-progress.js';
 import {syncExamPublishButtons} from './ui/exam-publish-button.js';
+import {bindPublishedEditor} from './ui/published-editor.js';
 import {isScoredWritingField,writingFormScore,addWritingRow,removeWritingRow} from './domain/writing-form.js';
 import {readWritingRow} from './ui/writing-form.js';
 import {readExamAnswers,revealUnansweredQuestion} from './ui/exam-answers.js';
@@ -653,6 +654,7 @@ function examBuilderView(){
   if(section)ui.builderSectionId=section.id;
   const readOnly=exam.status==='published'||!canEditExam(user,exam);
   app.innerHTML=layout(examBuilderHtml({data,user,exam,section,readOnly}));
+  bindPublishedEditor(app.querySelector('.goethe-builder'),notify);
 }
 
 function gradingDetailView(){
@@ -1569,6 +1571,7 @@ if(repo.mode==='api')startDashboardRefresh({
   onResult:result=>{if(JSON.stringify(result)===JSON.stringify(ui.infrastructure))return;ui.infrastructure=result;ui.infrastructureError='';render();},
 });
 if(repo.mode==='api')startDashboardRefresh({
+  idleIntervalMs:60000,
   isActive:()=>isMaster(user)&&ui.view==='admin'&&ui.adminTab==='dashboard'&&Boolean(ui.infrastructure)&&!document.getElementById('modal'),
   refresh:()=>repo.call('getWritingAiQueueStatus'),
   onResult:writingAi=>{

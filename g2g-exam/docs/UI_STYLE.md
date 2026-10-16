@@ -81,6 +81,9 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 - Published exams must be unpublished before editing content. The editor remains
   available read-only for preview and unpublishing; the server also rejects stale
   content saves. Existing attempt snapshots remain unchanged.
+  Published editors omit the permanent unpublish reminder. Clicking the editing
+  surface shows “Hãy bỏ xuất bản trước khi chỉnh sửa bài thi.”; preview, section
+  navigation and unpublishing remain available.
 
 - Publishing keeps one button toggling Xuất bản / Bỏ xuất bản immediately on
   success without rebuilding the editor. Unpublish uses an explicit authorized
@@ -479,6 +482,12 @@ Validate hex input, preview locally before save, then apply to every route. Cach
 theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
+
+Refinement requested 16 October 2026: keep the existing charts and compact the
+mobile cards, with a separate Backup row below system resources linking to the
+Backup page. Keep its last successful backup time separate from running/error
+states; a restore verification does not count as a new backup. Empty AI accuracy
+states have one concise explanation. Idle AI polling runs once per minute.
 
 - Show the same-account session snapshot immediately while loading fresh dashboard
   data. Retain it up to 24 hours and clear it on logout; never cache answers,

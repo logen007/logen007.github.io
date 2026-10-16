@@ -112,18 +112,26 @@
 .backup-table td{font-variant-numeric:tabular-nums}
 .backup-table th:first-child,.backup-table td:first-child:not([colspan]){width:1%}
 .backup-created time{display:flex;gap:8px;font-weight:600}
+.backup-download{display:inline-flex;align-items:center;min-height:44px;color:var(--chu);text-decoration:none}
+.backup-download:hover{text-decoration:underline;text-underline-offset:4px}
 .backup-created .backup-time{color:var(--phu)}
 .backup-table th:nth-child(2),.backup-table td:nth-child(2){text-align:right}
 .backup-table th:last-child,.backup-table td:last-child:not([colspan]){width:1%;text-align:right}
 .backup-table .backup-actions{justify-content:flex-end;flex-wrap:nowrap}
 .backup-table .backup-job-row>td{padding:0;border-bottom:1px solid var(--vien)}
-.backup-job{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:80px;padding:16px 20px;font-size:13px;animation:backup-line-in .24s ease-out}
+.backup-job{display:grid;align-content:center;gap:10px;min-height:80px;padding:16px 20px;font-size:13px;animation:backup-line-in .24s ease-out}
+.backup-job-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0}
+.backup-job progress{display:block;appearance:none;width:100%;height:5px;border:0;border-radius:var(--pill);overflow:hidden;background:var(--surface-muted);accent-color:var(--brand-primary)}
+.backup-job progress::-webkit-progress-bar{background:var(--surface-muted);border-radius:var(--pill)}
+.backup-job progress::-webkit-progress-value{background:var(--brand-primary);border-radius:var(--pill);transition:width .35s ease}
+.backup-job progress::-moz-progress-bar{background:var(--brand-primary);border-radius:var(--pill)}
+.backup-table [data-files] tr:not(:last-child)>td{border-bottom:1px solid var(--vien)}
 .backup-job [data-status]{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--phu)}
 .backup-job time{flex:none;color:var(--phu);font-variant-numeric:tabular-nums}
 .backup-table [data-job][data-state=failed] [data-status],.backup-table [data-job][data-state=interrupted] [data-status]{color:var(--do)}
 .backup-row-enter>td{animation:backup-line-in .36s ease-out}
 @keyframes backup-line-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-@media(prefers-reduced-motion:reduce){.backup-job,.backup-row-enter>td{animation:none}}
+@media(prefers-reduced-motion:reduce){.backup-job,.backup-row-enter>td{animation:none}.backup-job progress::-webkit-progress-value{transition:none}}
 .backup-dialog{position:fixed;box-sizing:border-box;width:min(500px,calc(100% - 32px));max-height:90dvh;overflow:auto;padding:24px;border:1px solid var(--vien);border-radius:var(--r);background:var(--mat);color:var(--chu);box-shadow:var(--shadow)}
 .backup-dialog::backdrop{background:rgba(0,0,0,.35)}
 .backup-page [hidden],.backup-dialog [hidden]{display:none!important}
