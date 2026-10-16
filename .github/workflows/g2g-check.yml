@@ -45,6 +45,9 @@ jobs:
       - name: Check speaking phone flow without a browser
         working-directory: g2g-exam
         run: G2G_JSDOM_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/jsdom/lib/api.js" node tests/speaking-phone.test.mjs
+      - name: Check speaking video Drive archive
+        working-directory: g2g-exam
+        run: G2G_PGLITE_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js" node tests/speaking-archive.integration.mjs
       - name: Check bundled web and phone entry
         working-directory: g2g-exam
         run: npm ci && npm run build:web && node tests/speaking-qr.test.mjs

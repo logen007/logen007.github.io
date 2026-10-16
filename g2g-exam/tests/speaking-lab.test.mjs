@@ -48,6 +48,13 @@ for(const role of ['master','teacher']){
  assert.match(speaking,/muc-ben--icon/);assert.match(speaking,/aria-label="Thi Nói thử nghiệm"/);assert.ok(!speaking.includes('<span>'));
 }
 const source=readFileSync(new URL('../src/speaking/phone.js',import.meta.url),'utf8');
+const css=readFileSync(new URL('../enhancements.css',import.meta.url),'utf8');
+assert.match(css,/\.speaking-room:is\(\[data-view=stage\],\[data-view=paused\]\)\{--speaking-tile:min\(214px/);
+assert.match(css,/\.speaking-videos figcaption\{[^}]*font-size:8px/);
+for(const [width,height] of [[320,568],[390,664],[430,800],[480,900]]){
+ const previous=Math.max(96,Math.min((height-520)*.5625,150)),next=Math.min(214,(width-52)/2,(height-300)*.5625);
+ assert.ok(next>previous);assert.ok(next*2+52<=width);assert.ok(next*16/9+300<=height);
+}
 assert.match(source,/acquirePreview/);assert.match(source,/consent:true/);assert.match(source,/document\.hidden/);
 assert.match(source,/actions\?\.leave/);assert.match(source,/URL\.revokeObjectURL/);
 console.log('Speaking trial: validation, private A/B prompts, teacher ownership, phone gate and safe login return passed.');

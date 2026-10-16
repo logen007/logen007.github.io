@@ -73,7 +73,7 @@ try{
  assert.equal((await send('POST','sessions','t',input)).statusCode,409,'Reject overlapping slots');
  assert.equal((await send('GET',p,'c')).statusCode,403);
  assert.equal((await send('GET',p,'x')).statusCode,403);
- assert.equal((await send('GET','sessions','x')).json().sessions.length,0);
+ assert.ok((await send('GET','sessions','x')).json().sessions.every(s=>s.id!==id),'Other teachers cannot list a live session they do not own');
  assert.equal((await send('GET',p,'a')).json().stage,null);
  assert.equal((await send('POST',p+'/join','a',{}, {'user-agent':'Macintosh Chrome'})).statusCode,400);
  const joined=await send('POST',p+'/join','a',{});assert.equal(joined.statusCode,200,joined.body);
@@ -108,7 +108,9 @@ try{
  assert.equal((await send('GET',p+'/recording','t')).statusCode,302);
  assert.equal((await send('POST',p+'/review','t',{reviews:{a:'Clear pronunciation',b:'More interaction'}})).statusCode,200);
  assert.ok(!(await send('GET',p,'a')).body.includes('Clear pronunciation'));
- assert.equal((await send('POST',p+'/review','x',{reviews:{a:'No'}})).statusCode,403);
+ assert.equal((await send('POST',p+'/review','x',{reviews:{a:'No'}})).statusCode,409,'Stale review cannot overwrite another teacher');
+ assert.equal((await send('GET',p+'/recording','x')).statusCode,302,'Any teacher may review a finished recording');
+ assert.equal((await send('POST',p+'/review','x',{reviewVersion:1,reviews:{a:'Updated by teacher'}})).statusCode,200);
  const expired={...structuredClone(d),state:'waiting',roomId:undefined,scheduledAt:new Date(time-91*60000).toISOString()};await tickTrial(expired,config,time);assert.equal(expired.state,'interrupted');
  const waiting={...structuredClone(d),state:'waiting',roomId:'room1',roomOpenedAt:time,scheduledAt:new Date(time).toISOString(),recordingId:undefined,recordingRequestedAt:undefined,recordingStopped:undefined,ready:{}};
  waiting.outcome='cancelled';waiting.state='finishing';const before=calls.length;await tickTrial(waiting,config,time);assert.equal(waiting.state,'cancelled');assert.ok(!calls.slice(before).some(c=>c.path.endsWith('/stop')),'Cancelling before recording must still close the room');

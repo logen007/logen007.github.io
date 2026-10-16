@@ -77,7 +77,7 @@ try{
  dom.window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
  const {mountSpeakingAdmin}=await import('../src/speaking/admin.js');
  let accountRequests=0;
- set('fetch',async url=>{let value;if(url.endsWith('/config'))value={configured:true};else if(url.endsWith('/sessions'))value={sessions:[]};else if(url.includes('/accounts?q=')){accountRequests++;value={accounts:[{email:'a@test.example',name:'Nguyễn Văn An'}]};}else throw Error('Unexpected '+url);return {ok:true,json:async()=>value};});
+ set('fetch',async url=>{let value;if(url.endsWith('/config'))value={configured:true};else if(url.endsWith('/archive-status'))value={connected:true};else if(url.endsWith('/sessions'))value={sessions:[]};else if(url.includes('/accounts?q=')){accountRequests++;value={accounts:[{email:'a@test.example',name:'Nguyễn Văn An'}]};}else throw Error('Unexpected '+url);return {ok:true,json:async()=>value};});
  await mountSpeakingAdmin(el('#speaking-app'),{user:{role:'master'}});
  el('[data-create]').click();
  const dialog=document.querySelector('dialog'),mode=dialog.querySelector('[name=mode]'),scheduled=dialog.querySelector('[name=scheduledAt]');

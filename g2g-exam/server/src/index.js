@@ -32,6 +32,7 @@ import {withMediaMutation} from './media-backup-lock.js';
 import {startWritingAiWorker} from './writing-ai-queue.js';
 import {startResultEmailWorker} from './actions/grading.js';
 import {registerSpeakingLabRoutes,startSpeakingLabWorker} from './speaking-lab.js';
+import {registerSpeakingArchiveRoutes,startSpeakingArchiveWorker} from './speaking-archive.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const publicDir=path.resolve(process.env.WEB_PUBLIC_DIR||path.resolve(here,'../../public'));
@@ -87,6 +88,8 @@ await registerAuthRoutes(app);
 await registerBackupGoogleRoutes(app);
 registerSpeakingLabRoutes(app);
 startSpeakingLabWorker(app);
+registerSpeakingArchiveRoutes(app);
+startSpeakingArchiveWorker(app);
 app.get('/api/backup/files/:id/download',async(request,reply)=>{const file=await downloadBackupFile(await requireRole(request,'master'),request.params.id);reply.header('Content-Type','application/octet-stream').header('Content-Disposition',`attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`);return reply.send(file.body);});
 
 app.get('/api/health',async()=>{let db=true;try{await pool.query('SELECT 1');}catch{db=false;}return {ok:db,backend:'vps',database:db,time:new Date().toISOString()};});

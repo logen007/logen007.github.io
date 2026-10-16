@@ -2,7 +2,8 @@ import crypto from 'node:crypto';
 import {query,withTx,appError} from './db.js';
 import {requireUser,requireRole} from './auth.js';
 import {readHmsConfig,saveHmsConfig,hmsRequest,hmsToken,hmsPresence} from './speaking-hms.js';
-import {validateTrial,trialView,canManage,isPhone} from '../../src/speaking/model.js';
+import {validateTrial,trialView,canManage,canReview,isPhone} from '../../src/speaking/model.js';
+import {streamDriveRecording} from './speaking-drive.js';
 
 const terminal=['completed','cancelled','interrupted'];
 async function persist(c,row){await c.query('UPDATE speaking_lab_sessions SET data=$2::jsonb,updated_at=now() WHERE id=$1',[row.id,JSON.stringify(row.data)]);}
@@ -42,7 +43,7 @@ export function registerSpeakingLabRoutes(app){
  });
  app.get('/api/speaking-lab/sessions',async request=>{
   const user=await requireRole(request,'teacher','master');
-  const r=await query(`SELECT id,data->>'title' AS title,data->>'scheduledAt' AS scheduled_at,data->>'mode' AS mode,data->>'state' AS state,data->'members' AS members,updated_at FROM speaking_lab_sessions WHERE ($1::boolean OR owner_id=$2) ORDER BY created_at DESC LIMIT 100`,[user.role==='master',user.id]);
+  const r=await query(`SELECT id,data->>'title' AS title,data->>'scheduledAt' AS scheduled_at,data->>'mode' AS mode,data->>'state' AS state,CASE WHEN data->>'assetId' IS NOT NULL THEN COALESCE(data->'driveArchive'->>'state','queued') END AS archive_state,data->'members' AS members,updated_at FROM speaking_lab_sessions WHERE ($1::boolean OR owner_id=$2 OR data->>'state' IN ('completed','interrupted','cancelled','processing')) ORDER BY created_at DESC LIMIT 100`,[user.role==='master',user.id]);
   return {sessions:r.rows};
  });
  app.post('/api/speaking-lab/sessions',async request=>{
@@ -116,16 +117,18 @@ export function registerSpeakingLabRoutes(app){
  app.post('/api/speaking-lab/sessions/:id/review',async request=>{
   const user=await requireRole(request,'teacher','master');
   return locked(request.params.id,user,async row=>{
-   if(!canManage(user,row))throw appError(403,'Không có quyền nhận xét ca này.');
+   if(!canManage(user,row)&&!canReview(user,row))throw appError(403,'Không có quyền nhận xét ca này.');
    if(!['completed','interrupted'].includes(row.data.state))throw appError(409,'Chờ kết thúc và xử lý bản ghi trước khi nhận xét.');
    const reviews={};for(const m of row.data.members){const note=String(request.body?.reviews?.[m.id]||'').trim();if(note.length>10000)throw appError(400,'Nhận xét quá dài.');reviews[m.id]=note;}
-   row.data.reviews=reviews;row.data.reviewedBy=user.id;
+   if(Number(request.body?.reviewVersion||0)!==Number(row.data.reviewVersion||0))throw appError(409,'Giáo viên khác đã cập nhật nhận xét. Hãy mở lại ca trước khi lưu.');
+   row.data.reviews=reviews;row.data.reviewedBy=user.id;row.data.reviewVersion=(row.data.reviewVersion||0)+1;
   });
  });
  app.get('/api/speaking-lab/sessions/:id/recording',async(request,reply)=>{
   const user=await requireRole(request,'teacher','master'),r=await query('SELECT * FROM speaking_lab_sessions WHERE id=$1',[request.params.id]),row=r.rows[0];
-  if(!row||!canManage(user,row))throw appError(404,'Không tìm thấy bản ghi.');
+  if(!row||!canManage(user,row)&&!canReview(user,row))throw appError(404,'Không tìm thấy bản ghi.');
   if(!row.data.assetId)throw appError(409,'Bản ghi chưa sẵn sàng.');
+  if(row.data.driveArchive?.state==='saved')return streamDriveRecording(row.data.driveArchive.fileId,request,reply);
   const result=await hmsRequest(await readHmsConfig(),'recording-assets/'+encodeURIComponent(row.data.assetId)+'/presigned-url?presign_duration=900');
   if(!result.url||new URL(result.url).protocol!=='https:')throw appError(502,'100ms chưa trả liên kết video hợp lệ.');
   return reply.redirect(result.url);

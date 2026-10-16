@@ -3,6 +3,7 @@ export const LAB_STATES={scheduled:'Đã xếp lịch',waiting:'Chờ sẵn sàn
 export const isPhone=agent=>/iPhone|Android.*Mobile/i.test(String(agent||''));
 export const isStaff=user=>['master','teacher'].includes(user?.role);
 export const canManage=(user,row)=>user?.role==='master'||user?.role==='teacher'&&row.owner_id===user.id;
+export const canReview=(user,row)=>isStaff(user)&&['completed','interrupted','cancelled','processing'].includes(row.data.state);
 export function validateTrial(input,now=Date.now()){
  const fail=message=>{throw Object.assign(new Error(message),{statusCode:400});};
  const mode=input.mode||'schedule';
@@ -20,10 +21,10 @@ export function validateTrial(input,now=Date.now()){
  return {title,mode,scheduledAt:new Date(scheduledAt).toISOString(),emails,stages};
 }
 export function trialView(row,user,now=Date.now()){
- const d=row.data,manage=canManage(user,row),index=d.members.findIndex(m=>m.id===user.id);
- if(!manage&&index<0)throw Object.assign(new Error('Bạn không được xếp vào ca thi này.'),{statusCode:403});
+ const d=row.data,manage=canManage(user,row),review=canReview(user,row),index=d.members.findIndex(m=>m.id===user.id);
+ if(!manage&&!review&&index<0)throw Object.assign(new Error('Bạn không được xếp vào ca thi này.'),{statusCode:403});
  const stage=['running','paused'].includes(d.state)?d.stages[d.stageIndex]:null;
  const speaker=stage?.speakerSeat?d.members.find(m=>m.seat===stage.speakerSeat):null,isSpeaker=index>=0&&(!speaker||speaker.id===user.id);
- return {id:row.id,title:d.title,scheduledAt:d.scheduledAt,mode:d.mode||'schedule',state:d.state,serverNow:now,manage,participant:index>=0,seat:index<0?null:index===0?'A':'B',members:d.members.map(m=>({id:m.id,name:m.name,seat:m.seat,ready:!!d.ready?.[m.id],presence:d.presence?.find(p=>p.id===m.id)||null})),stageIndex:d.stageIndex??null,stageCount:d.stages.length,stage:stage?{title:stage.title,instruction:stage.instruction,prompt:isSpeaker?stage[index===0?'a':'b']:'',seconds:stage.seconds,isSpeaker,speakerName:speaker?.name||'',image:isSpeaker?stage.image||'':''}:null,finished:!!d.votes?.[user.id],partnerFinished:d.members.some(m=>m.id!==user.id&&d.votes?.[m.id]),deadline:d.deadline||null,remaining:d.remaining??null,error:d.error||'',recordingStatus:d.recordingStatus||null,...(manage?{stages:d.stages,markers:d.markers||[],reviews:d.reviews||{},hasRecording:!!d.assetId,recordingStartedAt:d.recordingStartedAt||null}:{} )};
+ return {id:row.id,title:d.title,scheduledAt:d.scheduledAt,mode:d.mode||'schedule',state:d.state,serverNow:now,manage,participant:index>=0,seat:index<0?null:index===0?'A':'B',members:d.members.map(m=>({id:m.id,name:m.name,seat:m.seat,ready:!!d.ready?.[m.id],presence:d.presence?.find(p=>p.id===m.id)||null})),stageIndex:d.stageIndex??null,stageCount:d.stages.length,stage:stage?{title:stage.title,instruction:stage.instruction,prompt:isSpeaker?stage[index===0?'a':'b']:'',seconds:stage.seconds,isSpeaker,speakerName:speaker?.name||'',image:isSpeaker?stage.image||'':''}:null,finished:!!d.votes?.[user.id],partnerFinished:d.members.some(m=>m.id!==user.id&&d.votes?.[m.id]),deadline:d.deadline||null,remaining:d.remaining??null,error:d.error||'',recordingStatus:d.recordingStatus||null,...((manage||review)?{reviewVersion:d.reviewVersion||0,stages:d.stages,markers:d.markers||[],reviews:d.reviews||{},hasRecording:!!d.assetId,archive:d.assetId?{state:d.driveArchive?.state||'queued',error:d.driveArchive?.error||'',savedAt:d.driveArchive?.savedAt||null}:null,recordingStartedAt:d.recordingStartedAt||null}:{} )};
 }
 export const clockText=seconds=>{const n=Math.max(0,Math.ceil(seconds||0));return Math.floor(n/60)+':'+String(n%60).padStart(2,'0');};

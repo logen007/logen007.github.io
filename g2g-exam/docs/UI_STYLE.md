@@ -725,6 +725,10 @@ shared tables and controls; scheduling, 100ms setup and review are native dialog
 Phone delivery uses the approved Review04: compact header, equal 9:16 video
 slots and a white task sheet. Show each account's full name, never “Bạn”, in
 primary/secondary name labels with contrasting text; seat order stays stable.
+During the task/paused views, video tiles expand to the available two-column
+width (214px maximum per tile), reserving 300px for header/task/actions on short
+screens. Video name labels use 8px text (two thirds of the previous 12px), with
+proportionally compact padding; preflight video sizing remains unchanged.
 Keep device checks before entering; no camera, mic, help or leave controls in
 the call. Camera video fills the portrait slot without stretching (center crop
 landscape input); do not apply this crop to task images or recording playback.
@@ -746,6 +750,17 @@ Suggestions use an input-anchored, border-only white list with a medium-weight
 name and muted email underneath; no native datalist, avatars or decorative badges.
 Preserve touch selection, arrow/Enter/Escape navigation and cached requests.
 Show recording saved only after server confirmation.
+After 100ms completes its single composite recording, a durable worker copies it
+to the existing Drive connection's `G2G Exam / Video thi nói` subfolder. Keep
+backup archives and retention separate. Show queued/uploading/saved/retrying
+states, verify size and checksum, reuse a durable file ID on retry, and clean
+temporary VPS files. Do not delete the 100ms source or make Drive videos public.
+Teacher playback goes through the authenticated recording endpoint (Range
+supported) once archived, with 100ms playback available before transfer completes.
+All teachers may view/review finished trials; only admins/owners control live
+trials. Review saves use a version check to prevent overwriting another teacher.
+This remains isolated feedback, not official exam scoring. Admin pairing remains
+manual in this release; automatic candidate matchmaking is a separate feature.
 The ending icon follows actual state: warning for interruption, cross for
 cancellation, clock for processing/closing, and completion tick only for completed.
 Keep the status and server clock on one row. Desktop displays only a phone QR.

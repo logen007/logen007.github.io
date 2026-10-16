@@ -111,6 +111,13 @@ export async function getBackupDriveCredentials(){
   const config=await read();if(!config?.refreshToken)throw appError(503,'Chưa kết nối Google Drive Backup.');
   return {...config,clientId:env().clientId,clientSecret:env().clientSecret};
 }
+// Reuse the existing encrypted OAuth connection, without exposing it to clients.
+export async function getBackupDriveAccess(){
+  const config=await getBackupDriveCredentials(),oauth=client();oauth.setCredentials({refresh_token:config.refreshToken});
+  const {token}=await oauth.getAccessToken();
+  if(!token||!config.folderId)throw appError(503,'Hãy kết nối lại Google Drive trong Backup.');
+  return {token,folderId:config.folderId};
+}
 export async function listBackupFiles(user){
   if(user?.role!=='master')throw appError(403,'Không có quyền.');
   const config=await read();if(!config?.folderId)throw appError(409,'Chưa kết nối Google Drive.');
