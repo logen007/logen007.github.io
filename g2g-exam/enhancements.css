@@ -120,7 +120,7 @@
 .backup-job{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:80px;padding:16px 20px;font-size:13px;animation:backup-line-in .24s ease-out}
 .backup-job [data-status]{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--phu)}
 .backup-job time{flex:none;color:var(--phu);font-variant-numeric:tabular-nums}
-.backup-job[data-state=failed] [data-status],.backup-job[data-state=interrupted] [data-status]{color:var(--do)}
+.backup-table [data-job][data-state=failed] [data-status],.backup-table [data-job][data-state=interrupted] [data-status]{color:var(--do)}
 .backup-row-enter>td{animation:backup-line-in .36s ease-out}
 @keyframes backup-line-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.backup-job,.backup-row-enter>td{animation:none}}
