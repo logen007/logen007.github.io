@@ -220,6 +220,8 @@ assert.ok(roster.includes('Class Student'));
 assert.ok(!roster.includes('lan@example.test'));
 assert.ok(roster.includes('data-class-back'));
 assert.ok(studentProfileCardHtml(rosterData,rosterData.users[0]).includes('data-action="class-enrollment"'));
+assert.ok(studentProfileCardHtml(rosterData,rosterData.users[0]).includes('>Nhập mã lớp</button>'));
+assert.ok(!studentProfileCardHtml(rosterData,rosterData.users[0]).includes('Nhập mã xác nhận'));
 assert.ok(!studentProfileCardHtml(rosterData,rosterData.users[1]).includes('data-action="class-enrollment"'));
 // Inline editing is tested without opening a browser.
 const editButton={focus(){}},nameInput={value:'',focus(){},select(){},disabled:false};
