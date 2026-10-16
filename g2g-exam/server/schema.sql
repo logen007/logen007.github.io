@@ -1,3 +1,13 @@
+-- Isolated speaking trial. No links to attempts, grades or published exam data.
+CREATE TABLE IF NOT EXISTS speaking_lab_sessions (
+  id text PRIMARY KEY,
+  owner_id text NOT NULL,
+  data jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS speaking_lab_owner_idx ON speaking_lab_sessions(owner_id);
+
 CREATE TABLE IF NOT EXISTS users (
   id text PRIMARY KEY,
   email text UNIQUE NOT NULL,

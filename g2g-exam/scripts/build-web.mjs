@@ -18,7 +18,7 @@ async function collectSpecs(directory){
 await collectSpecs(path.join(root,'specs'));
 await fs.mkdir(path.join(out,'assets'),{recursive:true});
 const result=await build({
-  absWorkingDir:root,entryPoints:{app:'src/app.js',features:'src/feature-loader.js'},
+  absWorkingDir:root,entryPoints:{app:'src/app.js',features:'src/feature-loader.js',speaking:'src/speaking/phone.js'},
   outdir:path.join(out,'assets'),entryNames:'[name]-[hash]',chunkNames:'chunk-[hash]',
   bundle:true,splitting:true,format:'esm',platform:'browser',target:'es2022',
   minify:true,metafile:true,external:['node:*'],
@@ -31,7 +31,9 @@ const result=await build({
   }}],
 });
 let html=await fs.readFile(path.join(root,'vi.html'),'utf8');
+let speakingHtml=await fs.readFile(path.join(root,'speaking-lab.html'),'utf8');
 for(const [file,metadata] of Object.entries(result.metafile.outputs)){
+  if(metadata.entryPoint==='src/speaking/phone.js')speakingHtml=speakingHtml.replace('./src/speaking/phone.js','/assets/'+path.basename(file));
   if(!['src/app.js','src/feature-loader.js'].includes(metadata.entryPoint))continue;
   const original=metadata.entryPoint==='src/app.js'?'app':'feature-loader';
   html=html.replace(new RegExp(`\\./src/${original}\\.js\\?[^" ]+`),'/assets/'+path.basename(file));
@@ -41,9 +43,11 @@ for(const file of ['styles.css','enhancements.css']){
   const name=file.replace('.css','-'+createHash('sha256').update(content).digest('hex').slice(0,12)+'.css');
   await fs.writeFile(path.join(out,'assets',name),content);
   html=html.replace(new RegExp(`\\./${file.replace('.','\\.')}\\?[^" ]+`),'/assets/'+name);
+  speakingHtml=speakingHtml.replace(new RegExp(`\\./${file.replace('.','\\.')}\\?[^" ]+`),'/assets/'+name);
 }
 await fs.writeFile(path.join(out,'vi.html'),html);
 await fs.writeFile(path.join(out,'index.html'),html);
+await fs.writeFile(path.join(out,'speaking-lab.html'),speakingHtml);
 for(const file of ['privacy.html','terms.html','legal.css'])await fs.copyFile(path.join(root,file),path.join(out,file));
 await fs.copyFile(path.join(root,'server/runtime/runtime-config.js'),path.join(out,'runtime-config.js'));
 await fs.copyFile(path.join(root,'media-worker.js'),path.join(out,'media-worker.js'));

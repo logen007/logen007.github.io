@@ -137,7 +137,7 @@ repo.subscribe(next=>{
     realtimeRenderTimer=setTimeout(()=>render(),80);
     return;
   }
-  if(['exam','preview-exam','builder','grading-detail'].includes(ui.view)||(ui.view==='admin'&&['settings','backup'].includes(ui.adminTab))||document.getElementById('modal')||document.querySelector('.g2g-settings-page')||document.querySelector('[data-name-form]:not([hidden])')||document.activeElement?.matches('[data-student-search]'))return;
+  if(['exam','preview-exam','builder','grading-detail'].includes(ui.view)||(ui.view==='admin'&&['settings','backup','speaking'].includes(ui.adminTab))||document.getElementById('modal')||document.querySelector('.g2g-settings-page')||document.querySelector('[data-name-form]:not([hidden])')||document.activeElement?.matches('[data-student-search]'))return;
   clearTimeout(realtimeRenderTimer);
   realtimeRenderTimer=setTimeout(()=>render(),80);
 });
@@ -630,6 +630,7 @@ function adminView(cachedAt=null){
   else if(ui.adminTab==='classes')content=classesHtml({data,classId:ui.classId});
   else if(ui.adminTab==='trash')content=trashAdminHtml({data,retentionDays:data.trashRetentionDays??30});
   else if(ui.adminTab==='backup'&&isMaster(user))content='<div data-backup-page></div>';
+  else if(ui.adminTab==='speaking')content='<div data-speaking-admin></div>';
   else if(ui.adminTab==='settings'&&isMaster(user))content='<div data-settings-route><p role="status">Đang tải cài đặt…</p></div>';
   const current=app.querySelector('.admin-dashboard');
   if(current&&ui.adminTab==='dashboard'&&isMaster(user)){
@@ -644,6 +645,10 @@ function adminView(cachedAt=null){
   if(ui.adminTab==='backup'&&isMaster(user)){
     const target=app.querySelector('[data-backup-page]');
     import('./views/backup-page.js').then(({mountBackupPage})=>mountBackupPage(target,{owner:user.id})).catch(()=>{if(target.isConnected)target.textContent='Không tải được trang Backup.';});
+  }
+  if(ui.adminTab==='speaking'){
+    const target=app.querySelector('[data-speaking-admin]');
+    import('./speaking/admin.js').then(({mountSpeakingAdmin})=>mountSpeakingAdmin(target,{user})).catch(()=>{if(target.isConnected)target.textContent='Không tải được khu Thi Nói thử nghiệm.';});
   }
 }
 

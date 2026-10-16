@@ -718,6 +718,15 @@ states have one concise explanation. Idle AI polling runs once per minute.
   The Y scale spans zero to the largest native maximum/score among shown attempts.
   No extra polling or fabricated historical values.
 
+## Speaking trial (16 October 2026)
+
+The admin/teacher navigation includes a separate Thi Nói thử nghiệm tab. Reuse
+shared tables and controls; scheduling, 100ms setup and review are native dialogs.
+Phone delivery has explicit device checks, recording consent and contextual
+instructions. Two compact video tiles precede the current private prompt; keep
+the status and server clock on one row. Desktop displays only a phone QR.
+Use explicit trial labels; never imply an official TELC task or real published score.
+
 ## Verification
 
 Run syntax checks, automated tests and G2G Exam Check before updating main.

@@ -5,7 +5,7 @@ RUN npm ci
 COPY scripts /build/scripts
 COPY src /build/src
 COPY specs /build/specs
-COPY vi.html styles.css enhancements.css media-worker.js /build/
+COPY vi.html speaking-lab.html styles.css enhancements.css media-worker.js /build/
 COPY privacy.html terms.html legal.css /build/
 COPY server/runtime /build/server/runtime
 RUN npm run build:web
@@ -26,6 +26,7 @@ COPY media-worker.js /app/public/media-worker.js
 RUN cp /app/public/vi.html /app/public/index.html
 COPY src /app/public/src
 COPY src/release.js /app/src/release.js
+COPY src/speaking/model.js /app/src/speaking/model.js
 COPY src/config.js /app/src/config.js
 COPY src/domain/exams.js src/domain/questions.js src/domain/base.js src/domain/configured-part-validation.js src/domain/inline-gaps.js src/domain/text-markup.js /app/src/domain/
 COPY src/domain/student-profile.js /app/src/domain/student-profile.js

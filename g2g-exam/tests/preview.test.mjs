@@ -298,7 +298,8 @@ try{
   await test('Header keeps role-appropriate menus in builder and grading views',()=>{
     for(const role of ['master','teacher'])for(const view of ['admin','builder','grading-detail']){
       const html=topbarHtml({user:{id:role,role},mode:'api',online:true,ui:{view}});
-      assert.equal(actionButtons(html,'admin-tab').length,role==='master'?6:3);
+      assert.equal(actionButtons(html,'admin-tab').length,role==='master'?7:4);
+      assert.match(html,/data-tab="speaking"/);
       if(role==='master')assert.doesNotMatch(html,/data-tab="classes"/);
       else assert.match(html,/data-tab="classes"/);
       assert.match(html,/data-tab="exams"/);

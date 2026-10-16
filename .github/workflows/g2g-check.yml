@@ -22,6 +22,9 @@ jobs:
       - name: Run tests
         working-directory: g2g-exam
         run: npm test && node tests/legal-pages.test.mjs
+      - name: Check isolated speaking trial
+        working-directory: g2g-exam
+        run: node tests/speaking-lab.test.mjs
       - name: Check R2 settings and VPS fallback
         working-directory: g2g-exam
         run: npm run test:r2
@@ -29,10 +32,19 @@ jobs:
         working-directory: g2g-exam
         run: node tests/backup-control.test.mjs && node tests/backup-policy.test.mjs && node tests/backup-progress.test.mjs && node tests/backup-data.test.mjs && node tests/backup-page.test.mjs
       - name: Install isolated SQL test runtime
-        run: npm install --prefix "$RUNNER_TEMP/g2g-test-db" --no-save --ignore-scripts @electric-sql/pglite@0.5.8
+        run: npm install --prefix "$RUNNER_TEMP/g2g-test-db" --no-save --ignore-scripts @electric-sql/pglite@0.5.8 jsdom@26.1.0
       - name: Check exam codes and promotions against SQL
         working-directory: g2g-exam
         run: G2G_PGLITE_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js" node tests/backend-access.integration.mjs
       - name: Check completion threshold and expiry against SQL
         working-directory: g2g-exam
         run: G2G_PGLITE_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js" node tests/exam-completion.integration.mjs
+      - name: Check speaking trial access and lifecycle against SQL
+        working-directory: g2g-exam
+        run: G2G_PGLITE_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js" node tests/speaking-lab.integration.mjs
+      - name: Check speaking phone flow without a browser
+        working-directory: g2g-exam
+        run: G2G_JSDOM_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/jsdom/lib/api.js" node tests/speaking-phone.test.mjs
+      - name: Check bundled web and phone entry
+        working-directory: g2g-exam
+        run: npm ci && npm run build:web
