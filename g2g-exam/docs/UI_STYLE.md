@@ -51,6 +51,13 @@ Keep an aria-label even after a value is selected. Preserve the original filter
 values and behavior; filters with a required selection retain that selection.
 This applies to dropdown filters, not count tabs such as “Tất cả (234)”.
 Student exam filters use two compact dropdowns aligned with the action button.
+Student catalog refinement (16 October): scope compact type under `.student-catalog`.
+Profile name is 20px mobile / up to 24px desktop; card titles 16px mobile / 18px
+desktop; secondary text 12–13px. Numeric profile metrics stay 20–22px, while text
+outcomes use 15–16px and wrap. Catalog buttons use 14px labels with 44px minimum
+touch targets; editable touch controls retain the shared 16px accessibility rule.
+Use text-size-adjust:100% in this catalog only to stabilize automatic inflation,
+without disabling browser zoom. Keep long text wrap-safe and exam typography unchanged.
 The student exam grid adapts its column count to a 320px minimum card width;
 when the viewport is narrower, cards fit 100% without horizontal overflow. Mobile uses one column. Card titles reserve exactly two lines and clamp overflow; the complete
 title remains in the accessible text and title tooltip.

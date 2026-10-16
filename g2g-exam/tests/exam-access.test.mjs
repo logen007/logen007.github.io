@@ -165,6 +165,12 @@ assert.ok(studentExamCardHtml({...exam,hidden:true,hasActiveCodes:true},[],data)
 assert.ok(studentExamCardHtml({...exam,hidden:true,hasActiveCodes:false},[],data).includes('Không có mã thi'));
 assert.ok(!studentExamCardHtml({...exam,hidden:true},[],data).includes('data-action="start"'));
 assert.ok(studentHomeHtml({data,user:{id:'s',name:'Student'},levelFilter:'B1.1'}).includes('Nhập mã đề'));
+assert.ok(studentHomeHtml({data,user:{id:'s',name:'Student'}}).includes('class="khung student-catalog"'));
+const catalogStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(catalogStyles,/\.student-catalog\{[^}]*text-size-adjust:100%/);
+assert.match(catalogStyles,/\.student-catalog \.learner-actions \.nut\{[^}]*min-height:44px[^}]*white-space:normal/);
+assert.match(catalogStyles,/\.student-catalog \.learner-stats \.exam-latest-result\{font-size:16px/);
+assert.match(catalogStyles,/\.student-catalog \.the-de h3\{font-size:16px/);
 console.log('Access UI, TELC gates, exact exam-level assignment passed.');
 const student={id:'s',name:'Lan <script>',level:'B1',classId:'c',picture:'https://example.com/avatar.jpg'};
 const profileData={...data,classes:[{id:'c',code:'PRIVATE-CLASS'}]};
