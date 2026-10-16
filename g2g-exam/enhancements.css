@@ -117,6 +117,7 @@
 .speaking-form label{display:grid;gap:8px;min-width:0}
 .speaking-form .speaking-image-choice{display:flex;align-items:center;gap:8px}
 .speaking-form .truong{width:100%;min-width:0}
+.speaking-device-status:empty{display:none}
 .speaking-account-field{position:relative;min-width:0}
 .speaking-account-options{position:absolute;z-index:3;top:calc(100% + 6px);left:0;right:0;max-height:220px;overflow:auto;overscroll-behavior:contain;padding:4px;background:var(--mat);border:1px solid var(--vien);border-radius:12px}
 .speaking-account-options[hidden]{display:none}

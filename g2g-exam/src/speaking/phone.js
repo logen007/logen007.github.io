@@ -27,7 +27,7 @@ async function checkDevices(){
   const version=previewEpoch,acquired=await acquirePreview(el('[data-preview]'));
   if(version!==previewEpoch){stopMedia(acquired);return;}
   stream=acquired;checked=true;el('[data-record]').disabled=false;showError();b.hidden=true;updateJoin();
-  el('[data-device-status]').textContent='Có thể thu thử và nghe lại nếu cần.';
+  el('[data-device-status]').textContent='';
   const interrupted=()=>{if(!mediaAvailable(stream)){checked=false;el('[data-record]').disabled=true;b.hidden=false;el('[data-device-status]').textContent=mediaErrorText({name:'DeviceInterruptedError'});updateJoin();}};
   stream.getTracks().forEach(t=>{t.addEventListener('ended',interrupted);t.addEventListener('mute',interrupted);});
  }catch(error){stream=null;b.hidden=false;el('[data-device-status]').textContent=mediaErrorText(error);}
@@ -48,7 +48,7 @@ async function main(){
   let remaining=3;el('[data-device-status]').textContent='Nói vài từ · còn 3 giây';sampleClock=setInterval(()=>{remaining=Math.max(0,remaining-1);el('[data-device-status]').textContent='Đang thu · còn '+remaining+' giây';},1000);
   try{
    const blob=await recordSample(stream,{onRecorder:value=>{recorder=value;}});
-   if(recordingUrl)URL.revokeObjectURL(recordingUrl);recordingUrl=URL.createObjectURL(blob);el('[data-sample]').src=recordingUrl;el('[data-listen]').disabled=false;el('[data-device-status]').textContent='Bản thu thử đã sẵn sàng để nghe lại.';
+   if(recordingUrl)URL.revokeObjectURL(recordingUrl);recordingUrl=URL.createObjectURL(blob);el('[data-sample]').src=recordingUrl;el('[data-listen]').disabled=false;el('[data-device-status]').textContent='';
   }catch(error){el('[data-device-status]').textContent=mediaErrorText(error);}
   finally{clearInterval(sampleClock);b.disabled=!mediaAvailable(stream);actionLabel(b,'Thu thử','speaking');el('[data-check]').disabled=false;updateJoin();}
  };
@@ -100,7 +100,6 @@ function paint(){
  el('[data-preflight]').hidden=entered||done||!state.participant;el('[data-preview-wrap]').hidden=entered||done;el('[data-videos]').hidden=!entered||done;
  el('[data-wait]').hidden=!entered||!waiting||done;el('[data-stage]').hidden=!active||!entered||paused;el('[data-paused]').hidden=!paused;el('[data-finished]').hidden=!done;
  const me=state.members.find(m=>m.id===user.id),ready=!!me?.ready;el('[data-ready]').disabled=ready||state.state==='starting';actionLabel(el('[data-ready]'),ready?'Đã sẵn sàng':'Sẵn sàng','example');
- el('[data-wait-note]').textContent=state.state==='starting'?'Đang bật ghi hình. Giữ trang mở.':state.mode==='instant'?'Cả hai sẵn sàng, phòng tự bắt đầu.':'Đến giờ và đủ hai bạn, phòng tự bắt đầu.';
  const names=JSON.stringify(state.members);if(memberKey!==names){memberKey=names;el('[data-members]').innerHTML=readinessHtml(state.members);}
  if(state.error)showError({message:state.error});
  if(active&&state.stage){
@@ -110,9 +109,9 @@ function paint(){
   el('[data-task]').hidden=!isSpeaker;el('[data-listening]').hidden=isSpeaker;
   el('[data-speaker]').textContent=state.stage.speakerName+(state.partnerFinished?' đã nói xong':' đang nói');
   el('[data-turn]').textContent=finished?'Đã xong':state.stage.speakerName?'Đến lượt bạn':'Cùng trao đổi';el('[data-turn]').classList.toggle('speaking-turn-neutral',finished);
-  el('[data-stage-footer]').hidden=!isSpeaker&&!state.partnerFinished&&!finished;
-  el('[data-next]').hidden=finished;el('[data-next]').disabled=paused||finished;actionLabel(el('[data-next]'),isSpeaker?'Tôi đã nói xong':'Đã nghe xong','arrowRight');
-  el('[data-vote]').hidden=!finished;
+  el('[data-stage-footer]').hidden=finished||!isSpeaker&&!state.partnerFinished;
+  el('[data-next]').hidden=finished;el('[data-next]').disabled=paused||finished;actionLabel(el('[data-next]'),isSpeaker?'Tôi đã nói xong':'Xong','arrowRight');
+  el('[data-vote]').hidden=true;
  }
  if(done){const copy=finishedCopy(state),icon=el('[data-finished-icon]');icon.dataset.outcome=state.state;icon.innerHTML=finishedIconHtml(state);el('[data-finished-title]').textContent=copy.title;el('[data-finished-note]').textContent=copy.note;if(entered){entered=false;joined=false;actions?.leave().catch(()=>{});}}
  if(!done)renderPeers(lastPeers,state.members);
@@ -125,7 +124,7 @@ function updateClock(){
  el('[data-entry-loading]').hidden=!entering;el('[data-wait]>.speaking-content').hidden=entering;el('[data-wait]>.speaking-footer').hidden=entering;
  if(entered&&state.state==='running'){
   const switching=!!(state.finished&&state.partnerFinished||state.deadline&&now>=state.deadline);
-  el('[data-switch-loading]').hidden=!switching;el('[data-vote-label]').textContent=switching?(state.stageIndex+1>=state.stageCount?'Đang kết thúc…':'Đang chuyển phần…'):'Chờ bạn cùng thi';
+  el('[data-switch-loading]').hidden=!switching;el('[data-vote-label]').textContent=switching?(state.stageIndex+1>=state.stageCount?'Đang kết thúc…':'Đang chuyển phần…'):'';
   if(switching){el('[data-stage-footer]').hidden=false;el('[data-next]').hidden=true;el('[data-vote]').hidden=false;}
  }
 }
