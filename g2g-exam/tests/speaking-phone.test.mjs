@@ -36,7 +36,14 @@ const el=s=>document.querySelector(s);
 try{
  await import('../src/speaking/phone.js');await settle();
  assert.equal(el('[data-join]').disabled,true);
+ const capture=navigator.mediaDevices.getUserMedia;
+ navigator.mediaDevices.getUserMedia=async()=>{throw Object.assign(Error('busy'),{name:'NotReadableError'});};
+ el('[data-check]').click();await settle();assert.equal(el('[data-check]').disabled,false);assert.equal(el('[data-record]').disabled,true);assert.match(el('[data-device-status]').textContent,/kết thúc cuộc gọi/);
+ navigator.mediaDevices.getUserMedia=capture;
  el('[data-check]').click();await settle();assert.equal(el('[data-record]').disabled,false);
+ const Recorder=globalThis.MediaRecorder;set('MediaRecorder',class{constructor(){throw Error('busy');}});
+ el('[data-record]').click();await settle();assert.equal(el('[data-check]').disabled,false);assert.equal(el('[data-record]').disabled,false);assert.equal(el('[data-join]').disabled,true);
+ set('MediaRecorder',Recorder);
  el('[data-record]').click();latestRecorder.stop();await settle();assert.equal(el('[data-sample]').hidden,false);
  for(const s of ['[data-heard]','[data-consent]']){el(s).checked=true;el(s).dispatchEvent(new dom.window.Event('change'));}
  assert.equal(el('[data-join]').disabled,false);el('[data-join]').click();await settle();

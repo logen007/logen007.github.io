@@ -25,6 +25,6 @@ assert.equal(loginReturnPath(link,'student'),link);assert.equal(loginReturnPath(
 assert.equal(initialStateScope({role:'master'},'https://g2g.test/adm?tab=speaking'),'catalog');assert.equal(viewStateScope('admin','speaking'),'catalog');
 assert.match(adminTrialHtml(),/không ghi vào kết quả thi thật/);
 const source=readFileSync(new URL('../src/speaking/phone.js',import.meta.url),'utf8');
-assert.match(source,/navigator\.mediaDevices\.getUserMedia/);assert.match(source,/consent:true/);assert.match(source,/document\.hidden/);
+assert.match(source,/acquirePreview/);assert.match(source,/consent:true/);assert.match(source,/document\.hidden/);
 assert.match(source,/actions\?\.leave/);assert.match(source,/URL\.revokeObjectURL/);
 console.log('Speaking trial: validation, private A/B prompts, teacher ownership, phone gate and safe login return passed.');
