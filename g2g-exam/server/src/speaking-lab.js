@@ -83,6 +83,7 @@ export function registerSpeakingLabRoutes(app){
    const presence=await hmsPresence(config,d.roomId,d.members);
    if(presence.find(p=>p.id===user.id)?.devices>0)throw appError(409,'Tài khoản đang vào phòng trên thiết bị khác. Thoát phòng cũ hoặc đợi kết nối cũ đóng rồi thử lại.');
    d.ready[user.id]=false;
+   delete d.countdownEndsAt;
    const token=hmsToken(config,{type:'app',room_id:d.roomId,role:config.role,user_id:user.id,exp:Math.floor((Date.parse(d.scheduledAt)+90*60000)/1000)});
    return {token,name:d.members.find(m=>m.id===user.id).name};
   });
@@ -96,6 +97,7 @@ export function registerSpeakingLabRoutes(app){
    const presence=await hmsPresence(await readHmsConfig(),row.data.roomId,row.data.members),p=presence.find(x=>x.id===user.id);
    if(!p?.connected||!p.audio||!p.video)throw appError(409,'Chưa nhận đủ camera và micro của bạn. Kiểm tra thiết bị rồi thử lại.');
    row.data.ready[user.id]=true;
+   if(row.data.state==='waiting'&&Date.now()>=Date.parse(row.data.scheduledAt)&&row.data.members.every(m=>row.data.ready[m.id])&&presence.every(p=>p.connected&&p.audio&&p.video))row.data.countdownEndsAt??=Date.now()+5000;
   });
  });
  app.post('/api/speaking-lab/sessions/:id/next',async request=>{
@@ -150,6 +152,7 @@ export async function tickTrial(d,config,time=Date.now()){
   catch(error){
    if(!error.providerRetryable)throw error;
    d.presenceFailureAt??=time;
+   if(d.state==='waiting')delete d.countdownEndsAt;
    if(d.state==='running'){d.remaining=Math.max(0,d.deadline-time);d.pausedAt=time;d.state='paused';d.votes={};}
    d.error='Đang kiểm tra lại kết nối 100ms. Vui lòng giữ phòng mở.';
    if(time-d.presenceFailureAt<5*60000)return;
@@ -157,7 +160,10 @@ export async function tickTrial(d,config,time=Date.now()){
   }
   if(d.presenceFailureAt){delete d.presenceFailureAt;delete d.error;}
   const present=d.presence.every(p=>p.connected&&p.audio&&p.video);
+  if(d.state==='waiting'&&(!present||!d.members.every(m=>d.ready[m.id])))delete d.countdownEndsAt;
   if(d.state==='waiting'&&time>=Date.parse(d.scheduledAt)&&present&&d.members.every(m=>d.ready[m.id])){
+   d.countdownEndsAt??=time+5000;
+   if(time<d.countdownEndsAt)return;
    // Persist the job id and wait for running; never reveal a prompt on a mere start acknowledgement.
    d.recordingRequestedAt=time;
    const recording=await hmsRequest(config,`recordings/room/${d.roomId}/start`,{method:'POST',body:{destination:config.recordingDestination,resolution:{width:1280,height:720},transcription:{enabled:false}}});

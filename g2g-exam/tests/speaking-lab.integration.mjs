@@ -90,7 +90,11 @@ try{
  await tickTrial(future,config,time);assert.equal(future.state,'waiting','Scheduled trial waits until appointed time even when both ready');
  const notReady={...structuredClone(d),mode:'instant',ready:{a:true,b:false}};
  await tickTrial(notReady,config,time);assert.equal(notReady.state,'waiting','Instant trial still requires both participants ready');
- await tickTrial(d,config,time);assert.equal(d.state,'starting');assert.equal(trialView(row,users.a).stage,null,'Recording start acknowledgement must not reveal prompt');
+ const startsBefore=calls.filter(c=>c.path==='recordings/room/room1/start').length;
+ await tickTrial(d,config,time);assert.equal(d.state,'waiting');assert.ok(d.countdownEndsAt>time);
+ assert.equal(calls.filter(c=>c.path==='recordings/room/room1/start').length,startsBefore,'No waiting-room recording during countdown');
+ const disconnected=structuredClone(d);peers.pb.tracks.video.mute=true;await tickTrial(disconnected,config,time+1000);assert.equal(disconnected.countdownEndsAt,undefined,'Loss of camera cancels countdown');peers.pb.tracks.video.mute=false;
+ time=d.countdownEndsAt;await tickTrial(d,config,time);assert.equal(d.state,'starting');assert.equal(trialView(row,users.a).stage,null,'Recording start acknowledgement must not reveal prompt');
  recording.status='running';recording.started_at=new Date(time).toISOString();await tickTrial(d,config,time+1000);assert.equal(d.state,'running');assert.equal(d.stageIndex,0);
  await query('UPDATE speaking_lab_sessions SET data=$2::jsonb WHERE id=$1',[id,JSON.stringify(d)]);
  assert.equal((await send('GET',p,'a')).json().stage.prompt,'PRIVATE_A');assert.ok(!(await send('GET',p,'a')).body.includes('PRIVATE_B'));

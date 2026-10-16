@@ -20,6 +20,7 @@ export function speakingRoomHtml(){
    ${footer(button('Vào phòng chờ','arrowRight','data-join disabled',true),'Đảm bảo thấy hình và nghe rõ tiếng. Buổi thi được ghi hình.')}
   </section>
   <section class="speaking-panel" data-wait hidden>
+   <div class="speaking-countdown" data-countdown hidden role="status" aria-live="polite"><div class="speaking-countdown-orb"><strong data-countdown-number></strong><span class="speaking-spinner" data-countdown-loading hidden></span></div><h1 data-countdown-label>Chuẩn bị bắt đầu</h1><p class="speaking-note">Giữ kết nối · bắt đầu cùng nhau</p></div>
    <div class="speaking-content"><h1 class="speaking-icon-title">${iconHtml('users')}<span>Chào nhau bằng tiếng Đức</span></h1>
     <p class="speaking-copy">Chỉ dùng tiếng Đức khi trò chuyện ở phòng chờ và trong lúc thi.</p>
     <div class="speaking-readiness" data-members></div>
@@ -29,7 +30,7 @@ export function speakingRoomHtml(){
   <section class="speaking-panel" data-stage hidden>
    <div class="speaking-content" data-task><div class="speaking-task-heading"><h1 class="speaking-icon-title"><span data-task-icon></span><span data-stage-title></span></h1><span class="speaking-turn" data-turn>Đến lượt bạn</span></div><div class="speaking-prompt" data-prompt></div></div>
    <div class="speaking-focus" data-listening hidden><span class="speaking-turn speaking-turn-neutral">Đang lắng nghe</span><h1 class="speaking-icon-title">${iconHtml('users')}<span data-speaker></span></h1><p class="speaking-note speaking-copy">Lắng nghe bạn cùng thi.<br>Hệ thống sẽ báo khi đến lượt bạn.</p></div>
-   <footer class="speaking-footer" data-stage-footer>${button('Tôi đã nói xong','arrowRight','data-next',true)}<div class="speaking-inline-status" data-vote role="status" hidden>${iconHtml('example')}<span>Chờ bạn cùng thi</span></div><p class="speaking-note">Cả hai xong, hệ thống tự chuyển phần.</p></footer>
+   <footer class="speaking-footer" data-stage-footer>${button('Tôi đã nói xong','arrowRight','data-next',true)}<div class="speaking-inline-status" data-vote role="status" hidden><span class="speaking-spinner" data-switch-loading hidden></span><span data-vote-label>Chờ bạn cùng thi</span></div><p class="speaking-note">Cả hai xong, hệ thống tự chuyển phần.</p></footer>
   </section>
   <section class="speaking-panel speaking-focus" data-paused hidden><span class="speaking-turn speaking-turn-neutral">Thời gian đã tạm dừng</span><h1 class="speaking-icon-title">${iconHtml('repeat')}<span>Đang kết nối lại</span></h1><p class="speaking-note speaking-copy">Giữ trang này mở. Phòng tự tiếp tục khi kết nối ổn định.</p></section>
   <section class="speaking-panel" data-finished hidden><div class="speaking-focus"><span class="speaking-complete-icon" data-finished-icon></span><h1 data-finished-title>Bạn đã hoàn thành</h1><p class="speaking-note speaking-copy" data-finished-note></p></div>${footer('<a class="nut chinh" href="/">'+iconHtml('arrowLeft')+'<span>Về trang chủ</span></a>','Buổi thử nghiệm không tính điểm thật.')}</section>

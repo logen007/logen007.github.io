@@ -104,7 +104,7 @@ function paint(){
  const names=JSON.stringify(state.members);if(memberKey!==names){memberKey=names;el('[data-members]').innerHTML=readinessHtml(state.members);}
  if(state.error)showError({message:state.error});
  if(active&&state.stage){
-  const key=state.stageIndex;if(stageKey!==key){stageKey=key;votedStage=null;el('[data-task]').scrollTop=0;showError();}
+  const key=state.stageIndex;if(stageKey!==key){stageKey=key;votedStage=null;el('[data-task]').scrollTop=0;showError();if(!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)el('[data-stage]').animate?.([{opacity:.35,transform:'translateY(6px)'},{opacity:1,transform:'none'}],{duration:320,easing:'ease-out'});}
   const finished=state.finished||votedStage===key,isSpeaker=state.stage.isSpeaker!==false;
   const contentKey=JSON.stringify(state.stage);if(el('[data-prompt]').dataset.key!==contentKey){el('[data-prompt]').dataset.key=contentKey;el('[data-prompt]').innerHTML=privatePromptHtml(state.stage);el('[data-stage-title]').textContent=state.stage.title;el('[data-task-icon]').innerHTML=iconHtml(state.stage.image?'image':'speaking');}
   el('[data-task]').hidden=!isSpeaker;el('[data-listening]').hidden=isSpeaker;
@@ -118,7 +118,22 @@ function paint(){
  if(!done)renderPeers(lastPeers,state.members);
  updateClock();
 }
-function updateClock(){if(!el('[data-clock]'))return;const value=state.state==='paused'?clockText(state.remaining/1000):state.deadline&&state.state==='running'?clockText((state.deadline-Date.now()-serverOffset)/1000):'';el('[data-clock]').textContent=value;el('[data-clock]').hidden=!value;}
+function updateClock(){
+ if(!el('[data-clock]'))return;
+ const now=Date.now()+serverOffset,value=state.state==='paused'?clockText(state.remaining/1000):state.deadline&&state.state==='running'?clockText((state.deadline-now)/1000):'';el('[data-clock]').textContent=value;el('[data-clock]').hidden=!value;
+ const counting=entered&&['waiting','starting'].includes(state.state)&&!!(state.countdownEndsAt||state.state==='starting');
+ el('[data-countdown]').hidden=!counting;el('[data-wait]>.speaking-content').hidden=counting;el('[data-wait]>.speaking-footer').hidden=counting;
+ if(counting){
+  const seconds=state.state==='starting'?0:Math.max(0,Math.ceil((state.countdownEndsAt-now)/1000)),number=el('[data-countdown-number]');
+  number.hidden=!seconds;el('[data-countdown-loading]').hidden=!!seconds;el('[data-countdown-label]').textContent=seconds?'Chuẩn bị bắt đầu':'Đang vào thi…';
+  if(number.textContent!==String(seconds)){number.textContent=String(seconds);if(!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)number.animate?.([{opacity:.2,transform:'scale(.85)'},{opacity:1,transform:'scale(1)'}],{duration:260,easing:'ease-out'});}
+ }
+ if(entered&&state.state==='running'){
+  const switching=!!(state.finished&&state.partnerFinished||state.deadline&&now>=state.deadline);
+  el('[data-switch-loading]').hidden=!switching;el('[data-vote-label]').textContent=switching?(state.stageIndex+1>=state.stageCount?'Đang kết thúc…':'Đang chuyển phần…'):'Chờ bạn cùng thi';
+  if(switching){el('[data-stage-footer]').hidden=false;el('[data-next]').hidden=true;el('[data-vote]').hidden=false;}
+ }
+}
 let fetching=false;
 async function refresh(){
  clearTimeout(timer);if(fetching||document.hidden)return;fetching=true;

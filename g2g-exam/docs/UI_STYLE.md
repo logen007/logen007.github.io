@@ -746,6 +746,13 @@ stimulus; its configurable G2G timings are not official exam rules. Do not chang
 existing trial content. New trials have photo turns for each participant and a shared
 experience exchange. Scheduling offers Thi ngay (both ready) and Hẹn giờ (time and
 both ready); account email/name suggestions are staff-only, debounced and bounded.
+Both ready and scheduled time reached trigger a five-second server-clock countdown.
+Cancel that countdown on lost media/presence; do not request recording until it
+finishes. Reveal the task only after 100ms confirms recording is running. The
+countdown uses a brand-colored orb and number transition, with a small spinner
+while entering. Both confirmations or expiry show “Đang chuyển phần…” with a
+small spinner until the next server stage, then a brief content entrance. Keep
+video nodes stable and respect reduced motion; do not add polling requests.
 Suggestions use an input-anchored, border-only white list with a medium-weight
 name and muted email underneath; no native datalist, avatars or decorative badges.
 Preserve touch selection, arrow/Enter/Escape navigation and cached requests.
