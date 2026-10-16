@@ -15,10 +15,9 @@ export function speakingRoomHtml(){
    <div class="speaking-content"><h1>Kiểm tra hình và tiếng</h1><p class="speaking-note speaking-copy">Nói vài từ bằng tiếng Đức, rồi nghe lại.</p>
     <div class="speaking-test-actions">${button('Thu thử','speaking','data-record disabled')}${button('Nghe lại','play','data-listen disabled')}</div>
     <audio data-sample hidden></audio><p class="speaking-device-status" data-device-status role="status" aria-live="polite">Đặt điện thoại cố định, thấy rõ mặt.</p>
-    <label class="speaking-check"><input type="checkbox" data-heard>Tôi thấy hình và nghe rõ tiếng.</label>
     <label class="speaking-check"><input type="checkbox" data-environment>Đảm bảo không có ai hoặc bất cứ thứ gì làm ảnh hưởng quá trình thi</label>
    </div>
-   ${footer(button('Vào phòng chờ','arrowRight','data-join disabled',true),'Đeo tai nghe, cắm sạc và giữ trang mở. Buổi thi được ghi hình.')}
+   ${footer(button('Vào phòng chờ','arrowRight','data-join disabled',true),'Đảm bảo thấy hình và nghe rõ tiếng. Buổi thi được ghi hình.')}
   </section>
   <section class="speaking-panel" data-wait hidden>
    <div class="speaking-content"><h1 class="speaking-icon-title">${iconHtml('users')}<span>Chào nhau bằng tiếng Đức</span></h1>

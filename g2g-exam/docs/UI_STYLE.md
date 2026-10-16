@@ -726,15 +726,21 @@ Phone delivery uses the approved Review04: compact header, equal 9:16 video
 slots and a white task sheet. Show each account's full name, never “Bạn”, in
 primary/secondary name labels with contrasting text; seat order stays stable.
 Keep device checks before entering; no camera, mic, help or leave controls in
-the call. Disclose recording without a consent checkbox; require clear-picture/
-sound and undisturbed-environment confirmations. Buttons are “Thu thử” and
+the call. Camera video fills the portrait slot without stretching (center crop
+landscape input); do not apply this crop to task images or recording playback.
+Disclose recording without a consent checkbox; require only the undisturbed-environment
+confirmation. Show “Đảm bảo thấy hình và nghe rõ tiếng”; no separate picture/sound
+checkbox. Recording and playback are optional, never entry prerequisites. Buttons are “Thu thử” and
 “Nghe lại”. Explicit speaker turns hide the listener's prompt server-side.
 “Tôi đã nói xong” keeps video/task visible and becomes an informational waiting
 state, with no confirmation dialog or “Tiếp tục nói”. The listener confirms
 “Đã nghe xong” after the speaker finishes. Only two confirmations or the existing
 server deadline advance a stage. A new DTZ photo trial uses the approved source
 stimulus; its configurable G2G timings are not official exam rules. Do not change
-existing trial content. Show recording saved only after server confirmation.
+existing trial content. New trials have photo turns for each participant and a shared
+experience exchange. Scheduling offers Thi ngay (both ready) and Hẹn giờ (time and
+both ready); account email/name suggestions are staff-only, debounced and bounded.
+Show recording saved only after server confirmation.
 Keep the status and server clock on one row. Desktop displays only a phone QR.
 Use explicit trial labels; never imply an official TELC task or real published score.
 

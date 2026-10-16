@@ -15,6 +15,14 @@ function phone(request){if(!isPhone(request.headers['user-agent']))throw appErro
 function member(row,user){if(!row.data.members.some(m=>m.id===user.id))throw appError(403,'Bạn không phải thí sinh trong ca này.');}
 function joinWindow(d){const time=Date.now(),scheduled=Date.parse(d.scheduledAt);if(time<scheduled-15*60000||time>scheduled+90*60000||terminal.includes(d.state)||['finishing','processing'].includes(d.state))throw appError(409,'Phòng chỉ mở từ 15 phút trước lịch thi và đóng chậm nhất sau lịch 90 phút.');}
 export function registerSpeakingLabRoutes(app){
+ app.get('/api/speaking-lab/accounts',async request=>{
+  await requireRole(request,'teacher','master');
+  const text=String(request.query.q||'').trim().slice(0,120);
+  if(text.length<2)return {accounts:[]};
+  const pattern='%'+text.replace(/[\\%_]/g,'\\$&')+'%';
+  const result=await query(`SELECT email,data->>'name' AS name FROM users WHERE active=true AND (email ILIKE $1 OR data->>'name' ILIKE $1) ORDER BY lower(email) LIMIT 10`,[pattern]);
+  return {accounts:result.rows};
+ });
  // All writes require the application's same origin, including staff-only secret settings.
  app.addHook('preHandler',async request=>{
   if(request.method==='POST'&&request.url.startsWith('/api/speaking-lab/')){
@@ -34,7 +42,7 @@ export function registerSpeakingLabRoutes(app){
  });
  app.get('/api/speaking-lab/sessions',async request=>{
   const user=await requireRole(request,'teacher','master');
-  const r=await query(`SELECT id,data->>'title' AS title,data->>'scheduledAt' AS scheduled_at,data->>'state' AS state,data->'members' AS members,updated_at FROM speaking_lab_sessions WHERE ($1::boolean OR owner_id=$2) ORDER BY created_at DESC LIMIT 100`,[user.role==='master',user.id]);
+  const r=await query(`SELECT id,data->>'title' AS title,data->>'scheduledAt' AS scheduled_at,data->>'mode' AS mode,data->>'state' AS state,data->'members' AS members,updated_at FROM speaking_lab_sessions WHERE ($1::boolean OR owner_id=$2) ORDER BY created_at DESC LIMIT 100`,[user.role==='master',user.id]);
   return {sessions:r.rows};
  });
  app.post('/api/speaking-lab/sessions',async request=>{
@@ -49,7 +57,7 @@ export function registerSpeakingLabRoutes(app){
    if(existing.rows.length>=24)throw appError(409,'Khu thử giới hạn 24 ca chưa kết thúc.');
    const end=Date.parse(input.scheduledAt)+90*60000,start=Date.parse(input.scheduledAt)-15*60000;
    if(existing.rows.some(r=>r.data.members.some(m=>members.some(n=>n.id===m.id))&&Date.parse(r.data.scheduledAt)-15*60000<end&&Date.parse(r.data.scheduledAt)+90*60000>start))throw appError(409,'Một thí sinh đã có ca trùng khung giờ. Hãy đổi lịch hoặc huỷ ca cũ.');
-   const id=crypto.randomUUID(),data={title:input.title,scheduledAt:input.scheduledAt,members,stages:input.stages,state:'scheduled',ready:{},votes:{},reviews:{},markers:[]};
+   const id=crypto.randomUUID(),data={title:input.title,mode:input.mode,scheduledAt:input.scheduledAt,members,stages:input.stages,state:'scheduled',ready:{},votes:{},reviews:{},markers:[]};
    await c.query('INSERT INTO speaking_lab_sessions(id,owner_id,data) VALUES($1,$2,$3::jsonb)',[id,user.id,JSON.stringify(data)]);
    return {id};
   });

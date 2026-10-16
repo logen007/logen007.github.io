@@ -41,12 +41,16 @@ try{
  el('[data-check]').click();await settle();assert.equal(el('[data-check]').disabled,false);assert.equal(el('[data-record]').disabled,true);assert.match(el('[data-device-status]').textContent,/kết thúc cuộc gọi/);
  navigator.mediaDevices.getUserMedia=capture;
  el('[data-check]').click();await settle();assert.equal(el('[data-record]').disabled,false);
+ assert.equal(el('[data-heard]'),null);
+ el('[data-environment]').checked=true;el('[data-environment]').dispatchEvent(new dom.window.Event('change'));
+ assert.equal(el('[data-join]').disabled,false,'Device access and environment check suffice without recording or playback');
  const Recorder=globalThis.MediaRecorder;set('MediaRecorder',class{constructor(){throw Error('busy');}});
- el('[data-record]').click();await settle();assert.equal(el('[data-check]').disabled,false);assert.equal(el('[data-record]').disabled,false);assert.equal(el('[data-join]').disabled,true);
+ el('[data-record]').click();await settle();assert.equal(el('[data-check]').disabled,false);assert.equal(el('[data-record]').disabled,false);assert.equal(el('[data-join]').disabled,false,'Optional sample failure must not block entry');
  set('MediaRecorder',Recorder);
  el('[data-record]').click();latestRecorder.stop();await settle();assert.equal(el('[data-listen]').disabled,false);assert.equal(el('[data-sample]').hidden,true);
  assert.equal(el('[data-record]').textContent,'Thu thử');assert.equal(el('[data-listen]').textContent,'Nghe lại');
- for(const s of ['[data-heard]','[data-environment]']){el(s).checked=true;el(s).dispatchEvent(new dom.window.Event('change'));}
+ assert.equal(el('[data-heard]'),null);
+ for(const s of ['[data-environment]']){el(s).checked=true;el(s).dispatchEvent(new dom.window.Event('change'));}
  assert.equal(el('[data-join]').disabled,false);el('[data-join]').click();await settle();
  assert.equal(joinCalls,1);assert.equal(stopCount,2,'Local preflight tracks are stopped before joining SDK');
  assert.equal(el('[data-videos]').children.length,2);assert.equal(el('[data-preflight]').hidden,true);
@@ -64,5 +68,24 @@ try{
  state={...state,state:'paused',remaining:40000};document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-paused]').hidden,false);assert.equal(el('[data-stage]').hidden,true);
  state={...state,state:'processing',stage:null};document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-finished]').hidden,false);assert.ok(leaveCalls>0);
  assert.equal(el('[data-error]').textContent,'');
+ dom.window.dispatchEvent(new dom.window.Event('pagehide'));
+ dom.window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+ const {mountSpeakingAdmin}=await import('../src/speaking/admin.js');
+ let accountRequests=0;
+ set('fetch',async url=>{let value;if(url.endsWith('/config'))value={configured:true};else if(url.endsWith('/sessions'))value={sessions:[]};else if(url.includes('/accounts?q=')){accountRequests++;value={accounts:[{email:'a@test.example',name:'Nguyễn Văn An'}]};}else throw Error('Unexpected '+url);return {ok:true,json:async()=>value};});
+ await mountSpeakingAdmin(el('#speaking-app'),{user:{role:'master'}});
+ el('[data-create]').click();
+ const dialog=document.querySelector('dialog'),mode=dialog.querySelector('[name=mode]'),scheduled=dialog.querySelector('[name=scheduledAt]');
+ assert.equal(mode.value,'instant');assert.equal(scheduled.disabled,true);
+ mode.value='schedule';mode.dispatchEvent(new dom.window.Event('change'));assert.equal(scheduled.disabled,false);assert.equal(scheduled.required,true);
+ mode.value='instant';mode.dispatchEvent(new dom.window.Event('change'));assert.equal(scheduled.disabled,true);
+ assert.equal(dialog.querySelectorAll('fieldset').length,3);
+ const email=dialog.querySelector('[name=emailA]');email.value='Nguyễn';email.dispatchEvent(new dom.window.Event('input'));
+ email.value='Nguyễn Văn';email.dispatchEvent(new dom.window.Event('input'));
+ await new Promise(resolve=>setTimeout(resolve,350));await settle();
+ assert.equal(accountRequests,1,'Suggestions debounce rapid typing');
+ assert.equal(dialog.querySelector('#speaking-accounts-A option').value,'a@test.example');
+ email.value='x';email.dispatchEvent(new dom.window.Event('input'));assert.equal(dialog.querySelector('#speaking-accounts-A').children.length,0);
+ dialog.dispatchEvent(new dom.window.Event('close'));
  console.log('Speaking phone DOM: device preview, audio test, environment checks, full names, stable video order, control-free call, private task, inline waiting, listening and paused states passed.');
 }finally{dom.window.dispatchEvent(new dom.window.Event('pagehide'));hook.deregister();dom.window.close();for(const [k,d]of previous)d?Object.defineProperty(globalThis,k,d):delete globalThis[k];delete globalThis.__hmsMock;}

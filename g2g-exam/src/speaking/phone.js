@@ -18,13 +18,13 @@ function stopPreview(){clearInterval(sampleClock);if(recorder?.state==='recordin
 function cleanup(){clearTimeout(timer);clearInterval(clock);stopPreview();unsubscribers.forEach(fn=>fn());unsubscribers=[];actions?.leave().catch(()=>{});if(recordingUrl)URL.revokeObjectURL(recordingUrl);}
 window.addEventListener('pagehide',cleanup);
 window.addEventListener('beforeunload',event=>{if(entered&&!terminal(state?.state)){event.preventDefault();event.returnValue='';}});
-function updateJoin(){const b=el('[data-join]');if(b)b.disabled=!checked||!mediaAvailable(stream)||!el('[data-heard]').checked||!el('[data-environment]').checked||joining;}
+function updateJoin(){const b=el('[data-join]');if(b)b.disabled=!checked||!mediaAvailable(stream)||!el('[data-environment]').checked||joining;}
 async function checkDevices(){
  const b=el('[data-check]');b.disabled=true;el('[data-device-status]').textContent='Cho phép camera/micro khi trình duyệt hỏi. Hãy kết thúc mọi cuộc gọi trước khi kiểm tra.';
  try{
-  stopPreview();checked=false;el('[data-heard]').checked=false;updateJoin();el('[data-record]').disabled=true;el('[data-listen]').disabled=true;
-  stream=await acquirePreview(el('[data-preview]'));el('[data-record]').disabled=false;showError();b.hidden=true;
-  el('[data-device-status]').textContent='Nói vài từ bằng tiếng Đức khi thu thử.';
+  stopPreview();checked=false;updateJoin();el('[data-record]').disabled=true;el('[data-listen]').disabled=true;
+  stream=await acquirePreview(el('[data-preview]'));checked=true;el('[data-record]').disabled=false;showError();b.hidden=true;updateJoin();
+  el('[data-device-status]').textContent='Có thể thu thử và nghe lại nếu cần.';
   const interrupted=()=>{if(!mediaAvailable(stream)){checked=false;el('[data-record]').disabled=true;b.hidden=false;el('[data-device-status]').textContent=mediaErrorText({name:'DeviceInterruptedError'});updateJoin();}};
   stream.getTracks().forEach(t=>{t.addEventListener('ended',interrupted);t.addEventListener('mute',interrupted);});
  }catch(error){stream=null;b.hidden=false;el('[data-device-status]').textContent=mediaErrorText(error);}
@@ -39,13 +39,13 @@ async function main(){
   root.innerHTML='<section class="the speaking-welcome"><h1>Tiếp tục trên điện thoại</h1><p>'+esc(state.title)+'</p><canvas data-qr aria-label="QR chuyển sang điện thoại"></canvas><p>Quét QR bằng camera điện thoại, đăng nhập tài khoản <strong>'+esc(user.email)+'</strong>. Điện thoại dùng để xem đề, nghe–nói và ghi hình; máy tính không tham gia cuộc gọi.</p><p class="speaking-note">Safari trên iPhone hoặc Chrome trên Android. Không mở bằng trình duyệt bên trong Zalo/Facebook.</p><a class="nut" href="/">Về G2G</a></section>';await drawQr(el('[data-qr]'),location.href);return;
  }
  root.classList.add('speaking-room');root.innerHTML=speakingRoomHtml();
- el('[data-heard]').onchange=updateJoin;el('[data-environment]').onchange=updateJoin;el('[data-check]').onclick=checkDevices;
+ el('[data-environment]').onchange=updateJoin;el('[data-check]').onclick=checkDevices;
  el('[data-record]').onclick=async()=>{
-  const b=el('[data-record]');b.disabled=true;el('[data-check]').disabled=true;el('[data-listen]').disabled=true;checked=false;el('[data-heard]').checked=false;updateJoin();actionLabel(b,'Đang thu…','speaking');
+  const b=el('[data-record]');b.disabled=true;el('[data-check]').disabled=true;el('[data-listen]').disabled=true;actionLabel(b,'Đang thu…','speaking');
   let remaining=3;el('[data-device-status]').textContent='Nói vài từ · còn 3 giây';sampleClock=setInterval(()=>{remaining=Math.max(0,remaining-1);el('[data-device-status]').textContent='Đang thu · còn '+remaining+' giây';},1000);
   try{
    const blob=await recordSample(stream,{onRecorder:value=>{recorder=value;}});
-   if(recordingUrl)URL.revokeObjectURL(recordingUrl);recordingUrl=URL.createObjectURL(blob);el('[data-sample]').src=recordingUrl;checked=true;el('[data-listen]').disabled=false;el('[data-device-status]').textContent='Nghe lại rồi xác nhận hình và tiếng.';
+   if(recordingUrl)URL.revokeObjectURL(recordingUrl);recordingUrl=URL.createObjectURL(blob);el('[data-sample]').src=recordingUrl;el('[data-listen]').disabled=false;el('[data-device-status]').textContent='Bản thu thử đã sẵn sàng để nghe lại.';
   }catch(error){el('[data-device-status]').textContent=mediaErrorText(error);}
   finally{clearInterval(sampleClock);b.disabled=!mediaAvailable(stream);actionLabel(b,'Thu thử','speaking');el('[data-check]').disabled=false;updateJoin();}
  };
@@ -96,7 +96,7 @@ function paint(){
  el('[data-preflight]').hidden=entered||done||!state.participant;el('[data-preview-wrap]').hidden=entered||done;el('[data-videos]').hidden=!entered||done;
  el('[data-wait]').hidden=!entered||!waiting||done;el('[data-stage]').hidden=!active||!entered||paused;el('[data-paused]').hidden=!paused;el('[data-finished]').hidden=!done;
  const me=state.members.find(m=>m.id===user.id),ready=!!me?.ready;el('[data-ready]').disabled=ready||state.state==='starting';actionLabel(el('[data-ready]'),ready?'Đã sẵn sàng':'Sẵn sàng','example');
- el('[data-wait-note]').textContent=state.state==='starting'?'Đang bật ghi hình. Giữ trang mở.':'Đến giờ và đủ hai bạn, phòng tự bắt đầu.';
+ el('[data-wait-note]').textContent=state.state==='starting'?'Đang bật ghi hình. Giữ trang mở.':state.mode==='instant'?'Cả hai sẵn sàng, phòng tự bắt đầu.':'Đến giờ và đủ hai bạn, phòng tự bắt đầu.';
  const names=JSON.stringify(state.members);if(memberKey!==names){memberKey=names;el('[data-members]').innerHTML=readinessHtml(state.members);}
  if(state.error)showError({message:state.error});
  if(active&&state.stage){

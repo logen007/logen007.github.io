@@ -4,12 +4,16 @@ import {validateTrial,trialView,isPhone,clockText} from '../src/speaking/model.j
 import {trialDefaults,adminTrialHtml} from '../src/speaking/admin.js';
 import {dtzTrialDefaults,DTZ_PHOTO} from '../src/speaking/trials.js';
 import {privatePromptHtml,finishedCopy} from '../src/speaking/phone-view.js';
+import {topbarHtml} from '../src/ui/layout.js';
 import {loginReturnPath} from '../server/src/auth-routing.js';
 import {initialStateScope,viewStateScope} from '../src/repositories/state-scope.js';
 const time=Date.now(),input={title:'Trial',scheduledAt:new Date(time+60000).toISOString(),emailA:'a@test.example',emailB:'b@test.example',stages:trialDefaults()};
 assert.equal(validateTrial(input,time).stages.length,3);
 const photoStages=validateTrial({...input,stages:dtzTrialDefaults()},time).stages;
-assert.deepEqual(photoStages.map(s=>s.speakerSeat),['A','A','B','B']);
+assert.deepEqual(photoStages.map(s=>s.speakerSeat),['A','B',undefined]);
+assert.equal(validateTrial({...input,mode:'instant',scheduledAt:null},time).scheduledAt,new Date(time).toISOString());
+assert.equal(validateTrial(input,time).mode,'schedule');
+assert.throws(()=>validateTrial({...input,mode:'invalid'},time),/Chế độ/);
 assert.ok(photoStages.every(s=>s.image===DTZ_PHOTO));
 assert.throws(()=>validateTrial({...input,stages:[{...input.stages[0],image:'https://evil.test/image.png'}]},time),/ảnh mẫu/);
 assert.throws(()=>validateTrial({...input,stages:[{...input.stages[0],speakerSeat:'other'}]},time),/Lượt nói/);
@@ -38,6 +42,11 @@ const link='/speaking-lab.html?session=12345678-1234-1234-1234-123456789abc';
 assert.equal(loginReturnPath(link,'student'),link);assert.equal(loginReturnPath('//evil.test'+link,'student'),'/student');
 assert.equal(initialStateScope({role:'master'},'https://g2g.test/adm?tab=speaking'),'catalog');assert.equal(viewStateScope('admin','speaking'),'catalog');
 assert.match(adminTrialHtml(),/không ghi vào kết quả thi thật/);
+for(const role of ['master','teacher']){
+ const nav=topbarHtml({user:{role,name:'Test'},online:true,ui:{adminTab:'speaking'}});
+ const speaking=nav.match(/<button[^>]*data-tab="speaking"[^>]*>[\s\S]*?<\/button>/)?.[0];
+ assert.match(speaking,/muc-ben--icon/);assert.match(speaking,/aria-label="Thi Nói thử nghiệm"/);assert.ok(!speaking.includes('<span>'));
+}
 const source=readFileSync(new URL('../src/speaking/phone.js',import.meta.url),'utf8');
 assert.match(source,/acquirePreview/);assert.match(source,/consent:true/);assert.match(source,/document\.hidden/);
 assert.match(source,/actions\?\.leave/);assert.match(source,/URL\.revokeObjectURL/);

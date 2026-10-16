@@ -50,6 +50,11 @@ try{
  registerSpeakingLabRoutes(app);
  const send=async(method,path,user,body,headers={})=>app.inject({method,url:'/api/speaking-lab/'+path,headers:{origin:'https://g2g.test','test-user':user,'user-agent':'iPhone Safari',...headers},...(body===undefined?{}:{payload:body})});
  assert.equal((await send('GET','config','a')).statusCode,403);
+ assert.equal((await send('GET','accounts?q=test','a')).statusCode,403);
+ assert.deepEqual((await send('GET','accounts?q=a','t')).json().accounts,[]);
+ const suggestions=(await send('GET','accounts?q=a%40test','t')).json().accounts;
+ assert.deepEqual(suggestions,[{email:'a@test.example',name:'A'}]);
+ assert.deepEqual((await send('GET','accounts?q=%25%25','t')).json().accounts,[],'Wildcard input is literal');
  assert.equal((await send('POST','config','m',config,{origin:'https://evil.test'})).statusCode,403);
  adminPermission=true;assert.equal((await send('POST','config','m',config)).statusCode,400);adminPermission=false;
  assert.equal((await send('POST','config','m',config)).statusCode,200);
@@ -59,6 +64,12 @@ try{
  const input={title:'Trial',scheduledAt:new Date(Date.now()-1000).toISOString(),emailA:'a@test.example',emailB:'b@test.example',stages:[stage]};
  assert.equal((await send('POST','sessions','a',input)).statusCode,403);
  const created=await send('POST','sessions','t',input);assert.equal(created.statusCode,200,created.body);const id=created.json().id,p='sessions/'+id;
+ assert.equal((await send('GET',p,'t')).json().mode,'schedule');
+ const instant=await send('POST','sessions','t',{...input,mode:'instant',scheduledAt:null,emailA:'c@test.example',emailB:'m@test.example'});
+ assert.equal(instant.statusCode,200,instant.body);
+ const instantView=(await send('GET','sessions/'+instant.json().id,'t')).json();
+ assert.equal(instantView.mode,'instant');assert.ok(Math.abs(Date.parse(instantView.scheduledAt)-Date.now())<5000);
+ assert.equal((await send('POST','sessions/'+instant.json().id+'/end','t',{})).statusCode,200);
  assert.equal((await send('POST','sessions','t',input)).statusCode,409,'Reject overlapping slots');
  assert.equal((await send('GET',p,'c')).statusCode,403);
  assert.equal((await send('GET',p,'x')).statusCode,403);
@@ -75,6 +86,10 @@ try{
  assert.equal((await send('POST',p+'/ready','a',{consent:false})).statusCode,400);
  for(const who of ['a','b'])assert.equal((await send('POST',p+'/ready',who,{consent:true})).statusCode,200);
  let row=(await query('SELECT * FROM speaking_lab_sessions WHERE id=$1',[id])).rows[0],d=row.data,time=Date.now();
+ const future={...structuredClone(d),scheduledAt:new Date(time+60000).toISOString(),mode:'schedule'};
+ await tickTrial(future,config,time);assert.equal(future.state,'waiting','Scheduled trial waits until appointed time even when both ready');
+ const notReady={...structuredClone(d),mode:'instant',ready:{a:true,b:false}};
+ await tickTrial(notReady,config,time);assert.equal(notReady.state,'waiting','Instant trial still requires both participants ready');
  await tickTrial(d,config,time);assert.equal(d.state,'starting');assert.equal(trialView(row,users.a).stage,null,'Recording start acknowledgement must not reveal prompt');
  recording.status='running';recording.started_at=new Date(time).toISOString();await tickTrial(d,config,time+1000);assert.equal(d.state,'running');assert.equal(d.stageIndex,0);
  await query('UPDATE speaking_lab_sessions SET data=$2::jsonb WHERE id=$1',[id,JSON.stringify(d)]);
