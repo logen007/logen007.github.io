@@ -52,12 +52,21 @@ values and behavior; filters with a required selection retain that selection.
 This applies to dropdown filters, not count tabs such as “Tất cả (234)”.
 Student exam filters use two compact dropdowns aligned with the action button.
 Student catalog refinement (16 October): scope compact type under `.student-catalog`.
-Profile name is 20px mobile / up to 24px desktop; card titles 16px mobile / 18px
-desktop; secondary text 12–13px. Numeric profile metrics stay 20–22px, while text
+Profile name is 20px mobile / up to 24px desktop; exam titles use the shared
+18px `--student-exam-title-size` across catalog, result list and detailed result
+header; secondary text 12–13px. Numeric profile metrics stay 20–22px, while text
 outcomes use 15–16px and wrap. Catalog buttons use 14px labels with 44px minimum
 touch targets; editable touch controls retain the shared 16px accessibility rule.
 Use text-size-adjust:100% in this catalog only to stabilize automatic inflation,
 without disabling browser zoom. Keep long text wrap-safe and exam typography unchanged.
+The catalog filter row uses compact 132px/116px maximum desktop tracks and
+shrinkable mobile tracks. “Nhập mã đề” always occupies the rightmost track and
+aligns to the right edge, not immediately after the dropdowns.
+Detailed results use a result-only 14px body/control scale, 20–22px name,
+18px section headings, 16px part headings, and readable 15px answer text.
+Keep the total score 34px desktop / 28px mobile; secondary metrics 24px / 22px.
+Preserve semantic badges, score colors, touch targets, editable-field sizing,
+browser zoom and teacher grading typography.
 The student exam grid adapts its column count to a 320px minimum card width;
 when the viewport is narrower, cards fit 100% without horizontal overflow. Mobile uses one column. Card titles reserve exactly two lines and clamp overflow; the complete
 title remains in the accessible text and title tooltip.

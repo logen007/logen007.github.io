@@ -170,7 +170,12 @@ const catalogStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8'
 assert.match(catalogStyles,/\.student-catalog\{[^}]*text-size-adjust:100%/);
 assert.match(catalogStyles,/\.student-catalog \.learner-actions \.nut\{[^}]*min-height:44px[^}]*white-space:normal/);
 assert.match(catalogStyles,/\.student-catalog \.learner-stats \.exam-latest-result\{font-size:16px/);
-assert.match(catalogStyles,/\.student-catalog \.the-de h3\{font-size:16px/);
+assert.match(catalogStyles,/--student-exam-title-size:18px/);
+assert.match(catalogStyles,/\.student-catalog \.the-de h3\{font-size:var\(--student-exam-title-size\)/);
+assert.match(catalogStyles,/\.result-page \.result-heading h2,\.student-result-info h2\{font-size:var\(--student-exam-title-size\)/);
+assert.match(catalogStyles,/\.student-catalog \.exam-filter>\.nut\{justify-self:end/);
+assert.match(catalogStyles,/grid-template-columns:minmax\(0,132px\) minmax\(0,116px\) minmax\(0,1fr\)/);
+assert.match(catalogStyles,/\.result-page \.result-hero \.result-stats \.result-stat-total>strong\{font-size:28px/);
 console.log('Access UI, TELC gates, exact exam-level assignment passed.');
 const student={id:'s',name:'Lan <script>',level:'B1',classId:'c',picture:'https://example.com/avatar.jpg'};
 const profileData={...data,classes:[{id:'c',code:'PRIVATE-CLASS'}]};
