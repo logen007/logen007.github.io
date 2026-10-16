@@ -112,13 +112,14 @@
 .backup-table td{font-variant-numeric:tabular-nums}
 .backup-table th:first-child,.backup-table td:first-child:not([colspan]){width:1%}
 .backup-created time{display:flex;gap:8px;font-weight:600}
-.backup-download{display:inline-flex;align-items:center;min-height:44px;color:var(--chu);text-decoration:none}
-.backup-download:hover{text-decoration:underline;text-underline-offset:4px}
+.backup-download{display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:44px;color:var(--chu);text-decoration:none;transition:color .18s ease}
+.backup-download:hover{color:var(--brand-text);text-decoration:none}
+.backup-version{font-size:12px;font-weight:400;color:var(--phu)}
 .backup-created .backup-time{color:var(--phu)}
 .backup-table th:nth-child(2),.backup-table td:nth-child(2){text-align:right}
 .backup-table th:last-child,.backup-table td:last-child:not([colspan]){width:1%;text-align:right}
 .backup-table .backup-actions{justify-content:flex-end;flex-wrap:nowrap}
-.backup-table .backup-job-row>td{padding:0;border-bottom:1px solid var(--vien)}
+.backup-table .backup-job-row:last-child>td{padding:0;border-bottom:1px solid var(--vien)}
 .backup-job{display:grid;align-content:center;gap:10px;min-height:80px;padding:16px 20px;font-size:13px;animation:backup-line-in .24s ease-out}
 .backup-job-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0}
 .backup-job progress{display:block;appearance:none;width:100%;height:5px;border:0;border-radius:var(--pill);overflow:hidden;background:var(--surface-muted);accent-color:var(--brand-primary)}

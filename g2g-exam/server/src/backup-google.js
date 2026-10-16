@@ -3,6 +3,7 @@ import {OAuth2Client} from 'google-auth-library';
 import {query,appError} from './db.js';
 import {encrypt,decrypt} from './settings-secrets.js';
 import {currentUser} from './auth.js';
+import {APP_VERSION} from '../../src/release.js';
 
 const KEY='backup_google_drive';
 const REDIRECT='/api/backup/google/callback';
@@ -22,9 +23,9 @@ export async function uploadBackupArchive(filename,name,sha256){
   const {token}=await oauth.getAccessToken();
   const {stat}=await import('node:fs/promises'),{createReadStream}=await import('node:fs');
   const size=(await stat(filename)).size;
-  const init=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name,size,createdTime,description',{
+  const init=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name,size,createdTime,description,appProperties',{
     method:'POST',headers:{Authorization:`Bearer ${token}`,'content-type':'application/json','X-Upload-Content-Type':'application/gzip','X-Upload-Content-Length':String(size)},
-    body:JSON.stringify({name,parents:[config.folderId],description:'g2g-backup-v2 sha256='+sha256}),signal:AbortSignal.timeout(30000)});
+    body:JSON.stringify({name,parents:[config.folderId],description:'g2g-backup-v2 sha256='+sha256,appProperties:{appVersion:APP_VERSION}}),signal:AbortSignal.timeout(30000)});
   const location=init.headers.get('location');
   if(!init.ok||!location||new URL(location).origin!=='https://www.googleapis.com')throw appError(503,'Không tạo được bản backup trên Drive.');
   const result=await fetch(location,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'content-length':String(size)},body:createReadStream(filename),duplex:'half',signal:AbortSignal.timeout(1800000)});
@@ -115,7 +116,7 @@ export async function listBackupFiles(user){
   const config=await read();if(!config?.folderId)throw appError(409,'Chưa kết nối Google Drive.');
   const files=[];let next='';
   do{
-    const result=await drive(config,'GET',`/files?q=${encodeURIComponent(`'${config.folderId}' in parents and trashed = false`)}&fields=nextPageToken,files(id,name,size,createdTime,mimeType,description)&orderBy=createdTime desc&pageSize=1000`+(next?'&pageToken='+encodeURIComponent(next):''));
+    const result=await drive(config,'GET',`/files?q=${encodeURIComponent(`'${config.folderId}' in parents and trashed = false`)}&fields=nextPageToken,files(id,name,size,createdTime,mimeType,description,appProperties)&orderBy=createdTime desc&pageSize=1000`+(next?'&pageToken='+encodeURIComponent(next):''));
     files.push(...result.files||[]);next=result.nextPageToken||'';
   }while(next);
   return files.filter(file=>file.mimeType!=='application/vnd.google-apps.folder').map(file=>({...file,size:Number(file.size||0)}));
