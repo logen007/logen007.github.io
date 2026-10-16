@@ -57,9 +57,8 @@ try{
  assert.deepEqual([...el('[data-videos]').children].map(n=>[n.dataset.seat,n.querySelector('figcaption').textContent]),[['A','Nguyễn Văn An'],['B','Trần Thị Bình']]);
  const stableTiles=[...el('[data-videos]').children];
  el('[data-ready]').click();await settle();assert.equal(el('[data-ready]').textContent,'Đã sẵn sàng');
- state.countdownEndsAt=Date.now()+5000;state.serverNow=Date.now();document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();
- assert.equal(el('[data-countdown]').hidden,false);assert.equal(el('[data-countdown-number]').textContent,'5');assert.equal(el('[data-wait]>.speaking-footer').hidden,true);
- state.countdownEndsAt=Date.now()-1000;state.serverNow=Date.now();document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-countdown-loading]').hidden,false);
+ state.members[1].ready=true;state.scheduledAt=new Date(Date.now()-1000).toISOString();state.serverNow=Date.now();document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();
+ assert.equal(el('[data-entry-loading]').hidden,false);assert.match(el('[data-entry-loading]').textContent,/Đang vào thi/);assert.equal(el('[data-wait]>.speaking-footer').hidden,true);assert.equal(el('[data-countdown-number]'),null);
  state={...state,state:'running',stageIndex:0,stage:{title:'Part one',instruction:'A starts',prompt:'PRIVATE A',seconds:60},deadline:Date.now()+60000};
  document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-stage]').hidden,false);assert.equal(el('[data-prompt]').textContent,'PRIVATE A');
  el('[data-next]').click();await settle();assert.equal(el('[data-next]').hidden,true);assert.equal(el('[data-vote]').hidden,false);assert.match(el('[data-vote]').textContent,/Chờ bạn cùng thi/);
@@ -67,7 +66,7 @@ try{
  state.partnerFinished=true;document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-switch-loading]').hidden,false);assert.equal(el('[data-vote-label]').textContent,'Đang chuyển phần…');
  state={...state,stageIndex:1,finished:false,stage:{title:'Mô tả ảnh',prompt:'',isSpeaker:false,speakerName:'Trần Thị Bình',seconds:60},partnerFinished:false};
  document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-listening]').hidden,false);assert.equal(el('[data-task]').hidden,true);assert.equal(el('[data-stage-footer]').hidden,true);
- assert.equal(el('[data-switch-loading]').hidden,true);assert.equal(el('[data-countdown]').hidden,true);
+ assert.equal(el('[data-switch-loading]').hidden,true);assert.equal(el('[data-entry-loading]').hidden,true);
  state.partnerFinished=true;document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-stage-footer]').hidden,false);assert.equal(el('[data-next]').textContent,'Đã nghe xong');
  state={...state,state:'paused',remaining:40000};document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-paused]').hidden,false);assert.equal(el('[data-stage]').hidden,true);
  state={...state,state:'processing',stage:null};document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-finished]').hidden,false);assert.ok(leaveCalls>0);

@@ -121,13 +121,8 @@ function paint(){
 function updateClock(){
  if(!el('[data-clock]'))return;
  const now=Date.now()+serverOffset,value=state.state==='paused'?clockText(state.remaining/1000):state.deadline&&state.state==='running'?clockText((state.deadline-now)/1000):'';el('[data-clock]').textContent=value;el('[data-clock]').hidden=!value;
- const counting=entered&&['waiting','starting'].includes(state.state)&&!!(state.countdownEndsAt||state.state==='starting');
- el('[data-countdown]').hidden=!counting;el('[data-wait]>.speaking-content').hidden=counting;el('[data-wait]>.speaking-footer').hidden=counting;
- if(counting){
-  const seconds=state.state==='starting'?0:Math.max(0,Math.ceil((state.countdownEndsAt-now)/1000)),number=el('[data-countdown-number]');
-  number.hidden=!seconds;el('[data-countdown-loading]').hidden=!!seconds;el('[data-countdown-label]').textContent=seconds?'Chuẩn bị bắt đầu':'Đang vào thi…';
-  if(number.textContent!==String(seconds)){number.textContent=String(seconds);if(!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)number.animate?.([{opacity:.2,transform:'scale(.85)'},{opacity:1,transform:'scale(1)'}],{duration:260,easing:'ease-out'});}
- }
+ const entering=entered&&(state.state==='starting'||state.state==='waiting'&&now>=Date.parse(state.scheduledAt)&&state.members.every(m=>m.ready));
+ el('[data-entry-loading]').hidden=!entering;el('[data-wait]>.speaking-content').hidden=entering;el('[data-wait]>.speaking-footer').hidden=entering;
  if(entered&&state.state==='running'){
   const switching=!!(state.finished&&state.partnerFinished||state.deadline&&now>=state.deadline);
   el('[data-switch-loading]').hidden=!switching;el('[data-vote-label]').textContent=switching?(state.stageIndex+1>=state.stageCount?'Đang kết thúc…':'Đang chuyển phần…'):'Chờ bạn cùng thi';

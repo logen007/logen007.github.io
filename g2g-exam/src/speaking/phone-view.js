@@ -20,7 +20,7 @@ export function speakingRoomHtml(){
    ${footer(button('Vào phòng chờ','arrowRight','data-join disabled',true),'Đảm bảo thấy hình và nghe rõ tiếng. Buổi thi được ghi hình.')}
   </section>
   <section class="speaking-panel" data-wait hidden>
-   <div class="speaking-countdown" data-countdown hidden role="status" aria-live="polite"><div class="speaking-countdown-orb"><strong data-countdown-number></strong><span class="speaking-spinner" data-countdown-loading hidden></span></div><h1 data-countdown-label>Chuẩn bị bắt đầu</h1><p class="speaking-note">Giữ kết nối · bắt đầu cùng nhau</p></div>
+   <div class="speaking-entry-loading" data-entry-loading hidden role="status" aria-live="polite"><span class="speaking-spinner"></span><h1>Đang vào thi…</h1></div>
    <div class="speaking-content"><h1 class="speaking-icon-title">${iconHtml('users')}<span>Chào nhau bằng tiếng Đức</span></h1>
     <p class="speaking-copy">Chỉ dùng tiếng Đức khi trò chuyện ở phòng chờ và trong lúc thi.</p>
     <div class="speaking-readiness" data-members></div>
