@@ -2,18 +2,17 @@ import {r2SettingsAction as action} from '../settings/api.js';
 import {confirmAction} from '../ui/confirm.js';
 import {iconHtml} from '../ui/icons.js';
 import {esc} from '../ui/format.js';
-const dateText=value=>value&&Number.isFinite(Date.parse(value))?new Date(value).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short'}):'—';
+const dateText=(value,part)=>value&&Number.isFinite(Date.parse(value))?new Date(value).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',...(part==='date'?{dateStyle:'short'}:{timeStyle:'short'})}):'—';
 export function backupPageHtml(){return `<section class="backup-page">
  <header class="tieu-de-trang backup-heading"><div class="backup-title"><h1>Backup</h1><span data-count></span></div><div class="backup-actions">
  <button class="icon-btn" data-settings title="Cài đặt Backup" aria-label="Cài đặt Backup">${iconHtml('settings')}</button>
- <button class="nut chinh icon-btn" data-now title="Backup ngay" aria-label="Backup ngay" disabled>${iconHtml('backup')}</button></div></header>
- <div class="table-wrap backup-table-wrap" role="region" aria-label="Danh sách bản backup" tabindex="0"><table class="bang backup-table" aria-label="Các bản backup trên Google Drive"><thead><tr><th scope="col">Ngày tạo</th><th scope="col">Dung lượng</th><th scope="col">Thao tác</th></tr></thead><tbody data-files></tbody></table></div>
- <div class="backup-job" data-job hidden><span data-status role="status" aria-live="polite"></span><time data-elapsed aria-label="Tổng thời gian" hidden></time></div></section>`;}
+ <button class="nut chinh" data-now title="Tạo bản sao lưu" disabled>Sao lưu</button></div></header>
+ <div class="table-wrap backup-table-wrap" role="region" aria-label="Danh sách bản backup" tabindex="0"><table class="bang backup-table" aria-label="Các bản backup trên Google Drive"><thead><tr><th scope="col">Ngày tạo</th><th scope="col">Dung lượng</th><th scope="col">Thao tác</th></tr></thead><tbody data-job hidden><tr class="backup-job-row"><td colspan="3"><div class="backup-job"><span data-status role="status" aria-live="polite"></span><time data-elapsed aria-label="Tổng thời gian" hidden></time></div></td></tr></tbody><tbody data-files></tbody></table></div></section>`;}
 export function backupProgressText(status,now=Date.now()){
  const seconds=Math.max(0,Math.floor(((status.finishedAt?Date.parse(status.finishedAt):now)-Date.parse(status.startedAt))/1000));
  return Number.isFinite(seconds)?Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0'):'0:00';
 }
-export function backupItemHtml(file){return `<td title="${esc(file.name)}">${esc(dateText(file.createdTime))}</td><td>${Number.isFinite(Number(file.size))?(Number(file.size)/1048576).toFixed(1)+' MB':'—'}</td><td><div class="hanh-dong-bang backup-actions"><a class="icon-btn" aria-label="Tải xuống ${esc(file.name)}" title="Tải xuống" href="/api/backup/files/${encodeURIComponent(file.id)}/download">${iconHtml('arrowDown')}</a><button class="icon-btn" data-restore title="Phục hồi thử" aria-label="Phục hồi thử ${esc(file.name)}">${iconHtml('repeat')}</button><button class="icon-btn" data-delete title="Xoá bản backup" aria-label="Xoá bản backup ${esc(file.name)}">${iconHtml('trash')}</button></div></td>`;}
+export function backupItemHtml(file){return `<td class="backup-created" title="${esc(file.name)}"><time datetime="${esc(file.createdTime||'')}"><span>${esc(dateText(file.createdTime,'date'))}</span><span class="backup-time">${esc(dateText(file.createdTime,'time'))}</span></time></td><td>${Number.isFinite(Number(file.size))?(Number(file.size)/1048576).toFixed(1)+' MB':'—'}</td><td><div class="hanh-dong-bang backup-actions"><a class="icon-btn" aria-label="Tải xuống ${esc(file.name)}" title="Tải xuống" href="/api/backup/files/${encodeURIComponent(file.id)}/download">${iconHtml('arrowDown')}</a><button class="icon-btn" data-restore title="Phục hồi thử" aria-label="Phục hồi thử ${esc(file.name)}">${iconHtml('repeat')}</button><button class="icon-btn" data-delete title="Xoá bản backup" aria-label="Xoá bản backup ${esc(file.name)}">${iconHtml('trash')}</button></div></td>`;}
 export function backupSettingsHtml(){return `<form class="backup-form"><header class="dau-hop"><h2 id="backup-dialog-title">Cài đặt Backup</h2><button type="button" class="icon-btn" data-close title="Đóng" aria-label="Đóng">${iconHtml('close')}</button></header>
  <section class="backup-google"><div><strong>Google Drive</strong><small data-google>Đang kiểm tra…</small></div><button type="button" class="nut" data-connect disabled>Kết nối</button><button type="button" class="icon-btn" data-disconnect title="Ngắt kết nối Google Drive" aria-label="Ngắt kết nối Google Drive" hidden>${iconHtml('logout')}</button></section>
  <fieldset disabled><label class="backup-toggle"><span>Backup tự động</span><input type="checkbox" name="enabled" role="switch"></label>
@@ -47,7 +46,7 @@ export function mountBackupPage(root){
    if(!root.isConnected)return;
    // The uploading archive becomes visible on Drive before verification finishes.
    // Keep that candidate in the status row until the complete job succeeds.
-   const files=result.files.filter(file=>!(jobBusy&&status.kind==='backup'&&file.name?.startsWith('g2g-')&&Date.parse(file.createdTime)>=Date.parse(status.startedAt))).sort((a,b)=>Date.parse(a.createdTime)-Date.parse(b.createdTime));
+   const files=result.files.filter(file=>!(jobBusy&&status.kind==='backup'&&file.name?.startsWith('g2g-')&&Date.parse(file.createdTime)>=Date.parse(status.startedAt))).sort((a,b)=>Date.parse(b.createdTime)-Date.parse(a.createdTime));
    if(pendingCompletion&&!files.some(file=>file.id===pendingCompletion)){report('Đang cập nhật bản backup mới…');}
    el('[data-count]').textContent=files.length+' bản lưu';
    const signature=JSON.stringify([files,jobBusy,enabled]);

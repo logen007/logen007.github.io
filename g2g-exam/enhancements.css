@@ -107,14 +107,17 @@
 .backup-title [data-count]{color:var(--phu);font-size:13px;white-space:nowrap}
 .backup-page{min-width:0;max-width:100%}
 .backup-table-wrap{max-width:100%;overflow-x:auto}
-.backup-table{min-width:480px}
+.backup-table{min-width:0}
 .backup-table th,.backup-table td:not([colspan]){white-space:nowrap}
 .backup-table td{font-variant-numeric:tabular-nums}
 .backup-table th:first-child,.backup-table td:first-child:not([colspan]){width:1%}
+.backup-created time{display:flex;gap:8px;font-weight:600}
+.backup-created .backup-time{color:var(--phu)}
 .backup-table th:nth-child(2),.backup-table td:nth-child(2){text-align:right}
 .backup-table th:last-child,.backup-table td:last-child:not([colspan]){width:1%;text-align:right}
 .backup-table .backup-actions{justify-content:flex-end;flex-wrap:nowrap}
-.backup-job{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:8px;padding:16px 20px;font-size:13px;animation:backup-line-in .24s ease-out}
+.backup-table .backup-job-row>td{padding:0;border-bottom:1px solid var(--vien)}
+.backup-job{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:80px;padding:16px 20px;font-size:13px;animation:backup-line-in .24s ease-out}
 .backup-job [data-status]{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--phu)}
 .backup-job time{flex:none;color:var(--phu);font-variant-numeric:tabular-nums}
 .backup-job[data-state=failed] [data-status],.backup-job[data-state=interrupted] [data-status]{color:var(--do)}
@@ -147,4 +150,4 @@
 .backup-footer{display:flex;justify-content:flex-end;gap:12px;margin-top:24px}
 .backup-form [data-error]{color:var(--do);font-size:13px;margin:16px 0 0}
 .backup-form [data-error]:empty{display:none}
-@media(max-width:600px){.backup-actions{gap:4px}.backup-dialog{padding:24px 20px}.backup-setting-row{grid-template-columns:minmax(0,1fr) 108px;gap:12px}.backup-job{padding-inline:16px}}
+@media(max-width:600px){.backup-actions{gap:4px}.backup-dialog{padding:24px 20px}.backup-setting-row{grid-template-columns:minmax(0,1fr) 108px;gap:12px}.backup-table th,.backup-table td{padding:14px 10px}.backup-created time{display:grid;gap:2px;font-size:13px}.backup-created .backup-time{font-size:12px}.backup-job{min-height:72px;padding:14px 10px}}
