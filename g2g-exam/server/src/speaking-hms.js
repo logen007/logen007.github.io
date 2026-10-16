@@ -16,9 +16,11 @@ export function hmsToken(config,claims={}){
 }
 export async function hmsRequest(config,path,{method='GET',body,missing=false}={}){
  if(!config)throw appError(503,'Chưa kết nối 100ms. Quản trị viên cần mở Cài đặt trong Thi Nói thử nghiệm.');
- const r=await fetch('https://api.100ms.live/v2/'+path,{method,headers:{Authorization:'Bearer '+hmsToken(config),...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(10000)});
+ let r;
+ try{r=await fetch('https://api.100ms.live/v2/'+path,{method,headers:{Authorization:'Bearer '+hmsToken(config),...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(10000)});}
+ catch{throw Object.assign(appError(502,'Không kết nối được 100ms.'),{providerOperation:method+' '+path,providerRetryable:method==='GET'});}
  if(missing&&r.status===404)return null;
- if(!r.ok)throw appError(502,`100ms trả lỗi ${r.status}. Kiểm tra khóa, template, quyền và cấu hình ghi hình trên 100ms.`);
+ if(!r.ok)throw Object.assign(appError(502,`100ms trả lỗi ${r.status}. Kiểm tra khóa, template, quyền và cấu hình ghi hình trên 100ms.`),{providerStatus:r.status,providerOperation:method+' '+path,providerRetryable:method==='GET'&&(r.status===429||r.status>=500)});
  return r.status===204?{}:r.json();
 }
 export async function saveHmsConfig(input,user){

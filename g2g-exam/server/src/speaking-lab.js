@@ -135,7 +135,16 @@ export async function tickTrial(d,config,time=Date.now()){
  if(!['finishing','processing'].includes(d.state)&&(time>Date.parse(d.scheduledAt)+90*60000||d.roomOpenedAt&&time>d.roomOpenedAt+55*60000)){d.outcome='interrupted';d.error='Đã hết thời gian mở phòng thử.';d.state=d.roomId?'finishing':'interrupted';}
  if(!d.roomId)return;
  if(['waiting','starting','running','paused'].includes(d.state)){
-  d.presence=await hmsPresence(config,d.roomId,d.members);
+  try{d.presence=await hmsPresence(config,d.roomId,d.members);}
+  catch(error){
+   if(!error.providerRetryable)throw error;
+   d.presenceFailureAt??=time;
+   if(d.state==='running'){d.remaining=Math.max(0,d.deadline-time);d.pausedAt=time;d.state='paused';d.votes={};}
+   d.error='Đang kiểm tra lại kết nối 100ms. Vui lòng giữ phòng mở.';
+   if(time-d.presenceFailureAt<5*60000)return;
+   throw error;
+  }
+  if(d.presenceFailureAt){delete d.presenceFailureAt;delete d.error;}
   const present=d.presence.every(p=>p.connected&&p.audio&&p.video);
   if(d.state==='waiting'&&time>=Date.parse(d.scheduledAt)&&present&&d.members.every(m=>d.ready[m.id])){
    // Persist the job id and wait for running; never reveal a prompt on a mere start acknowledgement.
@@ -194,7 +203,7 @@ export function startSpeakingLabWorker(app){
      if(active.rows.length!==2&&!['finishing','processing'].includes(row.data.state)){row.data.outcome='interrupted';row.data.error='Một tài khoản đã bị vô hiệu hoá.';row.data.state=row.data.roomId?'finishing':'interrupted';}
      await tickTrial(row.data,config);delete row.data.retryAt;
     }
-    catch{row.data.error='Không xác nhận được trạng thái 100ms. Hệ thống đang dừng/đóng phòng an toàn; quản trị viên kiểm tra kết nối.';row.data.outcome='interrupted';row.data.state=row.data.roomId?'finishing':'interrupted';row.data.retryAt=Date.now()+15000;app.log.warn('Speaking lab provider request failed; cleanup will retry.');}
+    catch(error){row.data.error='Không xác nhận được trạng thái 100ms. Hệ thống đang dừng/đóng phòng an toàn; quản trị viên kiểm tra kết nối.';row.data.outcome='interrupted';row.data.state=row.data.roomId?'finishing':'interrupted';row.data.retryAt=Date.now()+15000;app.log.warn({operation:error.providerOperation,status:error.providerStatus},'Speaking lab provider request failed; cleanup will retry.');}
     await persist(c,row);
    });
   }catch{app.log.warn('Speaking lab worker unavailable; will retry.');}finally{busy=false;}

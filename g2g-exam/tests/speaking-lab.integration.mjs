@@ -19,7 +19,7 @@ const hook=registerHooks({resolve(specifier,ctx,next){
  return next(specifier,ctx);
 }});
 const originalFetch=globalThis.fetch;process.env.PUBLIC_URL='https://g2g.test';process.env.SETTINGS_ENCRYPTION_KEY='test-private-key-never-used-in-production';
-let peers={},recording={id:'rec1',status:'starting',recording_assets:[]},calls=[],adminPermission=false,failStop=false;
+let peers={},recording={id:'rec1',status:'starting',recording_assets:[]},calls=[],adminPermission=false,failStop=false,presenceError=0;
 const config={accessKey:'access-key-123456',appSecret:'secret-1234567890123456789',templateId:'template-123',role:'student'};
 globalThis.fetch=async(url,options={})=>{
  assert.ok(url.startsWith('https://api.100ms.live/v2/'),'Unexpected network request');
@@ -31,7 +31,7 @@ globalThis.fetch=async(url,options={})=>{
  if(path==='templates/template-123')value={roles:{student:{permissions:{endRoom:adminPermission},publishParams:{allowed:['audio','video']},subscribeParams:{subscribeToRoles:['student']}}}};
  else if(path==='templates/template-123/recordings')value=[{name:'default',maxDuration:3600,compositeRecording:{browserComposite:{enabled:true,autoStart:false}}}];
  else if(path==='rooms'&&options.method==='POST')value={id:'room1'};
- else if(path==='active-rooms/room1/peers')value={peers:Object.fromEntries(Object.entries(peers).map(([id,p])=>[id,{id,user_id:p.user_id}]))};
+ else if(path==='active-rooms/room1/peers'){if(presenceError)return {ok:false,status:presenceError};value={peers:Object.fromEntries(Object.entries(peers).map(([id,p])=>[id,{id,user_id:p.user_id}]))};}
  else if(path.startsWith('active-rooms/room1/peers/'))value=peers[path.split('/').at(-1)];
  else if(path==='recordings/room/room1/start')value=recording;
  else if(path==='recordings/room/room1/stop'){if(failStop)throw Error('Network interrupted');recording.status='post_processing';}
@@ -104,6 +104,17 @@ try{
  peers={pa:peer('a'),pb:peer('b')};recording.status='running';await tickTrial(deadline,config,time+31000);assert.equal(deadline.state,'processing');assert.equal(deadline.outcome,'completed','Server deadline advances without any page request or vote');
  const broken={...structuredClone(d),state:'starting',roomOpenedAt:time,scheduledAt:new Date(time).toISOString(),recordingRequestedAt:time,recordingStopped:false};
  peers={pa:peer('a'),pb:peer('b')};recording.status='failed';await tickTrial(broken,config,time+1000);assert.equal(broken.outcome,'interrupted');assert.equal(broken.state,'processing');
+ const recovering={...structuredClone(d),state:'running',roomOpenedAt:time,scheduledAt:new Date(time).toISOString(),deadline:time+30000,votes:{a:true},recordingStopped:false};
+ peers={pa:peer('a'),pb:peer('b')};recording.status='running';presenceError=503;
+ const retryBefore=calls.length;await tickTrial(recovering,config,time+1000);
+ assert.equal(recovering.state,'paused');assert.equal(recovering.remaining,29000);assert.deepEqual(recovering.votes,{});
+ assert.ok(!calls.slice(retryBefore).some(c=>c.path.endsWith('/end-room')),'Transient presence failure must not close a live call');
+ presenceError=0;await tickTrial(recovering,config,time+11000);assert.equal(recovering.state,'running');assert.equal(recovering.deadline,time+40000);assert.equal(recovering.error,undefined);
+ const pending={...structuredClone(recovering),state:'waiting',scheduledAt:new Date(time+60000).toISOString(),ready:{}};
+ presenceError=429;await tickTrial(pending,config,time);assert.equal(pending.state,'waiting');
+ await assert.rejects(tickTrial(pending,config,time+300000));
+ presenceError=401;await assert.rejects(tickTrial(pending,config,time+1000),e=>e.providerStatus===401&&!e.providerRetryable);
+ presenceError=0;
  const cleanup={...structuredClone(d),state:'finishing',roomOpenedAt:time,scheduledAt:new Date(time).toISOString(),recordingStopped:false};
  failStop=true;const cleanupBefore=calls.length;await assert.rejects(tickTrial(cleanup,config,time));failStop=false;
  assert.ok(calls.slice(cleanupBefore).some(c=>c.path==='active-rooms/room1/end-room'),'Provider recording failure must not prevent room termination');
