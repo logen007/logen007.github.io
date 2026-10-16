@@ -6,15 +6,15 @@ const footer=(content,note)=>`<footer class="speaking-footer">${content}<p class
 export function speakingRoomHtml(){
  return `<header class="speaking-room-heading"><span data-title>Trước khi thi</span><span class="speaking-room-meta"><span data-status>Thử nghiệm</span><strong data-clock></strong></span></header>
  <div class="speaking-camera-stage">
-  <div class="speaking-self-preview" data-preview-wrap><video data-preview autoplay playsinline muted></video>${button('Kiểm tra thiết bị','preview','data-check')}</div>
+  <div class="speaking-self-preview" data-preview-wrap><video data-preview autoplay playsinline muted></video>${button('Thử lại','repeat','data-check hidden')}</div>
   <div class="speaking-videos" data-videos hidden></div>
  </div>
  <section class="speaking-sheet">
   <p data-error role="alert" hidden></p>
   <section class="speaking-panel" data-preflight>
-   <div class="speaking-content"><h1>Kiểm tra hình và tiếng</h1><p class="speaking-note speaking-copy">Nói vài từ bằng tiếng Đức, rồi nghe lại.</p>
+   <div class="speaking-content"><h1>Kiểm tra hình và tiếng</h1><p class="speaking-note speaking-copy">Có thể thu thử và nghe lại nếu cần.</p>
     <div class="speaking-test-actions">${button('Thu thử','speaking','data-record disabled')}${button('Nghe lại','play','data-listen disabled')}</div>
-    <audio data-sample hidden></audio><p class="speaking-device-status" data-device-status role="status" aria-live="polite">Đặt điện thoại cố định, thấy rõ mặt.</p>
+    <audio data-sample hidden></audio><p class="speaking-device-status" data-device-status role="status" aria-live="polite">Đang mở camera/micro…</p>
     <label class="speaking-check"><input type="checkbox" data-environment>Đảm bảo không có ai hoặc bất cứ thứ gì làm ảnh hưởng quá trình thi</label>
    </div>
    ${footer(button('Vào phòng chờ','arrowRight','data-join disabled',true),'Đảm bảo thấy hình và nghe rõ tiếng. Buổi thi được ghi hình.')}

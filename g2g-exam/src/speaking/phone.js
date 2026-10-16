@@ -5,7 +5,7 @@ import {isPhone,clockText} from './model.js';
 import {loadPublicSettings} from '../settings/api.js';
 import {initializeTheme,acceptPublicSettings} from '../settings/theme.js';
 import {drawQr} from './qr.js';
-import {acquirePreview,mediaAvailable,mediaErrorText,recordSample} from './devices.js';
+import {acquirePreview,mediaAvailable,mediaErrorText,recordSample,stopMedia} from './devices.js';
 import {speakingRoomHtml,privatePromptHtml,readinessHtml,finishedCopy,finishedIconHtml} from './phone-view.js';
 
 const root=document.getElementById('speaking-app'),id=new URL(location.href).searchParams.get('session');
@@ -14,21 +14,24 @@ const tiles=new Map(),el=s=>root.querySelector(s),path=s=>'sessions/'+encodeURIC
 const terminal=s=>['finishing','processing','completed','cancelled','interrupted'].includes(s);
 const actionLabel=(node,text,icon)=>{node.innerHTML=iconHtml(icon)+'<span>'+text+'</span>';};
 function showError(error){const n=el('[data-error]');if(n){n.textContent=error?.message||'';n.hidden=!n.textContent;}}
-function stopPreview(){clearInterval(sampleClock);if(recorder?.state==='recording')recorder.stop();stream?.getTracks().forEach(t=>t.stop());stream=null;}
+let previewEpoch=0;
+function stopPreview(){previewEpoch++;clearInterval(sampleClock);if(recorder?.state==='recording')recorder.stop();stream?.getTracks().forEach(t=>t.stop());stream=null;}
 function cleanup(){clearTimeout(timer);clearInterval(clock);stopPreview();unsubscribers.forEach(fn=>fn());unsubscribers=[];actions?.leave().catch(()=>{});if(recordingUrl)URL.revokeObjectURL(recordingUrl);}
 window.addEventListener('pagehide',cleanup);
 window.addEventListener('beforeunload',event=>{if(entered&&!terminal(state?.state)){event.preventDefault();event.returnValue='';}});
 function updateJoin(){const b=el('[data-join]');if(b)b.disabled=!checked||!mediaAvailable(stream)||!el('[data-environment]').checked||joining;}
 async function checkDevices(){
- const b=el('[data-check]');b.disabled=true;el('[data-device-status]').textContent='Cho phép camera/micro khi trình duyệt hỏi. Hãy kết thúc mọi cuộc gọi trước khi kiểm tra.';
+ const b=el('[data-check]');b.disabled=true;b.hidden=true;el('[data-device-status]').textContent='Đang mở camera/micro…';
  try{
   stopPreview();checked=false;updateJoin();el('[data-record]').disabled=true;el('[data-listen]').disabled=true;
-  stream=await acquirePreview(el('[data-preview]'));checked=true;el('[data-record]').disabled=false;showError();b.hidden=true;updateJoin();
+  const version=previewEpoch,acquired=await acquirePreview(el('[data-preview]'));
+  if(version!==previewEpoch){stopMedia(acquired);return;}
+  stream=acquired;checked=true;el('[data-record]').disabled=false;showError();b.hidden=true;updateJoin();
   el('[data-device-status]').textContent='Có thể thu thử và nghe lại nếu cần.';
   const interrupted=()=>{if(!mediaAvailable(stream)){checked=false;el('[data-record]').disabled=true;b.hidden=false;el('[data-device-status]').textContent=mediaErrorText({name:'DeviceInterruptedError'});updateJoin();}};
   stream.getTracks().forEach(t=>{t.addEventListener('ended',interrupted);t.addEventListener('mute',interrupted);});
  }catch(error){stream=null;b.hidden=false;el('[data-device-status]').textContent=mediaErrorText(error);}
- finally{b.disabled=false;actionLabel(b,'Kiểm tra thiết bị','preview');}
+ finally{b.disabled=false;actionLabel(b,'Thử lại','repeat');}
 }
 async function main(){
  if(!id||!/^[a-f0-9-]{36}$/.test(id))throw Error('Link ca thử không hợp lệ. Hãy mở link do giáo viên gửi.');
@@ -74,6 +77,7 @@ async function main(){
  };
  document.addEventListener('visibilitychange',()=>{clearTimeout(timer);if(!document.hidden)refresh();});
  clock=setInterval(updateClock,1000);paint();await refresh();
+ if(state.participant&&!terminal(state.state))checkDevices();
 }
 function renderPeers(peers,members){
  const container=el('[data-videos]');if(!container)return;

@@ -731,7 +731,9 @@ landscape input); do not apply this crop to task images or recording playback.
 Disclose recording without a consent checkbox; require only the undisturbed-environment
 confirmation. Show “Đảm bảo thấy hình và nghe rõ tiếng”; no separate picture/sound
 checkbox. Recording and playback are optional, never entry prerequisites. Buttons are “Thu thử” and
-“Nghe lại”. Explicit speaker turns hide the listener's prompt server-side.
+“Nghe lại”. Open camera/microphone automatically on participant entry; only show
+“Thử lại” on failure/interruption. Omit fixed-phone/clear-face instructions.
+Explicit speaker turns hide the listener's prompt server-side.
 “Tôi đã nói xong” keeps video/task visible and becomes an informational waiting
 state, with no confirmation dialog or “Tiếp tục nói”. The listener confirms
 “Đã nghe xong” after the speaker finishes. Only two confirmations or the existing

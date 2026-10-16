@@ -9,9 +9,9 @@ const set=(k,value)=>Object.defineProperty(globalThis,k,{configurable:true,writa
 for(const k of ['window','document','location','navigator','localStorage'])set(k,dom.window[k]);
 Object.defineProperty(dom.window.navigator,'userAgent',{value:'Mozilla iPhone Safari'});
 dom.window.HTMLMediaElement.prototype.play=async()=>{};
-let stopCount=0,connected=false,latestRecorder,joinCalls=0,leaveCalls=0;
+let stopCount=0,connected=false,latestRecorder,joinCalls=0,leaveCalls=0,captureCalls=0;
 const tracks=[{kind:'audio',stop(){stopCount++;},addEventListener(){}},{kind:'video',stop(){stopCount++;},addEventListener(){}}];
-Object.defineProperty(navigator,'mediaDevices',{value:{getUserMedia:async()=>({getTracks:()=>tracks,getAudioTracks:()=>[tracks[0]]})}});
+Object.defineProperty(navigator,'mediaDevices',{value:{getUserMedia:async()=>{if(++captureCalls===1)throw Object.assign(Error('busy'),{name:'NotReadableError'});return {getTracks:()=>tracks,getAudioTracks:()=>[tracks[0]]};}}});
 set('MediaStream',class{constructor(tracks){this.tracks=tracks;}});
 set('MediaRecorder',class{constructor(){latestRecorder=this;this.state='inactive';this.mimeType='audio/webm';}start(){this.state='recording';}stop(){this.state='inactive';this.ondataavailable?.({data:new Blob(['sample'])});this.onstop?.();}});
 let state={id:'12345678-1234-1234-1234-123456789abc',title:'G2G trial',seat:'A',participant:true,state:'waiting',members:[{id:'a',seat:'A',name:'Nguyễn Văn An',ready:false},{id:'b',seat:'B',name:'Trần Thị Bình',ready:false}],serverNow:Date.now(),stageCount:2};
@@ -36,11 +36,10 @@ const el=s=>document.querySelector(s);
 try{
  await import('../src/speaking/phone.js');await settle();
  assert.equal(el('[data-join]').disabled,true);
- const capture=navigator.mediaDevices.getUserMedia;
- navigator.mediaDevices.getUserMedia=async()=>{throw Object.assign(Error('busy'),{name:'NotReadableError'});};
- el('[data-check]').click();await settle();assert.equal(el('[data-check]').disabled,false);assert.equal(el('[data-record]').disabled,true);assert.match(el('[data-device-status]').textContent,/kết thúc cuộc gọi/);
- navigator.mediaDevices.getUserMedia=capture;
+ assert.equal(captureCalls,1,'Camera/mic open automatically without a button click');
+ assert.equal(el('[data-check]').hidden,false);assert.equal(el('[data-check]').textContent,'Thử lại');assert.equal(el('[data-record]').disabled,true);assert.match(el('[data-device-status]').textContent,/kết thúc cuộc gọi/);
  el('[data-check]').click();await settle();assert.equal(el('[data-record]').disabled,false);
+ assert.equal(el('[data-check]').hidden,true);
  assert.equal(el('[data-heard]'),null);
  el('[data-environment]').checked=true;el('[data-environment]').dispatchEvent(new dom.window.Event('change'));
  assert.equal(el('[data-join]').disabled,false,'Device access and environment check suffice without recording or playback');
