@@ -11,7 +11,7 @@ export function mediaAvailable(stream){
 }
 export async function acquirePreview(video,{mediaDevices=globalThis.navigator?.mediaDevices,permissionMs=15000,playMs=8000}={}){
  if(!mediaDevices?.getUserMedia)throw Object.assign(Error('Trình duyệt không hỗ trợ camera/micro.'),{name:'NotSupportedError'});
- const stream=await deadline(mediaDevices.getUserMedia({audio:true,video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}}),permissionMs,stopMedia);
+ const stream=await deadline(mediaDevices.getUserMedia({audio:true,video:{facingMode:'user',width:{ideal:720},height:{ideal:1280},aspectRatio:{ideal:9/16}}}),permissionMs,stopMedia);
  try{
   video.muted=true;video.defaultMuted=true;video.playsInline=true;video.srcObject=stream;
   await deadline(video.play(),playMs);

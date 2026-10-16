@@ -5,6 +5,7 @@ RUN npm ci
 COPY scripts /build/scripts
 COPY src /build/src
 COPY specs /build/specs
+COPY speaking-assets /build/speaking-assets
 COPY vi.html speaking-lab.html styles.css enhancements.css media-worker.js /build/
 COPY privacy.html terms.html legal.css /build/
 COPY server/runtime /build/server/runtime

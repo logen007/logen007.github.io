@@ -14,14 +14,14 @@ const tracks=[{kind:'audio',stop(){stopCount++;},addEventListener(){}},{kind:'vi
 Object.defineProperty(navigator,'mediaDevices',{value:{getUserMedia:async()=>({getTracks:()=>tracks,getAudioTracks:()=>[tracks[0]]})}});
 set('MediaStream',class{constructor(tracks){this.tracks=tracks;}});
 set('MediaRecorder',class{constructor(){latestRecorder=this;this.state='inactive';this.mimeType='audio/webm';}start(){this.state='recording';}stop(){this.state='inactive';this.ondataavailable?.({data:new Blob(['sample'])});this.onstop?.();}});
-let state={id:'12345678-1234-1234-1234-123456789abc',title:'G2G trial',seat:'A',participant:true,state:'waiting',members:[{id:'a',seat:'A',name:'A',ready:false},{id:'b',seat:'B',name:'B',ready:false}],serverNow:Date.now(),stageCount:1};
+let state={id:'12345678-1234-1234-1234-123456789abc',title:'G2G trial',seat:'A',participant:true,state:'waiting',members:[{id:'a',seat:'A',name:'Nguyễn Văn An',ready:false},{id:'b',seat:'B',name:'Trần Thị Bình',ready:false}],serverNow:Date.now(),stageCount:2};
 set('fetch',async(url,options={})=>{
  let data;
  if(url==='/api/auth/me')data={user:{id:'a',email:'a@test.example',name:'A'}};
  else if(url==='/api/public-settings')data={theme:{primaryColor:'#175CD3'}};
  else if(url.endsWith('/join'))data={token:'app-token',name:'A'};
  else if(url.endsWith('/ready')){assert.equal(JSON.parse(options.body).consent,true);state.members[0].ready=true;data=state;}
- else if(url.endsWith('/next'))data={};
+ else if(url.endsWith('/next')){state.finished=true;data={};}
  else if(url.startsWith('/api/speaking-lab/sessions/'))data=state;
  else throw Error('Unexpected URL '+url);
  return {ok:true,json:async()=>structuredClone(data)};
@@ -44,16 +44,25 @@ try{
  const Recorder=globalThis.MediaRecorder;set('MediaRecorder',class{constructor(){throw Error('busy');}});
  el('[data-record]').click();await settle();assert.equal(el('[data-check]').disabled,false);assert.equal(el('[data-record]').disabled,false);assert.equal(el('[data-join]').disabled,true);
  set('MediaRecorder',Recorder);
- el('[data-record]').click();latestRecorder.stop();await settle();assert.equal(el('[data-sample]').hidden,false);
- for(const s of ['[data-heard]','[data-consent]']){el(s).checked=true;el(s).dispatchEvent(new dom.window.Event('change'));}
+ el('[data-record]').click();latestRecorder.stop();await settle();assert.equal(el('[data-listen]').disabled,false);assert.equal(el('[data-sample]').hidden,true);
+ assert.equal(el('[data-record]').textContent,'Thu thử');assert.equal(el('[data-listen]').textContent,'Nghe lại');
+ for(const s of ['[data-heard]','[data-environment]']){el(s).checked=true;el(s).dispatchEvent(new dom.window.Event('change'));}
  assert.equal(el('[data-join]').disabled,false);el('[data-join]').click();await settle();
  assert.equal(joinCalls,1);assert.equal(stopCount,2,'Local preflight tracks are stopped before joining SDK');
  assert.equal(el('[data-videos]').children.length,2);assert.equal(el('[data-preflight]').hidden,true);
+ assert.equal(el('[data-audio]'),null);assert.equal(el('[data-video]'),null);assert.equal(el('[data-call-controls]'),null);assert.equal(el('[data-consent]'),null);
+ assert.deepEqual([...el('[data-videos]').children].map(n=>[n.dataset.seat,n.querySelector('figcaption').textContent]),[['A','Nguyễn Văn An'],['B','Trần Thị Bình']]);
+ const stableTiles=[...el('[data-videos]').children];
  el('[data-ready]').click();await settle();assert.equal(el('[data-ready]').textContent,'Đã sẵn sàng');
  state={...state,state:'running',stageIndex:0,stage:{title:'Part one',instruction:'A starts',prompt:'PRIVATE A',seconds:60},deadline:Date.now()+60000};
  document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-stage]').hidden,false);assert.equal(el('[data-prompt]').textContent,'PRIVATE A');
- el('[data-next]').click();await settle();assert.equal(el('[data-next]').disabled,true);assert.match(el('[data-vote]').textContent,/Chờ bạn thi/);
+ el('[data-next]').click();await settle();assert.equal(el('[data-next]').hidden,true);assert.equal(el('[data-vote]').hidden,false);assert.match(el('[data-vote]').textContent,/Chờ bạn cùng thi/);
+ assert.equal(el('[data-prompt]').textContent,'PRIVATE A');assert.deepEqual([...el('[data-videos]').children],stableTiles);assert.equal(document.querySelector('dialog'),null);
+ state={...state,stageIndex:1,finished:false,stage:{title:'Mô tả ảnh',prompt:'',isSpeaker:false,speakerName:'Trần Thị Bình',seconds:60},partnerFinished:false};
+ document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-listening]').hidden,false);assert.equal(el('[data-task]').hidden,true);assert.equal(el('[data-stage-footer]').hidden,true);
+ state.partnerFinished=true;document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-stage-footer]').hidden,false);assert.equal(el('[data-next]').textContent,'Đã nghe xong');
+ state={...state,state:'paused',remaining:40000};document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-paused]').hidden,false);assert.equal(el('[data-stage]').hidden,true);
  state={...state,state:'processing',stage:null};document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-finished]').hidden,false);assert.ok(leaveCalls>0);
  assert.equal(el('[data-error]').textContent,'');
- console.log('Speaking phone DOM: device preview, local audio test, consent gate, SDK join, video tiles, ready, private prompt, stage vote and media cleanup passed.');
+ console.log('Speaking phone DOM: device preview, audio test, environment checks, full names, stable video order, control-free call, private task, inline waiting, listening and paused states passed.');
 }finally{dom.window.dispatchEvent(new dom.window.Event('pagehide'));hook.deregister();dom.window.close();for(const [k,d]of previous)d?Object.defineProperty(globalThis,k,d):delete globalThis[k];delete globalThis.__hmsMock;}

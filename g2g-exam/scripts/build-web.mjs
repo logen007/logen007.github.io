@@ -51,6 +51,7 @@ await fs.writeFile(path.join(out,'speaking-lab.html'),speakingHtml);
 for(const file of ['privacy.html','terms.html','legal.css'])await fs.copyFile(path.join(root,file),path.join(out,file));
 await fs.copyFile(path.join(root,'server/runtime/runtime-config.js'),path.join(out,'runtime-config.js'));
 await fs.copyFile(path.join(root,'media-worker.js'),path.join(out,'media-worker.js'));
+await fs.cp(path.join(root,'speaking-assets'),path.join(out,'speaking-assets'),{recursive:true});
 await fs.mkdir(path.join(out,'src/ui'),{recursive:true});
 await fs.copyFile(path.join(root,'src/ui/media-fallback.js'),path.join(out,'src/ui/media-fallback.js'));
 for(const file of await fs.readdir(path.join(out,'assets'))){
