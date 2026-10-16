@@ -32,7 +32,7 @@ export function speakingRoomHtml(){
    <footer class="speaking-footer" data-stage-footer>${button('Tôi đã nói xong','arrowRight','data-next',true)}<div class="speaking-inline-status" data-vote role="status" hidden>${iconHtml('example')}<span>Chờ bạn cùng thi</span></div><p class="speaking-note">Cả hai xong, hệ thống tự chuyển phần.</p></footer>
   </section>
   <section class="speaking-panel speaking-focus" data-paused hidden><span class="speaking-turn speaking-turn-neutral">Thời gian đã tạm dừng</span><h1 class="speaking-icon-title">${iconHtml('repeat')}<span>Đang kết nối lại</span></h1><p class="speaking-note speaking-copy">Giữ trang này mở. Phòng tự tiếp tục khi kết nối ổn định.</p></section>
-  <section class="speaking-panel" data-finished hidden><div class="speaking-focus"><span class="speaking-complete-icon"><img src="/speaking-assets/complete.svg" width="32" height="32" alt=""></span><h1 data-finished-title>Bạn đã hoàn thành</h1><p class="speaking-note speaking-copy" data-finished-note></p></div>${footer('<a class="nut chinh" href="/">'+iconHtml('arrowLeft')+'<span>Về trang chủ</span></a>','Buổi thử nghiệm không tính điểm thật.')}</section>
+  <section class="speaking-panel" data-finished hidden><div class="speaking-focus"><span class="speaking-complete-icon" data-finished-icon></span><h1 data-finished-title>Bạn đã hoàn thành</h1><p class="speaking-note speaking-copy" data-finished-note></p></div>${footer('<a class="nut chinh" href="/">'+iconHtml('arrowLeft')+'<span>Về trang chủ</span></a>','Buổi thử nghiệm không tính điểm thật.')}</section>
  </section>`;
 }
 export function privatePromptHtml(stage){
@@ -47,4 +47,7 @@ export function finishedCopy(state){
  if(state.state==='interrupted')return {title:'Buổi thi bị gián đoạn',note:'Chưa có xác nhận hoàn thành. Giáo viên sẽ kiểm tra và hướng dẫn bạn.'};
  if(state.state==='completed')return {title:'Bạn đã hoàn thành',note:'Bản ghi đã được lưu. Giáo viên sẽ xem và nhận xét.'};
  return {title:'Đã kết thúc phần thi',note:state.state==='finishing'?'Đang đóng phòng an toàn. Giữ trang mở để nhận trạng thái bản ghi.':'Đang xử lý bản ghi. Chưa có xác nhận video đã được lưu.'};
+}
+export function finishedIconHtml(state){
+ return state.state==='completed'?'<img src="/speaking-assets/complete.svg" width="32" height="32" alt="">':iconHtml(state.state==='interrupted'?'warning':state.state==='cancelled'?'close':'clock');
 }

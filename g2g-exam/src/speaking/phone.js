@@ -6,7 +6,7 @@ import {loadPublicSettings} from '../settings/api.js';
 import {initializeTheme,acceptPublicSettings} from '../settings/theme.js';
 import {drawQr} from './qr.js';
 import {acquirePreview,mediaAvailable,mediaErrorText,recordSample} from './devices.js';
-import {speakingRoomHtml,privatePromptHtml,readinessHtml,finishedCopy} from './phone-view.js';
+import {speakingRoomHtml,privatePromptHtml,readinessHtml,finishedCopy,finishedIconHtml} from './phone-view.js';
 
 const root=document.getElementById('speaking-app'),id=new URL(location.href).searchParams.get('session');
 let state,user,stream,actions,store,sdk,joined=false,entered=false,joining=false,checked=false,timer,clock,serverOffset=0,recordingUrl,recorder,sampleClock,unsubscribers=[],lastPeers=[],votedStage=null,stageKey,memberKey;
@@ -110,7 +110,7 @@ function paint(){
   el('[data-next]').hidden=finished;el('[data-next]').disabled=paused||finished;actionLabel(el('[data-next]'),isSpeaker?'Tôi đã nói xong':'Đã nghe xong','arrowRight');
   el('[data-vote]').hidden=!finished;
  }
- if(done){const copy=finishedCopy(state);el('[data-finished-title]').textContent=copy.title;el('[data-finished-note]').textContent=copy.note;if(entered){entered=false;joined=false;actions?.leave().catch(()=>{});}}
+ if(done){const copy=finishedCopy(state),icon=el('[data-finished-icon]');icon.dataset.outcome=state.state;icon.innerHTML=finishedIconHtml(state);el('[data-finished-title]').textContent=copy.title;el('[data-finished-note]').textContent=copy.note;if(entered){entered=false;joined=false;actions?.leave().catch(()=>{});}}
  if(!done)renderPeers(lastPeers,state.members);
  updateClock();
 }

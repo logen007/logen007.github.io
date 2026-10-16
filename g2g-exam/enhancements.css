@@ -117,6 +117,13 @@
 .speaking-form label{display:grid;gap:8px;min-width:0}
 .speaking-form .speaking-image-choice{display:flex;align-items:center;gap:8px}
 .speaking-form .truong{width:100%;min-width:0}
+.speaking-account-field{position:relative;min-width:0}
+.speaking-account-options{position:absolute;z-index:3;top:calc(100% + 6px);left:0;right:0;max-height:220px;overflow:auto;overscroll-behavior:contain;padding:4px;background:var(--mat);border:1px solid var(--vien);border-radius:12px}
+.speaking-account-options[hidden]{display:none}
+.speaking-account-options [role=option]{display:grid;gap:2px;min-height:52px;padding:8px 12px;border-radius:8px;cursor:pointer;overflow-wrap:anywhere}
+.speaking-account-options strong{font-size:14px;font-weight:500;line-height:1.4}
+.speaking-account-options small{font-size:12px;color:var(--phu);line-height:1.4}
+.speaking-account-options [role=option]:hover,.speaking-account-options [aria-selected=true]{background:var(--brand-soft)}
 .speaking-form fieldset{display:grid;gap:16px;border:1px solid var(--vien);border-radius:var(--r);padding:20px;min-width:0}
 .speaking-form legend{padding:0 8px;font-weight:500}
 .speaking-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
@@ -178,6 +185,8 @@
 .speaking-focus h1{font-size:28px;justify-content:center}
 .speaking-complete-icon{display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:50%;background:var(--brand-primary);color:var(--brand-on-primary)}
 .speaking-complete-icon>.ui-icon{width:32px;height:32px}
+.speaking-complete-icon:not([data-outcome=completed]){background:var(--surface-muted);color:var(--phu)}
+.speaking-complete-icon[data-outcome=interrupted]{color:var(--do)}
 .speaking-sheet>[data-error]{flex:none;margin:0;padding:8px 0;color:var(--do);font-size:14px;line-height:1.4;overflow-wrap:anywhere}
 @media(max-width:600px){.speaking-form-grid{grid-template-columns:1fr}.speaking-dialog{padding:24px 20px}.speaking-welcome{padding:20px}.speaking-phone:not(.speaking-room){margin-top:16px}.speaking-admin .tieu-de-trang{flex-wrap:wrap}.speaking-admin h1{font-size:28px}}
 @media(prefers-reduced-motion:no-preference){.speaking-room[data-view=stage] .speaking-turn{transition:background-color .18s ease,color .18s ease}.speaking-inline-status:not([hidden]){animation:speaking-status-enter .2s ease-out}@keyframes speaking-status-enter{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}}

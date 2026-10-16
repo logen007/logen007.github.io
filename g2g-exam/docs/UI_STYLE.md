@@ -740,7 +740,12 @@ stimulus; its configurable G2G timings are not official exam rules. Do not chang
 existing trial content. New trials have photo turns for each participant and a shared
 experience exchange. Scheduling offers Thi ngay (both ready) and Hẹn giờ (time and
 both ready); account email/name suggestions are staff-only, debounced and bounded.
+Suggestions use an input-anchored, border-only white list with a medium-weight
+name and muted email underneath; no native datalist, avatars or decorative badges.
+Preserve touch selection, arrow/Enter/Escape navigation and cached requests.
 Show recording saved only after server confirmation.
+The ending icon follows actual state: warning for interruption, cross for
+cancellation, clock for processing/closing, and completion tick only for completed.
 Keep the status and server clock on one row. Desktop displays only a phone QR.
 Use explicit trial labels; never imply an official TELC task or real published score.
 

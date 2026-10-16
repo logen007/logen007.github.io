@@ -1,5 +1,7 @@
 // Shared outline icons: the control owns its border, size and interaction state.
 const paths={
+  warning:'<path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v5M12 17h.01"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   speaking:'<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/>',
   backup:'<path d="M7 18H6a4 4 0 0 1-.6-8A7 7 0 0 1 19 9a4.5 4.5 0 0 1 0 9h-2M12 21V11m-4 4 4-4 4 4"/>',
   twoPages:'<rect x="2" y="4" width="9" height="16" rx="1"/><rect x="13" y="4" width="9" height="16" rx="1"/>',
