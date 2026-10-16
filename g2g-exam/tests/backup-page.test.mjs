@@ -60,6 +60,8 @@ assert.match(driveSource,/files\(id,name,size,createdTime,mimeType,description,a
 assert.match(css,/\.backup-page \[hidden\],\.backup-dialog \[hidden\]/);
 assert.match(css,/\.backup-page \.icon-btn,\.backup-dialog \.icon-btn\{--editor-control:44px\}/);
 assert.match(css,/\.backup-table-wrap\{max-width:100%;overflow-x:auto\}/);
+assert.match(css,/\.backup-created time\{display:inline-flex;flex-wrap:nowrap;align-items:baseline;gap:8px;font-weight:600;white-space:nowrap\}/);
+assert.ok(!/\.backup-created time\{[^}]*display:grid/.test(css),'Mobile date and time remain on one line');
 assert.ok(!css.includes('.backup-item'));
 console.log('Backup UI: compact layout, popup, real status, escaping and accessibility passed');
 
