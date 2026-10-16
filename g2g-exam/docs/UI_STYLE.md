@@ -556,7 +556,7 @@ states have one concise explanation. Idle AI polling runs once per minute.
   fill tokens, with matching slice/legend colors rather than a muddy single-hue
   gradient. The donut uses a 160px desktop plot and a responsive 120–160px mobile
   plot. Keep the legend content-width, with aligned names/counts separated by
-  10px. Align this compact legend block and both text columns to the right;
+  10px. Position this compact legend block on the right, with names left-aligned and counts right-aligned;
   do not stretch the gap between names and counts. Preserve real counts and empty states.
 - Overview starts with charts; omit the four summary cards for pending work,
   exams, students and teachers (user request, 12 October 2026).
