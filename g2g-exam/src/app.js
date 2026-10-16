@@ -93,6 +93,7 @@ import {readWritingRow} from './ui/writing-form.js';
 import {readExamAnswers,revealUnansweredQuestion} from './ui/exam-answers.js';
 import {startReleaseMonitor} from './ui/release-update.js';
 import {startDashboardRefresh} from './ui/dashboard-refresh.js';
+import {startSpeakingArrival} from './speaking/arrival.js';
 
 initializeTheme();
 const app=document.getElementById('app');
@@ -1590,6 +1591,12 @@ if(repo.mode==='api')startReleaseMonitor({canReload:()=>
   !document.getElementById('modal')&&!document.querySelector('[data-name-form]:not([hidden])')&&
   !document.activeElement?.matches('input,textarea,select,[contenteditable="true"]')&&
   (ui.view==='student-home'||ui.view==='student-results'||ui.view==='admin'&&['dashboard','exams'].includes(ui.adminTab))
+});
+if(repo.mode==='api')startSpeakingArrival({getUser:()=>user,canEnter:()=>
+  !document.hidden&&startupGate.isReady()&&!startingAttempt&&!submitBusy&&!builderAutosaveBusy&&!builderSavePromise&&
+  !document.getElementById('modal')&&!document.querySelector('dialog[open]')&&!document.querySelector('[data-name-form]:not([hidden])')&&
+  !document.activeElement?.matches('input,textarea,select,[contenteditable="true"]')&&
+  (['student-home','student-results','student-attempt-detail','submitted','expired'].includes(ui.view)||ui.view==='admin'&&['dashboard','exams'].includes(ui.adminTab))
 });
 import {shareStudentProfile,bindStudentName} from './views/student-profile-card.js';
 import {loadStudentReview as loadStudentReviewData} from './controllers/student-review.js';

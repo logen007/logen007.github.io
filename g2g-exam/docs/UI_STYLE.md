@@ -767,6 +767,13 @@ All teachers may view/review finished trials; only admins/owners control live
 trials. Review saves use a version check to prevent overwriting another teacher.
 This remains isolated feedback, not official exam scoring. Admin pairing remains
 manual in this release; automatic candidate matchmaking is a separate feature.
+Assigned candidates already using the mobile website automatically open the
+speaking preflight when the room's entry window opens (15 minutes before a
+scheduled trial, immediately for instant trials). Check only the signed-in
+account's eligible session ID, every 10 seconds on safe visible screens; never
+interrupt exams, editing, grading, open dialogs or active inputs. Recheck identity
+after loading and guard once per account/session/browser tab to avoid redirect
+loops. This does not bypass device permission, environment checks or readiness.
 The ending icon follows actual state: warning for interruption, cross for
 cancellation, clock for processing/closing, and completion tick only for completed.
 Keep the status and server clock on one row. Desktop displays only a phone QR.

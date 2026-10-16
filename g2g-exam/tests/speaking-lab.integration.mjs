@@ -64,12 +64,16 @@ try{
  const input={title:'Trial',scheduledAt:new Date(Date.now()-1000).toISOString(),emailA:'a@test.example',emailB:'b@test.example',stages:[stage]};
  assert.equal((await send('POST','sessions','a',input)).statusCode,403);
  const created=await send('POST','sessions','t',input);assert.equal(created.statusCode,200,created.body);const id=created.json().id,p='sessions/'+id;
+ for(const who of ['a','b']){const arrival=await send('GET','arrival',who);assert.deepEqual(arrival.json(),{id});assert.equal(arrival.headers['cache-control'],'private, no-store');}
+ assert.deepEqual((await send('GET','arrival','x')).json(),{id:null},'Only the assigned participant receives the session ID');
+ assert.equal((await send('GET','arrival','missing')).statusCode,401);
  assert.equal((await send('GET',p,'t')).json().mode,'schedule');
  const instant=await send('POST','sessions','t',{...input,mode:'instant',scheduledAt:null,emailA:'c@test.example',emailB:'m@test.example'});
  assert.equal(instant.statusCode,200,instant.body);
  const instantView=(await send('GET','sessions/'+instant.json().id,'t')).json();
  assert.equal(instantView.mode,'instant');assert.ok(Math.abs(Date.parse(instantView.scheduledAt)-Date.now())<5000);
  assert.equal((await send('POST','sessions/'+instant.json().id+'/end','t',{})).statusCode,200);
+ assert.deepEqual((await send('GET','arrival','c')).json(),{id:null},'Cancelled trials never cause automatic entry');
  assert.equal((await send('POST','sessions','t',input)).statusCode,409,'Reject overlapping slots');
  assert.equal((await send('GET',p,'c')).statusCode,403);
  assert.equal((await send('GET',p,'x')).statusCode,403);

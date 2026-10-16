@@ -16,6 +16,15 @@ function phone(request){if(!isPhone(request.headers['user-agent']))throw appErro
 function member(row,user){if(!row.data.members.some(m=>m.id===user.id))throw appError(403,'Bạn không phải thí sinh trong ca này.');}
 function joinWindow(d){const time=Date.now(),scheduled=Date.parse(d.scheduledAt);if(time<scheduled-15*60000||time>scheduled+90*60000||terminal.includes(d.state)||['finishing','processing'].includes(d.state))throw appError(409,'Phòng chỉ mở từ 15 phút trước lịch thi và đóng chậm nhất sau lịch 90 phút.');}
 export function registerSpeakingLabRoutes(app){
+ app.get('/api/speaking-lab/arrival',async(request,reply)=>{
+  const user=await requireUser(request);reply.header('Cache-Control','private, no-store');
+  const result=await query(`SELECT id FROM speaking_lab_sessions WHERE data->'members' @> $1::jsonb
+   AND data->>'state' IN ('scheduled','waiting','starting','running','paused')
+   AND (data->>'scheduledAt')::timestamptz <= now()+interval '15 minutes'
+   AND (data->>'scheduledAt')::timestamptz >= now()-interval '90 minutes'
+   ORDER BY CASE WHEN data->>'state' IN ('running','paused','starting') THEN 0 ELSE 1 END,(data->>'scheduledAt')::timestamptz LIMIT 1`,[JSON.stringify([{id:user.id}])]);
+  return {id:result.rows[0]?.id||null};
+ });
  app.get('/api/speaking-lab/accounts',async request=>{
   await requireRole(request,'teacher','master');
   const text=String(request.query.q||'').trim().slice(0,120);

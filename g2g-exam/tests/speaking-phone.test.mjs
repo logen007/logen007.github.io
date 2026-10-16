@@ -105,5 +105,18 @@ try{
  list.querySelector('small').click();assert.equal(email.value,'a@test.example');assert.equal(list.hidden,true);
  email.value='x';email.dispatchEvent(new dom.window.Event('input'));assert.equal(dialog.querySelector('#speaking-accounts-A').children.length,0);
  dialog.dispatchEvent(new dom.window.Event('close'));
+ const {startSpeakingArrival}=await import('../src/speaking/arrival.js');
+ let arrivalUser={id:'a'},safe=true,arrivalTime=0,arrivalRequests=0;
+ const arrivals=[],assigned='12345678-1234-1234-1234-123456789abc';
+ set('fetch',async url=>{assert.equal(url,'/api/speaking-lab/arrival');arrivalRequests++;return {ok:true,json:async()=>({id:assigned})};});
+ const arrival=startSpeakingArrival({getUser:()=>arrivalUser,canEnter:()=>safe,now:()=>arrivalTime,navigate:url=>arrivals.push(url),storage:{getItem(){return null;},setItem(){}}});
+ try{
+  await settle();assert.equal(arrivals.length,1);assert.equal(arrivals[0],'/speaking-lab.html?session='+assigned);
+  arrivalTime+=11000;await arrival.tick();assert.equal(arrivals.length,1,'Do not trap the user in a redirect loop after returning to the web');
+  safe=false;arrivalTime+=11000;const requests=arrivalRequests;await arrival.tick();assert.equal(arrivalRequests,requests,'Never interrupt another exam or an editing surface');
+  safe=true;let release;set('fetch',async()=>new Promise(resolve=>{release=()=>resolve({ok:true,json:async()=>({id:assigned})});}));
+  const pending=arrival.tick();await settle();arrivalUser={id:'b'};release();await pending;assert.equal(arrivals.length,1,'An old-account response cannot redirect a newly signed-in user');
+  set('fetch',async()=>({ok:true,json:async()=>({id:assigned})}));arrivalTime+=11000;await arrival.tick();assert.equal(arrivals.length,2,'The second assigned account gets its own arrival guard');
+ }finally{arrival.stop();}
  console.log('Speaking phone DOM: device preview, audio test, environment checks, full names, stable video order, control-free call, private task, inline waiting, listening and paused states passed.');
 }finally{dom.window.dispatchEvent(new dom.window.Event('pagehide'));hook.deregister();dom.window.close();for(const [k,d]of previous)d?Object.defineProperty(globalThis,k,d):delete globalThis[k];delete globalThis.__hmsMock;}
