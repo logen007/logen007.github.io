@@ -675,10 +675,10 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .distribution-plot>div { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .distribution-plot b { font-size:36px; font-weight:450; letter-spacing:-1px; font-variant-numeric:tabular-nums; }
 .distribution-plot span { font-size:12px; color:var(--phu); }
-.distribution-legend { list-style:none; padding:0; margin:0; min-width:0; width:fit-content; max-width:100%; justify-self:start; }
+.distribution-legend { list-style:none; padding:0; margin:0; min-width:0; width:fit-content; max-width:100%; justify-self:end; }
 .distribution-legend li { display:grid; grid-template-columns:8px minmax(0,1fr) auto; align-items:center; column-gap:10px; padding:6px 0; font-size:12px; }
 .distribution-legend i { width:8px; height:8px; border-radius:50%; background:var(--slice-color); }
-.distribution-legend span { min-width:0; overflow-wrap:anywhere; }
+.distribution-legend span { min-width:0; overflow-wrap:anywhere; text-align:right; }
 .distribution-legend b { min-width:2ch; text-align:right; font-weight:500; font-variant-numeric:tabular-nums; }
 .resource-ring-plot { position:relative; width:88px; height:88px; flex:none; }
 .resource-ring-plot svg { width:100%; height:100%; transform:rotate(-90deg); }

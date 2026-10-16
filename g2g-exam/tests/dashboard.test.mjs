@@ -17,7 +17,8 @@ assert.equal(new Set(plotColors).size,6);assert.deepEqual(plotColors,legendColor
 assert.doesNotMatch(colorfulDistribution,/--slice:/);
 const distributionStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(distributionStyles,/--distribution-size:clamp\(120px,38vw,160px\)/);
-assert.match(distributionStyles,/\.distribution-legend \{[^}]*width:fit-content;[^}]*justify-self:start/);
+assert.match(distributionStyles,/\.distribution-legend \{[^}]*width:fit-content;[^}]*justify-self:end/);
+assert.match(distributionStyles,/\.distribution-legend span \{[^}]*text-align:right/);
 assert.match(distributionStyles,/\.distribution-legend li \{[^}]*grid-template-columns:8px minmax\(0,1fr\) auto/);
 assert.match(resourceRing('RAM','0 / 10',0),/stroke-dasharray="0 100"/);
 assert.match(resourceRing('RAM','Unknown',null),/>—<\/b>/);
