@@ -10,6 +10,15 @@ import {resourceRing,resourceColumns,distributionChart} from '../src/views/resou
 assert.match(distributionChart([]),/Chưa có đề thi/);
 assert.match(distributionChart([['A',3],['B',1]]),/stroke-dasharray="75 25"/);
 assert.match(distributionChart([['<script>',1]]),/&lt;script&gt;/);
+const colorfulDistribution=distributionChart([['GOETHE A1',3],['FID A1',1],['GOETHE A2',1],['GOETHE B1',1],['GOETHE B2',1],['TELC B1',1]]);
+const plotColors=[...colorfulDistribution.matchAll(/<circle[^>]*style="([^"]+)"/g)].map(m=>m[1]);
+const legendColors=[...colorfulDistribution.matchAll(/<i style="([^"]+)"/g)].map(m=>m[1]);
+assert.equal(new Set(plotColors).size,6);assert.deepEqual(plotColors,legendColors,'Each legend dot matches its real chart slice');
+assert.doesNotMatch(colorfulDistribution,/--slice:/);
+const distributionStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(distributionStyles,/--distribution-size:clamp\(120px,38vw,160px\)/);
+assert.match(distributionStyles,/\.distribution-legend \{[^}]*width:fit-content;[^}]*justify-self:start/);
+assert.match(distributionStyles,/\.distribution-legend li \{[^}]*grid-template-columns:8px minmax\(0,1fr\) auto/);
 assert.match(resourceRing('RAM','0 / 10',0),/stroke-dasharray="0 100"/);
 assert.match(resourceRing('RAM','Unknown',null),/>—<\/b>/);
 assert.match(resourceRing('<script>','test',150),/stroke-dasharray="100 100"/);

@@ -1,13 +1,15 @@
 import {esc} from '../ui/format.js';
+const distributionColors=['--score-good-fill','--score-excellent-fill','--score-satisfactory-fill','--score-failed-fill','--score-sufficient-fill','--brand-primary'];
+const distributionColor=index=>'--slice-color:var('+distributionColors[index%distributionColors.length]+')';
 export function distributionChart(items){
   const total=items.reduce((sum,[,count])=>sum+count,0);
   if(!total)return '<p class="dashboard-empty">Chưa có đề thi.</p>';
   let offset=0;
   const slices=items.map(([name,count],index)=>{
     const size=count/total*100,start=offset;offset+=size;
-    return `<circle cx="50" cy="50" r="38" pathLength="100" stroke-dasharray="${size} ${100-size}" stroke-dashoffset="${-start}" style="--slice:${index%6}"/>`;
+    return `<circle cx="50" cy="50" r="38" pathLength="100" stroke-dasharray="${size} ${100-size}" stroke-dashoffset="${-start}" style="${distributionColor(index)}"/>`;
   }).join('');
-  return `<div class="distribution-chart"><div class="distribution-plot"><svg viewBox="0 0 100 100" aria-hidden="true">${slices}</svg><div><b>${total}</b><span>đề thi</span></div></div><ul class="distribution-legend">${items.map(([name,count],index)=>`<li><i style="--slice:${index%6}" aria-hidden="true"></i><span>${esc(name)}</span><b>${count}</b></li>`).join('')}</ul></div>`;
+  return `<div class="distribution-chart"><div class="distribution-plot"><svg viewBox="0 0 100 100" aria-hidden="true">${slices}</svg><div><b>${total}</b><span>đề thi</span></div></div><ul class="distribution-legend">${items.map(([name,count],index)=>`<li><i style="${distributionColor(index)}" aria-hidden="true"></i><span>${esc(name)}</span><b>${count}</b></li>`).join('')}</ul></div>`;
 }
 
 // Decorative SVGs always accompany equivalent visible values; no chart dependency.

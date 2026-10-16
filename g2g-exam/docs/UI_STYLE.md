@@ -552,6 +552,11 @@ states have one concise explanation. Idle AI polling runs once per minute.
   duplicate large total. Default to the week/month/year range with the highest
   share of nonzero bins; ties prefer the shorter range. Keep true zero bins
   and respect manual period selection.
+- Exam distribution reuses existing blue, teal, violet, coral, green and yellow
+  fill tokens, with matching slice/legend colors rather than a muddy single-hue
+  gradient. The donut uses a 160px desktop plot and a responsive 120–160px mobile
+  plot. Keep the legend content-width, with aligned names/counts separated by
+  10px; do not push counts to the far card edge. Preserve real counts and empty states.
 - Overview starts with charts; omit the four summary cards for pending work,
   exams, students and teachers (user request, 12 October 2026).
 - Use aligned equal-height panels, adaptive day/week/month/year bars with editable
