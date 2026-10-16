@@ -34,7 +34,8 @@ assert.equal(backupProgressText({startedAt:'2026-10-16T00:00:00Z',finishedAt:'20
 
 const item=backupItemHtml({id:'a/b',name:'<img onerror="bad">',size:1048576,createdTime:'2026-10-15T20:00:00Z'});
 assert.equal((item.match(/<td[ >]/g)||[]).length,3);
-assert.match(item,/16\/10\/26/);
+assert.match(item,/Thứ Sáu/);
+assert.match(item,/16\/10\/2026/);
 assert.match(item,/03:00/);
 assert.match(item,/class="backup-created"/);
 assert.match(item,/1\.0 MB/);
@@ -44,6 +45,10 @@ assert.equal((item.match(/class="icon-btn"/g)||[]).length,2);
 assert.ok(!item.includes('<img'));
 assert.match(item,/&lt;img/);
 assert.ok(!backupItemHtml({}).includes('NaN'));
+const requestedDate=backupItemHtml({createdTime:'2026-10-16T12:54:00Z'});
+assert.match(requestedDate,/<span>Thứ Sáu<\/span><span>16\/10\/2026<\/span><span class="backup-time">19:54<\/span>/);
+assert.match(backupItemHtml({createdTime:'2026-10-17T17:00:00Z'}),/<span>Chủ Nhật<\/span><span>18\/10\/2026<\/span><span class="backup-time">00:00<\/span>/);
+assert.ok(!backupItemHtml({createdTime:'invalid'}).includes('Invalid Date'));
 assert.match(backupItemHtml({appProperties:{appVersion:'1.3.163'}}),/<small class="backup-version">v1\.3\.163<\/small>/);
 assert.ok(!backupItemHtml({}).includes('backup-version'),'Legacy backups must not claim the current application version');
 assert.ok(!backupItemHtml({appProperties:{appVersion:'<img>'}}).includes('<img>'));

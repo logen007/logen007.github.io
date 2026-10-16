@@ -3,7 +3,13 @@ import {confirmAction} from '../ui/confirm.js';
 import {iconHtml} from '../ui/icons.js';
 import {esc} from '../ui/format.js';
 import {readBackupData,loadBackupData,invalidateBackupData} from '../settings/backup-data.js';
-const dateText=(value,part)=>value&&Number.isFinite(Date.parse(value))?new Date(value).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',...(part==='date'?{dateStyle:'short'}:{timeStyle:'short'})}):'—';
+const backupDateFormatter=new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',weekday:'long',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+function backupCreatedTimeHtml(value){
+ if(!value||!Number.isFinite(Date.parse(value)))return '<time><span>—</span></time>';
+ const date=new Date(value),parts=Object.fromEntries(backupDateFormatter.formatToParts(date).map(part=>[part.type,part.value]));
+ const weekday=parts.weekday.split(' ').map(word=>word.charAt(0).toLocaleUpperCase('vi-VN')+word.slice(1)).join(' ');
+ return `<time datetime="${date.toISOString()}"><span>${esc(weekday)}</span><span>${parts.day}/${parts.month}/${parts.year}</span><span class="backup-time">${parts.hour}:${parts.minute}</span></time>`;
+}
 export function backupPageHtml(){return `<section class="backup-page">
  <header class="tieu-de-trang backup-heading"><div class="backup-title"><h1>Backup</h1><span data-count></span></div><div class="backup-actions">
  <button class="icon-btn" data-settings title="Cài đặt Backup" aria-label="Cài đặt Backup">${iconHtml('settings')}</button>
@@ -13,7 +19,7 @@ export function backupProgressText(status,now=Date.now()){
  const seconds=Math.max(0,Math.floor(((status.finishedAt?Date.parse(status.finishedAt):now)-Date.parse(status.startedAt))/1000));
  return Number.isFinite(seconds)?Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0'):'0:00';
 }
-export function backupItemHtml(file){return `<td class="backup-created"><a class="backup-download" aria-label="Tải xuống ${esc(file.name)}" title="${esc(file.name)}" href="/api/backup/files/${encodeURIComponent(file.id)}/download"><time datetime="${esc(file.createdTime||'')}"><span>${esc(dateText(file.createdTime,'date'))}</span><span class="backup-time">${esc(dateText(file.createdTime,'time'))}</span></time>${file.appProperties?.appVersion?`<small class="backup-version">v${esc(file.appProperties.appVersion)}</small>`:''}</a></td><td>${Number.isFinite(Number(file.size))?(Number(file.size)/1048576).toFixed(1)+' MB':'—'}</td><td><div class="hanh-dong-bang backup-actions"><button class="icon-btn" data-restore title="Phục hồi thử" aria-label="Phục hồi thử ${esc(file.name)}">${iconHtml('repeat')}</button><button class="icon-btn" data-delete title="Xoá bản backup" aria-label="Xoá bản backup ${esc(file.name)}">${iconHtml('trash')}</button></div></td>`;}
+export function backupItemHtml(file){return `<td class="backup-created"><a class="backup-download" aria-label="Tải xuống ${esc(file.name)}" title="${esc(file.name)}" href="/api/backup/files/${encodeURIComponent(file.id)}/download">${backupCreatedTimeHtml(file.createdTime)}${file.appProperties?.appVersion?`<small class="backup-version">v${esc(file.appProperties.appVersion)}</small>`:''}</a></td><td>${Number.isFinite(Number(file.size))?(Number(file.size)/1048576).toFixed(1)+' MB':'—'}</td><td><div class="hanh-dong-bang backup-actions"><button class="icon-btn" data-restore title="Phục hồi thử" aria-label="Phục hồi thử ${esc(file.name)}">${iconHtml('repeat')}</button><button class="icon-btn" data-delete title="Xoá bản backup" aria-label="Xoá bản backup ${esc(file.name)}">${iconHtml('trash')}</button></div></td>`;}
 export function backupSettingsHtml(){return `<form class="backup-form"><header class="dau-hop"><h2 id="backup-dialog-title">Cài đặt Backup</h2><button type="button" class="icon-btn" data-close title="Đóng" aria-label="Đóng">${iconHtml('close')}</button></header>
  <section class="backup-google"><div><strong>Google Drive</strong><small data-google>Đang kiểm tra…</small></div><button type="button" class="nut" data-connect disabled>Kết nối</button><button type="button" class="icon-btn" data-disconnect title="Ngắt kết nối Google Drive" aria-label="Ngắt kết nối Google Drive" hidden>${iconHtml('logout')}</button></section>
  <fieldset disabled><label class="backup-toggle"><span>Backup tự động</span><input type="checkbox" name="enabled" role="switch"></label>
