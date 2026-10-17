@@ -5,16 +5,30 @@ for(const band of ['excellent','good','satisfactory','sufficient','failed']){
   assert.ok(css.includes('.result-track--'+band+'>span{background:var(--score-'+band+'-fill)}'));
   assert.ok(css.includes('.score-'+band+' { background:var(--score-'+band+'-bg);'));
 }
-const badges=[...css.matchAll(/\.exam-(?:provider|level)\[data-(?:provider|level)="([^"]+)"\] \{ background:#([0-9a-f]{6}); color:#([0-9a-f]{6}); \}/g)];
+const badges=[...css.matchAll(/\.exam-(?:provider|level)\[data-(?:provider|level)="([^"]+)"\] \{ background:var\((--badge-[\w-]+-bg)\); color:var\((--badge-[\w-]+-text)\); \}/g)];
 assert.equal(badges.length,9);
 assert.equal(new Set(badges.map(match=>match[2])).size,9);
+const lightPalette=css.match(/:root \{([^}]+)\}/)[1];
+const darkPalette=css.match(/:root\[data-color-mode="dark"\] \{([^}]+)\}/)[1];
+function token(palette,name){
+  const value=palette.match(new RegExp(name+':([^;]+)'))?.[1].trim();
+  if(value?.startsWith('var('))return token(palette,value.slice(4,-1));
+  assert.match(value||'',/^#[0-9a-f]{6}$/i,name+' has a palette value');
+  return value.slice(1);
+}
 const luminance=hex=>{
   const rgb=hex.match(/../g).map(value=>parseInt(value,16)/255).map(value=>value<=0.04045?value/12.92:((value+0.055)/1.055)**2.4);
   return rgb[0]*0.2126+rgb[1]*0.7152+rgb[2]*0.0722;
 };
-for(const [,name,bg,fg] of badges){
+for(const [,name,bgToken,fgToken] of badges){
+  const bg=token(lightPalette,bgToken),fg=token(lightPalette,fgToken);
   assert.ok(luminance(bg)>0.7,name+' pastel background');
   assert.ok((luminance(bg)+0.05)/(luminance(fg)+0.05)>=4.5,name+' text contrast');
+}
+for(const name of ['goethe','telc','fid','a1','a2','b1','b2','c1','c2','neutral','passed','failed','ai-groq','ai-gemini','ai-grok','ai-mistral']){
+  const bg=token(darkPalette,'--badge-'+name+'-bg'),fg=token(darkPalette,'--badge-'+name+'-text');
+  assert.ok(luminance(bg)<0.08,name+' dark background stays subdued');
+  assert.ok((luminance(fg)+0.05)/(luminance(bg)+0.05)>=4.5,name+' dark text contrast');
 }
 const lightScores=css.match(/:root \{ --score-[^}]+\}/)[0];
 const darkScores=css.match(/:root\[data-color-mode="dark"\] \{([^}]+)\}/)[1];

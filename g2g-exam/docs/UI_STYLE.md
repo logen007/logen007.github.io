@@ -17,6 +17,11 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
   and readable light text, following the supplied SmartThings references. Shared
   tokens own surfaces and semantic colors; derive readable dark accents from the
   configured brand hue. Switching never rebuilds a page or interrupts input.
+  Provider/level, result status and AI badges use corresponding light/dark token
+  pairs throughout the site. Dark badge surfaces are muted tinted charcoal with
+  readable softened text, never the light palette's pastel fills. Exam entry/exit
+  coverage uses the current surface color. Explicit theme toggles animate colors
+  over 260ms; startup stays immediate and reduced motion disables interpolation.
 
 - Exam-list published titles use success green with no tinted row background (15 October 2026).
   Elsewhere use success green, draft/pending neutral, failed/error red. Preserve a

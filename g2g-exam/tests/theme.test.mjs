@@ -161,3 +161,20 @@ for(const color of ['#000000','#111827','#FFFFFF','#175CD3','#087A56','#FFEE00',
   assert.ok(colorContrast(palette['--dark-brand-primary'],palette['--dark-brand-on-primary'])>=4.5);
 }
 console.log('✓ Chuyển sáng/tối, lưu lựa chọn và tương phản màu tối');
+
+const savedMotionGlobals={setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout,matchMedia:globalThis.matchMedia};
+try{
+  const classes=new Set(),pending=new Map();let timerId=0,committed=0;
+  globalThis.setTimeout=callback=>{pending.set(++timerId,callback);return timerId;};
+  globalThis.clearTimeout=id=>pending.delete(id);
+  globalThis.matchMedia=()=>({matches:false});
+  globalThis.document.documentElement={dataset:{},classList:{add:value=>classes.add(value),remove:value=>classes.delete(value)},getBoundingClientRect:()=>{committed++;}};
+  initializeColorMode();assert.equal(classes.size,0,'Restored theme never animates');
+  toggleColorMode();assert.ok(classes.has('color-mode-changing'));assert.equal(committed,1);
+  toggleColorMode();assert.equal(pending.size,1,'Rapid toggles reset the cleanup timer');
+  for(const callback of pending.values())callback();pending.clear();
+  assert.equal(classes.size,0,'Transition rules are removed after toggling');
+  globalThis.matchMedia=()=>({matches:true});
+  toggleColorMode();assert.equal(classes.size,0);assert.equal(pending.size,0,'Reduced motion skips animation');
+}finally{Object.assign(globalThis,savedMotionGlobals);}
+console.log('✓ Chuyển màu: khởi động tức thì, bật/tắt nhanh, dọn dẹp và giảm chuyển động');

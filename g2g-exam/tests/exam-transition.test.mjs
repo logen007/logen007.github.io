@@ -18,7 +18,7 @@ assert.doesNotMatch(appSource,/notify\('Đã hủy bài thi/);
 for(const status of ['Đã nộp bài','Đã hủy bài thi','Hết giờ — Đã nộp bài'])assert.ok(appSource.includes("'"+status+"'"));
 assert.ok(appSource.includes("leaveExam('student-home','Đã hủy bài thi',{danger:true})"));
 assert.match(transitionCss,/\.exam-transition-waves i \{[^}]*var\(--brand-primary\)/);
-assert.match(transitionCss,/\.exam-transition::before \{[^}]*background:#fff/);
+assert.match(transitionCss,/\.exam-transition::before \{[^}]*background:var\(--mat\)/,'Coverage follows the current light/dark surface');
 assert.match(transitionCss,/\.exam-transition--exit \.exam-transition-center \{ animation:exam-cancel-caption 1500ms linear both; \}/);
 assert.match(transitionCss,/animation:exam-cancel-wave 1500ms linear both;/);
 assert.match(transitionCss,/@keyframes exam-cancel-caption \{ 0% \{ opacity:0; \} 20% \{ opacity:1; \} 55% \{ opacity:\.55; \} 100% \{ opacity:0; \} \}/);
