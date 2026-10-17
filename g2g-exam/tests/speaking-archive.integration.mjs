@@ -11,7 +11,7 @@ const query=(sql,args)=>(context.getStore()||db).query(sql,args);
 const appError=(statusCode,message)=>Object.assign(Error(message),{statusCode});
 globalThis.__archiveTest={query,withTx:fn=>db.transaction(c=>context.run(c,()=>fn({query}))),appError,
  getBackupDriveAccess:async()=>({token:'private-token',folderId:'root-folder'}),readHmsConfig:async()=>({}),hmsRequest:async()=>({url:'https://storage.test/private-recording.mp4'}),
- requireRole:async(request,...roles)=>{const user={id:request.headers['test-user'],role:request.headers['test-user']==='student'?'student':'teacher'};if(!user.id)throw appError(401,'Login');if(!roles.includes(user.role))throw appError(403,'Forbidden');return user;}};
+ requireRole:async(request,...roles)=>{const id=request.headers['test-user'],user={id,role:id==='student'?'student':id==='other-teacher'?'teacher':'master'};if(!user.id)throw appError(401,'Login');if(!roles.includes(user.role))throw appError(403,'Forbidden');return user;}};
 const hooks=registerHooks({resolve(specifier,ctx,next){
  if(ctx.parentURL?.endsWith('/speaking-archive.js')||ctx.parentURL?.endsWith('/speaking-drive.js')){
   const names={'./db.js':'query,withTx,appError','./backup-google.js':'getBackupDriveAccess','./speaking-hms.js':'readHmsConfig,hmsRequest','./auth.js':'requireRole'}[specifier];
@@ -60,7 +60,9 @@ try{
  assert.equal((await app.inject({method:'POST',url:'/api/speaking-lab/sessions/three/archive-retry',headers:{'test-user':'owner',origin:'https://evil.test'}})).statusCode,403);
  assert.equal((await send('GET','archive-status','student')).statusCode,403);
  assert.equal((await send('POST','sessions/three/archive-retry','student')).statusCode,403);
- assert.equal((await send('POST','sessions/three/archive-retry','other-teacher')).statusCode,200,'Any teacher can retry a finished recording');
+ assert.equal((await send('POST','sessions/three/archive-retry','other-teacher')).statusCode,403,'Teachers cannot manage archives');
+ assert.equal((await send('GET','archive-status','other-teacher')).statusCode,403);
+ assert.equal((await send('POST','sessions/three/archive-retry','admin')).statusCode,200,'Admin can retry a finished recording');
  assert.equal((await row('three')).driveArchive.state,'queued');
  deny=true;await runSpeakingArchiveOnce();assert.equal((await row('three')).driveArchive.state,'retrying');assert.equal((await row('three')).state,'completed','Drive failure cannot change exam outcome');deny=false;
  const video=await app.inject({method:'GET',url:'/video',headers:{range:'bytes=0-3'}});assert.equal(video.statusCode,206);assert.equal(video.headers['content-range'],'bytes 0-3/'+binary.length);assert.deepEqual(video.rawPayload,binary.subarray(0,4));assert.equal(video.headers['cache-control'],'private, no-store');

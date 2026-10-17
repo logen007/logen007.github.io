@@ -6,7 +6,7 @@ Existing TELC oral maxima and offline grading are not changed.
 
 ## First test
 
-1. Admin / teacher opens **Thi Nói thử nghiệm**. Only master can configure 100ms.
+1. Only admin opens **Thi Nói thử nghiệm** or uses its management APIs, including 100ms configuration, scheduling and recording review.
 2. In a separate 100ms Dashboard template create a student role that publishes
    audio/video and subscribes to the same role. Turn OFF all role permissions
    (including end room, recording, streaming, role changes and moderation).
@@ -43,15 +43,15 @@ Existing TELC oral maxima and offline grading are not changed.
 - Table `speaking_lab_sessions` has no link to attempts, grades, publication,
   level progression or exam content. No production exam schema is changed.
 - Example tasks are explicitly G2G practice text, not official TELC tasks.
-  The teacher edits all prompts, instructions and durations before creating a trial.
+  The admin edits all prompts, instructions and durations before creating a trial.
 - No AI grading, official score calculation, notifications, automatic pairing,
   long-term video ingestion or formal identity verification in this first slice.
 - At most 24 unfinished scheduled trials and 4 nonterminal rooms. Scheduling
   rejects overlapping participant windows (-15 to +90 minutes).
 - Recordings remain on 100ms storage by default (15-day vendor retention).
   Download required recordings before expiration; no claim of a 90-day archive.
-- Only assigned users can get app tokens/current prompts. Only owning teacher or
-  master gets recording links (15-minute presigned links) and feedback.
+- Only assigned users can get app tokens/current prompts. Only admin gets
+  recording links (15-minute presigned links) and manages feedback.
 - Timeouts/provider errors never claim a completed exam. Cleanup retries on the
   server and keeps the slot nonterminal until closing is confirmed.
 - Browser user-agent phone checking is a UX gate, not anti-cheating or device attestation.

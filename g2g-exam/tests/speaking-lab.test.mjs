@@ -29,7 +29,8 @@ row.data.state='running';row.data.stageIndex=1;
 const a=trialView(row,{id:'a',role:'student'}),b=trialView(row,{id:'b',role:'student'});
 assert.equal(a.stage.prompt,input.stages[1].a);assert.equal(b.stage.prompt,input.stages[1].b);
 assert.equal(a.stages,undefined);assert.equal(a.reviews,undefined);assert.ok(!JSON.stringify(a).includes(input.stages[1].b));
-assert.equal(trialView(row,{id:'teacher',role:'teacher'}).stages.length,3);
+assert.throws(()=>trialView(row,{id:'teacher',role:'teacher'}),/không được xếp/);
+assert.equal(trialView(row,{id:'admin',role:'master'}).stages.length,3);
 const photoRow={...row,data:{...row.data,stages:photoStages,stageIndex:0,members:[{id:'a',name:'Nguyễn Văn An',seat:'A'},{id:'b',name:'Trần Thị Bình',seat:'B'}],votes:{a:true}}};
 const photoA=trialView(photoRow,{id:'a',role:'student'}),photoB=trialView(photoRow,{id:'b',role:'student'});
 assert.equal(photoA.stage.image,DTZ_PHOTO);assert.equal(photoA.stage.isSpeaker,true);assert.equal(photoA.finished,true);
@@ -42,11 +43,15 @@ const link='/speaking-lab.html?session=12345678-1234-1234-1234-123456789abc';
 assert.equal(loginReturnPath(link,'student'),link);assert.equal(loginReturnPath('//evil.test'+link,'student'),'/student');
 assert.equal(initialStateScope({role:'master'},'https://g2g.test/adm?tab=speaking'),'catalog');assert.equal(viewStateScope('admin','speaking'),'catalog');
 assert.match(adminTrialHtml(),/không ghi vào kết quả thi thật/);
-for(const role of ['master','teacher']){
+for(const role of ['master']){
  const nav=topbarHtml({user:{role,name:'Test'},online:true,ui:{adminTab:'speaking'}});
  const speaking=nav.match(/<button[^>]*data-tab="speaking"[^>]*>[\s\S]*?<\/button>/)?.[0];
  assert.match(speaking,/muc-ben--icon/);assert.match(speaking,/aria-label="Thi Nói thử nghiệm"/);assert.ok(!speaking.includes('<span>'));
 }
+assert.doesNotMatch(topbarHtml({user:{role:'teacher',name:'Teacher'},online:true}),/data-tab="speaking"/);
+row.data.state='completed';
+assert.throws(()=>trialView(row,{id:'teacher',role:'teacher'}),/không được xếp/,'Former owners cannot review after losing admin access');
+assert.equal(trialView(row,{id:'a',role:'teacher'}).participant,true,'Assigned candidates retain their phone room');
 const source=readFileSync(new URL('../src/speaking/phone.js',import.meta.url),'utf8');
 const css=readFileSync(new URL('../enhancements.css',import.meta.url),'utf8');
 assert.match(css,/\.speaking-room:is\(\[data-view=stage\],\[data-view=paused\]\)\{--speaking-tile:min\(214px/);

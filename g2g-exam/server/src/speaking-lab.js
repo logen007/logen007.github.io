@@ -26,7 +26,7 @@ export function registerSpeakingLabRoutes(app){
   return {id:result.rows[0]?.id||null};
  });
  app.get('/api/speaking-lab/accounts',async request=>{
-  await requireRole(request,'teacher','master');
+  await requireRole(request,'master');
   const text=String(request.query.q||'').trim().slice(0,120);
   if(text.length<2)return {accounts:[]};
   const pattern='%'+text.replace(/[\\%_]/g,'\\$&')+'%';
@@ -41,7 +41,7 @@ export function registerSpeakingLabRoutes(app){
   }
  });
  app.get('/api/speaking-lab/config',async request=>{
-  await requireRole(request,'teacher','master');const c=await readHmsConfig();
+  await requireRole(request,'master');const c=await readHmsConfig();
   return {configured:!!c,templateId:c?.templateId||'',role:c?.role||''};
  });
  app.post('/api/speaking-lab/config',async request=>{
@@ -51,12 +51,12 @@ export function registerSpeakingLabRoutes(app){
   return saveHmsConfig(request.body||{},user);
  });
  app.get('/api/speaking-lab/sessions',async request=>{
-  const user=await requireRole(request,'teacher','master');
+  const user=await requireRole(request,'master');
   const r=await query(`SELECT id,data->>'title' AS title,data->>'scheduledAt' AS scheduled_at,data->>'mode' AS mode,data->>'state' AS state,CASE WHEN data->>'assetId' IS NOT NULL THEN COALESCE(data->'driveArchive'->>'state','queued') END AS archive_state,data->'members' AS members,updated_at FROM speaking_lab_sessions WHERE ($1::boolean OR owner_id=$2 OR data->>'state' IN ('completed','interrupted','cancelled','processing')) ORDER BY created_at DESC LIMIT 100`,[user.role==='master',user.id]);
   return {sessions:r.rows};
  });
  app.post('/api/speaking-lab/sessions',async request=>{
-  const user=await requireRole(request,'teacher','master'),input=validateTrial(request.body||{});
+  const user=await requireRole(request,'master'),input=validateTrial(request.body||{});
   return withTx(async c=>{
    // Serialize scheduling to reject collisions even for concurrent teachers.
    await c.query("SELECT pg_advisory_xact_lock(hashtext('g2g-speaking-lab-schedule'))");
@@ -116,7 +116,7 @@ export function registerSpeakingLabRoutes(app){
   });
  });
  app.post('/api/speaking-lab/sessions/:id/end',async request=>{
-  const user=await requireRole(request,'teacher','master');
+  const user=await requireRole(request,'master');
   return locked(request.params.id,user,async row=>{
    if(!canManage(user,row))throw appError(403,'Không có quyền điều phối ca này.');
    if(terminal.includes(row.data.state))return;
@@ -124,7 +124,7 @@ export function registerSpeakingLabRoutes(app){
   });
  });
  app.post('/api/speaking-lab/sessions/:id/review',async request=>{
-  const user=await requireRole(request,'teacher','master');
+  const user=await requireRole(request,'master');
   return locked(request.params.id,user,async row=>{
    if(!canManage(user,row)&&!canReview(user,row))throw appError(403,'Không có quyền nhận xét ca này.');
    if(!['completed','interrupted'].includes(row.data.state))throw appError(409,'Chờ kết thúc và xử lý bản ghi trước khi nhận xét.');
@@ -134,7 +134,7 @@ export function registerSpeakingLabRoutes(app){
   });
  });
  app.get('/api/speaking-lab/sessions/:id/recording',async(request,reply)=>{
-  const user=await requireRole(request,'teacher','master'),r=await query('SELECT * FROM speaking_lab_sessions WHERE id=$1',[request.params.id]),row=r.rows[0];
+  const user=await requireRole(request,'master'),r=await query('SELECT * FROM speaking_lab_sessions WHERE id=$1',[request.params.id]),row=r.rows[0];
   if(!row||!canManage(user,row)&&!canReview(user,row))throw appError(404,'Không tìm thấy bản ghi.');
   if(!row.data.assetId)throw appError(409,'Bản ghi chưa sẵn sàng.');
   if(row.data.driveArchive?.state==='saved')return streamDriveRecording(row.data.driveArchive.fileId,request,reply);

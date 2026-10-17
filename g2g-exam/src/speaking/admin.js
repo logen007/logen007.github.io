@@ -25,7 +25,7 @@ function bindForm(d,onSave){
 }
 export function adminTrialHtml(){return `<section class="speaking-admin"><header class="tieu-de-trang"><div><h1>Thi Nói <small class="speaking-label">Thử nghiệm</small></h1></div><div class="backup-actions"><button class="icon-btn" data-config aria-label="Cài đặt 100ms" title="Cài đặt 100ms">${iconHtml('settings')}</button><button class="nut chinh" data-create>Xếp ca thử</button></div></header><p class="speaking-note">Khu thử độc lập · mẫu ảnh DTZ, không thay cho quy trình thi chính thức · không ghi vào kết quả thi thật.</p><p data-connection role="status"></p><p data-error role="alert"></p><div class="table-wrap"><table class="bang speaking-table"><thead><tr><th>Ca thử / giờ Việt Nam</th><th>Thí sinh A · B</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody data-sessions></tbody></table></div><p class="speaking-note">Hai thí sinh dùng điện thoại, đăng nhập đúng tài khoản được xếp. Không cần giáo viên trực phòng. Bản thử chưa có AI chấm.</p></section>`;}
 export async function mountSpeakingAdmin(root,{user}={}){
- if(!root?.isConnected)return;root.innerHTML=adminTrialHtml();const el=s=>root.querySelector(s);let config,loading=false,timer,signature;
+ if(!root?.isConnected||user?.role!=='master')return;root.innerHTML=adminTrialHtml();const el=s=>root.querySelector(s);let config,loading=false,timer,signature;
  const error=e=>{if(root.isConnected)el('[data-error]').textContent=e.message;};
  async function refresh(){
   if(!root.isConnected||document.hidden||loading)return;loading=true;

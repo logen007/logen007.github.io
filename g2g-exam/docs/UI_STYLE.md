@@ -762,7 +762,10 @@ states have one concise explanation. Idle AI polling runs once per minute.
 
 ## Speaking trial (16 October 2026)
 
-The admin/teacher navigation includes a separate Thi Nói thử nghiệm tab. Reuse
+Only admin navigation includes the Thi Nói thử nghiệm tab (17 October 2026).
+Management, scheduling, account search, recording review and archive controls
+require admin on the server as well as in direct-link routing. Assigned candidates
+retain their separate phone entry and room access. Reuse
 shared tables and controls; scheduling, 100ms setup and review are native dialogs.
 Phone delivery uses the approved Review04: compact header, equal 9:16 video
 slots and a white task sheet. Show each account's full name, never “Bạn”, in
@@ -808,7 +811,7 @@ states, verify size and checksum, reuse a durable file ID on retry, and clean
 temporary VPS files. Do not delete the 100ms source or make Drive videos public.
 Teacher playback goes through the authenticated recording endpoint (Range
 supported) once archived, with 100ms playback available before transfer completes.
-All teachers may view/review finished trials; only admins/owners control live
+Only admins may view/review finished trials or control live
 trials. Review saves use a version check to prevent overwriting another teacher.
 This remains isolated feedback, not official exam scoring. Admin pairing remains
 manual in this release; automatic candidate matchmaking is a separate feature.

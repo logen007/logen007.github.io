@@ -613,7 +613,7 @@ function confirmAbandonExam(){
 }
 
 function adminView(cachedAt=null){
-  if(ui.adminTab==='settings'&&!isMaster(user))ui.adminTab='exams';
+  if(['settings','speaking'].includes(ui.adminTab)&&!isMaster(user))ui.adminTab='exams';
   if(ui.adminTab==='grading')ui.adminTab='grades';
   if(isMaster(user)&&['grading','grades'].includes(ui.adminTab))ui.adminTab='dashboard';
   let content='';

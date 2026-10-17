@@ -1,8 +1,8 @@
 // G2G technical trial, not an official TELC examination specification.
 export const LAB_STATES={scheduled:'Đã xếp lịch',waiting:'Chờ sẵn sàng',starting:'Đang bật ghi hình',running:'Đang thi',paused:'Tạm dừng · kiểm tra kết nối',finishing:'Đang đóng phòng',processing:'Đang xử lý bản ghi',completed:'Chờ nhận xét',interrupted:'Gián đoạn',cancelled:'Đã huỷ'};
 export const isPhone=agent=>/iPhone|Android.*Mobile/i.test(String(agent||''));
-export const isStaff=user=>['master','teacher'].includes(user?.role);
-export const canManage=(user,row)=>user?.role==='master'||user?.role==='teacher'&&row.owner_id===user.id;
+export const isStaff=user=>user?.role==='master';
+export const canManage=user=>user?.role==='master';
 export const canReview=(user,row)=>isStaff(user)&&['completed','interrupted','cancelled','processing'].includes(row.data.state);
 export function validateTrial(input,now=Date.now()){
  const fail=message=>{throw Object.assign(new Error(message),{statusCode:400});};

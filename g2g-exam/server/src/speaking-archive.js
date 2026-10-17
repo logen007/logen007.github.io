@@ -42,12 +42,12 @@ export function startSpeakingArchiveWorker(app){
 }
 export function registerSpeakingArchiveRoutes(app){
  app.get('/api/speaking-lab/archive-status',async request=>{
-  await requireRole(request,'teacher','master');
+  await requireRole(request,'master');
   try{const access=await getBackupDriveAccess(),folder=await driveJson(access,'/files/'+encodeURIComponent(access.folderId)+'?fields=id,trashed');return {connected:!!folder&&!folder.trashed};}catch{return {connected:false};}
  });
  app.post('/api/speaking-lab/sessions/:id/archive-retry',async request=>{
   if(request.headers.origin!==new URL(process.env.PUBLIC_URL||'http://localhost:8080').origin)throw appError(403,'Nguồn yêu cầu không hợp lệ.');
-  const user=await requireRole(request,'teacher','master');
+  const user=await requireRole(request,'master');
   return withTx(async c=>{
    const result=await c.query('SELECT * FROM speaking_lab_sessions WHERE id=$1 FOR UPDATE',[request.params.id]),row=result.rows[0];
    if(!row||!canManage(user,row)&&!canReview(user,row))throw appError(404,'Không tìm thấy bản ghi.');
