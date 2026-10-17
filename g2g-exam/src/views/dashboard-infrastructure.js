@@ -56,12 +56,16 @@ export function dashboardInfrastructureHtml(infrastructure,error='',overview={})
   const warnings=[memoryPercent>=85?'RAM cao':null,diskPercent>=85?'Ổ đĩa gần đầy':null,gc.error?'Dọn tệp gặp lỗi':null].filter(Boolean);
   const storage=[...(infrastructure.examStorage||[])].sort((a,b)=>Number(b.totalBytes||0)-Number(a.totalBytes||0));
   const parts=[['PostgreSQL',usage.databaseBytes],['Ảnh & audio',usage.uploadsBytes],['Mã nguồn',usage.applicationBytes]];
-  return `${dashboardAiQueueHtml(infrastructure.writingAi,overview)}<section class="dashboard-infrastructure"><div class="dashboard-section-heading dashboard-system-heading"><h2>Hệ thống</h2><div class="dashboard-services" aria-label="Trạng thái kết nối">${connectionStatusHtml(infrastructure,{compact:true})}</div></div>
+  return `<section class="dashboard-infrastructure"><div class="dashboard-section-heading dashboard-system-heading"><h2>Hệ thống</h2><div class="dashboard-services" aria-label="Trạng thái kết nối">${connectionStatusHtml(infrastructure,{compact:true})}</div></div>
     ${warnings.length?`<div class="dashboard-alerts" role="status">${warnings.map(text=>status(text,'error')).join('')}</div>`:''}
     <div class="dashboard-system-grid">
+      <div class="dashboard-system-column">
       <section class="the dashboard-cpu-card"><header class="dashboard-section-heading"><h3>CPU</h3>${monitorRangePicker()}</header><div class="dashboard-cpu-history">
         ${monitorChart('CPU','cpu',resources.history,cpu==null?'—':cpu+'%',value=>value+'%',{hideLabel:true,detailsLabel:null})}
       </div></section>
+      ${dashboardAiQueueHtml(infrastructure.writingAi,overview)}
+      </div>
+      <div class="dashboard-system-column">
       <section class="the dashboard-capacity-card"><header class="dashboard-section-heading"><h3>Tài nguyên</h3></header><div class="dashboard-capacity-rings">
         ${resourceGauge('RAM',`${bytes(memory.usedBytes)} / ${bytes(memory.totalBytes)}`,memoryPercent,{warning:memoryPercent>=85})}
         ${resourceGauge('Ổ đĩa',`${bytes(disk?.usedBytes)} / ${bytes(disk?.totalBytes)}`,diskPercent,{warning:diskPercent>=85})}
@@ -70,8 +74,9 @@ export function dashboardInfrastructureHtml(infrastructure,error='',overview={})
       <details class="dashboard-disclosure"><summary>Chi tiết dung lượng</summary><div class="dashboard-detail-content">${parts.map(([label,value])=>row(label,value)).join('')}${row('Bài làm',tables.attempts)}${row('Câu hỏi',tables.questions)}${row('Nhật ký',tables.audit_log)}<p>Dọn tệp: ${gcText}</p>${gcKnown?`<p>Quét: ${date(gc.lastSuccessAt)} · Đã dọn ${Number(gc.deleted)||0} tệp (${bytes(gc.deletedBytes??0)})</p>`:''}${gc.error?`<p class="dashboard-warning">${esc(gc.error)}</p>`:''}</div></details>
       </section>
       ${dashboardR2Html(infrastructure.r2)}
+      ${dashboardBackupHtml(infrastructure.backup)}
+      </div>
     </div>
-    ${dashboardBackupHtml(infrastructure.backup)}
   </section>
   <section class="dashboard-storage-card"><div class="dashboard-section-heading"><h2>Dung lượng đề thi</h2>${status(storage.length+' đề')}</div>
     <div class="dashboard-exam-storage"><div class="table-wrap"><table class="bang"><thead><tr><th scope="col">Đề thi</th><th scope="col">Last edit</th><th scope="col">Câu</th><th scope="col">Media</th><th scope="col">Dữ liệu</th><th scope="col">Tổng</th></tr></thead><tbody>${storage.map(item=>`<tr><td><button type="button" class="table-link" data-action="edit-exam" data-id="${esc(item.id)}" title="Mở đề thi">${esc(item.title)}</button><span class="phu">${esc([item.provider,item.level].filter(Boolean).join(' '))}</span></td><td>${fmtDate(item.updatedAt)}</td><td>${Number(item.questions)||0}</td><td>${Number(item.mediaFiles)||0} tệp · ${bytes(item.mediaBytes)}</td><td>${bytes(item.dataBytes)}</td><td><b>${bytes(item.totalBytes)}</b></td></tr>`).join('')||'<tr><td colspan="6" class="rong">Chưa có đề thi.</td></tr>'}</tbody></table></div></div>

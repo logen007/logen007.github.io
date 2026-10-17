@@ -528,6 +528,10 @@ theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
 
+System cards use two independent columns: CPU then AI grading on the left;
+resources, R2 then Backup on the right. Phones stack the left group before the
+right group, keeping AI directly below CPU and Backup directly below R2.
+
 The compact Backup card has no visible title. Use a bold primary-text timestamp,
 archived app version directly underneath, and status centered vertically beside
 that two-line group. Omit the left icon;
