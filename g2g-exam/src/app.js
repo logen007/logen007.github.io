@@ -1032,7 +1032,7 @@ function bindGlobal(){
     menu.hidden=!menu.hidden;account.querySelectorAll('[data-action="toggle-role-menu"]').forEach(trigger=>trigger.setAttribute('aria-expanded',String(!menu.hidden)));
     if(!menu.hidden)menu.querySelector('button')?.focus();
   });
-  app.querySelectorAll('[data-action="toggle-color-mode"]').forEach(button=>button.onclick=()=>toggleColorMode());
+  app.querySelectorAll('[data-action="toggle-color-mode"]').forEach(button=>button.onclick=()=>toggleColorMode(button));
   const account=app.querySelector('.header-account');
   if(account){
     const close=()=>{account.querySelector('[data-role-menu]').hidden=true;account.querySelector('.account-avatar').setAttribute('aria-expanded','false');};

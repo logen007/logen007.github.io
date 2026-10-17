@@ -108,6 +108,9 @@ globalThis.document={addEventListener:(type,fn)=>tooltipEvents[type]=fn,
 globalThis.window={addEventListener(){}};globalThis.innerWidth=1000;globalThis.innerHeight=800;
 const {bindButtonTooltips}=await import('../src/ui/button-tooltips.js');
 bindButtonTooltips();
+const noTooltip={closest(){return this;},getAttribute:key=>key==='data-no-tooltip'?'':null};
+tooltipEvents.focusin({target:noTooltip});
+assert.equal(tooltip,undefined,'Theme toggle remains labelled without showing a tooltip');
 function tooltipTarget(imageTarget){
   const attrs={title:'Bấm lần 1 để chọn vùng dán\nBấm lần 2 để chọn ảnh','aria-label':'Upload'};
   const target={textContent:'',closest:()=>target,matches:selector=>selector==='[data-image-paste-target]'?imageTarget:selector!=='.image-width-control',

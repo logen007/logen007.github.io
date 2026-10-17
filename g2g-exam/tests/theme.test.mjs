@@ -162,19 +162,32 @@ for(const color of ['#000000','#111827','#FFFFFF','#175CD3','#087A56','#FFEE00',
 }
 console.log('✓ Chuyển sáng/tối, lưu lựa chọn và tương phản màu tối');
 
-const savedMotionGlobals={setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout,matchMedia:globalThis.matchMedia};
+assert.doesNotMatch(colorModeButtonHtml(),/\stitle=/);
+assert.match(colorModeButtonHtml(),/data-no-tooltip/);
+const savedMotionGlobals={matchMedia:globalThis.matchMedia,innerWidth:globalThis.innerWidth,innerHeight:globalThis.innerHeight};
 try{
-  const classes=new Set(),pending=new Map();let timerId=0,committed=0;
-  globalThis.setTimeout=callback=>{pending.set(++timerId,callback);return timerId;};
-  globalThis.clearTimeout=id=>pending.delete(id);
+  const classes=new Set(),properties=new Map();let transitions=0,finish;
   globalThis.matchMedia=()=>({matches:false});
-  globalThis.document.documentElement={dataset:{},classList:{add:value=>classes.add(value),remove:value=>classes.delete(value)},getBoundingClientRect:()=>{committed++;}};
+  globalThis.innerWidth=390;globalThis.innerHeight=844;
+  globalThis.document.documentElement={dataset:{},style:{setProperty:(key,value)=>properties.set(key,value)},classList:{add:value=>classes.add(value),remove:value=>classes.delete(value)}};
+  globalThis.document.startViewTransition=update=>{
+    transitions++;update();
+    return {ready:Promise.resolve(),finished:new Promise(resolve=>{finish=resolve;})};
+  };
   initializeColorMode();assert.equal(classes.size,0,'Restored theme never animates');
-  toggleColorMode();assert.ok(classes.has('color-mode-changing'));assert.equal(committed,1);
-  toggleColorMode();assert.equal(pending.size,1,'Rapid toggles reset the cleanup timer');
-  for(const callback of pending.values())callback();pending.clear();
-  assert.equal(classes.size,0,'Transition rules are removed after toggling');
+  const origin={getBoundingClientRect:()=>({left:300,top:20,width:44,height:44})};
+  toggleColorMode(origin);assert.ok(classes.has('color-mode-revealing'));assert.equal(transitions,1);
+  assert.equal(properties.get('--theme-reveal-x'),'322px');assert.equal(properties.get('--theme-reveal-y'),'42px');
+  assert.ok(parseFloat(properties.get('--theme-reveal-radius'))>=Math.hypot(322,802),'Wave covers the farthest corner');
+  toggleColorMode(origin);assert.equal(transitions,1,'Rapid clicks do not overlap snapshots');
+  finish();await Promise.resolve();await Promise.resolve();await Promise.resolve();
+  assert.equal(classes.size,0,'Snapshot styling is removed after finishing');
   globalThis.matchMedia=()=>({matches:true});
-  toggleColorMode();assert.equal(classes.size,0);assert.equal(pending.size,0,'Reduced motion skips animation');
+  toggleColorMode(origin);assert.equal(classes.size,0);assert.equal(transitions,1,'Reduced motion skips snapshots');
+  globalThis.matchMedia=()=>({matches:false});
+  globalThis.document.startViewTransition=()=>{throw new Error('Unavailable');};
+  assert.equal(toggleColorMode(origin),'dark');assert.equal(classes.size,0,'API failure still switches and cleans up');
+  delete globalThis.document.startViewTransition;
+  assert.equal(toggleColorMode(origin),'light','Unsupported browsers still switch');
 }finally{Object.assign(globalThis,savedMotionGlobals);}
-console.log('✓ Chuyển màu: khởi động tức thì, bật/tắt nhanh, dọn dẹp và giảm chuyển động');
+console.log('✓ Vòng lan từ nút: phủ hết màn hình, chống chồng hiệu ứng, dọn dẹp, giảm chuyển động và fallback');

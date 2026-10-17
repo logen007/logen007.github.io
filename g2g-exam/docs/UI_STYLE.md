@@ -20,8 +20,10 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
   Provider/level, result status and AI badges use corresponding light/dark token
   pairs throughout the site. Dark badge surfaces are muted tinted charcoal with
   readable softened text, never the light palette's pastel fills. Exam entry/exit
-  coverage uses the current surface color. Explicit theme toggles animate colors
-  over 260ms; startup stays immediate and reduced motion disables interpolation.
+  coverage uses the current surface color. The theme button has no tooltip, keeping
+  its accessible label. Explicit toggles reveal the new palette in a 560ms circle
+  expanding from the button center; outside the circle retains the previous palette.
+  Startup, reduced motion and browsers without View Transitions switch immediately.
 
 - Exam-list published titles use success green with no tinted row background (15 October 2026).
   Elsewhere use success green, draft/pending neutral, failed/error red. Preserve a
