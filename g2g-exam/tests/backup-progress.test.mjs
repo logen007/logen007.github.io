@@ -63,11 +63,14 @@ try{
  await assert.rejects(startBackupJob(),error=>error.statusCode===409);
  releaseDump();await waitBackupJob();
  assert.equal(saved.state,'success');assert.equal(saved.completedSteps,10);
+ const archivedVersion=saved.lastBackupVersion;assert.match(archivedVersion,/^\d+\.\d+\.\d+$/);
  assert.deepEqual(history.filter(x=>x.state==='running').map(x=>x.phase),progress.snapshot().steps.map(x=>x.id));
  history=[];await startBackupJob('restore','test');await waitBackupJob();
  assert.equal(saved.state,'success');assert.equal(saved.completedSteps,4);
+ assert.equal(saved.lastBackupVersion,archivedVersion,'Restore retains the last successful backup version');
  failUpload=true;await startBackupJob();await new Promise(resolve=>setImmediate(resolve));releaseDump();await waitBackupJob();
  assert.equal(saved.state,'failed');assert.equal(saved.phase,'upload');assert.equal(saved.completedSteps,5);
+ assert.equal(saved.lastBackupVersion,archivedVersion,'Failure retains the last successful backup version');
  console.log('Backup progress: persisted initial status, all real operation boundaries, exclusive job, restore stages and exact failure phase passed');
 }finally{
  hooks.deregister();delete globalThis.__backupProgressTest;

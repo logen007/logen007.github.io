@@ -522,8 +522,10 @@ theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
 
-The compact Backup card uses two rows: title and status above; backup icon,
-last successful timestamp and navigation arrow below, including on phones.
+The compact Backup card has its title above, timestamp and status on the same
+row, and archived app version directly below the timestamp. Omit the left icon;
+the right action uses a 44px backup icon button instead of an arrow. Display the
+actual archived version from job/Drive metadata, never the current app version.
 
 AI provider pills filter the accuracy list by the saved grading provider. Selecting
 the active provider again clears the filter. Keep selected state through refreshes,

@@ -93,7 +93,7 @@ async function execute(kind,id,client,progress){
    await progress.phase('retention');
    const p=await preferences(),{keep,ordered}=retainedBackupIds(await listBackupFiles(master),p);
    for(const old of ordered)if(!keep.has(old.id))await deleteBackupFile(master,old.id);
-   await state({...progress.snapshot(),state:'success',completedSteps:progress.snapshot().stepCount,finishedAt:new Date().toISOString(),lastBackupAt:new Date().toISOString(),fileId:file.id,name,sha256:checksum,...result,message:'Backup đã lên Drive và phục hồi thử thành công.'});
+   await state({...progress.snapshot(),state:'success',completedSteps:progress.snapshot().stepCount,finishedAt:new Date().toISOString(),lastBackupAt:new Date().toISOString(),lastBackupVersion:APP_VERSION,fileId:file.id,name,sha256:checksum,...result,message:'Backup đã lên Drive và phục hồi thử thành công.'});
   }else{
    const file=(await listBackupFiles(master)).find(f=>f.id===id);
    if(!file)throw Error('Không tìm thấy bản backup.');
@@ -122,7 +122,7 @@ export async function startBackupJob(kind='backup',id){
   const r=await client.query('SELECT pg_try_advisory_lock($1,$2) AS locked',jobLock);locked=r.rows[0].locked;
   if(!locked)throw appError(409,'Backup đang chạy.');
   const startedAt=new Date().toISOString();
-  const previous=await jobStatus(),progress=createBackupProgress({kind,startedAt,lastBackupAt:previous.lastBackupAt,write:state});
+  const previous=await jobStatus(),progress=createBackupProgress({kind,startedAt,lastBackupAt:previous.lastBackupAt,lastBackupVersion:previous.lastBackupVersion,write:state});
   // Persist before acknowledging the click so the first poll cannot see the previous job.
   await progress.phase('prepare');
   active=execute(kind,id,client,progress).catch(()=>{}).finally(async()=>{try{await client.query('SELECT pg_advisory_unlock($1,$2)',jobLock);}finally{client.release();active=null;}});

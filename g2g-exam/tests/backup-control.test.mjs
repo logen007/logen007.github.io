@@ -45,6 +45,12 @@ try{
  assert.equal((await backupAction(master,'getBackupPreferences')).preferences.time,'04:30');
  await assert.rejects(backupAction(master,'saveBackupPreferences',{...prefs,intervalDays:0}),e=>e.statusCode===400);
  await assert.rejects(backupAction(master,'unknown'),e=>e.statusCode===404);
+ job={state:'success',fileId:'legacy',lastBackupAt:'2026-10-16T00:00:00Z'};
+ let fileReads=0;
+ globalThis.__backupControlTest.files=async()=>{fileReads++;return [{id:'legacy',appProperties:{appVersion:'1.3.181'}}];};
+ assert.equal((await backupAction(master,'getBackupStatus')).status.lastBackupVersion,'1.3.181');
+ assert.equal((await backupAction(master,'getBackupStatus')).status.lastBackupVersion,'1.3.181');
+ assert.equal(fileReads,1,'Legacy version metadata lookup is reused');
  console.log('Backup API: master permissions, runner gate, Drive ownership, exclusive jobs and validated preferences passed');
 }finally{
  hooks.deregister();delete globalThis.__backupControlTest;

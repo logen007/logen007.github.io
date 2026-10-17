@@ -2,7 +2,16 @@ import {appError,query} from './db.js';
 import {backupDriveStatus,listBackupFiles} from './backup-google.js';
 import {preferences,jobStatus,startBackupJob} from './backup-job.js';
 import {validateBackupPreferences} from './backup-policy.js';
-export async function backupSummary(){return {status:await jobStatus(),history:[],latest:null};}
+let versionLookup;
+export async function backupSummary(){
+ const status={...await jobStatus()};
+ // Legacy jobs predate saved version metadata; reuse one lookup per archive.
+ if(status.lastBackupAt&&status.fileId&&status.lastBackupVersion===undefined){
+  if(versionLookup?.id!==status.fileId)versionLookup={id:status.fileId,promise:listBackupFiles({role:'master'}).then(files=>files.find(file=>file.id===status.fileId)?.appProperties?.appVersion||null)};
+  try{status.lastBackupVersion=await versionLookup.promise;}catch{versionLookup=null;}
+ }
+ return {status,history:[],latest:null};
+}
 export async function backupAction(user,name,data={}){
  if(user?.role!=='master')throw appError(403,'Không có quyền quản lý Backup.');
  const enabled=process.env.BACKUP_RUNNER_ENABLED==='true';
