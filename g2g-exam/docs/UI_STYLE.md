@@ -532,8 +532,10 @@ System cards use two independent columns: CPU then AI grading on the left;
 resources, R2 then Backup on the right. Phones stack the left group before the
 right group, keeping AI directly below CPU and Backup directly below R2.
 On multi-column screens stretch both groups to equal height; CPU flexes to fill
-the difference above AI and centers its chart vertically. Mobile keeps natural
-card heights. Do not introduce fixed heights or resize polling.
+the difference above AI. Size-contain CPU with a readable 360px minimum so SVG
+intrinsic aspect ratio cannot force the column taller; flex the active plot inside
+the available height. Backup anchors to the right column's bottom if the left
+content sets the minimum height. Mobile keeps natural card heights. No resize polling.
 
 The compact Backup card has no visible title. Use a bold primary-text timestamp,
 archived app version directly underneath, and status centered vertically beside

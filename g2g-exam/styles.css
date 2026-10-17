@@ -860,8 +860,15 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-cpu-history { width:100%; margin:16px auto 0; display:block; }
 .dashboard-cpu-history .monitor-chart { width:100%; }
 @media(min-width:601px) {
-  .dashboard-system-column>.dashboard-cpu-card { flex:1; }
-  .dashboard-cpu-history { flex:1; display:flex; align-items:center; }
+  .dashboard-system-column>.dashboard-cpu-card { flex:1; contain:size; min-height:360px; }
+  .dashboard-system-column>.dashboard-backup-card { margin-top:auto; }
+  .dashboard-cpu-history { flex:1; min-height:0; display:flex; }
+  .dashboard-cpu-history .monitor-chart { display:flex; flex-direction:column; min-height:0; }
+  .dashboard-cpu-history .monitor-chart header { flex:none; }
+  .dashboard-cpu-history .monitor-period { flex:1; min-height:0; }
+  .dashboard-cpu-history .monitor-chart svg { height:0; min-height:100px; flex:1; }
+  .dashboard-cpu-history .monitor-summary { flex:none; }
+  .dashboard-cpu-history .monitor-empty { flex:1; min-height:100px; height:auto; }
 }
 .dashboard-cpu-history .monitor-chart header { justify-content:flex-start; margin:0 0 16px; }
 .dashboard-cpu-history .monitor-chart strong { font-size:22px; font-weight:450; line-height:1.1; letter-spacing:-.5px; font-variant-numeric:tabular-nums; }
@@ -1476,6 +1483,13 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-infrastructure:has(.monitor-range input[value="168"]:checked) .monitor-period--168,
 .dashboard-infrastructure:has(.monitor-range input[value="720"]:checked) .monitor-period--720,
 .dashboard-infrastructure:has(.monitor-range input[value="8760"]:checked) .monitor-period--8760 { display:block; }
+@media(min-width:601px) {
+  .dashboard-infrastructure:has(.monitor-range input[value="1"]:checked) .dashboard-cpu-history .monitor-period--1,
+  .dashboard-infrastructure:has(.monitor-range input[value="24"]:checked) .dashboard-cpu-history .monitor-period--24,
+  .dashboard-infrastructure:has(.monitor-range input[value="168"]:checked) .dashboard-cpu-history .monitor-period--168,
+  .dashboard-infrastructure:has(.monitor-range input[value="720"]:checked) .dashboard-cpu-history .monitor-period--720,
+  .dashboard-infrastructure:has(.monitor-range input[value="8760"]:checked) .dashboard-cpu-history .monitor-period--8760 { display:flex; flex-direction:column; }
+}
 .monitor-values { margin:12px 0; color:var(--phu); font-size:12px; }
 .monitor-values summary { cursor:pointer; padding:8px 0; }
 .monitor-values > div { max-height:200px; overflow:auto; }
