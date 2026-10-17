@@ -8,6 +8,7 @@ const range={hours:1,bucketSeconds:60,start,end:start+3600000,points:[
   {at:new Date(start+600000).toISOString(),cpu:50,r2:2048,error:false}
 ]};
 const html=monitorChart('CPU','cpu',[range],'50%',n=>n+'%');
+assert.match(html,/<svg[^>]*preserveAspectRatio="none"/,'Flexible CPU charts fill the viewport width without letterboxing');
 assert.match(html,/M[\d.,]+ L[\d.,]+ M/,'Missing samples break the line');
 assert.match(html,/0%/);
 assert.match(html,/100%/);

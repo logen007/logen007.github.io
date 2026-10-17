@@ -534,7 +534,9 @@ right group, keeping AI directly below CPU and Backup directly below R2.
 On multi-column screens stretch both groups to equal height; CPU flexes to fill
 the difference above AI. Size-contain CPU with a readable 360px minimum so SVG
 intrinsic aspect ratio cannot force the column taller; flex the active plot inside
-the available height. Backup anchors to the right column's bottom if the left
+the available height. CPU SVG uses preserveAspectRatio="none" to fill its full
+available width at every flexible height, without centered letterboxing.
+Backup anchors to the right column's bottom if the left
 content sets the minimum height. Mobile keeps natural card heights. No resize polling.
 
 The compact Backup card has no visible title. Use a bold primary-text timestamp,
