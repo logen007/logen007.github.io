@@ -35,6 +35,7 @@ export function questionHtml(q,published,answerLabel='Bạn trả lời'){
   else{
     const choice=['single','truefalse','cloze'].includes(q.type);
     body=`<div class="result-answer ${verdict==='wrong'?'result-wrong':''}"><span class="phu-de">${esc(answerLabel)}</span><div>${choice?option(q,q.answer):textHtml(display(q.answer))}</div></div>${published&&q.correct!=null?`<div class="result-answer result-answer--correct"><span>Đáp án đúng</span><div>${choice?option(q,q.correct):esc(display(q.correct))}</div></div>`:''}`;
+    if(published&&q.correct!=null)body=`<div class="result-answer-comparison">${body}</div>`;
   }
   return `<article class="result-question" data-result-verdict="${verdict||'manual'}"><div class="result-question-heading"><strong>Câu ${esc(q.number||'')} ${q.title?`· ${textHtml(q.title)}`:''}</strong>${verdict?`<span class="result-${verdict}">${labels[verdict]}</span>`:''}</div>${body}</article>`;
 }

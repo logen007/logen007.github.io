@@ -724,6 +724,10 @@ states have one concise explanation. Idle AI polling runs once per minute.
 
 ## Teacher grading
 
+- Answer/correct-answer comparisons share two equal columns on one row, including
+  phones, in grading and student review. Images scale within their column without
+  cropping; long text wraps locally. A lone answer retains the full available width.
+
 - Score breakdown reuses Result's structure without the “Điểm từng phần”
   heading or a multi-column skill grid. Standard TELC B1/B2 use the shared
   written/oral blocks and nested child frame, with no child assessments.
