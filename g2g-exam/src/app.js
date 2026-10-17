@@ -82,6 +82,7 @@ import {mountExamRuntime} from './part-templates/runtime.js';
 import {collectReadingBlocks,bindReadingBlocks} from './ui/reading-blocks.js';
 import {templateRequest} from './part-templates/shared/api.js';
 import {initializeTheme} from './settings/theme.js';
+import {toggleColorMode} from './settings/color-mode.js';
 import {readCachedInfrastructure,refreshInfrastructure,setInfrastructureOwner,clearInfrastructureCache} from './settings/api.js';
 import {clearBackupData} from './settings/backup-data.js';
 import {readDashboardCache,writeDashboardCache,clearDashboardCache,patchDashboard} from './ui/dashboard-cache.js';
@@ -1031,6 +1032,7 @@ function bindGlobal(){
     menu.hidden=!menu.hidden;account.querySelectorAll('[data-action="toggle-role-menu"]').forEach(trigger=>trigger.setAttribute('aria-expanded',String(!menu.hidden)));
     if(!menu.hidden)menu.querySelector('button')?.focus();
   });
+  app.querySelectorAll('[data-action="toggle-color-mode"]').forEach(button=>button.onclick=()=>toggleColorMode());
   const account=app.querySelector('.header-account');
   if(account){
     const close=()=>{account.querySelector('[data-role-menu]').hidden=true;account.querySelector('.account-avatar').setAttribute('aria-expanded','false');};

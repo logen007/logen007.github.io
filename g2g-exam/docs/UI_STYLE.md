@@ -11,6 +11,13 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
 
 ## Visual hierarchy
 
+- Personal light/dark mode (17 October 2026) uses a 44px moon/sun button directly
+  before the account avatar. Save the choice in browser storage and restore before
+  first paint. Dark uses near-black canvas, charcoal cards, raised neutral controls
+  and readable light text, following the supplied SmartThings references. Shared
+  tokens own surfaces and semantic colors; derive readable dark accents from the
+  configured brand hue. Switching never rebuilds a page or interrupts input.
+
 - Exam-list published titles use success green with no tinted row background (15 October 2026).
   Elsewhere use success green, draft/pending neutral, failed/error red. Preserve a
   readable status description (accessible name or concise text); never rely on

@@ -136,3 +136,28 @@ await test('Lưu demo báo lỗi khi trình duyệt chặn lưu trữ',()=>{
 });
 
 console.log(`\n${passed} kiểm thử giao diện thương hiệu đã đạt.`);
+
+// Personal appearance does not mutate the configured brand or rebuild the page.
+const {initializeColorMode,toggleColorMode,colorModeButtonHtml}=await import('../src/settings/color-mode.js');
+const {darkThemePalette}=await import('../src/settings/palette.js');
+const modeStorage=new Map([['g2g.color-mode.v1','dark']]);
+const attributes=new Map();
+const toggle={setAttribute:(key,value)=>attributes.set(key,value),innerHTML:''};
+globalThis.localStorage={getItem:key=>modeStorage.get(key),setItem:(key,value)=>modeStorage.set(key,value)};
+globalThis.document={documentElement:{dataset:{}},querySelectorAll:()=>[toggle]};
+assert.equal(initializeColorMode(),'dark');
+assert.match(colorModeButtonHtml(),/aria-pressed="true"/);
+assert.equal(toggleColorMode(),'light');
+assert.equal(attributes.get('aria-label'),'Chuyển sang giao diện tối');
+assert.equal(modeStorage.get('g2g.color-mode.v1'),'light');
+assert.equal(toggleColorMode(),'dark');
+assert.equal(currentTheme().primaryColor,'#175CD3');
+globalThis.localStorage={getItem:()=>{throw new Error('Blocked');},setItem:()=>{throw new Error('Blocked');}};
+assert.equal(initializeColorMode(),'light');
+assert.equal(toggleColorMode(),'dark');
+for(const color of ['#000000','#111827','#FFFFFF','#175CD3','#087A56','#FFEE00','#6D3DF5']){
+  const palette=darkThemePalette(color);
+  assert.ok(colorContrast(palette['--dark-brand-primary'],'#27272E')>=4.5);
+  assert.ok(colorContrast(palette['--dark-brand-primary'],palette['--dark-brand-on-primary'])>=4.5);
+}
+console.log('✓ Chuyển sáng/tối, lưu lựa chọn và tương phản màu tối');

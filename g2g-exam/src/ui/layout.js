@@ -2,6 +2,7 @@ import {isMaster,isStudent} from '../core.js';
 import {esc} from './format.js';
 import {iconHtml} from './icons.js';
 import {currentPublicSettings} from '../settings/theme.js';
+import {colorModeButtonHtml} from '../settings/color-mode.js';
 
 export function topbarHtml({user,mode,online,ui={},canSwitchRole=false}){
   const general=currentPublicSettings().general||{};
@@ -23,5 +24,5 @@ export function topbarHtml({user,mode,online,ui={},canSwitchRole=false}){
     : '';
   const roleItems=[['student','Học viên'],['teacher','Giáo viên'],['master','Át min']];
   const roleMenu=`<div id="accountRoleMenu" class="account-role-menu" data-role-menu hidden><button data-action="account-profile">${iconHtml('profile')}<span>Hồ sơ</span></button>${canSwitchRole?roleItems.filter(([value])=>value!==user?.role).map(([value,label])=>`<button data-action="test-role" data-role="${value}">${iconHtml(value==='master'?'admin':value)}<span>${label}</span></button>`).join(''):''}<button data-action="logout">${iconHtml('logout')}<span>Đăng xuất</span></button></div>`;
-return `<header class="thanh-dau" data-current-role="${esc(user?.role||'')}"><div class="thuong-hieu"><div class="logo">${brandLogo}</div><div class="ten-he-thong"><strong>Luyện thi tiếng Đức</strong><small>G2G Career</small></div></div>${navigation}<div class="header-account"><button class="account-avatar" data-action="toggle-role-menu" aria-expanded="false" aria-controls="accountRoleMenu" title="${esc(user?.name||role)}${canSwitchRole?` · ${roleItems.find(([value])=>value===user?.role)?.[1]||role}`:''}" aria-label="Tài khoản ${esc(user?.name||role)}${canSwitchRole?` · ${role}`:''}">${avatar}</button>${canSwitchRole?`<span class="account-role-indicator" data-role="${esc(user.role)}" title="${roleItems.find(([value])=>value===user.role)?.[1]||role}" aria-hidden="true">${iconHtml(user.role==='master'?'admin':user.role)}</span>`:''}${roleMenu}</div></header>${demo}${offline}`;
+return `<header class="thanh-dau" data-current-role="${esc(user?.role||'')}"><div class="thuong-hieu"><div class="logo">${brandLogo}</div><div class="ten-he-thong"><strong>Luyện thi tiếng Đức</strong><small>G2G Career</small></div></div>${navigation}<div class="header-utilities">${colorModeButtonHtml()}<div class="header-account"><button class="account-avatar" data-action="toggle-role-menu" aria-expanded="false" aria-controls="accountRoleMenu" title="${esc(user?.name||role)}${canSwitchRole?` · ${roleItems.find(([value])=>value===user?.role)?.[1]||role}`:''}" aria-label="Tài khoản ${esc(user?.name||role)}${canSwitchRole?` · ${role}`:''}">${avatar}</button>${canSwitchRole?`<span class="account-role-indicator" data-role="${esc(user.role)}" title="${roleItems.find(([value])=>value===user.role)?.[1]||role}" aria-hidden="true">${iconHtml(user.role==='master'?'admin':user.role)}</span>`:''}${roleMenu}</div></div></header>${demo}${offline}`;
 }

@@ -27,6 +27,15 @@ export function colorContrast(a,b){
   return (values[0]+0.05)/(values[1]+0.05);
 }
 const foreground=color=>colorContrast(color,'#FFFFFF')>=colorContrast(color,'#000000')?'#FFFFFF':'#000000';
+// Keep the configured hue, lifting dark brand colors until they read on charcoal.
+export function darkThemePalette(value){
+  const source=normalizeThemeColor(value)||DEFAULT_PRIMARY_COLOR;
+  let primary=source;
+  for(let amount=0.05;colorContrast(primary,'#27272E')<4.5&&amount<=1;amount+=0.05)primary=mix(source,'#FFFFFF',amount);
+  return {'--dark-brand-primary':primary,'--dark-brand-on-primary':foreground(primary),
+    '--dark-brand-text':primary,'--dark-brand-soft':mix(primary,'#16161B',0.85),
+    '--dark-brand-border':mix(primary,'#16161B',0.55),'--dark-brand-hover':mix(primary,'#FFFFFF',0.12)};
+}
 // Selection is derived from primary, never an unrelated third color.
 export function themePalette(value,options={}){
   const primary=normalizeThemeColor(value)||DEFAULT_PRIMARY_COLOR;

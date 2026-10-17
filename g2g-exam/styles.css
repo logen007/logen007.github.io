@@ -157,6 +157,45 @@
 /* Site-wide dropdown shape, including compact and feature-specific controls. */
 select:not([multiple]), .inline-gap-trigger { border-radius:var(--pill)!important; }
 html { background:var(--nen); color-scheme:light; }
+/* Personal appearance uses the shared tokens; brand settings remain independent. */
+:root[data-color-mode="dark"] {
+  color-scheme:dark;
+  --nen:#08080a!important; --mat:#16161b; --chu:#f4f4f6; --phu:#b2b2bd;
+  --vien:#34343d; --surface-muted:#27272e; --control-border-hover:#646470;
+  --example-bg:#1b2630; --example-border:#43576a; --example-text:#c2d7ea;
+  --xanh:#6fd6a5; --vang:#f0c86b; --do:#ff9b91;
+  --brand-primary:var(--dark-brand-primary,#a7aab0)!important;
+  --brand-on-primary:var(--dark-brand-on-primary,#000)!important;
+  --brand-text:var(--dark-brand-text,#d0d2d7)!important;
+  --brand-soft:var(--dark-brand-soft,#2c2c35)!important;
+  --brand-border:var(--dark-brand-border,#656572)!important;
+  --brand-hover:var(--dark-brand-hover,#c5c7cc)!important;
+  --brand-ring:var(--brand-text)!important;
+  --button-secondary:#27272e!important; --button-secondary-text:#f4f4f6!important;
+  --button-secondary-border:#454550!important; --button-secondary-hover:#35353e!important;
+  --score-excellent:#86ddca; --score-good:#99caff; --score-satisfactory:#d0b2ff;
+  --score-sufficient:#91dfac; --score-failed:#ffb1a5;
+  --score-excellent-bg:#18362f; --score-good-bg:#1d3047; --score-satisfactory-bg:#30243e;
+  --score-sufficient-bg:#1c3426; --score-failed-bg:#402522;
+  --score-excellent-fill:#65c8b1; --score-good-fill:#79b4f1; --score-satisfactory-fill:#b28be4;
+  --score-sufficient-fill:#72c38c; --score-failed-fill:#ee9182;
+  --shadow:0 20px 64px #0008;
+}
+:root[data-color-mode="dark"] :is(.student-result-row,.landing-mockup,.writing-paper,.image-remove-button),:root[data-color-mode="dark"] .writing-paper::before { background:var(--mat); }
+:root[data-color-mode="dark"] :is(.form-cell>input[type=text],.form-given,.writing-paper .form-prefilled,.mockup-bar,.secret-status) { background:var(--surface-muted); color:var(--chu); }
+:root[data-color-mode="dark"] :is(.nhan.xanh,.tich-hop-status.ok) { background:color-mix(in srgb,var(--xanh) 14%,var(--mat)); }
+:root[data-color-mode="dark"] :is(.nhan.do,.offline) { background:color-mix(in srgb,var(--do) 12%,var(--mat)); }
+:root[data-color-mode="dark"] :is(.nhan.vang,.canh-bao-bao-tri,.ghi-chu-bao-mat) { background:color-mix(in srgb,var(--vang) 12%,var(--mat)); }
+:root[data-color-mode="dark"] .score-pending { background:var(--surface-muted); color:var(--phu); }
+:root[data-color-mode="dark"] .ai-writing-suggestion { background:var(--surface-muted); }
+:root[data-color-mode="dark"] .image-remove-button { color:var(--do); }
+:root[data-color-mode="dark"] .bang th,:root[data-color-mode="dark"] .bang tbody tr:hover { background:var(--surface-muted); }
+:root[data-color-mode="dark"] :is(.ai-writing-score,.provisional-score) { color:var(--chu); }
+:root[data-color-mode="dark"] :is(input,textarea)::placeholder { color:var(--phu); }
+:root[data-color-mode="dark"] .site-confirm-danger { background:#b42318!important; }
+:root[data-color-mode="dark"] .account-role-indicator[data-role="master"] { color:#c4a2ff; }
+:root[data-color-mode="dark"] .account-role-indicator[data-role="teacher"] { color:#91bcff; }
+:root[data-color-mode="dark"] .account-role-indicator[data-role="student"] { color:var(--xanh); }
 body { margin:0; color:var(--chu); background:var(--nen); font:400 15px/1.5 var(--font-ui); font-optical-sizing:auto; }
 button,input,select,textarea { font:inherit; color:inherit; }
 /* Shared readability floor, including compact forms and inline autosizing. */
@@ -191,6 +230,10 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .muc-ben:hover { background:var(--brand-soft); }
 .muc-ben.active { background:var(--brand-primary); color:var(--brand-on-primary); }
 .header-account { margin-left:auto; display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.header-utilities { display:flex; align-items:center; gap:8px; margin-left:auto; flex-shrink:0; }
+.header-utilities .header-account { margin-left:0; }
+.color-mode-toggle.icon-btn { width:44px; height:44px; flex:none; background:var(--surface-muted); color:var(--chu); }
+@media(max-width:420px) { .thanh-dau .thuong-hieu { flex:1; min-width:0; } }
 .account-switch { position:relative; }.account-avatar { display:grid; place-items:center; width:40px; height:40px; padding:0; overflow:hidden; border:0; border-radius:50%; background:var(--brand-soft); color:var(--brand-text); font-size:13px; font-weight:600; cursor:pointer; }.account-avatar img { width:100%; height:100%; object-fit:cover; }.account-role-menu { position:absolute; z-index:30; top:calc(100% + 10px); right:0; display:grid; width:58px; padding:6px; border:1px solid var(--vien); border-radius:16px; background:var(--mat); box-shadow:var(--shadow); }.account-role-menu[hidden] { display:none; }.account-role-menu button { display:grid; place-items:center; min-height:42px; padding:8px; border:0; border-radius:10px; background:transparent; text-align:center; font-weight:650; cursor:pointer; }.account-role-menu button:hover { background:var(--surface-muted); }
 .account-role-trigger { display:inline-flex; align-items:center; justify-content:space-between; gap:8px; min-width:58px; min-height:44px; padding:0 12px; border:1px solid var(--vien); border-radius:var(--pill); background:var(--surface-muted); color:var(--chu); font:650 14px/1 var(--font-ui); cursor:pointer; white-space:nowrap; }
 .account-role-trigger .ui-icon { width:16px; height:16px; stroke:var(--phu); transition:transform var(--motion-fast); }

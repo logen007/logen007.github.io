@@ -1,7 +1,8 @@
 import {hasApiBackend} from '../config.js';
 import {loadPublicSettings} from './api.js';
 import {normalizeLayout,layoutVariables,validateLayout} from './layout.js';
-import {DEFAULT_PRIMARY_COLOR,normalizeThemeColor,themePalette,normalizeButtonTheme,validateButtonTheme} from './palette.js';
+import {DEFAULT_PRIMARY_COLOR,normalizeThemeColor,themePalette,darkThemePalette,normalizeButtonTheme,validateButtonTheme} from './palette.js';
+import {initializeColorMode} from './color-mode.js';
 export {DEFAULT_PRIMARY_COLOR,normalizeThemeColor,themePalette,colorContrast} from './palette.js';
 let currentLayout=normalizeLayout();
 let currentButtons=normalizeButtonTheme();
@@ -28,7 +29,7 @@ function storeColor(key,color){
 }
 export function applyTheme(value,target=globalThis.document?.documentElement,options={}){
   const palette=themePalette(value,options);
-  if(target?.style)for(const [name,color] of Object.entries(palette))target.style.setProperty(name,color);
+  if(target?.style)for(const [name,color] of Object.entries({...palette,...darkThemePalette(value)}))target.style.setProperty(name,color);
   return palette;
 }
 function applyCurrentTheme(color,layout={}){
@@ -63,6 +64,7 @@ export function acceptPublicSettings(settings){
 // Starts before role-specific features, including local/demo and student routes.
 export function initializeTheme(){
   if(initialization)return initialization;
+  initializeColorMode();
   const cached=readColor(CACHE_KEY)||DEFAULT_PRIMARY_COLOR;
   applyCurrentTheme(localThemeEnabled()?readColor(DEMO_KEY)||cached:cached,localThemeEnabled()?readLayout(DEMO_KEY)||readLayout(CACHE_KEY)||{}:readLayout(CACHE_KEY)||{});
   initialization=hasApiBackend()
