@@ -4,7 +4,15 @@ import {promotionTarget,STUDENT_LEVELS,normalizeStudentLevel} from '../src/domai
 import {resultSummary} from '../src/domain/result-summary.js';
 import {studentExamCardHtml,studentHomeHtml} from '../src/views/student.js';
 import {resultSummaryHtml} from '../src/views/result-summary.js';
-import {studentProfileCardHtml,studentShareText,profileStats,bindStudentName} from '../src/views/student-profile-card.js';
+import {studentProfileCardHtml,studentShareText,profileStats,bindStudentName,studentLevelEmblem} from '../src/views/student-profile-card.js';
+for(const level of STUDENT_LEVELS){
+  const badge=studentLevelEmblem(level);
+  assert.ok(badge.includes(`data-level="${level}"`));
+  assert.ok(badge.includes(`aria-label="Trình độ ${level}"`));
+  assert.match(badge,/<svg viewBox="0 0 100 112"/);
+  assert.match(badge,/level-emblem-facet/);
+}
+assert.doesNotMatch(studentLevelEmblem('<script>'),/<script>/);
 import {examAccessFormHtml} from '../src/views/exam-access.js';
 import {classFormHtml,classesHtml} from '../src/views/classes.js';
 import {openStudentProfile} from '../src/views/classes.js';

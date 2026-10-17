@@ -524,6 +524,9 @@ with reserved right spacing and visible overflow so they do not obscure the
 thumbnail or overlap the next input. Preserve their existing touch target.
 
 Student identity cards use one compact current-level badge, not a level ladder.
+The level emblem uses a layered shield with a beveled rim and subtle facets,
+sharing the existing A1–C2 badge background/text tokens in both color modes.
+Keep the level label sharp and accessible; never replace it with brand yellow.
 Keep name editing inline and group class confirmation with Share. Statistics start
 with submitted exam count (“Bài đã thi”), including pending grading.
 
