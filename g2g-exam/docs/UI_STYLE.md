@@ -522,6 +522,9 @@ theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
 
+The compact Backup card uses two rows: title and status above; backup icon,
+last successful timestamp and navigation arrow below, including on phones.
+
 AI provider pills filter the accuracy list by the saved grading provider. Selecting
 the active provider again clears the filter. Keep selected state through refreshes,
 recompute matched/total per provider before grouping, and preserve overall pill
