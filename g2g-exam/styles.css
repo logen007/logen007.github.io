@@ -846,7 +846,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-state { display:inline-flex; align-items:center; width:max-content; max-width:100%; padding:4px 10px; border-radius:var(--pill); background:var(--surface-muted); color:var(--phu); font-size:12px; line-height:1.5; }
 .dashboard-state--success { color:var(--xanh); background:color-mix(in srgb,var(--xanh),var(--mat) 92%); }
 .dashboard-state--error { color:var(--do); background:color-mix(in srgb,var(--do),var(--mat) 92%); }
-.dashboard-system-grid { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(0,1fr); gap:24px; align-items:start; }
+.dashboard-system-grid { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(0,1fr); gap:24px; align-items:stretch; }
 .dashboard-system-grid>.the { min-width:0; padding:24px; }
 .dashboard-system-grid h3 { margin:0; font-size:16px; font-weight:500; }
 .dashboard-system-grid h3>span { font-size:12px; font-weight:400; color:var(--phu); margin-left:6px; }
@@ -859,6 +859,10 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-cpu-card .monitor-range input:checked+span { background:transparent; color:var(--chu); border-bottom-color:var(--brand-primary); font-weight:550; }
 .dashboard-cpu-history { width:100%; margin:16px auto 0; display:block; }
 .dashboard-cpu-history .monitor-chart { width:100%; }
+@media(min-width:601px) {
+  .dashboard-system-column>.dashboard-cpu-card { flex:1; }
+  .dashboard-cpu-history { flex:1; display:flex; align-items:center; }
+}
 .dashboard-cpu-history .monitor-chart header { justify-content:flex-start; margin:0 0 16px; }
 .dashboard-cpu-history .monitor-chart strong { font-size:22px; font-weight:450; line-height:1.1; letter-spacing:-.5px; font-variant-numeric:tabular-nums; }
 .dashboard-cpu-history .monitor-chart svg { max-height:none; }
@@ -936,7 +940,6 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-storage-card h2 { margin:0; font-size:18px; font-weight:500; }
 @media(max-width:960px) {
   .dashboard-system-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .dashboard-cpu-history { display:block; }
   .dashboard-services { gap:6px 12px; }
 }
 @media(max-width:600px) {

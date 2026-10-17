@@ -531,6 +531,9 @@ theme application must not wait for a network response to render the page.
 System cards use two independent columns: CPU then AI grading on the left;
 resources, R2 then Backup on the right. Phones stack the left group before the
 right group, keeping AI directly below CPU and Backup directly below R2.
+On multi-column screens stretch both groups to equal height; CPU flexes to fill
+the difference above AI and centers its chart vertically. Mobile keeps natural
+card heights. Do not introduce fixed heights or resize polling.
 
 The compact Backup card has no visible title. Use a bold primary-text timestamp,
 archived app version directly underneath, and status centered vertically beside
