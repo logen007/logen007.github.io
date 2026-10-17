@@ -27,7 +27,11 @@ for(const [,name,bgToken,fgToken] of badges){
 }
 for(const name of ['goethe','telc','fid','a1','a2','b1','b2','c1','c2','neutral','passed','failed','ai-groq','ai-gemini','ai-grok','ai-mistral']){
   const bg=token(darkPalette,'--badge-'+name+'-bg'),fg=token(darkPalette,'--badge-'+name+'-text');
-  assert.ok(luminance(bg)<0.08,name+' dark background stays subdued');
+  if(name!=='neutral'){
+    const channels=bg.match(/../g).map(value=>parseInt(value,16)/255),max=Math.max(...channels),min=Math.min(...channels);
+    assert.ok((max-min)/max>=0.45,name+' dark badge keeps a vivid hue');
+    assert.ok((luminance(bg)+0.05)/(luminance('16161b')+0.05)>=1.6,name+' fill stands out from the card');
+  }
   assert.ok((luminance(fg)+0.05)/(luminance(bg)+0.05)>=4.5,name+' dark text contrast');
 }
 const lightScores=css.match(/:root \{ --score-[^}]+\}/)[0];

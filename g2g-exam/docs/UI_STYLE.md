@@ -18,8 +18,10 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
   tokens own surfaces and semantic colors; derive readable dark accents from the
   configured brand hue. Switching never rebuilds a page or interrupts input.
   Provider/level, result status and AI badges use corresponding light/dark token
-  pairs throughout the site. Dark badge surfaces are muted tinted charcoal with
-  readable softened text, never the light palette's pastel fills. Exam entry/exit
+  pairs throughout the site. Dark badges use fresh saturated blue, violet, pink,
+  teal, amber and coral fills with clear light text, following the staking reference
+  approved 17 October; avoid gray-tinted muted fills. Charts use vivid saturated
+  accents from the same hue families. Keep neutral statuses neutral. Exam entry/exit
   coverage uses the current surface color. The theme button has no tooltip, keeping
   its accessible label. Light expands from the button; switching to dark contracts
   the light snapshot back into that button. Use an 800ms radial mask with a broad
