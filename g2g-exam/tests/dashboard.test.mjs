@@ -36,7 +36,7 @@ assert.match(html,/Học viên tích cực/);
 assert.doesNotMatch(html,/SECRET/);
 assert.match(html,/height:0%/,'Zero months must not have fake positive bars');
 assert.match(html,/: 1 học viên/);
-assert.match(html,/data-action="new-exam"/);
+assert.doesNotMatch(html,/data-action="new-exam"|dashboard-heading|<h1>|tháng 10 năm 2026/);
 assert.match(html,/data-tab="exams"/);
 assert.match(html,/data-dashboard-range/);
 assert.doesNotMatch(html,/data-dashboard-from|data-dashboard-to|Tuỳ chọn|Theo dữ liệu/);

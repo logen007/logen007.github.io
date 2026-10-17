@@ -229,17 +229,24 @@ html { background:var(--nen); color-scheme:light; }
 :root[data-color-mode="dark"] .account-role-indicator[data-role="teacher"] { color:#91bcff; }
 :root[data-color-mode="dark"] .account-role-indicator[data-role="student"] { color:var(--xanh); }
 body { margin:0; color:var(--chu); background:var(--nen); font:400 15px/1.5 var(--font-ui); font-optical-sizing:auto; }
-/* Reveal the new snapshot from the toggle; the old palette stays outside the wave. */
+/* Feather only the light snapshot: light expands, then contracts back to the toggle. */
+@property --theme-reveal-size { syntax:'<length>'; inherits:false; initial-value:0px; }
 :root.color-mode-revealing *,:root.color-mode-revealing *::before,:root.color-mode-revealing *::after { transition:none!important; }
 :root.color-mode-revealing::view-transition-group(root) { animation:none; }
 :root.color-mode-revealing::view-transition-image-pair(root) { isolation:isolate; }
 :root.color-mode-revealing::view-transition-old(root) { animation:none; mix-blend-mode:normal; z-index:1; }
-:root.color-mode-revealing::view-transition-new(root) { animation:theme-light-reveal 560ms cubic-bezier(.4,0,.2,1) both; mix-blend-mode:normal; z-index:2; }
-@keyframes theme-light-reveal {
-  from { clip-path:circle(0px at var(--theme-reveal-x) var(--theme-reveal-y)); }
-  to { clip-path:circle(var(--theme-reveal-radius) at var(--theme-reveal-x) var(--theme-reveal-y)); }
+:root.color-mode-revealing::view-transition-new(root) { animation:none; mix-blend-mode:normal; z-index:2; }
+:root[data-theme-reveal="expand"]::view-transition-new(root),:root[data-theme-reveal="contract"]::view-transition-old(root) {
+  mask-image:radial-gradient(circle at var(--theme-reveal-x) var(--theme-reveal-y),#000 max(0px,calc(var(--theme-reveal-size) - var(--theme-reveal-feather))),transparent max(0px,var(--theme-reveal-size)));
+  animation:theme-light-reveal 800ms cubic-bezier(.4,0,.2,1) both;
 }
-@media(prefers-reduced-motion:reduce) { :root.color-mode-revealing::view-transition-new(root) { animation:none; } }
+:root[data-theme-reveal="contract"]::view-transition-old(root) { z-index:2; animation-direction:reverse; }
+:root[data-theme-reveal="contract"]::view-transition-new(root) { z-index:1; }
+@keyframes theme-light-reveal {
+  from { --theme-reveal-size:0px; }
+  to { --theme-reveal-size:var(--theme-reveal-end); }
+}
+@media(prefers-reduced-motion:reduce) { :root.color-mode-revealing::view-transition-new(root),:root.color-mode-revealing::view-transition-old(root) { animation:none; mask-image:none; } }
 button,input,select,textarea { font:inherit; color:inherit; }
 /* Shared readability floor, including compact forms and inline autosizing. */
 textarea:not(.exam-title-input) { min-height:max(100px,var(--textarea-min-height,100px))!important; resize:vertical; }

@@ -21,8 +21,9 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
   pairs throughout the site. Dark badge surfaces are muted tinted charcoal with
   readable softened text, never the light palette's pastel fills. Exam entry/exit
   coverage uses the current surface color. The theme button has no tooltip, keeping
-  its accessible label. Explicit toggles reveal the new palette in a 560ms circle
-  expanding from the button center; outside the circle retains the previous palette.
+  its accessible label. Light expands from the button; switching to dark contracts
+  the light snapshot back into that button. Use an 800ms radial mask with a broad
+  120–260px alpha feather, keeping text sharp and avoiding a hard circular edge.
   Startup, reduced motion and browsers without View Transitions switch immediately.
 
 - Exam-list published titles use success green with no tinted row background (15 October 2026).
@@ -512,6 +513,9 @@ Validate hex input, preview locally before save, then apply to every route. Cach
 theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
+
+The dashboard starts directly with its charts: no visible Tổng quan heading,
+current-date subtitle or create-exam button. Keep exam creation in the exam catalog.
 
 Refinement requested 16 October 2026: keep the existing charts and compact the
 mobile cards, with a separate Backup row below system resources linking to the

@@ -177,17 +177,23 @@ try{
   initializeColorMode();assert.equal(classes.size,0,'Restored theme never animates');
   const origin={getBoundingClientRect:()=>({left:300,top:20,width:44,height:44})};
   toggleColorMode(origin);assert.ok(classes.has('color-mode-revealing'));assert.equal(transitions,1);
+  assert.equal(globalThis.document.documentElement.dataset.themeReveal,'contract','Dark contracts the old light snapshot');
   assert.equal(properties.get('--theme-reveal-x'),'322px');assert.equal(properties.get('--theme-reveal-y'),'42px');
   assert.ok(parseFloat(properties.get('--theme-reveal-radius'))>=Math.hypot(322,802),'Wave covers the farthest corner');
+  assert.ok(parseFloat(properties.get('--theme-reveal-feather'))>=120,'Broad alpha feather softens the boundary');
+  assert.ok(parseFloat(properties.get('--theme-reveal-end'))>parseFloat(properties.get('--theme-reveal-radius')),'Feather clears every viewport corner');
   toggleColorMode(origin);assert.equal(transitions,1,'Rapid clicks do not overlap snapshots');
   finish();await Promise.resolve();await Promise.resolve();await Promise.resolve();
   assert.equal(classes.size,0,'Snapshot styling is removed after finishing');
+  assert.equal(globalThis.document.documentElement.dataset.themeReveal,undefined);
+  toggleColorMode(origin);assert.equal(globalThis.document.documentElement.dataset.themeReveal,'expand','Light expands from the button');
+  finish();await Promise.resolve();await Promise.resolve();await Promise.resolve();
   globalThis.matchMedia=()=>({matches:true});
-  toggleColorMode(origin);assert.equal(classes.size,0);assert.equal(transitions,1,'Reduced motion skips snapshots');
+  toggleColorMode(origin);assert.equal(classes.size,0);assert.equal(transitions,2,'Reduced motion skips snapshots');
   globalThis.matchMedia=()=>({matches:false});
   globalThis.document.startViewTransition=()=>{throw new Error('Unavailable');};
-  assert.equal(toggleColorMode(origin),'dark');assert.equal(classes.size,0,'API failure still switches and cleans up');
+  assert.equal(toggleColorMode(origin),'light');assert.equal(classes.size,0,'API failure still switches and cleans up');
   delete globalThis.document.startViewTransition;
-  assert.equal(toggleColorMode(origin),'light','Unsupported browsers still switch');
+  assert.equal(toggleColorMode(origin),'dark','Unsupported browsers still switch');
 }finally{Object.assign(globalThis,savedMotionGlobals);}
 console.log('✓ Vòng lan từ nút: phủ hết màn hình, chống chồng hiệu ứng, dọn dẹp, giảm chuyển động và fallback');

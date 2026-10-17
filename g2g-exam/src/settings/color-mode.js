@@ -34,10 +34,14 @@ export function toggleColorMode(trigger){
   const width=globalThis.innerWidth||root.clientWidth,height=globalThis.innerHeight||root.clientHeight;
   const x=rect?rect.left+rect.width/2:width/2,y=rect?rect.top+rect.height/2:height/2;
   const radius=Math.hypot(Math.max(x,width-x),Math.max(y,height-y));
+  const feather=Math.min(260,Math.max(120,Math.max(width,height)*0.18));
   root.style.setProperty('--theme-reveal-x',x+'px');root.style.setProperty('--theme-reveal-y',y+'px');
   root.style.setProperty('--theme-reveal-radius',Math.ceil(radius)+1+'px');
+  root.style.setProperty('--theme-reveal-feather',feather+'px');
+  root.style.setProperty('--theme-reveal-end',Math.ceil(radius+feather)+1+'px');
   revealing=true;root.classList.add('color-mode-revealing');
-  const cleanup=()=>{revealing=false;root.classList.remove('color-mode-revealing');};
+  root.dataset.themeReveal=value==='light'?'expand':'contract';
+  const cleanup=()=>{revealing=false;root.classList.remove('color-mode-revealing');delete root.dataset.themeReveal;};
   try{
     const transition=doc.startViewTransition(apply);
     transition.ready.catch(()=>{});
