@@ -43,7 +43,12 @@ function updateConnectionStatus(){
   if(hint)hint.textContent=infra?.smtp?.secretConfigured?'Đã lưu mật khẩu an toàn.':'Chưa lưu mật khẩu SMTP.';
   for(const provider of AI_PROVIDER_IDS){
     const hint=document.getElementById(`sAi${provider[0].toUpperCase()+provider.slice(1)}Hint`),state=infra?.ai?.[provider];
-    if(hint)hint.textContent=state?.configured?`Đã cấu hình${state.source==='settings'?' trong Cài đặt':' từ biến môi trường'}.`:'Chưa cấu hình.';
+    if(hint){
+      const configured=Boolean(state?.configured);
+      hint.dataset.configured=String(configured);
+      hint.setAttribute('aria-label',configured?'Đã cấu hình':'Chưa cấu hình');
+      hint.textContent=configured?'':'Chưa cấu hình.';
+    }
   }
 }
 function selectedThemeColor(){

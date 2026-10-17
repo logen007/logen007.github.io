@@ -16,6 +16,9 @@
 .cai-dat-card-head p { margin:0; color:var(--phu); font-size:13px; line-height:1.6; }
 .cai-dat-fields { display:grid; gap:20px; padding:24px; }
 .cai-dat-field { display:grid; gap:8px; min-width:0; }
+.ai-key-label { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.ai-key-status { display:inline-flex; align-items:center; color:var(--phu); font-size:12px; font-weight:400; }
+.ai-key-status[data-configured="true"]::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--xanh); }
 .cai-dat-field>span,.cai-dat-field>label { font-size:14px; font-weight:500; }
 .cai-dat-field small,.cai-dat-toggle small { display:block; color:var(--phu); font-size:12px; font-weight:400; line-height:1.5; }
 .cai-dat-field textarea.truong { height:auto; min-height:112px; resize:vertical; }

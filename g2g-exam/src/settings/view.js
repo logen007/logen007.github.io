@@ -4,7 +4,8 @@ import {AI_PROVIDERS} from '../domain/ai-providers.js';
 function aiSettingsFields(settings,infra){
   return `${AI_PROVIDERS.map(({id,label})=>{
     const suffix=id[0].toUpperCase()+id.slice(1);
-    return `<label class="cai-dat-field"><span>${label} API key</span><div class="email-test"><input class="truong" id="sAi${suffix}" type="password" autocomplete="new-password" placeholder="Nhập khi cần cập nhật"><button class="nut" id="sAi${suffix}Save">Cập nhật ${label}</button></div><small id="sAi${suffix}Hint">${infra?.ai?.[id]?.configured?'Đã cấu hình.':'Chưa cấu hình.'}</small></label>`;
+    const configured=Boolean(infra?.ai?.[id]?.configured);
+    return `<label class="cai-dat-field"><span class="ai-key-label">${label} API key <span id="sAi${suffix}Hint" class="ai-key-status" data-configured="${configured}" role="status" aria-label="${configured?'Đã cấu hình':'Chưa cấu hình'}">${configured?'':'Chưa cấu hình.'}</span></span><div class="email-test"><input class="truong" id="sAi${suffix}" type="password" autocomplete="new-password" placeholder="Nhập khi cần cập nhật"><button class="nut chinh" id="sAi${suffix}Save" aria-label="Cập nhật ${label}">Cập nhật</button></div></label>`;
   }).join('')}`;
 }
 import {normalizeButtonTheme,SELECTION_STRENGTH_RANGE} from './palette.js';
