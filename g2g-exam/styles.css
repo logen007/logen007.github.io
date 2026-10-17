@@ -897,7 +897,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-ai-providers .dashboard-ai-provider { gap:4px; white-space:nowrap; min-width:0; flex-wrap:wrap; justify-content:center; }
 .dashboard-ai-provider b { font-size:inherit; font-variant-numeric:tabular-nums; }
 .dashboard-ai-providers button.dashboard-ai-provider { border:0; min-height:36px; cursor:pointer; }
-.dashboard-ai-providers button.dashboard-ai-provider[aria-pressed=true] { outline:2px solid var(--chu); outline-offset:2px; }
+.dashboard-ai-providers:has([aria-pressed=true]) .dashboard-ai-provider[aria-pressed=false] { background:var(--surface-muted); color:var(--phu); font-weight:400; }
 @media(any-pointer:coarse) { .dashboard-ai-providers button.dashboard-ai-provider { min-height:44px; } }
 .dashboard-ai-provider[data-provider="groq"] { --ai-color:var(--badge-ai-groq-bg); --ai-text:var(--badge-ai-groq-text); }
 .dashboard-ai-provider[data-provider="gemini"] { --ai-color:var(--badge-ai-gemini-bg); --ai-text:var(--badge-ai-gemini-text); }

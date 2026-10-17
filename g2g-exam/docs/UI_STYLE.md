@@ -11,6 +11,12 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
 
 ## Visual hierarchy
 
+- User preference (17 October 2026): never use an outer ring/outline to indicate
+  selection. Keep keyboard-only focus-visible indicators distinct from selected
+  state. In colored filter groups, selected items retain their color while other
+  items turn neutral gray; selecting the active item again clears the filter and
+  restores all colors.
+
 - Personal light/dark mode (17 October 2026) uses a 44px moon/sun button directly
   before the account avatar. Save the choice in browser storage and restore before
   first paint. Dark uses near-black canvas, charcoal cards, raised neutral controls
@@ -530,7 +536,8 @@ actual archived version from job/Drive metadata, never the current app version.
 AI provider pills filter the accuracy list by the saved grading provider. Selecting
 the active provider again clears the filter. Keep selected state through refreshes,
 recompute matched/total per provider before grouping, and preserve overall pill
-counts. Use native buttons with aria-pressed and visible keyboard focus.
+counts. Use native buttons with aria-pressed and visible keyboard focus. Selection
+keeps only the chosen provider colored; the others become neutral. No selected ring.
 
 The dashboard starts directly with its charts: no visible Tổng quan heading,
 current-date subtitle or create-exam button. Keep exam creation in the exam catalog.
