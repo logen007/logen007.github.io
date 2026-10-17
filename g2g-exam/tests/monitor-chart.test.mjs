@@ -9,6 +9,10 @@ const range={hours:1,bucketSeconds:60,start,end:start+3600000,points:[
 ]};
 const html=monitorChart('CPU','cpu',[range],'50%',n=>n+'%');
 assert.match(html,/<svg[^>]*preserveAspectRatio="none"/,'Flexible CPU charts fill the viewport width without letterboxing');
+assert.match(html,/<svg viewBox="54 24 666 228"/,'CPU plot viewport ends exactly at its axes');
+assert.doesNotMatch(html.match(/<svg[\s\S]*?<\/svg>/)?.[0]||'',/<text/,'Axis labels are HTML and cannot be distorted by SVG stretching');
+assert.match(html,/class="cpu-axis-y"><span>100%<\/span>/);
+assert.match(html,/class="cpu-axis-x"><span style="left:0%">/);
 assert.match(html,/M[\d.,]+ L[\d.,]+ M/,'Missing samples break the line');
 assert.match(html,/0%/);
 assert.match(html,/100%/);

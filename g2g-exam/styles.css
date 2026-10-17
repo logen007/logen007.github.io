@@ -859,6 +859,17 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-cpu-card .monitor-range input:checked+span { background:transparent; color:var(--chu); border-bottom-color:var(--brand-primary); font-weight:550; }
 .dashboard-cpu-history { width:100%; margin:16px auto 0; display:block; }
 .dashboard-cpu-history .monitor-chart { width:100%; }
+.cpu-plot { display:grid; grid-template-columns:40px minmax(0,1fr); grid-template-rows:minmax(100px,1fr) auto; gap:12px 8px; width:100%; height:220px; }
+.cpu-axis-y { display:flex; flex-direction:column; justify-content:space-between; text-align:right; }
+.cpu-axis-x { grid-column:2; position:relative; height:12px; }
+.cpu-axis-y,.cpu-axis-x { color:var(--phu); font-size:12px; line-height:1; font-variant-numeric:tabular-nums; }
+.cpu-axis-x span { position:absolute; white-space:nowrap; transform:translateX(-50%); }
+.cpu-axis-x span:first-child { transform:none; }
+.cpu-axis-x span:last-child { transform:translateX(-100%); }
+@media(max-width:380px) { .cpu-axis-x span:nth-child(2n) { display:none; } }
+.cpu-plot-canvas { position:relative; min-width:0; min-height:0; }
+.dashboard-cpu-history .cpu-plot .cpu-plot-canvas>svg { position:absolute; inset:0; width:100%; height:100%; min-height:0; }
+.cpu-plot-canvas path { vector-effect:non-scaling-stroke; }
 @media(min-width:601px) {
   .dashboard-system-column>.dashboard-cpu-card { flex:1; contain:size; min-height:360px; }
   .dashboard-system-column>.dashboard-backup-card { margin-top:auto; }
@@ -866,7 +877,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
   .dashboard-cpu-history .monitor-chart { display:flex; flex-direction:column; min-height:0; }
   .dashboard-cpu-history .monitor-chart header { flex:none; }
   .dashboard-cpu-history .monitor-period { flex:1; min-height:0; }
-  .dashboard-cpu-history .monitor-chart svg { height:0; min-height:100px; flex:1; }
+  .dashboard-cpu-history .cpu-plot { flex:1; height:0; min-height:120px; }
   .dashboard-cpu-history .monitor-summary { flex:none; }
   .dashboard-cpu-history .monitor-empty { flex:1; min-height:100px; height:auto; }
 }
