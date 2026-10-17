@@ -270,6 +270,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
   settings retain the time field only. Instructions/examples play once;
   grouping follows the spec.
 
+- The account profile dialog is a compact 440px surface with a small avatar and
+  selectable read-only email summary, name field and optional student class code.
+  Email is display-only and is never included in profile save payloads. Use shared
+  light/dark surfaces, 16px field gaps and one full-width save button.
 - Header account controls use one avatar opening a menu: Profile, other role
   options for authorized admins (Student, Teacher, Admin; omit current role),
   then Log out. No separate role selector or logout icon. Profile edits the

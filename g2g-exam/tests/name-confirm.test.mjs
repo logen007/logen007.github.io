@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {confirmNameChange} from '../src/ui/confirm.js';
+import {accountProfileHtml} from '../src/views/account-profile.js';
+
+for(const role of ['master','teacher','student']){
+  const html=accountProfileHtml({role,name:'An <Test>',email:'an+<test>@example.com'});
+  assert.match(html,/an\+&lt;test&gt;@example.com/);
+  assert.match(html,/Email · chỉ xem/);
+  assert.doesNotMatch(html,/name="email"|type="email"|contenteditable/);
+  assert.equal(html.includes('name="code"'),role==='student');
+  assert.match(html,/name="name"/);
+}
 
 const profileSource=readFileSync(new URL('../src/views/account-profile.js',import.meta.url),'utf8');
 assert.match(profileSource,/mountDialog\('Hồ sơ'/);
