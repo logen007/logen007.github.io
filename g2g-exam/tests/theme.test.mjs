@@ -35,6 +35,11 @@ for(const background of ['#F4F5F6','#FFFFFF','#101318','#806040','#FFFF00']){
   assert.ok(colorContrast(background,preview['--preview-text'])>=4.5,'Preview text follows its own background, not inherited dark-mode text');
 }
 const previewCss=readFileSync(new URL('../enhancements.css',import.meta.url),'utf8');
+const darkPreview=previewCss.match(/:root\[data-color-mode="dark"\] \.brand-theme-preview \{([^}]+)\}/)?.[1]||'';
+assert.match(darkPreview,/--nen:var\(--surface-muted\)!important/);
+assert.match(darkPreview,/--preview-text:var\(--chu\)!important/);
+for(const name of ['primary','on-primary','text','soft','border'])assert.ok(darkPreview.includes(`--brand-${name}:var(--dark-brand-${name})!important`));
+for(const name of ['secondary','secondary-text','secondary-border'])assert.ok(darkPreview.includes(`--button-${name}:inherit!important`));
 for(const selector of ['.brand-theme-preview {','.brand-preview-caption {','.brand-theme-preview>small {']){
   assert.ok(previewCss.slice(previewCss.indexOf(selector)).split('}')[0].includes('color:var(--preview-text)'));
 }
@@ -42,6 +47,7 @@ assert.equal(normalizeLayout({background:'warm'}).background,'#F7F5F0');
 for(const input of [{contentWidth:0},{contentWidth:1600.5},{contentWidth:'1600'},{background:'toString'},{background:'url(evil)'}])assert.throws(()=>validateLayout(input));
 for(const input of [{secondaryColor:'red'},{selectionStrength:100},{selectionStrength:7.5}])assert.throws(()=>validateButtonTheme(input));
 const page=settingsPageHtml({settings:DEFAULT_SETTINGS,infra:null});
+assert.match(page,/id="sThemePreview" style="[^"]*--dark-brand-primary:/,'Initial preview has its own unsaved dark palette');
 assert.match(page,/id="sAiMistral" type="password"/);
 assert.match(page,/id="sAiMistralSave"/);
 const mistralPage=settingsPageHtml({settings:{...DEFAULT_SETTINGS,ai:{providerPreference:'mistral'}},infra:{ai:{mistral:{configured:true}}}});

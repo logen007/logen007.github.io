@@ -69,6 +69,18 @@
 .brand-preview-selected { background:var(--brand-soft); color:var(--brand-text); border:1px solid var(--brand-border); }
 .brand-preview-secondary { background:var(--button-secondary); color:var(--button-secondary-text); border:1px solid var(--button-secondary-border); }
 .brand-theme-preview>small { color:var(--preview-text); font-size:12px; }
+:root[data-color-mode="dark"] .brand-theme-preview {
+  --nen:var(--surface-muted)!important;
+  --preview-text:var(--chu)!important;
+  --brand-primary:var(--dark-brand-primary)!important;
+  --brand-on-primary:var(--dark-brand-on-primary)!important;
+  --brand-text:var(--dark-brand-text)!important;
+  --brand-soft:var(--dark-brand-soft)!important;
+  --brand-border:var(--dark-brand-border)!important;
+  --button-secondary:inherit!important;
+  --button-secondary-text:inherit!important;
+  --button-secondary-border:inherit!important;
+}
 
 /* Keep exam navigation after the questions, without a surface or sticky positioning. */
 .dieu-huong-thi{position:static;background:transparent;border:0;padding:0 0 calc(12px + env(safe-area-inset-bottom));}
