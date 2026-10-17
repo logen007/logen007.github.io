@@ -9,6 +9,7 @@ const chatProviders={
   groq:{endpoint:groqEndpoint,model:'openai/gpt-oss-20b'},
   grok:{endpoint:grokEndpoint,model:'grok-4.7'},
   mistral:{endpoint:'https://api.mistral.ai/v1/chat/completions',model:'mistral-small-latest',response_format:{type:'json_object'}},
+  cerebras:{endpoint:'https://api.cerebras.ai/v1/chat/completions',model:'gpt-oss-120b',reasoning_effort:'low',max_tokens:4096,response_format:{type:'json_object'}},
 };
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,Number(value)||0));
 
@@ -48,7 +49,7 @@ function rateLimitError(provider,response){
 async function fromChatProvider(provider,{prompt,maximum,apiKey,fetchImpl}){
   if(!apiKey)return null;
   const {endpoint,...parameters}=chatProviders[provider],label=aiProviderLabel(provider);
-  const {response,body}=await requestJson(fetchImpl,endpoint,{method:'POST',headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/json'},body:JSON.stringify({...parameters,temperature:0.2,max_tokens:900,messages:[{role:'user',content:prompt}]})});
+  const {response,body}=await requestJson(fetchImpl,endpoint,{method:'POST',headers:{authorization:`Bearer ${apiKey}`,'content-type':'application/json'},body:JSON.stringify({temperature:0.2,max_tokens:900,...parameters,messages:[{role:'user',content:prompt}]})});
   if(response.status===429)throw rateLimitError(provider,response);
   if(!response.ok){
     const detail=String(body?.error?.message||'').replace(/\s+/g,' ').trim().slice(0,180);
@@ -70,12 +71,12 @@ async function fromGemini({prompt,maximum,apiKey,fetchImpl}){
   return {...parseWritingSuggestion(body?.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join(''),maximum),model:'gemini'};
 }
 
-export async function suggestWritingGrade({task='',level='',rule,answer,maxScore,groqApiKey,geminiApiKey,grokApiKey,mistralApiKey,providerPreference,providerOnly,fetchImpl=fetch}={}){
+export async function suggestWritingGrade({task='',level='',rule,answer,maxScore,groqApiKey,geminiApiKey,grokApiKey,mistralApiKey,cerebrasApiKey,providerPreference,providerOnly,fetchImpl=fetch}={}){
   const rubric=String(rule||'').trim(),submission=String(answer||'').trim(),maximum=Math.max(0,Number(maxScore)||0);
   if(!rubric)throw appError(409,'Bài này chưa có quy tắc chấm AI.');
   if(!submission)throw appError(409,'Học viên chưa có bài viết để AI xem.');
   if(providerOnly&&!AI_PROVIDER_IDS.includes(providerOnly))throw appError(400,'Nhà cung cấp AI không hợp lệ.');
-  let keys={groqApiKey,geminiApiKey,grokApiKey,mistralApiKey};
+  let keys={groqApiKey,geminiApiKey,grokApiKey,mistralApiKey,cerebrasApiKey};
   const loadConfiguredKeys=Object.values(keys).every(key=>key===undefined);
   if(loadConfiguredKeys)keys=await aiApiKeys(providerOnly);
   if(!Object.values(keys).some(Boolean))throw appError(503,'AI chấm bài chưa được cấu hình.');

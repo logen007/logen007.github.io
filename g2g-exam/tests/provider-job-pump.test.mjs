@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import {createProviderJobPump} from '../server/src/provider-job-pump.js';
+import {AI_PROVIDER_IDS} from '../src/domain/ai-providers.js';
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 let idleReads=0;
 const idle=createProviderJobPump({getProviders:async()=>['groq','gemini','grok','mistral'].map(id=>({id})),hasWork:async()=>{idleReads++;return false;},claim:()=>assert.fail('Idle queue must not query each provider'),processJob:()=>assert.fail()});
 await idle.tick();assert.equal(idleReads,1);idle.stop();
 
-for(const count of [0,1,2,3,4]){
-  const ids=['groq','gemini','grok','mistral'].slice(0,count),jobs=Array.from({length:200},(_,id)=>({id}));
+for(const count of [0,1,2,3,4,5]){
+  const ids=AI_PROVIDER_IDS.slice(0,count),jobs=Array.from({length:200},(_,id)=>({id}));
   const active=new Map(),seen=new Set(),used=new Set();let peak=0;
   const pump=createProviderJobPump({spacingMs:0,getProviders:async()=>ids.map(id=>({id,version:'v1'})),
     claim:async()=>{await settle();return jobs.shift();},
@@ -14,7 +15,8 @@ for(const count of [0,1,2,3,4]){
       assert.equal(active.get(id)||0,0,'Each provider has only one in-flight job');
       active.set(id,1);used.add(id);peak=Math.max(peak,[...active.values()].reduce((a,b)=>a+b,0));
       assert.ok(!seen.has(job.id),'A paper must not be processed twice');seen.add(job.id);
-      await settle();await settle();active.set(id,0);
+      for(let turn=0;turn<=count;turn++)await settle();
+      active.set(id,0);
     }});
   await Promise.all(Array.from({length:20},()=>pump.tick()));
   for(let turn=0;seen.size<200&&count&&turn<1200;turn++){await settle();await pump.tick();}

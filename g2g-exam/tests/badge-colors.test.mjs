@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {AI_PROVIDER_IDS} from '../src/domain/ai-providers.js';
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 for(const band of ['excellent','good','satisfactory','sufficient','failed']){
   assert.ok(css.includes('.result-track--'+band+'>span{background:var(--score-'+band+'-fill)}'));
@@ -25,7 +26,7 @@ for(const [,name,bgToken,fgToken] of badges){
   assert.ok(luminance(bg)>0.7,name+' pastel background');
   assert.ok((luminance(bg)+0.05)/(luminance(fg)+0.05)>=4.5,name+' text contrast');
 }
-for(const name of ['goethe','telc','fid','a1','a2','b1','b2','c1','c2','neutral','passed','failed','ai-groq','ai-gemini','ai-grok','ai-mistral']){
+for(const name of ['goethe','telc','fid','a1','a2','b1','b2','c1','c2','neutral','passed','failed',...AI_PROVIDER_IDS.map(id=>'ai-'+id)]){
   const bg=token(darkPalette,'--badge-'+name+'-bg'),fg=token(darkPalette,'--badge-'+name+'-text');
   if(name!=='neutral'){
     const channels=bg.match(/../g).map(value=>parseInt(value,16)/255),max=Math.max(...channels),min=Math.min(...channels);

@@ -47,7 +47,7 @@ assert.match(page,/id="sAiMistralSave"/);
 const mistralPage=settingsPageHtml({settings:{...DEFAULT_SETTINGS,ai:{providerPreference:'mistral'}},infra:{ai:{mistral:{configured:true}}}});
 assert.doesNotMatch(mistralPage,/sAiProvider|AI ưu tiên/);
 assert.match(mistralPage,/id="sAiMistralHint"[^>]*data-configured="true"[^>]*aria-label="Đã cấu hình"><\/span>/);
-for(const provider of ['Groq','Gemini','Grok','Mistral']){
+for(const provider of ['Groq','Gemini','Grok','Mistral','Cerebras']){
   assert.match(page,new RegExp(`class="nut chinh" id="sAi${provider}Save" aria-label="Cập nhật ${provider}">Cập nhật</button>`));
 }
 assert.doesNotMatch(page,/id="sRefresh"|id="sSave"|class="tich-hop-tong-quan"/);
