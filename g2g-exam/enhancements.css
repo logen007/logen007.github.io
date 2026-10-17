@@ -45,7 +45,7 @@
 .brand-color-control .truong[aria-invalid=true] { border-color:var(--do); }
 .cai-dat-field input[type=range] { width:100%; min-height:44px; accent-color:var(--brand-primary); }
 #sSelectionValue { float:right; color:var(--phu); font-variant-numeric:tabular-nums; }
-.brand-theme-preview { border:1px solid var(--vien); border-radius:var(--r); padding:20px; background:var(--nen); }
+.brand-theme-preview { border:1px solid var(--vien); border-radius:var(--r); padding:20px; background:var(--nen); color:var(--preview-text); }
 .r2-settings-fields { display:grid; gap:20px; min-width:0; border:0; padding:0; margin:0; }
 .r2-settings-fields .nhom-nut { flex-wrap:wrap; }
 .r2-settings-status { margin:0; overflow-wrap:anywhere; }
@@ -59,13 +59,13 @@
 .settings-asset-info small { color:var(--phu); overflow-wrap:anywhere; }
 .settings-asset .nut { flex-shrink:0; }
 @media(max-width:480px) { .settings-asset { flex-wrap:wrap; gap:12px; }.settings-asset .nut { margin-left:68px; } }
-.brand-preview-caption { display:block; color:var(--phu); font-size:12px; margin-bottom:16px; }
+.brand-preview-caption { display:block; color:var(--preview-text); font-size:12px; margin-bottom:16px; }
 .brand-preview-controls { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
 .brand-preview-controls>span { display:inline-flex; align-items:center; min-height:40px; padding:10px 16px; border-radius:var(--pill); font-size:13px; font-weight:500; }
 .brand-preview-primary { color:var(--brand-on-primary); background:var(--brand-primary); }
 .brand-preview-selected { background:var(--brand-soft); color:var(--brand-text); border:1px solid var(--brand-border); }
 .brand-preview-secondary { background:var(--button-secondary); color:var(--button-secondary-text); border:1px solid var(--button-secondary-border); }
-.brand-theme-preview>small { color:var(--phu); font-size:12px; }
+.brand-theme-preview>small { color:var(--preview-text); font-size:12px; }
 
 /* Keep exam navigation after the questions, without a surface or sticky positioning. */
 .dieu-huong-thi{position:static;background:transparent;border:0;padding:0 0 calc(12px + env(safe-area-inset-bottom));}

@@ -25,6 +25,8 @@ const startupGate=createStartupGate();
 const initialUrl=new URL(window.location.href);
 import {bindTextareaBold} from './ui/textarea-bold.js';
 import {bindButtonTooltips} from './ui/button-tooltips.js';
+import {bindDisclosureMotion} from './ui/disclosure-motion.js';
+bindDisclosureMotion();
 bindButtonTooltips();
 bindTextareaBold();
 import {bindLetterAnswers} from './ui/letter-answers.js';

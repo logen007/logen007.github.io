@@ -1,4 +1,4 @@
-import {normalizeThemeColor} from './palette.js';
+import {normalizeThemeColor,colorContrast} from './palette.js';
 
 export const CONTENT_WIDTH_RANGE={min:800,max:3840};
 export const LAYOUT_DEFAULTS={contentWidth:1600,cardRadius:24,background:'#F4F5F6'};
@@ -18,5 +18,6 @@ export function normalizeLayout(input={}){
 }
 export function layoutVariables(input={}){
   const theme=normalizeLayout(input);
-  return {'--max':theme.contentWidth+'px','--r':theme.cardRadius+'px','--nen':theme.background};
+  const text=colorContrast(theme.background,'#101318')>=colorContrast(theme.background,'#FFFFFF')?'#101318':'#FFFFFF';
+  return {'--max':theme.contentWidth+'px','--r':theme.cardRadius+'px','--nen':theme.background,'--preview-text':text};
 }

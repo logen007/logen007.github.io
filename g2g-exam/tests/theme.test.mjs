@@ -30,6 +30,14 @@ assert.equal(layoutVariables({cardRadius:16,background:'warm'})['--r'],'16px');
 assert.equal(layoutVariables({background:'url(invalid)'})['--nen'],'#F4F5F6');
 assert.equal(normalizeLayout({contentWidth:1537,background:'#aabbcc'}).contentWidth,1537);
 assert.equal(layoutVariables({background:'#aabbcc'})['--nen'],'#AABBCC');
+for(const background of ['#F4F5F6','#FFFFFF','#101318','#806040','#FFFF00']){
+  const preview=layoutVariables({background});
+  assert.ok(colorContrast(background,preview['--preview-text'])>=4.5,'Preview text follows its own background, not inherited dark-mode text');
+}
+const previewCss=readFileSync(new URL('../enhancements.css',import.meta.url),'utf8');
+for(const selector of ['.brand-theme-preview {','.brand-preview-caption {','.brand-theme-preview>small {']){
+  assert.ok(previewCss.slice(previewCss.indexOf(selector)).split('}')[0].includes('color:var(--preview-text)'));
+}
 assert.equal(normalizeLayout({background:'warm'}).background,'#F7F5F0');
 for(const input of [{contentWidth:0},{contentWidth:1600.5},{contentWidth:'1600'},{background:'toString'},{background:'url(evil)'}])assert.throws(()=>validateLayout(input));
 for(const input of [{secondaryColor:'red'},{selectionStrength:100},{selectionStrength:7.5}])assert.throws(()=>validateButtonTheme(input));

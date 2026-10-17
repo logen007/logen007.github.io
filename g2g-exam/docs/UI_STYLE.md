@@ -11,6 +11,12 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
 
 ## Visual hierarchy
 
+- All native disclosure sections slide open and closed through the shared
+  disclosure-motion binding, including dynamically rendered sections. Keep content
+  mounted during closing, allow reversing mid-animation, and skip reduced motion.
+  Brand preview text derives contrast from its configured preview background,
+  independently of the surrounding light/dark mode.
+
 - User preference (17 October 2026): never use an outer ring/outline to indicate
   selection. Keep keyboard-only focus-visible indicators distinct from selected
   state. In colored filter groups, selected items retain their color while other
