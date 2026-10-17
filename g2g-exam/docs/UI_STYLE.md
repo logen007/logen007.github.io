@@ -21,8 +21,10 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
   pairs throughout the site. Dark badges use fresh saturated blue, violet, pink,
   teal, amber and coral fills with clear light text, following the staking reference
   approved 17 October; avoid gray-tinted muted fills. Charts use vivid saturated
-  accents from the same hue families. Keep neutral statuses neutral. Exam entry/exit
-  coverage uses the current surface color. The theme button has no tooltip, keeping
+  accents from the same hue families. Keep neutral statuses neutral.
+  Status-colored titles share dedicated tokens: vivid coral for failed and fresh
+  green for passed/published in dark mode; pending titles keep the normal text.
+  Exam entry/exit coverage uses the current surface color. The theme button has no tooltip, keeping
   its accessible label. Light expands from the button; switching to dark contracts
   the light snapshot back into that button. Use an 800ms radial mask with a broad
   120–260px alpha feather, keeping text sharp and avoiding a hard circular edge.

@@ -140,6 +140,8 @@
   --xanh:#087a56;
   --vang:#996000;
   --do:#b42318;
+  --status-title-success:var(--xanh);
+  --status-title-failed:var(--do);
   --r:24px;
   --r-sm:12px;
   --pill:999px;
@@ -196,6 +198,7 @@ html { background:var(--nen); color-scheme:light; }
   --badge-ai-mistral-bg:#83400f; --badge-ai-mistral-text:#ffdfbc;
   --example-bg:#1b2630; --example-border:#43576a; --example-text:#c2d7ea;
   --xanh:#6fd6a5; --vang:#f0c86b; --do:#ff9b91;
+  --status-title-success:#36d981; --status-title-failed:#ff6b75;
   --brand-primary:var(--dark-brand-primary,#a7aab0)!important;
   --brand-on-primary:var(--dark-brand-on-primary,#000)!important;
   --brand-text:var(--dark-brand-text,#d0d2d7)!important;
@@ -1219,10 +1222,10 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .student-results-heading > span { flex:none; color:var(--phu); font-size:14px; white-space:nowrap; }
 .student-result-row { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:16px; padding:20px 24px; border:1px solid var(--vien); border-radius:24px; background:#fff; }
 .student-result-info h2 { margin:0; font-size:var(--student-exam-title-size); font-weight:550; line-height:1.4; overflow-wrap:anywhere; }
-.student-result-info h2.passed { color:var(--xanh); }
-.student-result-info h2.failed { color:var(--do); }
+.student-result-info h2.passed { color:var(--status-title-success); }
+.student-result-info h2.failed { color:var(--status-title-failed); }
 .bang thead th { white-space:nowrap; }
-.table-link.exam-title-status.is-published { color:var(--xanh); }
+.table-link.exam-title-status.is-published { color:var(--status-title-success); }
 .release-update { position:fixed; z-index:12000; top:50%; left:50%; transform:translate(-50%,-50%); display:flex; align-items:center; gap:12px; width:max-content; max-width:calc(100vw - 32px); padding:16px 20px; border:1px solid var(--vien); border-radius:16px; background:var(--mat); color:var(--chu); box-shadow:0 8px 32px #0002; font-size:14px; line-height:1.5; pointer-events:none; }
 .release-update-spinner { flex:none; width:18px; height:18px; border:2px solid var(--vien); border-top-color:var(--brand-primary); border-radius:50%; animation:release-spin .8s linear infinite; }
 @keyframes release-spin { to { transform:rotate(360deg); } }
