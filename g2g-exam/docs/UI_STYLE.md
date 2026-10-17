@@ -522,6 +522,11 @@ theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
 
+AI provider pills filter the accuracy list by the saved grading provider. Selecting
+the active provider again clears the filter. Keep selected state through refreshes,
+recompute matched/total per provider before grouping, and preserve overall pill
+counts. Use native buttons with aria-pressed and visible keyboard focus.
+
 The dashboard starts directly with its charts: no visible Tổng quan heading,
 current-date subtitle or create-exam button. Keep exam creation in the exam catalog.
 

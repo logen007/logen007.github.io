@@ -6,13 +6,14 @@ import {distributionChart} from './resource-charts.js';
 
 const total=value=>Number(value||0).toLocaleString('vi-VN');
 const writingPart=value=>{const text=String(value||''),number=text.match(/(?:teil|bài|viết|viet)\s*(\d+)/i)?.[1];return number?`Viết ${number}`:(text.trim()&&text.trim()!=='Viết'?text.trim():'Bài viết');};
-export function dashboardHtml({data,infrastructure=null,infrastructureError='',now=new Date(),activityFilter={}}){
+export function dashboardHtml({data,infrastructure=null,infrastructureError='',now=new Date(),activityFilter={},aiProvider=''}){
   const exams=data.exams.filter(ex=>ex.status!=='trash');
   const examById=new Map(exams.map(exam=>[exam.id,exam]));
   const questionById=new Map((data.questions||[]).map(question=>[question.id,question]));
   const accuracyGroups=new Map();
   for(const attempt of data.attempts)for(const item of Object.values(attempt.aiWritingAccuracy||{})){
     if(typeof item?.accurate!=='boolean')continue;
+    if(aiProvider&&item.provider!==aiProvider)continue;
     const exam=examById.get(attempt.examId)||{};
     const section=(exam.sections||[]).find(section=>(section.questionIds||[]).includes(item.questionId));
     const part=writingPart(section?.name||questionById.get(item.questionId)?.title||item.part);
@@ -23,6 +24,7 @@ export function dashboardHtml({data,infrastructure=null,infrastructureError='',n
     accuracyGroups.set(key,group);
   }
   const gradingOverview={needsGrading:data.attempts.filter(attempt=>attempt.status==='grading').length,graded:data.attempts.filter(attempt=>['ready','published'].includes(attempt.status)).length,aiAccuracy:[...accuracyGroups.values()].sort((a,b)=>b.total-a.total||a.examName.localeCompare(b.examName))};
+  gradingOverview.aiProvider=aiProvider;
   const activity=preferredDashboardActivity(data,activityFilter.range,now),months=activity.bins;
   const biggest=Math.max(1,...months.map(item=>item.count));
   const active=activity.active;

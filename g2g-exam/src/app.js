@@ -618,7 +618,7 @@ function adminView(cachedAt=null){
   if(isMaster(user)&&['grading','grades'].includes(ui.adminTab))ui.adminTab='dashboard';
   let content='';
   if(ui.adminTab==='dashboard'&&isMaster(user)){
-    content=dashboardHtml({data,infrastructure:ui.infrastructure,infrastructureError:ui.infrastructureError||'',activityFilter:ui.dashboardPeriod||{}});
+    content=dashboardHtml({data,infrastructure:ui.infrastructure,infrastructureError:ui.infrastructureError||'',activityFilter:ui.dashboardPeriod||{},aiProvider:ui.dashboardAiProvider||''});
     if(!cachedAt)writeDashboardCache(user.id,data);
     if(!infrastructureRefreshStarted&&!infrastructureLoading){
       infrastructureRefreshStarted=true;
@@ -1099,6 +1099,7 @@ function bindViewSpecific(){
     catch(error){button.disabled=false;notify(error?.message||'Không thể chạy lại bài lỗi AI.');}
   });
   const dashboardRange=app.querySelector('[data-dashboard-range]');if(dashboardRange)dashboardRange.onchange=event=>{ui.dashboardPeriod={range:event.target.value};render();};
+  app.querySelectorAll('[data-dashboard-ai-provider]').forEach(button=>button.onclick=()=>{ui.dashboardAiProvider=ui.dashboardAiProvider===button.dataset.dashboardAiProvider?'':button.dataset.dashboardAiProvider;render();});
   app.querySelectorAll('[data-action="new-question"]').forEach(b=>b.onclick=()=>questionModal(null,ui.view==='builder'?async q=>{const ex=byId(data.exams,ui.builderExamId),sec=ex?.sections.find(s=>s.id===ui.builderSectionId);if(ex&&sec)await act(()=>repo.transaction(st=>addQuestionsToSection(st,user,ex.id,sec.id,[q.id])),'Đã thêm câu vào phần.');}:null));
   app.querySelectorAll('[data-action="edit-part-template"]').forEach(b=>b.onclick=async()=>{
     const exam=byId(data.exams,ui.builderExamId),section=exam?.sections.find(s=>s.id===ui.builderSectionId);
