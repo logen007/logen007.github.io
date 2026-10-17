@@ -16,6 +16,8 @@ const legendColors=[...colorfulDistribution.matchAll(/<i style="([^"]+)"/g)].map
 assert.equal(new Set(plotColors).size,6);assert.deepEqual(plotColors,legendColors,'Each legend dot matches its real chart slice');
 assert.doesNotMatch(colorfulDistribution,/--slice:/);
 const distributionStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(distributionStyles,/\.dashboard-ai-providers\{display:flex;flex-wrap:nowrap;gap:3px\}/,'Mobile AI pills stay on one row');
+assert.match(distributionStyles,/flex:1 1 auto;flex-wrap:nowrap;padding:4px 2px;gap:2px;font-size:clamp\(10px,2.7vw,12px\)/,'Compact mobile AI pills keep name and count together');
 assert.match(distributionStyles,/--distribution-size:clamp\(120px,38vw,160px\)/);
 assert.match(distributionStyles,/\.distribution-legend \{[^}]*width:fit-content;[^}]*justify-self:end/);
 assert.match(distributionStyles,/\.distribution-legend span \{[^}]*text-align:left/);

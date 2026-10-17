@@ -643,8 +643,9 @@ states have one concise explanation. Idle AI polling runs once per minute.
   and keep the linked exam name truncated alongside the part and matched/total count.
   The list grows naturally without a nested scroll area. The pills
   may move together below the heading on narrow phones, never scroll sideways.
-  On phones distribute all four providers equally across the available width;
-  their counts may wrap within a pill while provider names stay on one row.
+  On phones keep all AI providers on one row, including Cerebras. Use compact
+  horizontal padding and adaptive text; keep each name and count together without
+  wrapping. Preserve touch-target height.
   Failures remain visible separately with the retry action.
 - Technical details remain available but must not dominate the default screen.
 - System connection statuses use a compact strip, not nested cards. Place CPU
