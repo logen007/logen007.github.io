@@ -828,12 +828,11 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .dashboard-details h3>span { margin-left:12px; font-size:12px; font-weight:400; color:var(--phu); }
 .dashboard-system-heading { margin-bottom:16px; }
 .dashboard-backup-card{display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center;gap:12px;margin-top:20px;padding:20px 24px}
-.dashboard-backup-info{min-width:0}
-.dashboard-backup-info h3{font-size:15px;font-weight:500;margin:0 0 8px}
-.dashboard-backup-summary{display:flex;align-items:center;gap:8px;min-width:0}
-.dashboard-backup-info p{min-width:0;font-size:12px;color:var(--phu);margin:0;font-variant-numeric:tabular-nums}
-.dashboard-backup-summary .dashboard-state{flex:none;padding:3px 8px;font-size:11px;white-space:nowrap}
-.dashboard-backup-version{display:block;margin-top:4px;font-size:12px;color:var(--phu)}
+.dashboard-backup-info{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center}
+.dashboard-backup-summary{display:contents}
+.dashboard-backup-info p{grid-column:1;grid-row:1;min-width:0;font-size:13px;font-weight:600;color:var(--chu);margin:0;font-variant-numeric:tabular-nums}
+.dashboard-backup-summary .dashboard-state{grid-column:2;grid-row:1 / span 2;align-self:center;padding:3px 8px;font-size:11px;white-space:nowrap}
+.dashboard-backup-version{grid-column:1;grid-row:2;display:block;font-size:12px;color:var(--phu)}
 .dashboard-backup-card>.icon-btn{width:44px;height:44px}
 .dashboard-ai-empty{font-size:13px;color:var(--phu);margin:20px 0 0}
 .dashboard-services { display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; }

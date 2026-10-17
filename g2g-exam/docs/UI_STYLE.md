@@ -528,8 +528,9 @@ theme application must not wait for a network response to render the page.
 
 ## Admin dashboard
 
-The compact Backup card has its title above, timestamp and status on the same
-row, and archived app version directly below the timestamp. Omit the left icon;
+The compact Backup card has no visible title. Use a bold primary-text timestamp,
+archived app version directly underneath, and status centered vertically beside
+that two-line group. Omit the left icon;
 the right action uses a 44px backup icon button instead of an arrow. Display the
 actual archived version from job/Drive metadata, never the current app version.
 

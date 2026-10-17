@@ -20,7 +20,7 @@ export function dashboardBackupHtml(backup={}){
  const label=running?(backup.kind==='restore'?'Đang phục hồi thử':'Đang sao lưu'):failed?'Cần kiểm tra':latest?'Đã sao lưu':'Chưa ghi nhận';
  const stamp=latest?new Date(latest).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short'}):'Chưa có bản thành công';
  const version=backup.lastBackupVersion?`v${String(backup.lastBackupVersion).replace(/^v/,'')}`:'Chưa ghi nhận phiên bản';
- return `<section class="the dashboard-backup-card"><div class="dashboard-backup-info"><h3>Sao lưu</h3><div class="dashboard-backup-summary"><p>${esc(stamp)}</p>${status(label,failed?'error':!running&&latest?'success':'neutral')}</div>${latest?`<small class="dashboard-backup-version">${esc(version)}</small>`:''}</div><button type="button" class="icon-btn" data-action="admin-tab" data-tab="backup" title="Mở Sao lưu" aria-label="Mở Sao lưu">${iconHtml('backup')}</button></section>`;
+ return `<section class="the dashboard-backup-card" aria-label="Sao lưu"><div class="dashboard-backup-info"><div class="dashboard-backup-summary"><p>${esc(stamp)}</p>${status(label,failed?'error':!running&&latest?'success':'neutral')}</div>${latest?`<small class="dashboard-backup-version">${esc(version)}</small>`:''}</div><button type="button" class="icon-btn" data-action="admin-tab" data-tab="backup" title="Mở Sao lưu" aria-label="Mở Sao lưu">${iconHtml('backup')}</button></section>`;
 }
 
 function dashboardAiQueueHtml(ai,overview={}){
