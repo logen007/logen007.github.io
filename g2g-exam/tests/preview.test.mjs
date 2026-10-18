@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './audio-runtime.test.mjs';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {iconHtml} from '../src/ui/icons.js';

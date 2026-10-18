@@ -1,0 +1,80 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+
+// Execute the actual app helpers without booting accounts or requesting media.
+const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+const helpers=source.slice(source.indexOf('function readAudioDuration('),source.indexOf('function queueAnswer('));
+const timers=new Map(),frames=new Map();let sequence=0;
+const context=vm.createContext({
+ setTimeout:(fn,ms)=>{const id=++sequence;timers.set(id,{fn,ms});return id;},
+ clearTimeout:id=>timers.delete(id),
+ requestAnimationFrame:fn=>{const id=++sequence;frames.set(id,fn);return id;},
+ cancelAnimationFrame:id=>frames.delete(id),
+});
+vm.runInContext(helpers,context);
+class Audio extends EventTarget{
+ duration=NaN;currentTime=0;ended=false;loads=0;plays=0;
+ load(){this.loads++;}
+ play(){this.plays++;return Promise.resolve();}
+}
+const runTimers=()=>{const pending=[...timers.values()];timers.clear();for(const item of pending)item.fn();};
+const settle=()=>new Promise(resolve=>setImmediate(resolve));
+
+const stalled=new Audio(),waiting=context.readAudioDuration(stalled);
+assert.equal(timers.size,1,'Missing metadata must have a bounded wait');
+assert.equal([...timers.values()][0].ms,15000);
+runTimers();await assert.rejects(waiting,/Audiodauer/);
+stalled.duration=2;stalled.dispatchEvent(new Event('loadedmetadata'));
+assert.equal(timers.size,0,'Late metadata cannot keep a retry timer alive');
+
+const ready=new Audio(),loading=context.readAudioDuration(ready);
+ready.duration=2;ready.dispatchEvent(new Event('loadedmetadata'));
+assert.equal(await loading,2);assert.equal(timers.size,0);
+assert.equal(await context.readAudioDuration(ready),2);assert.equal(ready.loads,1);
+const broken=new Audio(),failed=context.readAudioDuration(broken);
+broken.dispatchEvent(new Event('error'));await assert.rejects(failed,/Audiodauer/);
+assert.equal(timers.size,0);
+const throwing=new Audio();throwing.load=()=>{throw Error('load failed');};
+await assert.rejects(context.readAudioDuration(throwing));assert.equal(timers.size,0);
+
+const resumed=new Audio();resumed.duration=2;
+resumed.play=()=>++resumed.plays===1?Promise.resolve():Promise.reject(Error('resume blocked'));
+const playback=context.playSectionSegment(resumed,()=>{});await settle();
+assert.equal(frames.size,1);resumed.onpause();runTimers();
+await assert.rejects(playback,/resume blocked/);
+assert.equal(frames.size,0,'Resume rejection must cancel the animation frame');
+for(const hook of ['onpause','onended','onerror'])assert.equal(resumed[hook],null);
+
+const finished=new Audio();finished.duration=2;
+const complete=context.playSectionSegment(finished,()=>{});await settle();
+finished.onpause();finished.ended=true;finished.onended();await complete;
+runTimers();assert.equal(finished.plays,1,'Queued resume cannot replay a completed segment');
+assert.equal(frames.size,0);
+// Exercise the caller too: timeout must restore the real pre-lock UI path,
+// without consuming the server-owned audio session.
+const notices=[],requests=[],button={disabled:false},status={textContent:''};
+const classes=new Set(),progress={hidden:true,querySelector:()=>({style:{}}),setAttribute(){}};
+let segment=new Audio();segment.dataset={repeat:'2',label:'Aufgabe 1'};
+const root={dataset:{sectionAudio:'section',storageKey:'fixture'},
+ classList:{add:name=>classes.add(name),remove:name=>classes.delete(name)},
+ querySelector:selector=>({'.section-audio-play':button,'.section-audio-status':status,'.section-audio-progress':progress})[selector],
+ querySelectorAll:()=>[segment]};
+Object.assign(context,{app:{querySelector:()=>root},notify:message=>notices.push(message),
+ sessionStorage:{setItem(){},removeItem(){}},templateRequest:async url=>{requests.push(url);return {ok:true};}});
+vm.runInContext(source.slice(source.indexOf('function bindSectionAudio('),source.indexOf('function readAudioDuration(')),context);
+context.bindSectionAudio({id:'attempt'},{preview:false});
+const timeoutClick=button.onclick();assert.equal(root.dataset.audioBusy,'true');
+runTimers();await timeoutClick;
+assert.equal(button.disabled,false);assert.equal(root.dataset.audioBusy,undefined);
+assert.equal(progress.hidden,true);assert.equal(requests.length,0);
+assert.match(notices.at(-1),/Audiodauer/);
+
+segment.duration=1;
+const successClick=button.onclick();await settle();
+assert.equal(segment.plays,1);segment.onended();await settle();
+assert.equal(segment.plays,2,'Configured repeat count is preserved');segment.onended();await successClick;
+assert.deepEqual(requests,['/actions/startPartAudio','/actions/completePartAudio']);
+assert.equal(button.disabled,true);assert.equal(root.dataset.audioBusy,undefined);
+assert.equal(classes.has('is-playing'),false);assert.equal(frames.size,0);
+console.log('Audio runtime: bounded metadata, success/error cleanup, resume rejection and no late replay passed.');

@@ -473,20 +473,23 @@ function bindSectionAudio(attempt,{preview}){
 function readAudioDuration(audio){
   if(Number.isFinite(audio.duration)&&audio.duration>0)return Promise.resolve(audio.duration);
   return new Promise((resolve,reject)=>{
-    const cleanup=()=>{audio.removeEventListener('loadedmetadata',ready);audio.removeEventListener('error',failed);};
+    let timer;
+    const cleanup=()=>{clearTimeout(timer);audio.removeEventListener('loadedmetadata',ready);audio.removeEventListener('error',failed);};
     const ready=()=>{if(!Number.isFinite(audio.duration)||audio.duration<=0)return failed();cleanup();resolve(audio.duration);};
     const failed=()=>{cleanup();reject(new Error('Die Audiodauer konnte nicht ermittelt werden.'));};
-    audio.addEventListener('loadedmetadata',ready,{once:true});audio.addEventListener('error',failed,{once:true});audio.load();
+    audio.addEventListener('loadedmetadata',ready,{once:true});audio.addEventListener('error',failed,{once:true});
+    timer=setTimeout(failed,15000);
+    try{audio.load();}catch{failed();}
   });
 }
 
 function playSectionSegment(audio,onProgress){
   return new Promise((resolve,reject)=>{
-    let active=true,frame=0;
+    let active=true,frame=0,resumeTimer;
     const tick=()=>{if(!active)return;onProgress(audio.currentTime);frame=requestAnimationFrame(tick);};
-    const cleanup=()=>{active=false;if(frame)cancelAnimationFrame(frame);audio.onended=null;audio.onerror=null;audio.onpause=null;};
+    const cleanup=()=>{active=false;clearTimeout(resumeTimer);if(frame)cancelAnimationFrame(frame);audio.onended=null;audio.onerror=null;audio.onpause=null;};
     audio.controls=false;audio.currentTime=0;
-    audio.onpause=()=>{if(active&&!audio.ended)setTimeout(()=>audio.play().catch(reject),0);};
+    audio.onpause=()=>{if(active&&!audio.ended){clearTimeout(resumeTimer);resumeTimer=setTimeout(()=>{if(active&&!audio.ended)audio.play().catch(error=>{cleanup();reject(error);});},0);}};
     audio.onended=()=>{onProgress(audio.duration);cleanup();resolve();};
     audio.onerror=()=>{cleanup();reject(new Error('Không phát được một audio trong phần.'));};
     audio.play().then(tick).catch(error=>{cleanup();reject(error);});

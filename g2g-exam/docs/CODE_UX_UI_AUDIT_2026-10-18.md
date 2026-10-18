@@ -240,3 +240,40 @@ need their respective devices/services. They are not silently treated as passed.
 Google Drive was not tested by the local restore drill. No live restore, VPS
 deployment SHA or guarantee of exhaustive WCAG/security coverage is claimed.
 These limitations do not authorize changing production credentials or data.
+
+## Audio-loading follow-up: 1.3.212
+
+Reproduced a pending metadata request with no error/loadedmetadata event: the
+shared section player had no timeout and retained its busy/disabled state.
+The regression failed on baseline. `readAudioDuration` now bounds the wait to
+15 seconds, removes listeners/timer on success/failure, and handles a synchronous
+load failure. This is a transport wait, not an exam time or scoring rule.
+
+Also verified/fixed resume-rejection cleanup in `playSectionSegment`: cancel its
+animation frame and queued resume, remove handlers, and never replay after the
+segment has ended. Server-owned start/complete permissions, max sessions and
+configured repetitions are unchanged. No schema or saved exam changes.
+
+- `tests/audio-runtime.test.mjs` executes the actual app helpers with controlled
+  media/timers. Covers missing/late/valid/error metadata, throwing load, resume
+  rejection, queued replay after completion, caller busy-state cleanup, retry
+  without starting a server session, and successful two-repeat start/complete.
+  It is imported by preview tests so normal suite/CI execute it.
+- Focused audio + preview tests passed; HIGH 36/36 passed (macOS Node26.5,
+  dependency audits reported 0 vulnerabilities). The final expanded caller tests
+  were rerun with the focused suite after HIGH; CI must test the committed head.
+- Browser on loopback synthetic fixture decoded a generated PCM WAV (duration
+  1 second, readyState4), ran the configured two-repeat playback and reached
+  ended=true/currentTime1 with no media error. UI showed already played, button
+  remained disabled and audioBusy cleared. This proves browser decoding and
+  playback lifecycle, not that a person heard sound from a physical speaker.
+  Screenshot outside Git: audit-evidence/audio-playback-complete.jpg.
+- Preview-only fixtures include an intentionally open WAV response to exercise
+  metadata timeout; they are never enabled by the quality runner/production app.
+  Preview IDs now use UUIDs to permit separate synthetic attempts in one run.
+- The intentionally open response was also exercised in the built browser:
+  metadata stayed at readyState0 without a media error; after timeout the UI said
+  Audio konnte nicht geladen werden, the play button was enabled and audioBusy
+  was absent. Screenshot: audit-evidence/audio-timeout-recovered.jpg.
+
+The existing physical-device/external-service limitations above still apply.
