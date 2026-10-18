@@ -14,7 +14,7 @@ export function bindDialogKeyboard(modal,{required=false,onDismiss=()=>{},return
   modal.addEventListener('keydown',event=>{
     if(event.key==='Escape'&&!required){event.preventDefault();event.stopPropagation();dismiss();return;}
     if(event.key!=='Tab')return;
-    const nodes=[...modal.querySelectorAll('button,input,select,textarea,a[href],[tabindex]')].filter(item=>!item.disabled&&!item.hidden&&item.tabIndex>=0&&!item.closest('.an,[hidden]'));
+    const nodes=[...modal.querySelectorAll('button,input,select,textarea,a[href],[tabindex]')].filter(item=>!item.matches(':disabled,[type="hidden"]')&&!item.hidden&&item.tabIndex>=0&&!item.closest('.an,[hidden]'));
     const first=nodes[0],last=nodes.at(-1);
     if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
     if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}

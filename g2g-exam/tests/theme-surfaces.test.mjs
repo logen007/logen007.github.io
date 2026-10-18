@@ -23,6 +23,9 @@ for(const [mode,values] of [['light',palette(light)],['dark',{...palette(light),
 const rule=(source,selector)=>[...source.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find(match=>match[1].trim()===selector.slice(0,-1).trim())?.[2]||'';
 for(const [source,selector,token] of [
   [css,'.profile-form [data-error] {','--do'],
+  [css,'.ai-writing-suggestion .is-met span {','--xanh'],
+  [css,'.ai-writing-suggestion .is-missing span {','--do'],
+  [css,'.image-width-control>span {','--phu'],
   [css,'.learner-stats span{','--phu'],
   [css,'.user-role-name--teacher {','--badge-goethe-text'],
   [css,'.dashboard-ai-part {','--badge-goethe-bg'],

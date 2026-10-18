@@ -38,6 +38,16 @@ try{
   const notice=mountDialog('Synthetic notice','<p>Information</p>');
   assert.equal(doc.activeElement,notice.querySelector('[data-dismiss]'),'A message-only dialog focuses its close control');
   key('Escape');assert.equal(doc.activeElement,outside);
+  const guarded=mountDialog('Synthetic loading form','<input type="hidden"><fieldset disabled><button>Unavailable before</button></fieldset><input aria-label="Available"><fieldset disabled><button>Unavailable after</button></fieldset>',{required:true});
+  const available=guarded.querySelector('[aria-label="Available"]');
+  for(const shiftKey of [false,true]){
+    available.focus();
+    const tab=new dom.window.KeyboardEvent('keydown',{key:'Tab',shiftKey,bubbles:true,cancelable:true});
+    available.dispatchEvent(tab);
+    assert.equal(tab.defaultPrevented,true,'Hidden inputs and disabled fieldsets are not focus-loop boundaries');
+    assert.equal(doc.activeElement,available);
+  }
+  guarded.remove();outside.focus();
   const required=mountDialog('Required','<input>',{required:true});
   key('Escape');assert.equal(required.isConnected,true);required.remove();outside.focus();
   let extras=0;

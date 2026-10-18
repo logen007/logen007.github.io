@@ -508,3 +508,31 @@ attempted. Fixed artwork/media/shadows, deliberate white emblem labels and
 palette definitions are intentional literals, not a promise of zero hex values.
 No dependency/framework change, scoring change or experimental-speaking edit.
 Rollback: normal PR revert. Public post-deploy proof remains health/version only.
+
+## UI state token and focus guards: 1.3.218
+
+Follow-up to the design-system audit, outside experimental speaking. Three
+unresolved CSS names remained in less-common states: --thanh-cong / --loi on
+the AI suggestion's met/missing marks and --muted on the image-width px suffix.
+No declaration/runtime assignment exists for those names. They now reference
+the existing --xanh / --do / --phu owners, preserving their light/dark pairs.
+No AI request, suggestion data, scoring or exam rule changed. The existing
+theme-surfaces test now checks these consumers and failed on baseline.
+
+The actual shared dialog key handler also treated descendants of disabled
+fieldsets and type=hidden inputs as focus-loop endpoints. A jsdom regression
+with one eligible field between disabled/hidden controls failed because Tab was
+not prevented/wrapped. The handler now uses the same native :disabled/type
+eligibility as initial dialog focus; forward and backward wrap pass. Required
+Escape behavior, normal dialogs and return focus remain covered by existing
+DOM tests. No global event listener or new abstraction added.
+
+Evidence: both regressions failed before the product edits and passed after.
+Local HIGH passed all 36 checks on Node 26.5; both dependency audits found zero
+vulnerabilities. Workflow and focused theme/DOM regressions also passed.
+These are CSS token ownership/contrast and DOM keyboard-event checks, not new
+browser rendering, physical keyboard or screen-reader certification. The prior
+1.3.217 browser matrix is not recounted as fresh evidence for this patch.
+Required quality/CI checks gate release; public post-deploy probe only proves
+HTTP health/database flag/version. No production business data changed.
+Rollback: normal PR revert, no schema or data migration.
