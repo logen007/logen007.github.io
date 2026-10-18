@@ -44,6 +44,9 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   the light snapshot back into that button. Use an 800ms radial mask with a broad
   120–260px alpha feather, keeping text sharp and avoiding a hard circular edge.
   Startup, reduced motion and browsers without View Transitions switch immediately.
+  Theme motion must never permanently lock the control: cancel stalled snapshots
+  after a bounded deadline, ignore stale callbacks, and honor a second activation
+  by ending the current effect and applying the latest preference immediately.
 
 - Exam-list published titles use success green with no tinted row background (15 October 2026).
   Elsewhere use success green, draft/pending neutral, failed/error red. Preserve a
