@@ -1,5 +1,25 @@
 # G2G Exam — AI Working Rules
 
+Chat mới bắt đầu từ `../README.md` ở Git root: tìm checkout, kết nối hiện có,
+thứ tự tài liệu và trạng thái branch/PR. Không suy quyền truy cập từ tài liệu.
+
+## Engineering workflow — đọc trước khi triển khai
+
+- `docs/ENGINEERING.md`: Understand → Design → Implement → Self review → Test →
+  Quality gate → Delivery; owner và UI/UX checklist, feature branch/release/rollback.
+- `docs/QUALITY_GATES.md`: chọn LOW/MEDIUM/HIGH theo ảnh hưởng, lệnh chạy thực tế
+  và giới hạn bằng chứng. Không báo đã kiểm thử nếu chỉ đọc code hoặc in test plan.
+- `docs/MAINTENANCE.md`: tìm module chịu trách nhiệm; `docs/UI_STYLE.md`: UI đã duyệt;
+  `specs/README.md` và APPROVED specs: luật thi. Không copy quy tắc sang tài liệu mới.
+- Mặc định làm trên feature branch, tự kiểm tra và chuẩn bị thay đổi cho review.
+  Request cấm deploy/audit-only luôn ưu tiên hơn quyền deploy thường lệ ở mục 15.
+  Workflow v1 ban đầu audit-only. Ngày 18/10/2026 owner đã cho phép phát hành
+  1.3.208 qua PR/main sau gate; không sửa dữ liệu hoặc hạ tầng production.
+  SSH timeout: owner chấp thuận theo dõi public health/version, không suy đã
+  xác minh backup hoặc deploy SHA từ VPS. Request mới nhất luôn quyết định scope.
+- Chỉ hỏi khi repository không giải quyết được quyết định quan trọng về nghiệp vụ,
+  chi phí, quyền truy cập hoặc rủi ro cao; thay đổi nhỏ không cần tài liệu/confirm dư.
+
 Giao diện dùng quy chuẩn đã chốt trong `docs/UI_STYLE.md`. Khi sửa UI, đọc tài liệu
 này và dùng token/component chung; không chồng thêm các lớp style toàn site.
 

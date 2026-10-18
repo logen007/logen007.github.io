@@ -8,14 +8,17 @@ demo; technical details remain in disclosures. Scope this styling to the dashboa
 At tablet widths CPU spans both resource columns; on phones cards stack and the
 exam table scrolls inside its own wrapper. Display real values and zero bars only.
 This document governs presentation only. Exam rules remain in approved `specs/`.
+The design/self-review/state matrix is in `docs/ENGINEERING.md`; automated evidence
+and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
 
 ## Visual hierarchy
 
 - All native disclosure sections slide open and closed through the shared
   disclosure-motion binding, including dynamically rendered sections. Keep content
   mounted during closing, allow reversing mid-animation, and skip reduced motion.
-  Brand preview text derives contrast from its configured preview background,
-  independently of the surrounding light/dark mode.
+  Brand preview follows the active light/dark mode. Light previews use the configured
+  background and derived contrast; dark previews use dark surface/button tokens
+  derived from the unsaved brand color, without changing the saved global theme.
 
 - User preference (17 October 2026): never use an outer ring/outline to indicate
   selection. Keep keyboard-only focus-visible indicators distinct from selected

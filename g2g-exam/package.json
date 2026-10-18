@@ -6,6 +6,9 @@
     "esbuild": "0.25.12"
   },
   "scripts": {
+    "quality": "node scripts/quality.mjs",
+    "test:workflow": "node tests/engineering-workflow.test.mjs",
+    "verify:release": "node scripts/verify-release.mjs",
     "test:disclosures": "node tests/disclosure-motion.test.mjs",
     "build:web": "node scripts/build-web.mjs",
     "test:performance": "node tests/performance.test.mjs && node tests/attempt-sync.test.mjs",
