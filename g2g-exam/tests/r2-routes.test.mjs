@@ -9,6 +9,8 @@ const Fastify=require('fastify'),staticFiles=require('@fastify/static');
 const root=await fs.mkdtemp(path.join(os.tmpdir(),'g2g-r2-route-'));
 try{
   await fs.writeFile(path.join(root,'test.mp3'),'0123456789');
+  await fs.writeFile(path.join(root,'legacy.html'),'<script>synthetic()</script>');
+  await fs.writeFile(path.join(root,'legacy.svg'),'<svg onload="synthetic()"/>');
   let sources=0,enabled=true;
   const app=Fastify();
   await app.register(staticFiles,{root,serve:false});
@@ -26,6 +28,16 @@ try{
   assert.equal((await app.inject({url:'/uploads/test.mp3?delivery=r2',headers})).body,'0123456789');
   assert.equal((await app.inject({url:'/uploads/.r2',headers})).statusCode,404);
   assert.equal((await app.inject({url:'/uploads/test.mp3?delivery=r2',method:'HEAD',headers})).statusCode,200);
+  assert.equal(local.headers['x-content-type-options'],'nosniff');
+  for(const name of ['legacy.html','legacy.svg']){
+    const before=sources;
+    const response=await app.inject({url:'/uploads/'+name+'?delivery=r2',headers});
+    assert.equal(response.statusCode,200);
+    assert.equal(response.headers['content-type'],'application/octet-stream');
+    assert.match(response.headers['content-disposition'],/^attachment;/);
+    assert.equal(response.headers['x-content-type-options'],'nosniff');
+    assert.equal(sources,before,'Active legacy files cannot bypass attachment policy through R2');
+  }
   await app.close();
   console.log('R2 routes: authentication before signing, non-cacheable redirect, VPS range fallback, rollback and hidden manifest protection passed.');
 }finally{await fs.rm(root,{recursive:true,force:true});}

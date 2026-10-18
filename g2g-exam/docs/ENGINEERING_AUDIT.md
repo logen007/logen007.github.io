@@ -126,6 +126,10 @@ nhưng chưa chạy bộ gate mới của candidate.
 
 ## E. Ưu tiên và trạng thái
 
+Audit code/UX/UI tiếp theo: [báo cáo ngày 18/10/2026](CODE_UX_UI_AUDIT_2026-10-18.md).
+Báo cáo này phân biệt source audit, automated regressions và local-browser proof;
+không thay baseline lịch sử dưới đây hoặc tự suy là đã phát hành.
+
 ### Chuẩn bị phát hành 1.3.208 — owner duyệt 18/10/2026
 
 PR #10 đã merge vào nhánh workflow; CI Node 22 Ubuntu của PR #9 tại head

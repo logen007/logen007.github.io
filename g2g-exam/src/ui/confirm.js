@@ -1,7 +1,8 @@
 import {iconHtml} from './icons.js';
 import {esc} from './format.js';
+let cancelActiveConfirmation=null;
 export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',cancelLabel='Hủy',danger=false,confirmIcon= danger?'trash':'arrowRight',cancelIcon='close',extraAction=null,onCancel=()=>{}}={}){
-  document.getElementById('site-confirm')?.remove();
+  cancelActiveConfirmation?.();
   const previousFocus=document.activeElement;
   const overlay=document.createElement('div');
   overlay.id='site-confirm';
@@ -12,21 +13,35 @@ export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',can
   const accept=overlay.querySelector('[data-confirm-accept]');
   accept.innerHTML=iconHtml(confirmIcon)+'<span>'+esc(confirmLabel)+'</span>';
   if(danger)accept.classList.add('site-confirm-danger');
-  const close=()=>{document.removeEventListener('keydown',onKeydown);overlay.remove();previousFocus?.focus?.();};
-  const cancel=()=>{close();onCancel();};
-  const onKeydown=event=>{if(event.key==='Escape'){event.preventDefault();cancel();}};
+  let closed=false;
+  const close=()=>{if(closed)return false;closed=true;cancelActiveConfirmation=null;document.removeEventListener('keydown',onKeydown);document.removeEventListener('focusin',onFocus);overlay.remove();
+    const target=previousFocus?.disabled?previousFocus.closest?.('[role="dialog"]')?.querySelector('input:not(:disabled),button:not(:disabled)'):previousFocus;
+    target?.focus?.();return true;};
+  const cancel=()=>{if(close())onCancel();};
+  const onFocus=event=>{if(!overlay.contains(event.target))overlay.querySelector('[data-confirm-cancel]').focus();};
+  const onKeydown=event=>{
+    if(event.key==='Escape'){event.preventDefault();event.stopPropagation?.();cancel();return;}
+    if(event.key!=='Tab')return;
+    const buttons=[...overlay.querySelectorAll('button')].filter(button=>!button.disabled&&!button.hidden);
+    const first=buttons[0],last=buttons.at(-1),active=document.activeElement;
+    if(!overlay.contains(active)||(event.shiftKey?active===first:active===last)){
+      event.preventDefault();(event.shiftKey?last:first)?.focus();
+    }
+  };
   overlay.querySelector('[data-confirm-cancel]').onclick=cancel;
-  accept.onclick=()=>{close();onConfirm();};
+  accept.onclick=()=>{if(close())onConfirm();};
   if(extraAction){
     const extra=document.createElement('button');
     extra.type='button';extra.className='text-link site-confirm-extra';
     extra.innerHTML=(extraAction.icon?iconHtml(extraAction.icon):'')+'<span>'+esc(extraAction.label)+'</span>';
-    extra.onclick=()=>{close();extraAction.onClick();};
+    extra.onclick=()=>{if(close())extraAction.onClick();};
     overlay.querySelector('.site-confirm').append(extra);
   }
   overlay.onclick=event=>{if(event.target===overlay)cancel();};
   document.body.append(overlay);
   document.addEventListener('keydown',onKeydown);
+  document.addEventListener('focusin',onFocus);
+  cancelActiveConfirmation=cancel;
   overlay.querySelector('[data-confirm-cancel]').focus();
 }
 

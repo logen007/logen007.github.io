@@ -17,6 +17,9 @@ import {esc} from '../ui/format.js';
 import {DEFAULT_PRIMARY_COLOR,normalizeThemeColor,themePalette} from './theme.js';
 
 function assetPicker(id,label,url,accept){
+  // Active SVG uploads are rejected server-side; keep the picker honest while
+  // retaining PNG/ICO and other supported raster logo formats.
+  accept=accept==='image/*'?'image/png,image/jpeg,image/webp,image/gif,image/avif,image/bmp,image/x-icon,image/vnd.microsoft.icon':accept.replace('image/svg+xml,','');
   return `<div class="settings-asset"><div class="settings-asset-preview" data-asset-preview="${id}">${url?`<img src="${esc(url)}" alt="${label} hiện tại">`:iconHtml('image')}</div><div class="settings-asset-info"><b>${label}</b><small data-asset-name="${id}">${url?'Đang sử dụng':'Chưa có ảnh'}</small></div><button class="nut" type="button" data-asset-pick="${id}">${iconHtml('image')}<span>${url?'Thay ảnh':'Chọn ảnh'}</span></button><input id="${id}" type="file" hidden data-image-picker-direct accept="${accept}" aria-label="${label}"></div>`;
 }
 

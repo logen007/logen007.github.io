@@ -58,6 +58,7 @@ import {uploadQuestionAudio,uploadQuestionImage} from './media.js';
 import {countWords} from './ui/format.js';
 import {topbarHtml} from './ui/layout.js';
 import {classesHtml,bindClasses,openStudentProfile} from './views/classes.js';
+import {bindDialogKeyboard} from './ui/dialog-keyboard.js';
 import {openClassEnrollment} from './views/class-enrollment.js';
 import {openAccountProfile} from './views/account-profile.js';
 import {openExamAccess,openCodeEntry,showPromotion} from './views/exam-access.js';
@@ -1249,6 +1250,10 @@ async function createNewExam(){
     modal.innerHTML=`<div class="noi-hop exam-setup"><div class="dau-hop"><h2>TẠO BÀI THI</h2><button class="nut nho" data-close>×</button></div><div class="exam-setup-grid"><div class="choice-field"><b>Loại đề</b><div class="choice-buttons" id="newExamProviders"><button type="button" data-provider="GOETHE">Goethe</button><button type="button" data-provider="TELC">TELC</button><button type="button" data-provider="FID">FID</button></div></div><div class="choice-field"><b>Trình độ</b><div class="choice-buttons" id="newExamLevels"><button type="button" data-level="A1">A1</button><button type="button" data-level="A2">A2</button><button type="button" data-level="B1">B1</button><button type="button" data-level="B2">B2</button></div></div><label class="exam-setup-name">Tên đề thi<input id="newExamTitle" placeholder="Ví dụ: Goethe A1 – Đề thi thử 01"></label></div><div class="chan-hop"><span></span><div class="nhom-nut"><button class="nut" data-close>Hủy</button><button class="nut chinh" id="confirmNewExam">Tạo đề</button></div></div></div>`;
     document.body.append(modal);
     const title=modal.querySelector('#newExamTitle');
+    const panel=modal.querySelector('.noi-hop'),heading=panel.querySelector('h2');
+    heading.id='newExamDialogTitle';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby',heading.id);
+    modal.querySelector('[data-close]').setAttribute('aria-label','Đóng');
+    bindDialogKeyboard(modal,{onDismiss:()=>resolve(null)});
     let provider='GOETHE',level='A1';
     const syncLevels=()=>{
       const available=getProviderLevels(provider);

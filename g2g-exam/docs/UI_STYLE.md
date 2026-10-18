@@ -512,6 +512,9 @@ Exam image uploads are converted before upload to JPEG (quality 85%, maximum
 optimized file is uploaded; never upload a second original. Use short English
 position names (reading-2-q3-a.jpg), with a short unique suffix on the server.
 Existing referenced uploads are not renamed or deleted as part of new uploads.
+Security audit 18 October: logo/favicon raster formats remain supported, including
+PNG/ICO; new active SVG uploads are rejected with guidance to convert to PNG.
+Never preserve a client-supplied HTML extension for an image/audio upload.
 Clicking an image picker selects and focuses it for native Cmd/Ctrl+V; it must
 not open the file dialog on the first click, including clicks on its icon.
 The border changes to the brand color; clicking the selected picker again opens
@@ -891,6 +894,8 @@ Use explicit trial labels; never imply an official TELC task or real published s
 ## Verification
 
 Run syntax checks, automated tests and G2G Exam Check before updating main.
-The user requested to perform browser checks personally; do not open a browser
-for verification unless they change that preference. Report that visual checks
-were not performed when handing off.
+The user previously requested to perform browser checks personally. On 18 October
+the owner explicitly allowed local browser checks with synthetic data for the
+code/UX/UI audit. This does not authorize interacting with production data or
+external camera/Drive/AI services. Outside this approved scope, obtain permission
+before browser verification. Report the actual viewports/states and untested flows.
