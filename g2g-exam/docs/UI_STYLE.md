@@ -129,17 +129,23 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
-Login redesign (19 October 2026): a quiet editorial shell with compact G2G Exam
-identity, personal theme toggle, a large two-line Vietnamese headline and one
-clear Google sign-in action. A tilted German practice sheet is decorative and
-explicitly labelled as an illustration, never a real score or official paper.
-Keep the existing live public metrics/exam types, local-only demo accounts and
-policy links. Google disabled state updates its caption without replacing the
-icon/label structure. Auth routing and One Tap remain unchanged.
-Use the existing palette in both modes; no independent login theme. Desktop
-uses a two-column hero; phones put the CTA before the illustration, with no
-page-wide overflow. Entrance, sheet/tag and progress animations run once under
-1.3 seconds including stagger, with no endless floating/particles. Reduced motion skips them.
+Login motion refinement (19 October 2026): clear Vietnamese product copy and a
+separate Google sign-in panel. Use the original concrete promise, “Thi thử trước.
+Tự tin khi thi thật.”, without generic journey slogans. The product illustration
+assembles UI layers, answers, a light sweep, progress and an autosave indicator;
+it is visibly labelled, hidden from assistive technology, and never a real score
+or official exam paper. No interactive fake answers. CSS owns one finite 2.7s
+choreography; replay restarts only the decorative scene via `login-motion.js`.
+Motion is opt-in through no-preference, with a complete static fallback. No
+loop, timers, pointer tracking, new library, or animation on sign-in controls.
+Desktop pairs product/preview with the sign-in panel; mobile shows copy, sign-in,
+then preview. Keep typography readable and settle animated text without transforms.
+Use shared light/dark tokens; Google logo/colors are the documented brand exception
+from Google's official HTML configurator, not a custom monochrome G or yellow CTA.
+Keep public metrics/types in a native disclosure, local-only demo accounts, policy
+links and the theme toggle. Public settings preserve the logo/label structure;
+auth routing and One Tap remain unchanged. Check configured brand color as well
+as defaults in browser previews before release.
 
 - Page navigation creates browser history entries; repeat renders do not. Class
   detail, result, grading, editor/preview parts and settings tabs have direct URLs.
