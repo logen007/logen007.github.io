@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {validateTrial,trialView,isPhone,clockText} from '../src/speaking/model.js';
-import {trialDefaults,adminTrialHtml} from '../src/speaking/admin.js';
+import {trialDefaults,adminTrialHtml,trialDeleteButton} from '../src/speaking/admin.js';
+for(const state of ['scheduled','completed','interrupted','cancelled']){
+ const button=trialDeleteButton({id:'test',title:'A < B',state});
+ assert.match(button,/data-delete="test"/);assert.match(button,/A &lt; B/);
+ assert.doesNotMatch(button,/disabled/);
+}
+for(const state of ['waiting','running','paused','starting','finishing','processing'])assert.match(trialDeleteButton({id:'test',title:'Trial',state}),/disabled/);
+assert.match(trialDeleteButton({id:'test',title:'Trial',state:'completed',archive_state:'uploading'}),/disabled/);
 import {dtzTrialDefaults,DTZ_PHOTO} from '../src/speaking/trials.js';
 import {privatePromptHtml,finishedCopy} from '../src/speaking/phone-view.js';
 import {topbarHtml} from '../src/ui/layout.js';

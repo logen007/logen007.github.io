@@ -9,6 +9,10 @@ import {dtzTrialDefaults,DTZ_PHOTO} from './trials.js';
 
 const date=value=>new Date(value).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short'});
 const archiveLabel=state=>({saved:'Đã lưu trên Google Drive',uploading:'Đang chuyển video lên Drive',queued:'Chờ lưu video lên Drive',retrying:'Chưa lưu lên Drive · sẽ thử lại'}[state]||'Chờ lưu video lên Drive');
+export function trialDeleteButton(session){
+ const disabled=!['scheduled','completed','interrupted','cancelled'].includes(session.state)||session.archive_state==='uploading';
+ return `<button type="button" class="icon-btn speaking-delete" data-delete="${esc(session.id)}" title="${disabled?'Chờ kết thúc ca và xử lý video':'Xóa ca và video trên Drive'}" aria-label="Xóa ca ${esc(session.title)}" ${disabled?'disabled':''}>${iconHtml('trash')}</button>`;
+}
 export const trialDefaults=()=>[
  {title:'Làm quen · bài thử G2G',instruction:'A giới thiệu ngắn trước, sau đó B giới thiệu. Mỗi người hỏi bạn thi một câu. Đây là bài làm quen thao tác, không tính điểm.',a:'Stellen Sie sich kurz vor. Fragen Sie Ihren Partner / Ihre Partnerin nach einem Hobby.',b:'Stellen Sie sich kurz vor. Fragen Sie Ihren Partner / Ihre Partnerin nach dem Alltag.',seconds:60},
  {title:'Trao đổi · bài thử G2G',instruction:'A mở đầu, B phản hồi. Hai bạn cùng nêu ý kiến và hỏi thêm, không chỉ đọc đề. Có thể mở lại Hướng dẫn trong lúc thi.',a:'Sprechen Sie gemeinsam: Welche Vorteile hat das Lernen in einer Gruppe? Nennen Sie ein Beispiel.',b:'Sprechen Sie gemeinsam: Welche Vorteile hat das Lernen allein? Reagieren Sie auf die Meinung Ihres Partners / Ihrer Partnerin.',seconds:120},
@@ -27,9 +31,16 @@ export function adminTrialHtml(){return `<section class="speaking-admin"><header
 export async function mountSpeakingAdmin(root,{user}={}){
  if(!root?.isConnected||user?.role!=='master')return;root.innerHTML=adminTrialHtml();const el=s=>root.querySelector(s);let config,loading=false,timer,signature;
  const error=e=>{if(root.isConnected)el('[data-error]').textContent=e.message;};
+ function removeSession(button){
+  confirmAction('Xóa vĩnh viễn ca thử, nhận xét và mọi video của ca trên Google Drive? Không thể hoàn tác. Bản gốc trên 100ms được giữ theo thời hạn lưu của nhà cung cấp, không thuộc thao tác xóa này.',async()=>{
+   button.disabled=true;
+   try{await speakingApi('sessions/'+encodeURIComponent(button.dataset.delete)+'/delete',{});signature=undefined;clearTimeout(timer);await refresh();}
+   catch(e){error(e);if(button.isConnected)button.disabled=false;}
+  },{danger:true,confirmLabel:'Xóa vĩnh viễn'});
+ }
  async function refresh(){
   if(!root.isConnected||document.hidden||loading)return;loading=true;
-  try{const result=await speakingApi('sessions');if(!root.isConnected)return;const next=JSON.stringify(result.sessions);if(signature!==next){signature=next;el('[data-sessions]').innerHTML=result.sessions.length?result.sessions.map(s=>`<tr><td><strong>${esc(s.title)}</strong><small>${esc(s.mode==='instant'?'Thi ngay · khi cả hai sẵn sàng':date(s.scheduled_at))}</small></td><td>${s.members.map(m=>esc(m.name)).join('<br>')}</td><td>${esc(LAB_STATES[s.state]||s.state)}${s.archive_state?'<small>'+esc(archiveLabel(s.archive_state))+'</small>':''}</td><td><button class="icon-btn" data-open="${esc(s.id)}" title="Mở ca thử" aria-label="Mở ${esc(s.title)}">${iconHtml('preview')}</button></td></tr>`).join(''):'<tr><td colspan="4">Chưa có ca thử. Bấm “Xếp ca thử” để bắt đầu.</td></tr>';el('[data-sessions]').querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openSession(b.dataset.open).catch(error));}}
+  try{const result=await speakingApi('sessions');if(!root.isConnected)return;const next=JSON.stringify(result.sessions);if(signature!==next){signature=next;el('[data-sessions]').innerHTML=result.sessions.length?result.sessions.map(s=>`<tr><td><strong>${esc(s.title)}</strong><small>${esc(s.mode==='instant'?'Thi ngay · khi cả hai sẵn sàng':date(s.scheduled_at))}</small></td><td>${s.members.map(m=>esc(m.name)).join('<br>')}</td><td>${esc(LAB_STATES[s.state]||s.state)}${s.archive_state?'<small>'+esc(archiveLabel(s.archive_state))+'</small>':''}</td><td><div class="speaking-session-actions"><button class="icon-btn" data-open="${esc(s.id)}" title="Mở ca thử" aria-label="Mở ${esc(s.title)}">${iconHtml('preview')}</button>${trialDeleteButton(s)}</div></td></tr>`).join(''):'<tr><td colspan="4">Chưa có ca thử. Bấm “Xếp ca thử” để bắt đầu.</td></tr>';el('[data-sessions]').querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openSession(b.dataset.open).catch(error));el('[data-sessions]').querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>removeSession(b));}}
   catch(e){error(e);}finally{loading=false;if(root.isConnected)timer=setTimeout(refresh,15000);}
  }
  async function settings(){

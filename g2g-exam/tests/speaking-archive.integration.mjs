@@ -20,14 +20,27 @@ const hooks=registerHooks({resolve(specifier,ctx,next){
 }});
 const originalFetch=globalThis.fetch,files=new Map(),binary=Buffer.from('0000ftyp-real-streamed-test-video'),md5=crypto.createHash('md5').update(binary).digest('hex');
 let generated=0,downloads=0,uploads=0,failAfterUpload=false,corrupt=false,deny=false,uploadMetadata;
+let allowDeletes=false,failDeleteId='';
 globalThis.fetch=async(input,options={})=>{
  const url=String(input),method=options.method||'GET';
- assert.notEqual(method,'DELETE','Source and Drive recordings must never be deleted');
+ if(method==='DELETE')assert.ok(allowDeletes,'Transfer/retry paths must never delete recordings');
  if(url==='https://storage.test/private-recording.mp4'){downloads++;return new Response(binary,{headers:{'content-length':String(binary.length),'content-type':'video/mp4'}});}
  assert.equal(options.headers.Authorization,'Bearer private-token');
  if(deny)return new Response('',{status:403});
+ if(method==='DELETE'){
+  const id=url.split('/files/')[1];
+  if(id===failDeleteId)return new Response('',{status:503});
+  const existed=files.delete(id);return new Response(null,{status:existed?204:404});
+ }
  if(url.includes('/files/generateIds'))return Response.json({ids:['file'+(++generated)]});
- if(url.includes('/files?q='))return Response.json({files:[{id:'video-folder'}]});
+ if(url.includes('/files?q=')){
+  const q=new URL(url).searchParams.get('q');
+  if(q.includes('speakingSession')){
+   const session=q.match(/value='([^']+)'/)[1];
+   return Response.json({files:[...files.values()].filter(file=>file.appProperties?.speakingSession===session)});
+  }
+  return Response.json({files:[{id:'video-folder'}]});
+ }
  if(url.includes('/upload/drive/v3/files?')){uploadMetadata=JSON.parse(options.body);assert.deepEqual(uploadMetadata.parents,['video-folder']);return new Response(null,{headers:{location:'https://www.googleapis.com/upload-session'}});}
  if(url.endsWith('/upload-session')){
   uploads++;const chunks=[];for await(const chunk of options.body)chunks.push(chunk);assert.deepEqual(Buffer.concat(chunks),binary);
@@ -67,6 +80,29 @@ try{
  deny=true;await runSpeakingArchiveOnce();assert.equal((await row('three')).driveArchive.state,'retrying');assert.equal((await row('three')).state,'completed','Drive failure cannot change exam outcome');deny=false;
  const video=await app.inject({method:'GET',url:'/video',headers:{range:'bytes=0-3'}});assert.equal(video.statusCode,206);assert.equal(video.headers['content-range'],'bytes 0-3/'+binary.length);assert.deepEqual(video.rawPayload,binary.subarray(0,4));assert.equal(video.headers['cache-control'],'private, no-store');
  assert.equal((await app.inject({method:'GET',url:'/video',headers:{range:'invalid'}})).statusCode,416);
+ allowDeletes=true;
+ for(const user of ['student','other-teacher'])assert.equal((await send('POST','sessions/one/delete',user)).statusCode,403);
+ assert.equal((await app.inject({method:'POST',url:'/api/speaking-lab/sessions/one/delete',headers:{'test-user':'admin',origin:'https://evil.test'}})).statusCode,403);
+ await query(`INSERT INTO speaking_lab_sessions(id,owner_id,data) VALUES('active','owner','{"state":"running"}'),('uploading','owner','{"state":"completed","driveArchive":{"state":"uploading"}}'),('scheduled','owner','{"state":"scheduled"}')`);
+ assert.equal((await send('POST','sessions/active/delete','admin')).statusCode,409);
+ assert.equal((await send('POST','sessions/uploading/delete','admin')).statusCode,409);
+ deny=true;assert.equal((await send('POST','sessions/scheduled/delete','admin')).statusCode,200,'Unstarted trial needs no Drive connection');
+ assert.equal((await send('POST','sessions/one/delete','admin')).statusCode,503,'Drive failure keeps the session');deny=false;
+ assert.ok(await row('one'));
+ await query(`INSERT INTO speaking_lab_sessions(id,owner_id,data) VALUES('shared','owner',$1::jsonb)`,[JSON.stringify({state:'completed',driveArchive:{fileId:'file1'}})]);
+ assert.equal((await send('POST','sessions/one/delete','admin')).statusCode,409,'Shared file references are not destroyed');
+ await query("DELETE FROM speaking_lab_sessions WHERE id='shared'");
+ files.set('file91',{id:'file91',appProperties:{speakingSession:'one'}});
+ files.set('file92',{id:'file92',appProperties:{speakingSession:'unrelated'}});
+ failDeleteId='file91';assert.equal((await send('POST','sessions/one/delete','admin')).statusCode,503);
+ assert.ok(await row('one'),'Partial provider failure retains metadata for an idempotent retry');
+ failDeleteId='';assert.equal((await send('POST','sessions/one/delete','admin')).statusCode,200);
+ assert.equal((await query("SELECT id FROM speaking_lab_sessions WHERE id='one'")).rows.length,0);
+ assert.ok(!files.has('file1')&&!files.has('file91'),'Original and copied Drive files belonging to this trial are removed');
+ assert.ok(files.has('file92')&&files.has('file2'),'Other recordings are untouched');
+ files.set('file2',{...files.get('file2'),appProperties:{speakingSession:'unrelated'}});
+ assert.equal((await send('POST','sessions/two/delete','admin')).statusCode,409,'Mismatched Drive ownership blocks deletion');
+ assert.ok(await row('two'));
  const after=(await fs.readdir(tmpdir())).filter(n=>n.startsWith('g2g-speaking-video-'));assert.deepEqual(after.sort(),before.sort(),'Temporary video files are cleaned after success and failure');
  console.log('Speaking archive: SQL queue, streamed upload, checksums, idempotent retry, cleanup, permissions, state isolation and range playback passed.');
 }finally{await app.close();await db.close();hooks.deregister();globalThis.fetch=originalFetch;delete globalThis.__archiveTest;}

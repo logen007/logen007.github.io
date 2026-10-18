@@ -3,7 +3,7 @@ import {query,withTx,appError} from './db.js';
 import {requireRole} from './auth.js';
 import {canManage,canReview} from '../../src/speaking/model.js';
 import {getBackupDriveAccess} from './backup-google.js';
-import {archiveRecording,generateRecordingFileId,driveJson,cleanupAbandonedRecordingTemps} from './speaking-drive.js';
+import {archiveRecording,generateRecordingFileId,driveJson,cleanupAbandonedRecordingTemps,deleteDriveRecordings} from './speaking-drive.js';
 
 async function claim(){
  return withTx(async c=>{
@@ -41,6 +41,23 @@ export function startSpeakingArchiveWorker(app){
  const timer=setInterval(tick,10000);timer.unref();cleanupAbandonedRecordingTemps().catch(()=>{}).finally(tick);app.addHook('onClose',async()=>clearInterval(timer));
 }
 export function registerSpeakingArchiveRoutes(app){
+ app.post('/api/speaking-lab/sessions/:id/delete',async request=>{
+  if(request.headers.origin!==new URL(process.env.PUBLIC_URL||'http://localhost:8080').origin)throw appError(403,'Nguồn yêu cầu không hợp lệ.');
+  await requireRole(request,'master');
+  return withTx(async c=>{
+   const result=await c.query('SELECT * FROM speaking_lab_sessions WHERE id=$1 FOR UPDATE',[request.params.id]),row=result.rows[0];
+   if(!row)throw appError(404,'Không tìm thấy ca thử.');
+   const d=row.data,archive=d.driveArchive||{};
+   if(!['completed','cancelled','interrupted'].includes(d.state)&&!(d.state==='scheduled'&&!d.roomId))throw appError(409,'Hãy kết thúc ca và chờ xử lý bản ghi xong trước khi xóa.');
+   if(archive.state==='uploading')throw appError(409,'Video đang chuyển lên Drive. Hãy chờ chuyển xong trước khi xóa.');
+   if(d.assetId||archive.fileId)await deleteDriveRecordings(row.id,archive,async fileIds=>{
+    const shared=await c.query(`SELECT id FROM speaking_lab_sessions WHERE id<>$1 AND data->'driveArchive'->>'fileId'=ANY($2::text[]) LIMIT 1`,[row.id,fileIds]);
+    if(shared.rows.length)throw appError(409,'File đang được ca khác tham chiếu. Chưa xóa dữ liệu.');
+   });
+   await c.query('DELETE FROM speaking_lab_sessions WHERE id=$1',[row.id]);
+   return {ok:true};
+  });
+ });
  app.get('/api/speaking-lab/archive-status',async request=>{
   await requireRole(request,'master');
   try{const access=await getBackupDriveAccess(),folder=await driveJson(access,'/files/'+encodeURIComponent(access.folderId)+'?fields=id,trashed');return {connected:!!folder&&!folder.trashed};}catch{return {connected:false};}

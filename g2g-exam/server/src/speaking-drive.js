@@ -29,6 +29,31 @@ export async function generateRecordingFileId(){
  if(!result?.ids?.[0])throw appError(503,'Không tạo được mã video trên Drive.');
  return result.ids[0];
 }
+// Explicit admin deletion only; transfer/retry paths must never call this.
+export async function deleteDriveRecordings(sessionId,archive={},checkReferences=async()=>{}){
+ const access=await getBackupDriveAccess(),files=new Map();
+ if(archive.fileId){
+  const file=await driveJson(access,'/files/'+encodeURIComponent(archive.fileId)+'?fields=id,appProperties');
+  if(file)files.set(file.id,file);
+ }
+ const q="appProperties has { key='speakingSession' and value='"+sessionId.replace(/'/g,"\\'")+"' }";
+ let pageToken;
+ do{
+  const result=await driveJson(access,'/files?q='+encodeURIComponent(q)+'&fields=nextPageToken,files(id,appProperties)&pageSize=100'+(pageToken?'&pageToken='+encodeURIComponent(pageToken):''));
+  if(!result)throw appError(503,'Chưa kiểm tra được các bản ghi trên Drive.');
+  for(const file of result.files||[])files.set(file.id,file);
+  pageToken=result.nextPageToken;
+ }while(pageToken);
+ // Verify every target before deleting any file; never trust a client-supplied ID.
+ for(const file of files.values())if(file.appProperties?.speakingSession!==sessionId)throw appError(409,'File Drive không thuộc ca này. Chưa xóa dữ liệu.');
+ await checkReferences([...files.keys()]);
+ for(const file of files.values()){
+  const response=await fetch(API+'/files/'+encodeURIComponent(file.id),{method:'DELETE',headers:{Authorization:'Bearer '+access.token},signal:AbortSignal.timeout(30000)});
+  if(!response.ok&&response.status!==404)throw appError(503,'Chưa xóa hết video trên Drive. Ca vẫn được giữ để thử lại.');
+  await response.body?.cancel();
+ }
+ return files.size;
+}
 function verified(file,job){return file&&!file.trashed&&file.mimeType==='video/mp4'&&file.appProperties?.speakingSession===job.id&&Number(file.size)===job.archive.size&&file.md5Checksum===job.archive.md5;}
 async function recordingFolder(access){
  const q="'"+access.folderId.replace(/'/g,"\\'")+"' in parents and trashed = false and mimeType = 'application/vnd.google-apps.folder' and name = 'Video thi nói'";

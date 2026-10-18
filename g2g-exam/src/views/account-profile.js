@@ -10,7 +10,7 @@ export function accountProfileHtml(user){
   const initials=String(user.name||'G2G').trim().split(/\s+/).slice(-2).map(word=>word[0]).join('').toUpperCase();
   const avatar=user.picture?`<img src="${esc(user.picture)}" alt="" referrerpolicy="no-referrer">`:esc(initials);
   return `<form class="profile-form account-profile-form">
-    <div class="account-profile-identity"><span class="account-profile-avatar" aria-hidden="true">${avatar}</span><div><span class="account-profile-email-label">Email · chỉ xem</span><p class="account-profile-email">${esc(user.email||'Chưa có email')}</p></div></div>
+    <div class="account-profile-identity"><span class="account-profile-avatar" aria-hidden="true">${avatar}</span><div><span class="account-profile-email-label">Email</span><p class="account-profile-email">${esc(user.email||'Chưa có email')}</p></div></div>
     <div class="account-profile-field"><label>Họ và tên<input name="name" required maxlength="120" autocomplete="name" ${user.role==='master'?'':'aria-describedby="accountNameHint"'} value="${esc(user.name)}"></label>${user.role==='master'?'':'<p id="accountNameHint" class="account-profile-hint">Đổi tên tối đa 1 lần mỗi 30 ngày.</p>'}</div>
     ${user.role==='student'?'<div class="account-profile-field"><label>Mã xác nhận lớp <span class="account-profile-optional">Tùy chọn</span><input name="code" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters" placeholder="Mã gồm 5 ký tự"></label></div>':''}
     <p data-error role="alert"></p><button type="submit" class="nut chinh">${iconHtml('grading')}<span>Lưu thay đổi</span></button>

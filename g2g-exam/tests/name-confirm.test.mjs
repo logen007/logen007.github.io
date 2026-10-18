@@ -6,7 +6,8 @@ import {accountProfileHtml} from '../src/views/account-profile.js';
 for(const role of ['master','teacher','student']){
   const html=accountProfileHtml({role,name:'An <Test>',email:'an+<test>@example.com'});
   assert.match(html,/an\+&lt;test&gt;@example.com/);
-  assert.match(html,/Email · chỉ xem/);
+  assert.match(html,/account-profile-email-label">Email<\/span>/);
+  assert.doesNotMatch(html,/chỉ xem/);
   assert.doesNotMatch(html,/name="email"|type="email"|contenteditable/);
   assert.equal(html.includes('name="code"'),role==='student');
   assert.match(html,/name="name"/);

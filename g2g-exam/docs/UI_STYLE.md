@@ -815,6 +815,12 @@ states have one concise explanation. Idle AI polling runs once per minute.
 ## Speaking trial (16 October 2026)
 
 Only admin navigation includes the Thi Nói thử nghiệm tab (17 October 2026).
+Admin session rows include a compact trash action with an explicit destructive
+confirmation. Delete only unstarted or terminal trials, never an active trial or
+an in-flight Drive upload. Permanently remove its Drive files after ownership
+checks, then remove the session/feedback row. Provider failure retains the row
+for retry; do not touch other sessions or backup archives. Explain that 100ms
+source retention is separate and its API does not support permanent room deletion.
 Management, scheduling, account search, recording review and archive controls
 require admin on the server as well as in direct-link routing. Assigned candidates
 retain their separate phone entry and room access. Reuse

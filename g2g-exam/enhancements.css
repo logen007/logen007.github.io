@@ -126,6 +126,8 @@
 .speaking-label{display:inline-block;font-size:12px;font-weight:500;color:var(--phu);vertical-align:middle}
 .speaking-note{color:var(--phu);font-size:13px;line-height:1.6;margin:0}
 .speaking-table{min-width:640px}
+.speaking-session-actions{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.speaking-delete:not(:disabled){color:var(--do)}
 .speaking-table td small{display:block;color:var(--phu);margin-top:4px}
 .speaking-dialog{width:min(720px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto}
 .speaking-form{display:grid;gap:20px;min-width:0}
