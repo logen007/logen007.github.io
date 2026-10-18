@@ -19,7 +19,7 @@ export function loginHtml({mode,general=currentPublicSettings().general||{}}){
       <section class="landing-product" aria-labelledby="landing-title">
         <figure class="landing-visual" aria-label="Minh họa trải nghiệm luyện thi, không phải kết quả thực tế">
           <div class="landing-demo" data-login-scene aria-hidden="true">
-            <div class="landing-demo-screen"><div class="landing-demo-top"><span class="landing-demo-identity">${iconHtml('exams')} <span data-brand-name>${esc(name)}</span></span><span class="landing-demo-badge">Tiếng Đức</span></div>${loginDemoHtml()}</div>
+            <div class="landing-demo-stack"><div class="landing-demo-screen"><div class="landing-demo-top"><span class="landing-demo-identity">${iconHtml('exams')} <span data-brand-name>${esc(name)}</span></span><span class="landing-demo-badge">Tiếng Đức</span></div>${loginDemoHtml()}</div></div>
           </div>
         </figure>
       </section>

@@ -154,6 +154,10 @@ unsupported animation show only question one. No page layout/CTA motion.
 Accessibility tradeoff: the owner explicitly removed the stop control despite
 continuous autoplay. OS reduced motion is retained, but this is not a claim of
 WCAG 2.2.2 pause/stop/hide compliance; do not call it a full accessibility pass.
+Owner refinement in 1.3.224: remove the redundant outer rounded frame and fill.
+Two neutral paper sheets may sit slightly tilted behind the actual screen;
+they are static, use shared surfaces/borders and follow the screen's intrinsic
+height. Do not restore looping backdrops or tilt/scale the question text.
 Use shared light/dark tokens; Google logo/colors are the documented brand exception
 from Google's official HTML configurator, not a custom monochrome G or yellow CTA.
 Correction requested 19 October: the public exam types and metrics remain visible,
