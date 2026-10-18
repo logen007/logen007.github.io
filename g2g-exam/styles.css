@@ -839,12 +839,12 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
   .landing-copy h1 br { display:block; }
   .landing-copy>p { max-width:400px; font-size:15px; }
   .landing-signin { order:1; margin-top:24px; }
-  .landing-login { min-height:0; padding:28px 24px; border-radius:24px; }
-  .landing-login-heading { gap:12px; margin-bottom:24px; }
-  .landing-login-symbol { width:40px; height:40px; border-radius:12px; }
-  .landing-login-symbol .ui-icon { width:24px; height:24px; }
-  .landing-login-divider { margin:20px 0 16px; }
-  .landing-login h2 { font-size:22px; }
+  .landing-login { min-height:0; padding:0; border:0; border-radius:0; background:transparent; overflow:visible; }
+  .landing-login::before { display:none; }
+  .landing-login-heading,.landing-login-divider,.landing-login-note { display:none; }
+  .landing .landing-cta,:root[data-color-mode="dark"] .landing .landing-cta { padding-block:10px; background:var(--brand-primary); color:var(--brand-on-primary); border-color:var(--brand-primary); }
+  .landing .landing-cta:hover:not(:disabled),:root[data-color-mode="dark"] .landing .landing-cta:hover:not(:disabled) { background:var(--brand-hover,var(--brand-primary)); }
+  .landing .landing-google-mark { width:32px; height:32px; padding:6px; border-radius:50%; background:#fff; }
   .landing-policy { padding:16px 0; }
   .landing-product { order:2; margin:8px 0 16px; }
   .landing-visual { height:auto; padding-bottom:0; }

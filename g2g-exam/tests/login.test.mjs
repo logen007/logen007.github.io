@@ -80,5 +80,9 @@ assert.match(css,/\.landing-copy \{[^}]*grid-column:1\/-1; text-align:center/,'I
 assert.match(css,/\.landing-demo-screen \{[^}]*min-height:332px/,'The screen must grow with wrapped question text');
 assert.doesNotMatch(css.match(/\.landing-demo-screen \{[^}]*\}/)?.[0]||'',/(?<!-)\bheight:/,'No fixed or percentage height can crop the illustration');
 assert.match(css,/\.landing-login \{[^}]*background:var\(--mat\); color:var\(--chu\)/,'Sign-in follows the active light/dark surface rather than a permanent inverse card');
+const mobile=css.slice(css.indexOf('.landing {')).match(/@media\(max-width:760px\) \{([\s\S]*?)\n\}/)?.[1]||'';
+assert.match(mobile,/\.landing-login \{[^}]*padding:0;[^}]*border:0;[^}]*background:transparent/,'Phone sign-in is a button, not a framed card');
+assert.match(mobile,/\.landing-login-heading,\.landing-login-divider,\.landing-login-note \{ display:none; \}/,'Only Google and the free label remain inside the production mobile sign-in block');
+assert.match(mobile,/\.landing-cta \{[^}]*background:var\(--brand-primary\); color:var\(--brand-on-primary\)/,'Mobile CTA uses the contrast-paired brand primary');
 assert.doesNotMatch(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/bindLoginMotion|login-motion\.js/,'CSS-only scenes have no timer/listener lifecycle in app');
 console.log('Login: real brand, visible catalog, six question formats, synchronized loop/steps, no removed labels/control, static reduced-motion fallback and active-theme surfaces passed.');
