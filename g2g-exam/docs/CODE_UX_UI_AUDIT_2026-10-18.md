@@ -536,3 +536,49 @@ browser rendering, physical keyboard or screen-reader certification. The prior
 Required quality/CI checks gate release; public post-deploy probe only proves
 HTTP health/database flag/version. No production business data changed.
 Rollback: normal PR revert, no schema or data migration.
+
+## Login redesign: 19 October 2026 / 1.3.219
+
+Owner requested a professional, modern, impressive animated login page. Replaced
+the old landing presentation with an editorial hero, compact G2G Exam identity,
+one explicit Google action, personal light/dark toggle, illustrated German
+practice sheet and compact live catalog/activity section. Removed the unsupported
+ranking-style marketing sentence. Illustration is explicitly not a real result;
+no fabricated user counts or score testimonials. German illustration has lang=de.
+
+View owner is src/views/login.js, re-exported through the existing student-view
+contract. Existing Google handler, One Tap, public metrics, local-only demo
+identities and policy routes are retained. Login theme button calls the existing
+color-mode owner. Public settings now update the Google caption inside its
+dedicated span, preserving the decorative mark/arrow and disabled-state policy.
+No new authentication flow, dependency, external image or animation library.
+The design-system/lean-build skills guided reuse of theme tokens and a bounded
+login-only implementation. Existing landing rules were replaced in place;
+no new global override stylesheet or unrelated exam/business edits.
+
+Motion: copy enters, sheet and note settle, progress draws once; final stagger
+finishes within 1.3s. Reduced motion removes those animations; no infinite loops.
+Animation iteration count read back as 1 in the real browser. The CTA is 56px.
+Browser keyboard check: Tab reaches policy links and Shift+Tab returns to the
+Google CTA with a solid focus outline. No real OAuth submission was attempted.
+
+Built local Fastify + isolated SQL checked at actual 320/390/768/1024/1440px,
+both modes: no page-wide overflow; Google caption and mark remain mounted after
+public configuration settles. Mobile CTA bottom measured below 468px at 320px
+and 444px at 390px (900px viewport height), before the illustration. Counts are
+synthetic fixture values only. Saved screenshots outside Git: audit-evidence/
+login-desktop-light-1.3.219.jpg, login-desktop-dark-1.3.219.jpg and
+login-mobile-dark-1.3.219.jpg. Physical iPhone/Safari, screen readers and actual
+OS reduced-motion emulation not certified; reduced-motion CSS contract tested.
+
+Tests: login renderer/action/hooks, public enabled/disabled caption behavior and
+decorative-child preservation, local demo isolation, policy links, motion/focus
+contracts. Imported into the existing preview suite so CI runs it. Existing
+preview/legal/theme tests pass. Local HIGH 36/36 on Node 26.5; dependency audits
+zero vulnerabilities. Initial preview was started before compressed build assets
+finished and failed its Brotli assertion; restarting after the completed build
+passed. This was not hidden or counted as a successful initial run.
+
+Required CI gates exact candidate before merge. Version 1.3.219; normal release
+authorized. No production data, scoring or experimental-speaking changes.
+Rollback via ordinary PR revert; public post-deploy proof is health/version only.
