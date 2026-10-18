@@ -379,3 +379,33 @@ from active audit work. Browser proof and final gate/release status follow below
   No conflict was shown. Screenshots outside Git: audit-evidence/
   answer-ack-recovery.jpg and answer-ack-server-proof.jpg. This is controlled
   loopback connection failure, not a real mobile-network outage.
+
+## Draft cleanup ordering: 1.3.215
+
+Reproduced with the actual ApiRepository method and a delayed write: calling
+closeExamDraft stopped the queue but closed its store/released the editing lock
+while the network write was still pending. Its later acknowledgement can still
+persist through ExamOutbox. The new regression failed at closed=1 versus0 on
+baseline. This is a lifecycle race; it is not evidence that a real student's
+answer was lost. The prior durable in-flight recovery protection remains.
+
+The existing cleanup owner now waits for both the current persisted snapshot
+and active drain promise to settle (success or failure), then closes its store
+and releases its captured lock. The queue is detached/stopped immediately, so no
+new background batches are scheduled. Existing bounded API request timeouts
+remain; no new network wait, scoring, deadline or sign-out policy is introduced.
+No local database version or server schema migration.
+
+- test:sync passed with delayed success/failure, immediate queue stop, delayed
+  close/lock release and repeated-cleanup exactly-once assertions.
+- Added a real ExamOutbox+ApiRepository combined regression with a guarded store:
+  a delayed send finishes after cleanup begins, persists the empty acknowledged
+  queue, then closes the store and releases the lock. No write to a closed store.
+- Existing outbox recovery and performance tests passed. Local HIGH passed all
+  36 checks on Node 26.5, with zero dependency audit vulnerabilities. Required CI
+  must pass the final candidate before merge. No browser UI change was made; these
+  are controlled lifecycle/storage tests, not physical tab-close certification.
+
+Speaking remains excluded. No production account was logged out and no live
+attempt was changed. Rollback is a normal PR revert; do not delete drafts or
+restore production data. Public post-deploy proof remains health/version only.
