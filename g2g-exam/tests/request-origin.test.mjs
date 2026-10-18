@@ -1,11 +1,18 @@
 import assert from 'node:assert/strict';
 import Fastify from '../server/node_modules/fastify/fastify.js';
+import cors from '../server/node_modules/@fastify/cors/index.js';
 import {requestOriginPolicy} from '../server/src/request-origin.js';
 const policy=requestOriginPolicy({production:true,publicUrl:'https://exam.example.test/app',origins:' https://staff.example.test '});
 const app=Fastify();let writes=0;
 app.addHook('onRequest',async request=>policy.guard(request));
+await app.register(cors,{origin:(origin,cb)=>cb(null,policy.allows(origin)),credentials:true});
 app.post('/write',async()=>{writes++;return {ok:true};});
 try{
+  const preflight=origin=>app.inject({method:'OPTIONS',url:'/write',headers:{origin,'access-control-request-method':'POST','access-control-request-headers':'content-type'}});
+  const trusted=await preflight('https://exam.example.test');
+  assert.equal(trusted.statusCode,204);assert.equal(trusted.headers['access-control-allow-origin'],'https://exam.example.test');
+  assert.equal(trusted.headers['access-control-allow-credentials'],'true');
+  assert.equal((await preflight('https://other.example.test')).headers['access-control-allow-origin'],undefined);
   for(const origin of ['https://evil.invalid','https://other.example.test','null']){
     assert.equal(policy.allows(origin),false);
     for(const type of ['application/json','text/plain','application/x-www-form-urlencoded']){

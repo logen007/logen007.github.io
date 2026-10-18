@@ -151,3 +151,19 @@ that a generic guideline proves a production vulnerability.
   not an exhaustive visual regression suite or independent accessibility review.
 - CI Node22 Ubuntu and PR metadata are recorded on the candidate PR; read its
   current status rather than inferring completion from this local report.
+
+### Release preparation 1.3.210
+
+Owner requested continuation after the audit. Read-only public checks on
+18 October: health ok/database true, running version 1.3.209 and publicUrl
+https://exam.g2gcareer.com. OPTIONS preflight on saveAnswers returned204 with
+credentialed allow-origin for that canonical origin. A sibling test origin and
+an external test origin returned500 without CORS permission under the old code.
+This confirms the canonical origin is already explicitly permitted by existing
+deployment configuration; the candidate retains it. No business write, login
+or secret read was performed. Exact private environment values and any other
+intended entry origins were not inspected. Added real Fastify+CORS preflight
+regression (trusted204/credentials, untrusted no allow-origin) before release.
+Version bumped to1.3.210; earlier no-version/no-deploy notes describe the initial
+audit-only stage. PR checks must pass this final candidate before merge. Public
+health/version will be checked after deployment; no SSH/timer proof is claimed.
