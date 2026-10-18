@@ -44,7 +44,7 @@ await assert.rejects(verifyRelease('https://example.test','latest',{fetchImpl:fi
 const ci=readFileSync(new URL('../../.github/workflows/g2g-check.yml',import.meta.url),'utf8');
 const bootstrap=readFileSync(new URL('../../README.md',import.meta.url),'utf8');
 for(const target of ['g2g-exam/AGENTS.md','G2G-CONNECTIONS.local.md','docs/ENGINEERING.md','docs/QUALITY_GATES.md','không merge main'])assert.ok(bootstrap.includes(target));
-assert.doesNotMatch(bootstrap,/root@\d|BEGIN (?:OPENSSH|RSA) PRIVATE KEY|198\.252\.99\.114/,'Public bootstrap must not publish private connection metadata');
+assert.doesNotMatch(bootstrap,/root@\d|BEGIN (?:OPENSSH|RSA) PRIVATE KEY|(?:\d{1,3}\.){3}\d{1,3}/,'Public bootstrap must not publish private connection metadata');
 assert.match(ci,/pull_request:/);assert.match(ci,/contents: read/);assert.match(ci,/persist-credentials: false/);
 assert.ok(!ci.includes('pull_request_target'),'Untrusted PR code must not run with privileged trigger');
 assert.match(ci,/npm run test:workflow/);
