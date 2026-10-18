@@ -294,3 +294,40 @@ not browser permission prompts, physical camera capture or an iPhone call.
 Remaining physical iOS and live AI/Drive/SMTP/100ms checks require a separately
 authorized real-device/service session; the earlier local-only browser permission
 does not authorize those external actions or disclosure of recordings.
+
+## New-image signature follow-up: 1.3.213
+
+Owner explicitly excluded speaking from further work. Continued the upload-policy
+follow-up instead, using isolated SQL/Fastify, no production uploads or deletions.
+Reproduced HTML declared as image/png receiving HTTP200; the new HTTP assertion
+expected400 and failed on baseline. Earlier extension/nosniff protections remain;
+this result alone does not prove script execution in a victim browser.
+
+The existing media-upload-policy owner now checks a bounded 4096-byte header
+against the declared supported raster type: JPEG, PNG, GIF, WebP, BMP, ICO and
+standard AVIF ftyp brands. Upload auth, size limits, generated extensions and
+audio compatibility are unchanged. A mismatch throws400 with conversion guidance.
+New rejected files are removed inside the existing media-mutation barrier, as are
+truncated/oversized files. No existing file is renamed, scanned or deleted.
+
+- New pure header tests cover every supported MIME alias, normalized MIME,
+  HTML/SVG spoofing, wrong MIME, truncated PNG, zero dimensions, high-bit marker
+  spoofing and bounded malformed AVIF boxes. These fixtures prove header policy,
+  not complete image decoding. Imported by R2 routes so CI executes them.
+- Real multipart/Fastify/SQL regression: genuine PNG payload with a .html name
+  still gets a generated .png URL; HTML, empty/truncated PNG and PNG declared
+  JPEG return400, leaving exactly the pre-existing upload directory contents.
+  This test passed after the fix. Student upload remains forbidden.
+- Focused header tests, test:r2 and final HIGH36/36 passed on macOS Node26.5;
+  web/backend dependency audits reported0 vulnerabilities at execution time.
+  Required CI must pass the exact committed head before merge.
+- Header markers cross-checked with the official [WebP container specification](https://developers.google.com/speed/webp/docs/riff_container)
+  and [AVIF specification](https://aomediacodec.github.io/av1-avif/latest-approved.html).
+
+Limit: signatures are not a full decoder, CRC checker, re-encoder or malware scan;
+a deliberately crafted file with a matching header can still pass. AVIF probing
+is bounded to its initial4096 bytes; unusual newer container variants may require
+conversion to JPG/PNG. Do not claim all invalid images are rejected. Full decode
+and audio-content validation remain separate policy/compatibility work. No new
+runtime dependency, schema change or exam-rule change. Roll back by reverting
+this PR normally; previously stored assets are untouched.

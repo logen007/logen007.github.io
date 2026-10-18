@@ -6,7 +6,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {registerHooks} from 'node:module';
-import {gunzipSync} from 'node:zlib';
+import {gunzipSync,inflateSync} from 'node:zlib';
 import {randomUUID} from 'node:crypto';
 import Fastify from '../server/node_modules/fastify/fastify.js';
 import {sign} from '../server/node_modules/@fastify/cookie/signer.js';
@@ -79,15 +79,23 @@ try{
   await query("INSERT INTO attempts(id,student_id,exam_id,status,attempt_no,public_data,private_data) SELECT 'a'||i,'s'||i,'e','in_progress',1,jsonb_build_object('studentId','s'||i,'examId','e','status','in_progress','answers',jsonb_build_object('q',0),'startedAt',$1::text,'examDeadlineMs',$2::numeric),$3 FROM generate_series(0,199) i",[new Date().toISOString(),deadline,JSON.stringify({examSnapshot:{...exam,questionSnapshot:[question]}})]);
   ({app}=await import('../server/src/index.js'));
   const cookie=id=>'g2g_session='+encodeURIComponent(sign(id,secret));
-  const upload=async(route,type,filename,user='admin')=>{
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNg+A8AAQIBAEK+vGgAAAAASUVORK5CYII=','base64');
+  assert.deepEqual(inflateSync(png.subarray(41,52)),Buffer.from([0,0,255]),'Positive PNG fixture has a decodable scanline');
+  const upload=async(route,type,filename,user='admin',bytes=type==='image/png'?png:Buffer.from('synthetic bytes'))=>{
     const boundary='synthetic-boundary';
-    return app.inject({method:'POST',url:'/api/media/'+route,headers:{cookie:cookie(user),'content-type':'multipart/form-data; boundary='+boundary},payload:Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${type}\r\n\r\nsynthetic bytes\r\n--${boundary}--\r\n`)});
+    return app.inject({method:'POST',url:'/api/media/'+route,headers:{cookie:cookie(user),'content-type':'multipart/form-data; boundary='+boundary},payload:Buffer.concat([Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${type}\r\n\r\n`),bytes,Buffer.from(`\r\n--${boundary}--\r\n`)])});
   };
   const image=await upload('image','image/png','payload.html');assert.equal(image.statusCode,200);assert.match(image.json().url,/\.png$/);
   const audio=await upload('audio','audio/mpeg','payload.html');assert.equal(audio.statusCode,200);assert.match(audio.json().url,/\.mp3$/);
   assert.equal((await upload('image','image/svg+xml','payload.svg')).statusCode,400);
   assert.equal((await upload('image','text/html','payload.png')).statusCode,400);
   assert.equal((await upload('image','image/png','safe.png','s0')).statusCode,403);
+  const beforeInvalid=await fs.readdir(process.env.UPLOAD_DIR);
+  for(const bytes of [Buffer.from('<!doctype html><script>synthetic()</script>'),Buffer.alloc(0),png.subarray(0,5)]){
+    assert.equal((await upload('image','image/png','spoof.png','admin',bytes)).statusCode,400);
+  }
+  assert.equal((await upload('image','image/jpeg','mismatch.jpg','admin',png)).statusCode,400);
+  assert.deepEqual(await fs.readdir(process.env.UPLOAD_DIR),beforeInvalid,'Rejected new uploads leave no files behind');
   const media=await app.inject({url:image.json().url,headers:{cookie:cookie('admin')}});
   assert.equal(media.headers['x-content-type-options'],'nosniff');assert.match(media.headers['content-type'],/^image\/png/);
   const html=await app.inject('/adm');assert.equal(html.statusCode,200);assert.ok(html.body.includes('/assets/app-'));assert.ok(html.headers['cache-control'].includes('no-store'));

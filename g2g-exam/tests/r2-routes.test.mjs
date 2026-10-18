@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './media-upload-policy.test.mjs';
 import {createRequire} from 'node:module';
 import fs from 'node:fs/promises';
 import os from 'node:os';

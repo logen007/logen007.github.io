@@ -25,7 +25,7 @@ import {startTrashGarbageCollector} from './trash-gc.js';
 import {submitExpiredAttempts} from './actions/attempts.js';
 import {r2Settings} from './r2-settings.js';
 import {registerMediaDeliveryRoutes} from './media-routes.js';
-import {uploadExtension} from './media-upload-policy.js';
+import {uploadExtension,imageHeaderMatches} from './media-upload-policy.js';
 import {requestOriginPolicy} from './request-origin.js';
 import {APP_VERSION} from '../../src/release.js';
 import {registerBackupGoogleRoutes,downloadBackupFile} from './backup-google.js';
@@ -151,8 +151,15 @@ async function saveUpload(request,{kind,maxBytes,mimePrefix,defaultExt},user=nul
   const dest=path.join(uploadDir,name);let size=0;
   part.file.on('data',chunk=>{size+=chunk.length;if(size>maxBytes)part.file.destroy(appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`));});
   await withMediaMutation(async()=>{
-    try{await pipeline(part.file,createWriteStream(dest,{flags:'wx'}));}catch(error){await fs.rm(dest,{force:true});throw error;}
-    if(part.file.truncated||size>maxBytes){await fs.rm(dest,{force:true});throw appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`);}
+    try{
+      await pipeline(part.file,createWriteStream(dest,{flags:'wx'}));
+      if(part.file.truncated||size>maxBytes)throw appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`);
+      if(mimePrefix==='image/'){
+        const file=await fs.open(dest,'r'),header=Buffer.alloc(4096);
+        let bytesRead;try{({bytesRead}=await file.read(header,0,header.length,0));}finally{await file.close();}
+        if(!imageHeaderMatches(header.subarray(0,bytesRead),part.mimetype))throw appError(400,'Nội dung tệp không khớp định dạng ảnh đã chọn. Hãy chọn lại ảnh hoặc xuất sang JPG/PNG.');
+      }
+    }catch(error){await fs.rm(dest,{force:true});throw error;}
   });
   app.log.info({user:user.id,file:name,kind},'media uploaded');return {url:`/uploads/${name}`};
 }
