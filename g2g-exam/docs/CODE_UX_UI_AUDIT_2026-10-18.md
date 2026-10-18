@@ -429,3 +429,82 @@ screen-reader or screenshot certification. Speaking remains excluded.
 Local HIGH passed 36/36 on Node 26.5; both dependency audits found zero
 vulnerabilities. Required GitHub checks must pass the exact candidate before merge.
 Rollback is a normal PR revert. Public delivery proof is health/version only.
+
+## UI/UX and theme-system audit: 1.3.217
+
+Scope: shared controls, light/dark surfaces, semantic feedback, responsive page
+shells and main admin/teacher/student journeys. Experimental speaking excluded;
+no provider/device/Drive/SMTP connection or production business write.
+Exam specification/rules N/A: presentation/build fixes only.
+
+Structure inspected: all three stylesheets (styles, enhancements, legal),
+palette/theme/color-mode/layout owners, inline startup feedback, view/template
+color usage and build asset packaging. No second design system or global
+override stylesheet was added. The design-system skill guided token ownership
+and state coverage; no invented numeric design-quality score.
+
+Findings and fixes:
+
+- Fixed foregrounds produced contrast 2.74:1 for profile errors, 3.36:1 for
+  learner supporting text and 2.93:1 for teacher labels on dark cards; landing
+  emphasis was 2.23:1 on white. Consumers now use existing matching semantic,
+  muted, provider or brand foregrounds. AI part/model chips, provisional/pending
+  UI, completion and promotion feedback also use their shared palette owners.
+- Added shared success/warning/error background/border pairs. Migrated badge,
+  maintenance, security-note, integration, offline and secret-status consumers;
+  removed redundant per-component dark background patches. Tests assert >=4.5:1
+  for the affected text/surface pairs, including inverse cards, in both modes.
+- R2 incorrectly swapped text/card colors through --chu/--mat in dark mode,
+  rendering a white card. A dedicated inverse pair preserves a charcoal card
+  with readable text in both modes; no R2 behavior/configuration changed.
+- CPU's seven time ticks collided in narrow plots. Container-scoped density
+  retains four ticks below 440px plot width; seven remain in wider plots. All
+  original values stay in the SVG titles/data; labels remain unscaled HTML.
+- Paper-form radio check marks and landing mockup controls now follow their
+  containing theme. Startup error/retry feedback uses shared control tokens.
+- Built privacy/terms pages referenced /styles.css, which was not a usable
+  stylesheet in the isolated built deployment (zero CSS rules). The builder now
+  links the real fingerprinted CSS and reuses the app's pre-paint color-mode
+  bootstrap. Browser readback: 1616 base rules, dark canvas rgb(8,8,10), saved
+  mode restored. HTTP regression checks both pages and their CSS without auth.
+  Source policy text was not edited; content remains readable without JavaScript.
+
+Local automated evidence: HIGH 36/36, Node 26.5; web/backend dependency audits
+zero vulnerabilities. theme-surfaces.test is imported by the existing theme
+suite, so CI runs its semantic contrast/consumer regressions. Added built-policy
+HTTP coverage to the existing SQL/HTTP suite. Required CI still gates merge.
+
+Browser evidence uses actual built Fastify + isolated SQL and synthetic records.
+The main pages were measured at actual 320/390/768/1440px in light and dark:
+dashboard, exam catalog, 200-user list, empty Trash, unconfigured Backup, all four
+settings tabs, profile, read-only builder, writing preview, class/visitor roster,
+gradebook, grading detail, student catalog, empty/pending results, pending review
+overview/writing tab, privacy/terms, and enrollment error. Measurements wait for
+theme transitions and verify the actual viewport equals the requested width.
+An earlier background-tab viewport mismatch and transient wave measurements were
+discarded, not counted as valid coverage. No stable page-wide overflow found in
+the final matrix; existing local table/navigation scrolling is intentional.
+Final matrix: 208 viewport/state measurements including the landing page and
+live writing/submit confirmation in both modes; zero stable page-wide overflow
+in those measured states. This counts layout measurements, not 208 independent
+test cases or full visual/accessibility coverage. Browser override reset and
+temporary tabs closed after verification.
+
+Additional checks: real local writing entry/save/submit/review; teacher comment
+text survives a theme switch exactly; failed enrollment retains the typed code
+and readable coral error (rgb(255,155,145) on rgb(22,22,27)). Admin role simulation
+correctly rejects student enrollment; this was not a successful enrollment test.
+CPU readback at the four actual widths: 4/4/4/7 visible ticks, no overlap. R2
+dark background rgb(34,34,41). Screenshots outside Git in audit-evidence:
+theme-profile-dark-1.3.217.jpg, theme-form-error-dark-1.3.217.jpg and
+theme-dashboard-dark-1.3.217.jpg.
+
+Limits: browser viewport testing is not a physical iPhone/Safari, screen reader,
+every authored exam/specification or every possible live integration state.
+Published assessment palette is tested by the existing badge/result suites;
+this turn's student browser review is pending, not a newly published result.
+Google sign-in is unconfigured in the isolated fixture (503); no live OAuth was
+attempted. Fixed artwork/media/shadows, deliberate white emblem labels and
+palette definitions are intentional literals, not a promise of zero hex values.
+No dependency/framework change, scoring change or experimental-speaking edit.
+Rollback: normal PR revert. Public post-deploy proof remains health/version only.

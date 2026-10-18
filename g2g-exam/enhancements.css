@@ -27,19 +27,19 @@
 .cai-dat-toggle span { min-width:0; font-size:14px; }.cai-dat-toggle b { display:block; margin-bottom:4px; font-weight:500; }
 .cai-dat-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:24px; padding:0; }
 .loi { color:var(--do)!important; }
-.canh-bao-bao-tri { padding:12px 18px; text-align:center; border:1px solid #f0dfb6; border-radius:12px; margin-top:12px; font-size:13px; background:#fff8e8; color:var(--vang); }
+.canh-bao-bao-tri { padding:12px 18px; text-align:center; border:1px solid var(--warning-border); border-radius:12px; margin-top:12px; font-size:13px; background:var(--warning-bg); color:var(--vang); }
 .tich-hop-tong-quan { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin-bottom:24px; }
 .tich-hop-tong-quan>div { display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:12px 0; min-width:0; }
 .tich-hop-tong-quan b { font-size:14px; font-weight:500; color:var(--chu); }
 .tich-hop-status { display:inline-flex; align-items:center; width:max-content; max-width:100%; gap:5px; border-radius:var(--pill); padding:5px 10px; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.tich-hop-status.ok { background:#e9f6ef; color:var(--xanh); }.tich-hop-status.off { background:var(--surface-muted); color:var(--phu); }
+.tich-hop-status.ok { background:var(--success-bg); color:var(--xanh); }.tich-hop-status.off { background:var(--surface-muted); color:var(--phu); }
 .ma-he-thong { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .tich-hop-info { display:grid; gap:8px; padding:16px; border:1px dashed var(--vien); border-radius:var(--r-sm); background:var(--surface-muted); }.tich-hop-info small { color:var(--phu); line-height:1.5; }
 .email-test,.secret-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; }.email-test .nut,.secret-row .nut { white-space:nowrap; }
-.secret-status { padding:14px 16px; border:1px solid #dfe7df; border-radius:var(--r-sm); background:#f7fbf8; font-size:13px; line-height:1.5; }
+.secret-status { padding:14px 16px; border:1px solid var(--success-border); border-radius:var(--r-sm); background:var(--success-bg); font-size:13px; line-height:1.5; }
 .infra-list { display:grid; border:1px solid var(--vien); border-radius:var(--r-sm); overflow:hidden; }.infra-list>div { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:14px 16px; border-bottom:1px solid var(--vien); font-size:13px; }.infra-list>div:last-child { border-bottom:0; }.infra-list span { color:var(--phu); }.infra-list b { text-align:right; overflow-wrap:anywhere; }
 .dong-tich-hop { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 0; border-bottom:1px solid var(--vien); }.dong-tich-hop:last-of-type { border-bottom:0; }.dong-tich-hop>div { display:grid; gap:4px; min-width:0; }.dong-tich-hop small { color:var(--phu); }
-.ghi-chu-bao-mat { margin-top:12px; padding:16px; border:1px solid #eadfb8; border-radius:var(--r-sm); background:#fffaf0; font-size:13px; line-height:1.55; }
+.ghi-chu-bao-mat { margin-top:12px; padding:16px; border:1px solid var(--warning-border); border-radius:var(--r-sm); background:var(--warning-bg); font-size:13px; line-height:1.55; }
 
 /* Shared theme preview is local to this panel until Save is pressed. */
 .brand-color-control { display:grid; grid-template-columns:48px minmax(0,1fr); gap:12px; align-items:center; }
@@ -107,7 +107,7 @@
 .letter-table th,.letter-table td{border:1px solid var(--line,#dde1e4);padding:12px;text-align:center}
 .letter-table th span{display:block;font-weight:400;margin-top:8px}
 .letter-example{display:inline-block;min-width:44px;text-align:center;font-weight:600}
-.letter-answer-error{color:#b42318;margin:0}
+.letter-answer-error{color:var(--do);margin:0}
 .letter-answer-error:empty{display:none}
 .letter-builder-answer{display:flex;gap:16px;align-items:center;margin-top:16px}
 .letter-builder-answer select{width:100px}
