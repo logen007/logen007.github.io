@@ -409,3 +409,23 @@ No local database version or server schema migration.
 Speaking remains excluded. No production account was logged out and no live
 attempt was changed. Rollback is a normal PR revert; do not delete drafts or
 restore production data. Public post-deploy proof remains health/version only.
+
+## Input-free dialog focus: 1.3.216
+
+The shared mountDialog focused only an input. A required promotion-style dialog
+with just its continuation button left keyboard focus behind the overlay.
+Reproduced against the actual mounted dialog in jsdom before the fix: expected
+the continuation button, but the background trigger remained active.
+
+The existing dialog owner now selects an eligible form control, or its first
+eligible action when no editable control exists. Hidden fields, hidden ancestors
+and disabled fieldsets are excluded. Existing dialogs retain form-first focus;
+no new focus listeners, CSS, scoring or promotion rules were introduced.
+
+DOM regressions cover input-free required dialogs, forward/backward Tab, required
+Escape behavior, select-only forms, hidden/disabled fields, message-only close
+buttons and return focus. These are DOM behavior checks, not physical keyboard,
+screen-reader or screenshot certification. Speaking remains excluded.
+Local HIGH passed 36/36 on Node 26.5; both dependency audits found zero
+vulnerabilities. Required GitHub checks must pass the exact candidate before merge.
+Rollback is a normal PR revert. Public delivery proof is health/version only.

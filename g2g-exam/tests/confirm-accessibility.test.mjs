@@ -27,6 +27,17 @@ try{
   save.focus();key('Tab');assert.equal(doc.activeElement,close);
   key('Tab',true);assert.equal(doc.activeElement,save);
   key('Escape');assert.equal(modal.isConnected,false);assert.equal(doc.activeElement,outside);
+  const celebration=mountDialog('Synthetic completion','<button data-continue>Continue</button>',{required:true});
+  assert.equal(doc.activeElement,celebration.querySelector('[data-continue]'),'A required dialog without inputs takes focus instead of leaving it behind the overlay');
+  key('Tab');assert.equal(doc.activeElement,celebration.querySelector('[data-continue]'));
+  key('Tab',true);assert.equal(doc.activeElement,celebration.querySelector('[data-continue]'));
+  key('Escape');assert.equal(celebration.isConnected,true);celebration.remove();outside.focus();
+  const choices=mountDialog('Synthetic choices','<input type="hidden"><fieldset disabled><input></fieldset><div hidden><input></div><select><option>Choice</option></select>');
+  assert.equal(doc.activeElement,choices.querySelector('select'),'Hidden or disabled fields do not steal initial focus');
+  key('Escape');assert.equal(doc.activeElement,outside);
+  const notice=mountDialog('Synthetic notice','<p>Information</p>');
+  assert.equal(doc.activeElement,notice.querySelector('[data-dismiss]'),'A message-only dialog focuses its close control');
+  key('Escape');assert.equal(doc.activeElement,outside);
   const required=mountDialog('Required','<input>',{required:true});
   key('Escape');assert.equal(required.isConnected,true);required.remove();outside.focus();
   let extras=0;
