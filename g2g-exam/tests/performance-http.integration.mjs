@@ -11,6 +11,7 @@ import {randomUUID} from 'node:crypto';
 import Fastify from '../server/node_modules/fastify/fastify.js';
 import {sign} from '../server/node_modules/@fastify/cookie/signer.js';
 import {DEFAULT_SETTINGS} from '../server/src/defaults.js';
+import {ExamOutbox} from '../src/repositories/exam-outbox.js';
 const {PGlite}=await import(process.env.G2G_PGLITE_PATH);
 const db=new PGlite(),tx=new AsyncLocalStorage(),scratch=await fs.mkdtemp(path.join(os.tmpdir(),'g2g-http-'));
 let revision=0,queries=0,summaryLoads=0;
@@ -30,6 +31,17 @@ globalThis.__testFastify=options=>{
   if(!process.env.G2G_PREVIEW_PORT)app.listen=async()=>app.ready();
   else{
     const listen=app.listen.bind(app);app.listen=options=>listen({...options,host:'127.0.0.1'});
+    let dropSaveReceipts=false;
+    app.get('/__fixture/drop-save-receipts',(_request,reply)=>{dropSaveReceipts=true;return reply.redirect('/student?view=home');});
+    app.get('/__fixture/restore-save-receipts',(_request,reply)=>{dropSaveReceipts=false;return reply.type('text/plain; charset=utf-8').send('Synthetic save acknowledgements restored.');});
+    app.get('/__fixture/writing-answer',async(_request,reply)=>{
+      const result=await query("SELECT public_data->'answers' AS answers FROM attempts WHERE student_id='admin' AND exam_id='browser-writing-exam' ORDER BY created_at DESC LIMIT 1");
+      return reply.type('text/plain; charset=utf-8').send(JSON.stringify(result.rows));
+    });
+    app.addHook('onSend',(request,reply,payload,done)=>{
+      if(dropSaveReceipts&&request.url==='/api/actions/saveAnswers'&&reply.statusCode===200){reply.hijack();reply.raw.destroy();}
+      done(null,payload);
+    });
     app.get('/__fixture/admin',(_request,reply)=>reply.header('Set-Cookie','g2g_session='+encodeURIComponent(sign('admin',secret))+'; Path=/; HttpOnly; SameSite=Lax').redirect('/adm'));
     app.get('/__fixture/stalled.wav',(_request,reply)=>{
       reply.hijack();reply.raw.writeHead(200,{'Content-Type':'audio/wav'});reply.raw.flushHeaders();
@@ -112,9 +124,48 @@ try{
   assert.ok(conditional.every(response=>response.statusCode===304));assert.equal(summaryLoads,before,'Conditional hits do not load the question bank');
   assert.equal((await app.inject({url:'/api/state-summary',headers:{cookie:cookie('s0')}})).statusCode,403);
   assert.equal((await app.inject({url:'/api/attempts/a0/session',headers:{cookie:cookie('s1')}})).statusCode,404);
+  // Server commits the first answer, but the client never receives its receipt.
+  // A subsequent edit and reload must replay that operation before sending the
+  // latest answer, rather than falsely conflicting with our own committed write.
+  let draft,dropReceipt=true;const requests=[];
+  const store={read:async()=>structuredClone(draft),write:async(_key,value)=>{draft=structuredClone(value);}};
+  const send=async changes=>{
+    requests.push(structuredClone(changes));
+    const response=await app.inject({method:'POST',url:'/api/actions/saveAnswers',headers:{cookie:cookie('s0')},payload:{attemptId:'a0',changes}});
+    if(response.statusCode!==200)throw Object.assign(Error(response.json().error),{status:response.statusCode});
+    if(dropReceipt){dropReceipt=false;throw Error('Synthetic lost acknowledgement after commit');}
+    return response.json();
+  };
+  const draftBox=await new ExamOutbox({store,key:'s0:a0',send}).init();
+  draftBox.edit('q',1,null);await assert.rejects(draftBox.flush(),/lost acknowledgement/);
+  const firstOperation=draft.pending.q.operation;
+  draftBox.edit('q',0);await draftBox.persisted;draftBox.close();
+  const reloadedBox=await new ExamOutbox({store,key:'s0:a0',send}).init();
+  try{await reloadedBox.flush();}finally{reloadedBox.close();}
+  assert.equal(requests.length,3);assert.equal(requests[1].q.operation,firstOperation);
+  assert.equal(requests[2].q.base,firstOperation);
+  assert.deepEqual(draft.pending,{});
+  const recovered=(await query("SELECT public_data FROM attempts WHERE id='a0'")).rows[0].public_data;
+  assert.equal(recovered.answers.q,0);assert.equal(recovered.answerVersions.q,requests[2].q.operation);
+  // A genuine competing write still conflicts; recovery must not rebase blindly.
+  dropReceipt=true;
+  const conflictBox=await new ExamOutbox({store,key:'s0:a0',send}).init();
+  conflictBox.edit('q',1,recovered.answerVersions.q);
+  await assert.rejects(conflictBox.flush(),/lost acknowledgement/);
+  const uncertainOperation=draft.pending.q.operation;
+  conflictBox.edit('q',0);await conflictBox.persisted;
+  const competitor=await app.inject({method:'POST',url:'/api/actions/saveAnswers',headers:{cookie:cookie('s0')},payload:{attemptId:'a0',changes:{q:{value:1,base:uncertainOperation,operation:'competing-client-write'}}}});
+  assert.equal(competitor.statusCode,200);
+  try{await assert.rejects(conflictBox.flush(),error=>error.status===409);}finally{conflictBox.close();}
+  assert.equal(draft.pending.q.value,0,'Unsent latest answer survives a genuine conflict');
+  assert.equal((await query("SELECT public_data FROM attempts WHERE id='a0'")).rows[0].public_data.answerVersions.q,'competing-client-write');
+  console.log('Actual HTTP/SQL outbox: lost acknowledgement, newer edit, reload, idempotent replay and latest answer recovery passed.');
   const start=performance.now();
   const receipts=await Promise.all(Array.from({length:200},(_,i)=>app.inject({method:'POST',url:'/api/actions/submitAttempt',headers:{cookie:cookie('s'+i)},payload:{attemptId:'a'+i}})));
   assert.ok(receipts.every(response=>response.statusCode===200&&response.json().attempt.status==='ready'));
+  const resubmitted=await app.inject({method:'POST',url:'/api/actions/submitAttempt',headers:{cookie:cookie('s0')},payload:{attemptId:'a0'}});
+  assert.equal(resubmitted.statusCode,200);
+  assert.equal(resubmitted.json().attempt.submittedAt,receipts[0].json().attempt.submittedAt,'Retry returns the original submission receipt');
   const changed=await app.inject({url:'/api/state-summary',headers:{cookie:cookie('admin'),'if-none-match':first.headers.etag}});assert.equal(changed.statusCode,200);assert.notEqual(changed.headers.etag,first.headers.etag);
   const session=await app.inject({url:'/api/attempts/a0/session',headers:{cookie:cookie('s0')}});assert.equal(session.statusCode,200);assert.equal(session.json().attempts.length,1);
   console.log(JSON.stringify({test:'Production Fastify injection with isolated SQL, not VPS network capacity',concurrentSubmissions:receipts.length,submissionBurstMs:Math.round(performance.now()-start),entryAssets:assets.length,compression:'Brotli static + gzip JSON',conditionalRequests:20,extraSummaryLoadsOnConditionalHits:summaryLoads-before-1,queries}));

@@ -15,6 +15,7 @@ Keep UI changes separate from grading, transport and persistence changes.
 | Credentialed browser origin allowlist | `server/src/request-origin.js`, registered before API handlers in `index.js` |
 | Overlay keyboard lifecycle | `src/ui/dialog-keyboard.js` for existing dialogs, `src/ui/confirm.js` for confirmation settlement/focus |
 | Screen state / navigation wiring | `src/app.js` — delegate rules and data loading |
+| Durable answer writes / lost-receipt replay | `src/repositories/exam-outbox.js`; API transport in `src/repositories/api.js` |
 | Server action routing | `server/src/actions/index.js` — delegate handlers |
 
 ## Safe change checklist

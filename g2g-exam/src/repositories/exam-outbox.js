@@ -17,7 +17,7 @@ export function openExamStore(){
 // One editing tab per attempt; durable snapshots are serialized before network IO.
 export class ExamOutbox{
   constructor({store,key,send,onStatus=()=>{}}){
-    Object.assign(this,{store,key,send,onStatus});this.draft={pending:{},index:null};
+    Object.assign(this,{store,key,send,onStatus});this.draft={pending:{},index:null,inflight:null};
     this.persisted=Promise.resolve();this.timer=null;this.running=null;this.closed=false;
   }
   async init(){this.draft=await this.store.read(this.key)||this.draft;return this;}
@@ -46,9 +46,12 @@ export class ExamOutbox{
   }
   async drain(){
     try{
-      while(!this.closed&&Object.keys(this.draft.pending).length){
+      while(!this.closed&&(this.draft.inflight||Object.keys(this.draft.pending).length)){
         await this.persisted;
-        const changes=structuredClone(this.draft.pending);
+        // Persist the exact operation before sending. A lost receipt must replay
+        // this operation even if the student edits pending answers or reloads.
+        if(!this.draft.inflight){this.draft.inflight=structuredClone(this.draft.pending);await this.persist();}
+        const changes=structuredClone(this.draft.inflight);
         this.onStatus('saving');
         const result=await this.send(changes);
         for(const [id,sent] of Object.entries(changes)){
@@ -56,11 +59,17 @@ export class ExamOutbox{
           if(current?.operation===sent.operation)delete this.draft.pending[id];
           else if(current)current.base=result.versions[id];
         }
-        await this.persist();
+        this.draft.inflight=null;await this.persist();
       }
       this.onStatus('saved');
     }catch(error){
       const terminal=error.status>=400&&error.status<500&&error.status!==429;
+      if(terminal){
+        // A definitive rejection did not accept this write. Keep current answers
+        // but allow corrected input to replace a rejected (e.g. invalid) payload.
+        this.draft.inflight=null;
+        try{await this.persist();}catch(storageError){this.onStatus('storage-error');throw storageError;}
+      }
       this.onStatus(error.localStorageFailure?'storage-error':terminal?'conflict':'offline');
       if(!terminal)this.schedule(5000);
       throw error;
