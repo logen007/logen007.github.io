@@ -750,3 +750,18 @@ Local MEDIUM 13/13 passed, plus diff check. Built isolated browser preview check
 outer border 0 / transparent background, both papers animation-name none. Physical
 iPhone/Safari, screen reader and live OAuth are not tested. Required GitHub checks
 gate exact candidate; protected PR release and ordinary revert rollback apply.
+
+## Balance visible login cards: 19 October 2026 / 1.3.225
+
+Owner's photo exposed the measurement error: equal invisible wrappers did not
+mean equal visible cards. Desktop/tablet inset padding shrank the actual preview.
+Remove those insets; stretch stack/screen/body through the row. Preserve phone
+paper-overhang padding, six scenes, flat text, static papers, brand and auth.
+Regression failed before patch; final MEDIUM 13/13 and targeted tests passed.
+First browser pass caught stale built tablet padding; rebuilt from final source,
+restarted fixture and repeated all checks, without accepting that first pass.
+Actual screen (not wrapper) vs sign-in now matches width/top/bottom/height at
+768px (336x420), 1024px (452x420), 1440px (616x420), in both modes. At 320/390
+phone layouts remain stacked, no page overflow/content collision. No speaking,
+schema/data/auth edits; physical iPhone/live OAuth remain unverified. Protected
+checks gate release; normal revert rollback, not a full accessibility certificate.
