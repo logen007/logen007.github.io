@@ -7,6 +7,7 @@ import os from 'node:os';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {registerHooks} from 'node:module';
 import {gunzipSync} from 'node:zlib';
+import {randomUUID} from 'node:crypto';
 import Fastify from '../server/node_modules/fastify/fastify.js';
 import {sign} from '../server/node_modules/@fastify/cookie/signer.js';
 import {DEFAULT_SETTINGS} from '../server/src/defaults.js';
@@ -23,13 +24,16 @@ const secret='synthetic-test-cookie-secret';
 process.env.COOKIE_SECRET=secret;process.env.NODE_ENV='test';
 process.env.WEB_PUBLIC_DIR=path.resolve('.web-build');process.env.WEB_ASSETS_DIR=path.join(scratch,'assets');process.env.UPLOAD_DIR=path.join(scratch,'uploads');
 if(process.env.G2G_PREVIEW_PORT)process.env.PORT=process.env.G2G_PREVIEW_PORT;
-globalThis.__httpDb={query,withTx:fn=>db.transaction(client=>tx.run(client,()=>fn({query}))),getSettings:async()=>structuredClone(DEFAULT_SETTINGS),getDataRevision:()=>revision,audit:async()=>{},initDb:async()=>{},now:()=>new Date().toISOString(),uid:()=> 'new-test-attempt',appError:(statusCode,message)=>Object.assign(new Error(message),{statusCode})};
+globalThis.__httpDb={query,withTx:fn=>db.transaction(client=>tx.run(client,()=>fn({query}))),getSettings:async()=>structuredClone(DEFAULT_SETTINGS),getDataRevision:()=>revision,audit:async()=>{},initDb:async()=>{},now:()=>new Date().toISOString(),uid:()=>process.env.G2G_PREVIEW_PORT?randomUUID():'new-test-attempt',appError:(statusCode,message)=>Object.assign(new Error(message),{statusCode})};
 globalThis.__testFastify=options=>{
   const app=Fastify({...options,logger:false});
   if(!process.env.G2G_PREVIEW_PORT)app.listen=async()=>app.ready();
   else{
     const listen=app.listen.bind(app);app.listen=options=>listen({...options,host:'127.0.0.1'});
     app.get('/__fixture/admin',(_request,reply)=>reply.header('Set-Cookie','g2g_session='+encodeURIComponent(sign('admin',secret))+'; Path=/; HttpOnly; SameSite=Lax').redirect('/adm'));
+    app.get('/__fixture/stalled.wav',(_request,reply)=>{
+      reply.hijack();reply.raw.writeHead(200,{'Content-Type':'audio/wav'});reply.raw.flushHeaders();
+    });
   }
   return app;
 };
@@ -53,6 +57,21 @@ try{
     const writingExam={id:'browser-writing-exam',title:'Synthetic writing journey',provider:'GOETHE',level:'A1',sections:[{id:'browser-writing-part',name:'Viết 2',skill:'Viết',timeMinutes:10,questionIds:[writing.id]}]};
     await query("INSERT INTO questions(id,owner_id,data) VALUES($1,'admin',$2)",[writing.id,JSON.stringify(writing)]);
     await query("INSERT INTO exams(id,owner_id,status,data) VALUES($1,'admin','published',$2)",[writingExam.id,JSON.stringify(writingExam)]);
+    // A real decodable 1-second PCM tone, and a response intentionally left open.
+    const wav=Buffer.alloc(44+16000);
+    wav.write('RIFF',0);wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);
+    wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);
+    wav.writeUInt32LE(8000,24);wav.writeUInt32LE(16000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);
+    wav.write('data',36);wav.writeUInt32LE(16000,40);
+    for(let i=0;i<8000;i++)wav.writeInt16LE(Math.round(1200*Math.sin(2*Math.PI*440*i/8000)),44+2*i);
+    await fs.mkdir(process.env.UPLOAD_DIR,{recursive:true});
+    await fs.writeFile(path.join(process.env.UPLOAD_DIR,'synthetic-tone.wav'),wav);
+    for(const [key,audioUrl] of [['playback','/uploads/synthetic-tone.wav'],['stalled','/__fixture/stalled.wav']]){
+      const audioQuestion={id:'browser-audio-'+key,type:'single',skill:'Nghe',maxScore:1,autoGrade:true,correctAnswer:0,choices:['A','B'],prompt:'Synthetic audio transport check',audioUrl};
+      const audioExam={id:'browser-audio-exam-'+key,title:'Synthetic audio '+key,provider:'GOETHE',level:'A1',sections:[{id:'audio-part-'+key,name:'Nghe 1',skill:'Nghe',skillKey:'listening',timeMinutes:10,questionIds:[audioQuestion.id],audioPolicy:{mode:'per_question_segment',segmentRepeat:2,maxSessions:1}}]};
+      await query("INSERT INTO questions(id,owner_id,data) VALUES($1,'admin',$2)",[audioQuestion.id,JSON.stringify(audioQuestion)]);
+      await query("INSERT INTO exams(id,owner_id,status,data) VALUES($1,'admin','published',$2)",[audioExam.id,JSON.stringify(audioExam)]);
+    }
   }
   await query("INSERT INTO exams(id,owner_id,status,data) VALUES('e','admin','published',$1)",[JSON.stringify(exam)]);
   await query("INSERT INTO questions(id,owner_id,data) VALUES('q','admin',$1)",[JSON.stringify(question)]);
