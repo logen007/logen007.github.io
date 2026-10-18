@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {loginHtml} from '../src/views/login.js';
 import {loginDemoHtml} from '../src/views/login-demo.js';
+import {themePalette,darkThemePalette,colorContrast} from '../src/settings/palette.js';
 const api=loginHtml({mode:'api'}),local=loginHtml({mode:'local'});
 assert.match(api,/Kết quả sẽ được gửi về email này/);
 assert.doesNotMatch(api,/Minh họa giao diện luyện thi|Đề luyện hiện có/,'Remove the two labels requested by the owner');
@@ -20,7 +21,7 @@ assert.match(api,/<button type="button"[^>]+id="googleLogin"/);
 assert.match(api,/Tiếp tục với Google/);
 assert.doesNotMatch(api,/demo-login|nhiều nhất|nhiều <strong>nhì/);
 assert.equal((local.match(/demo-login/g)||[]).length,3);
-for(const hook of ['id="landingTypes"','id="landingMetrics"','aria-live="polite"','data-action="toggle-color-mode"','data-no-tooltip','aria-labelledby="login-title"','href="/privacy.html"','href="/terms.html"'])assert.ok(api.includes(hook),hook);
+for(const hook of ['id="landingTypes"','id="landingMetrics"','aria-live="polite"','data-action="toggle-color-mode"','data-no-tooltip','aria-label="Đăng nhập"','href="/privacy.html"','href="/terms.html"'])assert.ok(api.includes(hook),hook);
 assert.match(api,/Minh họa trải nghiệm luyện thi, không phải kết quả thực tế/);
 assert.match(api,/Thi thử trước\.<br> <span>Tự tin khi thi thật\.<\/span>/,'Desktop inline headline retains a word separator');
 assert.doesNotMatch(api,/bước tiến mới|một hành trình|điều tiếp theo|landing-sheet/);
@@ -38,6 +39,10 @@ for(let i=1;i<=6;i++){
 }
 for(const kind of ['choice','binary','gap','match','order','writing'])assert.ok(scenes.includes(`landing-demo-question--${kind}`));
 assert.doesNotMatch(scenes,/<button|<input|<select|<textarea|Goethe|Telc/,'Decorative scenes do not pretend to be interactive or an official exam structure');
+assert.doesNotMatch(scenes,/landing-demo-body|Tiến trình làm bài|landing-demo-track/,'Questions are compact objects, not a scaled dashboard');
+assert.match(scenes,/landing-demo-order-token/);
+for(const shift of [2,-1,1,-2])assert.ok(scenes.includes(`--word-shift:${shift}`));
+for(let i=0;i<3;i++)assert.ok(scenes.includes(`--line-index:${i}`));
 const caption={textContent:'Initial'},button={disabled:true,textContent:'Keep decorative children',querySelector:()=>caption};
 const context={localOnly:false,pub:{auth:{googleLoginEnabled:true}},document:{getElementById:()=>button}};
 const settings=readFileSync(new URL('../src/settings.js',import.meta.url),'utf8');
@@ -58,36 +63,50 @@ assert.equal(button.textContent,'Keep decorative children','Public settings keep
 context.pub.auth.googleLoginEnabled=false;applyLogin();assert.equal(button.disabled,true);assert.equal(caption.textContent,'Đăng nhập Google đang tạm tắt');
 context.localOnly=true;caption.textContent='Demo';applyLogin();assert.equal(caption.textContent,'Demo');
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+const lightTokens=css.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1]||'';
+const darkTokens=css.match(/:root\[data-color-mode="dark"\] \{([\s\S]*?)\n\}/)?.[1]||'';
+const token=(block,name)=>{const value=block.match(new RegExp(name+':(#[0-9a-f]+)','i'))?.[1];assert.ok(value,name);return value.length===4?'#'+[...value.slice(1)].map(c=>c+c).join(''):value;};
+const chosenAmount=Number(css.match(/--scene-chosen-bg:color-mix\(in srgb,var\(--brand-primary\) (\d+)%/)?.[1])/100;
+const rgb=color=>color.slice(1).match(/../g).map(c=>parseInt(c,16));
+const mix=(a,b,amount)=>'#'+rgb(a).map((v,i)=>Math.round(v*amount+rgb(b)[i]*(1-amount)).toString(16).padStart(2,'0')).join('');
+for(const primary of ['#F6D238','#111827','#4285F4','#8B5CF6','#00A15B','#FFFFFF','#FF0000'])for(const [block,brand] of [[lightTokens,themePalette(primary)['--brand-primary']],[darkTokens,darkThemePalette(primary)['--dark-brand-primary']]]){
+  assert.ok(colorContrast(token(block,'--chu'),mix(brand,token(block,'--mat'),chosenAmount))>=4.5,'Question highlight ink remains readable for custom primary '+primary);
+}
+for(const selector of ['.landing-demo-answer--chosen {','.landing-demo-sentence b {','.landing-demo-pairs>span {']){
+  const rule=css.slice(css.indexOf(selector)).split('}')[0];
+  assert.match(rule,/color:var\(--chu\)/,'A custom-tinted fill uses surface ink, not a foreground paired with a different soft fill');
+}
 assert.match(css,/\.landing-demo \{[^}]*border:0;[^}]*background:transparent/,'No redundant outer frame around the illustration');
 assert.match(api,/class="landing-demo-stack"/);
 assert.match(css,/\.landing-demo \{[^}]*padding:0;/,'Desktop illustration must not shrink inside an invisible padded wrapper');
-assert.doesNotMatch(css,/\.landing-demo \{ padding-inline:/,'Tablet desktop must not reintroduce horizontal inset');
-assert.match(css,/\.landing-demo-stack \{[^}]*align-self:stretch/,'The visible illustration fills the same row height as sign-in');
 assert.match(css,/\.landing-demo-stack::before,\.landing-demo-stack::after/,'Two static paper sheets sit behind the screen');
 const motion=css.match(/@media\(prefers-reduced-motion:no-preference\) \{([\s\S]+?)\n\}/)?.[1];
 assert.ok(motion);
 assert.doesNotMatch(motion,/landing-cta|landing-login|landing-copy|landing-demo-layer|landing-demo-orbit|landing-demo-stack/,'Only the question content and its step change, not authentication or paper stack');
 assert.match(motion,/36s var\(--scene-delay\) linear infinite both/);
 for(const name of ['rise','right','reveal','left','drop','fade'])assert.match(css,new RegExp('@keyframes landing-question-'+name));
+for(const name of ['answer-select','word-land','pair-connect','word-order','letter-line'])assert.match(css,new RegExp('@keyframes landing-'+name),'Question formats have their own meaningful internal motion');
+assert.match(css,/@keyframes landing-word-order \{[^\n]*4% \{ transform:translateY\(var\(--word-lift\)\)/,'Word tokens lift into separate lanes before crossing');
+for(const name of ['pair-color','pair-connect','letter-line']){
+  const keyframes=css.match(new RegExp('@keyframes landing-'+name+' \\{[^\\n]+'))?.[0]||'';
+  assert.match(keyframes,/18%,100% \{/,'Staggered children reset during hidden phase, avoiding a previous-cycle flash');
+}
 assert.match(css,/\.landing-demo-question \{[^}]*opacity:0; visibility:hidden/);
 assert.match(css,/\.landing-demo-question:first-child \{ opacity:1; visibility:visible; \}/,'Without animations, including reduced motion, only question one is visible');
 assert.doesNotMatch(css,/landing-motion-control|landing-demo-save|landing-demo-wash|landing-demo-orbit|\.landing-demo-layer/,'Removed scene decorations and controls leave no orphan styles');
 assert.match(css,/\.landing \.landing-cta:focus-visible/);
-assert.match(css,/\.landing-signin \{ order:1;/);
-assert.match(css,/\.landing-product \{ order:2;/);
-assert.match(css,/\.landing-main \{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/,'Desktop uses equal-width panels');
-assert.match(css,/\.landing-copy \{[^}]*grid-column:1\/-1; text-align:center/,'Intro no longer adds weight to the left column');
-assert.match(css,/\.landing-demo-screen \{[^}]*min-height:332px/,'The screen must grow with wrapped question text');
-assert.doesNotMatch(css.match(/\.landing-demo-screen \{[^}]*\}/)?.[0]||'',/(?<!-)\bheight:/,'No fixed or percentage height can crop the illustration');
-assert.match(css,/\.landing-login \{[^}]*background:var\(--mat\); color:var\(--chu\)/,'Sign-in follows the active light/dark surface rather than a permanent inverse card');
-const mobile=css.slice(css.indexOf('.landing {')).match(/@media\(max-width:760px\) \{([\s\S]*?)\n\}/)?.[1]||'';
-assert.match(mobile,/\.landing-login \{[^}]*padding:0;[^}]*border:0;[^}]*background:transparent/,'Phone sign-in is a button, not a framed card');
-assert.match(mobile,/\.landing-login-heading,\.landing-login-divider,\.landing-login-note \{ display:none; \}/,'Only Google and the free label remain inside the production mobile sign-in block');
-assert.match(mobile,/\.landing-cta \{[^}]*background:var\(--brand-primary\); color:var\(--brand-on-primary\)/,'Mobile CTA uses the contrast-paired brand primary');
-assert.match(mobile,/\.landing-copy \{[^}]*text-align:left/,'Mobile has a compact reading edge, not a centered desktop hero');
-assert.match(mobile,/\.landing-copy h1>span \{ text-decoration:none; \}/,'The mobile heading does not compete with the primary CTA');
-assert.match(mobile,/\.landing-demo-top[^}]*display:none/,'Mobile omits the duplicate application header');
-assert.match(mobile,/\.landing-demo-question \{[^}]*min-height:0/,'Mobile scenes reserve their actual content height, not a desktop minimum');
+assert.match(css,/\.landing \.landing-cta \{[^}]*isolation:isolate; appearance:none;/,'Custom CTA owns its paint context across theme snapshots');
+assert.match(css,/\.landing \.landing-cta>svg,\.landing \.landing-cta>span \{ position:relative; z-index:1; \}/,'Logo and label paint above the custom button surface');
+assert.match(api,/class="landing-intro"/,'Desktop copy and auth share one column group');
+assert.doesNotMatch(api,/landing-login-heading|landing-login-divider|landing-demo-screen|landing-demo-top/,'No empty auth frame or mini-application chrome');
+assert.match(css,/\.landing-login \{[^}]*padding:0;[^}]*border:0;[^}]*background:transparent/,'Sign-in has no redundant frame');
+assert.match(css,/\.landing \.landing-cta \{[^}]*background:var\(--brand-primary\); color:var\(--brand-on-primary\)/,'CTA uses the paired brand colors');
+const mobile=css.slice(css.indexOf('.landing {')).match(/@media\(max-width:900px\) \{([\s\S]*?)\n\}/)?.[1]||'';
+assert.match(mobile,/\.landing-copy \{ order:0;/);
+assert.match(mobile,/\.landing-product \{ order:1;/);
+assert.match(mobile,/\.landing-signin \{ order:2;/,'Welcome order is promise, experience, action');
+assert.match(mobile,/\.landing-login-note \{ display:none; \}/,'Mobile auth only has Google and the free label');
+assert.doesNotMatch(css.match(/\.landing-demo-question \{[^}]*\}/)?.[0]||'',/(?:min-|max-)?height:/,'Content, not a fixed card height, determines the scene stage');
 assert.ok(api.indexOf('class="landing-policy"')>api.indexOf('<footer>'),'Policy links follow the public content rather than interrupting sign-in');
 assert.doesNotMatch(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/bindLoginMotion|login-motion\.js/,'CSS-only scenes have no timer/listener lifecycle in app');
-console.log('Login: real brand, visible catalog, six question formats, synchronized loop/steps, no removed labels/control, static reduced-motion fallback and active-theme surfaces passed.');
+console.log('Login contracts: real brand, auth/settings hooks, visible catalog, six decorative question formats and internal motion, static reduced-motion fallback. Browser/design review required separately.');

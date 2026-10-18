@@ -801,3 +801,62 @@ not owner visual approval or full accessibility certification. No speaking/data/
 auth/schema edits. Physical iPhone, live OAuth, screen reader, OS reduced-motion
 emulation and VPS backup/SHA remain unverified; existing reduced-motion rule retained.
 Protected exact-candidate checks and ordinary revert rollback still apply.
+
+## Researched welcome composition: 19 October 2026 / 1.3.228
+
+Owner rejected the prior incremental layouts and requested internet research and
+multiple review rounds. Compared official Duolingo/Brilliant welcome and Linear/
+Headspace sign-in pages, plus Duolingo craft and Linear redesign articles (links
+in UI_STYLE). No borrowed assets, fabricated brand, social proof or exam rules.
+Design critique/system/accessibility checklists guide this scoped login change.
+
+Composition: mobile promise -> compact expressive question object -> supporting
+sentence/Google/free; desktop one copy/auth column beside the question object.
+No empty equal-card requirement, mini-dashboard scaffolding or oversized metrics.
+Actual public catalog/statistics remain visible. Shared theme tokens, original
+logo, approved copy, auth hooks/One Tap and local-only demo accounts preserved.
+
+Review corrections, not just automated passes:
+
+- Round 1 mobile/desktop, light/dark critique: reduced the heavy rear-paper skirt,
+  vertically balanced short scenes and strengthened light selected-answer fill.
+- Source/motion review found staggered pair/letter children flashing the previous
+  cycle. Added red->green reset regression, resetting the hidden timeline interval.
+- Custom-color review found that stronger fill broke the old brand-text pairing
+  for blue/violet/green. Use surface ink; seven primaries x two modes now have a
+  contrast regression based on actual theme palette functions and CSS surface tokens.
+- Final desktop theme/resize sequence reproduced a blank painted Google button
+  despite correct DOM/styles; focus repainted it. Narrow custom appearance and
+  explicit logo/label paint context fixed the reproduced sequence, without GPU
+  hacks, repaint timers or disabling theme motion. Ten crop captures were not
+  accepted as sole proof (some captured the wrong region); five full-viewport
+  repeats showed the logo/label before any Google focus.
+- Ordering-token motion now lifts into opposite lanes before crossing and lands
+  afterward, avoiding intermediate overprinted words.
+
+Executed browser matrix: 320x700, 390x700, 760x900, 761x900, 768x1024, 900x900,
+901x900 and 1440x900, both modes (16 combinations), no page/scene clipping or
+horizontal overflow. CTA bottom 600.6px at320, 594.2px at390; target56px. Supporting/
+free/legal text and badge rendered contrasts >=5.15:1. Theme measurements wait for
+View Transition cleanup. Neutral default primary, long configured branding and
+Google-disabled label checked at320; no overflow, button grows naturally to71px.
+Keyboard: theme -> Google -> policies; 2px focus, 44px legal targets. Dark survives
+reload. Decorative scenes have no focus stops.
+
+A 38-second/509-sample motion pass observed all six completed formats, zero
+simultaneous scene text, step mismatches or overflow; CTA y=544.58 and stage
+h=244.80 at320 stayed constant. Pair/letter segments began incomplete, completed
+and did not revert. Saved completed scene frames, viewport/full-page captures,
+matrix and contrast measurements are local evidence, not accepted image baselines.
+The final rebuilt lane check ran another 37 seconds / 497 samples, including 78 visible
+ordering samples: zero token-box collisions, page overflow or CTA/stage movement.
+Paint correction was retested separately using the reproduced resize/theme sequence.
+
+MEDIUM 13/13 passed on the implemented layout and subsequent source corrections;
+targeted login assertions and diff checks also ran. Required protected PR checks
+still gate the exact final candidate. Second-agent reviews are not human/owner
+approval. No speaking, data, schema or infrastructure edits. Live OAuth, physical
+iPhone, real screen-reader, browser200%-zoom and OS reduced-motion emulation are
+unverified; static reduced-motion fallback remains, with the owner's no-pause
+tradeoff. Do not claim full WCAG or Google-button branding compliance. VPS backup/
+deployed SHA unverified; public health/version only. Ordinary revert is rollback.

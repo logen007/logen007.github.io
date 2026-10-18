@@ -129,65 +129,52 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
-Login implementation (19 October 2026; NOT an owner-accepted visual baseline):
-1.3.223 responds to the owner's clarification that motion belongs in questions
-1–6, not decorative backgrounds. Keep the original concrete promise, “Thi thử trước. Tự tin
-khi thi thật.”, without generic journey slogans. Center the intro above two
-equal-width, aligned panels. Sign-in uses the active --mat/--chu pair: white in
-light mode and charcoal in dark, not an always-dark inverse card. Mobile shows
-copy, sign-in, then preview. Authentication controls stay stationary; screen
-height grows with wrapped text and reserves space for the largest question.
-The illustration is decorative, has an accessible description identifying it
-as an example, and never presents a real score or official exam paper. No fake
-interactive answers. Omit the visible “Minh họa giao diện luyện thi” caption and
-“Đề luyện hiện có” heading, while retaining an accessible catalog landmark.
-At the owner's explicit request, remove the pause/resume button, autosave badge
-and visible “Ví dụ minh họa” text. `src/views/login-demo.js` owns six decorative
-practice formats (choice, true/false, gap, matching, ordering, writing), not an
-official provider specification. CSS cycles questions 1–6 every six seconds,
-with six different entrance treatments and synchronized numbered steps. All
-offsets are negative to avoid future steps showing active during initial delays.
-No JS timer, runtime binding, pointer tracking or animation library. Background
-layers, orbit and color fields are removed entirely: only question content and
-its numbered step animate. Motion is opt-in through no-preference; reduced motion and
-unsupported animation show only question one. No page layout/CTA motion.
-Accessibility tradeoff: the owner explicitly removed the stop control despite
-continuous autoplay. OS reduced motion is retained, but this is not a claim of
-WCAG 2.2.2 pause/stop/hide compliance; do not call it a full accessibility pass.
-Owner refinement in 1.3.224: remove the redundant outer rounded frame and fill.
-Two neutral paper sheets may sit slightly tilted behind the actual screen;
-they are static, use shared surfaces/borders and follow the screen's intrinsic
-height. Do not restore looping backdrops or tilt/scale the question text.
-1.3.225 correction: balance the visible screen against the sign-in card, not
-their invisible wrappers. On desktop the screen fills the column/row without
-outer inset padding, sharing the sign-in card's width and top/bottom edges.
-Retain phone padding only to protect the static paper overhang.
-Use shared light/dark tokens; the unmodified multicolor Google vector is the
-documented brand exception from Google's official HTML configurator. Desktop
-keeps Google's neutral button; mobile uses the owner-requested primary below.
-Correction requested 19 October: the public exam types and metrics remain visible,
-never in a collapsed disclosure. Omit the hardcoded “GOETHE & TELC” kicker (actual
-catalog may include FID). Use configured systemName/organizationName and the actual
-uploaded logo through /brand/logo, sharing the existing brand hydration owner;
-never invent an “Exam” name or draw a replacement G2G mark. The sign-in heading is
-“Đăng nhập”; omit the Google-account instruction and show “Kết quả sẽ được gửi về
-email này” on desktop. Owner refinement in 1.3.226: the mobile sign-in block has
-only a brand-primary Google CTA and “Hoàn toàn miễn phí”, without outer card,
-heading/icon, divider or email note. Use primary/on-primary contrast tokens in
-both modes; keep the unmodified colored Google mark on a white circular plate.
-Desktop Google styles and card remain unchanged. Keep local-only demo accounts, policy
-links and the theme toggle. Public settings preserve the Google logo/label structure;
-auth routing and One Tap remain unchanged. Check configured brand color as well
-as defaults in browser previews before release.
-1.3.227 mobile composition responds to owner rejection of the previous layout:
-compact left-aligned hero without underline; unchanged primary CTA/free label;
-consistent content edges; a content-sized six-scene preview with numbered steps
-but no duplicate app header or navigation label. Keep every scene readable, not
-scaled or cropped. Static paper overhang stays inside viewport. Legal links live
-in the footer after public catalog/metrics, no longer between CTA and preview.
-Desktop visible cards remain equal and aligned; remove the old 60px illustration
-spacer together with the relocated policy row. This is an implementation under
-review, not an owner-accepted screenshot baseline.
+Login implementation 1.3.228 (19 October 2026; NOT an owner-accepted visual baseline).
+The owner rejected the previous 1.3.223–227 compositions. Their incremental
+centered/left hero, equal framed cards and mini-dashboard layouts are superseded.
+Research references: [Duolingo welcome](https://www.duolingo.com/),
+[Brilliant](https://brilliant.org/), [Linear login](https://linear.app/login),
+and [Duolingo's craft process](https://blog.duolingo.com/core-tabs-redesign/).
+Borrow hierarchy and purposeful illustration, not assets, claims or product copy.
+
+- Preserve configured systemName/organizationName and the actual uploaded logo
+  through /brand/logo, using existing brand hydration. Never invent “Exam” branding.
+  Keep “Thi thử trước. Tự tin khi thi thật.” and the approved supporting sentence.
+  Omit Google-account instructions and the removed marketing/example labels.
+- Mobile/tablet <=900px: brand header, two-line promise, compact question object,
+  then supporting sentence + primary Google CTA + “Hoàn toàn miễn phí”. No sign-in
+  frame, heading/icon, divider or email note. Desktop groups copy/auth in one
+  left column and question object right, balanced by visual mass rather than
+  forced equal rectangles. Email note stays exact: “Kết quả sẽ được gửi về email này”.
+- `login-demo.js` owns six decorative practice formats, not official provider
+  specifications or real scored attempts. Questions have readable titles and
+  type badges, without mini-app header/sidebar/progress-caption chrome. Natural
+  shared grid height reserves the largest scene; never scale text or crop it.
+  Short content is vertically balanced. Six thin progress segments are decorative,
+  not fake controls. Two static tilted paper sheets have restrained overhang;
+  no surrounding ring, orbit or animated page background. The illustration-only
+  subtle depth shadow is an exception to the normal shadow-free card rule.
+- CSS cycles six scenes every six seconds with distinct entrances and internal
+  answer selection, gap fill, pair connection, word ordering and writing reveal.
+  Scene entrances/exits do not overlap text; staggered child keyframes reset in
+  the hidden phase to prevent previous-cycle flashes. No runtime timer/library.
+  Authentication, page layout and paper backgrounds do not animate. Reduced motion
+  and unsupported animation show only static question one. At the owner's explicit
+  request there is no pause button: this retains a WCAG 2.2.2 tradeoff and must
+  never be called a full accessibility certification.
+- Use paired shared brand/surface/type-badge tokens in both modes. The owner-requested
+  primary Google CTA retains the original multicolor G on a white plate; do not
+  claim strict Google branding compliance (their guide specifies approved fills).
+  Public settings preserve label/logo nodes and auth/One Tap behavior. Keep theme
+  control and local-only demo accounts. Compare configured yellow and neutral defaults.
+  The custom CTA owns its appearance/paint context, with logo/label above its fill;
+  preserve this fix for the reproduced post-View-Transition blank-content issue.
+- Public exam types and real statistics remain visible, never collapsed, in a
+  low-emphasis supporting band. Do not turn small real totals into oversized
+  social-proof headlines. Policy links stay in the footer with touch targets.
+- Review viewport and full-page screenshots, multiple complete scenes and both
+  modes before release; source assertions and gate success do not establish visual
+  quality. Record review corrections, actual matrix and untested flows in the audit.
 
 - Page navigation creates browser history entries; repeat renders do not. Class
   detail, result, grading, editor/preview parts and settings tabs have direct URLs.
