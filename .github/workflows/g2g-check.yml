@@ -36,7 +36,7 @@ jobs:
         run: npm test && node tests/legal-pages.test.mjs && node tests/backend-dependencies.test.mjs
       - name: Check engineering workflow and disclosure regression
         working-directory: g2g-exam
-        run: npm run test:workflow && npm run test:disclosures && npm run test:performance
+        run: npm run test:workflow && node tests/deploy-health.test.mjs && npm run test:disclosures && npm run test:performance
       - name: Check isolated speaking trial
         working-directory: g2g-exam
         run: node tests/speaking-lab.test.mjs && node tests/speaking-devices.test.mjs
