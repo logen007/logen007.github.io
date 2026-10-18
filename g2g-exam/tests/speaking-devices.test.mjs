@@ -2,6 +2,25 @@ import assert from 'node:assert/strict';
 import {acquirePreview,mediaAvailable,mediaErrorText,recordSample} from '../src/speaking/devices.js';
 const never=()=>new Promise(()=>{}),stream=()=>{const tracks=['audio','video'].map(kind=>({kind,readyState:'live',enabled:true,muted:false,stop(){this.readyState='ended';}}));return {getTracks:()=>tracks,getAudioTracks:()=>[tracks[0]]};};
 const video=play=>({play,srcObject:null});
+await assert.rejects(acquirePreview(video(never),{mediaDevices:{}}),e=>e.name==='NotSupportedError');
+for(const name of ['NotAllowedError','PermissionDeniedError','NotFoundError','NotReadableError']){
+ const denied=Object.assign(Error('synthetic device rejection'),{name}),target=video(()=>{throw Error('Must not play after permission failure');});
+ await assert.rejects(acquirePreview(target,{mediaDevices:{getUserMedia:async()=>{throw denied;}}}),e=>e===denied);
+ assert.equal(target.srcObject,null);
+ assert.match(mediaErrorText(denied),name==='NotFoundError'?/Không tìm thấy/:name==='NotReadableError'?/ứng dụng đang dùng/:/cấp quyền/);
+}
+for(const kind of ['audio','video'])for(const property of ['enabled','muted','readyState']){
+ const interrupted=stream(),target=video(async()=>{});
+ interrupted.getTracks().find(track=>track.kind===kind)[property]=property==='enabled'?false:property==='muted'?true:'ended';
+ assert.equal(mediaAvailable(interrupted),false);
+ await assert.rejects(acquirePreview(target,{mediaDevices:{getUserMedia:async()=>interrupted}}),e=>e.name==='DeviceInterruptedError');
+ assert.equal(target.srcObject,null);assert.ok(interrupted.getTracks().every(track=>track.readyState==='ended'));
+}
+const rejectedStream=stream(),rejectedVideo=video(async()=>{throw Error('preview playback denied');});
+await assert.rejects(acquirePreview(rejectedVideo,{mediaDevices:{getUserMedia:async()=>rejectedStream}}),/preview playback denied/);
+assert.equal(rejectedVideo.srcObject,null);assert.ok(rejectedStream.getTracks().every(track=>track.readyState==='ended'));
+assert.equal(mediaAvailable({getTracks:()=>[]}),false);
+assert.equal(mediaAvailable({getTracks:()=>[{kind:'audio',readyState:'live'}]}),false);
 await assert.rejects(acquirePreview(video(never),{mediaDevices:{getUserMedia:never},permissionMs:5}),e=>e.name==='TimeoutError');
 let resolveLate;const late=stream();
 await assert.rejects(acquirePreview(video(never),{mediaDevices:{getUserMedia:()=>new Promise(resolve=>{resolveLate=resolve;})},permissionMs:5}));
@@ -18,5 +37,14 @@ try{
  class Stalled{constructor(){this.state='inactive';}start(){this.state='recording';}stop(){this.state='inactive';}}
  await assert.rejects(recordSample(live,{Recorder:Stalled,durationMs:5,waitMs:5}),e=>e.name==='TimeoutError');
  class Empty extends Recorder{stop(){this.state='inactive';this.onstop?.();}}await assert.rejects(recordSample(live,{Recorder:Empty,durationMs:5}),/Không nhận được dữ liệu/);
+ const ended=stream();
+ class Interrupted extends Recorder{stop(){ended.getAudioTracks()[0].readyState='ended';super.stop();}}
+ await assert.rejects(recordSample(ended,{Recorder:Interrupted,durationMs:5}),/Không nhận được dữ liệu/);
+ let faulty;
+ class Faulty extends Recorder{constructor(...args){super(...args);faulty=this;}start(){super.start();queueMicrotask(()=>this.onerror?.());}}
+ await assert.rejects(recordSample(live,{Recorder:Faulty,durationMs:1000}),/Thu thử thất bại/);
+ assert.equal(faulty.state,'inactive');
+ for(const handler of ['ondataavailable','onstop','onerror'])assert.equal(faulty[handler],null);
 }finally{if(original===undefined)delete globalThis.MediaStream;else globalThis.MediaStream=original;}
 console.log('Speaking devices: bounded permission/play waits, late stream cleanup, muted input, inline preview, MP4 samples, constructor failure, stalled recorder and empty recording passed.');
+console.log('Device negatives: denied/missing/busy devices, disabled/muted/ended tracks, rejected preview, interrupted sample and recorder cleanup passed.');
