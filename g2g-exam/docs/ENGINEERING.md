@@ -112,8 +112,10 @@ merge → main → VPS auto-deploy → health/version + critical-flow verificati
   không merge/push main, không đổi timer, không tăng version, không gọi VPS.
 - Branch protection/required checks phải được owner phê duyệt và cấu hình ở
   GitHub; YAML không tự bật được policy. Đề nghị yêu cầu `check` và
-  `dependency-audit`, không bypass. Audit đã thấy main `protected:false`; rulesets
-  và quyền bypass chưa được xác nhận, chưa thay đổi setting nào.
+  `dependency-audit`, không bypass. Owner đã bật ruleset `Protect main` ngày
+  18/10/2026: required checks `check` và `dependency-audit` từ GitHub Actions,
+  strict up-to-date, PR với 0 approvals, chặn xóa/force push. Đây là trạng thái
+  đã đọc lại qua API; phải kiểm tra lại khi phát hành, không suy từ YAML.
 - Khi được phép phát hành sản phẩm: tăng patch theo `AGENTS.md`, kiểm tra gates
   trên exact candidate SHA và tình trạng backup, rồi mới merge/push theo quyền.
 - Sau deploy, dùng `npm run verify:release -- <origin> <version>` **chỉ khi được

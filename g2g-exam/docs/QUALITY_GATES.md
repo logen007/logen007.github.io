@@ -95,7 +95,7 @@ glob: fixtures, benchmarks và integration có prerequisites khác nhau.
 | Prettier | Chưa thêm/autofix | code đang compact; bulk reformat làm diff nhiễu và tăng conflict, không giải quyết bug hành vi |
 | npm audit | Đã thêm CI job và HIGH | miễn phí, dùng lockfile, không auto fix; blocker có triage, phụ thuộc registry |
 | Secret scanning / gitleaks | Đề xuất rollout riêng | baseline/allowlist fixtures phải review; không in secret vào log, không khẳng định zero secrets từ grep |
-| GitHub required checks | Cấu hình đề xuất, chưa thay setting repo | cần quyền owner và policy; YAML chỉ tạo status, không tự chặn merge |
+| GitHub required checks | Owner bật Protect main ngày 18/10/2026 | check + dependency-audit từ GitHub Actions, strict up-to-date; xác minh lại trước merge |
 
 ## Bằng chứng và bàn giao
 

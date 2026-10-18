@@ -77,9 +77,12 @@ request hiện tại; yêu cầu “không deploy” luôn được ưu tiên, d
 phép deploy thường lệ. Không bật auto-merge hoặc bypass gate.
 
 Workflow v1 hiện được chuẩn bị ở `feature/g2g-engineering-workflow-v1`,
-[Draft PR #9](https://github.com/logen007/logen007.github.io/pull/9).
-Đọc trạng thái PR/CI mới nhất, không suy là đã merge từ tên README. Trong phạm vi
-workflow/bootstrap này: **không merge main, không deploy, không tăng app version**.
+[PR #9](https://github.com/logen007/logen007.github.io/pull/9).
+Ngày 18/10/2026 owner đã cho phép phát hành 1.3.208 qua main tự deploy, thay cho
+giới hạn audit-only ban đầu. SSH đang timeout; owner chấp thuận kiểm tra public
+health/version, chưa xác minh backup hoặc deploy SHA trên VPS. Quyền này không
+cho phép bỏ gate. Đọc trạng thái PR/CI mới nhất, không suy đã merge từ README.
+Request mới cấm triển khai thì **không merge main**.
 Nếu README chưa có trên main, chat mới cần checkout branch này hoặc đọc README
 đúng ref; không tự merge chỉ để lấy tài liệu.
 

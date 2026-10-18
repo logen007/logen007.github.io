@@ -13,8 +13,10 @@ thứ tự tài liệu và trạng thái branch/PR. Không suy quyền truy cậ
   `specs/README.md` và APPROVED specs: luật thi. Không copy quy tắc sang tài liệu mới.
 - Mặc định làm trên feature branch, tự kiểm tra và chuẩn bị thay đổi cho review.
   Request cấm deploy/audit-only luôn ưu tiên hơn quyền deploy thường lệ ở mục 15.
-  Trong nhiệm vụ Engineering Workflow v1: **không merge/push main, không deploy,
-  không tăng app version, không sửa dữ liệu hoặc hạ tầng production**.
+  Workflow v1 ban đầu audit-only. Ngày 18/10/2026 owner đã cho phép phát hành
+  1.3.208 qua PR/main sau gate; không sửa dữ liệu hoặc hạ tầng production.
+  SSH timeout: owner chấp thuận theo dõi public health/version, không suy đã
+  xác minh backup hoặc deploy SHA từ VPS. Request mới nhất luôn quyết định scope.
 - Chỉ hỏi khi repository không giải quyết được quyết định quan trọng về nghiệp vụ,
   chi phí, quyền truy cập hoặc rủi ro cao; thay đổi nhỏ không cần tài liệu/confirm dư.
 

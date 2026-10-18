@@ -126,6 +126,18 @@ nhưng chưa chạy bộ gate mới của candidate.
 
 ## E. Ưu tiên và trạng thái
 
+### Chuẩn bị phát hành 1.3.208 — owner duyệt 18/10/2026
+
+PR #10 đã merge vào nhánh workflow; CI Node 22 Ubuntu của PR #9 tại head
+9154c57 đạt `check` và `dependency-audit` (run 39102947222). Owner đã tạo ruleset
+Protect main: active/default main, PR approvals 0, strict required checks
+`check` + `dependency-audit` (GitHub Actions), chặn xóa và force push.
+Owner sau đó cho phép phát hành 1.3.208 qua main tự deploy dù SSH timeout.
+Public health trước release: ok/database true, version 1.3.207. Chưa xác minh
+backup gần nhất hoặc deploy SHA trên VPS; không tuyên bố có bằng chứng này.
+Theo dõi public health + version sau merge, không thay hạ tầng/deploy script.
+Các phần candidate/baseline bên dưới là lịch sử trước phê duyệt phát hành này.
+
 ### Candidate vá dependency — 18/10/2026
 
 Nhánh `fix/g2g-backend-security-dependencies` dựa trên workflow v1; chưa merge
