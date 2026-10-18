@@ -36,6 +36,7 @@ const paths={
   copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   upload:'<path d="M12 16V4M7 9l5-5 5 5M4 16v4h16v-4"/>',
   play:'<path d="m8 5 11 7-11 7Z"/>',
+  pause:'<path d="M8 5v14M16 5v14"/>',
   image:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1"/><path d="m3 17 5-5 4 4 4-6 5 7"/>',
   example:'<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>',
 };

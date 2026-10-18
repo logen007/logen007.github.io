@@ -13,11 +13,12 @@ export function loginHtml({mode,general=currentPublicSettings().general||{}}){
   return `<main class="landing">
     <header class="landing-header"><a class="landing-brand thuong-hieu" href="/" aria-label="Trang chủ"><span class="logo">${logo}</span><span class="ten-he-thong"><strong>${esc(name)}</strong><small data-brand-organization>${esc(organization)}</small></span></a><div class="landing-header-actions">${colorModeButtonHtml()}</div></header>
     <div class="landing-main">
-      <section class="landing-signin" aria-labelledby="login-title"><div class="landing-login"><h2 id="login-title">Đăng nhập</h2><button type="button" class="dang-nhap-google landing-cta" id="googleLogin">${googleMark}<span data-google-login-label>Tiếp tục với Google</span></button><span class="landing-free">${iconHtml('example')} Hoàn toàn miễn phí</span><div class="landing-login-divider"></div><span class="landing-login-note">Kết quả sẽ được gửi về email này</span>${demo}</div><div class="landing-policy"><a href="/privacy.html">Chính sách bảo mật</a><span aria-hidden="true">·</span><a href="/terms.html">Điều khoản sử dụng</a></div></section>
-      <section class="landing-product" aria-labelledby="landing-title"><div class="landing-copy"><h1 id="landing-title">Thi thử trước.<br>Tự tin khi thi thật.</h1><p>Luyện đề tiếng Đức. Làm bài, xem kết quả và biết mình cần ôn gì.</p></div>
+      <div class="landing-copy"><h1 id="landing-title">Thi thử trước.<br> <span>Tự tin khi thi thật.</span></h1><p>Luyện đề tiếng Đức. Làm bài, xem kết quả và biết mình cần ôn gì.</p></div>
+      <section class="landing-signin" aria-labelledby="login-title"><div class="landing-login"><div class="landing-login-heading"><span class="landing-login-symbol">${iconHtml('student')}</span><h2 id="login-title">Đăng nhập</h2></div><button type="button" class="dang-nhap-google landing-cta" id="googleLogin">${googleMark}<span data-google-login-label>Tiếp tục với Google</span></button><span class="landing-free">${iconHtml('example')} Hoàn toàn miễn phí</span><div class="landing-login-divider"></div><span class="landing-login-note">Kết quả sẽ được gửi về email này</span>${demo}</div><div class="landing-policy"><a href="/privacy.html">Chính sách bảo mật</a><span aria-hidden="true">·</span><a href="/terms.html">Điều khoản sử dụng</a></div></section>
+      <section class="landing-product" aria-labelledby="landing-title">
         <figure class="landing-visual" aria-label="Minh họa trải nghiệm luyện thi, không phải kết quả thực tế">
           <div class="landing-demo" data-login-scene aria-hidden="true">
-            <div class="landing-demo-wash"></div><div class="landing-demo-layer landing-demo-layer--blue"></div><div class="landing-demo-layer landing-demo-layer--violet"></div>
+            <div class="landing-demo-wash landing-demo-wash--blue"></div><div class="landing-demo-wash landing-demo-wash--violet"></div><div class="landing-demo-orbit"><span></span></div><div class="landing-demo-layer landing-demo-layer--blue"></div><div class="landing-demo-layer landing-demo-layer--violet"></div>
             <div class="landing-demo-screen"><div class="landing-demo-top"><span class="landing-demo-identity">${iconHtml('exams')} <span data-brand-name>${esc(name)}</span></span><span class="landing-demo-badge">Goethe A1</span></div>
               <div class="landing-demo-body"><div class="landing-demo-nav"><span>Đọc</span><div>${[1,2,3,4,5,6].map(n=>`<span${n===6?' class="current"':''}>${n}</span>`).join('')}</div></div>
                 <div class="landing-demo-question"><span class="landing-demo-eyebrow">Câu 6 · Ví dụ minh họa</span><h2 lang="de">Sie suchen einen Deutschkurs.</h2><div class="landing-demo-answer landing-demo-answer--first"><span>A</span><span lang="de">Deutsch am Vormittag</span></div><div class="landing-demo-answer landing-demo-answer--chosen"><span>B</span><span lang="de">Deutsch am Abend</span>${iconHtml('example')}</div><div class="landing-demo-answer landing-demo-answer--last"><span>C</span><span lang="de">Deutsch am Wochenende</span></div>
@@ -26,11 +27,11 @@ export function loginHtml({mode,general=currentPublicSettings().general||{}}){
             </div>
             <div class="landing-demo-save">${iconHtml('example')}<span>Lưu bài tự động</span><span class="landing-demo-save-line"></span></div>
           </div>
-          <figcaption><span>Minh họa giao diện luyện thi</span><button type="button" class="landing-replay" data-login-replay aria-label="Xem lại chuyển động minh họa">${iconHtml('repeat')} Xem lại</button></figcaption>
+          <figcaption><button type="button" class="landing-motion-control" data-login-motion-toggle aria-label="Tạm dừng chuyển động" hidden><span class="landing-motion-pause">${iconHtml('pause')}</span><span class="landing-motion-play">${iconHtml('play')}</span><span data-login-motion-label>Tạm dừng chuyển động</span></button></figcaption>
         </figure>
       </section>
     </div>
-    <section class="landing-catalog" aria-labelledby="landing-catalog-title"><h2 id="landing-catalog-title">Đề luyện hiện có</h2><div class="landing-bottom"><div class="landing-types" id="landingTypes"><span>Đang tải đề luyện…</span></div><div class="landing-metrics" id="landingMetrics" aria-live="polite"></div></div></section>
+    <section class="landing-catalog" aria-label="Đề luyện và hoạt động"><div class="landing-bottom"><div class="landing-types" id="landingTypes"><span>Đang tải đề luyện…</span></div><div class="landing-metrics" id="landingMetrics" aria-live="polite"></div></div></section>
     <footer><span data-brand-organization>${esc(organization)}</span><span>Phát triển Nhân lực Quốc tế</span></footer>
   </main>`;
 }

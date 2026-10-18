@@ -653,3 +653,45 @@ modes: uploaded 500px logo loaded, email and metrics displayed without expanding
 56px CTA and no page overflow. Saved screenshots outside Git. No live Google
 OAuth/email send, physical Safari or screen-reader certification. Required CI
 still gates the exact candidate; normal revert is rollback, with no migration.
+
+## Login balance/contrast/continuous motion: 19 October 2026 / 1.3.222
+
+Owner requested removal of two labels, a balanced desktop, stronger colors and
+multiple continuous loops. Intro now spans both columns; equal panel tracks align
+the colorful illustration with an inverse-surface sign-in card. Heading/body use
+normal high-contrast text, with brand underline instead of muddy accent text.
+Shared semantic/hue tokens own both themes; Google mark/colors remain unchanged.
+Removed visible illustration caption and catalog heading, not the visible stats.
+Preserved actual configured brand, exact email caption, auth/One Tap and policies.
+
+Eight independent CSS loops use transform/opacity only: 16/21s color-field drift,
+28s orbit, 9/13s back layers, 8s light sweep, 4.8s progress glint, 3.8s save signal.
+One pause/resume button controls every descendant/pseudo-element. No new library,
+timer, pointer tracking, auth motion or artificial stat/score. Reduced motion is
+static through no-preference opt-in; the motion control hides in reduced motion.
+No exam specification, scoring, speaking, credential, data or infrastructure edits.
+
+The label regression failed before implementation. Final local MEDIUM gate passed
+13/13 on Node 26.5/macOS (CI uses Node 22/Linux), including syntax, suite and build.
+Renderer/control/CSS tests cover removed labels, preserved branding, equal tracks,
+stationary auth, independent loops, pause/resume/rebind and live preference guard.
+These unit/source assertions are not browser or screen-reader tests.
+
+Actual built isolated Fastify/SQL preview checked 320/390/768/1024/1440px in both
+themes with public brand yellow #F6D238 and original uploaded logo; also default
+#111827 at 320/1440px in both modes. All had 56px Google buttons, visible stats and
+email, no page overflow and complete question content. Desktop panels measured
+616x422 at 1440px, 452x422 at 1024px and 336x432.09 at 768px, matching top/bottom.
+Thirteen sampled text/background pairs each passed 4.5:1 (minimum light 5.15,
+dark 6.49), using actual computed colors; this is not a site-wide WCAG certificate.
+Keyboard order Google → privacy → terms → motion and Enter/Space pause/resume
+passed; paused transforms stayed identical after focus left the control. All
+decorative and pseudo-element play states paused. Eleven-second capture confirms
+different layer/orbit transforms over time while Google transform stays none.
+Saved screenshots and 188-frame MP4 outside Git; recording rate is not device FPS.
+
+Not verified: physical iPhone/Safari, live Google OAuth/email delivery, screen
+reader, OS reduced-motion emulation, GPU profiling, VPS backup/deployed SHA.
+Required GitHub checks gate the exact candidate. Routine protected-PR release is
+authorized; public health/version only proves those signals, not live auth/SHA.
+Visual acceptance remains the owner's decision; rollback is ordinary revert.

@@ -129,20 +129,27 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
-Login implementation (19 October 2026; NOT an accepted visual baseline): owner
-rejected 1.3.220's identity, copy and motion treatment. The 1.3.221 corrections
-below do not redesign or claim acceptance of that motion. Current layout has
-Vietnamese product copy and a
-separate Google sign-in panel. Use the original concrete promise, “Thi thử trước.
-Tự tin khi thi thật.”, without generic journey slogans. The product illustration
-assembles UI layers, answers, a light sweep, progress and an autosave indicator;
-it is visibly labelled, hidden from assistive technology, and never a real score
-or official exam paper. No interactive fake answers. CSS owns one finite 2.7s
-choreography; replay restarts only the decorative scene via `login-motion.js`.
-Motion is opt-in through no-preference, with a complete static fallback. No
-loop, timers, pointer tracking, new library, or animation on sign-in controls.
-Desktop pairs product/preview with the sign-in panel; mobile shows copy, sign-in,
-then preview. Keep typography readable and settle animated text without transforms.
+Login implementation (19 October 2026; NOT an owner-accepted visual baseline):
+1.3.222 responds to the owner's rejection of desktop imbalance, weak contrast
+and one-shot motion. Keep the original concrete promise, “Thi thử trước. Tự tin
+khi thi thật.”, without generic journey slogans. Center the intro above two
+equal-width, aligned panels: a colorful product illustration and a contrasting
+inverse-surface sign-in card. Mobile shows copy, sign-in, then preview. Text and
+authentication controls stay stationary; screen height grows with wrapped text.
+The illustration is decorative, has an accessible description identifying it
+as an example, and never presents a real score or official exam paper. No fake
+interactive answers. Omit the visible “Minh họa giao diện luyện thi” caption and
+“Đề luyện hiện có” heading, while retaining an accessible catalog landmark.
+At the owner's explicit request, CSS now runs independent continuous loops:
+color fields, orbit, two UI back layers, light sweep, progress glint and autosave
+signal, with different 3.8–28s periods. Animate transforms/opacity only, not layout
+or sign-in controls. `login-motion.js` owns one persistent pause/resume control
+for the whole scene, including pseudo-elements. No timers, pointer tracking or
+new animation library. Motion is opt-in through no-preference, with a complete
+static reduced-motion fallback; the control hides in reduced motion. Respect
+the current preference on activation; pausing persists after moving focus away.
+References: [W3C pause/stop/hide guidance](https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html)
+and [web.dev animation performance](https://web.dev/articles/animations-guide).
 Use shared light/dark tokens; Google logo/colors are the documented brand exception
 from Google's official HTML configurator, not a custom monochrome G or yellow CTA.
 Correction requested 19 October: the public exam types and metrics remain visible,
