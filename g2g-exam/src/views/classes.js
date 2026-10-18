@@ -36,7 +36,8 @@ export function mountDialog(title,body,{required=false,compact=false,onDismiss=(
   modal.innerHTML=`<section class="noi-hop ${compact?'noi-hop--compact':''}" role="dialog" aria-modal="true" aria-labelledby="profileDialogTitle"><div class="dau-hop"><h2 id="profileDialogTitle">${esc(title)}</h2>${required?'':'<button class="nut nho" type="button" data-dismiss aria-label="Đóng">×</button>'}</div>${body}</section>`;
   document.body.append(modal);
   bindDialogKeyboard(modal,{required,onDismiss,returnFocus:previousFocus});
-  modal.querySelector('input')?.focus();return modal;
+  const controls=[...modal.querySelectorAll('input,select,textarea,button,a[href],[tabindex]')].filter(item=>!item.matches(':disabled,[type="hidden"]')&&!item.closest('[hidden],.an')&&item.tabIndex>=0);
+  (controls.find(item=>item.matches('input,select,textarea'))||controls[0])?.focus();return modal;
 }
 
 export function openStudentProfile({data,student,repo,onSaved,required=false}){
