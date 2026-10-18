@@ -26,6 +26,15 @@ let network=0;
 const failed=await new ExamOutbox({store:{read:async()=>null,write:async()=>{throw Error('disk full');}},key:'u:a',send:async()=>{network++;}}).init();
 failed.edit('x',1);await assert.rejects(()=>failed.flush(),/disk full/);
 assert.equal(network,0);failed.close();
+// An explicit validation rejection must not pin a bad in-flight payload forever.
+let accepted;
+const corrected=await new ExamOutbox({store:{read:async()=>null,write:async()=>{}},key:'u:invalid',send:async changes=>{
+ if(changes.q.value==='invalid')throw Object.assign(Error('invalid answer'),{status:400});
+ accepted=changes;return {versions:{q:changes.q.operation}};
+}}).init();
+corrected.edit('q','invalid');await assert.rejects(corrected.flush(),/invalid answer/);
+assert.equal(corrected.draft.inflight,null);assert.equal(corrected.draft.pending.q.value,'invalid');
+corrected.edit('q','corrected');await corrected.flush();assert.equal(accepted.q.value,'corrected');corrected.close();
 // Losing connectivity must retain the exact write and operation id on disk.
 // Recovering/reloading must replay it, not silently replace it with server state.
 for(const status of [undefined,429,503]){

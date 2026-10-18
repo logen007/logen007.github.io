@@ -331,3 +331,51 @@ conversion to JPG/PNG. Do not claim all invalid images are rejected. Full decode
 and audio-content validation remain separate policy/compatibility work. No new
 runtime dependency, schema change or exam-rule change. Roll back by reverting
 this PR normally; previously stored assets are untouched.
+
+## Lost answer-receipt recovery: 1.3.214
+
+Reproduced with the real Fastify actions, signed synthetic student cookie and
+isolated SQL: save operation A commits, its receipt is discarded, student edits B
+and reloads. The old outbox retained only B with the original base version, so
+the server correctly returned409 against A. This was a false cross-tab conflict
+from the student's perspective, not data deletion on the server. The regression
+failed on baseline and passed after the fix.
+
+The outbox now durably records the exact in-flight operation before sending.
+Unknown outcomes (network/5xx/429) replay that operation unchanged after retry or
+reload, using the server's existing idempotency check, then rebase the newer
+pending edit on its acknowledged operation. Explicit terminal rejections discard
+only the rejected in-flight envelope, retaining current answers so corrected
+validation input can be submitted. Genuine version conflicts are not rebased
+blindly. Deadline, scoring, auth and server actions remain unchanged.
+
+- Real HTTP/SQL regression covers lost receipt after commit, newer edit, durable
+  reload, exact operation replay, correct latest answer and acknowledged cleanup.
+- A competing client update still returns409 and retains the local latest answer;
+  it cannot overwrite the competitor. Retrying submit returns the original
+  submittedAt receipt. No new attempt is created by this retry.
+- Pure outbox tests include correcting a400-rejected answer; existing restore,
+  429/503/offline, disk failure and concurrent-edit tests passed. test:sync passed.
+- Legacy local drafts without the optional inflight field remain readable; no
+  IndexedDB version or backend schema migration. The existing single-tab lock
+  remains. A rollback to the old client loses this new recovery behavior; do not
+  delete local drafts or restore production data as a source-code rollback.
+- Preview-only controls can discard successful save responses until restored and show
+  the synthetic latest writing answer for browser proof. These routes exist only
+  in the loopback test fixture, never in the production server.
+
+No live exam, recording or external provider was used. Speaking remains excluded
+from active audit work. Browser proof and final gate/release status follow below.
+
+- HIGH36/36 passed on the product/test candidate (macOS Node26.5), including real
+  SQL/HTTP recovery tests; web/backend dependency audits reported0 vulnerabilities.
+  Final preview-control refinements were exercised in-browser and syntax checked;
+  required CI must pass the final committed head before merge.
+- Built local browser proof: discard successful save receipts, confirm the
+  database stores Erste Antwort while the client gets no acknowledgement; edit
+  Neueste Antwort and F5 while receipts are still blocked. The client retains
+  Neueste Antwort and database still shows Erste Antwort. Restore receipts, then
+  read back database showing the exact latest text with fünf/Grüße/Köln/äöü/ß.
+  No conflict was shown. Screenshots outside Git: audit-evidence/
+  answer-ack-recovery.jpg and answer-ack-server-proof.jpg. This is controlled
+  loopback connection failure, not a real mobile-network outage.
