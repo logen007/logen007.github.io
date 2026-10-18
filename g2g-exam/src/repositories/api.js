@@ -120,7 +120,9 @@ export class ApiRepository{
     const outbox=this.outbox,store=this.draftStore,release=this.releaseDraft;
     outbox?.close();this.outbox=null;this.outboxAttempt=null;
     if(this.onlineDraft)window.removeEventListener('online',this.onlineDraft);
-    Promise.resolve(outbox?.persisted).catch(()=>{}).finally(()=>{store?.close();release?.();});this.releaseDraft=null;this.draftStore=null;
+    // A pending send can still persist its receipt. Keep its store and editing
+    // lock alive until that bounded request settles, including failure paths.
+    Promise.allSettled([outbox?.running,outbox?.persisted]).then(()=>{store?.close();release?.();});this.releaseDraft=null;this.draftStore=null;
   }
   saveDraftAnswer(attemptId,qid,value){
     if(this.outboxAttempt!==attemptId||!this.outbox)throw new Error('Bản lưu trên máy chưa sẵn sàng.');
