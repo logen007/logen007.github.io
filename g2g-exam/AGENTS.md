@@ -1,5 +1,8 @@
 # G2G Exam — AI Working Rules
 
+Chat mới bắt đầu từ `../README.md` ở Git root: tìm checkout, kết nối hiện có,
+thứ tự tài liệu và trạng thái branch/PR. Không suy quyền truy cập từ tài liệu.
+
 ## Engineering workflow — đọc trước khi triển khai
 
 - `docs/ENGINEERING.md`: Understand → Design → Implement → Self review → Test →
