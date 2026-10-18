@@ -582,3 +582,47 @@ passed. This was not hidden or counted as a successful initial run.
 Required CI gates exact candidate before merge. Version 1.3.219; normal release
 authorized. No production data, scoring or experimental-speaking changes.
 Rollback via ordinary PR revert; public post-deploy proof is health/version only.
+
+## Login motion refinement: 19 October 2026 / 1.3.220
+
+Owner rejected 1.3.219's generic copy/poster treatment, then requested further
+motion research and implementation. Restored the concrete exam promise; separated
+sign-in from a product-UI illustration. Removed the tilted paper and extra slogans.
+Public catalog/stats now use a native disclosure, preserving the same real API
+hooks. Mobile puts sign-in before the preview in visual and keyboard order.
+
+Research: web.dev/articles/animations-guide (compositor-friendly transforms and
+opacity), web.dev/learn/css/animations (motion preference), and Google's official
+identity/branding-guidelines HTML configurator (unchanged four-color G vector).
+Design-system and lean-build skills guided shared-token reuse and a small scene
+replay owner, without a library, new auth behavior, looping animation or timers.
+CSS layers assemble in perspective, answers enter, light sweeps once, progress
+draws and autosave illustration settles. Total 2.7s; final text is untransformed.
+Authentication remains opaque, static and immediately available during replay.
+Motion runs only under no-preference; replay rechecks the preference each time.
+
+Verification: baseline npm test + server syntax passed before edits. Final local
+HIGH passed 36/36 on Node 26.5/macOS, including build/SQL/HTTP/DOM checks; both
+dependency audits returned zero vulnerabilities. Login regressions exercise real
+renderer/settings caption ownership, replay/restart, reduced-motion guard and
+unsupported-API fallback, with CSS contracts for static auth/mobile ordering.
+
+Actual built local Fastify/SQL preview checked brand yellow #F6D238 at
+320/390/768/1024/1440px in both modes, plus neutral #111827 at 320/1440px in both
+modes. All final states have 56px Google CTA, no page overflow or clipped question
+content. First visual pass found clipping at 320/768px: replaced fixed scene/screen
+heights with intrinsic content + minimum height, then reran HIGH and browser checks.
+Restarted the isolated server after rebuilding its fingerprinted assets; an
+intermediate stale fixture asset map caused an unstyled reload, not accepted as
+visual proof. Native catalog open/close and keyboard focus on Google/policy passed.
+
+Actual replay readback changed the screen to a perspective matrix and hid the
+save indicator while CTA opacity stayed 1/transform none. After 3.3s screen was
+identity and save opacity 1. A 53-frame capture (~16fps recording, not a browser
+performance claim) is saved outside Git with final light/dark/mobile screenshots
+as audit-evidence/login-motion-*-1.3.220; no fictional score/testimonial added.
+Physical Safari/iPhone, screen reader, OS-level reduced-motion emulation, live
+Google OAuth and device frame-rate profiling remain unverified. No speaking,
+exam rules, provider credentials, production business data or infrastructure edits.
+Release through protected PR/main only; rollback by ordinary revert. Public
+post-deploy probe proves HTTP health/database flag/version, not live auth or SHA.
