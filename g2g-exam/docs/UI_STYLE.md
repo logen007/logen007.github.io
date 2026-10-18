@@ -112,6 +112,14 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 - `styles.css` owns tokens, base controls, navigation, page layout, exam and builder.
 - `enhancements.css` owns settings/infrastructure layouts using those tokens.
   Do not append another global visual override block here.
+- Shared success/warning/error surfaces and borders have explicit light/dark
+  token pairs beside the existing semantic foregrounds. Consumers use these
+  tokens directly, not component-specific dark patches. Inverse cards use
+  `--surface-inverse` with `--text-inverse`; never invert `--chu` and `--mat`.
+  CPU time-axis density follows the plot container width so narrow desktop
+  columns and phones retain readable, nonoverlapping labels.
+  Built public policy pages use the same fingerprinted base CSS and pre-paint
+  color-mode preference bootstrap as the app; policy text stays static/public.
 - `src/ui/icons.js` owns outline icons. Buttons own the frame; do not use an icon
   asset with a second embedded border. Existing unframed Figma assets may be reused.
 - `src/settings/palette.js` owns brand colors and contrast; `theme.js` applies and caches them. Use `--brand-primary`

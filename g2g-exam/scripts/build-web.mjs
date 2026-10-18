@@ -38,9 +38,11 @@ for(const [file,metadata] of Object.entries(result.metafile.outputs)){
   const original=metadata.entryPoint==='src/app.js'?'app':'feature-loader';
   html=html.replace(new RegExp(`\\./src/${original}\\.js\\?[^" ]+`),'/assets/'+path.basename(file));
 }
+const cssAssets={};
 for(const file of ['styles.css','enhancements.css']){
   const content=await fs.readFile(path.join(root,file));
   const name=file.replace('.css','-'+createHash('sha256').update(content).digest('hex').slice(0,12)+'.css');
+  cssAssets[file]='/assets/'+name;
   await fs.writeFile(path.join(out,'assets',name),content);
   html=html.replace(new RegExp(`\\./${file.replace('.','\\.')}\\?[^" ]+`),'/assets/'+name);
   speakingHtml=speakingHtml.replace(new RegExp(`\\./${file.replace('.','\\.')}\\?[^" ]+`),'/assets/'+name);
@@ -48,7 +50,16 @@ for(const file of ['styles.css','enhancements.css']){
 await fs.writeFile(path.join(out,'vi.html'),html);
 await fs.writeFile(path.join(out,'index.html'),html);
 await fs.writeFile(path.join(out,'speaking-lab.html'),speakingHtml);
-for(const file of ['privacy.html','terms.html','legal.css'])await fs.copyFile(path.join(root,file),path.join(out,file));
+// Reuse the app's pre-paint preference bootstrap, without requiring the app or
+// authentication to read public policy content. Source templates remain JS-free.
+const colorModeBoot=html.match(/<script>try\{document\.documentElement\.dataset\.colorMode=[\s\S]*?<\/script>/)?.[0];
+if(!colorModeBoot)throw new Error('Missing shared color-mode bootstrap');
+for(const file of ['privacy.html','terms.html','legal.css']){
+  if(file.endsWith('.css')){await fs.copyFile(path.join(root,file),path.join(out,file));continue;}
+  let policy=await fs.readFile(path.join(root,file),'utf8');
+  policy=policy.replace('<link rel="stylesheet" href="/styles.css">',colorModeBoot+`<link rel="stylesheet" href="${cssAssets['styles.css']}">`);
+  await fs.writeFile(path.join(out,file),policy);
+}
 await fs.copyFile(path.join(root,'server/runtime/runtime-config.js'),path.join(out,'runtime-config.js'));
 await fs.copyFile(path.join(root,'media-worker.js'),path.join(out,'media-worker.js'));
 await fs.cp(path.join(root,'speaking-assets'),path.join(out,'speaking-assets'),{recursive:true});

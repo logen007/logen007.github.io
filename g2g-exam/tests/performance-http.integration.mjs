@@ -111,6 +111,15 @@ try{
   const media=await app.inject({url:image.json().url,headers:{cookie:cookie('admin')}});
   assert.equal(media.headers['x-content-type-options'],'nosniff');assert.match(media.headers['content-type'],/^image\/png/);
   const html=await app.inject('/adm');assert.equal(html.statusCode,200);assert.ok(html.body.includes('/assets/app-'));assert.ok(html.headers['cache-control'].includes('no-store'));
+  for(const file of ['privacy.html','terms.html']){
+    const policy=await app.inject('/'+file);assert.equal(policy.statusCode,200);
+    const stylesheet=policy.body.match(/href="(\/assets\/styles-[^"]+\.css)"/)[1];
+    const response=await app.inject(stylesheet);assert.equal(response.statusCode,200);assert.match(response.headers['content-type'],/text\/css/);
+    assert.ok(response.body.includes('--surface-inverse:'),'Public policies use the actual shared theme CSS');
+    assert.ok(policy.body.includes("localStorage.getItem('g2g.color-mode.v1')"),'Public pages restore the same personal color mode before paint');
+    assert.doesNotMatch(policy.body,/\/src\/app.js|\/assets\/app-/,'Policies remain independent of login and application bootstrap');
+    assert.match(policy.body,/<article>[\s\S]+<h1>/,'Policy content is static and remains available without JavaScript');
+  }
   const assets=[...html.body.matchAll(/(?:src|href)="(\/assets\/[^" ]+)"/g)].map(match=>match[1]);
   assert.equal(assets.length,4);
   for(const url of assets){const response=await app.inject({url,headers:{'accept-encoding':'br,gzip'}});assert.equal(response.statusCode,200);assert.ok(response.headers['cache-control'].includes('immutable'));assert.equal(response.headers['content-encoding'],'br');assert.ok(response.headers.vary.includes('Accept-Encoding'));}
