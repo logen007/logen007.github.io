@@ -21,7 +21,6 @@ const withNavigationLoading=createNavigationLoading();
 let openingBuilder=false;
 import {resolveBuilderSection} from './ui/builder-route.js';
 import {startGoogleOneTap,stopGoogleOneTap} from './ui/google-one-tap.js';
-import {bindLoginMotion} from './ui/login-motion.js';
 const startupGate=createStartupGate();
 const initialUrl=new URL(window.location.href);
 import {bindTextareaBold} from './ui/textarea-bold.js';
@@ -219,7 +218,6 @@ async function act(fn,success,{rerender=true}={}){
 
 function loginView(){
   app.innerHTML=loginHtml({mode:repo.mode});
-  bindLoginMotion(app);
   app.querySelector('[data-action="toggle-color-mode"]').onclick=event=>toggleColorMode(event.currentTarget);
   if(repo.mode!=='local')startGoogleOneTap({onError:message=>notify(message)});
   if(repo.mode==='local'){
