@@ -52,6 +52,11 @@ log "deploying G2G ${deployed:+$(short "$deployed") -> }$(short "$target")"
 git reset --hard "$target" >/dev/null
 
 cd "$APP_DIR"
+expected_version="$(sed -n "s/^export const APP_VERSION='\([0-9][0-9.]*\)';$/\1/p" src/release.js)"
+if [ -z "$expected_version" ] || [ ! -f scripts/verify-release.mjs ]; then
+  log "release verification source missing; refusing deploy"
+  exit 1
+fi
 if ! sh server/check-code.sh; then
   log "syntax check FAILED at $(short "$target"); will retry next timer run"
   exit 1
@@ -79,11 +84,12 @@ if ! docker compose -f "$COMPOSE_FILE" up -d --build app; then
   exit 1
 fi
 
-# Return as soon as the new container is healthy. A failed health check is NOT
-# recorded as deployed, so the next timer run retries automatically.
+# Use the shared bounded probe, comparing to the CHECKOUT version rather than
+# the running container's source (which could still belong to the old release).
+# HTTP 200 alone is not sufficient. Failed probes never advance deployed-sha.
 i=0
 while [ "$i" -lt 20 ]; do
-  if docker compose -f "$COMPOSE_FILE" exec -T app node -e "fetch('http://127.0.0.1:8080/api/health').then(async r=>{if(!r.ok)throw new Error(await r.text());process.exit(0)}).catch(()=>process.exit(1))" >/dev/null 2>&1; then
+  if docker compose -f "$COMPOSE_FILE" exec -T app node /app/scripts/verify-release.mjs http://127.0.0.1:8080 "$expected_version" >/dev/null 2>&1; then
     printf '%s\n' "$target" >"$DEPLOYED_FILE"
     log "deploy healthy at $(short "$target")"
     exit 0

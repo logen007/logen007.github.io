@@ -122,6 +122,11 @@ merge → main → VPS auto-deploy → health/version + critical-flow verificati
   phép kiểm tra môi trường đó**. Tool chỉ GET, kiểm tra HTTP + JSON health DB +
   version, không chứng minh login, UI, media, email hoặc đúng Git SHA. Đối chiếu
   SHA trong deploy state/log; không suy từ version string là đủ.
+- Từ 1.3.209, auto-deploy dùng cùng probe trong container và expected version
+  đọc từ checkout. Chỉ ghi deployed-sha khi HTTP + JSON health/database/backend
+  và version cùng đạt; timeout/mismatch giữ last-good SHA và retry hữu hạn.
+  Script được timer đọc từ checkout ở lần gọi tiếp theo; không suy lần triển
+  khai mang chính bản sửa này đã chạy script mới. Không sửa timer/hạ tầng.
 
 ### Rollback và khi phát hành lỗi
 

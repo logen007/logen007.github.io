@@ -78,6 +78,7 @@ Không giấu baseline bằng allowlist rỗng hoặc `continue-on-error`.
 | Media/R2 | `test:r2`, `media-gc`, `copy-media`, `image-paste`; references, fallback, upload limits |
 | Speaking/delete/archive | `speaking-lab`, `speaking-devices`, SQL `speaking-lab`/`speaking-archive`, DOM `speaking-phone`; retries, CSRF, Drive ownership |
 | Backup/restore/deployment | `backup-*`, isolated restore workflow, Docker import closure `vps-backend`; do not run a real restore on production |
+| Deploy health | `test:workflow` kiểm tra semantic probe; `deploy-health.test.mjs` chạy deploy shell với command doubles, retry và last-good SHA; HIGH/CI gọi cả hai, không phải deploy VPS thật |
 
 Tên ngắn trong bảng là `tests/<name>.test.mjs`. Một số file được import bởi suite
 khác; không đếm số file là số test độc lập/coverage. Không tự chạy mọi `.mjs` bằng
