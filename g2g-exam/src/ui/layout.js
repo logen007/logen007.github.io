@@ -7,7 +7,7 @@ import {colorModeButtonHtml} from '../settings/color-mode.js';
 export function topbarHtml({user,mode,online,ui={},canSwitchRole=false}){
   const general=currentPublicSettings().general||{};
   const logoUrl=general.logoUrl?`/brand/logo?v=${encodeURIComponent(general.logoUrl)}`:'/brand/logo';
-  const brandLogo=mode==='local'?'G2G':`<img src="${esc(logoUrl)}" alt="G2G Career" width="48" height="48">`;
+  const brandLogo=mode==='local'||!general.logoUrl?'G2G':`<img src="${esc(logoUrl)}" alt="G2G Career" width="48" height="48">`;
   const role=isStudent(user)?'Học viên':isMaster(user)?'Quản trị cấp cao':'Giáo viên';
   const tabs=user&&!isStudent(user)
     ?(isMaster(user)?[['dashboard','Tổng quan','grades'],['exams','Đề Thi','exams'],['speaking','Thi Nói thử nghiệm','speaking'],['backup','Backup','backup'],['teachers','Người dùng','users'],['trash','Thùng rác','trash'],['settings','Cài đặt','settings']]:[['exams','Đề Thi','exams'],['grades','Bài Thi','grading'],['classes','Lớp học','users']])

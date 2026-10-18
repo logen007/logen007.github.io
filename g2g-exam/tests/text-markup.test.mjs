@@ -81,7 +81,7 @@ assert.match(confirmationSource,/iconHtml\(cancelIcon\)/);
 assert.match(confirmationSource,/iconHtml\(confirmIcon\)/);
 assert.match(confirmationSource,/esc\(cancelLabel\)/);
 assert.match(confirmationSource,/esc\(confirmLabel\)/);
-assert.match(confirmationSource,/extra\.onclick=\(\)=>\{close\(\);extraAction.onClick\(\);\}/);
+assert.match(confirmationSource,/extra\.onclick=\(\)=>\{if\(close\(\)\)extraAction.onClick\(\);\}/);
 assert.match(confirmationSource,/esc\(extraAction.label\)/);
 const cancelExamSource=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
 assert.match(cancelExamSource,/function render\(\)\{\s*if\(!startupGate.isReady\(\)\)return;/);

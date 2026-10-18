@@ -25,6 +25,8 @@ import {startTrashGarbageCollector} from './trash-gc.js';
 import {submitExpiredAttempts} from './actions/attempts.js';
 import {r2Settings} from './r2-settings.js';
 import {registerMediaDeliveryRoutes} from './media-routes.js';
+import {uploadExtension} from './media-upload-policy.js';
+import {requestOriginPolicy} from './request-origin.js';
 import {APP_VERSION} from '../../src/release.js';
 import {registerBackupGoogleRoutes,downloadBackupFile} from './backup-google.js';
 import {startBackupScheduler} from './backup-job.js';
@@ -50,8 +52,9 @@ await initDb();
 const app=Fastify({logger:true,trustProxy:process.env.TRUST_PROXY==='true'});
 const r2Media=await r2Settings.start({uploadDir,logger:app.log});
 await app.register(cookie,{secret:process.env.COOKIE_SECRET||'development-only-change-me',hook:'onRequest'});
-const origins=String(process.env.CORS_ORIGINS||'').split(',').map(x=>x.trim()).filter(Boolean);
-await app.register(cors,{origin:(origin,cb)=>{if(!origin||!origins.length||origins.includes(origin))cb(null,true);else cb(new Error('Origin không được phép.'),false);},credentials:true});
+const originPolicy=requestOriginPolicy({production:process.env.NODE_ENV==='production',publicUrl:process.env.PUBLIC_URL||'http://localhost:8080',origins:process.env.CORS_ORIGINS||''});
+app.addHook('onRequest',async request=>originPolicy.guard(request));
+await app.register(cors,{origin:(origin,cb)=>cb(null,originPolicy.allows(origin)),credentials:true});
 await app.register(multipart,{limits:{fileSize:25*1024*1024,files:1}});
 
 app.addHook('onSend',async(request,reply,payload)=>{
@@ -138,9 +141,10 @@ async function saveUpload(request,{kind,maxBytes,mimePrefix,defaultExt},user=nul
   user=user||await requireRole(request,'teacher','master');
   const part=await request.file();
   if(!part)throw appError(400,`Chưa chọn tệp ${kind}.`);
-  if(part.mimetype&&!part.mimetype.startsWith(mimePrefix))throw appError(400,`Tệp tải lên không phải ${kind}.`);
-  const ext=path.extname(part.filename||'').replace(/[^.a-zA-Z0-9]/g,'').slice(0,10);
-  const imageStem=path.basename(part.filename||'image',ext).toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,60)||'image';
+  const ext=uploadExtension(part.mimetype,mimePrefix);
+  if(!ext)throw appError(400,mimePrefix==='image/'?'Chọn ảnh JPG, PNG, WebP, GIF, AVIF, BMP hoặc ICO. Hãy chuyển SVG sang PNG trước khi tải.':`Tệp tải lên không phải ${kind} được hỗ trợ.`);
+  const originalExt=path.extname(part.filename||'');
+  const imageStem=path.basename(part.filename||'image',originalExt).toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,60)||'image';
   const name=mimePrefix==='image/'&&part.mimetype==='image/jpeg'
     ?`${imageStem}-${randomUUID().slice(0,8)}.jpg`
     :`${Date.now()}-${randomUUID()}${ext||defaultExt}`;
@@ -163,6 +167,8 @@ app.get('/brand/:kind',async(request,reply)=>{
   if(!key)throw appError(404,'Ảnh không tồn tại.');
   const settings=await getSettings(),name=path.basename(settings.general[key]||'');
   if(!name)throw appError(404,'Ảnh không tồn tại.');
+  reply.header('X-Content-Type-Options','nosniff');
+  reply.header('Content-Security-Policy',"sandbox; default-src 'none'; style-src 'unsafe-inline'");
   reply.header('Cache-Control','public, max-age=300');
   return reply.sendFile(name,uploadDir);
 });

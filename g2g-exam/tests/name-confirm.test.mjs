@@ -31,7 +31,7 @@ globalThis.document={
     },remove(){this.removed=true;}};
     return overlay;
   },
-  body:{append(){}},addEventListener(type,handler){keyHandler=handler;},removeEventListener(){}
+  body:{append(){}},addEventListener(type,handler){if(type==='keydown')keyHandler=handler;},removeEventListener(){}
 };
 try{
   for(const action of ['accept','cancel','escape','backdrop']){

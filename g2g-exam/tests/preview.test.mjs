@@ -30,6 +30,7 @@ assert.doesNotMatch(renderQuestionHtml({...optionQuestion,choices:[{text:longCho
 import {readExamAnswers} from '../src/ui/exam-answers.js';
 import {examBuilderHtml} from '../src/views/builder.js';
 import {topbarHtml} from '../src/ui/layout.js';
+import {currentPublicSettings} from '../src/settings/theme.js';
 import {dashboardHtml} from '../src/views/admin.js';
 import {previewExamModalHtml} from '../src/views/modals.js';
 import {mountStudentRuntime} from '../src/part-templates/a1-listening-part-1/student.js';
@@ -331,7 +332,12 @@ try{
     sandbox.button.dataset.userGroupFilter='external';
     vm.runInNewContext(handler,sandbox);assert.equal(sandbox.selectedGroup,'external');
     const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin'},canSwitchRole:true});
-    assert.match(html,/<div class="logo"><img src="\/brand\/logo/);
+    assert.match(html,/<div class="logo">G2G<\/div>/,'An unconfigured logo must not request a missing image');
+    const settings=currentPublicSettings(),savedGeneral=settings.general;
+    try{
+      settings.general={...savedGeneral,logoUrl:'/uploads/configured-logo.png'};
+      assert.match(topbarHtml({user:{role:'master'},mode:'api',online:true}),/<div class="logo"><img src="\/brand\/logo\?v=/);
+    }finally{settings.general=savedGeneral;}
     assert.match(html,/<header class="thanh-dau" data-current-role="master">/);
     assert.doesNotMatch(html,/<span class="nhan"/);
     assert.match(html,/<button class="account-avatar"[^>]*aria-controls="accountRoleMenu"/);

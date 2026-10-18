@@ -1,0 +1,169 @@
+# Code / UX / UI audit — 18 October 2026
+
+Baseline: main `670499692f6bf0a02c84cb94395686db4bebe235`, app 1.3.209.
+Candidate: `audit/code-ux-ui-2026-10`. No production data, schema or exam rules
+changed. This is a cross-layer engineering audit, not a complete penetration
+test, source-line-by-line certification or WCAG conformance claim.
+
+## Scope and method
+
+Read owner docs (AGENTS, MAINTENANCE, UI_STYLE, ENGINEERING, QUALITY_GATES),
+trace security/data/UI entry points, reproduce actionable findings, patch the
+responsible layer, then run focused regressions and HIGH. Owner explicitly
+allowed local browser verification with synthetic data. Browser used the real
+Fastify application and built bundle with PGlite fixtures; no production login,
+SMTP, AI, Google Drive or camera/microphone action. The preview listener is bound
+to loopback. Infrastructure values shown there are local, not VPS metrics.
+
+| Layer | Evidence reviewed | Boundaries / result |
+| --- | --- | --- |
+| Authentication / roles | auth cookies, OAuth nonce/state/return routing, requireUser/Role, backend-access tests | Signed HttpOnly/Secure production cookies and server role guards retained; no real OAuth account exercise |
+| Browser request boundary | CORS registration, credentialed state/actions/upload routes | Fixed permissive empty production allowlist and missing common write-origin guard |
+| Media / delivery | upload filename/type, static sendFile, R2 fallback and brand route | Fixed active-extension risk; existing media is not deleted/renamed |
+| Exam / grading / privacy | state projection, attempt review authorization, snapshots, SQL regressions | No scoring changes; snapshot/privacy/publication/deadline behavior tested using fixtures, not official-score revalidation |
+| Data flow / performance | API transport, per-user cache, grade autosave, history, performance suites | Metadata projection, conditional requests, outbox/save/flush tests retained; not VPS capacity proof |
+| Operations | Docker import closure, semantic deploy probe, required CI gates | Existing 1.3.209 deploy health improvement retained; no backup restore, secret-history scan or SSH verification |
+| UX | admin catalog/settings/dashboard, student catalog/results, profile and create-exam dialogs | Verified representative local paths and empty states; complete real-user journeys remain untested |
+| UI / design system | token ownership, dark/light, badges, rounded controls, local table scrolling | Existing direction retained; no mass CSS overrides or redesign |
+| Accessibility | keyboard/ARIA/focus lifecycle, field sizing, selected badge contrast samples | Fixed confirmation/create-dialog issues; no screen reader, axe scan, zoom-200% or all-components WCAG claim |
+
+## Findings and changes
+
+### P1 — client filenames could produce active same-origin media
+
+Before: upload checked the declared image/audio MIME prefix, but stored the
+extension from the supplied filename; delivery inferred the type from that
+extension. A declared `image/png` with filename `payload.html` could be stored
+as HTML. This is a code-level risk; no production exploit or incident is claimed.
+
+Now: server-owned MIME-to-extension policy, raster image allowlist, safe audio
+extensions/fallback, SVG upload rejection with conversion guidance. Legacy
+non-inline media is an authenticated attachment with octet-stream + nosniff,
+not an R2 redirect. Brand delivery adds nosniff and restrictive sandbox CSP.
+PNG/ICO/GIF/etc. logos remain supported; picker no longer advertises SVG uploads.
+Existing referenced bytes are untouched. Policy does not inspect/decode file
+contents or replace malware/file-signature validation.
+
+Proof: real Fastify multipart injection checks misleading filename, image/audio
+suffixes, SVG and wrong-MIME rejection and student denial. Real static delivery
+tests check HTML/SVG attachment headers and no redirect, plus audio Range/R2
+fallback. `@fastify/static` overwrites inferred Content-Type by default; the
+attachment branch explicitly disables its content-type inference.
+
+### P1 conditional — production origin policy was fail-open when unset
+
+Before: empty CORS_ORIGINS accepted arbitrary origins with credentials, and
+common write handlers had no shared Origin guard. Exploitability depends on
+deployment allowlist/cookies/site context; live private configuration was not read.
+
+Now: production allows the PUBLIC_URL origin plus explicit CORS_ORIGINS, not
+arbitrary origins. Origin-bearing POST/PUT/PATCH/DELETE from untrusted or opaque
+origins fail before write handlers, including simple text/form requests. Explicit
+development allowlists remain effective; no-Origin CLI requests are retained.
+This is not a CSRF-token system or an authentication bypass.
+
+Proof: real Fastify handler counter remains zero for external, sibling and
+opaque Origins; trusted and no-Origin requests succeed. Before release, verify
+production PUBLIC_URL / CORS_ORIGINS match every intended browser entry origin.
+
+### P2 — modal keyboard lifecycle incomplete
+
+Local browser reproduced Tab leaving the confirmation overlay (activeElement
+became body). Confirm replacement also removed the DOM without settling the old
+caller or cleaning its document listener. Create-exam overlay lacked dialog
+semantics and Escape handling. Profile close did not restore the opener focus.
+
+Now: confirmation traps Tab/Shift+Tab, contains outside focus, restores a usable
+control, settles superseded callers and accepts each action once. Existing
+profile/create overlays share a small keyboard helper; hidden options are not
+focus targets. Create-exam has dialog name/role and labeled Close. Required
+profile completion is still not dismissible; save/business behavior is unchanged.
+Focused jsdom tests cover cancellation, replacement, extras, repeat clicks,
+Escape, forward/backward wrapping and required dialogs.
+
+### P2 — unconfigured logo produced broken-image header
+
+Reproduced with default local settings: the header requested absent /brand/logo
+and alt text overlapped the name. Now it uses existing G2G text when no logo is
+configured, keeps configured-logo behavior, and prevents the logo box shrinking.
+No branding settings are changed. Tests cover configured and absent logo cases.
+
+## Browser evidence actually collected
+
+| Screen / state | Viewport evidence |
+| --- | --- |
+| Admin dashboard, light | Default desktop and 390px screenshot; native disclosure and infrastructure/empty states inspected |
+| Settings general | 390px light/dark screenshots; page fits viewport; editable text fields 16px; no unnamed visible buttons in inspected state |
+| Admin exam catalog | 320 / 390 / 768 / 1440px: document width matched viewport, wide table stays locally scrollable |
+| Create-exam dialog | 390px dark: named dialog, keyboard remains inside, Escape returns focus to create button; no exam created |
+| Student catalog | 320 / 390 / 768 / 1440px: no document overflow or unnamed visible buttons in fixture state; 390px dark screenshot |
+| Student results | Empty-results message and action to catalog inspected |
+| Profile / name confirmation | 390px light baseline reproduction; final dark bundle rechecked: two Tabs return to Cancel inside confirmation, Escape restores usable profile control; screenshot saved, no name submitted |
+
+Sample computed dark colors from the actual student catalog (not guessed from
+screenshots), with the existing colorContrast function: Goethe 6.49:1
+(#C5E3FF / #174D85), A1 6.81:1 (#A4FFE0 / #075C49), primary button 7.18:1
+(black / #94979E). These samples do not certify every token/background/state.
+44px action height is a project ergonomics rule, not a claim that every 44px
+criterion is WCAG 2.1 AA. Screenshot fixtures use the default brand, not the
+production brand settings. No automatic aesthetic/coverage score is assigned.
+
+## Follow-up, not silently implemented
+
+- P2: file-signature validation / decoding policy for raster/audio; use format
+  fixtures and preserve current authored assets, not a broad delete or rename.
+- P2: verify all intended production entry origins before releasing the stricter
+  request policy. No reading secrets or altering infrastructure to do this audit.
+- P2: complete role-by-role browser journeys for real exam/preview/writing,
+  published results, teacher grading, Backup and speaking permission failures;
+  current automated SQL/domain/DOM tests do not replace these browser journeys.
+- P2: screen reader, 200% zoom, reduced-motion device settings and real Safari/iOS
+  keyboard/camera testing. The local browser is not a physical iPhone test.
+- P2: visual-regression baseline/axe pilot with reviewed synthetic fixtures. This
+  turn did not install a new browser framework or approve baselines automatically.
+- P2: split app.js (1623 lines at baseline) by ownership as related tasks justify
+  it; CSS (1553 lines) and enhancements (269) remain coupled. No bulk refactor,
+  duplicate palette or new scoring source of truth in an audit patch.
+- P2 ops: real restore drill, external-provider delivery, live deployment SHA and
+  secret-history scan remain outside the evidence. No claim of zero risk.
+
+## Reference criteria
+
+Security recommendations follow [OWASP upload guidance](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html)
+and [OWASP CSRF guidance](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
+Modal keyboard expectations follow [WAI-ARIA APG modal dialogs](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
+Findings above come from this repository/tests/local browser, not from assuming
+that a generic guideline proves a production vulnerability.
+
+## Candidate verification and delivery
+
+- Local macOS Node 26.5.0: HIGH **36/36 passed**, full build and dependency audits
+  web/backend exit 0 (0 reported vulnerabilities at the time of the run).
+- New real-library/SQL/DOM tests exercised the fixes without external services.
+  An old source-string assertion for extra-action changed to reflect the
+  idempotent handler; added DOM proof still verifies close-before-extra-action.
+  The logo assertion now checks both absent and configured-logo behavior.
+- `git diff --check` passed. No schema migration, existing-file deletion, app
+  version bump or production deployment in this audit candidate.
+- Local browser evidence lives outside Git in the chat workspace's
+  `audit-evidence/`: `confirmation-dark-after.jpg`, `student-catalog-dark-after.jpg`.
+  No real user data is included. Desktop/mobile checks remain representative,
+  not an exhaustive visual regression suite or independent accessibility review.
+- CI Node22 Ubuntu and PR metadata are recorded on the candidate PR; read its
+  current status rather than inferring completion from this local report.
+
+### Release preparation 1.3.210
+
+Owner requested continuation after the audit. Read-only public checks on
+18 October: health ok/database true, running version 1.3.209 and publicUrl
+https://exam.g2gcareer.com. OPTIONS preflight on saveAnswers returned204 with
+credentialed allow-origin for that canonical origin. A sibling test origin and
+an external test origin returned500 without CORS permission under the old code.
+This confirms the canonical origin is already explicitly permitted by existing
+deployment configuration; the candidate retains it. No business write, login
+or secret read was performed. Exact private environment values and any other
+intended entry origins were not inspected. Added real Fastify+CORS preflight
+regression (trusted204/credentials, untrusted no allow-origin) before release.
+Version bumped to1.3.210; earlier no-version/no-deploy notes describe the initial
+audit-only stage. PR checks must pass this final candidate before merge. Public
+health/version will be checked after deployment; no SSH/timer proof is claimed.

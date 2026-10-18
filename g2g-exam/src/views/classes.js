@@ -1,6 +1,7 @@
 import {textHtml,esc} from '../ui/format.js';
 import {iconHtml} from '../ui/icons.js';
 import {bindClassPickerClear} from '../ui/class-picker-clear.js';
+import {bindDialogKeyboard} from '../ui/dialog-keyboard.js';
 import {EXTERNAL_CLASS,normalizeStudentLevel,validateStudentProfile} from '../domain/student-profile.js';
 
 export function teacherChip(teacher){
@@ -28,20 +29,13 @@ export function classesHtml({data,classId=null}){
     <h2>Học viên Vãng lai</h2><p class="phu-de">Gửi mã xác nhận cho đúng email để học viên chọn lớp.</p>${studentRosterHtml(data,students.filter(student=>!student.classId||student.classId===external?.id),{external:true})}`;
 }
 
-export function mountDialog(title,body,{required=false,compact=false}={}){
+export function mountDialog(title,body,{required=false,compact=false,onDismiss=()=>{}}={}){
+  const previousFocus=document.activeElement;
   document.getElementById('modal')?.remove();
   const modal=document.createElement('div');modal.id='modal';modal.className='hop-chon';
   modal.innerHTML=`<section class="noi-hop ${compact?'noi-hop--compact':''}" role="dialog" aria-modal="true" aria-labelledby="profileDialogTitle"><div class="dau-hop"><h2 id="profileDialogTitle">${esc(title)}</h2>${required?'':'<button class="nut nho" type="button" data-dismiss aria-label="Đóng">×</button>'}</div>${body}</section>`;
   document.body.append(modal);
-  modal.querySelector('[data-dismiss]')?.addEventListener('click',()=>modal.remove());
-  modal.addEventListener('keydown',event=>{
-    if(event.key==='Escape'&&!required)modal.remove();
-    if(event.key!=='Tab')return;
-    const focusable=[...modal.querySelectorAll('button,input,select,textarea')].filter(item=>!item.disabled);
-    const first=focusable[0],last=focusable.at(-1);
-    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
-    if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
-  });
+  bindDialogKeyboard(modal,{required,onDismiss,returnFocus:previousFocus});
   modal.querySelector('input')?.focus();return modal;
 }
 

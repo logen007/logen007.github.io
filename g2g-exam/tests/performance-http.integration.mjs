@@ -27,7 +27,10 @@ globalThis.__httpDb={query,withTx:fn=>db.transaction(client=>tx.run(client,()=>f
 globalThis.__testFastify=options=>{
   const app=Fastify({...options,logger:false});
   if(!process.env.G2G_PREVIEW_PORT)app.listen=async()=>app.ready();
-  else app.get('/__fixture/admin',(_request,reply)=>reply.header('Set-Cookie','g2g_session='+encodeURIComponent(sign('admin',secret))+'; Path=/; HttpOnly; SameSite=Lax').redirect('/adm'));
+  else{
+    const listen=app.listen.bind(app);app.listen=options=>listen({...options,host:'127.0.0.1'});
+    app.get('/__fixture/admin',(_request,reply)=>reply.header('Set-Cookie','g2g_session='+encodeURIComponent(sign('admin',secret))+'; Path=/; HttpOnly; SameSite=Lax').redirect('/adm'));
+  }
   return app;
 };
 const hook=registerHooks({resolve(specifier,context,next){
@@ -49,6 +52,17 @@ try{
   await query("INSERT INTO attempts(id,student_id,exam_id,status,attempt_no,public_data,private_data) SELECT 'a'||i,'s'||i,'e','in_progress',1,jsonb_build_object('studentId','s'||i,'examId','e','status','in_progress','answers',jsonb_build_object('q',0),'startedAt',$1::text,'examDeadlineMs',$2::numeric),$3 FROM generate_series(0,199) i",[new Date().toISOString(),deadline,JSON.stringify({examSnapshot:{...exam,questionSnapshot:[question]}})]);
   ({app}=await import('../server/src/index.js'));
   const cookie=id=>'g2g_session='+encodeURIComponent(sign(id,secret));
+  const upload=async(route,type,filename,user='admin')=>{
+    const boundary='synthetic-boundary';
+    return app.inject({method:'POST',url:'/api/media/'+route,headers:{cookie:cookie(user),'content-type':'multipart/form-data; boundary='+boundary},payload:Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${type}\r\n\r\nsynthetic bytes\r\n--${boundary}--\r\n`)});
+  };
+  const image=await upload('image','image/png','payload.html');assert.equal(image.statusCode,200);assert.match(image.json().url,/\.png$/);
+  const audio=await upload('audio','audio/mpeg','payload.html');assert.equal(audio.statusCode,200);assert.match(audio.json().url,/\.mp3$/);
+  assert.equal((await upload('image','image/svg+xml','payload.svg')).statusCode,400);
+  assert.equal((await upload('image','text/html','payload.png')).statusCode,400);
+  assert.equal((await upload('image','image/png','safe.png','s0')).statusCode,403);
+  const media=await app.inject({url:image.json().url,headers:{cookie:cookie('admin')}});
+  assert.equal(media.headers['x-content-type-options'],'nosniff');assert.match(media.headers['content-type'],/^image\/png/);
   const html=await app.inject('/adm');assert.equal(html.statusCode,200);assert.ok(html.body.includes('/assets/app-'));assert.ok(html.headers['cache-control'].includes('no-store'));
   const assets=[...html.body.matchAll(/(?:src|href)="(\/assets\/[^" ]+)"/g)].map(match=>match[1]);
   assert.equal(assets.length,4);
