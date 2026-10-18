@@ -277,3 +277,20 @@ configured repetitions are unchanged. No schema or saved exam changes.
   was absent. Screenshot: audit-evidence/audio-timeout-recovered.jpg.
 
 The existing physical-device/external-service limitations above still apply.
+
+## Device-failure verification follow-up
+
+Extended `speaking-devices.test.mjs` without changing product code or version.
+Explicit cases now exercise unsupported API; denied/missing/busy devices;
+disabled, muted or ended audio/video tracks; rejected video playback; interrupted
+sample recording; recorder errors and handler/recorder cleanup. All passed on
+Node26.5 macOS. `speaking-phone.test.mjs` also passed with the isolated jsdom
+runtime, covering retry/entry gating and phone lifecycle. Syntax and diff checks
+passed. Prior HIGH evidence still applies to the unchanged product source;
+CI must run on the final test-only commit before merge.
+
+No new product failure was reproduced. These are controlled device/DOM doubles,
+not browser permission prompts, physical camera capture or an iPhone call.
+Remaining physical iOS and live AI/Drive/SMTP/100ms checks require a separately
+authorized real-device/service session; the earlier local-only browser permission
+does not authorize those external actions or disclosure of recordings.
