@@ -736,3 +736,17 @@ exam rules, production data, credentials, schema or infrastructure changed.
 Not verified: physical iPhone/Safari, live OAuth/email, screen reader, OS-level
 reduced-motion emulation, GPU profiling, VPS backup/deployed SHA. Protected PR
 checks still gate exact candidate; normal revert is rollback.
+
+## Remove login outer frame / static paper stack: 19 October 2026 / 1.3.224
+
+Owner removed the redundant rounded wrapper and requested tilted sheets below.
+Scoped change: transparent borderless outer wrapper; two neutral pseudo-element
+papers anchored to the screen's intrinsic size, at -3/+2 degrees. Papers never
+animate; main screen/text stay untransformed. Existing six-question loop, auth,
+brand, tokens and mobile order are unchanged. No speaking/data/schema edits.
+Regression failed on the previous outer frame, then passed after the patch.
+Local MEDIUM 13/13 passed, plus diff check. Built isolated browser preview checked
+320/390/768/1024/1440px in both modes: no page overflow/content collision, 56px CTA,
+outer border 0 / transparent background, both papers animation-name none. Physical
+iPhone/Safari, screen reader and live OAuth are not tested. Required GitHub checks
+gate exact candidate; protected PR release and ordinary revert rollback apply.

@@ -734,7 +734,11 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .landing-copy h1>span { text-decoration:underline; text-decoration-color:var(--brand-primary); text-decoration-thickness:4px; text-underline-offset:8px; text-decoration-skip-ink:none; }
 .landing-copy>p { max-width:580px; margin:16px auto 0; font-size:16px; line-height:1.65; color:var(--chu); }
 .landing-visual { display:flex; flex-direction:column; height:100%; margin:0; min-width:0; padding-bottom:60px; }
-.landing-demo { position:relative; display:flex; align-items:center; flex:1; min-height:420px; padding:32px 28px; border:1px solid var(--vien); border-radius:28px; isolation:isolate; overflow:hidden; background:var(--surface-muted); }
+.landing-demo { position:relative; display:flex; align-items:center; flex:1; min-height:420px; padding:32px 28px; border:0; isolation:isolate; overflow:visible; background:transparent; }
+.landing-demo-stack { position:relative; isolation:isolate; width:100%; }
+.landing-demo-stack::before,.landing-demo-stack::after { content:''; position:absolute; z-index:-1; inset:0; border:1px solid var(--vien); border-radius:20px; background:var(--mat); pointer-events:none; }
+.landing-demo-stack::before { transform:translateY(8px) rotate(-3deg); background:var(--surface-muted); }
+.landing-demo-stack::after { transform:translateY(4px) rotate(2deg); }
 .landing-demo-screen { position:relative; width:100%; min-height:332px; border:1px solid var(--vien); border-radius:20px; overflow:hidden; background:var(--mat); }
 .landing-demo-top { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:48px; padding:8px 20px; border-bottom:1px solid var(--vien); }
 .landing-demo-identity { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; }
@@ -845,7 +849,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
   .landing-policy { padding:16px 0; }
   .landing-product { order:2; margin:8px 0 16px; }
   .landing-visual { height:auto; padding-bottom:0; }
-  .landing-demo { min-height:370px; padding:28px 16px; border-radius:24px; }
+  .landing-demo { min-height:370px; padding:28px 16px; }
   .landing-demo-screen { min-height:314px; }
   .landing-demo-nav { display:flex; align-items:center; gap:12px; padding:12px; border-right:0; border-bottom:1px solid var(--vien); text-align:left; }
   .landing-demo-nav>div { display:flex; flex:1; gap:6px; margin:0; }

@@ -58,9 +58,12 @@ assert.equal(button.textContent,'Keep decorative children','Public settings keep
 context.pub.auth.googleLoginEnabled=false;applyLogin();assert.equal(button.disabled,true);assert.equal(caption.textContent,'Đăng nhập Google đang tạm tắt');
 context.localOnly=true;caption.textContent='Demo';applyLogin();assert.equal(caption.textContent,'Demo');
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(css,/\.landing-demo \{[^}]*border:0;[^}]*background:transparent/,'No redundant outer frame around the illustration');
+assert.match(api,/class="landing-demo-stack"/);
+assert.match(css,/\.landing-demo-stack::before,\.landing-demo-stack::after/,'Two static paper sheets sit behind the screen');
 const motion=css.match(/@media\(prefers-reduced-motion:no-preference\) \{([\s\S]+?)\n\}/)?.[1];
 assert.ok(motion);
-assert.doesNotMatch(motion,/landing-cta|landing-login|landing-copy|landing-demo-layer|landing-demo-orbit/,'Only the question content and its step change, not authentication or background');
+assert.doesNotMatch(motion,/landing-cta|landing-login|landing-copy|landing-demo-layer|landing-demo-orbit|landing-demo-stack/,'Only the question content and its step change, not authentication or paper stack');
 assert.match(motion,/36s var\(--scene-delay\) linear infinite both/);
 for(const name of ['rise','right','reveal','left','drop','fade'])assert.match(css,new RegExp('@keyframes landing-question-'+name));
 assert.match(css,/\.landing-demo-question \{[^}]*opacity:0; visibility:hidden/);
