@@ -46,6 +46,14 @@ try{
   await query("INSERT INTO users(id,email,role,data) SELECT 's'||i,'s'||i||'@example.test','student',jsonb_build_object('name','Synthetic '||i) FROM generate_series(0,199) i");
   const question={id:'q',type:'single',skill:'Đọc',maxScore:1,autoGrade:true,correctAnswer:0,choices:['A','B'],prompt:'private passage '.repeat(1000)};
   const exam={id:'e',title:'Fixture',provider:'GOETHE',level:'A1',sections:[{id:'part',name:'Đọc 1',skill:'Đọc',timeMinutes:10,questionIds:['q']}]};
+  // Browser-only transport fixture, not an approved full-exam specification.
+  // Never enabled by the quality runner or exposed by the production server.
+  if(process.env.G2G_PREVIEW_PORT){
+    const writing={id:'browser-writing',type:'writing',skill:'Viết',maxScore:10,autoGrade:false,prompt:'Schreiben Sie eine kurze Nachricht an Anna. Ort, Datum und Einladung.',handwriting:false};
+    const writingExam={id:'browser-writing-exam',title:'Synthetic writing journey',provider:'GOETHE',level:'A1',sections:[{id:'browser-writing-part',name:'Viết 2',skill:'Viết',timeMinutes:10,questionIds:[writing.id]}]};
+    await query("INSERT INTO questions(id,owner_id,data) VALUES($1,'admin',$2)",[writing.id,JSON.stringify(writing)]);
+    await query("INSERT INTO exams(id,owner_id,status,data) VALUES($1,'admin','published',$2)",[writingExam.id,JSON.stringify(writingExam)]);
+  }
   await query("INSERT INTO exams(id,owner_id,status,data) VALUES('e','admin','published',$1)",[JSON.stringify(exam)]);
   await query("INSERT INTO questions(id,owner_id,data) VALUES('q','admin',$1)",[JSON.stringify(question)]);
   const deadline=Date.now()+600000;

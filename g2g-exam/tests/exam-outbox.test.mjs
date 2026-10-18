@@ -26,4 +26,31 @@ let network=0;
 const failed=await new ExamOutbox({store:{read:async()=>null,write:async()=>{throw Error('disk full');}},key:'u:a',send:async()=>{network++;}}).init();
 failed.edit('x',1);await assert.rejects(()=>failed.flush(),/disk full/);
 assert.equal(network,0);failed.close();
+// Losing connectivity must retain the exact write and operation id on disk.
+// Recovering/reloading must replay it, not silently replace it with server state.
+for(const status of [undefined,429,503]){
+ let disk,online=false,retryDelay,attempts=0;
+ const history=[],answer='Liebe Anna,\nGrüße aus Köln! äöü ß <script>not markup</script>';
+ const storage={read:async()=>structuredClone(disk),write:async(_key,value)=>{disk=structuredClone(value);}};
+ const send=async changes=>{
+  attempts++;
+  if(!online)throw Object.assign(new Error('network unavailable'),{status});
+  return {versions:{writing:changes.writing.operation}};
+ };
+ const offline=await new ExamOutbox({store:storage,key:'student:writing',send,onStatus:s=>history.push(s)}).init();
+ offline.schedule=delay=>{retryDelay=delay;};
+ offline.edit('writing',answer,'server-version');
+ await assert.rejects(()=>offline.flush(),/network unavailable/);
+ assert.equal(history.at(-1),'offline');assert.equal(retryDelay,5000);
+ assert.equal(disk.pending.writing.value,answer);
+ const operation=disk.pending.writing.operation;
+ offline.close();online=true;
+ const resumed=await new ExamOutbox({store:storage,key:'student:writing',send,onStatus:s=>history.push(s)}).init();
+ const hydrated={answers:{writing:'old server value'}};resumed.overlay(hydrated);
+ assert.equal(hydrated.answers.writing,answer);
+ assert.equal(resumed.draft.pending.writing.operation,operation);
+ await resumed.flush();assert.equal(attempts,2);
+ assert.equal(history.at(-1),'saved');assert.deepEqual(disk.pending,{});resumed.close();
+}
 console.log('Durable outbox: restore, navigation, ack, conflict, in-flight edits and storage failure passed.');
+console.log('Offline writing: durable Unicode text, network/429/503 failures, reload, operation replay and acknowledged cleanup passed.');
