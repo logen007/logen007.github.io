@@ -1,5 +1,20 @@
 # G2G Exam — AI Working Rules
 
+## Engineering workflow — đọc trước khi triển khai
+
+- `docs/ENGINEERING.md`: Understand → Design → Implement → Self review → Test →
+  Quality gate → Delivery; owner và UI/UX checklist, feature branch/release/rollback.
+- `docs/QUALITY_GATES.md`: chọn LOW/MEDIUM/HIGH theo ảnh hưởng, lệnh chạy thực tế
+  và giới hạn bằng chứng. Không báo đã kiểm thử nếu chỉ đọc code hoặc in test plan.
+- `docs/MAINTENANCE.md`: tìm module chịu trách nhiệm; `docs/UI_STYLE.md`: UI đã duyệt;
+  `specs/README.md` và APPROVED specs: luật thi. Không copy quy tắc sang tài liệu mới.
+- Mặc định làm trên feature branch, tự kiểm tra và chuẩn bị thay đổi cho review.
+  Request cấm deploy/audit-only luôn ưu tiên hơn quyền deploy thường lệ ở mục 15.
+  Trong nhiệm vụ Engineering Workflow v1: **không merge/push main, không deploy,
+  không tăng app version, không sửa dữ liệu hoặc hạ tầng production**.
+- Chỉ hỏi khi repository không giải quyết được quyết định quan trọng về nghiệp vụ,
+  chi phí, quyền truy cập hoặc rủi ro cao; thay đổi nhỏ không cần tài liệu/confirm dư.
+
 Giao diện dùng quy chuẩn đã chốt trong `docs/UI_STYLE.md`. Khi sửa UI, đọc tài liệu
 này và dùng token/component chung; không chồng thêm các lớp style toàn site.
 

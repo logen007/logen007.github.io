@@ -38,7 +38,8 @@ try{
   const oldAttempt=(await query('SELECT private_data FROM attempts WHERE id=$1',[started.attemptId])).rows[0].private_data;
   await query("UPDATE attempts SET status='published' WHERE id=$1",[started.attemptId]);
   const edited={...q,title:'NEW PRIVATE DRAFT',correctAnswer:1,imageUrl:'/uploads/new.jpg'};
-  await commitOperations(teacher,[{collection:'questions',id:'q',kind:'upsert',item:{...edited,ownerId:'t'}},{collection:'exams',id:'e',kind:'upsert',item:{...exam,title:'NEW DRAFT EXAM',status:'draft',publicationVersion:999}}]);
+  const edits=()=>[{collection:'questions',id:'q',kind:'upsert',item:{...edited,ownerId:'t'}},{collection:'exams',id:'e',kind:'upsert',item:{...exam,title:'NEW DRAFT EXAM',status:'draft',publicationVersion:999}}];
+  await assert.rejects(commitOperations(teacher,edits()),error=>error.statusCode===409,'Published content is immutable until explicitly unpublished');
   let row=(await query("SELECT * FROM exams WHERE id='e'")).rows[0];
   assert.equal(row.status,'published');assert.equal(row.data.publicationVersion,1,'Stale/forged editor pointers cannot change publication');
   assert.equal((await releasedExam({...row.data,id:'e',status:row.status})).title,'Original exam');
@@ -48,6 +49,11 @@ try{
   assert.equal(publicState.questions[0].title,'Original question');
   assert.equal(publicState.questions[0].correctAnswer,undefined);
   assert.ok(!JSON.stringify(publicState).includes('NEW PRIVATE DRAFT'));
+  await unpublishExamRelease(teacher,{examId:'e'});
+  await commitOperations(teacher,edits());
+  row=(await query("SELECT * FROM exams WHERE id='e'")).rows[0];
+  assert.equal(row.status,'draft');assert.equal(row.data.publicationVersion,1,'Editor cannot forge a release pointer');
+  assert.ok(!(await loadExamCatalog(student)).exams.some(item=>item.id==='e'),'Unpublished drafts stay out of student catalog');
   const second=await publishExamRelease(teacher,{examId:'e'});
   assert.equal(second.version,'1.0.1');
   assert.deepEqual((await query('SELECT private_data FROM attempts WHERE id=$1',[started.attemptId])).rows[0].private_data,oldAttempt,'Existing attempts remain byte-equivalent');
@@ -61,10 +67,13 @@ try{
   await query("UPDATE questions SET data=data||'{\"choices\":[],\"correctAnswer\":-1}'::jsonb WHERE id='q'");
   await assert.rejects(publishExamRelease(teacher,{examId:'e'}));
   assert.equal((await query("SELECT count(*)::int AS n FROM exam_releases WHERE exam_id='e'")).rows[0].n,2);
-  // Existing published exams receive a compatibility baseline before any edits.
+  // Legacy published content is also immutable; explicit unpublish enables editing.
   await query("INSERT INTO exams(id,owner_id,status,data) VALUES('legacy','t','published',$1)",[JSON.stringify({...exam,id:'legacy',sections:[]})]);
-  await commitOperations(teacher,[{collection:'exams',id:'legacy',kind:'upsert',item:{...exam,id:'legacy',title:'Edited legacy',status:'published'}}]);
-  assert.equal((await query("SELECT snapshot FROM exam_releases WHERE exam_id='legacy'")).rows[0].snapshot.title,'Original exam');
+  await assert.rejects(commitOperations(teacher,[{collection:'exams',id:'legacy',kind:'upsert',item:{...exam,id:'legacy',title:'Edited legacy',status:'published'}}]),error=>error.statusCode===409);
+  assert.equal((await query("SELECT data FROM exams WHERE id='legacy'")).rows[0].data.title,'Original exam');
+  await unpublishExamRelease(teacher,{examId:'legacy'});
+  await commitOperations(teacher,[{collection:'exams',id:'legacy',kind:'upsert',item:{...exam,id:'legacy',title:'Edited legacy',status:'draft'}}]);
+  assert.equal((await query("SELECT status FROM exams WHERE id='legacy'")).rows[0].status,'draft');
   const {default:Fastify}=await import('../server/node_modules/fastify/fastify.js');
   const {registerPublicationRoute}=await import('../server/src/publication-route.js');
   const app=Fastify();registerPublicationRoute(app,async()=>teacher);

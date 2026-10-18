@@ -1,17 +1,29 @@
 name: G2G Exam Check
 
 on:
+  pull_request:
+    branches: [main]
   push:
     paths:
       - 'g2g-exam/**'
       - '.github/workflows/g2g-check.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: g2g-check-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -22,6 +34,9 @@ jobs:
       - name: Run tests
         working-directory: g2g-exam
         run: npm test && node tests/legal-pages.test.mjs
+      - name: Check engineering workflow and disclosure regression
+        working-directory: g2g-exam
+        run: npm run test:workflow && npm run test:disclosures && npm run test:performance
       - name: Check isolated speaking trial
         working-directory: g2g-exam
         run: node tests/speaking-lab.test.mjs && node tests/speaking-devices.test.mjs
@@ -40,9 +55,11 @@ jobs:
         working-directory: g2g-exam
         run: G2G_PGLITE_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js" node tests/exam-completion.integration.mjs
       - name: Check speaking trial access and lifecycle against SQL
+        # Source rules are covered separately from DOM/static assertions.
         working-directory: g2g-exam
         run: G2G_PGLITE_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js" node tests/speaking-lab.integration.mjs
       - name: Check speaking phone flow without a browser
+        # No browser engine, camera permissions or visual verification is claimed.
         working-directory: g2g-exam
         run: G2G_JSDOM_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/jsdom/lib/api.js" node tests/speaking-phone.test.mjs
       - name: Check speaking video Drive archive
@@ -51,3 +68,22 @@ jobs:
       - name: Check bundled web and phone entry
         working-directory: g2g-exam
         run: npm ci && npm run build:web && node tests/speaking-qr.test.mjs
+      - name: Check publication snapshots and isolated SQL/HTTP performance
+        working-directory: g2g-exam
+        env:
+          G2G_PGLITE_PATH: ${{ runner.temp }}/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js
+        run: node tests/publication.integration.mjs && node tests/performance.integration.mjs && node tests/performance-http.integration.mjs
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Audit locked dependency trees without automatic fixes
+        working-directory: g2g-exam
+        run: npm audit --audit-level=high && npm audit --prefix server --audit-level=high
