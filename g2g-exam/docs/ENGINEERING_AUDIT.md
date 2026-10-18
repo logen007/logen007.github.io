@@ -126,6 +126,43 @@ nhưng chưa chạy bộ gate mới của candidate.
 
 ## E. Ưu tiên và trạng thái
 
+### Candidate vá dependency — 18/10/2026
+
+Nhánh `fix/g2g-backend-security-dependencies` dựa trên workflow v1; chưa merge
+main, không tăng version hoặc deploy. Nâng `@fastify/static` 8.3.0 → **10.1.6**
+và `nodemailer` 7.0.13 → **10.1.2**, pin phiên bản và cập nhật lockfile.
+Nguồn upstream: [static releases](https://github.com/fastify/fastify-static/releases/tag/v10.1.6),
+[Nodemailer release](https://github.com/nodemailer/nodemailer/releases/tag/v10.1.2).
+
+- Owner: static registration trong `server/src/index.js`; email qua
+  `server/src/mail.js`. Không thay API, SMTP settings, secret encryption,
+  database/schema, business rules hoặc dữ liệu. Provider/level/skill/part: N/A.
+- Node >=22 hiện hữu đáp ứng engines của dependency tree mới. Nodemailer đổi
+  packaging sang ESM/CJS exports; ứng dụng dùng public `import 'nodemailer'`,
+  không private `lib/` paths. Static vẫn tương thích Fastify 5; case/path guard
+  nghiêm ngặt hơn. Kiểm tra cả hai root/prefix hiện dùng.
+- Regression thực: Brotli, range, missing file, traversal không lộ sentinel,
+  MIME text/HTML/buffer attachment, envelope/reply-to và chặn file/URL attachments.
+  Không kết nối SMTP/OAuth/Drive/AI thật. HTTP/SQL integration kiểm tra app routes
+  với DB cô lập; không chứng minh cấu hình SMTP/VPS thực tế.
+- Forward: review và gate trên branch trước khi cho phép phát hành riêng.
+  Rollback code: revert commit dependency cùng lockfile, `npm ci --prefix server
+  --ignore-scripts`, chạy gate; bản cũ có advisory nên rollback chỉ là phục hồi
+  tương thích, không được coi đã an toàn. Không có migration dữ liệu; mixed
+  version không đổi contract. Không thực hiện rollback hoặc deploy trong task này.
+- GitHub đọc lại: main chưa protected, repository rulesets trả danh sách rỗng;
+  connector báo quyền admin nhưng không có thao tác sửa branch policy. Chưa bật
+  required checks, không mở browser hoặc lấy token từ credential để lách giới hạn.
+- Self-review PR #9: đã đối chiếu runner, CI read-only/PR trigger, release probe
+  và publication fixtures. Không đổi luật sản phẩm để làm test xanh; security
+  baseline vẫn chặn PR #9 cho tới khi mang bản vá vào candidate đó. Đây không
+  phải independent approval; giữ draft, không merge.
+- Kiểm chứng local macOS Node 26.5.0: `npm run quality -- --risk high` đạt
+  **33/33**, gồm build, SQL/DOM/HTTP cô lập và hai audit exit 0 (0 vulnerability
+  tại registry snapshot 18/10/2026). Dùng PGlite 0.5.8/jsdom 26.1.0 ở temp runtime,
+  TMPDIR cô lập; không browser/SMTP thật/production. Node 22 Ubuntu chờ CI,
+  không suy kết quả local là bằng chứng production hoặc release approval.
+
 | Ưu tiên | Cải tiến | Trạng thái candidate |
 | --- | --- | --- |
 | P1 security | Dependency audit/triage, cập nhật có kiểm thử riêng | Đã thêm audit gate; 2 backend High vẫn là blocker, chưa upgrade |

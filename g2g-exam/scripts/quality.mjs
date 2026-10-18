@@ -33,7 +33,7 @@ export function qualityPlan({risk='medium',tests=[]}={}){
   if(risk!=='low')steps.push(npmStep('test'));
   steps.push(...[...new Set([...uiTests,...tests])].map(nodeStep));
   if(risk!=='low')steps.push(npmStep('test:performance'));
-  if(risk==='high')steps.push(npmStep('test:r2'),...extras.map(nodeStep),...integrationTests.filter(f=>!f.includes('performance-http')).map(nodeStep),nodeStep('tests/speaking-phone.test.mjs'));
+  if(risk==='high')steps.push(nodeStep('tests/backend-dependencies.test.mjs'),npmStep('test:r2'),...extras.map(nodeStep),...integrationTests.filter(f=>!f.includes('performance-http')).map(nodeStep),nodeStep('tests/speaking-phone.test.mjs'));
   steps.push(npmStep('build:web'));
   if(risk==='high')steps.push(nodeStep('tests/performance-http.integration.mjs'),nodeStep('tests/speaking-qr.test.mjs'),
     {name:'dependency-audit:web',command:'npm',args:['audit','--audit-level=high']},
