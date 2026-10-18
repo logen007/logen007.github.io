@@ -162,8 +162,9 @@ height. Do not restore looping backdrops or tilt/scale the question text.
 their invisible wrappers. On desktop the screen fills the column/row without
 outer inset padding, sharing the sign-in card's width and top/bottom edges.
 Retain phone padding only to protect the static paper overhang.
-Use shared light/dark tokens; Google logo/colors are the documented brand exception
-from Google's official HTML configurator, not a custom monochrome G or yellow CTA.
+Use shared light/dark tokens; the unmodified multicolor Google vector is the
+documented brand exception from Google's official HTML configurator. Desktop
+keeps Google's neutral button; mobile uses the owner-requested primary below.
 Correction requested 19 October: the public exam types and metrics remain visible,
 never in a collapsed disclosure. Omit the hardcoded “GOETHE & TELC” kicker (actual
 catalog may include FID). Use configured systemName/organizationName and the actual
@@ -178,6 +179,15 @@ Desktop Google styles and card remain unchanged. Keep local-only demo accounts, 
 links and the theme toggle. Public settings preserve the Google logo/label structure;
 auth routing and One Tap remain unchanged. Check configured brand color as well
 as defaults in browser previews before release.
+1.3.227 mobile composition responds to owner rejection of the previous layout:
+compact left-aligned hero without underline; unchanged primary CTA/free label;
+consistent content edges; a content-sized six-scene preview with numbered steps
+but no duplicate app header or navigation label. Keep every scene readable, not
+scaled or cropped. Static paper overhang stays inside viewport. Legal links live
+in the footer after public catalog/metrics, no longer between CTA and preview.
+Desktop visible cards remain equal and aligned; remove the old 60px illustration
+spacer together with the relocated policy row. This is an implementation under
+review, not an owner-accepted screenshot baseline.
 
 - Page navigation creates browser history entries; repeat renders do not. Class
   detail, result, grading, editor/preview parts and settings tabs have direct URLs.
