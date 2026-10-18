@@ -130,26 +130,30 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 ## Navigation and forms
 
 Login implementation (19 October 2026; NOT an owner-accepted visual baseline):
-1.3.222 responds to the owner's rejection of desktop imbalance, weak contrast
-and one-shot motion. Keep the original concrete promise, “Thi thử trước. Tự tin
+1.3.223 responds to the owner's clarification that motion belongs in questions
+1–6, not decorative backgrounds. Keep the original concrete promise, “Thi thử trước. Tự tin
 khi thi thật.”, without generic journey slogans. Center the intro above two
-equal-width, aligned panels: a colorful product illustration and a contrasting
-inverse-surface sign-in card. Mobile shows copy, sign-in, then preview. Text and
-authentication controls stay stationary; screen height grows with wrapped text.
+equal-width, aligned panels. Sign-in uses the active --mat/--chu pair: white in
+light mode and charcoal in dark, not an always-dark inverse card. Mobile shows
+copy, sign-in, then preview. Authentication controls stay stationary; screen
+height grows with wrapped text and reserves space for the largest question.
 The illustration is decorative, has an accessible description identifying it
 as an example, and never presents a real score or official exam paper. No fake
 interactive answers. Omit the visible “Minh họa giao diện luyện thi” caption and
 “Đề luyện hiện có” heading, while retaining an accessible catalog landmark.
-At the owner's explicit request, CSS now runs independent continuous loops:
-color fields, orbit, two UI back layers, light sweep, progress glint and autosave
-signal, with different 3.8–28s periods. Animate transforms/opacity only, not layout
-or sign-in controls. `login-motion.js` owns one persistent pause/resume control
-for the whole scene, including pseudo-elements. No timers, pointer tracking or
-new animation library. Motion is opt-in through no-preference, with a complete
-static reduced-motion fallback; the control hides in reduced motion. Respect
-the current preference on activation; pausing persists after moving focus away.
-References: [W3C pause/stop/hide guidance](https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html)
-and [web.dev animation performance](https://web.dev/articles/animations-guide).
+At the owner's explicit request, remove the pause/resume button, autosave badge
+and visible “Ví dụ minh họa” text. `src/views/login-demo.js` owns six decorative
+practice formats (choice, true/false, gap, matching, ordering, writing), not an
+official provider specification. CSS cycles questions 1–6 every six seconds,
+with six different entrance treatments and synchronized numbered steps. All
+offsets are negative to avoid future steps showing active during initial delays.
+No JS timer, runtime binding, pointer tracking or animation library. Background
+layers, orbit and color fields are removed entirely: only question content and
+its numbered step animate. Motion is opt-in through no-preference; reduced motion and
+unsupported animation show only question one. No page layout/CTA motion.
+Accessibility tradeoff: the owner explicitly removed the stop control despite
+continuous autoplay. OS reduced motion is retained, but this is not a claim of
+WCAG 2.2.2 pause/stop/hide compliance; do not call it a full accessibility pass.
 Use shared light/dark tokens; Google logo/colors are the documented brand exception
 from Google's official HTML configurator, not a custom monochrome G or yellow CTA.
 Correction requested 19 October: the public exam types and metrics remain visible,

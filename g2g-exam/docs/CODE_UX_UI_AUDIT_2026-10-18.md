@@ -695,3 +695,44 @@ reader, OS reduced-motion emulation, GPU profiling, VPS backup/deployed SHA.
 Required GitHub checks gate the exact candidate. Routine protected-PR release is
 authorized; public health/version only proves those signals, not live auth/SHA.
 Visual acceptance remains the owner's decision; rollback is ordinary revert.
+
+## Six login questions and active-theme colors: 19 October 2026 / 1.3.223
+
+Owner clarified that motion belongs in question content 1–6, with different
+formats; explicitly removed pause control, autosave badge and example label,
+then requested removing the background layers entirely. The illustration now
+has choice, true/false, gap, matching, word ordering and short writing scenes.
+These are decorative language-practice examples, not provider specifications,
+interactive controls or real scores. The static header uses “Tiếng Đức”, not a
+claim that every illustrated format belongs to an official Goethe A1 paper.
+Actual site brand/logo, exact email copy, visible public metrics and auth remain.
+
+CSS owns a 36s cycle, six seconds per question, six entrance treatments and
+synchronized numbered steps. Negative offsets prevent future steps lighting
+up on first paint; browser reload showed only question/step 1. Grid overlap
+reserves the largest scene's height. Removed JS binding/timer ownership and all
+back layers, orbit, washes, glints, autosave and motion-button styles. Reduced
+motion/no-animation shows question one only. Per explicit owner request there
+is no pause UI; OS preference support is not WCAG pause/stop/hide compliance.
+
+Sign-in now uses shared --mat/--chu, white in light and charcoal in dark, instead
+of an always-inverse card. Fifteen sampled settled text/background pairs in each
+theme passed 4.5:1: minimum light 5.15, dark 6.49. Not a full WCAG certification.
+Built isolated Fastify/SQL preview checked 320/390/768/1024/1440px in both modes
+with actual public logo/configured yellow, plus neutral default at 320/1440 in
+both modes. No horizontal overflow or question-content collision; 56px Google
+CTA. Desktop panels align top/bottom: 616x420 at 1440, 452x420 at 1024, and
+336x445.89 at 768. A 37.592s/540-frame native recording observed ordered
+2→3→4→5→6→1→2, matching steps and distinct keyframes; frame height stayed 420,
+Google transform stayed none, and background-layer count was zero. Capture rate
+is not device FPS. Screenshots/recording are outside Git.
+
+Final local MEDIUM gate passed 13/13 (Node 26.5/macOS; CI Node 22/Linux): syntax,
+full suite, UI/workflow/performance regressions and build. Renderer/source tests
+cover all six formats, question/step counts and delays, removed elements, theme
+surfaces, preserved settings/auth caption, static fallback and no runtime binder.
+These assertions do not replace browser or screen-reader tests. No speaking,
+exam rules, production data, credentials, schema or infrastructure changed.
+Not verified: physical iPhone/Safari, live OAuth/email, screen reader, OS-level
+reduced-motion emulation, GPU profiling, VPS backup/deployed SHA. Protected PR
+checks still gate exact candidate; normal revert is rollback.

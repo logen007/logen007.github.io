@@ -2,6 +2,7 @@ import {iconHtml} from '../ui/icons.js';
 import {colorModeButtonHtml} from '../settings/color-mode.js';
 import {currentPublicSettings} from '../settings/theme.js';
 import {esc} from '../ui/format.js';
+import {loginDemoHtml} from './login-demo.js';
 
 // Unmodified vector from Google's official HTML button configurator.
 const googleMark=`<svg class="landing-google-mark" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`;
@@ -18,16 +19,8 @@ export function loginHtml({mode,general=currentPublicSettings().general||{}}){
       <section class="landing-product" aria-labelledby="landing-title">
         <figure class="landing-visual" aria-label="Minh họa trải nghiệm luyện thi, không phải kết quả thực tế">
           <div class="landing-demo" data-login-scene aria-hidden="true">
-            <div class="landing-demo-wash landing-demo-wash--blue"></div><div class="landing-demo-wash landing-demo-wash--violet"></div><div class="landing-demo-orbit"><span></span></div><div class="landing-demo-layer landing-demo-layer--blue"></div><div class="landing-demo-layer landing-demo-layer--violet"></div>
-            <div class="landing-demo-screen"><div class="landing-demo-top"><span class="landing-demo-identity">${iconHtml('exams')} <span data-brand-name>${esc(name)}</span></span><span class="landing-demo-badge">Goethe A1</span></div>
-              <div class="landing-demo-body"><div class="landing-demo-nav"><span>Đọc</span><div>${[1,2,3,4,5,6].map(n=>`<span${n===6?' class="current"':''}>${n}</span>`).join('')}</div></div>
-                <div class="landing-demo-question"><span class="landing-demo-eyebrow">Câu 6 · Ví dụ minh họa</span><h2 lang="de">Sie suchen einen Deutschkurs.</h2><div class="landing-demo-answer landing-demo-answer--first"><span>A</span><span lang="de">Deutsch am Vormittag</span></div><div class="landing-demo-answer landing-demo-answer--chosen"><span>B</span><span lang="de">Deutsch am Abend</span>${iconHtml('example')}</div><div class="landing-demo-answer landing-demo-answer--last"><span>C</span><span lang="de">Deutsch am Wochenende</span></div>
-                <div class="landing-demo-progress"><div><span>Tiến trình làm bài</span><span>6 / 10</span></div><div class="landing-demo-track"><span></span></div></div></div>
-              </div>
-            </div>
-            <div class="landing-demo-save">${iconHtml('example')}<span>Lưu bài tự động</span><span class="landing-demo-save-line"></span></div>
+            <div class="landing-demo-screen"><div class="landing-demo-top"><span class="landing-demo-identity">${iconHtml('exams')} <span data-brand-name>${esc(name)}</span></span><span class="landing-demo-badge">Tiếng Đức</span></div>${loginDemoHtml()}</div>
           </div>
-          <figcaption><button type="button" class="landing-motion-control" data-login-motion-toggle aria-label="Tạm dừng chuyển động" hidden><span class="landing-motion-pause">${iconHtml('pause')}</span><span class="landing-motion-play">${iconHtml('play')}</span><span data-login-motion-label>Tạm dừng chuyển động</span></button></figcaption>
         </figure>
       </section>
     </div>
