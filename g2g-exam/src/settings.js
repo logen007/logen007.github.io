@@ -66,12 +66,16 @@ function queue(){
 
 function applyBrand(){
   const name=pub.general?.systemName==='Thi thử tiếng Đức'?'Luyện thi tiếng Đức':pub.general?.systemName||'Luyện thi tiếng Đức';
-  const title=document.querySelector('.ten-he-thong strong');
-  if(title&&title.textContent!==name)title.textContent=name;
+  for(const title of document.querySelectorAll('.ten-he-thong strong,[data-brand-name]'))if(title.textContent!==name)title.textContent=name;
+  const organization=pub.general?.organizationName||'G2G Career';
+  for(const target of document.querySelectorAll('.ten-he-thong small,[data-brand-organization]'))if(target.textContent!==organization)target.textContent=organization;
   const logo=document.querySelector('.thuong-hieu .logo');
   if(logo&&pub.general?.logoUrl){
     const url=`/brand/logo?v=${encodeURIComponent(pub.general.logoUrl)}`;
-    if(logo.querySelector('img')?.getAttribute('src')!==url)logo.innerHTML=`<img src="${url}" alt="G2G Career">`;
+    let image=logo.querySelector('img');
+    if(!image){image=document.createElement('img');logo.replaceChildren(image);}
+    if(image.getAttribute('src')!==url)image.setAttribute('src',url);
+    if(image.alt!==organization)image.alt=organization;
   }
   if(pub.general?.faviconUrl){
     let icon=document.querySelector('link[rel="icon"]');

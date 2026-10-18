@@ -626,3 +626,30 @@ Google OAuth and device frame-rate profiling remain unverified. No speaking,
 exam rules, provider credentials, production business data or infrastructure edits.
 Release through protected PR/main only; rollback by ordinary revert. Public
 post-deploy probe proves HTTP health/database flag/version, not live auth or SHA.
+
+## Login identity/content correction: 19 October 2026 / 1.3.221
+
+Owner rejected the prior output, then specified exact copy and visible catalog.
+Read actual public settings and opened the configured logo: systemName is
+“Luyện thi tiếng Đức”, organization is “G2G Career”; the uploaded mark is red/yellow,
+not the fabricated G2G/Exam badge. Public catalog includes FID as well as Goethe
+and TELC. No private settings or credentials read. The login now uses public
+identity and the existing brand hydration owner, including async name/organization
+updates and the uploaded logo via /brand/logo. User text is escaped; hydration
+uses textContent and a stable image node, not HTML interpolation of organization.
+
+Exact requested email caption replaces the old one and remains visible on mobile;
+removed the Google-account instruction and hardcoded GOETHE & TELC kicker. Catalog
+and live metrics are a visible section, not a disclosure. No stat formula, auth,
+email delivery policy or experimental-speaking change. Existing animation is not
+redesigned and is explicitly NOT recorded as owner-accepted in UI_STYLE.md.
+
+Regression failed against 1.3.220 before edits; renderer/escaping/visible-section,
+brand hydration/image identity and exact-copy tests pass after. Local MEDIUM gate
+passed 13/13 on Node 26.5/macOS, including full npm suite, syntax and web build.
+Built isolated Fastify/SQL preview uses synthetic counts and the actual public
+logo solely as a branding fixture. Browser checked 320/390/768/1024/1440px in both
+modes: uploaded 500px logo loaded, email and metrics displayed without expanding,
+56px CTA and no page overflow. Saved screenshots outside Git. No live Google
+OAuth/email send, physical Safari or screen-reader certification. Required CI
+still gates the exact candidate; normal revert is rollback, with no migration.
