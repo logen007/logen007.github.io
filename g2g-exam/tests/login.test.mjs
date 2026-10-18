@@ -60,6 +60,9 @@ context.localOnly=true;caption.textContent='Demo';applyLogin();assert.equal(capt
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(css,/\.landing-demo \{[^}]*border:0;[^}]*background:transparent/,'No redundant outer frame around the illustration');
 assert.match(api,/class="landing-demo-stack"/);
+assert.match(css,/\.landing-demo \{[^}]*padding:0;/,'Desktop illustration must not shrink inside an invisible padded wrapper');
+assert.doesNotMatch(css,/\.landing-demo \{ padding-inline:/,'Tablet desktop must not reintroduce horizontal inset');
+assert.match(css,/\.landing-demo-stack \{[^}]*align-self:stretch/,'The visible illustration fills the same row height as sign-in');
 assert.match(css,/\.landing-demo-stack::before,\.landing-demo-stack::after/,'Two static paper sheets sit behind the screen');
 const motion=css.match(/@media\(prefers-reduced-motion:no-preference\) \{([\s\S]+?)\n\}/)?.[1];
 assert.ok(motion);
