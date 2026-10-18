@@ -765,3 +765,20 @@ Actual screen (not wrapper) vs sign-in now matches width/top/bottom/height at
 phone layouts remain stacked, no page overflow/content collision. No speaking,
 schema/data/auth edits; physical iPhone/live OAuth remain unverified. Protected
 checks gate release; normal revert rollback, not a full accessibility certificate.
+
+## Compact mobile sign-in: 19 October 2026 / 1.3.226
+
+Owner requested only a primary Google CTA and free label in the mobile sign-in
+block. At <=760px remove its frame, heading/icon, divider and email note; retain
+brand, hero, policies, preview, desktop layout and auth. Use existing paired
+primary/on-primary tokens, preserving the colored Google vector on white plate.
+Local MEDIUM 13/13 and targeted login assertions passed. Corrected the new CSS
+test's media-block selector after its first run selected an unrelated block.
+Built isolated browser checks at 320/390/768/1440px found no page overflow;
+mobile CTA remains 56px, frame transparent/borderless. Yellow primary checked
+light/dark; default neutral primary checked light/dark at 320px. Desktop visible
+screen/card still share top, width and 420px height. Theme transition completion
+was checked separately rather than trusting immediate post-click measurements.
+No speaking, data, schema or auth change. Physical iPhone, live OAuth, screen
+reader and VPS backup/deployed SHA unverified. Protected PR checks gate release;
+ordinary revert is rollback.

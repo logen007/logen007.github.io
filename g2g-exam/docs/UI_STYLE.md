@@ -170,7 +170,11 @@ catalog may include FID). Use configured systemName/organizationName and the act
 uploaded logo through /brand/logo, sharing the existing brand hydration owner;
 never invent an “Exam” name or draw a replacement G2G mark. The sign-in heading is
 “Đăng nhập”; omit the Google-account instruction and show “Kết quả sẽ được gửi về
-email này” on both desktop and mobile. Keep local-only demo accounts, policy
+email này” on desktop. Owner refinement in 1.3.226: the mobile sign-in block has
+only a brand-primary Google CTA and “Hoàn toàn miễn phí”, without outer card,
+heading/icon, divider or email note. Use primary/on-primary contrast tokens in
+both modes; keep the unmodified colored Google mark on a white circular plate.
+Desktop Google styles and card remain unchanged. Keep local-only demo accounts, policy
 links and the theme toggle. Public settings preserve the Google logo/label structure;
 auth routing and One Tap remain unchanged. Check configured brand color as well
 as defaults in browser previews before release.
