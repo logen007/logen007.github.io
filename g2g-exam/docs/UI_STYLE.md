@@ -129,7 +129,10 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
-Login motion refinement (19 October 2026): clear Vietnamese product copy and a
+Login implementation (19 October 2026; NOT an accepted visual baseline): owner
+rejected 1.3.220's identity, copy and motion treatment. The 1.3.221 corrections
+below do not redesign or claim acceptance of that motion. Current layout has
+Vietnamese product copy and a
 separate Google sign-in panel. Use the original concrete promise, “Thi thử trước.
 Tự tin khi thi thật.”, without generic journey slogans. The product illustration
 assembles UI layers, answers, a light sweep, progress and an autosave indicator;
@@ -142,8 +145,14 @@ Desktop pairs product/preview with the sign-in panel; mobile shows copy, sign-in
 then preview. Keep typography readable and settle animated text without transforms.
 Use shared light/dark tokens; Google logo/colors are the documented brand exception
 from Google's official HTML configurator, not a custom monochrome G or yellow CTA.
-Keep public metrics/types in a native disclosure, local-only demo accounts, policy
-links and the theme toggle. Public settings preserve the logo/label structure;
+Correction requested 19 October: the public exam types and metrics remain visible,
+never in a collapsed disclosure. Omit the hardcoded “GOETHE & TELC” kicker (actual
+catalog may include FID). Use configured systemName/organizationName and the actual
+uploaded logo through /brand/logo, sharing the existing brand hydration owner;
+never invent an “Exam” name or draw a replacement G2G mark. The sign-in heading is
+“Đăng nhập”; omit the Google-account instruction and show “Kết quả sẽ được gửi về
+email này” on both desktop and mobile. Keep local-only demo accounts, policy
+links and the theme toggle. Public settings preserve the Google logo/label structure;
 auth routing and One Tap remain unchanged. Check configured brand color as well
 as defaults in browser previews before release.
 
