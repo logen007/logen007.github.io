@@ -782,3 +782,22 @@ was checked separately rather than trusting immediate post-click measurements.
 No speaking, data, schema or auth change. Physical iPhone, live OAuth, screen
 reader and VPS backup/deployed SHA unverified. Protected PR checks gate release;
 ordinary revert is rollback.
+
+## Mobile login composition: 19 October 2026 / 1.3.227
+
+Owner rejected 1.3.226's mobile design. Critique identified an oversized centered
+hero, legal links interrupting the primary flow and a tall miniature desktop UI.
+Use compact left-aligned mobile copy, no underline, unchanged primary Google/free
+block, content-sized preview without duplicate app header/nav label, legal footer.
+Remove desktop preview's matching old policy spacer to preserve equal visible cards.
+New regression failed on the prior composition, then passed; MEDIUM 13/13 passed.
+Built isolated browser: 320/390/768/1024/1440 dark and 320/390/768/1440 light;
+all six scene bounds checked, no horizontal page/scene overflow or progress overlap.
+390px preview is 307px tall (342px at 320px), not fixed/cropped; desktop cards remain
+420px tall with equal visible widths/top/bottom. Google target 56px, keyboard focus
+2px, legal link targets 44px. Body copy contrast is 5.2:1 light / 9.5:1 dark.
+Read-only second-agent diff/screenshot critique found no blocking issue; this is
+not owner visual approval or full accessibility certification. No speaking/data/
+auth/schema edits. Physical iPhone, live OAuth, screen reader, OS reduced-motion
+emulation and VPS backup/SHA remain unverified; existing reduced-motion rule retained.
+Protected exact-candidate checks and ordinary revert rollback still apply.

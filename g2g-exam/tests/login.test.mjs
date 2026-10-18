@@ -84,5 +84,10 @@ const mobile=css.slice(css.indexOf('.landing {')).match(/@media\(max-width:760px
 assert.match(mobile,/\.landing-login \{[^}]*padding:0;[^}]*border:0;[^}]*background:transparent/,'Phone sign-in is a button, not a framed card');
 assert.match(mobile,/\.landing-login-heading,\.landing-login-divider,\.landing-login-note \{ display:none; \}/,'Only Google and the free label remain inside the production mobile sign-in block');
 assert.match(mobile,/\.landing-cta \{[^}]*background:var\(--brand-primary\); color:var\(--brand-on-primary\)/,'Mobile CTA uses the contrast-paired brand primary');
+assert.match(mobile,/\.landing-copy \{[^}]*text-align:left/,'Mobile has a compact reading edge, not a centered desktop hero');
+assert.match(mobile,/\.landing-copy h1>span \{ text-decoration:none; \}/,'The mobile heading does not compete with the primary CTA');
+assert.match(mobile,/\.landing-demo-top[^}]*display:none/,'Mobile omits the duplicate application header');
+assert.match(mobile,/\.landing-demo-question \{[^}]*min-height:0/,'Mobile scenes reserve their actual content height, not a desktop minimum');
+assert.ok(api.indexOf('class="landing-policy"')>api.indexOf('<footer>'),'Policy links follow the public content rather than interrupting sign-in');
 assert.doesNotMatch(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/bindLoginMotion|login-motion\.js/,'CSS-only scenes have no timer/listener lifecycle in app');
 console.log('Login: real brand, visible catalog, six question formats, synchronized loop/steps, no removed labels/control, static reduced-motion fallback and active-theme surfaces passed.');
