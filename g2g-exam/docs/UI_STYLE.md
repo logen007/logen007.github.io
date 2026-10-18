@@ -129,6 +129,18 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
+Login redesign (19 October 2026): a quiet editorial shell with compact G2G Exam
+identity, personal theme toggle, a large two-line Vietnamese headline and one
+clear Google sign-in action. A tilted German practice sheet is decorative and
+explicitly labelled as an illustration, never a real score or official paper.
+Keep the existing live public metrics/exam types, local-only demo accounts and
+policy links. Google disabled state updates its caption without replacing the
+icon/label structure. Auth routing and One Tap remain unchanged.
+Use the existing palette in both modes; no independent login theme. Desktop
+uses a two-column hero; phones put the CTA before the illustration, with no
+page-wide overflow. Entrance, sheet/tag and progress animations run once under
+1.3 seconds including stagger, with no endless floating/particles. Reduced motion skips them.
+
 - Page navigation creates browser history entries; repeat renders do not. Class
   detail, result, grading, editor/preview parts and settings tabs have direct URLs.
   Back/Forward flush pending edits before restoring the authorized destination.

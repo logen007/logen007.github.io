@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './login.test.mjs';
 import './audio-runtime.test.mjs';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
@@ -65,9 +66,9 @@ assert.doesNotMatch(bootHtml,/boot-progress|boot-shape|src="\.\/src\/ui\/boot-la
 assert.match(bootHtml,/Thử lại/);
 assert.doesNotMatch(bootHtml,/boot-card|boot-mark|boot-avatar/);
 assert.doesNotMatch(bootHtml,/class="thanh-dau"/);
-const landingSource=readFileSync(new URL('../src/views/student.js',import.meta.url),'utf8');
-assert.match(landingSource,/nhiều <strong>nhì<\/strong> Việt Nam/);
-assert.match(landingSource,/Bắt đầu luyện thi ngay<\/button><span class="landing-free">✓ Hoàn toàn miễn phí/);
+const landingSource=readFileSync(new URL('../src/views/login.js',import.meta.url),'utf8');
+assert.match(landingSource,/Tiếp tục với Google/);
+assert.match(landingSource,/Hoàn toàn miễn phí/);
 const publicStatsSource=readFileSync(new URL('../server/src/index.js',import.meta.url),'utf8');
 assert.ok(publicStatsSource.includes("FROM users WHERE role='teacher'"));
 assert.ok(publicStatsSource.includes("FROM attempts WHERE status IN ('grading','ready','published')"));

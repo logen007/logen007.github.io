@@ -218,6 +218,7 @@ async function act(fn,success,{rerender=true}={}){
 
 function loginView(){
   app.innerHTML=loginHtml({mode:repo.mode});
+  app.querySelector('[data-action="toggle-color-mode"]').onclick=event=>toggleColorMode(event.currentTarget);
   if(repo.mode!=='local')startGoogleOneTap({onError:message=>notify(message)});
   if(repo.mode==='local'){
     const exams=data.exams.filter(ex=>ex.status==='published');

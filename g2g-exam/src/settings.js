@@ -91,8 +91,9 @@ function applyLogin(){
   if(!button)return;
   const enabled=pub.auth?.googleLoginEnabled!==false;
   if('disabled' in button&&button.disabled===enabled)button.disabled=!enabled;
-  const label=enabled?'Bắt đầu luyện thi ngay':'Đăng nhập Google đang tạm tắt';
-  if(button.textContent!==label)button.textContent=label;
+  const label=enabled?'Tiếp tục với Google':'Đăng nhập Google đang tạm tắt';
+  const caption=button.querySelector('[data-google-login-label]')||button;
+  if(caption.textContent!==label)caption.textContent=label;
 }
 
 function applyMaintenance(){
