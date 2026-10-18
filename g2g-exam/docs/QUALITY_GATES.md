@@ -59,9 +59,12 @@ phải chạy Linux isolated restore drill của workflow đó. Không dùng liv
 
 HIGH còn chạy `npm audit --audit-level=high` cho web và backend. Audit không chứng
 minh exploit; lỗi registry/network cũng là chưa hoàn thành, không phải zero CVE.
-Hiện backend đã có 2 dependency mức High ở baseline (audit 18/10/2026), nên gate
-bảo mật dự kiến đỏ đến khi được triage/nâng cấp có kiểm thử. Không giấu baseline
-bằng allowlist rỗng hoặc `continue-on-error`.
+Backend có 2 dependency mức High ở baseline (audit 18/10/2026). Nhánh
+`fix/g2g-backend-security-dependencies` nâng static/Nodemailer và thêm
+`tests/backend-dependencies.test.mjs` vào HIGH/CI để kiểm tra thư viện thật:
+static roots, Brotli, range, traversal và MIME/email access guards, không SMTP thật.
+Xem bằng chứng theo candidate trong `ENGINEERING_AUDIT.md`; không suy main đã vá.
+Không giấu baseline bằng allowlist rỗng hoặc `continue-on-error`.
 
 ## Bản đồ chọn owner tests
 

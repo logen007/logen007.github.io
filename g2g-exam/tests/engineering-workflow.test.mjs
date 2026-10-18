@@ -18,6 +18,7 @@ assert.ok(qualityPlan({tests:['tests/core.test.mjs','tests/core.test.mjs']}).ste
 const high=qualityPlan({risk:'high'});
 assert.deepEqual(high.requirements,['G2G_PGLITE_PATH','G2G_JSDOM_PATH']);
 assert.ok(high.steps.some(s=>s.name==='dependency-audit:server'));
+assert.ok(high.steps.some(s=>s.name==='tests/backend-dependencies.test.mjs'));
 assert.ok(!high.steps.some(s=>s.name==='tests/backup-media-lock.integration.mjs'),'Real PostgreSQL drills require a separately authorized isolated environment');
 let calls=0;
 assert.throws(()=>runQuality(high,{env:{},run:()=>{calls++;},log:()=>{}}),/Missing/);assert.equal(calls,0);
@@ -50,4 +51,5 @@ assert.ok(!ci.includes('pull_request_target'),'Untrusted PR code must not run wi
 assert.match(ci,/npm run test:workflow/);
 assert.match(ci,/node tests\/publication.integration.mjs/);
 assert.match(ci,/dependency-audit:/);
+assert.match(ci,/node tests\/backend-dependencies.test.mjs/);
 console.log('Engineering workflow: profiles, no silent skips, fail-fast, test isolation, CI contract and semantic release probes passed.');
