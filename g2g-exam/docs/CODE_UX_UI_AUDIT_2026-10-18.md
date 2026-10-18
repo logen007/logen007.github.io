@@ -167,3 +167,76 @@ regression (trusted204/credentials, untrusted no allow-origin) before release.
 Version bumped to1.3.210; earlier no-version/no-deploy notes describe the initial
 audit-only stage. PR checks must pass this final candidate before merge. Public
 health/version will be checked after deployment; no SSH/timer proof is claimed.
+
+## Follow-up: local role journey, 18 October
+
+Verified against main 10ba8eb (1.3.210), using the loopback-only performance
+fixture with PGlite and signed synthetic admin role switching. No real accounts,
+production business writes, AI requests, Drive operations or email delivery.
+
+- Student: started Fixture, selected incorrect B, reloaded the page and observed
+  B still selected with 1/1 answered. Submitted through the confirmation dialog;
+  results showed 0 correct, 1 incorrect and awaiting teacher publication.
+- Teacher test role: opened that same attempt from Bài Thi, entered oral score
+  10/15 and a synthetic feedback string, published and reloaded. Score and
+  feedback persisted. Student home then showed latest score 10; result detail
+  settled at 10/16 total, 10/15 oral, 0/1 reading, 1 incorrect and the feedback.
+  Intermediate animated counters were not treated as final values.
+- Screenshot outside Git: chat workspace audit-evidence/
+  published-result-journey.jpg. No product changes or version bump were needed.
+
+Limits: the fixture has one reading question and legacy A1 oral scoring; this is
+not validation of a complete approved exam structure. Role switching is not proof
+of authorization boundaries for independent teacher/student accounts. Writing,
+media playback, interrupted-network recovery, Backup/restore, speaking device
+permissions, real Safari and external-provider delivery remain unverified by
+this browser journey. Existing SQL/domain tests provide separate evidence only.
+
+## Extended audit and fix: 1.3.211
+
+Owner requested completing remaining feasible checks. No production data or
+external provider was used. New product change is limited to a persistent German
+accessible name on free-response writing textareas in the shared student/preview
+renderer, retaining question-number context where present. Browser accessibility
+tree exposed an unnamed writing field; a regression failed before the fix and
+passed afterward. No visible text, layout, authored prompt, score or exam rule
+changed (business specification N/A). Reuses the existing renderer, no new styles.
+
+### Executed evidence
+
+- `node tests/preview.test.mjs`: 43 checks passed, including the new field name
+  for single-question and numbered writing tasks.
+- `node tests/exam-outbox.test.mjs`: passed. Added durable multiline German-text
+  recovery after network failure, HTTP 429 and 503; reload overlays pending
+  values, retains operation IDs, then removes acknowledged writes from storage.
+  Existing conflict, in-flight edits and disk-failure cases remain. These use
+  transport/storage doubles, not a browser disconnected from the Internet.
+- Local browser, desktop and 390x844 viewport: started preview-only writing
+  fixture, entered a 23-word message with newlines/umlauts/ß, reloaded and observed
+  the exact answer and count, submitted, then verified the writing answer in the
+  unpublished result detail. No page-wide overflow at 390px. Screenshot outside
+  Git: audit-evidence/writing-reload-mobile.jpg. Viewport emulation is not touch
+  input or physical iOS testing. The fixture tests transport, not a full exam.
+- HIGH 36/36 passed on baseline and again on the final 1.3.211 product/test
+  candidate, macOS Node 26.5. Both dependency audits reported 0 vulnerabilities
+  at execution time. Includes independent-identity SQL authorization, answer-key privacy,
+  provider leases/retries, submission idempotency, audio-flow/domain tests,
+  media delivery/ranges, speaking permission/recorder errors and phone DOM states.
+  Do not count doubles as real camera/100ms/AI delivery or actual audio output.
+- Real isolated restore drill **passed**, exit 0 on macOS, Homebrew PostgreSQL
+  16.15, age and Rclone local backend. Command: `PATH=/opt/homebrew/opt/coreutils/libexec/gnubin:/opt/homebrew/opt/util-linux/bin:/opt/homebrew/bin:/usr/bin:/bin TMPDIR=/private/tmp /opt/homebrew/bin/bash tests/backup-local.integration.sh`.
+  Initial missing-tool attempts were unavailable, not passes. Final run used a
+  fresh owner-only Unix-socket cluster, imported the real schema, backed up and
+  restored Unicode answers, account roles, settings and media with SHA-256 checks.
+  Wrong identity and tampered archives were rejected without a staging directory.
+  Real media barrier excluded concurrent writers. Both temporary databases and
+  archives were cleaned up by the drill; no normal database was targeted.
+
+### Remaining external/manual evidence
+
+Physical Safari/iOS, screen reader announcements, real camera/microphone and
+audio output, live AI responses, SMTP, 100ms recording and Drive delivery still
+need their respective devices/services. They are not silently treated as passed.
+Google Drive was not tested by the local restore drill. No live restore, VPS
+deployment SHA or guarantee of exhaustive WCAG/security coverage is claimed.
+These limitations do not authorize changing production credentials or data.

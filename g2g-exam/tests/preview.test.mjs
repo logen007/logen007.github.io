@@ -43,6 +43,8 @@ import {renderQuestionHtml} from '../src/views/student.js';
   assert.doesNotMatch(html,/question-number|Schreiben Sie 20–30 Wörter/);
   assert.match(html,/<strong class="text-bold">Eigene Anleitung<\/strong>/);
   assert.match(html,/Hallo/);
+  assert.match(html,/aria-label="Schriftliche Antwort"/);
+  assert.match(renderQuestionHtml({id:'writing-numbered',type:'writing',maxScore:10},'',{id:'preview'},{questionNumber:42}),/aria-label="Schriftliche Antwort 42"/);
   assert.match(html,/word-count/);
 }
 
