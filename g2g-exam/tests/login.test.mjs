@@ -5,7 +5,8 @@ import {loginHtml} from '../src/views/login.js';
 import {loginDemoHtml} from '../src/views/login-demo.js';
 import {themePalette,darkThemePalette,colorContrast} from '../src/settings/palette.js';
 const api=loginHtml({mode:'api'}),local=loginHtml({mode:'local'});
-assert.match(api,/Kết quả sẽ được gửi về email này/);
+assert.doesNotMatch(api,/Kết quả sẽ được gửi về email này|landing-login-note/);
+assert.match(api,/Công ty Cổ phần Phát triển Nhân lực Quốc tế/);
 assert.doesNotMatch(api,/Minh họa giao diện luyện thi|Đề luyện hiện có/,'Remove the two labels requested by the owner');
 assert.doesNotMatch(api,/Tạm dừng|Tiếp tục chuyển động|Lưu bài tự động|Ví dụ minh họa|data-login-motion-toggle|landing-demo-layer/);
 assert.doesNotMatch(api,/Sử dụng tài khoản Google của bạn|Một tài khoản để luyện thi|GOETHE &amp; TELC|G2G Exam|landing-brand-mark/);
@@ -36,6 +37,8 @@ for(let i=1;i<=6;i++){
   assert.ok(scenes.includes(`Câu ${i}`));
   assert.ok(scenes.includes(`${i} / 6`));
   assert.equal((scenes.match(new RegExp(`--scene-delay:${(i-1)*6-36.8}s`,'g'))||[]).length,2,'Each question shares its timeline with exactly one step');
+  assert.ok(scenes.includes(`--card-layer:${7-i}`),'Every real question starts at its own stack depth');
+  assert.ok(scenes.includes(`--card-offset:${(i-1)*4}px`),'Rear cards have a reserved visible offset');
 }
 for(const kind of ['choice','binary','gap','match','order','writing'])assert.ok(scenes.includes(`landing-demo-question--${kind}`));
 assert.doesNotMatch(scenes,/<button|<input|<select|<textarea|Goethe|Telc/,'Decorative scenes do not pretend to be interactive or an official exam structure');
@@ -79,20 +82,27 @@ for(const selector of ['.landing-demo-answer--chosen {','.landing-demo-sentence 
 assert.match(css,/\.landing-demo \{[^}]*border:0;[^}]*background:transparent/,'No redundant outer frame around the illustration');
 assert.match(api,/class="landing-demo-stack"/);
 assert.match(css,/\.landing-demo \{[^}]*padding:0;/,'Desktop illustration must not shrink inside an invisible padded wrapper');
-assert.match(css,/\.landing-demo-stack::before,\.landing-demo-stack::after/,'Two static paper sheets sit behind the screen');
+assert.doesNotMatch(css,/\.landing-demo-stack::(?:before|after)/,'Actual question cards replace fake rear sheets');
 const motion=css.match(/@media\(prefers-reduced-motion:no-preference\) \{([\s\S]+?)\n\}/)?.[1];
 assert.ok(motion);
-assert.doesNotMatch(motion,/landing-cta|landing-login|landing-copy|landing-demo-layer|landing-demo-orbit|landing-demo-stack/,'Only the question content and its step change, not authentication or paper stack');
+assert.doesNotMatch(motion,/landing-cta|landing-login|landing-copy|landing-demo-layer|landing-demo-orbit|landing-demo-stack/,'Cards move within their stack, never the page or authentication');
 assert.match(motion,/36s var\(--scene-delay\) linear infinite both/);
-for(const name of ['rise','right','reveal','left','drop','fade'])assert.match(css,new RegExp('@keyframes landing-question-'+name));
+assert.match(motion,/landing-card-cycle 36s var\(--scene-delay\) linear infinite both,landing-card-depth 36s var\(--scene-delay\) step-end infinite both/);
+const depth=css.match(/@keyframes landing-card-depth \{[^\n]+/)?.[0]||'';
+for(const layer of [1,2,3,4,5,6])assert.ok(depth.includes(`z-index:${layer}`));
+assert.match(depth,/0%,16\.66% \{ z-index:6; \} 16\.67%,33\.32% \{ z-index:1;/,'After its six-second turn, the front card goes to the very bottom');
+const cycle=css.match(/@keyframes landing-card-cycle \{[^\n]+/)?.[0]||'';
+assert.doesNotMatch(cycle,/opacity|visibility/,'Real cards travel to the back rather than crossfade or disappear');
+assert.match(cycle,/0%,14\.44% \{ transform:none;/,'Front-card text stays undistorted during its answer animation');
+assert.match(css,/@keyframes landing-card-content \{ 0%,16\.66% \{ visibility:visible; \} 16\.67%,99\.99% \{ visibility:hidden;/,'Rear cards cannot leak answer text around the front card');
 for(const name of ['answer-select','word-land','pair-connect','word-order','letter-line'])assert.match(css,new RegExp('@keyframes landing-'+name),'Question formats have their own meaningful internal motion');
 assert.match(css,/@keyframes landing-word-order \{[^\n]*4% \{ transform:translateY\(var\(--word-lift\)\)/,'Word tokens lift into separate lanes before crossing');
 for(const name of ['pair-color','pair-connect','letter-line']){
   const keyframes=css.match(new RegExp('@keyframes landing-'+name+' \\{[^\\n]+'))?.[0]||'';
   assert.match(keyframes,/18%,100% \{/,'Staggered children reset during hidden phase, avoiding a previous-cycle flash');
 }
-assert.match(css,/\.landing-demo-question \{[^}]*opacity:0; visibility:hidden/);
-assert.match(css,/\.landing-demo-question:first-child \{ opacity:1; visibility:visible; \}/,'Without animations, including reduced motion, only question one is visible');
+assert.match(css,/\.landing-demo-question \{[^}]*z-index:var\(--card-layer\);[^}]*transform:translateY\(var\(--card-offset\)\) rotate\(var\(--card-rotation\)\)/,'Without animations the six real cards remain a static ordered stack');
+assert.match(css,/\.landing-demo-question:first-child \{ transform:none; \}/,'Reduced-motion front card remains straight and readable');
 assert.doesNotMatch(css,/landing-motion-control|landing-demo-save|landing-demo-wash|landing-demo-orbit|\.landing-demo-layer/,'Removed scene decorations and controls leave no orphan styles');
 assert.match(css,/\.landing \.landing-cta:focus-visible/);
 assert.match(css,/\.landing \.landing-cta \{[^}]*isolation:isolate; appearance:none;/,'Custom CTA owns its paint context across theme snapshots');
@@ -105,7 +115,7 @@ const mobile=css.slice(css.indexOf('.landing {')).match(/@media\(max-width:900px
 assert.match(mobile,/\.landing-copy \{ order:0;/);
 assert.match(mobile,/\.landing-product \{ order:1;/);
 assert.match(mobile,/\.landing-signin \{ order:2;/,'Welcome order is promise, experience, action');
-assert.match(mobile,/\.landing-login-note \{ display:none; \}/,'Mobile auth only has Google and the free label');
+assert.doesNotMatch(css,/landing-login-note/,'Removed email note leaves no orphan styles');
 assert.doesNotMatch(css.match(/\.landing-demo-question \{[^}]*\}/)?.[0]||'',/(?:min-|max-)?height:/,'Content, not a fixed card height, determines the scene stage');
 assert.ok(api.indexOf('class="landing-policy"')>api.indexOf('<footer>'),'Policy links follow the public content rather than interrupting sign-in');
 assert.doesNotMatch(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/bindLoginMotion|login-motion\.js/,'CSS-only scenes have no timer/listener lifecycle in app');

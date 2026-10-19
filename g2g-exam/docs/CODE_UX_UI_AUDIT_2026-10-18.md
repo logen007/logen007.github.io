@@ -886,3 +886,29 @@ authenticated desktop/mobile headers also switched; preference survived reload.
 No real OAuth, physical iPhone, speaking, production data or infrastructure work.
 Protected CI gates the exact candidate; ordinary revert is rollback. VPS backup/
 deployed SHA remain unverified; public health/version verification follows merge.
+
+## Login rotating deck and copy: 19 October 2026 / 1.3.230
+
+Owner requested the full company name, no email note in any layout, and a real
+stack where each finished front card goes to the bottom, looping indefinitely.
+The existing six question nodes now supply every layer; removed fake rear sheets
+and six independent fade/entrance effects. CSS owns coordinated transform, discrete
+depth and front-only content visibility. Internal format-specific animations,
+shared theme tokens, auth, primary Google CTA and layout grouping are preserved.
+Reduced-motion/no-animation fallback is a static real-card deck; no new runtime
+timers, library, dependency or background animation. Footer uses exactly
+“Công ty Cổ phần Phát triển Nhân lực Quốc tế”.
+
+New login assertions failed against the prior email-bearing markup and pass on
+the change. MEDIUM 14/14 plus targeted login tests and diff check passed locally
+on macOS Node26. Built isolated IAB matrix: 320/390/768/1440, both modes; six depth
+layers, one visible text surface, no page overflow, 56px Google target, exact footer
+and removed email note. Two 37.5-second motion passes (mobile light and desktop
+dark; 960 samples total) observed all six cards in order and looping. Each outgoing
+front card became depth 1; zero rear-text leaks, card/page overflow or progress
+collisions. Stage height and CTA position stayed constant throughout each pass.
+Visual self-review only, not an independent or owner-approved image baseline.
+Physical iPhone, OS reduced-motion emulation, live OAuth and real screen reader
+remain unverified. No speaking, data/schema or infrastructure changes. Protected
+CI gates the exact candidate; ordinary revert rollback. VPS backup/SHA remain
+unverified; public health/version and final public UI checks follow merge.

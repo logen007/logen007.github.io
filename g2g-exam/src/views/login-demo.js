@@ -11,6 +11,6 @@ const scenes=[
 ];
 
 export function loginDemoHtml(){
-  const delay=index=>`style="--scene-delay:${index*6-36.8}s"`;
-  return `<div class="landing-demo-slides">${scenes.map(([kind,label,title,body],i)=>`<div class="landing-demo-question landing-demo-question--${kind}" data-scene="${i+1}" ${delay(i)}><div class="landing-demo-content"><div class="landing-demo-meta"><span class="landing-demo-type">${label}</span><span class="landing-demo-eyebrow">Câu ${i+1} / 6</span></div><h2 lang="de">${title}</h2><div lang="de">${body}</div></div></div>`).join('')}</div><div class="landing-demo-nav"><div>${scenes.map((_,i)=>`<span data-scene-step="${i+1}" ${delay(i)}${i===0?' class="current"':''}>${i+1}</span>`).join('')}</div></div>`;
+  const delay=(index,card=false)=>`style="--scene-delay:${index*6-36.8}s${card?`;--card-layer:${6-index};--card-offset:${index*4}px;--card-rotation:${[0,-.6,1.2,-1.6,2,-2][index]}deg`:''}"`;
+  return `<div class="landing-demo-slides">${scenes.map(([kind,label,title,body],i)=>`<div class="landing-demo-question landing-demo-question--${kind}" data-scene="${i+1}" ${delay(i,true)}><div class="landing-demo-content"><div class="landing-demo-meta"><span class="landing-demo-type">${label}</span><span class="landing-demo-eyebrow">Câu ${i+1} / 6</span></div><h2 lang="de">${title}</h2><div lang="de">${body}</div></div></div>`).join('')}</div><div class="landing-demo-nav"><div>${scenes.map((_,i)=>`<span data-scene-step="${i+1}" ${delay(i)}${i===0?' class="current"':''}>${i+1}</span>`).join('')}</div></div>`;
 }
