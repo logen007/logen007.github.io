@@ -162,10 +162,13 @@ Borrow hierarchy and purposeful illustration, not assets, claims or product copy
   subtle depth shadow is an exception to the normal shadow-free card rule.
 - CSS cycles the deck every 36 seconds: after each six-second internal question
   animation, the front card moves to the bottom layer and the next card takes over.
-  All six cards remain mounted and opaque; discrete depth changes avoid crossfades.
-  Only front-card text is visible, preventing text from leaking at rear edges.
+  All six cards remain mounted. Ease card travel and briefly fade the outgoing
+  card to zero opacity at the discrete depth switch, so it never snaps behind
+  another visible card. Fade outgoing text before the next text's soft entrance;
+  rear text stays hidden. Do not use step-end content visibility to swap titles.
   Preserve distinct internal answer selection, gap fill, pair connection, word
-  ordering and writing reveal; staggered children reset while behind the front.
+  ordering and writing reveal; every child resets while behind the front, before
+  the next card's pre-entrance, so completed answers never flash then revert.
   No runtime timer/library. Authentication and page layout do not animate.
   Reduced motion and unsupported animation show a static deck with question one
   readable. At the owner's explicit
