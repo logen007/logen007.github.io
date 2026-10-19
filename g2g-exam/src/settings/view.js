@@ -11,6 +11,7 @@ function aiSettingsFields(settings,infra){
 import {normalizeButtonTheme,SELECTION_STRENGTH_RANGE,darkThemePalette} from './palette.js';
 import {settingsTabsHtml} from './tabs.js';
 import {r2SettingsCardHtml} from './r2.js';
+import {googleSheetSettingsHtml} from './google-sheet.js';
 import {DEFAULT_EXAM_MESSAGES} from '../ui/exam-messages.js';
 import {iconHtml} from '../ui/icons.js';
 import {esc} from '../ui/format.js';
@@ -59,6 +60,7 @@ export function settingsPageHtml({settings,infra,localOnly=false}){
 ${card('Thông tin hệ thống','Tên hiển thị và địa chỉ truy cập.',field('sName','Tên hệ thống',s.general.systemName)+field('sOrg','Đơn vị vận hành',s.general.organizationName)+field('sSupport','Email hỗ trợ',s.general.supportEmail,'email')+field('sFeedbackEmail','Email nhận góp ý',s.general.feedbackEmail||'admin@g2gcareer.com','email')+field('sUrl','Địa chỉ hệ thống',s.general.publicUrl,'url')+assetPicker('sLogo','Logo',s.general.logoUrl,'image/*')+assetPicker('sFavicon','Favicon',s.general.faviconUrl,'image/png,image/svg+xml,image/x-icon,image/vnd.microsoft.icon'))}
 ${themeCard(s.theme)}
 ${r2SettingsCardHtml()}
+${googleSheetSettingsHtml()}
 ${card('Đăng nhập Google','Google OAuth chạy trực tiếp trên VPS, không cần Firebase.',toggle('sGoogle','Bật đăng nhập Google',s.auth.googleLoginEnabled)+toggle('sSignup','Cho học viên mới tự đăng ký',s.auth.allowNewStudents)+field('sDomain','Giới hạn tên miền email',s.auth.allowedDomain,'text','Để trống để nhận mọi tài khoản Google.'))}
 ${card('Máy chủ SMTP','SMTP riêng của anh. Mật khẩu được mã hóa trong PostgreSQL bằng khóa chỉ có trên VPS.',toggle('sSmtp','Bật SMTP',s.smtp.enabled)+field('sHost','SMTP Host',s.smtp.host)+field('sPort','Cổng SMTP',s.smtp.port,'number')+`<label class="cai-dat-field"><span>Bảo mật</span><select class="truong" id="sSecurity"><option value="starttls" ${s.smtp.security==='starttls'?'selected':''}>STARTTLS</option><option value="ssl" ${s.smtp.security==='ssl'?'selected':''}>SSL/TLS</option><option value="none" ${s.smtp.security==='none'?'selected':''}>Không mã hóa</option></select></label>`+field('sUser','Tên đăng nhập',s.smtp.username)+`<label class="cai-dat-field"><span>Mật khẩu / API key</span><div class="email-test"><input class="truong" id="sPassword" type="password" autocomplete="new-password" placeholder="Nhập khi cần cập nhật"><button class="nut" id="sSecret">Cập nhật mật khẩu</button></div><small id="sSecretHint">${!infra?'Chưa kiểm tra trạng thái mật khẩu.':infra?.smtp?.secretConfigured?'Đã lưu mật khẩu an toàn trên VPS.':'Chưa lưu mật khẩu SMTP.'}</small></label>`+field('sFromName','Tên người gửi',s.smtp.fromName)+field('sFrom','Email người gửi',s.smtp.fromEmail,'email')+field('sReply','Reply-To',s.smtp.replyTo,'email')+field('sTimeout','Timeout (ms)',s.smtp.timeoutMs,'number')+toggle('sTlsVerify','Kiểm tra chứng chỉ TLS',s.smtp.rejectUnauthorized!==false))}
 ${card('AI gợi ý chấm bài viết','Tùy chọn. Khóa được mã hóa trên VPS, không trả về trình duyệt. Tự chuyển sang AI khác khi đạt hạn mức.',aiSettingsFields(s,infra))}

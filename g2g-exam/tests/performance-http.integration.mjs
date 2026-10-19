@@ -104,6 +104,13 @@ try{
     assert.equal((await app.inject({method,url,headers:{cookie:cookie('s0')}})).statusCode,403);
   }
   const sheetStatus=await app.inject({url:'/api/exam-images/status',headers:{cookie:cookie('admin')}});
+  const pickerStatus=await app.inject({url:'/api/exam-images/google-settings',headers:{cookie:cookie('admin')}});
+  assert.equal(pickerStatus.statusCode,200);assert.equal(pickerStatus.json().configured,false);
+  assert.doesNotMatch(pickerStatus.body,/apiKey|accessToken|refreshToken|clientSecret/);
+  for(const [method,url] of [['GET','/api/exam-images/google-settings'],['POST','/api/exam-images/google-settings'],['POST','/api/exam-images/picker'],['POST','/api/exam-images/authorize'],['POST','/api/exam-images/disconnect']]){
+    assert.equal((await app.inject({method,url})).statusCode,401);
+    assert.equal((await app.inject({method,url,headers:{cookie:cookie('s0')}})).statusCode,403);
+  }
   assert.equal(sheetStatus.statusCode,200);assert.deepEqual(sheetStatus.json(),{ready:false,url:null,lastSync:null,result:null});
   assert.equal((await app.inject({url:'/api/exam-images/export',headers:{cookie:cookie('s0')}})).statusCode,403);
   await query("INSERT INTO users(id,email,role,data) VALUES('inventory-teacher','teacher@example.test','teacher','{}')");

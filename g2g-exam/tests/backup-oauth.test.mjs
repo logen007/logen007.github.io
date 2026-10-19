@@ -41,7 +41,7 @@ try{
  await assert.rejects(callback({...request,cookies:{g2g_backup_oauth:'different-browser'}},reply),e=>e.statusCode===400);
  await connect({user:master},reply);
  request.query.state=lastOptions.state;request.cookies.g2g_backup_oauth=reply.cookie;
- await callback(request,reply);
+ assert.equal(await callback(request,reply),'/adm?tab=settings&settings=advanced');
  await assert.rejects(callback(request,reply),e=>e.statusCode===400);
  const status=await backupDriveStatus(master);
  assert.equal(status.folderId,'folder-id');

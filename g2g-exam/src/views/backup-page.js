@@ -21,7 +21,7 @@ export function backupProgressText(status,now=Date.now()){
 }
 export function backupItemHtml(file){return `<td class="backup-created"><a class="backup-download" aria-label="Tải xuống ${esc(file.name)}" title="${esc(file.name)}" href="/api/backup/files/${encodeURIComponent(file.id)}/download">${backupCreatedTimeHtml(file.createdTime)}${file.appProperties?.appVersion?`<small class="backup-version">v${esc(file.appProperties.appVersion)}</small>`:''}</a></td><td>${Number.isFinite(Number(file.size))?(Number(file.size)/1048576).toFixed(1)+' MB':'—'}</td><td><div class="hanh-dong-bang backup-actions"><button class="icon-btn" data-restore title="Phục hồi thử" aria-label="Phục hồi thử ${esc(file.name)}">${iconHtml('repeat')}</button><button class="icon-btn" data-delete title="Xoá bản backup" aria-label="Xoá bản backup ${esc(file.name)}">${iconHtml('trash')}</button></div></td>`;}
 export function backupSettingsHtml(){return `<form class="backup-form"><header class="dau-hop"><h2 id="backup-dialog-title">Cài đặt Backup</h2><button type="button" class="icon-btn" data-close title="Đóng" aria-label="Đóng">${iconHtml('close')}</button></header>
- <section class="backup-google"><div><strong>Google Drive</strong><small data-google>Đang kiểm tra…</small></div><button type="button" class="nut" data-connect disabled>Kết nối</button><button type="button" class="icon-btn" data-disconnect title="Ngắt kết nối Google Drive" aria-label="Ngắt kết nối Google Drive" hidden>${iconHtml('logout')}</button></section>
+ <section class="backup-google"><div><strong>Google Drive</strong><small data-google>Đang kiểm tra…</small></div><a class="nut" href="/adm?tab=settings&amp;settings=advanced">Quản lý trong Cài đặt</a></section>
  <fieldset disabled><label class="backup-toggle"><span>Backup tự động</span><input type="checkbox" name="enabled" role="switch"></label>
  <div class="backup-form-grid"><label class="backup-setting-row"><span>Giờ chạy<small>Giờ Việt Nam</small></span><input class="truong" type="time" name="time" required></label><label class="backup-setting-row"><span>Chu kỳ<small>Số ngày giữa mỗi lần</small></span><input class="truong" type="number" min="1" max="30" name="intervalDays" required></label></div>
  <section class="backup-retention"><h3>Số bản giữ lại</h3><div class="backup-form-grid"><label class="backup-setting-row"><span>Gần nhất</span><input class="truong" type="number" min="1" max="90" name="dailyCopies" required></label><label class="backup-setting-row"><span>Theo tháng<small>Giữ thêm 1 bản mỗi tháng</small></span><input class="truong" type="number" min="0" max="24" name="monthlyCopies" required></label></div></section>
@@ -100,16 +100,12 @@ export function mountBackupPage(root,{owner=null}={}){
   const close=()=>{dialog.close();dialog.remove();previous?.focus();};
   dialog.querySelector('[data-close]').onclick=close;dialog.querySelector('[data-cancel]').onclick=close;dialog.oncancel=e=>{e.preventDefault();close();};
   dialog.querySelector('[data-close]').focus();
-  dialog.querySelector('[data-connect]').onclick=()=>location.assign('/api/backup/google/connect');
-  dialog.querySelector('[data-disconnect]').onclick=async()=>{try{const r=await fetch('/api/backup/google/disconnect',{method:'POST',credentials:'include'});if(!r.ok)throw Error('Không thể ngắt kết nối.');invalidateBackupData(owner);close();await load({force:true});}catch(e){err(e);}};
   try{
    const [{preferences:p},{drive}]=await Promise.all([action('getBackupPreferences'),loadBackupData(owner,'status')]);
    if(!dialog.isConnected)return;
    for(const key of ['time','intervalDays','dailyCopies','monthlyCopies'])form.elements[key].value=p[key];
    form.elements.enabled.checked=p.enabled===true;
    dialog.querySelector('[data-google]').textContent=drive.connected?drive.email:drive.oauthConfigured?'Chưa kết nối':'Google chưa được cấu hình.';
-   dialog.querySelector('[data-connect]').hidden=drive.connected;dialog.querySelector('[data-connect]').disabled=!drive.oauthConfigured;
-   dialog.querySelector('[data-disconnect]').hidden=!drive.connected;
    dialog.querySelector('fieldset').disabled=false;
   }catch(e){err(e);}
   form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('[type=submit]');button.disabled=true;try{await action('saveBackupPreferences',{enabled:form.elements.enabled.checked,time:form.elements.time.value,...Object.fromEntries(['intervalDays','dailyCopies','monthlyCopies'].map(k=>[k,Number(form.elements[k].value)]))});close();report('Đã lưu cài đặt Backup.');}catch(e){err(e);}finally{button.disabled=false;}};

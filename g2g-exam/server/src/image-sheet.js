@@ -1,6 +1,6 @@
 import {pool,query,withTx,appError} from './db.js';
 import {encrypt,decrypt} from './settings-secrets.js';
-import {getBackupDriveAccess} from './backup-google.js';
+import {getImageSheetGoogleAccess} from './image-sheet-google.js';
 import {loadExamImageInventory} from './exam-image-inventory.js';
 import {syncImageSheet} from './image-sheet-sync.js';
 
@@ -18,7 +18,7 @@ export function googleImageClient(token,fetcher=fetch){
     const base=service==='drive'?'https://www.googleapis.com/drive/v3':'https://sheets.googleapis.com/v4/spreadsheets';
     const response=await fetcher(base+route,{method,headers:{Authorization:`Bearer ${token}`,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(20000),redirect:'error'});
     // Never log Google's body: it may echo URLs, credentials or document data.
-    if(!response.ok)throw appError(400,'Google chưa cho website đọc/ghi Sheet ảnh. Kiểm tra quyền truy cập tệp và Google Sheets API của kết nối trong Sao lưu.');
+    if(!response.ok)throw appError(400,'Google chưa cho website đọc/ghi Sheet ảnh. Vào Cài đặt → Nâng cao để chọn lại Exam img; kiểm tra Google Sheets API đã bật trong dự án Google.');
     return response.status===204?{}:response.json();
   };
 }
@@ -55,9 +55,7 @@ async function withLock(fn){
     client.release(broken);
   }
 }
-export const runImageSheetSync=createImageSheetRunner({withLock,access:async()=>{
-  try{return await getBackupDriveAccess();}catch{throw appError(400,'Chưa truy cập được Google Drive. Anh kết nối lại Google trong Sao lưu.');}
-},readState:read,saveState:save,inventory:()=>loadExamImageInventory({withTx,origin:origin()}),makeGoogle:googleImageClient});
+export const runImageSheetSync=createImageSheetRunner({withLock,access:getImageSheetGoogleAccess,readState:read,saveState:save,inventory:()=>loadExamImageInventory({withTx,origin:origin()}),makeGoogle:googleImageClient});
 
 export function registerImageSheetRoutes(app,authenticate){
   app.get('/api/exam-images/status',async(request,reply)=>{
