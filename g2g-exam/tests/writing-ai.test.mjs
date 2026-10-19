@@ -2,30 +2,28 @@ import assert from 'node:assert/strict';
 import {parseWritingSuggestion,suggestWritingGrade} from '../server/src/writing-ai.js';
 import {writingQueueState} from '../server/src/actions/settings.js';
 import './provider-job-pump.test.mjs';
+import {AI_PROVIDER_IDS,normalizeAiProvider} from '../src/domain/ai-providers.js';
+import {aiApiKeys,setAiApiKey} from '../server/src/ai-settings.js';
 
-const cerebrasResponse={ok:true,status:200,json:async()=>({choices:[{message:{content:'{"suggestedScore":8,"findings":[]}'}}]})};
-const cerebrasGrade=await suggestWritingGrade({rule:'Nội dung 10đ',answer:'Hallo',maxScore:10,cerebrasApiKey:'test-only',providerOnly:'cerebras',fetchImpl:async(url,options)=>{
-  assert.equal(url,'https://api.cerebras.ai/v1/chat/completions');
-  assert.equal(options.headers.authorization,'Bearer test-only');
-  const body=JSON.parse(options.body);
-  assert.equal(body.model,'gpt-oss-120b');assert.equal(body.max_tokens,4096);
-  assert.equal(body.reasoning_effort,'low');assert.deepEqual(body.response_format,{type:'json_object'});
-  return cerebrasResponse;
-}});
-assert.deepEqual(cerebrasGrade,{suggestedScore:8,findings:[],model:'cerebras'});
-for(const status of [401,429])await assert.rejects(suggestWritingGrade({rule:'10đ',answer:'Hallo',maxScore:10,cerebrasApiKey:'test',providerOnly:'cerebras',fetchImpl:async()=>({ok:false,status,json:async()=>({})})}),error=>error.statusCode===(status===401?503:429));
-let cerebrasFallbackCalls=0;
-const cerebrasFallback=await suggestWritingGrade({rule:'10đ',answer:'Hallo',maxScore:10,groqApiKey:'test',cerebrasApiKey:'test',fetchImpl:async()=>++cerebrasFallbackCalls===1?{ok:false,status:429,json:async()=>({})}:cerebrasResponse});
-assert.equal(cerebrasFallback.model,'cerebras');assert.equal(cerebrasFallbackCalls,2);
-const cerebrasQueue=writingQueueState({}, {cerebras:{configured:true}},{rows:[{status:'completed',model:'cerebras',count:3}]},{rows:[]});
-assert.equal(cerebrasQueue.providers.cerebras,true);assert.equal(cerebrasQueue.successfulByProvider.cerebras,3);
+assert.deepEqual(AI_PROVIDER_IDS,['groq','gemini','grok','mistral']);
+assert.equal(normalizeAiProvider('cerebras'),'groq','Retired preference falls back to an active provider');
+await assert.rejects(suggestWritingGrade({rule:'10đ',answer:'Hallo',maxScore:10,cerebrasApiKey:'retired-key',providerOnly:'cerebras',fetchImpl:async()=>{throw Error('Retired provider must never be called');}}),error=>error.statusCode===400);
+await assert.rejects(aiApiKeys('cerebras'),error=>error.statusCode===400);
+await assert.rejects(setAiApiKey('cerebras','retired-key','master'),error=>error.statusCode===400);
+let activeCalls=0;
+await assert.rejects(suggestWritingGrade({rule:'10đ',answer:'Hallo',maxScore:10,groqApiKey:'test',cerebrasApiKey:'retired-key',providerPreference:'cerebras',fetchImpl:async url=>{activeCalls++;assert.equal(url,'https://api.groq.com/openai/v1/chat/completions');return {ok:false,status:429,json:async()=>({})};}}),error=>error.statusCode===429);
+assert.equal(activeCalls,1,'Quota fallback must not call retired Cerebras even when an old key is supplied');
+const cerebrasQueue=writingQueueState({ai:{providerPreference:'cerebras'}}, {cerebras:{configured:true}},{rows:[{status:'completed',model:'cerebras',count:3}]},{rows:[]});
+assert.equal(cerebrasQueue.providers.cerebras,undefined);assert.equal(cerebrasQueue.successfulByProvider.cerebras,undefined);
+assert.equal(cerebrasQueue.jobs.completed.count,3,'Historical completed jobs remain counted');
+assert.equal(cerebrasQueue.providerPreference,'groq');
 
 const queue=writingQueueState({ai:{providerPreference:'gemini'}},{},{rows:[
   {status:'completed',model:'groq',count:4},{status:'completed',model:'gemini',count:2},
   {status:'completed',model:null,count:1},{status:'failed',model:'groq',count:3},
   {status:'queued',model:'gemini',count:1}
 ]},{rows:[]});
-assert.deepEqual(queue.successfulByProvider,{groq:4,gemini:2,grok:0,mistral:0,cerebras:0});
+assert.deepEqual(queue.successfulByProvider,{groq:4,gemini:2,grok:0,mistral:0});
 assert.equal(queue.jobs.completed.count,7,'Grouped providers must preserve the total successful-job count');
 assert.deepEqual(queue.jobs.completed.models,['groq','gemini']);
 assert.equal(queue.jobs.failed.count,3);
