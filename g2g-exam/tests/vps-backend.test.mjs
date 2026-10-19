@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './exam-image-inventory.test.mjs';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {getPublishedExams} from '../src/domain/base.js';

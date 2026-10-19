@@ -11,7 +11,7 @@ import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
-import {initDb,getSettings,getDataRevision,appError,pool} from './db.js';
+import {initDb,getSettings,getDataRevision,appError,pool,withTx} from './db.js';
 import {createStateCache} from './state-cache.js';
 import {registerAuthRoutes,currentUser,requireUser,requireRole} from './auth.js';
 import {loadState,commitOperations} from './state.js';
@@ -20,6 +20,7 @@ import {loadAttemptSync} from './attempt-sync.js';
 import {stateResponse} from './state-response.js';
 import {handleAction} from './actions.js';
 import {registerPublicationRoute} from './publication-route.js';
+import {registerExamImageInventoryRoute} from './exam-image-inventory.js';
 import {startMediaGarbageCollector} from './media-gc.js';
 import {startTrashGarbageCollector} from './trash-gc.js';
 import {submitExpiredAttempts} from './actions/attempts.js';
@@ -120,6 +121,7 @@ const readState=async(request,reply,scope,load)=>{
 app.get('/api/state',async(request,reply)=>readState(request,reply,'full',loadState));
 app.get('/api/state-summary',async(request,reply)=>readState(request,reply,'summary',user=>loadState(user,{summaryOnly:true})));
 app.get('/api/exam-catalog',async(request,reply)=>readState(request,reply,'catalog',loadExamCatalog));
+registerExamImageInventoryRoute(app,{authenticate:request=>requireRole(request,'master'),withTx,origin:process.env.PUBLIC_URL||'http://localhost:8080'});
 app.get('/api/attempts/:id/sync',async(request,reply)=>stateResponse(await loadAttemptSync(await requireUser(request),request.params.id),request,reply));
 app.get('/api/attempts/:id/session',async(request,reply)=>{
   const user=await requireRole(request,'student');

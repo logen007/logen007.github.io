@@ -44,6 +44,7 @@ trong script phải đối chiếu cấu hình host trước khi sử dụng.
 | Quyền hạn, giới hạn và cách làm việc | `AGENTS.md` |
 | Quy trình 7 bước, UI/UX, review và release/rollback | `docs/ENGINEERING.md` |
 | Module chịu trách nhiệm | `docs/MAINTENANCE.md` |
+| Xuất ảnh / phục chế qua Google Sheet | `docs/IMAGE_RESTORATION.md` |
 | UI/component/token/mobile/light-dark | `docs/UI_STYLE.md` |
 | Luật thi và rubric | `specs/README.md` + đúng APPROVED specification |
 | Chọn và chạy test | `docs/QUALITY_GATES.md` |
