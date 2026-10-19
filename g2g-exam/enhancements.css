@@ -244,8 +244,9 @@
 .backup-dialog::backdrop{background:rgba(0,0,0,.35)}
 .backup-page [hidden],.backup-dialog [hidden]{display:none!important}
 .backup-dialog .dau-hop h2{font-size:24px;margin:0}
-.backup-google{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 0;border-bottom:1px solid var(--vien)}
+.backup-google{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:24px 0;border-bottom:1px solid var(--vien)}
 .backup-google>div{display:grid;gap:4px;min-width:0}
+.backup-google>.google-connection-actions{display:flex;flex-wrap:wrap;gap:8px;max-width:100%}
 .backup-google strong{font-size:14px;font-weight:500}
 .backup-google small{color:var(--phu);overflow-wrap:anywhere}
 .backup-google>button{flex-shrink:0}

@@ -20,6 +20,12 @@
 
 ### Cấp quyền trong Cài đặt (1.3.237)
 
+Từ 1.3.241, `Cài đặt → Nâng cao → Kết nối Google chính` chỉ quản lý Google
+chính và quyền file Sheet ảnh. Tài khoản Sao lưu được quản lý riêng tại
+`Backup → Cài đặt Backup`; callback Sao lưu quay về Backup, callback Google
+chính quay về Nâng cao. API trạng thái Sheet không tải email/trạng thái Sao lưu.
+Đây là thay đổi vị trí quản lý, không thay token hay tự thêm quyền/tác vụ mới.
+
 Từ 1.3.240, tài khoản Sheet ảnh và Sao lưu là hai kết nối OAuth riêng. Sheet dùng
 secret mã hóa `image_sheet_google`; tuyệt đối không fallback/copy token từ
 `backup_google_drive` hoặc tài khoản đăng nhập website. Cả hai tái dùng Cloud
@@ -49,8 +55,8 @@ Google vẫn loại file nếu tài khoản không được truy cập. Chưa x�
 nhân danh sách cũ thiếu file và chưa chạy Picker thật; không coi test double
 là bằng chứng cửa sổ Google đã hiển thị file production.
 
-1. Vào `Cài đặt → Nâng cao → Google Drive và Sheet ảnh` (chỉ master).
-2. Bấm `Kết nối Google Sheet ảnh`, chọn tài khoản có quyền sửa Exam img.
+1. Vào `Cài đặt → Nâng cao → Kết nối Google chính` (chỉ master).
+2. Bấm `Kết nối Google chính`, chọn tài khoản có quyền sửa Exam img.
    Không dùng kết nối Sao lưu làm quyền Sheet. Callback quay về Cài đặt.
 3. Nhập Picker API key và Project number trong cùng Cloud project của OAuth Backup.
    Key phải cho phép Google Picker API, referrer website và `https://docs.google.com/*`.
@@ -73,7 +79,7 @@ nếu hai kết nối dùng cùng tài khoản, Google có thể thu hồi grant
 cảnh báo khi ngắt Sao lưu. Quyền Picker vẫn có thể thu hồi trong tài khoản Google.
 Đổi tài khoản Sheet cần xác minh/cấp quyền lại.
 
-Kết nối Google trong popup Sao lưu chuyển thành link về Cài đặt. Chưa chạy Google
+Kết nối Google sao lưu nằm trong popup Cài đặt Backup. Chưa chạy Google
 Picker thật bằng trình duyệt hoặc xác minh quyền production: chỉ báo hoàn tất
 đồng bộ sau status/Sheet readback thật, không suy từ health/version/tests.
 

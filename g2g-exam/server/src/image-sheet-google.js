@@ -1,7 +1,6 @@
 import {pool,appError} from './db.js';
 import {encrypt,decrypt} from './settings-secrets.js';
 import {getImageSheetOAuthAccess,imageSheetGoogleStatus,disconnectImageSheetGoogle} from './image-sheet-oauth.js';
-import {backupDriveStatus} from './backup-google.js';
 
 const KEY='image_sheet_picker';
 const locallyDisabled=config=>config.enabled===false||(config.enabled===undefined&&config.authorized===false&&Boolean(config.folderId));
@@ -29,16 +28,16 @@ export async function getImageSheetGoogleAccess({sheetId,makeGoogle,storage={rea
   await verifyImageSheetGrant(makeGoogle(connection.token),sheetId);
   return connection;
 }
-export function registerImageSheetGoogleRoutes(app,{authenticate,sheetId,makeGoogle,storage={read,save},access=getImageSheetOAuthAccess,driveStatus=imageSheetGoogleStatus,backupStatus=backupDriveStatus,disconnect=disconnectImageSheetGoogle}){
+export function registerImageSheetGoogleRoutes(app,{authenticate,sheetId,makeGoogle,storage={read,save},access=getImageSheetOAuthAccess,driveStatus=imageSheetGoogleStatus,disconnect=disconnectImageSheetGoogle}){
   app.get('/api/exam-images/google-settings',async(request,reply)=>{
     const user=await authenticate(request);reply.header('Cache-Control','private, no-store');
-    const config=await storage.read(),drive=await driveStatus(user),backup=await backupStatus(user);
+    const config=await storage.read(),drive=await driveStatus(user);
     let authorized=false,error='';
     if(!locallyDisabled(config)&&drive.connected){
       try{const connection=await access();await verifyImageSheetGrant(makeGoogle(connection.token),sheetId);authorized=true;}
       catch(issue){error=issue.statusCode===400?issue.message:'Chưa xác minh được quyền Google. Anh kết nối lại trong Cài đặt.';}
     }
-    return {configured:Boolean(config.apiKey&&config.projectNumber),projectNumber:config.projectNumber||'',authorized,disabled:locallyDisabled(config),error,driveConnected:drive.connected,email:drive.email||'',oauthConfigured:drive.oauthConfigured,backup:{connected:backup.connected,email:backup.email||''}};
+    return {configured:Boolean(config.apiKey&&config.projectNumber),projectNumber:config.projectNumber||'',authorized,disabled:locallyDisabled(config),error,driveConnected:drive.connected,email:drive.email||'',oauthConfigured:drive.oauthConfigured};
   });
   app.post('/api/exam-images/google-settings',async(request,reply)=>{
     const user=await authenticate(request);reply.header('Cache-Control','private, no-store');

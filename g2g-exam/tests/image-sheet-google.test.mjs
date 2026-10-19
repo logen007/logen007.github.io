@@ -21,7 +21,7 @@ assert.equal(accessCalls,0);assert.equal(saveCalls,0);
 authorized=true;
 const status=await routes.get('GET /api/exam-images/google-settings')({},reply);
 assert.equal(status.configured,true);assert.doesNotMatch(JSON.stringify(status),/synthetic-picker|synthetic-access/);
-assert.equal(status.email,'sheet@example.test');assert.equal(status.backup.email,'backup@example.test');
+assert.equal(status.email,'sheet@example.test');assert.equal(status.backup,undefined,'Advanced status does not load or expose Backup account settings');
 assert.equal(status.authorized,true,'A stale false local flag must not hide a verified Google grant');
 assert.equal(saveCalls,0,'GET status is read-only');
 assert.equal(headers['Cache-Control'],'private, no-store');
@@ -51,7 +51,8 @@ assert.equal(liveChecks,2,'Explicit and legacy disconnects must never reconnect 
 await assert.rejects(getImageSheetGoogleAccess({...accessArgs,makeGoogle:()=>async()=>{throw Error('Google denies access');}}),/Google denies/);
 
 const html=googleSheetSettingsHtml();assert.match(html,/sGoogleConnections/);assert.match(html,/type="password"/);assert.doesNotMatch(html,/value="synthetic/);
-assert.match(html,/href="\/api\/exam-images\/google\/connect"/);assert.match(html,/href="\/api\/backup\/google\/connect"/);
+assert.match(html,/href="\/api\/exam-images\/google\/connect"/);assert.doesNotMatch(html,/\/api\/backup\/google|data-backup-google-status|data-google-disconnect|data-google-connect/);
+assert.match(html,/Kết nối Google chính/);
 const previousLocation=globalThis.location;globalThis.location={origin:'https://example.test'};
 try{
   let callback,seen,requestedIds,autoPick=null;

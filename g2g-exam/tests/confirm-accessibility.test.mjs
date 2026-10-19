@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {confirmAction} from '../src/ui/confirm.js';
 import {mountDialog} from '../src/views/classes.js';
+import {mountBackupPage} from '../src/views/backup-page.js';
+import {clearBackupData} from '../src/settings/backup-data.js';
 const {JSDOM}=await import(process.env.G2G_JSDOM_PATH);
 const dom=new JSDOM('<button id="outside">Background</button>');
 const previous=globalThis.document;globalThis.document=dom.window.document;
@@ -59,5 +61,36 @@ try{
   outside.setAttribute('aria-controls',menu.id);menu.querySelector('button').focus();menu.hidden=true;
   const profile=mountDialog('Profile','<input>');
   profile.querySelector('[data-dismiss]').click();assert.equal(doc.activeElement,outside,'Hidden menu opener restores its controlling avatar');
+  // DOM doubles only: native dialog top-layer rendering still needs a browser.
+  const saved={fetch:globalThis.fetch,setTimeout:globalThis.setTimeout,setInterval:globalThis.setInterval};
+  try{
+    Object.defineProperty(doc,'hidden',{configurable:true,value:false});
+    dom.window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+    dom.window.HTMLDialogElement.prototype.close=function(){this.open=false;};
+    globalThis.setTimeout=()=>0;globalThis.setInterval=()=>0;
+    let connected=true,fail=false,disconnects=0;
+    globalThis.fetch=async(url,options)=>{
+      assert.doesNotMatch(url,/exam-images/,'Backup settings never mutate the primary Google connection');
+      if(url==='/api/backup/google/disconnect'){
+        assert.equal(options.method,'POST');disconnects++;
+        if(fail)return {ok:false,json:async()=>({})};
+        connected=false;
+      }
+      return {ok:true,json:async()=>url.endsWith('getBackupStatus')?{drive:{connected,email:'backup@example.test',oauthConfigured:true},enabled:true,status:{state:'idle'}}:url.endsWith('getBackupPreferences')?{preferences:{time:'03:00',intervalDays:1,dailyCopies:7,monthlyCopies:1}}:{files:[]}};
+    };
+    clearBackupData();const root=doc.createElement('div');doc.body.append(root);
+    mountBackupPage(root,{owner:'synthetic-backup'});await new Promise(resolve=>setImmediate(resolve));
+    await root.querySelector('[data-settings]').onclick();
+    const popup=doc.querySelector('[data-backup-modal]'),disconnect=popup.querySelector('[data-disconnect]');
+    assert.equal(popup.querySelector('[data-connect]').getAttribute('href'),'/api/backup/google/connect');
+    assert.equal(popup.querySelector('[data-google]').textContent,'backup@example.test');
+    disconnect.click();assert.equal(popup.open,false,'Hide native modal before body confirmation');
+    doc.querySelector('[data-confirm-cancel]').click();assert.equal(popup.open,true);assert.equal(doc.activeElement,disconnect);assert.equal(disconnects,0);
+    fail=true;disconnect.click();doc.querySelector('[data-confirm-accept]').click();await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(popup.open,true);assert.equal(disconnect.disabled,false);assert.match(popup.querySelector('[data-error]').textContent,/Chưa ngắt/);
+    fail=false;disconnect.click();doc.querySelector('[data-confirm-accept]').click();await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(disconnects,2);assert.equal(popup.isConnected,false);assert.equal(root.querySelector('[data-now]').disabled,true);
+    root.remove();clearBackupData();
+  }finally{Object.assign(globalThis,saved);}
   console.log('Confirmation DOM: forward/backward focus loop, background containment, Escape, restoration and replacement cleanup passed.');
 }finally{globalThis.document=previous;dom.window.close();}
