@@ -23,8 +23,9 @@ assert.match(page,/<tbody data-job hidden><tr class="backup-job-row"><td colspan
 assert.match(page,/<time data-elapsed aria-label="Tổng thời gian" hidden>/);
 for(const name of ['enabled','time','intervalDays','dailyCopies','monthlyCopies'])assert.ok(settings.includes(`name="${name}"`));
 assert.match(settings,/<fieldset disabled>/);
-assert.match(settings,/href="\/adm\?tab=settings&amp;settings=advanced"/);
-assert.doesNotMatch(settings,/data-connect|data-disconnect/,'Google authorization lives in Settings only');
+assert.match(settings,/href="\/api\/backup\/google\/connect"/);
+assert.match(settings,/data-connect/);assert.match(settings,/data-disconnect/);
+assert.doesNotMatch(settings,/exam-images|settings=advanced/,'Backup account management stays on Backup');
 assert.match(settings,/data-close[^>]*aria-label="Đóng"/);
 assert.equal((settings.match(/class="truong"/g)||[]).length,4);
 assert.match(settings,/data-cancel/);
