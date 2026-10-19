@@ -267,3 +267,5 @@
 .backup-form [data-error]{color:var(--do);font-size:13px;margin:16px 0 0}
 .backup-form [data-error]:empty{display:none}
 @media(max-width:600px){.backup-actions{gap:4px}.backup-dialog{padding:24px 20px}.backup-setting-row{grid-template-columns:minmax(0,1fr) 108px;gap:12px}.backup-table th,.backup-table td{padding:14px 10px}.backup-created time{gap:6px;font-size:13px}.backup-created .backup-time{font-size:12px}.backup-job{min-height:72px;padding:14px 10px}}
+.google-connection-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.google-connection-actions>.nut { max-width:100%; white-space:normal; }

@@ -1,6 +1,7 @@
 import {hasApiBackend} from './config.js';
 import {AI_PROVIDER_IDS,aiProviderLabel} from './domain/ai-providers.js';
 import {bindR2Settings} from './settings/r2.js';
+import {bindGoogleSheetSettings} from './settings/google-sheet.js';
 import {
   loadPrivateSettings,refreshInfrastructure,
   updateSystemSettings,updateSmtpSecret,updateAiApiKey,testSmtp
@@ -244,6 +245,7 @@ async function sendTest(){
 }
 
 function bindSettingsActions(){
+  bindGoogleSheetSettings();
   bindR2Settings();
   document.querySelectorAll('[data-asset-pick]').forEach(button=>{
     const input=document.getElementById(button.dataset.assetPick);

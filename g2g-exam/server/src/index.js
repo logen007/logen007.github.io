@@ -21,7 +21,8 @@ import {stateResponse} from './state-response.js';
 import {handleAction} from './actions.js';
 import {registerPublicationRoute} from './publication-route.js';
 import {registerExamImageInventoryRoute} from './exam-image-inventory.js';
-import {registerImageSheetRoutes} from './image-sheet.js';
+import {registerImageSheetRoutes,IMAGE_SHEET_ID,googleImageClient} from './image-sheet.js';
+import {registerImageSheetGoogleRoutes} from './image-sheet-google.js';
 import {startMediaGarbageCollector} from './media-gc.js';
 import {startTrashGarbageCollector} from './trash-gc.js';
 import {submitExpiredAttempts} from './actions/attempts.js';
@@ -124,6 +125,7 @@ app.get('/api/state-summary',async(request,reply)=>readState(request,reply,'summ
 app.get('/api/exam-catalog',async(request,reply)=>readState(request,reply,'catalog',loadExamCatalog));
 registerExamImageInventoryRoute(app,{authenticate:request=>requireRole(request,'master'),withTx,origin:process.env.PUBLIC_URL||'http://localhost:8080'});
 registerImageSheetRoutes(app,request=>requireRole(request,'master'));
+registerImageSheetGoogleRoutes(app,{authenticate:request=>requireRole(request,'master'),sheetId:IMAGE_SHEET_ID,makeGoogle:googleImageClient});
 app.get('/api/attempts/:id/sync',async(request,reply)=>stateResponse(await loadAttemptSync(await requireUser(request),request.params.id),request,reply));
 app.get('/api/attempts/:id/session',async(request,reply)=>{
   const user=await requireRole(request,'student');

@@ -18,6 +18,33 @@
 
 ## Đồng bộ trực tiếp, chỉ khi bấm nút (1.3.236)
 
+### Cấp quyền trong Cài đặt (1.3.237)
+
+1. Vào `Cài đặt → Nâng cao → Google Drive và Sheet ảnh` (chỉ master).
+2. Kết nối Google Drive hoặc dùng kết nối Sao lưu hiện có. Callback quay về Cài đặt.
+3. Nhập Picker API key và Project number trong cùng Cloud project của OAuth Backup.
+   Key phải cho phép Google Picker API, referrer website và `https://docs.google.com/*`.
+   Bật Google Picker API, Google Sheets API trong Cloud project; không tạo OAuth mới.
+4. Lưu cấu hình, bấm `Chọn Exam img và cấp quyền`, chọn đúng file trong Picker.
+   Máy chủ kiểm chứng ID, quyền chỉnh sửa và Sheets API trước khi ghi authorized.
+   Chọn sai/hủy/lỗi không ghi nhận thành công và không đồng bộ ảnh.
+5. Sau đó dùng `Đề Thi → Đồng bộ ảnh`. Không đồng bộ lúc cấp quyền hoặc tải Cài đặt.
+
+Picker config lưu mã hóa trong secrets key `image_sheet_picker`, không lộ trong
+settings/infrastructure/public APIs. Master-only POST `/api/exam-images/picker`
+cung cấp API key và access token `drive.file` ngắn hạn cho Google Picker trong
+trình duyệt theo thiết kế Google; không refresh token/client secret, không cache,
+không localStorage. Mọi route mới dùng master guard và origin policy hiện hữu.
+Không thêm scope OAuth. Khác với các API key AI, key Picker cần có trong trình
+duyệt của master khi mở Google Picker, vì vậy phải hạn chế referrer/API trên Cloud.
+Ngắt Sheet ảnh là tắt sử dụng tại ứng dụng, không revoke kết nối Sao lưu hay xóa
+file. Ngắt Google Drive ảnh hưởng cả hai và cần xác nhận. Quyền Picker vẫn có thể
+được thu hồi trong tài khoản Google. Đổi Drive folder/account phải cấp quyền lại.
+
+Kết nối Google trong popup Sao lưu chuyển thành link về Cài đặt. Chưa chạy Google
+Picker thật bằng trình duyệt hoặc xác minh quyền production: chỉ báo hoàn tất
+đồng bộ sau status/Sheet readback thật, không suy từ health/version/tests.
+
 - Chỉ chạy khi master bấm `Đề Thi → Đồng bộ ảnh`. Không timer, không chạy khi
   khởi động máy chủ, mở trang, thêm đề hoặc mở link Sheet. Không cần xuất/nhập JSON.
 - Tái dùng kết nối Drive trong Sao lưu và scope `drive.file` hiện có. Google
