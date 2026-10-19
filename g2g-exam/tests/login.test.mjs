@@ -87,17 +87,19 @@ const motion=css.match(/@media\(prefers-reduced-motion:no-preference\) \{([\s\S]
 assert.ok(motion);
 assert.doesNotMatch(motion,/landing-cta|landing-login|landing-copy|landing-demo-layer|landing-demo-orbit|landing-demo-stack/,'Cards move within their stack, never the page or authentication');
 assert.match(motion,/36s var\(--scene-delay\) linear infinite both/);
-assert.match(motion,/landing-card-cycle 36s var\(--scene-delay\) linear infinite both,landing-card-depth 36s var\(--scene-delay\) step-end infinite both/);
+assert.match(motion,/landing-card-cycle 36s var\(--scene-delay\) cubic-bezier\(\.22,1,\.36,1\) infinite both,landing-card-depth 36s var\(--scene-delay\) step-end infinite both,landing-card-opacity/,'Card travel eases independently of its discrete depth switch');
 const depth=css.match(/@keyframes landing-card-depth \{[^\n]+/)?.[0]||'';
 for(const layer of [1,2,3,4,5,6])assert.ok(depth.includes(`z-index:${layer}`));
 assert.match(depth,/0%,16\.66% \{ z-index:6; \} 16\.67%,33\.32% \{ z-index:1;/,'After its six-second turn, the front card goes to the very bottom');
 const cycle=css.match(/@keyframes landing-card-cycle \{[^\n]+/)?.[0]||'';
 assert.doesNotMatch(cycle,/opacity|visibility/,'Real cards travel to the back rather than crossfade or disappear');
 assert.match(cycle,/0%,14\.44% \{ transform:none;/,'Front-card text stays undistorted during its answer animation');
-assert.match(css,/@keyframes landing-card-content \{ 0%,16\.66% \{ visibility:visible; \} 16\.67%,99\.99% \{ visibility:hidden;/,'Rear cards cannot leak answer text around the front card');
+assert.match(css,/@keyframes landing-card-opacity \{ 0%,14\.44% \{ opacity:1; \} 16\.66%,16\.67% \{ opacity:0;/,'Depth switches only while the outgoing card is invisible');
+assert.match(css,/@keyframes landing-card-content \{ 0%,13\.5% \{ opacity:1; visibility:visible; transform:none; \} 15%,98\.5% \{ opacity:0; visibility:hidden;/,'Old text fades away before incoming text begins its soft entrance');
+assert.match(motion,/landing-card-content 36s var\(--scene-delay\) ease-in-out/,'Content no longer pops with step-end visibility');
 for(const name of ['answer-select','word-land','pair-connect','word-order','letter-line'])assert.match(css,new RegExp('@keyframes landing-'+name),'Question formats have their own meaningful internal motion');
 assert.match(css,/@keyframes landing-word-order \{[^\n]*4% \{ transform:translateY\(var\(--word-lift\)\)/,'Word tokens lift into separate lanes before crossing');
-for(const name of ['pair-color','pair-connect','letter-line']){
+for(const name of ['answer-select','answer-check','word-land','word-order','order-result','pair-color','pair-connect','letter-line']){
   const keyframes=css.match(new RegExp('@keyframes landing-'+name+' \\{[^\\n]+'))?.[0]||'';
   assert.match(keyframes,/18%,100% \{/,'Staggered children reset during hidden phase, avoiding a previous-cycle flash');
 }
