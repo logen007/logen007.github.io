@@ -132,7 +132,7 @@ Exam access layout groups visibility, level and code creation, with feedback bes
 
 ## Navigation and forms
 
-Login implementation 1.3.228 (19 October 2026; NOT an owner-accepted visual baseline).
+Login implementation 1.3.230 (19 October 2026; NOT an owner-accepted visual baseline).
 The owner rejected the previous 1.3.223–227 compositions. Their incremental
 centered/left hero, equal framed cards and mini-dashboard layouts are superseded.
 Research references: [Duolingo welcome](https://www.duolingo.com/),
@@ -148,21 +148,26 @@ Borrow hierarchy and purposeful illustration, not assets, claims or product copy
   then supporting sentence + primary Google CTA + “Hoàn toàn miễn phí”. No sign-in
   frame, heading/icon, divider or email note. Desktop groups copy/auth in one
   left column and question object right, balanced by visual mass rather than
-  forced equal rectangles. Email note stays exact: “Kết quả sẽ được gửi về email này”.
+  forced equal rectangles. Owner removed the email note in all layouts on 19 October.
+  Footer company text is “Công ty Cổ phần Phát triển Nhân lực Quốc tế”.
 - `login-demo.js` owns six decorative practice formats, not official provider
   specifications or real scored attempts. Questions have readable titles and
   type badges, without mini-app header/sidebar/progress-caption chrome. Natural
   shared grid height reserves the largest scene; never scale text or crop it.
   Short content is vertically balanced. Six thin progress segments are decorative,
-  not fake controls. Two static tilted paper sheets have restrained overhang;
-  no surrounding ring, orbit or animated page background. The illustration-only
+  not fake controls. Six actual question cards form one ordered deck with restrained
+  offsets/rotation; no fake rear paper sheets, surrounding ring, orbit or animated
+  page background. The illustration-only
   subtle depth shadow is an exception to the normal shadow-free card rule.
-- CSS cycles six scenes every six seconds with distinct entrances and internal
-  answer selection, gap fill, pair connection, word ordering and writing reveal.
-  Scene entrances/exits do not overlap text; staggered child keyframes reset in
-  the hidden phase to prevent previous-cycle flashes. No runtime timer/library.
-  Authentication, page layout and paper backgrounds do not animate. Reduced motion
-  and unsupported animation show only static question one. At the owner's explicit
+- CSS cycles the deck every 36 seconds: after each six-second internal question
+  animation, the front card moves to the bottom layer and the next card takes over.
+  All six cards remain mounted and opaque; discrete depth changes avoid crossfades.
+  Only front-card text is visible, preventing text from leaking at rear edges.
+  Preserve distinct internal answer selection, gap fill, pair connection, word
+  ordering and writing reveal; staggered children reset while behind the front.
+  No runtime timer/library. Authentication and page layout do not animate.
+  Reduced motion and unsupported animation show a static deck with question one
+  readable. At the owner's explicit
   request there is no pause button: this retains a WCAG 2.2.2 tradeoff and must
   never be called a full accessibility certification.
 - Use paired shared brand/surface/type-badge tokens in both modes. The owner-requested
