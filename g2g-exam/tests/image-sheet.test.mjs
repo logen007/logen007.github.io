@@ -66,6 +66,8 @@ assert.deepEqual(sharingRows[0].slice(9),SHARE_COLUMNS);assert.match(sharingRows
 const protectedGoogle=async(service,method,route,body)=>method==='GET'&&route.includes('/values/')&&route.includes(encodeURIComponent('Ảnh'))?{values:[[...IMAGE_COLUMNS,'My manual column']]}:shareGoogle(service,method,route,body);
 await assert.rejects(syncImageSheet({google:protectedGoogle,spreadsheetId:'sheet',manifest,shareImages}),/sharing columns changed/);
 assert.equal(shareWrites,1,'Never overwrite unknown manual columns');
+await assert.rejects(syncImageSheet({google:async(service,method,route,body)=>method==='GET'&&route.includes('/values/')&&route.includes(encodeURIComponent('Ảnh'))?{values:[[...IMAGE_COLUMNS], [...first.imageRows[0],'Unlabelled manual data']]}:shareGoogle(service,method,route,body),spreadsheetId:'sheet',manifest,shareImages}),/unlabelled data/);
+assert.equal(shareWrites,1);
 let reads=0;
 const selected=await ensureImageSheet({state:{spreadsheetId:'old-sheet',lastSync:'old'},google:async(service,method,route)=>{
   reads++;assert.equal(service,'sheets');assert.equal(method,'GET');assert.ok(route.startsWith('/'+IMAGE_SHEET_ID+'?'));

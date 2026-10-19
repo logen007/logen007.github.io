@@ -50,6 +50,7 @@ export async function syncImageSheet({google,spreadsheetId,manifest,shareImages}
     const header=rows.shift();
     if(JSON.stringify(header.slice(0,spec.headers.length))!==JSON.stringify(spec.headers))throw Error('Image Sheet headers changed; refusing to overwrite');
     if(shareImages&&spec.title==='Ảnh'&&header.slice(9).some(Boolean)&&JSON.stringify(header.slice(9))!==JSON.stringify(SHARE_COLUMNS))throw Error('Image Sheet sharing columns changed; refusing to overwrite');
+    if(shareImages&&spec.title==='Ảnh'&&!header.slice(9).some(Boolean)&&rows.some(row=>row.slice(9).some(Boolean)))throw Error('Image Sheet sharing columns changed; refusing to overwrite unlabelled data');
     while(rows.length&&!rows.at(-1).some(Boolean))rows.pop();
     tabs.push({...tab,rows});
   }
