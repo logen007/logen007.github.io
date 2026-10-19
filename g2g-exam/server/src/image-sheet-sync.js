@@ -61,6 +61,7 @@ export async function syncImageSheet({google,spreadsheetId,manifest,shareImages}
     const links=await shareImages([...tabs[0].rows,...plan.imageRows].filter(eligible).map(row=>row[1]));
     const requests=[];
     if(tabs[0].gridProperties.columnCount<11)requests.push({appendDimension:{sheetId:tabs[0].sheetId,dimension:'COLUMNS',length:11-tabs[0].gridProperties.columnCount}});
+    requests.push({updateDimensionProperties:{range:{sheetId:tabs[0].sheetId,dimension:'COLUMNS',startIndex:9,endIndex:11},properties:{hiddenByUser:false},fields:'hiddenByUser'}});
     requests.push({updateCells:{range:{sheetId:tabs[0].sheetId,startRowIndex:0,endRowIndex:1,startColumnIndex:9,endColumnIndex:11},rows:sheetRows([SHARE_COLUMNS]),fields:'userEnteredValue'}});
     for(const [index,row] of tabs[0].rows.entries()){
       const link=eligible(row)?links.get(row[1]):null;if(!link)continue;

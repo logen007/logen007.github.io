@@ -53,6 +53,7 @@ const shareGoogle=async(service,method,route,body)=>{
   shareWrites++;
   for(const request of body.requests){
     if(request.updateCells){const {range,rows}=request.updateCells;assert.equal(range.startColumnIndex,9);assert.equal(range.endColumnIndex,11);sharingRows[range.startRowIndex]??=[];sharingRows[range.startRowIndex].splice(9,2,...rows[0].values.map(c=>c.userEnteredValue.stringValue));}
+    else if(request.updateDimensionProperties)assert.deepEqual(request,{updateDimensionProperties:{range:{sheetId:1,dimension:'COLUMNS',startIndex:9,endIndex:11},properties:{hiddenByUser:false},fields:'hiddenByUser'}});
     else assert.deepEqual(request,{appendDimension:{sheetId:1,dimension:'COLUMNS',length:2}});
   }
   return {};
