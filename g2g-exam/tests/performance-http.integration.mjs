@@ -98,6 +98,17 @@ try{
     return app.inject({method:'POST',url:'/api/media/'+route,headers:{cookie:cookie(user),'content-type':'multipart/form-data; boundary='+boundary},payload:Buffer.concat([Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${type}\r\n\r\n`),bytes,Buffer.from(`\r\n--${boundary}--\r\n`)])});
   };
   const image=await upload('image','image/png','payload.html');assert.equal(image.statusCode,200);assert.match(image.json().url,/\.png$/);
+  assert.equal((await app.inject('/api/exam-images/export')).statusCode,401);
+  assert.equal((await app.inject({url:'/api/exam-images/export',headers:{cookie:cookie('s0')}})).statusCode,403);
+  await query("INSERT INTO users(id,email,role,data) VALUES('inventory-teacher','teacher@example.test','teacher','{}')");
+  assert.equal((await app.inject({url:'/api/exam-images/export',headers:{cookie:cookie('inventory-teacher')}})).statusCode,403);
+  await query("UPDATE questions SET data=jsonb_set(data,'{imageUrl}',to_jsonb($1::text)) WHERE id='q'",[image.json().url]);
+  const imageExport=await app.inject({url:'/api/exam-images/export',headers:{cookie:cookie('admin')}});
+  assert.equal(imageExport.statusCode,200);assert.match(imageExport.headers['content-disposition'],/attachment/);
+  assert.equal(imageExport.json().assetCount,1);assert.equal(imageExport.json().assets[0].sourceUrl,'http://localhost:8080'+image.json().url);
+  assert.doesNotMatch(imageExport.body,/admin@example|studentId|private passage|correctAnswer/,'Image export excludes identities, attempts and answer content');
+  await query("UPDATE questions SET data=data-'imageUrl' WHERE id='q'");
+  await query("DELETE FROM users WHERE id='inventory-teacher'");
   const audio=await upload('audio','audio/mpeg','payload.html');assert.equal(audio.statusCode,200);assert.match(audio.json().url,/\.mp3$/);
   assert.equal((await upload('image','image/svg+xml','payload.svg')).statusCode,400);
   assert.equal((await upload('image','text/html','payload.png')).statusCode,400);
