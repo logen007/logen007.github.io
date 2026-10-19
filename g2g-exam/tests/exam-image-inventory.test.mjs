@@ -48,7 +48,8 @@ const previousApi=globalThis.G2G_API_BASE;
 try{
   globalThis.G2G_API_BASE='/api';
   const data={exams:[],attempts:[]};
-  assert.match(examAdminHtml({data,user:{role:'master'}}),/href="\/api\/exam-images\/export" download="g2g-exam-images.json">Xuất ảnh/);
+  assert.match(examAdminHtml({data,user:{role:'master'}}),/data-action="sync-image-sheet">Đồng bộ ảnh/);
+  assert.doesNotMatch(examAdminHtml({data,user:{role:'master'}}),/Xuất ảnh|Sheet ảnh/);
   assert.doesNotMatch(examAdminHtml({data,user:{role:'teacher'}}),/exam-images\/export/);
   globalThis.G2G_API_BASE='';assert.doesNotMatch(examAdminHtml({data,user:{role:'master'}}),/exam-images\/export/,'No broken export link in local demo');
 }finally{if(previousApi===undefined)delete globalThis.G2G_API_BASE;else globalThis.G2G_API_BASE=previousApi;}

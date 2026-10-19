@@ -2,7 +2,8 @@
 
 ## Phạm vi hiện tại
 
-- `Đề Thi → Xuất ảnh` tải `g2g-exam-images.json`, chỉ tài khoản master.
+- `Đề Thi → Đồng bộ ảnh` là nút duy nhất. API export JSON vẫn giữ cho tương
+  thích kỹ thuật, không hiển thị nút xuất file riêng.
 - Chỉ đọc ảnh của mọi đề chưa vào thùng rác, không phụ thuộc bộ lọc đang chọn.
   Đề published dùng snapshot đang xuất bản, không dùng ảnh của nháp chưa công bố.
 - Không xuất học viên, bài làm, đáp án, prompt AI hoặc khóa truy cập. File không
@@ -15,17 +16,19 @@
   do owner gửi hoặc khôi phục kết nối máy chủ đã được cấp quyền. Không trích cookie,
   công khai kho ảnh, tạo token bỏ qua đăng nhập hoặc tự mở trình duyệt để né giới hạn.
 
-## Đồng bộ trực tiếp, chỉ khi bấm nút (1.3.235)
+## Đồng bộ trực tiếp, chỉ khi bấm nút (1.3.236)
 
 - Chỉ chạy khi master bấm `Đề Thi → Đồng bộ ảnh`. Không timer, không chạy khi
   khởi động máy chủ, mở trang, thêm đề hoặc mở link Sheet. Không cần xuất/nhập JSON.
 - Tái dùng kết nối Drive trong Sao lưu và scope `drive.file` hiện có. Google
   Sheets API phải được bật trên cùng Google Cloud project của OAuth Backup.
   Không thêm OAuth scope, service account, token phía client hoặc dependency.
-- Tự tạo một Sheet riêng trong thư mục G2G Exam của kết nối Drive. Không đổi
-  sharing. Mã Sheet và thời điểm đồng bộ lưu mã hóa trong `secrets`; toàn bộ
+- Dùng đúng Sheet `Exam img` owner chỉ định, ID tại `IMAGE_SHEET_ID` trong
+  `server/src/image-sheet.js`. Không tìm/tạo Sheet khác, không đổi sharing hay
+  appProperties. Đích cũ trong cursor không được dùng làm fallback.
+  Mã Sheet và thời điểm đồng bộ lưu mã hóa trong `secrets`; toàn bộ
   link phục chế/trạng thái/ghi chú/vị trí vẫn nằm trong Sheet, không bản sao DB.
-- `Đề Thi → Sheet ảnh` mở Sheet đã tạo. Chỉ master được dùng API:
+- Chỉ master được dùng API:
   `GET /api/exam-images/status`, `GET /api/exam-images/sheet`,
   `POST /api/exam-images/sync` (đồng bộ ngay). POST chịu origin policy hiện hữu.
 - Đọc metadata/header và từng khối tối đa 1.000 hàng trước khi append. Giữ nguyên
@@ -39,14 +42,17 @@
   tối đa 200 hàng mỗi tab, atomic cả hai tab. Timeout: đọc lại ID ở lần sau, không
   replay append mù. Sheets không có khóa chống người dùng chỉnh/sort đồng thời;
   không chạy worker ghi hàng mới khác trong khi đồng bộ.
-- Ghi ý định trước khi tạo file, tìm lại theo appProperties nếu bị gián đoạn.
-  Kết quả tạo không rõ hoặc nhiều Sheet trùng: dừng đối soát, không tạo lặp.
-  Sheet bị xóa/đổi header/đổi Drive: dừng, không tự thay Sheet mới. Giới hạn
+- Sheet bị xóa/đổi header/không có quyền: dừng, không tự thay Sheet mới. Giới hạn
   50.000 hàng/tab; vượt giới hạn cần phân trang/đổi cấu trúc có chủ đích.
 - Sheet không xuất hiện trong danh sách backup và không thể bị xóa bằng API
   xóa backup. Lỗi Google được che nội dung/token; muốn thử lại phải bấm nút.
 - Test dùng dữ liệu tổng hợp/API doubles; chưa xác minh API bật hoặc quyền OAuth
   production. Chỉ ghi kết nối thực hoạt động khi đọc lại Sheet/status thành công.
+- Connector đã sửa được Sheet không chứng minh token Backup trên server có
+  quyền. Scope `drive.file` chỉ truy cập tệp đã được cấp cho ứng dụng: Sheet do
+  owner tạo ngoài ứng dụng có thể cần chọn/cấp quyền tệp qua Google Picker.
+  Không tự nâng sang quyền đọc toàn bộ Drive/Sheets để né lỗi. Lỗi được trả 400
+  với hướng dẫn an toàn để UI hiển thị, không bị global 5xx handler che mất.
 
 ## Sổ ảnh
 
