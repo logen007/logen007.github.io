@@ -15,10 +15,10 @@
   do owner gửi hoặc khôi phục kết nối máy chủ đã được cấp quyền. Không trích cookie,
   công khai kho ảnh, tạo token bỏ qua đăng nhập hoặc tự mở trình duyệt để né giới hạn.
 
-## Đồng bộ trực tiếp (1.3.234)
+## Đồng bộ trực tiếp, chỉ khi bấm nút (1.3.235)
 
-- Máy chủ production tự chạy sau khi khởi động 30 giây, rồi 5 phút sau mỗi lần
-  hoàn tất. Không cần mở trang, xuất/nhập JSON hay trình duyệt của Codex.
+- Chỉ chạy khi master bấm `Đề Thi → Đồng bộ ảnh`. Không timer, không chạy khi
+  khởi động máy chủ, mở trang, thêm đề hoặc mở link Sheet. Không cần xuất/nhập JSON.
 - Tái dùng kết nối Drive trong Sao lưu và scope `drive.file` hiện có. Google
   Sheets API phải được bật trên cùng Google Cloud project của OAuth Backup.
   Không thêm OAuth scope, service account, token phía client hoặc dependency.
@@ -44,7 +44,7 @@
   Sheet bị xóa/đổi header/đổi Drive: dừng, không tự thay Sheet mới. Giới hạn
   50.000 hàng/tab; vượt giới hạn cần phân trang/đổi cấu trúc có chủ đích.
 - Sheet không xuất hiện trong danh sách backup và không thể bị xóa bằng API
-  xóa backup. Lỗi Google được che nội dung/token; lần sau retry sau 5 phút.
+  xóa backup. Lỗi Google được che nội dung/token; muốn thử lại phải bấm nút.
 - Test dùng dữ liệu tổng hợp/API doubles; chưa xác minh API bật hoặc quyền OAuth
   production. Chỉ ghi kết nối thực hoạt động khi đọc lại Sheet/status thành công.
 
@@ -65,7 +65,7 @@ tham chiếu được áp dụng. Không nhét ảnh nhị phân, secret hoặc 
 
 ## Khi có đề mới / tiếp tục sau gián đoạn
 
-1. Máy chủ tự đọc inventory mới và Sheet cũ trước khi ghi. Khi xử lý thủ công dùng
+1. Khi bấm đồng bộ, máy chủ đọc inventory mới và Sheet cũ trước khi ghi. Worker dùng
    `scripts/media/restoration-registry.mjs` để merge: chỉ thêm nguồn mới, giữ link
    phục chế, trạng thái và ghi chú cũ. Không xóa hàng chỉ vì ảnh không còn trong đề.
    Ghi nội dung đề/URL dưới dạng giá trị RAW, không diễn giải chúng thành công thức.

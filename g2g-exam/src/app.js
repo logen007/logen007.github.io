@@ -1,4 +1,5 @@
 import {scrollExamToTop} from './ui/exam-scroll.js';
+import {bindImageSheetSync} from './ui/image-sheet-sync.js';
 import {changeInstructions,moveLegacyInstruction} from './domain/section-instructions.js';
 import {collectAdditionalInstructions} from './part-templates/default/section-instruction-editor.js';
 import {gradingNeighbors} from './domain/grading-navigation.js';
@@ -1033,6 +1034,7 @@ async function loadStudentReview(attemptId){
 }
 
 function bindGlobal(){
+  bindImageSheetSync(app,{repo,notify});
   app.querySelectorAll('[data-action="logout"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;await repo.signOut();clearDashboardCache();clearInfrastructureCache();clearBackupData();ui.infrastructure=null;infrastructureRefreshStarted=false;stopGoogleOneTap({logout:true});user=null;authenticatedUser=null;ui.view='login';render();});
   app.querySelectorAll('[data-action="toggle-role-menu"]').forEach(button=>button.onclick=event=>{
     event.stopPropagation();const account=button.closest('.header-account'),menu=account?.querySelector('[data-role-menu]');if(!menu)return;

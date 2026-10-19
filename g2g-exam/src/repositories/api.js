@@ -201,6 +201,11 @@ export class ApiRepository{
     return request(`/actions/${encodeURIComponent(name)}`,{method:'POST',body:payload});
   }
 
+  syncImageSheet(){
+    if(!this.imageSheetSync)this.imageSheetSync=request('/exam-images/sync',{method:'POST',body:{},timeoutMs:120000}).finally(()=>{this.imageSheetSync=null;});
+    return this.imageSheetSync;
+  }
+
   applyPublicationReceipt(receipt){
     const exam=this.state.exams.find(exam=>exam.id===receipt.examId);
     if(exam)Object.assign(exam,{status:'published',publicationVersion:receipt.publicationVersion,publicationLabel:receipt.version});
