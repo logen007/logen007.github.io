@@ -149,7 +149,8 @@ Borrow hierarchy and purposeful illustration, not assets, claims or product copy
   frame, heading/icon, divider or email note. Desktop groups copy/auth in one
   left column and question object right, balanced by visual mass rather than
   forced equal rectangles. Owner removed the email note in all layouts on 19 October.
-  Footer company text is “Công ty Cổ phần Phát triển Nhân lực Quốc tế”.
+  Footer is one label: “Công ty Cổ phần Phát triển Nhân lực Quốc tế G2G”, without
+  a separate “G2G Career” prefix. Header branding remains configured independently.
 - `login-demo.js` owns six decorative practice formats, not official provider
   specifications or real scored attempts. Questions have readable titles and
   type badges, without mini-app header/sidebar/progress-caption chrome. Natural

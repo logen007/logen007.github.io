@@ -65,6 +65,13 @@ thế nào? Giữ tác vụ chính rõ hơn trang trí. Không thêm animation c
 Không cần tạo component JS cho mọi wrapper. Extract khi giảm trùng lặp hoặc làm
 rõ ownership; không làm thư viện UI mới song song với `.nut`, `.truong`, `.icon-btn`.
 
+Owner preference (19 October 2026): prioritize fast, scoped edits; owner handles
+visual acceptance. For LOW-risk text-only changes, skip browser/screenshot matrices,
+repeat audits and redundant local full suites. Run only changed-file syntax and
+the nearest regression locally; required CI tests/build still gate the exact
+candidate before release. This preference does not waive security or higher-risk
+checks, or authorize bypassing protected checks. State when visuals were not reviewed.
+
 Với thành phần bị thay đổi, kiểm tra hoặc đánh dấu N/A có lý do cho **default,
 hover, focus-visible, active, selected, disabled, loading, empty, error, success**.
 Selected là trạng thái nghiệp vụ; focus-visible dành cho bàn phím. Tuân thủ quy
