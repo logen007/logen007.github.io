@@ -77,12 +77,13 @@ try{
     };
     const root={dataset:{},isConnected:true,querySelector:node};
     globalThis.document={getElementById:()=>root};globalThis.google=google;
-    let granted=false,confirmGrant=true,authorizePosts=0;
+    let granted=false,confirmGrant=true,authorizePosts=0,revocations=0;
     globalThis.fetch=async(url,options)=>{
       let data;
       if(url.endsWith('/google-settings'))data={configured:true,driveConnected:true,projectNumber:'123456',authorized:granted,error:'',email:'master@example.test'};
       else if(url.endsWith('/picker'))data={sheetId:'selected',appId:'123456',apiKey:'synthetic-key',accessToken:'synthetic-token'};
       else if(url.endsWith('/authorize')){authorizePosts++;assert.equal(JSON.parse(options.body).sheetId,'selected');granted=confirmGrant;data={ok:true};}
+      else if(url.endsWith('/shares/revoke')){revocations++;assert.equal(JSON.parse(options.body).url,'https://example.test/shared-exam-images/one.jpg?signature=synthetic');data={ok:true};}
       else throw Error('Unexpected request');
       return {ok:true,json:async()=>data};
     };
@@ -97,6 +98,8 @@ try{
     confirmGrant=false;autoPick={action:'picked',docs:[{id:'selected'}]};
     await node('[data-picker-authorize]').onclick();
     assert.equal(authorizePosts,2);assert.match(node('[data-google-status]').textContent,/chưa xác minh/,'Do not claim success when post-selection readback disagrees');
+    node('[data-image-share-url]').value='https://example.test/shared-exam-images/one.jpg?signature=synthetic';
+    await node('[data-image-share-revoke]').onclick();assert.equal(revocations,1);assert.equal(node('[data-image-share-url]').value,'');assert.match(node('[data-google-status]').textContent,/Đã thu hồi link/);
   }finally{
     for(const [key,value] of Object.entries(originals)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}
   }

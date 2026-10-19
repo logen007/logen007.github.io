@@ -3,6 +3,7 @@ import './image-restoration-registry.test.mjs';
 import './image-sheet.test.mjs';
 import './manual-image-sheet.test.mjs';
 import './image-sheet-google.test.mjs';
+import './image-sharing.test.mjs';
 import {buildExamImageInventory,canonicalImageUrl,imageSourceId,registerExamImageInventoryRoute} from '../server/src/exam-image-inventory.js';
 import {examAdminHtml} from '../src/views/admin.js';
 

@@ -28,6 +28,7 @@ import {startTrashGarbageCollector} from './trash-gc.js';
 import {submitExpiredAttempts} from './actions/attempts.js';
 import {r2Settings} from './r2-settings.js';
 import {registerMediaDeliveryRoutes} from './media-routes.js';
+import {registerImageSharingRoutes,sharedImageLogUrl} from './image-sharing.js';
 import {uploadExtension,imageHeaderMatches} from './media-upload-policy.js';
 import {requestOriginPolicy} from './request-origin.js';
 import {APP_VERSION} from '../../src/release.js';
@@ -52,7 +53,7 @@ if(process.env.NODE_ENV==='production'&&(!process.env.COOKIE_SECRET||/^(developm
 await fs.mkdir(uploadDir,{recursive:true});
 await initDb();
 
-const app=Fastify({logger:true,trustProxy:process.env.TRUST_PROXY==='true'});
+const app=Fastify({logger:{serializers:{req:request=>({method:request.method,url:sharedImageLogUrl(request.url),hostname:request.hostname,remoteAddress:request.ip})}},trustProxy:process.env.TRUST_PROXY==='true'});
 const r2Media=await r2Settings.start({uploadDir,logger:app.log});
 await app.register(cookie,{secret:process.env.COOKIE_SECRET||'development-only-change-me',hook:'onRequest'});
 const originPolicy=requestOriginPolicy({production:process.env.NODE_ENV==='production',publicUrl:process.env.PUBLIC_URL||'http://localhost:8080',origins:process.env.CORS_ORIGINS||''});
@@ -125,6 +126,7 @@ app.get('/api/state-summary',async(request,reply)=>readState(request,reply,'summ
 app.get('/api/exam-catalog',async(request,reply)=>readState(request,reply,'catalog',loadExamCatalog));
 registerExamImageInventoryRoute(app,{authenticate:request=>requireRole(request,'master'),withTx,origin:process.env.PUBLIC_URL||'http://localhost:8080'});
 registerImageSheetRoutes(app,request=>requireRole(request,'master'));
+registerImageSharingRoutes(app,{authenticate:request=>requireRole(request,'master'),uploadDir,origin:()=>new URL(process.env.PUBLIC_URL||'http://localhost:8080').origin});
 registerImageSheetGoogleRoutes(app,{authenticate:request=>requireRole(request,'master'),sheetId:IMAGE_SHEET_ID,makeGoogle:googleImageClient});
 app.get('/api/attempts/:id/sync',async(request,reply)=>stateResponse(await loadAttemptSync(await requireUser(request),request.params.id),request,reply));
 app.get('/api/attempts/:id/session',async(request,reply)=>{
