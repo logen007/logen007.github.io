@@ -6,7 +6,7 @@ let idleReads=0;
 const idle=createProviderJobPump({getProviders:async()=>['groq','gemini','grok','mistral'].map(id=>({id})),hasWork:async()=>{idleReads++;return false;},claim:()=>assert.fail('Idle queue must not query each provider'),processJob:()=>assert.fail()});
 await idle.tick();assert.equal(idleReads,1);idle.stop();
 
-for(const count of [0,1,2,3,4,5]){
+for(let count=0;count<=AI_PROVIDER_IDS.length;count++){
   const ids=AI_PROVIDER_IDS.slice(0,count),jobs=Array.from({length:200},(_,id)=>({id}));
   const active=new Map(),seen=new Set(),used=new Set();let peak=0;
   const pump=createProviderJobPump({spacingMs:0,getProviders:async()=>ids.map(id=>({id,version:'v1'})),

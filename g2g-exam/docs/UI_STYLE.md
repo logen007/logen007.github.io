@@ -719,7 +719,7 @@ states have one concise explanation. Idle AI polling runs once per minute.
   and keep the linked exam name truncated alongside the part and matched/total count.
   The list grows naturally without a nested scroll area. The pills
   may move together below the heading on narrow phones, never scroll sideways.
-  On phones keep all AI providers on one row, including Cerebras. Use compact
+  On phones keep all supported AI providers on one row. Use compact
   horizontal padding and adaptive text; keep each name and count together without
   wrapping. Preserve touch-target height.
   Failures remain visible separately with the retry action.
