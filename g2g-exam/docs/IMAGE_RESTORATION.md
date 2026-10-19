@@ -20,6 +20,12 @@
 
 ### Cấp quyền trong Cài đặt (1.3.237)
 
+Từ 1.3.238, Picker dùng `DocsView.setFileIds` với ID Exam img đã biết thay vì
+yêu cầu tìm theo tên trong danh sách chung. Không thêm scope hay vượt quyền:
+Google vẫn loại file nếu tài khoản không được truy cập. Chưa xác minh nguyên
+nhân danh sách cũ thiếu file và chưa chạy Picker thật; không coi test double
+là bằng chứng cửa sổ Google đã hiển thị file production.
+
 1. Vào `Cài đặt → Nâng cao → Google Drive và Sheet ảnh` (chỉ master).
 2. Kết nối Google Drive hoặc dùng kết nối Sao lưu hiện có. Callback quay về Cài đặt.
 3. Nhập Picker API key và Project number trong cùng Cloud project của OAuth Backup.
