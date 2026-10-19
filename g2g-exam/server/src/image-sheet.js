@@ -3,6 +3,7 @@ import {encrypt,decrypt} from './settings-secrets.js';
 import {getImageSheetGoogleAccess} from './image-sheet-google.js';
 import {loadExamImageInventory} from './exam-image-inventory.js';
 import {syncImageSheet} from './image-sheet-sync.js';
+import {imageSharing} from './image-sharing.js';
 
 const KEY='exam_image_sheet';
 // Explicit owner-selected destination, not a credential. Never discover/create a replacement.
@@ -39,14 +40,14 @@ export async function ensureImageSheet({google,state}){
   return {...(state?.spreadsheetId===IMAGE_SHEET_ID?state:{}),spreadsheetId:IMAGE_SHEET_ID,url:sheetUrl};
 }
 
-export function createImageSheetRunner({withLock,access,readState,saveState,inventory,makeGoogle}){
+export function createImageSheetRunner({withLock,access,readState,saveState,inventory,makeGoogle,shareImages}){
   let pending;
   return ()=>{
     if(pending)return pending;
     pending=withLock(async()=>{
       const connection=await access(),google=makeGoogle(connection.token);
       const state=await ensureImageSheet({google,state:await readState()});
-      const result=await syncImageSheet({google,spreadsheetId:state.spreadsheetId,manifest:await inventory()});
+      const result=await syncImageSheet({google,spreadsheetId:state.spreadsheetId,manifest:await inventory(),shareImages});
       await saveState({...state,lastSync:new Date().toISOString(),result});
       return {...result,url:state.url};
     }).finally(()=>{pending=null;});
@@ -65,7 +66,7 @@ async function withLock(fn){
     client.release(broken);
   }
 }
-export const runImageSheetSync=createImageSheetRunner({withLock,access:()=>getImageSheetGoogleAccess({sheetId:IMAGE_SHEET_ID,makeGoogle:googleImageClient}),readState:read,saveState:save,inventory:()=>loadExamImageInventory({withTx,origin:origin()}),makeGoogle:googleImageClient});
+export const runImageSheetSync=createImageSheetRunner({withLock,access:()=>getImageSheetGoogleAccess({sheetId:IMAGE_SHEET_ID,makeGoogle:googleImageClient}),readState:read,saveState:save,inventory:()=>loadExamImageInventory({withTx,origin:origin()}),makeGoogle:googleImageClient,shareImages:urls=>imageSharing.issue({urls,origin:origin()})});
 
 export function registerImageSheetRoutes(app,authenticate){
   app.get('/api/exam-images/status',async(request,reply)=>{

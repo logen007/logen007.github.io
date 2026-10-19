@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {IMAGE_COLUMNS,USAGE_COLUMNS,planImageSheetSync,syncImageSheet} from '../server/src/image-sheet-sync.js';
+import {IMAGE_COLUMNS,SHARE_COLUMNS,USAGE_COLUMNS,planImageSheetSync,syncImageSheet} from '../server/src/image-sheet-sync.js';
 import {IMAGE_SHEET_ID,createImageSheetRunner,ensureImageSheet,googleImageClient,registerImageSheetRoutes} from '../server/src/image-sheet.js';
 
 const asset={sourceId:'original',sourceUrl:'https://example.test/original.png'};
@@ -44,6 +44,30 @@ await assert.rejects(syncImageSheet({google:memoryGoogle,spreadsheetId:'sheet',m
 assert.equal((await syncImageSheet({google:memoryGoogle,spreadsheetId:'sheet',manifest:nextManifest})).added,0);
 assert.equal(stored[0].length,3);assert.equal(stored[1].length,3);
 assert.deepEqual(stored[0][1],restored,'Existing restored link/status/note survives both writes and retry');
+// Upgrade only the machine-owned J/K columns; preserve A:I and row gaps.
+const sharingRows=[[...IMAGE_COLUMNS],[],[...first.imageRows[0]]],beforeSource=[...sharingRows[2]];
+let shareWrites=0;
+const shareGoogle=async(service,method,route,body)=>{
+  if(method==='GET'&&route.includes('?fields='))return google(service,method,route,body);
+  if(method==='GET')return {values:structuredClone(route.includes(encodeURIComponent('Ảnh'))?sharingRows:[USAGE_COLUMNS,...first.usageRows])};
+  shareWrites++;
+  for(const request of body.requests){
+    if(request.updateCells){const {range,rows}=request.updateCells;assert.equal(range.startColumnIndex,9);assert.equal(range.endColumnIndex,11);sharingRows[range.startRowIndex]??=[];sharingRows[range.startRowIndex].splice(9,2,...rows[0].values.map(c=>c.userEnteredValue.stringValue));}
+    else if(request.updateDimensionProperties)assert.deepEqual(request,{updateDimensionProperties:{range:{sheetId:1,dimension:'COLUMNS',startIndex:9,endIndex:11},properties:{hiddenByUser:false},fields:'hiddenByUser'}});
+    else assert.deepEqual(request,{appendDimension:{sheetId:1,dimension:'COLUMNS',length:2}});
+  }
+  return {};
+};
+const shareImages=async urls=>{assert.deepEqual(urls,[asset.sourceUrl]);return new Map([[asset.sourceUrl,{url:'https://example.test/shared-exam-images/one.jpg?signature=synthetic',expiresAt:'2026-10-26T00:00:00.000Z'}]]);};
+const shared=await syncImageSheet({google:shareGoogle,spreadsheetId:'sheet',manifest,shareImages});
+assert.equal(shared.linksUpdated,1);assert.equal(shared.added,0);assert.equal(shareWrites,1);
+assert.deepEqual(sharingRows[2].slice(0,9),beforeSource);assert.deepEqual(sharingRows[1],[]);
+assert.deepEqual(sharingRows[0].slice(9),SHARE_COLUMNS);assert.match(sharingRows[2][9],/signature=synthetic/);
+const protectedGoogle=async(service,method,route,body)=>method==='GET'&&route.includes('/values/')&&route.includes(encodeURIComponent('Ảnh'))?{values:[[...IMAGE_COLUMNS,'My manual column']]}:shareGoogle(service,method,route,body);
+await assert.rejects(syncImageSheet({google:protectedGoogle,spreadsheetId:'sheet',manifest,shareImages}),/sharing columns changed/);
+assert.equal(shareWrites,1,'Never overwrite unknown manual columns');
+await assert.rejects(syncImageSheet({google:async(service,method,route,body)=>method==='GET'&&route.includes('/values/')&&route.includes(encodeURIComponent('Ảnh'))?{values:[[...IMAGE_COLUMNS], [...first.imageRows[0],'Unlabelled manual data']]}:shareGoogle(service,method,route,body),spreadsheetId:'sheet',manifest,shareImages}),/unlabelled data/);
+assert.equal(shareWrites,1);
 let reads=0;
 const selected=await ensureImageSheet({state:{spreadsheetId:'old-sheet',lastSync:'old'},google:async(service,method,route)=>{
   reads++;assert.equal(service,'sheets');assert.equal(method,'GET');assert.ok(route.startsWith('/'+IMAGE_SHEET_ID+'?'));

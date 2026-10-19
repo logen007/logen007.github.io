@@ -7,6 +7,8 @@ export function googleSheetSettingsHtml(){
   <label class="cai-dat-field"><span>Project number</span><input class="truong" data-picker-project inputmode="numeric" autocomplete="off" placeholder="Dãy số của dự án Google Cloud"><small>Dùng Project number, không phải Project ID hoặc OAuth Client ID.</small></label>
   <div class="google-connection-actions"><button class="nut chinh" type="button" data-picker-save>Lưu cấu hình</button><button class="nut" type="button" data-picker-authorize disabled>Chọn Exam img và cấp quyền</button><button class="nut" type="button" data-picker-disconnect disabled>Ngắt Sheet ảnh</button></div>
   <small>Chọn đúng Exam img trong cửa sổ Google. Cấp quyền không đồng bộ ảnh; sau đó dùng nút Đồng bộ ảnh ở Đề Thi. Ngắt Sheet ảnh tại đây không thu hồi kết nối Sao lưu.</small>
+  <label class="cai-dat-field"><span>Thu hồi link ảnh cho AI</span><input class="truong" data-image-share-url type="url" autocomplete="off" placeholder="Dán link ở cột Link cho AI"><small>Ai có link đều xem được đúng ảnh đó trong tối đa 7 ngày. Thu hồi không xóa ảnh. Đồng bộ lại có thể tạo link mới.</small></label>
+  <div class="google-connection-actions"><button class="nut" type="button" data-image-share-revoke>Thu hồi link</button></div>
   </div></section>`;
 }
 
@@ -75,5 +77,9 @@ export function bindGoogleSheetSettings(){
   });
   act('[data-picker-disconnect]',()=>request('disconnect',{}));
   act('[data-sheet-google-disconnect]',()=>request('google/disconnect',{}));
+  act('[data-image-share-revoke]',async()=>{
+    const url=el('[data-image-share-url]').value.trim();if(!url)throw Error('Dán link ảnh cần thu hồi trước.');
+    await request('shares/revoke',{url});el('[data-image-share-url]').value='';return {message:'Đã thu hồi link ảnh. Ảnh gốc vẫn được giữ nguyên.'};
+  });
   void load().catch(error=>report(error.message));
 }

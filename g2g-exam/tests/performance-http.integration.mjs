@@ -23,6 +23,7 @@ const query=async(sql,args)=>{
 };
 const secret='synthetic-test-cookie-secret';
 process.env.COOKIE_SECRET=secret;process.env.NODE_ENV='test';
+process.env.SETTINGS_ENCRYPTION_KEY='synthetic-sharing-encryption-key';
 process.env.WEB_PUBLIC_DIR=path.resolve('.web-build');process.env.WEB_ASSETS_DIR=path.join(scratch,'assets');process.env.UPLOAD_DIR=path.join(scratch,'uploads');
 if(process.env.G2G_PREVIEW_PORT)process.env.PORT=process.env.G2G_PREVIEW_PORT;
 globalThis.__httpDb={query,withTx:fn=>db.transaction(client=>tx.run(client,()=>fn({query}))),getSettings:async()=>structuredClone(DEFAULT_SETTINGS),getDataRevision:()=>revision,audit:async()=>{},initDb:async()=>{},now:()=>new Date().toISOString(),uid:()=>process.env.G2G_PREVIEW_PORT?randomUUID():'new-test-attempt',appError:(statusCode,message)=>Object.assign(new Error(message),{statusCode})};
@@ -50,7 +51,7 @@ globalThis.__testFastify=options=>{
   return app;
 };
 const hook=registerHooks({resolve(specifier,context,next){
-  if(specifier.endsWith('/db.js')||specifier==='./db.js'||specifier==='../db.js')return {shortCircuit:true,url:'data:text/javascript,export const {query,withTx,getSettings,getDataRevision,audit,initDb,now,uid,appError}=globalThis.__httpDb; export const pool={query,end:async()=>{}};'};
+  if(specifier.endsWith('/db.js')||specifier==='./db.js'||specifier==='../db.js')return {shortCircuit:true,url:'data:text/javascript,export const {query,withTx,getSettings,getDataRevision,audit,initDb,now,uid,appError}=globalThis.__httpDb; export const pool={query,end:async()=>{},connect:async()=>({query:(sql,args)=>sql==="SELECT pg_advisory_xact_lock(182733,2)"?Promise.resolve({rows:[]}):query(sql,args),release(){}})};'};
   if(specifier==='fastify')return {shortCircuit:true,url:'data:text/javascript,export default globalThis.__testFastify;'};
   if(specifier==='nodemailer')return {shortCircuit:true,url:'data:text/javascript,export default {createTransport(){throw Error("External mail forbidden")}};'};
   return next(specifier,context);
@@ -98,12 +99,23 @@ try{
     return app.inject({method:'POST',url:'/api/media/'+route,headers:{cookie:cookie(user),'content-type':'multipart/form-data; boundary='+boundary},payload:Buffer.concat([Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${type}\r\n\r\n`),bytes,Buffer.from(`\r\n--${boundary}--\r\n`)])});
   };
   const image=await upload('image','image/png','payload.html');assert.equal(image.statusCode,200);assert.match(image.json().url,/\.png$/);
+  const {imageSharing}=await import('../server/src/image-sharing.js');
+  const imageOrigin='http://localhost:8080',imageSource=imageOrigin+image.json().url;
+  const grant=(await imageSharing.issue({urls:[imageSource],origin:imageOrigin})).get(imageSource),sharedUrl=new URL(grant.url);
+  const secretRecord=await query("SELECT value_enc FROM secrets WHERE key='exam_image_sharing'");
+  assert.equal(secretRecord.rows.length,1);assert.doesNotMatch(secretRecord.rows[0].value_enc,/expiresAt|nonce|signature/);
+  assert.equal((await app.inject(sharedUrl.pathname+sharedUrl.search)).statusCode,200);
+  assert.equal((await app.inject(image.json().url)).statusCode,401,'Original upload remains authenticated');
+  assert.equal((await app.inject({method:'POST',url:'/api/exam-images/shares/revoke',headers:{cookie:cookie('admin')},payload:{url:grant.url}})).statusCode,200);
+  assert.equal((await app.inject(sharedUrl.pathname+sharedUrl.search)).statusCode,404,'SQL-persisted revocation takes effect immediately');
   assert.equal((await app.inject('/api/exam-images/export')).statusCode,401);
   for(const [method,url] of [['GET','/api/exam-images/status'],['GET','/api/exam-images/sheet'],['POST','/api/exam-images/sync']]){
     assert.equal((await app.inject({method,url})).statusCode,401);
     assert.equal((await app.inject({method,url,headers:{cookie:cookie('s0')}})).statusCode,403);
   }
   const sheetStatus=await app.inject({url:'/api/exam-images/status',headers:{cookie:cookie('admin')}});
+  for(const headers of [{},{cookie:cookie('s0')}])assert.equal((await app.inject({method:'POST',url:'/api/exam-images/shares/revoke',headers,payload:{url:'https://example.test/shared-exam-images/a.jpg?signature=synthetic'}})).statusCode,headers.cookie?403:401);
+  assert.equal((await app.inject('/shared-exam-images/a.jpg?signature=invalid')).statusCode,404);
   const pickerStatus=await app.inject({url:'/api/exam-images/google-settings',headers:{cookie:cookie('admin')}});
   assert.equal(pickerStatus.statusCode,200);assert.equal(pickerStatus.json().configured,false);
   assert.doesNotMatch(pickerStatus.body,/apiKey|accessToken|refreshToken|clientSecret/);

@@ -2,6 +2,10 @@
 
 ## Phạm vi hiện tại
 
+- Từ 1.3.242, owner cho phép chia sẻ từng ảnh raster bằng link có thời hạn để AI
+  đọc mà không cần đăng nhập. Link gốc `/uploads/` vẫn yêu cầu đăng nhập. Chỉ
+  thao tác `Đồng bộ ảnh` tạo/gia hạn link, không startup/polling. Đây không phải
+  công khai toàn kho; ai giữ link đều có thể xem đúng ảnh đó cho tới khi hết hạn.
 - `Đề Thi → Đồng bộ ảnh` là nút duy nhất. API export JSON vẫn giữ cho tương
   thích kỹ thuật, không hiển thị nút xuất file riêng.
 - Chỉ đọc ảnh của mọi đề chưa vào thùng rác, không phụ thuộc bộ lọc đang chọn.
@@ -12,11 +16,39 @@
   SSH đang timeout. Chưa xác minh Sheet chứa dữ liệu thật,
   chưa phục chế ảnh, chưa thay ảnh production. Không suy đã làm các bước này.
 - Link `/uploads/` cần đăng nhập. Inventory đủ để tạo danh sách trong Sheet,
-  nhưng không cấp quyền tải ảnh nhị phân cho worker. Phục chế cần nguồn file gốc
-  do owner gửi hoặc khôi phục kết nối máy chủ đã được cấp quyền. Không trích cookie,
+  và cột `Link cho AI` mới cấp quyền giới hạn cho ảnh được chia sẻ (xem mục dưới).
+  Không trích cookie,
   công khai kho ảnh, tạo token bỏ qua đăng nhập hoặc tự mở trình duyệt để né giới hạn.
 
 ## Đồng bộ trực tiếp, chỉ khi bấm nút (1.3.236)
+
+### Link ảnh cho AI (1.3.242)
+
+- Hai cột máy quản lý J/K trên tab Ảnh: `Link cho AI`, `Hết hạn link AI`.
+  Đồng bộ kiểm tra header trước khi mở rộng 9 thành 11 cột; cột lạ ở J/K thì
+  dừng, không ghi đè. Không thay A:I, link gốc, link phục chế, ghi chú hoặc mã nguồn.
+  Giữ vị trí hàng trống khi cập nhật. Chỉ tạo link cho ảnh còn trong inventory và
+  chưa có link phục chế, không tự phục chế/gắn ảnh lên web.
+- Chỉ ảnh JPG/JPEG, PNG, WebP, GIF, AVIF nằm trong `/uploads/` cùng origin.
+  Không fetch URL ngoài, audio, SVG, HTML hay file bất kỳ. Route kiểm tra header
+  ảnh trước khi trả bytes với MIME cố định, nosniff và cache no-store.
+- Link hiệu lực tối đa 7 ngày kể từ lúc phát hành. Đồng bộ tái sử dụng link còn
+  hạn; tạo link mới nếu hết hạn/đã thu hồi. Chữ ký HMAC ràng buộc tên ảnh, nonce,
+  hạn dùng. Khóa/grant lưu mã hóa riêng trong `exam_image_sharing`, không snapshot
+  bài thi, không migration. SQL advisory transaction lock bảo vệ cấp/thu hồi.
+- `GET/HEAD /shared-exam-images/:name?signature=...` không cần session nhưng cần
+  chữ ký hợp lệ và grant chưa hết hạn. Không có listing hay public original route.
+  Không trả redirect R2 làm mất khả năng thu hồi. App request serializer bỏ query
+  khỏi log route chia sẻ; proxy bên ngoài có thể vẫn ghi URL, coi link là bí mật.
+- `Cài đặt → Nâng cao → Thu hồi link ảnh cho AI`: dán đúng link, bấm Thu hồi.
+  Master-only POST `/api/exam-images/shares/revoke`, dùng origin guard hiện hữu.
+  Link cũ bị vô hiệu; không xóa ảnh. Thu hồi một link cũ không thu hồi nhầm grant
+  mới của cùng ảnh. Đồng bộ lần sau có thể phát hành lại bằng nonce khác.
+- Header noindex/nofollow/noarchive/no-referrer chỉ là hướng dẫn, không ngăn người
+  có link lưu/sao chép ảnh. Thu hồi không xóa bản đã tải. Không thay sharing Drive.
+- Kiểm thử synthetic gồm Fastify HTTP thật, bytes/cache/MIME, expiry, sửa token,
+  tên ảnh, thu hồi/cấp lại, master negatives và migration Sheet giữ dữ liệu cũ.
+  Chưa xác minh link thực/ChatGPT tải ảnh thực cho tới khi owner bấm đồng bộ.
 
 ### Cấp quyền trong Cài đặt (1.3.237)
 
