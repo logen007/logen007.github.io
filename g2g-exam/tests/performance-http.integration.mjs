@@ -107,7 +107,7 @@ try{
   const pickerStatus=await app.inject({url:'/api/exam-images/google-settings',headers:{cookie:cookie('admin')}});
   assert.equal(pickerStatus.statusCode,200);assert.equal(pickerStatus.json().configured,false);
   assert.doesNotMatch(pickerStatus.body,/apiKey|accessToken|refreshToken|clientSecret/);
-  for(const [method,url] of [['GET','/api/exam-images/google-settings'],['POST','/api/exam-images/google-settings'],['POST','/api/exam-images/picker'],['POST','/api/exam-images/authorize'],['POST','/api/exam-images/disconnect']]){
+  for(const [method,url] of [['GET','/api/exam-images/google-settings'],['GET','/api/exam-images/google/connect'],['POST','/api/exam-images/google/disconnect'],['POST','/api/exam-images/google-settings'],['POST','/api/exam-images/picker'],['POST','/api/exam-images/authorize'],['POST','/api/exam-images/disconnect']]){
     assert.equal((await app.inject({method,url})).statusCode,401);
     assert.equal((await app.inject({method,url,headers:{cookie:cookie('s0')}})).statusCode,403);
   }

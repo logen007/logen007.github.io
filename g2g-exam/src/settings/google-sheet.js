@@ -1,9 +1,12 @@
 import {confirmAction} from '../ui/confirm.js';
 
 export function googleSheetSettingsHtml(){
-  return `<section class="the cai-dat-card" id="sGoogleConnections"><div class="cai-dat-card-head"><h2>Google Drive và Sheet ảnh</h2><p>Kết nối Google và cấp quyền cho file Exam img. Không cấp quyền toàn bộ Drive.</p></div><div class="cai-dat-fields">
+  return `<section class="the cai-dat-card" id="sGoogleConnections"><div class="cai-dat-card-head"><h2>Google Drive và Sheet ảnh</h2><p>Hai kết nối riêng biệt, có thể dùng hai tài khoản Google khác nhau.</p></div><div class="cai-dat-fields">
+  <h3>Sao lưu</h3><p data-backup-google-status role="status">Đang kiểm tra…</p>
+  <div class="google-connection-actions"><a class="nut" href="/api/backup/google/connect" data-google-connect>Kết nối Google sao lưu</a><button class="nut" type="button" data-google-disconnect>Ngắt Google sao lưu</button></div>
+  <h3>Sheet ảnh · Exam img</h3>
   <p data-google-status role="status" aria-live="polite">Đang kiểm tra…</p>
-  <div class="google-connection-actions"><a class="nut" href="/api/backup/google/connect" data-google-connect>Kết nối Google Drive</a><button class="nut" type="button" data-google-disconnect>Ngắt Google Drive</button></div>
+  <div class="google-connection-actions"><a class="nut" href="/api/exam-images/google/connect" data-sheet-google-connect>Kết nối Google Sheet ảnh</a><button class="nut" type="button" data-sheet-google-disconnect disabled>Ngắt Google Sheet ảnh</button></div>
   <label class="cai-dat-field"><span>Google Picker API key</span><input class="truong" data-picker-key type="password" autocomplete="new-password" placeholder="Nhập khi cần cập nhật"><small>Key trong dự án Google hiện có. Chỉ master được dùng khi mở cửa sổ chọn file.</small></label>
   <label class="cai-dat-field"><span>Project number</span><input class="truong" data-picker-project inputmode="numeric" autocomplete="off" placeholder="Dãy số của dự án Google Cloud"><small>Dùng Project number, không phải Project ID hoặc OAuth Client ID.</small></label>
   <div class="google-connection-actions"><button class="nut chinh" type="button" data-picker-save>Lưu cấu hình</button><button class="nut" type="button" data-picker-authorize disabled>Chọn Exam img và cấp quyền</button><button class="nut" type="button" data-picker-disconnect disabled>Ngắt Sheet ảnh</button></div>
@@ -54,9 +57,12 @@ export function bindGoogleSheetSettings(){
     el('[data-picker-key]').placeholder=state.configured?'Đã lưu · nhập khi cần thay':'Nhập API key Google Picker';
     el('[data-picker-authorize]').disabled=!state.configured||!state.driveConnected;
     el('[data-picker-disconnect]').disabled=!state.authorized;
-    el('[data-google-disconnect]').disabled=!state.driveConnected;
-    el('[data-google-connect]').textContent=state.driveConnected?'Kết nối lại Google Drive':'Kết nối Google Drive';
-    report(!state.driveConnected?'Chưa kết nối Google Drive.':state.authorized?'Đã xác minh quyền Sheet ảnh · '+state.email:state.disabled?'Sheet ảnh đã được ngắt tại ứng dụng.':state.error||'Đã kết nối Google Drive · Chưa xác minh quyền Sheet ảnh.');
+    el('[data-google-disconnect]').disabled=!state.backup?.connected;
+    el('[data-google-connect]').textContent=state.backup?.connected?'Đổi tài khoản sao lưu':'Kết nối Google sao lưu';
+    el('[data-backup-google-status]').textContent=state.backup?.email?`${state.backup.connected?'Đã kết nối':'Cần kết nối lại'} · ${state.backup.email}`:'Chưa kết nối tài khoản sao lưu.';
+    el('[data-sheet-google-disconnect]').disabled=!state.driveConnected;
+    el('[data-sheet-google-connect]').textContent=state.driveConnected?'Đổi tài khoản Sheet ảnh':'Kết nối Google Sheet ảnh';
+    report(!state.driveConnected?'Chưa kết nối tài khoản Google cho Sheet ảnh. Không sử dụng tài khoản sao lưu.':`${state.email} · ${state.authorized?'Đã xác minh quyền Sheet ảnh':state.disabled?'Sheet ảnh đã được ngắt tại ứng dụng.':state.error||'Chọn Exam img và cấp quyền để tiếp tục.'}`);
     return state;
   };
   const act=(selector,fn)=>{const button=el(selector);button.onclick=async()=>{
@@ -75,11 +81,11 @@ export function bindGoogleSheetSettings(){
     return {authorized:true,message:'Đã chọn và xác minh quyền chỉnh sửa Exam img. Anh có thể đồng bộ ảnh.'};
   });
   act('[data-picker-disconnect]',()=>request('disconnect',{}));
+  act('[data-sheet-google-disconnect]',()=>request('google/disconnect',{}));
   act('[data-google-disconnect]',async()=>{
-    const confirmed=await new Promise(resolve=>confirmAction('Ngắt Google Drive sẽ làm Sao lưu và đồng bộ ảnh ngừng hoạt động. Dữ liệu trên Drive vẫn giữ nguyên.',()=>resolve(true),{confirmLabel:'Ngắt kết nối',onCancel:()=>resolve(false)}));
+    const confirmed=await new Promise(resolve=>confirmAction('Ngắt tài khoản Google sao lưu. Dữ liệu trên Drive vẫn giữ nguyên. Nếu Sheet ảnh dùng cùng tài khoản Google, Google có thể yêu cầu kết nối lại.',()=>resolve(true),{confirmLabel:'Ngắt kết nối',onCancel:()=>resolve(false)}));
     if(!confirmed)return;
     const response=await fetch('/api/backup/google/disconnect',{method:'POST',credentials:'include'});if(!response.ok)throw Error('Chưa ngắt được Google Drive.');
-    await request('disconnect',{});
   });
   void load().catch(error=>report(error.message));
 }
