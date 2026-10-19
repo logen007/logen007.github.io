@@ -99,6 +99,12 @@ try{
   };
   const image=await upload('image','image/png','payload.html');assert.equal(image.statusCode,200);assert.match(image.json().url,/\.png$/);
   assert.equal((await app.inject('/api/exam-images/export')).statusCode,401);
+  for(const [method,url] of [['GET','/api/exam-images/status'],['GET','/api/exam-images/sheet'],['POST','/api/exam-images/sync']]){
+    assert.equal((await app.inject({method,url})).statusCode,401);
+    assert.equal((await app.inject({method,url,headers:{cookie:cookie('s0')}})).statusCode,403);
+  }
+  const sheetStatus=await app.inject({url:'/api/exam-images/status',headers:{cookie:cookie('admin')}});
+  assert.equal(sheetStatus.statusCode,200);assert.deepEqual(sheetStatus.json(),{ready:false,url:null,lastSync:null,result:null});
   assert.equal((await app.inject({url:'/api/exam-images/export',headers:{cookie:cookie('s0')}})).statusCode,403);
   await query("INSERT INTO users(id,email,role,data) VALUES('inventory-teacher','teacher@example.test','teacher','{}')");
   assert.equal((await app.inject({url:'/api/exam-images/export',headers:{cookie:cookie('inventory-teacher')}})).statusCode,403);

@@ -126,14 +126,14 @@ export async function listBackupFiles(user){
     const result=await drive(config,'GET',`/files?q=${encodeURIComponent(`'${config.folderId}' in parents and trashed = false`)}&fields=nextPageToken,files(id,name,size,createdTime,mimeType,description,appProperties)&orderBy=createdTime desc&pageSize=1000`+(next?'&pageToken='+encodeURIComponent(next):''));
     files.push(...result.files||[]);next=result.nextPageToken||'';
   }while(next);
-  return files.filter(file=>file.mimeType!=='application/vnd.google-apps.folder').map(file=>({...file,size:Number(file.size||0)}));
+  return files.filter(file=>!['application/vnd.google-apps.folder','application/vnd.google-apps.spreadsheet'].includes(file.mimeType)).map(file=>({...file,size:Number(file.size||0)}));
 }
 export async function deleteBackupFile(user,id){
   if(user?.role!=='master')throw appError(403,'Không có quyền.');
   if(!/^[A-Za-z0-9_-]+$/.test(String(id||'')))throw appError(400,'Mã backup không hợp lệ.');
   const config=await read();if(!config?.folderId)throw appError(409,'Chưa kết nối Google Drive.');
-  const item=await drive(config,'GET',`/files/${encodeURIComponent(id)}?fields=id,parents`);
-  if(!item.parents?.includes(config.folderId))throw appError(404,'Không tìm thấy backup.');
+  const item=await drive(config,'GET',`/files/${encodeURIComponent(id)}?fields=id,parents,mimeType`);
+  if(!item.parents?.includes(config.folderId)||item.mimeType==='application/vnd.google-apps.spreadsheet')throw appError(404,'Không tìm thấy backup.');
   await drive(config,'DELETE',`/files/${encodeURIComponent(id)}`);
   return {ok:true};
 }

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import './image-restoration-registry.test.mjs';
+import './image-sheet.test.mjs';
 import {buildExamImageInventory,canonicalImageUrl,imageSourceId,registerExamImageInventoryRoute} from '../server/src/exam-image-inventory.js';
 import {examAdminHtml} from '../src/views/admin.js';
 

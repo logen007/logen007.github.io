@@ -21,6 +21,7 @@ import {stateResponse} from './state-response.js';
 import {handleAction} from './actions.js';
 import {registerPublicationRoute} from './publication-route.js';
 import {registerExamImageInventoryRoute} from './exam-image-inventory.js';
+import {registerImageSheetRoutes,startImageSheetSync} from './image-sheet.js';
 import {startMediaGarbageCollector} from './media-gc.js';
 import {startTrashGarbageCollector} from './trash-gc.js';
 import {submitExpiredAttempts} from './actions/attempts.js';
@@ -122,6 +123,7 @@ app.get('/api/state',async(request,reply)=>readState(request,reply,'full',loadSt
 app.get('/api/state-summary',async(request,reply)=>readState(request,reply,'summary',user=>loadState(user,{summaryOnly:true})));
 app.get('/api/exam-catalog',async(request,reply)=>readState(request,reply,'catalog',loadExamCatalog));
 registerExamImageInventoryRoute(app,{authenticate:request=>requireRole(request,'master'),withTx,origin:process.env.PUBLIC_URL||'http://localhost:8080'});
+registerImageSheetRoutes(app,request=>requireRole(request,'master'));
 app.get('/api/attempts/:id/sync',async(request,reply)=>stateResponse(await loadAttemptSync(await requireUser(request),request.params.id),request,reply));
 app.get('/api/attempts/:id/session',async(request,reply)=>{
   const user=await requireRole(request,'student');
@@ -192,6 +194,8 @@ const port=Number(process.env.PORT||8080);
 app.addHook('onClose',async()=>{stopMonitorHistory();r2Media?.stop();stopMediaGc();stopTrashGc();stopWritingAi();stopResultEmails();clearInterval(expiryTimer);});
 const stopBackupScheduler=startBackupScheduler();
 app.addHook('onClose',async()=>stopBackupScheduler());
+const stopImageSheetSync=startImageSheetSync(app.log);
+app.addHook('onClose',async()=>stopImageSheetSync());
 await app.listen({host:'0.0.0.0',port});
 const stopMediaGc=startMediaGarbageCollector({uploadDir,logger:app.log});
 const stopTrashGc=startTrashGarbageCollector({uploadDir,logger:app.log});

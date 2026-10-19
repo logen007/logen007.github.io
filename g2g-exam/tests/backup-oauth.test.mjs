@@ -29,7 +29,7 @@ process.env.BACKUP_GOOGLE_CLIENT_SECRET='test-secret';
 let revokedAccess=false;
 globalThis.fetch=async url=>{requests++;return {ok:!revokedAccess,json:async()=>url.includes('userinfo')?{email:'admin@example.test',email_verified:true}:url.includes('/files?q=')?{files:[]}:{id:'folder-id',mimeType:'application/vnd.google-apps.folder'}};};
 try{
- const {registerBackupGoogleRoutes,backupDriveStatus}=await import('../server/src/backup-google.js');
+ const {registerBackupGoogleRoutes,backupDriveStatus,listBackupFiles,deleteBackupFile}=await import('../server/src/backup-google.js');
  await registerBackupGoogleRoutes({get:(p,fn)=>routes.set(p,fn),post:(p,fn)=>routes.set(p,fn)});
  const connect=routes.get('/api/backup/google/connect'),callback=routes.get('/api/backup/google/callback');
  const master={id:'admin',role:'master'},reply={setCookie(name,value){this.cookie=value;},clearCookie(){},redirect:url=>url};
@@ -54,6 +54,14 @@ try{
  assert.equal(expired.connected,false);assert.equal(expired.needsReconnect,true);
  revokedAccess=false;
  await assert.rejects(backupDriveStatus({role:'teacher'}),e=>e.statusCode===403);
+ const previousFetch=globalThis.fetch;
+ globalThis.fetch=async(url,options)=>{
+  assert.notEqual(options.method,'DELETE','Image registry must never be deleted as a backup');
+  return {ok:true,json:async()=>url.includes('/files?q=')?{files:[{id:'archive',mimeType:'application/gzip'},{id:'sheet',mimeType:'application/vnd.google-apps.spreadsheet'}]}:{id:'sheet',parents:['folder-id'],mimeType:'application/vnd.google-apps.spreadsheet'}};
+ };
+ assert.deepEqual((await listBackupFiles(master)).map(f=>f.id),['archive']);
+ await assert.rejects(deleteBackupFile(master,'sheet'),e=>e.statusCode===404);
+ globalThis.fetch=previousFetch;
  await routes.get('/api/backup/google/disconnect')({user:master});
  assert.equal(revoked,true);assert.equal((await backupDriveStatus(master)).connected,false);
  console.log('Backup OAuth: master-only, browser binding, replay rejection, private credentials, disconnect passed.');
