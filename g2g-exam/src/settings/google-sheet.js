@@ -33,7 +33,7 @@ export function loadGooglePicker(){
 }
 export function chooseImageSheet(config,google=globalThis.google){
   return new Promise((resolve,reject)=>{
-    const view=new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS).setMode(google.picker.DocsViewMode.LIST).setMimeTypes('application/vnd.google-apps.spreadsheet');
+    const view=new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS).setMode(google.picker.DocsViewMode.LIST).setMimeTypes('application/vnd.google-apps.spreadsheet').setFileIds(config.sheetId);
     const picker=new google.picker.PickerBuilder().setAppId(config.appId).setDeveloperKey(config.apiKey).setOAuthToken(config.accessToken).setOrigin(globalThis.location.origin).addView(view).setCallback(data=>{
       if(data.action===google.picker.Action.CANCEL){resolve(false);return;}
       if(data.action!==google.picker.Action.PICKED)return;

@@ -35,14 +35,15 @@ await routes.get('POST /api/exam-images/disconnect')({},reply);assert.equal(stor
 const html=googleSheetSettingsHtml();assert.match(html,/sGoogleConnections/);assert.match(html,/type="password"/);assert.doesNotMatch(html,/value="synthetic/);
 const previousLocation=globalThis.location;globalThis.location={origin:'https://example.test'};
 try{
-  let callback,seen;
-  class View{setMode(){return this;}setMimeTypes(){return this;}}
+  let callback,seen,requestedIds;
+  class View{setMode(){return this;}setMimeTypes(){return this;}setFileIds(ids){requestedIds=ids;return this;}}
   class Builder{
     setAppId(){return this;}setDeveloperKey(){return this;}setOAuthToken(){return this;}setOrigin(origin){seen=origin;return this;}addView(){return this;}setCallback(fn){callback=fn;return this;}
     build(){return {setVisible:()=>{}};}
   }
   const google={picker:{DocsView:View,ViewId:{SPREADSHEETS:1},DocsViewMode:{LIST:1},PickerBuilder:Builder,Action:{CANCEL:'cancel',PICKED:'picked'}}};
   let pending=chooseImageSheet({sheetId:'selected'},google);callback({action:'cancel'});assert.equal(await pending,false);
+  assert.equal(requestedIds,'selected','Picker must show the known Sheet ID rather than require name search');
   pending=chooseImageSheet({sheetId:'selected'},google);callback({action:'picked',docs:[{id:'wrong'}]});await assert.rejects(pending,/đúng file/);
   pending=chooseImageSheet({sheetId:'selected'},google);callback({action:'picked',docs:[{id:'selected'}]});assert.equal(await pending,'selected');assert.equal(seen,'https://example.test');
 }finally{if(previousLocation===undefined)delete globalThis.location;else globalThis.location=previousLocation;}
