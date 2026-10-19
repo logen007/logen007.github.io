@@ -110,13 +110,3 @@ export function registerImageSheetRoutes(app,authenticate){
     return runImageSheetSync();
   });
 }
-export function startImageSheetSync(logger){
-  if(process.env.NODE_ENV!=='production')return ()=>{};
-  let stopped=false,timer;
-  const tick=async()=>{
-    try{await runImageSheetSync();}catch{logger.warn('Image Sheet sync unavailable; check Drive connection / Sheets API. No image data changed.');}
-    if(!stopped){timer=setTimeout(tick,300000);timer.unref();}
-  };
-  timer=setTimeout(tick,30000);timer.unref();
-  return ()=>{stopped=true;clearTimeout(timer);};
-}
