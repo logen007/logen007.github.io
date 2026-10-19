@@ -57,10 +57,8 @@ export function buildExamImageInventory({exams,questions,origin,generatedAt=new 
   return {schemaVersion:1,origin,generatedAt,examCount,assetCount:assets.size,assets:[...assets.values()].sort((a,b)=>a.sourceId.localeCompare(b.sourceId)),usages,warnings};
 }
 
-export function registerExamImageInventoryRoute(app,{authenticate,withTx,origin}){
-  app.get('/api/exam-images/export',async(request,reply)=>{
-    await authenticate(request);
-    const inventory=await withTx(async client=>{
+export function loadExamImageInventory({withTx,origin}){
+    return withTx(async client=>{
       await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
       const {rows:exams}=await client.query(`SELECT e.id,e.status,e.data,r.snapshot FROM exams e LEFT JOIN exam_releases r
         ON r.exam_id=e.id AND r.version=NULLIF(e.data->>'publicationVersion','')::integer
@@ -69,6 +67,12 @@ export function registerExamImageInventoryRoute(app,{authenticate,withTx,origin}
       const {rows:questionRows}=ids.length?await client.query('SELECT id,data FROM questions WHERE id=ANY($1::text[]) ORDER BY id',[ids]):{rows:[]};
       return buildExamImageInventory({exams,questions:questionRows.map(q=>({...q.data,id:q.id})),origin});
     });
+}
+
+export function registerExamImageInventoryRoute(app,{authenticate,withTx,origin}){
+  app.get('/api/exam-images/export',async(request,reply)=>{
+    await authenticate(request);
+    const inventory=await loadExamImageInventory({withTx,origin});
     reply.header('Cache-Control','private, no-store').header('X-Content-Type-Options','nosniff');
     reply.header('Content-Disposition','attachment; filename="g2g-exam-images.json"');
     return reply.type('application/json; charset=utf-8').send(inventory);
