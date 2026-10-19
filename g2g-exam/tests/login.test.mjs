@@ -6,7 +6,7 @@ import {loginDemoHtml} from '../src/views/login-demo.js';
 import {themePalette,darkThemePalette,colorContrast} from '../src/settings/palette.js';
 const api=loginHtml({mode:'api'}),local=loginHtml({mode:'local'});
 assert.doesNotMatch(api,/Kết quả sẽ được gửi về email này|landing-login-note/);
-assert.match(api,/Công ty Cổ phần Phát triển Nhân lực Quốc tế/);
+assert.match(api,/<div class="landing-footer-brand"><span>Công ty Cổ phần Phát triển Nhân lực Quốc tế G2G<\/span><\/div>/,'Footer is one company name, not a separate G2G Career label');
 assert.doesNotMatch(api,/Minh họa giao diện luyện thi|Đề luyện hiện có/,'Remove the two labels requested by the owner');
 assert.doesNotMatch(api,/Tạm dừng|Tiếp tục chuyển động|Lưu bài tự động|Ví dụ minh họa|data-login-motion-toggle|landing-demo-layer/);
 assert.doesNotMatch(api,/Sử dụng tài khoản Google của bạn|Một tài khoản để luyện thi|GOETHE &amp; TELC|G2G Exam|landing-brand-mark/);
