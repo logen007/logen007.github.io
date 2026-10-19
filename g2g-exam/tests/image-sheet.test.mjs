@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {IMAGE_COLUMNS,USAGE_COLUMNS,planImageSheetSync,syncImageSheet} from '../server/src/image-sheet-sync.js';
-import {createImageSheetRunner,ensureImageSheet,googleImageClient,registerImageSheetRoutes} from '../server/src/image-sheet.js';
+import {IMAGE_SHEET_ID,createImageSheetRunner,ensureImageSheet,googleImageClient,registerImageSheetRoutes} from '../server/src/image-sheet.js';
 
 const asset={sourceId:'original',sourceUrl:'https://example.test/original.png'};
 const usage={examId:'exam',examTitle:'=HYPERLINK("bad")',provider:'GOETHE',level:'A1',examStatus:'published',publicationVersion:1,entity:'question',entityId:'q',pointer:'/imageUrl',sourceId:'original'};
@@ -44,22 +44,13 @@ await assert.rejects(syncImageSheet({google:memoryGoogle,spreadsheetId:'sheet',m
 assert.equal((await syncImageSheet({google:memoryGoogle,spreadsheetId:'sheet',manifest:nextManifest})).added,0);
 assert.equal(stored[0].length,3);assert.equal(stored[1].length,3);
 assert.deepEqual(stored[0][1],restored,'Existing restored link/status/note survives both writes and retry');
-
-let state=null,created=0;
-const drive=async(service,method,route,body)=>{
-  assert.equal(service,'drive');
-  if(method==='GET'&&route.startsWith('/files?'))return {files:[]};
-  if(method==='POST'){created++;assert.equal(state.creating,true,'Persist intent before external create');assert.equal(body.appProperties.g2gImageRegistry,'marker');return {id:'id',webViewLink:'https://docs.google.com/spreadsheets/d/id/edit'};}
-  throw Error('Unexpected request');
-};
-const args={google:drive,folderId:'folder',state:null,saveState:async next=>{state=next;},sourceMarker:'marker'};
-assert.equal((await ensureImageSheet(args)).spreadsheetId,'id');assert.equal(created,1);
-await assert.rejects(ensureImageSheet({...args,state:{creating:true,folderId:'folder'}}),/không tự tạo lặp/);assert.equal(created,1);
-await assert.rejects(ensureImageSheet({...args,state:{folderId:'other'}}),/Drive đã đổi/);
-assert.equal((await ensureImageSheet({...args,state:{creating:true,folderId:'folder'},google:async()=>({files:[{id:'recovered',webViewLink:'https://docs.google.com/spreadsheets/d/recovered/edit'}]})})).spreadsheetId,'recovered');
-await assert.rejects(ensureImageSheet({...args,google:async()=>({files:[{id:'1'},{id:'2'}]})}),/nhiều Sheet/);
-await assert.rejects(ensureImageSheet({...args,state:{spreadsheetId:'id',folderId:'folder'},google:async()=>({mimeType:'application/vnd.google-apps.spreadsheet',trashed:true})}),/không còn hợp lệ/);
-
+let reads=0;
+const selected=await ensureImageSheet({state:{spreadsheetId:'old-sheet',lastSync:'old'},google:async(service,method,route)=>{
+  reads++;assert.equal(service,'sheets');assert.equal(method,'GET');assert.ok(route.startsWith('/'+IMAGE_SHEET_ID+'?'));
+  return {spreadsheetId:IMAGE_SHEET_ID};
+}});
+assert.equal(reads,1);assert.equal(selected.spreadsheetId,IMAGE_SHEET_ID);assert.equal(selected.lastSync,undefined);
+await assert.rejects(ensureImageSheet({google:async()=>({spreadsheetId:'wrong'})}),/sai Sheet/);
 let resolve,lockCalls=0;
 const runner=createImageSheetRunner({withLock:()=>{lockCalls++;return new Promise(r=>{resolve=r;});}});
 const pending=runner();assert.equal(runner(),pending);assert.equal(lockCalls,1);resolve({busy:true});await pending;
