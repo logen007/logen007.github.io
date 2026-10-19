@@ -1,5 +1,12 @@
 name: G2G Backup isolated checks
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/g2g-backup-check.yml'
+      - 'g2g-exam/server/src/backup-google.js'
+      - 'g2g-exam/server/src/google-drive-oauth.js'
+      - 'g2g-exam/server/src/image-sheet-oauth.js'
+      - 'g2g-exam/tests/backup-oauth.test.mjs'
   push:
     branches: [feature/g2g-drive-backup]
   workflow_dispatch:

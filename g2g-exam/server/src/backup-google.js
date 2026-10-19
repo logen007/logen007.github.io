@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
-import {OAuth2Client} from 'google-auth-library';
+import {googleDriveOAuthClient as client,googleDriveOAuthConfig as env} from './google-drive-oauth.js';
+import {saveImageSheetGoogleConnection} from './image-sheet-oauth.js';
 import {query,appError} from './db.js';
 import {encrypt,decrypt} from './settings-secrets.js';
 import {currentUser} from './auth.js';
@@ -10,13 +11,7 @@ const REDIRECT='/api/backup/google/callback';
 const SCOPE='https://www.googleapis.com/auth/drive.file';
 const states=new Map();
 let folderCheck;
-const env=()=>({
-  clientId:process.env.BACKUP_GOOGLE_CLIENT_ID||'',
-  clientSecret:process.env.BACKUP_GOOGLE_CLIENT_SECRET||'',
-  redirect:process.env.BACKUP_GOOGLE_REDIRECT_URI||`${process.env.PUBLIC_URL||'https://exam.g2gcareer.com'}${REDIRECT}`
-});
-const client=()=>{const c=env();if(!c.clientId||!c.clientSecret)throw appError(503,'Chưa cấu hình Google OAuth dành cho Backup.');return new OAuth2Client(c.clientId,c.clientSecret,c.redirect);};
-const admin=async request=>{const user=await currentUser(request);if(user?.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được quản lý Backup.');return user;};
+const admin=async request=>{const user=await currentUser(request);if(!user)throw appError(401,'Vui lòng đăng nhập.');if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được quản lý kết nối Google.');return user;};
 async function read(){const result=await query('SELECT value_enc FROM secrets WHERE key=$1',[KEY]);return result.rows[0]?JSON.parse(decrypt(result.rows[0].value_enc)):null;}
 export async function uploadBackupArchive(filename,name,sha256){
   const config=await getBackupDriveCredentials(),oauth=client();oauth.setCredentials({refresh_token:config.refreshToken});
@@ -70,15 +65,17 @@ export async function backupDriveStatus(user){
   return {connected:accessible,needsReconnect:Boolean(config?.refreshToken)&&!accessible,email:config?.email||'',folderId:config?.folderId||'',oauthConfigured:Boolean(env().clientId&&env().clientSecret)};
 }
 export async function registerBackupGoogleRoutes(app){
-  app.get('/api/backup/google/connect',async(request,reply)=>{
+  const connect=purpose=>async(request,reply)=>{
     const user=await admin(request),state=crypto.randomBytes(32).toString('hex');
     const oauth=client();
     for(const [key,item] of states)if(item.expires<Date.now())states.delete(key);
-    states.set(state,{userId:user.id,expires:Date.now()+600000});
+    states.set(state,{userId:user.id,purpose,expires:Date.now()+600000});
     reply.setCookie('g2g_backup_oauth',state,{path:REDIRECT,httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',signed:true,maxAge:600});
     const url=oauth.generateAuthUrl({access_type:'offline',prompt:'consent select_account',scope:[SCOPE,'openid','email'],state});
     return reply.redirect(url);
-  });
+  };
+  app.get('/api/backup/google/connect',connect('backup'));
+  app.get('/api/exam-images/google/connect',connect('images'));
   app.get(REDIRECT,async(request,reply)=>{
     const {code,state}=request.query||{},record=states.get(String(state||''));
     const browser=request.unsignCookie(request.cookies?.g2g_backup_oauth||'');
@@ -92,6 +89,10 @@ export async function registerBackupGoogleRoutes(app){
     if(!info.ok)throw appError(503,'Không xác minh được tài khoản Google.');
     const identity=await info.json();
     if(identity.email_verified!==true)throw appError(400,'Email Google chưa được xác minh.');
+    if(record.purpose==='images'){
+      await saveImageSheetGoogleConnection({refreshToken:tokens.refresh_token,email:identity.email||''},user);
+      return reply.redirect('/adm?tab=settings&settings=advanced');
+    }
     const config={refreshToken:tokens.refresh_token,email:identity.email||'',folderId:''};
     config.folderId=await ensureFolder(config);
     await save(config,user);

@@ -20,6 +20,17 @@
 
 ### Cấp quyền trong Cài đặt (1.3.237)
 
+Từ 1.3.240, tài khoản Sheet ảnh và Sao lưu là hai kết nối OAuth riêng. Sheet dùng
+secret mã hóa `image_sheet_google`; tuyệt đối không fallback/copy token từ
+`backup_google_drive` hoặc tài khoản đăng nhập website. Cả hai tái dùng Cloud
+OAuth client và callback đã đăng ký, không cần tạo project/client/redirect mới.
+State trên server gắn mục đích kết nối, user, cookie ký và thời hạn; callback
+Sheet chỉ lưu token Sheet, không tạo folder hay sửa credential Sao lưu. Cấu hình
+Picker cũ vẫn giữ; lần đầu sau nâng cấp cần kết nối Google Sheet ảnh riêng,
+chọn tài khoản có quyền Sheet, sau đó cấp quyền file qua Picker. Cài đặt luôn
+hiện email từng kết nối. Ngắt Google Sheet chỉ xóa token Sheet tại ứng dụng,
+không revoke app grant (có thể ảnh hưởng token khác nếu dùng cùng tài khoản).
+
 Từ 1.3.239, Google là nguồn xác minh quyền thực: GET trạng thái và POST đồng bộ
 kiểm tra đúng file, canEdit và Sheets API bằng token hiện tại, không chặn chỉ vì
 cờ `authorized` cũ chưa lưu sau Picker. Các bước kiểm tra này chỉ đọc Google,
@@ -39,7 +50,8 @@ nhân danh sách cũ thiếu file và chưa chạy Picker thật; không coi tes
 là bằng chứng cửa sổ Google đã hiển thị file production.
 
 1. Vào `Cài đặt → Nâng cao → Google Drive và Sheet ảnh` (chỉ master).
-2. Kết nối Google Drive hoặc dùng kết nối Sao lưu hiện có. Callback quay về Cài đặt.
+2. Bấm `Kết nối Google Sheet ảnh`, chọn tài khoản có quyền sửa Exam img.
+   Không dùng kết nối Sao lưu làm quyền Sheet. Callback quay về Cài đặt.
 3. Nhập Picker API key và Project number trong cùng Cloud project của OAuth Backup.
    Key phải cho phép Google Picker API, referrer website và `https://docs.google.com/*`.
    Bật Google Picker API, Google Sheets API trong Cloud project; không tạo OAuth mới.
@@ -56,8 +68,10 @@ không localStorage. Mọi route mới dùng master guard và origin policy hi�
 Không thêm scope OAuth. Khác với các API key AI, key Picker cần có trong trình
 duyệt của master khi mở Google Picker, vì vậy phải hạn chế referrer/API trên Cloud.
 Ngắt Sheet ảnh là tắt sử dụng tại ứng dụng, không revoke kết nối Sao lưu hay xóa
-file. Ngắt Google Drive ảnh hưởng cả hai và cần xác nhận. Quyền Picker vẫn có thể
-được thu hồi trong tài khoản Google. Đổi Drive folder/account phải cấp quyền lại.
+file. Ngắt Google sao lưu chỉ xóa kết nối Sao lưu trong ứng dụng và revoke token đó;
+nếu hai kết nối dùng cùng tài khoản, Google có thể thu hồi grant chung, nên UI
+cảnh báo khi ngắt Sao lưu. Quyền Picker vẫn có thể thu hồi trong tài khoản Google.
+Đổi tài khoản Sheet cần xác minh/cấp quyền lại.
 
 Kết nối Google trong popup Sao lưu chuyển thành link về Cài đặt. Chưa chạy Google
 Picker thật bằng trình duyệt hoặc xác minh quyền production: chỉ báo hoàn tất
@@ -65,7 +79,7 @@ Picker thật bằng trình duyệt hoặc xác minh quyền production: chỉ b
 
 - Chỉ chạy khi master bấm `Đề Thi → Đồng bộ ảnh`. Không timer, không chạy khi
   khởi động máy chủ, mở trang, thêm đề hoặc mở link Sheet. Không cần xuất/nhập JSON.
-- Tái dùng kết nối Drive trong Sao lưu và scope `drive.file` hiện có. Google
+- Dùng kết nối OAuth riêng cho Sheet với scope `drive.file` hiện có. Google
   Sheets API phải được bật trên cùng Google Cloud project của OAuth Backup.
   Không thêm OAuth scope, service account, token phía client hoặc dependency.
 - Dùng đúng Sheet `Exam img` owner chỉ định, ID tại `IMAGE_SHEET_ID` trong
@@ -93,7 +107,7 @@ Picker thật bằng trình duyệt hoặc xác minh quyền production: chỉ b
   xóa backup. Lỗi Google được che nội dung/token; muốn thử lại phải bấm nút.
 - Test dùng dữ liệu tổng hợp/API doubles; chưa xác minh API bật hoặc quyền OAuth
   production. Chỉ ghi kết nối thực hoạt động khi đọc lại Sheet/status thành công.
-- Connector đã sửa được Sheet không chứng minh token Backup trên server có
+- Connector đã sửa được Sheet không chứng minh token Sheet trên server có
   quyền. Scope `drive.file` chỉ truy cập tệp đã được cấp cho ứng dụng: Sheet do
   owner tạo ngoài ứng dụng có thể cần chọn/cấp quyền tệp qua Google Picker.
   Không tự nâng sang quyền đọc toàn bộ Drive/Sheets để né lỗi. Lỗi được trả 400

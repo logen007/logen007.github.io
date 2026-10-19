@@ -10,7 +10,8 @@ assert.throws(()=>pickerConfiguration({},{apiKey:'bad',projectNumber:'123456'}),
 let stored=config,authorized=false,accessCalls=0,saveCalls=0;
 const routes=new Map(),app={get:(p,fn)=>routes.set('GET '+p,fn),post:(p,fn)=>routes.set('POST '+p,fn)};
 let editable=true;
-registerImageSheetGoogleRoutes(app,{authenticate:async()=>{if(!authorized)throw Error('Denied');return {id:'master'};},sheetId:'selected',storage:{read:async()=>stored,save:async next=>{stored=next;saveCalls++;}},access:async()=>{accessCalls++;return {token:'synthetic-access',folderId:'folder'};},driveStatus:async()=>({connected:true,email:'master@example.test',oauthConfigured:true}),makeGoogle:()=>async(service,method,route)=>{
+let sheetDisconnected=false;
+registerImageSheetGoogleRoutes(app,{authenticate:async()=>{if(!authorized)throw Error('Denied');return {id:'master'};},sheetId:'selected',storage:{read:async()=>stored,save:async next=>{stored=next;saveCalls++;}},access:async()=>{accessCalls++;return {token:'synthetic-access'};},driveStatus:async()=>({connected:true,email:'sheet@example.test',oauthConfigured:true}),backupStatus:async()=>({connected:true,email:'backup@example.test'}),disconnect:async()=>{sheetDisconnected=true;},makeGoogle:()=>async(service,method,route)=>{
   assert.equal(method,'GET');assert.ok(route.includes('selected'));
   return service==='drive'?{id:'selected',mimeType:'application/vnd.google-apps.spreadsheet',capabilities:{canEdit:editable}}:{spreadsheetId:'selected'};
 }});
@@ -20,6 +21,7 @@ assert.equal(accessCalls,0);assert.equal(saveCalls,0);
 authorized=true;
 const status=await routes.get('GET /api/exam-images/google-settings')({},reply);
 assert.equal(status.configured,true);assert.doesNotMatch(JSON.stringify(status),/synthetic-picker|synthetic-access/);
+assert.equal(status.email,'sheet@example.test');assert.equal(status.backup.email,'backup@example.test');
 assert.equal(status.authorized,true,'A stale false local flag must not hide a verified Google grant');
 assert.equal(saveCalls,0,'GET status is read-only');
 assert.equal(headers['Cache-Control'],'private, no-store');
@@ -37,6 +39,7 @@ await routes.get('POST /api/exam-images/disconnect')({},reply);assert.equal(stor
 assert.equal(stored.enabled,false);
 const disabledStatus=await routes.get('GET /api/exam-images/google-settings')({},reply);
 assert.equal(disabledStatus.disabled,true);assert.equal(disabledStatus.authorized,false);
+await routes.get('POST /api/exam-images/google/disconnect')({},reply);assert.equal(sheetDisconnected,true);
 
 let liveChecks=0;
 const accessArgs={sheetId:'selected',makeGoogle:()=>async(service)=>{liveChecks++;return service==='drive'?{id:'selected',mimeType:'application/vnd.google-apps.spreadsheet',capabilities:{canEdit:true}}:{spreadsheetId:'selected'};},storage:{read:async()=>({authorized:false}),save:async()=>{throw Error('Live checks must not rewrite config');}},access:async()=>({token:'fresh',folderId:'folder'})};
@@ -48,6 +51,7 @@ assert.equal(liveChecks,2,'Explicit and legacy disconnects must never reconnect 
 await assert.rejects(getImageSheetGoogleAccess({...accessArgs,makeGoogle:()=>async()=>{throw Error('Google denies access');}}),/Google denies/);
 
 const html=googleSheetSettingsHtml();assert.match(html,/sGoogleConnections/);assert.match(html,/type="password"/);assert.doesNotMatch(html,/value="synthetic/);
+assert.match(html,/href="\/api\/exam-images\/google\/connect"/);assert.match(html,/href="\/api\/backup\/google\/connect"/);
 const previousLocation=globalThis.location;globalThis.location={origin:'https://example.test'};
 try{
   let callback,seen,requestedIds,autoPick=null;

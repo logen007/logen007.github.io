@@ -1,6 +1,7 @@
 import {pool,appError} from './db.js';
 import {encrypt,decrypt} from './settings-secrets.js';
-import {getBackupDriveAccess,backupDriveStatus} from './backup-google.js';
+import {getImageSheetOAuthAccess,imageSheetGoogleStatus,disconnectImageSheetGoogle} from './image-sheet-oauth.js';
+import {backupDriveStatus} from './backup-google.js';
 
 const KEY='image_sheet_picker';
 const locallyDisabled=config=>config.enabled===false||(config.enabled===undefined&&config.authorized===false&&Boolean(config.folderId));
@@ -21,23 +22,23 @@ export async function verifyImageSheetGrant(google,sheetId){
 // Google is the authority. An interrupted Picker callback must not permanently
 // block an already-granted file behind our stale cached authorized flag.
 // Reconcile only on an explicit sync POST; an explicit local disconnect wins.
-export async function getImageSheetGoogleAccess({sheetId,makeGoogle,storage={read,save},access=getBackupDriveAccess}){
+export async function getImageSheetGoogleAccess({sheetId,makeGoogle,storage={read,save},access=getImageSheetOAuthAccess}){
   const config=await storage.read();
   if(locallyDisabled(config))throw appError(400,'Sheet ảnh đã được ngắt trong Cài đặt. Anh chọn lại Exam img để bật kết nối.');
   let connection;try{connection=await access();}catch{throw appError(400,'Kết nối Google đã hết hạn. Anh kết nối lại trong Cài đặt → Nâng cao.');}
   await verifyImageSheetGrant(makeGoogle(connection.token),sheetId);
   return connection;
 }
-export function registerImageSheetGoogleRoutes(app,{authenticate,sheetId,makeGoogle,storage={read,save},access=getBackupDriveAccess,driveStatus=backupDriveStatus}){
+export function registerImageSheetGoogleRoutes(app,{authenticate,sheetId,makeGoogle,storage={read,save},access=getImageSheetOAuthAccess,driveStatus=imageSheetGoogleStatus,backupStatus=backupDriveStatus,disconnect=disconnectImageSheetGoogle}){
   app.get('/api/exam-images/google-settings',async(request,reply)=>{
     const user=await authenticate(request);reply.header('Cache-Control','private, no-store');
-    const config=await storage.read(),drive=await driveStatus(user);
+    const config=await storage.read(),drive=await driveStatus(user),backup=await backupStatus(user);
     let authorized=false,error='';
     if(!locallyDisabled(config)&&drive.connected){
       try{const connection=await access();await verifyImageSheetGrant(makeGoogle(connection.token),sheetId);authorized=true;}
       catch(issue){error=issue.statusCode===400?issue.message:'Chưa xác minh được quyền Google. Anh kết nối lại trong Cài đặt.';}
     }
-    return {configured:Boolean(config.apiKey&&config.projectNumber),projectNumber:config.projectNumber||'',authorized,disabled:locallyDisabled(config),error,driveConnected:drive.connected,email:drive.email||'',oauthConfigured:drive.oauthConfigured};
+    return {configured:Boolean(config.apiKey&&config.projectNumber),projectNumber:config.projectNumber||'',authorized,disabled:locallyDisabled(config),error,driveConnected:drive.connected,email:drive.email||'',oauthConfigured:drive.oauthConfigured,backup:{connected:backup.connected,email:backup.email||''}};
   });
   app.post('/api/exam-images/google-settings',async(request,reply)=>{
     const user=await authenticate(request);reply.header('Cache-Control','private, no-store');
@@ -60,12 +61,17 @@ export function registerImageSheetGoogleRoutes(app,{authenticate,sheetId,makeGoo
     if(!config.apiKey||!config.projectNumber)throw appError(400,'Chưa cấu hình Google Picker.');
     let connection;try{connection=await access();}catch{throw appError(400,'Kết nối Google đã hết hạn. Anh kết nối lại trong Cài đặt.');}
     await verifyImageSheetGrant(makeGoogle(connection.token),sheetId);
-    await storage.save({...config,enabled:true,authorized:true,folderId:connection.folderId},user);
+    await storage.save({...config,enabled:true,authorized:true,folderId:''},user);
     return {ok:true};
   });
   app.post('/api/exam-images/disconnect',async(request,reply)=>{
     const user=await authenticate(request);reply.header('Cache-Control','private, no-store');
     await storage.save({...await storage.read(),enabled:false,authorized:false},user);
+    return {ok:true};
+  });
+  app.post('/api/exam-images/google/disconnect',async(request,reply)=>{
+    await authenticate(request);reply.header('Cache-Control','private, no-store');
+    await disconnect();
     return {ok:true};
   });
 }
