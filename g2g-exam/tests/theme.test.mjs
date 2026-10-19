@@ -182,6 +182,7 @@ console.log('✓ Chuyển sáng/tối, lưu lựa chọn và tương phản màu
 
 assert.doesNotMatch(colorModeButtonHtml(),/\stitle=/);
 assert.match(colorModeButtonHtml(),/data-no-tooltip/);
+assert.match(colorModeButtonHtml(),/type="button"/,'The preference button never submits a surrounding form');
 const savedMotionGlobals={matchMedia:globalThis.matchMedia,innerWidth:globalThis.innerWidth,innerHeight:globalThis.innerHeight};
 try{
   const classes=new Set(),properties=new Map();let transitions=0,finish;
@@ -200,7 +201,6 @@ try{
   assert.ok(parseFloat(properties.get('--theme-reveal-radius'))>=Math.hypot(322,802),'Wave covers the farthest corner');
   assert.ok(parseFloat(properties.get('--theme-reveal-feather'))>=120,'Broad alpha feather softens the boundary');
   assert.ok(parseFloat(properties.get('--theme-reveal-end'))>parseFloat(properties.get('--theme-reveal-radius')),'Feather clears every viewport corner');
-  toggleColorMode(origin);assert.equal(transitions,1,'Rapid clicks do not overlap snapshots');
   finish();await Promise.resolve();await Promise.resolve();await Promise.resolve();
   assert.equal(classes.size,0,'Snapshot styling is removed after finishing');
   assert.equal(globalThis.document.documentElement.dataset.themeReveal,undefined);
@@ -215,3 +215,59 @@ try{
   assert.equal(toggleColorMode(origin),'dark','Unsupported browsers still switch');
 }finally{Object.assign(globalThis,savedMotionGlobals);}
 console.log('✓ Vòng lan từ nút: phủ hết màn hình, chống chồng hiệu ứng, dọn dẹp, giảm chuyển động và fallback');
+
+const savedRevealGlobals={document:globalThis.document,localStorage:globalThis.localStorage,matchMedia:globalThis.matchMedia,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout};
+try{
+  const classes=new Set(),timers=new Map(),transitions=[],writes=[];let timerId=0;
+  globalThis.matchMedia=()=>({matches:false});
+  globalThis.localStorage={setItem:(key,value)=>writes.push([key,value])};
+  globalThis.setTimeout=(callback,ms)=>{const id=++timerId;timers.set(id,{callback,ms});return id;};
+  globalThis.clearTimeout=id=>timers.delete(id);
+  const root={dataset:{colorMode:'light'},clientWidth:390,clientHeight:844,style:{setProperty(){}},classList:{add:value=>classes.add(value),remove:value=>classes.delete(value)}};
+  globalThis.document={documentElement:root,querySelectorAll:()=>[],startViewTransition:update=>{
+    const record={update,skips:0};
+    const ready=new Promise((resolve,reject)=>{record.ready=resolve;record.rejectReady=reject;});
+    const finished=new Promise((resolve,reject)=>{record.finish=resolve;record.rejectFinished=reject;});
+    transitions.push(record);return {ready,finished,skipTransition:()=>record.skips++};
+  }};
+  const drain=async()=>{await Promise.resolve();await Promise.resolve();await Promise.resolve();};
+  const expire=()=>{
+    assert.equal(timers.size,1,'Exactly one bounded recovery timer belongs to the current reveal');
+    const timer=[...timers.values()][0];
+    assert.ok(timer.ms>800&&timer.ms<=2000,'Recovery allows the normal wave without an indefinite lock');
+    timer.callback();
+  };
+  toggleColorMode();const stalled=transitions.at(-1);
+  assert.equal(root.dataset.colorMode,'light','Native update may be deferred');
+  expire();
+  assert.equal(root.dataset.colorMode,'dark','A stalled snapshot still applies the requested preference');
+  assert.equal(stalled.skips,1);assert.equal(classes.size,0);assert.equal(timers.size,0);
+  assert.equal(writes.length,1,'Recovery applies and persists the mode once');
+  toggleColorMode();const newer=transitions.at(-1);
+  stalled.update();stalled.finish();await drain();
+  assert.equal(root.dataset.colorMode,'dark','A stale callback cannot overwrite a newer requested mode');
+  assert.ok(classes.has('color-mode-revealing'),'Old completion cannot clear a newer reveal');
+  newer.update();newer.ready();newer.finish();await drain();
+  assert.equal(root.dataset.colorMode,'light');assert.equal(classes.size,0);assert.equal(timers.size,0);
+
+  toggleColorMode();const captured=transitions.at(-1);captured.update();captured.ready();
+  const writesBeforeRecovery=writes.length;expire();
+  assert.equal(writes.length,writesBeforeRecovery,'A stalled finish does not reapply an already updated mode');
+  assert.equal(captured.skips,1);assert.equal(classes.size,0);
+
+  toggleColorMode();const interrupted=transitions.at(-1),count=transitions.length;
+  assert.equal(toggleColorMode(),'dark','A second activation reverses even a deferred request');
+  assert.equal(transitions.length,count,'Rapid activation cancels the old snapshot instead of overlapping it');
+  assert.equal(interrupted.skips,1);assert.equal(root.dataset.colorMode,'dark');
+  interrupted.update();interrupted.finish();await drain();
+  assert.equal(root.dataset.colorMode,'dark','Delayed native updates cannot undo the latest activation');
+  assert.equal(classes.size,0);assert.equal(timers.size,0);
+
+  toggleColorMode();const failedReady=transitions.at(-1);failedReady.rejectReady(new Error('Capture failed'));await drain();
+  assert.equal(root.dataset.colorMode,'light');assert.equal(failedReady.skips,1);assert.equal(classes.size,0);assert.equal(timers.size,0);
+  toggleColorMode();const failedFinish=transitions.at(-1);failedFinish.rejectFinished(new Error('Interrupted'));await drain();
+  assert.equal(root.dataset.colorMode,'dark');assert.equal(failedFinish.skips,1);assert.equal(classes.size,0);assert.equal(timers.size,0);
+  const beforeHidden=transitions.length;globalThis.document.hidden=true;
+  assert.equal(toggleColorMode(),'light');assert.equal(transitions.length,beforeHidden,'Hidden tabs switch without waiting for a snapshot');
+}finally{Object.assign(globalThis,savedRevealGlobals);}
+console.log('✓ Nút theme tự phục hồi khi hiệu ứng kẹt/lỗi, nhận lần bấm đảo lại và bỏ qua callback cũ');

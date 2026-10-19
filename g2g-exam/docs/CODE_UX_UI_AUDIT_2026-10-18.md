@@ -860,3 +860,29 @@ iPhone, real screen-reader, browser200%-zoom and OS reduced-motion emulation are
 unverified; static reduced-motion fallback remains, with the owner's no-pause
 tradeoff. Do not claim full WCAG or Google-button branding compliance. VPS backup/
 deployed SHA unverified; public health/version only. Ordinary revert is rollback.
+
+## Theme toggle recovery: 19 October 2026 / 1.3.229
+
+Owner reports an unresponsive theme button. Public IAB baseline clicks/Enter
+worked, so the owner's exact device failure is not claimed reproduced. Source
+and fault injection identify a permanent latch: the old module releases its
+guard only when native `ViewTransition.finished` settles. A stalled transition
+therefore discards every subsequent activation indefinitely.
+
+The existing color-mode owner now bounds that lifecycle to 1600ms, cancels a
+stalled native transition, applies the requested preference once and ignores
+late callbacks. A second activation cancels the decoration and applies the
+opposite requested mode, without overlapping snapshots. Hidden tabs switch
+immediately; normal 800ms feathered wave, reduced-motion/unsupported fallbacks,
+palette, layout and auth are unchanged. The control is explicitly type=button.
+
+Fault regressions cover deferred update/finish, timeout before/after update,
+late callbacks during a newer reveal, reversal, ready/finished rejection and
+hidden fallback. Targeted theme/login tests and MEDIUM 14/14 passed on macOS
+Node26; read-only second-agent review found no blockers. Built isolated browser
+click + Enter switched both ways at320/390/768/1440, with matching labels/pressed
+state, cleared transition class, 44px hit targets and no overflow. Synthetic
+authenticated desktop/mobile headers also switched; preference survived reload.
+No real OAuth, physical iPhone, speaking, production data or infrastructure work.
+Protected CI gates the exact candidate; ordinary revert is rollback. VPS backup/
+deployed SHA remain unverified; public health/version verification follows merge.
