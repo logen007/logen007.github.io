@@ -56,18 +56,23 @@ export function bindGoogleSheetSettings(){
     el('[data-picker-disconnect]').disabled=!state.authorized;
     el('[data-google-disconnect]').disabled=!state.driveConnected;
     el('[data-google-connect]').textContent=state.driveConnected?'Kết nối lại Google Drive':'Kết nối Google Drive';
-    report(!state.driveConnected?'Chưa kết nối Google Drive.':state.authorized?'Đã cấp quyền Sheet ảnh · '+state.email:'Đã kết nối Google Drive · Chưa cấp quyền Sheet ảnh.');
+    report(!state.driveConnected?'Chưa kết nối Google Drive.':state.authorized?'Đã xác minh quyền Sheet ảnh · '+state.email:state.disabled?'Sheet ảnh đã được ngắt tại ứng dụng.':state.error||'Đã kết nối Google Drive · Chưa xác minh quyền Sheet ảnh.');
+    return state;
   };
   const act=(selector,fn)=>{const button=el(selector);button.onclick=async()=>{
     if(busy||button.disabled)return;busy=true;button.disabled=true;button.setAttribute('aria-busy','true');
-    try{await fn();button.disabled=false;await load();}catch(error){button.disabled=false;report(error.message||'Không hoàn tất được kết nối Google.');}
+    try{const outcome=await fn();button.disabled=false;const state=await load();if(outcome?.authorized&&state&&!state.authorized)throw Error(state.error||'Đã chọn Sheet nhưng chưa xác minh lại được quyền. Anh bấm Đồng bộ ảnh để kiểm chứng trực tiếp với Google.');if(outcome?.message)report(outcome.message);}catch(error){button.disabled=false;report(error.message||'Không hoàn tất được kết nối Google.');}
     finally{busy=false;button.removeAttribute('aria-busy');}
   };};
   act('[data-picker-save]',async()=>{await request('google-settings',{apiKey:el('[data-picker-key]').value.trim(),projectNumber:el('[data-picker-project]').value.trim()});el('[data-picker-key]').value='';});
   act('[data-picker-authorize]',async()=>{
     report('Đang mở cửa sổ chọn Sheet…');await loadGooglePicker();
     const config=await request('picker',{}),sheetId=await chooseImageSheet(config);
-    if(sheetId)await request('authorize',{sheetId});
+    if(!sheetId)return {message:'Đã đóng cửa sổ chọn file; chưa xác nhận cấp quyền mới. Nếu đã cấp trước đó, anh có thể bấm Đồng bộ ảnh để kiểm tra lại.'};
+    report('Đã chọn Exam img · Đang xác minh quyền với Google…');
+    const result=await request('authorize',{sheetId});
+    if(result.ok!==true)throw Error('Máy chủ chưa xác nhận cấp quyền. Anh bấm Đồng bộ ảnh để kiểm chứng lại.');
+    return {authorized:true,message:'Đã chọn và xác minh quyền chỉnh sửa Exam img. Anh có thể đồng bộ ảnh.'};
   });
   act('[data-picker-disconnect]',()=>request('disconnect',{}));
   act('[data-google-disconnect]',async()=>{
