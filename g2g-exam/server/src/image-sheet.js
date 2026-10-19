@@ -17,8 +17,18 @@ export function googleImageClient(token,fetcher=fetch){
   return async(service,method,route,body)=>{
     const base=service==='drive'?'https://www.googleapis.com/drive/v3':'https://sheets.googleapis.com/v4/spreadsheets';
     const response=await fetcher(base+route,{method,headers:{Authorization:`Bearer ${token}`,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(20000),redirect:'error'});
-    // Never log Google's body: it may echo URLs, credentials or document data.
-    if(!response.ok)throw appError(400,'Google chưa cho website đọc/ghi Sheet ảnh. Vào Cài đặt → Nâng cao để chọn lại Exam img; kiểm tra Google Sheets API đã bật trong dự án Google.');
+    // Classify allowlisted reason codes only. Never echo Google's message/body:
+    // it may contain credentials, user content or request details.
+    if(!response.ok){
+      let reasons=[];try{const payload=await response.json();reasons=[...(payload.error?.errors||[]),...(payload.error?.details||[])].map(item=>item.reason);}catch{}
+      const api=service==='drive'?'Google Drive API':'Google Sheets API';
+      const message=reasons.some(reason=>['SERVICE_DISABLED','accessNotConfigured'].includes(reason))?`${api} chưa bật trong dự án OAuth đang dùng. Anh bật API trong đúng dự án Google Cloud.`
+        :response.status===401?'Phiên Google đã hết hạn. Anh kết nối lại Google trong Cài đặt.'
+        :reasons.some(reason=>['ACCESS_TOKEN_SCOPE_INSUFFICIENT','insufficientPermissions'].includes(reason))?'Token Google chưa có đủ quyền. Anh kết nối lại Google Drive trong Cài đặt rồi chọn Exam img.'
+        :response.status===404?'Google chưa cho ứng dụng thấy Exam img. Kiểm tra Project number của Picker và OAuth Sao lưu thuộc cùng dự án.'
+        :`${api} chưa cho website đọc/ghi Exam img. Anh kiểm tra quyền chỉnh sửa và cấu hình Google trong Cài đặt.`;
+      throw appError(400,`${message} (${service==='drive'?'Drive':'Sheets'} HTTP ${Number(response.status)||0})`);
+    }
     return response.status===204?{}:response.json();
   };
 }
@@ -55,7 +65,7 @@ async function withLock(fn){
     client.release(broken);
   }
 }
-export const runImageSheetSync=createImageSheetRunner({withLock,access:getImageSheetGoogleAccess,readState:read,saveState:save,inventory:()=>loadExamImageInventory({withTx,origin:origin()}),makeGoogle:googleImageClient});
+export const runImageSheetSync=createImageSheetRunner({withLock,access:()=>getImageSheetGoogleAccess({sheetId:IMAGE_SHEET_ID,makeGoogle:googleImageClient}),readState:read,saveState:save,inventory:()=>loadExamImageInventory({withTx,origin:origin()}),makeGoogle:googleImageClient});
 
 export function registerImageSheetRoutes(app,authenticate){
   app.get('/api/exam-images/status',async(request,reply)=>{

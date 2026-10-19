@@ -20,6 +20,18 @@
 
 ### Cấp quyền trong Cài đặt (1.3.237)
 
+Từ 1.3.239, Google là nguồn xác minh quyền thực: GET trạng thái và POST đồng bộ
+kiểm tra đúng file, canEdit và Sheets API bằng token hiện tại, không chặn chỉ vì
+cờ `authorized` cũ chưa lưu sau Picker. Các bước kiểm tra này chỉ đọc Google,
+không tự ghi lại cấu hình/khóa. `Ngắt Sheet ảnh` lưu `enabled:false` và vẫn
+chặn đồng bộ; cấu hình cũ authorized:false + folderId có sẵn được giữ ngắt để
+không âm thầm nối lại. Chỉ thao tác cấp quyền rõ ràng mới bật lại kết nối ngắt.
+Picker hủy, chọn đúng, xác minh và hoàn tất có phản hồi riêng. Lỗi Google phân
+loại từ reason code cho phép (API chưa bật, thiếu scope, hết phiên, 404/403),
+không echo message/body có thể chứa nội dung hoặc token. Chưa xác minh lý do
+callback production không hoàn tất; không coi cải tiến này là bằng chứng Google
+đã cấp quyền. Chỉ xác nhận đồng bộ sau Sheet/status readback thật.
+
 Từ 1.3.238, Picker dùng `DocsView.setFileIds` với ID Exam img đã biết thay vì
 yêu cầu tìm theo tên trong danh sách chung. Không thêm scope hay vượt quyền:
 Google vẫn loại file nếu tài khoản không được truy cập. Chưa xác minh nguyên

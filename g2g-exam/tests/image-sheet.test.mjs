@@ -62,4 +62,8 @@ const api=googleImageClient('synthetic-token',async(url,options)=>{
   fetchCalls++;assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,'Bearer synthetic-token');assert.ok(url.startsWith('https://sheets.googleapis.com/'));return {ok:false,status:403,json:async()=>{throw Error('Never read provider errors');}};
 });
 await assert.rejects(api('sheets','GET','/id'),/Google Sheets API/);assert.equal(fetchCalls,1);
+const disabledApi=googleImageClient('synthetic',async()=>({ok:false,status:403,json:async()=>({error:{message:'private-credential-must-not-echo',details:[{reason:'SERVICE_DISABLED'}]}})}));
+await assert.rejects(disabledApi('sheets','GET','/id'),error=>/Google Sheets API chưa bật/.test(error.message)&&!/private-credential/.test(error.message));
+const hiddenFile=googleImageClient('synthetic',async()=>({ok:false,status:404,json:async()=>({error:{message:'private'}})}));
+await assert.rejects(hiddenFile('drive','GET','/files/id'),error=>/Project number/.test(error.message)&&/Drive HTTP 404/.test(error.message)&&!/private/.test(error.message));
 console.log('Direct image Sheet sync: append-only, restored/manual data preservation, history, literal values, interrupted create recovery, single flight, auth-first and redacted errors passed.');
