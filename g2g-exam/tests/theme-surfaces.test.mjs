@@ -3,6 +3,8 @@ import {readFileSync} from 'node:fs';
 import {colorContrast} from '../src/settings/palette.js';
 
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(css,/@media\(hover:hover\)\s*\{\s*\.color-mode-toggle\.icon-btn:hover:not\(:disabled\)\s*\{\s*background:var\(--brand-soft\); color:var\(--brand-text\); border-color:var\(--brand-border\);/,'Theme toggle hover differs from its muted default without sticky hover on touch');
+assert.match(css,/\.color-mode-toggle\.icon-btn:active:not\(:disabled\)\s*\{\s*background:var\(--brand-primary\); color:var\(--brand-on-primary\);/,'Theme toggle has a distinct pressed state');
 const enhancements=readFileSync(new URL('../enhancements.css',import.meta.url),'utf8');
 const light=css.match(/:root \{([^}]+)\}/)[1];
 const dark=css.match(/:root\[data-color-mode="dark"\] \{([^}]+)\}/)[1];
