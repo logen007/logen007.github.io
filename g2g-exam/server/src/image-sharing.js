@@ -53,6 +53,9 @@ export function createImageSharing({readState=read,mutateState=mutate,now=Date.n
 }
 export const imageSharing=createImageSharing();
 export function registerImageSharingRoutes(app,{authenticate,uploadDir,origin,sharing=imageSharing}){
+  // Do not let the SPA fallback return login HTML for the crawler policy.
+  // This does not grant file access: every image still requires its signature.
+  app.get('/robots.txt',async(_request,reply)=>reply.type('text/plain; charset=utf-8').header('Cache-Control','public, max-age=300').send('User-agent: *\nAllow: /shared-exam-images/\n'));
   app.get('/shared-exam-images/:name',async(request,reply)=>{
     reply.header('Cache-Control','private, no-store').header('Referrer-Policy','no-referrer').header('X-Robots-Tag','noindex, nofollow, noarchive').header('X-Content-Type-Options','nosniff');
     const {name}=request.params;

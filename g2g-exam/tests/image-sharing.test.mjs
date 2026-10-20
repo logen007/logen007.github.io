@@ -29,6 +29,7 @@ try{
   const bad=(await sharing.issue({urls:[origin+'/uploads/bad.jpg'],origin})).get(origin+'/uploads/bad.jpg');
   const app=Fastify();await app.register(staticFiles,{root,serve:false});
   registerImageSharingRoutes(app,{uploadDir:root,origin:()=>origin,sharing,authenticate:async req=>{if(req.headers.authorization!=='master')throw Object.assign(Error('Denied'),{statusCode:req.headers.authorization?403:401});}});
+  const robots=await app.inject('/robots.txt');assert.equal(robots.statusCode,200);assert.match(robots.headers['content-type'],/^text\/plain/);assert.equal(robots.body,'User-agent: *\nAllow: /shared-exam-images/\n');assert.doesNotMatch(robots.body,/<html|signature=/);
   const response=await app.inject(url.pathname+url.search);
   assert.equal(response.statusCode,200);assert.equal(response.headers['content-type'],'image/jpeg');assert.equal(response.rawPayload[0],255);
   assert.equal(response.headers['cache-control'],'private, no-store');assert.equal(response.headers['x-content-type-options'],'nosniff');assert.equal(response.headers['referrer-policy'],'no-referrer');assert.match(response.headers['x-robots-tag'],/noindex/);

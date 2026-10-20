@@ -24,6 +24,16 @@
 
 ### Link ảnh cho AI (1.3.242)
 
+Chẩn đoán 1.3.245: link thật đã trả 200/image/jpeg qua HTTP không session và
+các user-agent thử nghiệm; DNS hệ thống, Google và Cloudflare phân giải nhất
+quán. Công cụ web OpenAI vẫn báo inaccessible cho cả domain. Đây chưa phải
+bằng chứng OpenAI fetch thành công hoặc website chặn một IP cụ thể. Sửa lỗi
+`robots.txt` bị SPA fallback trả login HTML thành text/plain, khai báo allow
+đường dẫn chia sẻ; không đổi auth, chữ ký, noindex hay hạn link. Theo tài liệu
+OpenAI, robots rules có thể không áp dụng với ChatGPT-User do người dùng khởi
+xướng; vì vậy không coi bản sửa robots là chứng minh đã chữa lỗi DNS. Cần
+readback từ chính môi trường lỗi; không sửa pending/result hoặc tự bật lịch chạy.
+
 - Hai cột máy quản lý J/K trên tab Ảnh: `Link cho AI`, `Hết hạn link AI`.
   Đồng bộ kiểm tra header trước khi mở rộng 9 thành 11 cột; cột lạ ở J/K thì
   dừng, không ghi đè. Không thay A:I, link gốc, link phục chế, ghi chú hoặc mã nguồn.
