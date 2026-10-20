@@ -299,6 +299,10 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .header-utilities { display:flex; align-items:center; gap:8px; margin-left:auto; flex-shrink:0; }
 .header-utilities .header-account { margin-left:0; }
 .color-mode-toggle.icon-btn { width:44px; height:44px; flex:none; background:var(--surface-muted); color:var(--chu); }
+@media(hover:hover) {
+  .color-mode-toggle.icon-btn:hover:not(:disabled) { background:var(--brand-soft); color:var(--brand-text); border-color:var(--brand-border); }
+}
+.color-mode-toggle.icon-btn:active:not(:disabled) { background:var(--brand-primary); color:var(--brand-on-primary); border-color:var(--brand-primary); }
 @media(max-width:420px) { .thanh-dau .thuong-hieu { flex:1; min-width:0; } }
 .account-switch { position:relative; }.account-avatar { display:grid; place-items:center; width:40px; height:40px; padding:0; overflow:hidden; border:0; border-radius:50%; background:var(--brand-soft); color:var(--brand-text); font-size:13px; font-weight:600; cursor:pointer; }.account-avatar img { width:100%; height:100%; object-fit:cover; }.account-role-menu { position:absolute; z-index:30; top:calc(100% + 10px); right:0; display:grid; width:58px; padding:6px; border:1px solid var(--vien); border-radius:16px; background:var(--mat); box-shadow:var(--shadow); }.account-role-menu[hidden] { display:none; }.account-role-menu button { display:grid; place-items:center; min-height:42px; padding:8px; border:0; border-radius:10px; background:transparent; text-align:center; font-weight:650; cursor:pointer; }.account-role-menu button:hover { background:var(--surface-muted); }
 .account-role-trigger { display:inline-flex; align-items:center; justify-content:space-between; gap:8px; min-width:58px; min-height:44px; padding:0 12px; border:1px solid var(--vien); border-radius:var(--pill); background:var(--surface-muted); color:var(--chu); font:650 14px/1 var(--font-ui); cursor:pointer; white-space:nowrap; }
