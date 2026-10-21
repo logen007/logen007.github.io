@@ -49,11 +49,13 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   by ending the current effect and applying the latest preference immediately.
 
 - Owner update 21 October 2026: all application tables use a shared stronger
-  primary hierarchy: names/titles 16px/600 with `--chu` (white in dark, dark text
+  primary hierarchy: names/titles 14px/600 with `--chu` (white in dark, dark text
   in light). This replaces colored exam/graded table titles; preserve accessible
   state labels and semantic badges. Secondary text stays smaller, muted and
   regular, with a 2px gap. Roster name/email share one profile action with a 44px
   minimum touch target; long names/emails wrap without overflowing the cell.
+  Owner refinement (21 October): keep table names/titles at ordinary 14px size;
+  provider/level badges use a wrapping flex group with a 6px gap on both axes.
   Outside tables use success green, draft/pending neutral, failed/error red. Preserve a
   readable status description (accessible name or concise text); never rely on
   color alone.
@@ -108,8 +110,10 @@ touch targets; editable touch controls retain the shared 16px accessibility rule
 Use text-size-adjust:100% in this catalog only to stabilize automatic inflation,
 without disabling browser zoom. Keep long text wrap-safe and exam typography unchanged.
 The catalog filter row uses two equal 132px maximum desktop tracks and a
-right-aligned inline exam-code input. On mobile the dropdowns share two equal
-columns and the code input spans the next row.
+compact 120px inline exam-code input. On mobile the dropdowns share two equal
+columns beside a 110px code input on the same row; use compact dropdown padding.
+Class-code inputs stay 120px wide rather than growing with the Share action.
+Short placeholders are Mã lớp / Mã đề; full accessible input labels remain.
 Code controls (21 October) are editable inline, with a 44px submit arrow on the
 right, accessible labels/placeholders, native Enter submission and inline errors.
 Reuse existing server verification: class code proceeds to verified class choice;

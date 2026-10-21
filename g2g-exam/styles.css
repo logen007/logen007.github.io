@@ -359,6 +359,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .danh-sach-de { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr)); gap:16px; }.the-de { position:relative; display:flex; flex-direction:column; min-width:0; }
 .exam-card-details { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-bottom:16px; }
 .exam-card-tags { display:flex; gap:6px; align-items:center; flex-shrink:0; }
+.bang .exam-card-tags { flex-wrap:wrap; }
 .exam-card-tags .nhan { background:var(--badge-neutral-bg); color:var(--badge-neutral-text); }
 .exam-provider[data-provider="GOETHE"] { background:var(--badge-goethe-bg); color:var(--badge-goethe-text); }
 .exam-provider[data-provider="TELC"] { background:var(--badge-telc-bg); color:var(--badge-telc-text); }
@@ -438,10 +439,10 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .bang { width:100%; border-collapse:collapse; min-width:760px; }
 .bang th,.bang td { text-align:left; padding:18px 20px; border-bottom:1px solid var(--vien); font-size:14px; vertical-align:middle; }
 .bang th { font-size:12px; font-weight:500; color:var(--phu); background:var(--table-heading-bg); }.bang tbody tr:hover { background:var(--table-hover-bg); }.bang tr:last-child td { border-bottom:0; }
-.bang tbody td:first-child { font-size:16px; font-weight:600; color:var(--chu); }
+.bang tbody td:first-child { font-size:14px; font-weight:600; color:var(--chu); }
 .bang .phu { display:block; color:var(--phu); font-size:12px; font-weight:400; line-height:1.4; margin-top:2px; }.bang td b { font-weight:600; overflow-wrap:anywhere; }
 .hanh-dong-bang { display:flex; gap:6px; flex-wrap:wrap; min-width:max-content; }.bang td:last-child,.bang th:last-child { white-space:nowrap; }
-.table-link { padding:0; border:0; background:none; color:var(--chu); font:600 16px/1.4 var(--font-ui); text-align:left; cursor:pointer; }.table-link:hover { color:var(--brand-text); }.table-link:focus-visible { outline:1px solid var(--focus-ring); outline-offset:2px; border-radius:4px; }
+.table-link { padding:0; border:0; background:none; color:var(--chu); font:600 14px/1.4 var(--font-ui); text-align:left; cursor:pointer; }.table-link:hover { color:var(--brand-text); }.table-link:focus-visible { outline:1px solid var(--focus-ring); outline-offset:2px; border-radius:4px; }
 
 /* Shared forms and dialogs. Inner score/file controls are deliberately excluded. */
 .truong,.cai-dat input:not([type=checkbox]):not([type=radio]):not([type=file]),.cai-dat select,.cai-dat textarea,
@@ -1290,12 +1291,12 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .student-catalog .the-de h3{font-size:var(--student-exam-title-size);line-height:1.45;height:2.9em;letter-spacing:-.02em}
 .student-catalog .exam-card-status,.student-catalog .the-de .meta{font-size:13px;line-height:1.5}
 .student-catalog .exam-card-tags .nhan{font-size:12px;line-height:1.4}
-.student-catalog .exam-filter{display:grid;grid-template-columns:repeat(2,minmax(0,132px)) minmax(0,1fr);gap:12px;align-items:start}
+.student-catalog .exam-filter{display:grid;grid-template-columns:repeat(2,minmax(0,132px)) 120px;gap:12px;align-items:start}
 .student-catalog .exam-filter .filter-field{min-width:0;max-width:none}
 .student-catalog .exam-filter>.nut{justify-self:end;min-width:0;max-width:100%;white-space:normal;text-align:center}
-@media(max-width:600px){.student-catalog .learner-name h1{font-size:20px}.student-catalog .learner-stats{gap:16px 12px}.student-catalog .learner-stats strong{font-size:20px}.student-catalog .learner-stats .exam-latest-result{font-size:15px}.student-catalog .exam-card-status,.student-catalog .the-de .meta{font-size:12px}.student-catalog .exam-filter{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.student-catalog .exam-filter>.inline-code-entry{grid-column:1/-1;width:100%;max-width:none}}
-.inline-code-entry{display:grid;gap:4px;margin:0;min-width:0;width:220px;max-width:100%;justify-self:end}
-.inline-code-control{display:flex;align-items:center;min-width:0;min-height:44px;padding:0 4px 0 14px;border:1px solid var(--button-secondary-border);border-radius:var(--pill);background:var(--surface-muted);transition:border-color var(--motion-fast),background-color var(--motion-fast)}
+@media(max-width:600px){.student-catalog .learner-name h1{font-size:20px}.student-catalog .learner-stats{gap:16px 12px}.student-catalog .learner-stats strong{font-size:20px}.student-catalog .learner-stats .exam-latest-result{font-size:15px}.student-catalog .exam-card-status,.student-catalog .the-de .meta{font-size:12px}.student-catalog .exam-filter{grid-template-columns:repeat(2,minmax(0,1fr)) 110px;gap:6px}.student-catalog .exam-filter select{padding-left:6px;padding-right:16px;background-position:right 4px center;background-size:10px}.student-catalog .exam-filter>.inline-code-entry{width:110px}}
+.inline-code-entry{display:grid;gap:4px;margin:0;min-width:0;width:120px;max-width:100%;justify-self:end}
+.inline-code-control{display:flex;align-items:center;min-width:0;min-height:44px;padding:0 4px 0 8px;border:1px solid var(--button-secondary-border);border-radius:var(--pill);background:var(--surface-muted);transition:border-color var(--motion-fast),background-color var(--motion-fast)}
 .inline-code-control:has(input:focus-visible){outline:1px solid var(--focus-ring);outline-offset:2px}
 .inline-code-control input{display:block;min-width:0;width:100%;height:44px;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:var(--chu);font:400 16px/1.4 var(--font-ui)}
 .inline-code-control input:focus-visible{outline:none}
@@ -1303,7 +1304,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .inline-code-control .icon-btn{width:44px;height:44px;border:0;background:transparent;color:var(--chu)}
 .inline-code-control .icon-btn:hover:not(:disabled){background:var(--brand-soft);color:var(--brand-text)}
 .inline-code-entry small{font-size:12px;color:var(--do);overflow-wrap:anywhere}
-.learner-actions>.inline-code-entry{flex:1 1 180px;align-self:start}
+.learner-actions>.inline-code-entry{flex:0 0 120px;align-self:start}
 /* Result-only scale: do not change teacher grading or the exam workspace. */
 .result-page{--control-font-size:14px;font-size:14px;line-height:1.55;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .result-page .result-name h1{font-size:22px;line-height:1.3;overflow-wrap:anywhere}
@@ -1363,7 +1364,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .class-list-table .class-description { max-width:240px; }
 .roster-table td:first-child { min-width:160px;max-width:220px;overflow-wrap:anywhere; }
 .bang .roster-profile { display:grid; justify-items:start; align-content:center; gap:2px; min-height:44px; max-width:100%; padding:0; color:var(--chu); text-align:left; white-space:normal; }
-.roster-profile .roster-student-name,.bang [data-open-class],.bang .user-role-name b { font-size:16px; font-weight:600; line-height:1.4; color:var(--chu); }
+.roster-profile .roster-student-name,.bang [data-open-class],.bang .user-role-name b { font-size:14px; font-weight:600; line-height:1.4; color:var(--chu); }
 .bang .roster-profile .phu { margin:0; }
 .roster-profile:hover { text-decoration:none; }.roster-profile:hover .roster-student-name { text-decoration:underline; text-underline-offset:4px; }
 .roster-table th:not(:first-child),.roster-table td:not(:first-child) { width:1%;white-space:nowrap; }
