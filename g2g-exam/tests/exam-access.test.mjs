@@ -176,6 +176,11 @@ assert.equal(resultSummary(exam,questions,{...marks,oralScore:null}).complete,fa
 assert.ok(resultSummaryHtml(resultSummary(exam,questions,marks)).includes('135/225'));
 const data={exams:[exam],questions,attempts:[],users:[]};
 assert.ok(studentExamCardHtml({...exam,hidden:true,hasActiveCodes:true},[],data).includes('Nhập mã'));
+const newCard=studentExamCardHtml(exam,[],data);
+assert.match(newCard,/4 kỹ năng ·/);
+assert.match(newCard,/<div class="exam-card-footer"><span class="exam-card-status exam-new-label">Đề Mới<\/span>/);
+assert.doesNotMatch(newCard,/the-de-new|\d+ phần ·/);
+assert.doesNotMatch(studentExamCardHtml(exam,[{examId:exam.id,status:'in_progress'}],data),/Đề Mới/);
 assert.ok(studentExamCardHtml({...exam,hidden:true,hasActiveCodes:false},[],data).includes('Không có mã thi'));
 assert.ok(!studentExamCardHtml({...exam,hidden:true},[],data).includes('data-action="start"'));
 assert.ok(studentHomeHtml({data,user:{id:'s',name:'Student'},levelFilter:'B1.1'}).includes('Nhập mã đề'));

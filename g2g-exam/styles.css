@@ -379,6 +379,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .the-de .meta { font-size:13px; color:var(--phu); line-height:1.5; white-space:nowrap; }
 .exam-card-footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:12px; margin-top:auto; }
 .exam-card-status { flex:0 0 100%; min-width:0; font-size:13px; line-height:1.5; color:var(--phu); }
+.exam-card-status.exam-new-label { color:var(--brand-text); font-weight:600; }
 .exam-card-footer>.nut { min-height:44px; white-space:normal; text-align:center; }
 .exam-transition { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; overflow:hidden; isolation:isolate; opacity:1; transition:opacity 500ms ease; }
 .exam-transition::before { content:''; position:absolute; inset:0; background:var(--mat); animation:exam-white-fill 1100ms cubic-bezier(.45,0,.25,1) both; }

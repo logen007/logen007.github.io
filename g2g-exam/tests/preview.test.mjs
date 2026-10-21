@@ -265,19 +265,19 @@ try{
     assert.match(source,/async function moveAttemptSection\(delta\)[\s\S]*?if\(result\)\{[^}]*render\(\);scrollExamToTop\(\)/);
     assert.match(source,/function showPreviewSection\(index\)[\s\S]*?scrollExamToTop\(\)/);
   });
-  await test('Student exam card shows provider, exact duration and a new badge before part counts',()=>{
+  await test('Student exam card shows provider, exact duration, four skills and plain new status in footer',()=>{
     const exam={id:'goethe-a1',provider:'GOETHE',level:'A1',title:'Modelltest 1',sections:[{timeMinutes:20,questionIds:[]},{timeMinutes:15,questionIds:[]}]};
     const html=studentExamCardHtml(exam,[],{questions:[]});
     assert.match(html,/class="nhan exam-provider" data-provider="GOETHE">Goethe<\/span>/);
     assert.match(html,/class="nhan exam-level" data-level="A1">A1<\/span>/);
     assert.doesNotMatch(html,/>Goethe A1<\/span>/);
-    assert.match(html,/<div class="exam-card-details"><div class="exam-card-tags">[^]*?<\/div><span class="meta"><span class="the-de-new">Mới<\/span>2 phần · 0 câu<\/span><\/div>/);
+    assert.match(html,/<div class="exam-card-details"><div class="exam-card-tags">[^]*?<\/div><span class="meta">4 kỹ năng · 0 câu<\/span><\/div>/);
     const telc=studentExamCardHtml({...exam,provider:'TELC',level:'B2'},[],{questions:[]});
     assert.match(telc,/data-provider="TELC">Telc<\/span>/);
     assert.match(telc,/data-level="B2">B2<\/span>/);
     assert.match(html,/35 phút/);
     assert.doesNotMatch(html,/THI THỬ|khoảng/);
-    assert.match(html,/<span class="the-de-new">Mới<\/span>/);
+    assert.match(html,/<div class="exam-card-footer"><span class="exam-card-status exam-new-label">Đề Mới<\/span>/);
     assert.doesNotMatch(html,/Chưa từng thi|class="day"|class="chan"|class="hanh-dong"/);
     assert.match(html,/class="exam-card-footer"[^]*?data-action="start"[^]*?<span>Bắt đầu thi · 35 phút<\/span><svg/);
     assert.doesNotMatch(html,/<div class="meta">[^<]*phút/);

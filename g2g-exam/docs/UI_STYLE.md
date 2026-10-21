@@ -114,6 +114,9 @@ compact 120px inline exam-code input. On mobile the dropdowns share two equal
 columns beside a 110px code input on the same row; use compact dropdown padding.
 Class-code inputs stay 120px wide rather than growing with the Share action.
 Short placeholders are Mã lớp / Mã đề; full accessible input labels remain.
+Student catalog cards show “4 kỹ năng” instead of the part count. Never-attempted
+cards show plain “Đề Mới” text in the same footer status row as the latest result,
+not a badge beside provider/level. Preserve the existing new/attempted criterion.
 Code controls (21 October) are editable inline, with a 44px submit arrow on the
 right, accessible labels/placeholders, native Enter submission and inline errors.
 Reuse existing server verification: class code proceeds to verified class choice;
