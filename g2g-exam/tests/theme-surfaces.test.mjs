@@ -3,6 +3,10 @@ import {readFileSync} from 'node:fs';
 import {colorContrast} from '../src/settings/palette.js';
 
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(css,/\.table-link \{[^}]*font:600 16px\/1\.4 var\(--font-ui\)/,'Table primary links use the shared stronger hierarchy');
+assert.match(css,/\.bang \.roster-profile \{[^}]*gap:2px;[^}]*min-height:44px;[^}]*color:var\(--chu\)/,'Name/email stay compact without losing the touch target');
+assert.match(css,/\.bang \.roster-profile \.phu \{ margin:0; \}/);
+assert.doesNotMatch(css,/\.table-link\.(?:grade-attempt--graded|exam-title-status\.is-(?:published|draft))\s*\{/,'State-specific title colors must not override shared neutral/hover styling');
 assert.match(css,/@media\(hover:hover\)\s*\{\s*\.color-mode-toggle\.icon-btn:hover:not\(:disabled\)\s*\{\s*background:var\(--brand-soft\); color:var\(--brand-text\); border-color:var\(--brand-border\);/,'Theme toggle hover differs from its muted default without sticky hover on touch');
 assert.match(css,/\.color-mode-toggle\.icon-btn:active:not\(:disabled\)\s*\{\s*background:var\(--brand-primary\); color:var\(--brand-on-primary\);/,'Theme toggle has a distinct pressed state');
 const enhancements=readFileSync(new URL('../enhancements.css',import.meta.url),'utf8');
