@@ -26,6 +26,7 @@ assert.match(html,/class="confirmation-code"/);assert.doesNotMatch(html,/>Thông
 assert.doesNotMatch(classesHtml({data}),/data-action="edit-class"/);
 assert.match(classesHtml({data,classId:'c'}),/<h1>A1-01<\/h1>/);
 html=trashAdminHtml({data,retentionDays:17});
+assert.doesNotMatch(html,/<h3>Bài thi<\/h3>/,'Trash omits the redundant exam section heading');
 assert.match(html,/Dữ liệu xóa sau 17 ngày/);assert.doesNotMatch(html,/>Câu hỏi</);
 data.questions.push({id:'q',status:'trash',title:'Deleted'});
 assert.match(trashAdminHtml({data}),/>Câu hỏi</);
