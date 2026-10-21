@@ -101,9 +101,13 @@ outcomes use 15–16px and wrap. Catalog buttons use 14px labels with 44px minim
 touch targets; editable touch controls retain the shared 16px accessibility rule.
 Use text-size-adjust:100% in this catalog only to stabilize automatic inflation,
 without disabling browser zoom. Keep long text wrap-safe and exam typography unchanged.
-The catalog filter row uses compact 132px/116px maximum desktop tracks and
-shrinkable mobile tracks. “Nhập mã đề” always occupies the rightmost track and
-aligns to the right edge, not immediately after the dropdowns.
+The catalog filter row uses two equal 132px maximum desktop tracks and a
+right-aligned inline exam-code input. On mobile the dropdowns share two equal
+columns and the code input spans the next row.
+Code controls (21 October) are editable inline, with a 44px submit arrow on the
+right, accessible labels/placeholders, native Enter submission and inline errors.
+Reuse existing server verification: class code proceeds to verified class choice;
+exam code prefills the one-use warning/start confirmation, never auto-consumes.
 Detailed results use a result-only 14px body/control scale, 20–22px name,
 18px section headings, 16px part headings, and readable 15px answer text.
 Keep the total score 34px desktop / 28px mobile; secondary metrics 24px / 22px.

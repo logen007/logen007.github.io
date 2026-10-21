@@ -6,8 +6,8 @@ import {textHtml,esc} from '../ui/format.js';
 export const parseICTDateTime=value=>new Date(value+'+07:00');
 export const formatICTDateTime=value=>new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short',hour12:false}).format(new Date(value));
 
-export function openCodeEntry({repo,examId,onStarted}){
-  const modal=mountDialog('Nhập mã đề',`<form class="profile-form"><p>Mỗi mã dùng một lần. Bắt đầu rồi bỏ dở vẫn tính đã dùng.</p><label>Mã thi<input name="code" maxlength="5" minlength="5" pattern="[A-Za-z0-9]{5}" required autocomplete="off" autocapitalize="characters" placeholder="ABCDE"></label><p data-error role="alert"></p><button class="nut chinh" type="submit">Bắt đầu thi</button></form>`);
+export function openCodeEntry({repo,examId,onStarted,initialCode=''}){
+  const modal=mountDialog('Nhập mã đề',`<form class="profile-form"><p>Mỗi mã dùng một lần. Bắt đầu rồi bỏ dở vẫn tính đã dùng.</p><label>Mã thi<input name="code" value="${esc(initialCode)}" maxlength="5" minlength="5" pattern="[A-Za-z0-9]{5}" required autocomplete="off" autocapitalize="characters" placeholder="ABCDE"></label><p data-error role="alert"></p><button class="nut chinh" type="submit">Bắt đầu thi</button></form>`);
   modal.querySelector('form').onsubmit=async event=>{
     event.preventDefault();const form=event.currentTarget,button=form.querySelector('button');button.disabled=true;
     try{

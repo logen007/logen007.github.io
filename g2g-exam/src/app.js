@@ -61,6 +61,7 @@ import {topbarHtml} from './ui/layout.js';
 import {classesHtml,bindClasses,openStudentProfile} from './views/classes.js';
 import {bindDialogKeyboard} from './ui/dialog-keyboard.js';
 import {openClassEnrollment} from './views/class-enrollment.js';
+import {bindCodeEntry} from './ui/code-entry.js';
 import {openAccountProfile} from './views/account-profile.js';
 import {openExamAccess,openCodeEntry,showPromotion} from './views/exam-access.js';
 import {gradebookHtml,bindGradebook} from './views/gradebook.js';
@@ -833,6 +834,7 @@ function render(){
     bindGradebook(app,{data,repo,ui,onSaved:profileSaved,render});
   }
   app.querySelector('[data-action="class-enrollment"]')?.addEventListener('click',()=>openClassEnrollment({repo,user,onSaved:profileSaved}));
+  bindCodeEntry(app,'class',code=>openClassEnrollment({repo,user,onSaved:profileSaved,initialCode:code}));
   bindStudentName(app,{repo,user,onSaved:profileSaved});
   if(isStudent(user)&&!user.canTestRoles&&!user.profileCompletedAt&&!document.getElementById('modal'))openStudentProfile({data,repo,student:user,onSaved:profileSaved,required:true});
   else if(isStudent(user)&&['student-home','student-results','student-attempt-detail','submitted'].includes(ui.view)&&data.promotions?.length&&!document.getElementById('modal'))showPromotion({repo,promotion:data.promotions[0],onSaved:profileSaved});
@@ -1086,6 +1088,7 @@ function bindViewSpecific(){
     catch(error){if(error.name!=='AbortError')status.textContent='Chưa chia sẻ được. Vui lòng thử lại hoặc sao chép địa chỉ trang.';}
   });
   app.querySelectorAll('[data-action="enter-code"]').forEach(button=>button.onclick=()=>openCodeEntry({repo,examId:button.dataset.exam,onStarted:id=>beginAttempt(null,false,button,id)}));
+  bindCodeEntry(app,'exam',(code,button)=>openCodeEntry({repo,initialCode:code,onStarted:id=>beginAttempt(null,false,button,id)}));
   app.querySelectorAll('[data-exam-level-filter]').forEach(select=>select.onchange=()=>{ui.examLevelFilter=select.value;render();});
   app.querySelectorAll('[data-action="exam-access-settings"]').forEach(button=>button.onclick=async()=>{
     if(!await flushBuilderDraft())return;
