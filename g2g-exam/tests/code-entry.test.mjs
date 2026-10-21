@@ -3,6 +3,8 @@ import {readFileSync} from 'node:fs';
 import {codeEntryHtml,bindCodeEntry} from '../src/ui/code-entry.js';
 for(const kind of ['class','exam']){
   const html=codeEntryHtml(kind);
+  assert.ok(html.includes(`placeholder="${kind==='class'?'Mã lớp':'Mã đề'}"`));
+  assert.ok(html.includes(`aria-label="Nhập ${kind==='class'?'mã lớp':'mã đề'}"`));
   assert.match(html,/<form class="inline-code-entry"/);assert.match(html,/name="code" type="text" required minlength="5" maxlength="5"/);
   assert.match(html,/type="submit" aria-label="Xác nhận mã/);assert.match(html,/aria-describedby="inline-/);assert.match(html,/data-code-error role="alert" hidden/);
   let listener,calls=0,finish;

@@ -2,7 +2,7 @@ import {iconHtml} from './icons.js';
 
 export function codeEntryHtml(kind){
   const label=kind==='class'?'Nhập mã lớp':'Nhập mã đề',id=`inline-${kind}-code`;
-  return `<form class="inline-code-entry" data-code-entry="${kind}"><div class="inline-code-control"><input id="${id}" name="code" type="text" required minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="${label}" placeholder="${label}" aria-describedby="${id}-error"><button class="icon-btn" type="submit" aria-label="Xác nhận ${kind==='class'?'mã lớp':'mã đề'}">${iconHtml('arrowRight')}</button></div><small id="${id}-error" data-code-error role="alert" hidden></small></form>`;
+  return `<form class="inline-code-entry" data-code-entry="${kind}"><div class="inline-code-control"><input id="${id}" name="code" type="text" required minlength="5" maxlength="5" pattern="[A-Za-z0-9]{5}" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="${label}" placeholder="${kind==='class'?'Mã lớp':'Mã đề'}" aria-describedby="${id}-error"><button class="icon-btn" type="submit" aria-label="Xác nhận ${kind==='class'?'mã lớp':'mã đề'}">${iconHtml('arrowRight')}</button></div><small id="${id}-error" data-code-error role="alert" hidden></small></form>`;
 }
 export function bindCodeEntry(root,kind,onSubmit){
   const form=root.querySelector(`[data-code-entry="${kind}"]`);if(!form||form.dataset.bound)return;form.dataset.bound='true';

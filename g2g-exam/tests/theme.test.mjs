@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import './theme-surfaces.test.mjs';
+import './focus-style.test.mjs';
 import {settingsRouteTab,settingsHref} from '../src/settings/route.js';
 import {initialStateScope,viewStateScope} from '../src/repositories/state-scope.js';
 for(const tab of ['general','access','email']){

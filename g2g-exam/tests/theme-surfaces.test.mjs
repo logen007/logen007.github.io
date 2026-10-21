@@ -3,7 +3,12 @@ import {readFileSync} from 'node:fs';
 import {colorContrast} from '../src/settings/palette.js';
 
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
-assert.match(css,/\.table-link \{[^}]*font:600 16px\/1\.4 var\(--font-ui\)/,'Table primary links use the shared stronger hierarchy');
+assert.match(css,/\.bang tbody td:first-child \{ font-size:14px;/);
+assert.match(css,/\.bang \.exam-card-tags \{ flex-wrap:wrap; \}/);
+assert.match(css,/\.exam-card-tags \{ display:flex; gap:6px;/);
+const admin=readFileSync(new URL('../src/views/admin.js',import.meta.url),'utf8');
+assert.match(admin,/<td><div class="exam-card-tags"><span class="nhan exam-provider"/);
+assert.match(css,/\.table-link \{[^}]*font:600 14px\/1\.4 var\(--font-ui\)/,'Table primary links use the shared stronger hierarchy');
 assert.match(css,/\.bang \.roster-profile \{[^}]*gap:2px;[^}]*min-height:44px;[^}]*color:var\(--chu\)/,'Name/email stay compact without losing the touch target');
 assert.match(css,/\.bang \.roster-profile \.phu \{ margin:0; \}/);
 assert.doesNotMatch(css,/\.table-link\.(?:grade-attempt--graded|exam-title-status\.is-(?:published|draft))\s*\{/,'State-specific title colors must not override shared neutral/hover styling');
