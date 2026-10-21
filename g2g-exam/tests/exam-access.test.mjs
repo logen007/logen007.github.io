@@ -13,10 +13,11 @@ for(const level of STUDENT_LEVELS){
   assert.match(badge,/level-emblem-facet/);
 }
 assert.doesNotMatch(studentLevelEmblem('<script>'),/<script>/);
-import {examAccessFormHtml} from '../src/views/exam-access.js';
+import {examAccessFormHtml,openCodeEntry} from '../src/views/exam-access.js';
 import {classFormHtml,classesHtml} from '../src/views/classes.js';
 import {openStudentProfile} from '../src/views/classes.js';
 import {openClassEnrollment} from '../src/views/class-enrollment.js';
+import './code-entry.test.mjs';
 import {bindClassPickerClear} from '../src/ui/class-picker-clear.js';
 {
   const previous=globalThis.document,nodes=[],handlers={},events=[];
@@ -96,6 +97,11 @@ import {bindClassPickerClear} from '../src/ui/class-picker-clear.js';
     await active.form.pending;
     assert.equal(active.error.textContent,'Mã không hợp lệ');
     assert.equal(active.choice.hidden,true);
+    const beforeExamCode=calls.length;
+    openCodeEntry({repo,initialCode:'AB123',onStarted:()=>assert.fail('Opening confirmation must not start an exam')});
+    assert.match(active.html,/name="code" value="AB123"/);
+    assert.match(active.html,/Mỗi mã dùng một lần/);
+    assert.equal(calls.length,beforeExamCode,'Prefilling an exam code does not consume it');
     openStudentProfile({data,student:{...student,level:'B1'},repo,onSaved:async()=>{}});
     assert.ok(active.html.includes('Trình độ: B1'));
     assert.ok(active.html.includes('list="profile-class-options"'));
@@ -182,7 +188,8 @@ assert.match(catalogStyles,/--student-exam-title-size:18px/);
 assert.match(catalogStyles,/\.student-catalog \.the-de h3\{font-size:var\(--student-exam-title-size\)/);
 assert.match(catalogStyles,/\.result-page \.result-heading h2,\.student-result-info h2\{font-size:var\(--student-exam-title-size\)/);
 assert.match(catalogStyles,/\.student-catalog \.exam-filter>\.nut\{justify-self:end/);
-assert.match(catalogStyles,/grid-template-columns:minmax\(0,132px\) minmax\(0,116px\) minmax\(0,1fr\)/);
+assert.match(catalogStyles,/grid-template-columns:repeat\(2,minmax\(0,132px\)\) minmax\(0,1fr\)/);
+assert.match(catalogStyles,/\.student-catalog \.exam-filter\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 assert.match(catalogStyles,/\.result-page \.result-hero \.result-stats \.result-stat-total>strong\{font-size:28px/);
 console.log('Access UI, TELC gates, exact exam-level assignment passed.');
 const student={id:'s',name:'Lan <script>',level:'B1',classId:'c',picture:'https://example.com/avatar.jpg'};
@@ -238,10 +245,10 @@ assert.ok(roster.includes('bang classes-compact-table roster-table'));
 assert.ok(roster.includes('Class Student'));
 assert.ok(!roster.includes('lan@example.test'));
 assert.ok(roster.includes('data-class-back'));
-assert.ok(studentProfileCardHtml(rosterData,rosterData.users[0]).includes('data-action="class-enrollment"'));
-assert.ok(studentProfileCardHtml(rosterData,rosterData.users[0]).includes('>Nhập mã lớp</button>'));
+assert.ok(studentProfileCardHtml(rosterData,rosterData.users[0]).includes('data-code-entry="class"'));
+assert.ok(studentProfileCardHtml(rosterData,rosterData.users[0]).includes('placeholder="Nhập mã lớp"'));
 assert.ok(!studentProfileCardHtml(rosterData,rosterData.users[0]).includes('Nhập mã xác nhận'));
-assert.ok(!studentProfileCardHtml(rosterData,rosterData.users[1]).includes('data-action="class-enrollment"'));
+assert.ok(!studentProfileCardHtml(rosterData,rosterData.users[1]).includes('data-code-entry="class"'));
 // Inline editing is tested without opening a browser.
 const editButton={focus(){}},nameInput={value:'',focus(){},select(){},disabled:false};
 const nameForm={elements:{name:nameInput},hidden:true},nameTitle={hidden:false},nameStatus={textContent:''};

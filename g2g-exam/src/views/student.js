@@ -1,4 +1,5 @@
 import {sectionLabel} from '../ui/section-label.js';
+import {codeEntryHtml} from '../ui/code-entry.js';
 import {partUsesSplit} from '../ui/part-display.js';
 import {sectionInstructions,supportsInstructionPositions,instructionPosition,instructionSlotCount,instructionExampleCount} from '../domain/section-instructions.js';
 import {sectionQuestionOffset} from '../domain/question-numbering.js';
@@ -33,7 +34,7 @@ export function studentHomeHtml({data,user,filter='all',levelFilter=''}){
   const latestExam=latest&&byId(data.exams,latest.examId);
   const types=['GOETHE','TELC','FID'];
   const visible=exams.filter(ex=>(filter==='all'||ex.provider===filter)&&(!levelFilter||examLearningLevel(ex)===levelFilter));
-  return `<main class="khung student-catalog">${studentProfileCardHtml(data,user)}<div class="exam-filter" aria-label="Lọc đề thi"><label class="filter-field"><select aria-label="Loại đề" data-exam-provider-filter><option value="all">Loại đề</option>${types.map(type=>`<option value="${esc(type)}" ${filter===type?'selected':''}>${esc(type)}</option>`).join('')}</select></label><label class="filter-field"><select aria-label="Trình độ" data-exam-level-filter><option value="">Trình độ</option>${STUDENT_LEVELS.map(level=>`<option ${levelFilter===level?'selected':''}>${level}</option>`).join('')}</select></label><button class="nut" data-action="enter-code">Nhập mã đề</button></div><section class="danh-sach-de">${visible.map(ex=>studentExamCardHtml(ex,attempts,data)).join('')||'<p>Chưa có đề luyện thuộc loại này.</p>'}</section></main>`;
+  return `<main class="khung student-catalog">${studentProfileCardHtml(data,user)}<div class="exam-filter" aria-label="Lọc đề thi"><label class="filter-field"><select aria-label="Loại đề" data-exam-provider-filter><option value="all">Loại đề</option>${types.map(type=>`<option value="${esc(type)}" ${filter===type?'selected':''}>${esc(type)}</option>`).join('')}</select></label><label class="filter-field"><select aria-label="Trình độ" data-exam-level-filter><option value="">Trình độ</option>${STUDENT_LEVELS.map(level=>`<option ${levelFilter===level?'selected':''}>${level}</option>`).join('')}</select></label>${codeEntryHtml('exam')}</div><section class="danh-sach-de">${visible.map(ex=>studentExamCardHtml(ex,attempts,data)).join('')||'<p>Chưa có đề luyện thuộc loại này.</p>'}</section></main>`;
 }
 
 export function studentExamCardHtml(ex,attempts,data){
