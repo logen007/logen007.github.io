@@ -653,6 +653,42 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 .writing-add-blocks { display:flex; flex-wrap:wrap; gap:8px; padding-block:12px; }
 /* One native-select treatment across admin, builder, preview and exam screens. */
 select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearance:none; padding-right:42px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23585d65' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; background-size:16px; }
+/* Native customizable pickers: preserve select values, labels, validation and keyboard behavior.
+   Unsupported browsers keep the existing OS picker. Multiple/listbox controls stay native. */
+@supports (appearance:base-select) and selector(select::picker(select)) {
+  select:not([multiple]):not([size]),select:not([multiple]):not([size])::picker(select) { appearance:base-select; }
+  select:not([multiple]):not([size]) { background-image:none; padding-right:var(--control-pad-x); align-items:center; gap:8px; }
+  select:not([multiple]):not([size])::picker-icon { display:none; }
+  select:not([multiple]):not([size])::after { content:''; flex:none; width:7px; height:7px; margin-inline-start:auto; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:translateY(-2px) rotate(45deg); opacity:.65; }
+  select:not([multiple]):not([size]):open::after { transform:translateY(2px) rotate(225deg); }
+  select:not([multiple]):not([size])::picker(select) {
+    box-sizing:border-box; min-inline-size:anchor-size(width); max-inline-size:calc(100vw - 24px);
+    max-block-size:min(360px,60dvh); overflow:auto; overscroll-behavior:contain;
+    margin-block:6px; padding:6px; border:1px solid var(--vien); border-radius:16px;
+    background:var(--mat); color:var(--chu); font:400 14px/1.4 var(--font-ui);
+    box-shadow:0 10px 28px #0000001f; opacity:0; transform:translateY(-4px);
+    transition:opacity 140ms ease,transform 140ms ease,display 140ms allow-discrete,overlay 140ms allow-discrete;
+  }
+  select:not([multiple]):not([size])::picker(select):popover-open { opacity:1; transform:translateY(0); }
+  @starting-style { select:not([multiple]):not([size])::picker(select):popover-open { opacity:0; transform:translateY(-4px); } }
+  select:not([multiple]):not([size]) option { display:flex; align-items:center; gap:16px; min-block-size:40px; padding:10px 12px; border:0; border-radius:10px; background:transparent; color:var(--chu); font:inherit; white-space:normal; overflow-wrap:anywhere; }
+  select:not([multiple]):not([size]) option:checked { background:var(--surface-muted); font-weight:600; }
+  select:not([multiple]):not([size]) option:is(:hover,:focus-visible):not(:disabled) { background:var(--surface-muted); outline:1px solid var(--focus-ring); outline-offset:-1px; }
+  select:not([multiple]):not([size]) option::checkmark { content:'✓'; order:1; margin-inline-start:auto; color:var(--chu); font-size:14px; }
+  select:not([multiple]):not([size]) option:disabled { opacity:.5; cursor:not-allowed; }
+  select:not([multiple]):not([size]) optgroup { color:var(--phu); font:500 12px/1.4 var(--font-ui); }
+  @media(any-pointer:coarse) {
+    select:not([multiple]):not([size])::picker(select) { font-size:16px; }
+    select:not([multiple]):not([size]) option { min-block-size:44px; }
+  }
+  @media(prefers-reduced-motion:reduce) { select:not([multiple]):not([size])::picker(select) { transition:none; transform:none; } }
+  @media(forced-colors:active) {
+    select:not([multiple]):not([size])::picker(select) { background:Canvas; color:CanvasText; border-color:CanvasText; box-shadow:none; }
+    select:not([multiple]):not([size]) option { color:CanvasText; }
+    select:not([multiple]):not([size]) option:checked { background:Highlight; color:HighlightText; }
+    select:not([multiple]):not([size]) option::checkmark { color:currentColor; }
+  }
+}
 /* Shared interactive states. Component layouts may choose 44px or the compact 40px builder density. */
 :where(.truong,.cai-dat input:not([type=checkbox]):not([type=radio]):not([type=file]),.cai-dat select,.cai-dat textarea,.exam-setup-grid input:not([type=checkbox]):not([type=radio]),.exam-setup-grid select,.question-profile-field select,.question-profile-field input,.dap-an,.viet,.nhan-xet,.tieu-chi input,.goethe-instruction textarea,.goethe-question-row>textarea,.goethe-free-response>textarea,.writing-form-row>input,.writing-form-row>select,.goethe-choices label>input:last-child,.writing-setup-field input,.writing-setup-field textarea,.writing-option-setup input:not([type=radio])) { transition:border-color var(--motion-fast),background-color var(--motion-fast),box-shadow var(--motion-fast); }
 :where(.truong,.cai-dat input:not([type=checkbox]):not([type=radio]):not([type=file]),.cai-dat select,.cai-dat textarea,.exam-setup-grid input:not([type=checkbox]):not([type=radio]),.exam-setup-grid select,.question-profile-field select,.question-profile-field input,.dap-an,.viet,.nhan-xet,.tieu-chi input,.goethe-instruction textarea,.goethe-question-row>textarea,.goethe-free-response>textarea,.writing-form-row>input,.writing-form-row>select,.goethe-choices label>input:last-child,.writing-setup-field input,.writing-setup-field textarea,.writing-option-setup input:not([type=radio])):hover:not(:disabled) { border-color:var(--control-border-hover); }
@@ -1297,9 +1333,9 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .student-catalog .exam-filter>.nut{justify-self:end;min-width:0;max-width:100%;white-space:normal;text-align:center}
 @media(max-width:600px){.student-catalog .learner-name h1{font-size:20px}.student-catalog .learner-stats{gap:16px 12px}.student-catalog .learner-stats strong{font-size:20px}.student-catalog .learner-stats .exam-latest-result{font-size:15px}.student-catalog .exam-card-status,.student-catalog .the-de .meta{font-size:12px}.student-catalog .exam-filter{grid-template-columns:repeat(2,minmax(0,1fr)) 110px;gap:6px}.student-catalog .exam-filter select{padding-left:6px;padding-right:16px;background-position:right 4px center;background-size:10px}.student-catalog .exam-filter>.inline-code-entry{width:110px}}
 .inline-code-entry{display:grid;gap:4px;margin:0;min-width:0;width:120px;max-width:100%;justify-self:end}
-.inline-code-control{display:flex;align-items:center;min-width:0;min-height:44px;padding:0 4px 0 8px;border:1px solid var(--button-secondary-border);border-radius:var(--pill);background:var(--surface-muted);transition:border-color var(--motion-fast),background-color var(--motion-fast)}
+.inline-code-control{display:flex;align-items:center;min-width:0;min-height:44px;padding:0 4px 0 8px;border:1px solid var(--button-secondary-border);border-radius:var(--pill);background:var(--mat);transition:border-color var(--motion-fast),background-color var(--motion-fast)}
 .inline-code-control:has(input:focus-visible){outline:1px solid var(--focus-ring);outline-offset:2px}
-.inline-code-control input{display:block;min-width:0;width:100%;height:44px;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:var(--chu);font:400 16px/1.4 var(--font-ui)}
+.inline-code-control input{display:block;min-width:0;width:100%;height:44px;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:var(--chu);font:400 var(--control-font-size)/var(--control-line-height) var(--font-ui)}
 .inline-code-control input:focus-visible{outline:none}
 .inline-code-control input::placeholder{color:var(--phu);opacity:1}
 .inline-code-control .icon-btn{width:44px;height:44px;border:0;background:transparent;color:var(--chu)}

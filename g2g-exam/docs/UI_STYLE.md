@@ -95,6 +95,12 @@ Filter dropdowns, profile forms and exam access controls use the shared form rul
 All dropdown triggers are pill-shaped (`--pill`) across the site, including
 filters, settings, preview part selection and compact letter controls. Text inputs
 and textareas keep their existing radii; native multiple-selection lists are not dropdowns.
+Single dropdown menus progressively use native customizable select rendering:
+rounded 16px surface, 6px inner padding, 40px rows (44px touch), neutral selected
+row with a checkmark, shared light/dark colors and short reduced-motion-safe entry.
+Keep native labels, values, validation and keyboard behavior. No JS clone or
+replacement control; unsupported browsers retain the OS picker. Listboxes/multiple
+selects are excluded. Implementation follows MDN's Customizable select elements.
 Filter dropdowns use the field name (e.g. Loại đề, Trình độ, Mã lớp) as the
 unfiltered/default option instead of “Tất cả”, with no visible label above.
 Keep an aria-label even after a value is selected. Preserve the original filter
@@ -114,6 +120,9 @@ compact 120px inline exam-code input. On mobile the dropdowns share two equal
 columns beside a 110px code input on the same row; use compact dropdown padding.
 Class-code inputs stay 120px wide rather than growing with the Share action.
 Short placeholders are Mã lớp / Mã đề; full accessible input labels remain.
+Inline code controls use the same white/light or charcoal/dark `--mat` surface
+and shared form typography as dropdowns, not their own larger font. Touch fields
+retain the shared 16px floor to avoid automatic input zoom.
 Student catalog cards show “4 kỹ năng” instead of the part count. Never-attempted
 cards show plain “Đề Mới” text in the same footer status row as the latest result,
 not a badge beside provider/level. Preserve the existing new/attempted criterion.
