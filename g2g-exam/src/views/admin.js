@@ -25,7 +25,7 @@ export function teachersAdminHtml({data,user}){
 
 export function trashAdminHtml({data,retentionDays=30}){
   const exams=data.exams.filter(x=>x.status==='trash'),qs=data.questions.filter(x=>x.status==='trash');
-  return `<div class="tieu-de-trang exam-list-heading"><div><h1>Thùng rác</h1></div><button class="nut nguy" data-action="empty-trash" ${!exams.length&&!qs.length?'disabled':''}>Dọn sạch</button></div><p class="phu-de">Dữ liệu xóa sau ${esc(retentionDays)} ngày. Xóa đề sẽ xóa cả lịch sử bài làm và bảng điểm của đề. Câu hỏi, media còn được sử dụng sẽ được giữ lại.</p><h3>Bài thi</h3>${trashTableHtml(exams,'exam')}${qs.length?`<h3 style="margin-top:20px">Câu hỏi</h3>${trashTableHtml(qs,'question')}`:''}`;
+  return `<div class="tieu-de-trang exam-list-heading"><div><h1>Thùng rác</h1></div><button class="nut nguy" data-action="empty-trash" ${!exams.length&&!qs.length?'disabled':''}>Dọn sạch</button></div><p class="phu-de">Dữ liệu xóa sau ${esc(retentionDays)} ngày. Xóa đề sẽ xóa cả lịch sử bài làm và bảng điểm của đề. Câu hỏi, media còn được sử dụng sẽ được giữ lại.</p>${trashTableHtml(exams,'exam')}${qs.length?`<h3 style="margin-top:20px">Câu hỏi</h3>${trashTableHtml(qs,'question')}`:''}`;
 }
 
 export function trashTableHtml(items,type){
