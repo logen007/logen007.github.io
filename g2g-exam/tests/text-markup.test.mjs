@@ -222,7 +222,7 @@ assert.match(css,/@media\(pointer:coarse\) \{ \.inline-gap \{ --gap-control-heig
 assert.match(css,/\.letter-picker-option \{[^}]*white-space:normal/);
 assert.doesNotMatch(css,/answer-option-body::before/);
 assert.doesNotMatch(css,/grid-template-columns:18px minmax\(0,1fr\)/);
-assert.match(css,/input:focus-visible\+\.answer-option-body \{ outline:2px/);
+assert.match(css,/input:focus-visible\+\.answer-option-body \{ outline:1px solid var\(--focus-ring\)/);
 assert.match(css,/input:checked\+\.answer-option-body \{ border-color:var\(--brand-primary\); background:/);
 assert.match(css,/\.reading-block \{ display:flow-root;/);
 assert.match(css,/\.reading-block > img \{ float:left;/);

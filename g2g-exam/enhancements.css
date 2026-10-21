@@ -256,7 +256,7 @@
 .backup-toggle input::before{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--phu)}
 .backup-toggle input:checked{background:var(--brand-primary);border-color:var(--brand-primary)}
 .backup-toggle input:checked::before{left:19px;background:var(--brand-on-primary)}
-.backup-toggle input:focus-visible{outline:2px solid var(--chu);outline-offset:3px}
+.backup-toggle input:focus-visible{outline:1px solid var(--focus-ring);outline-offset:2px}
 .backup-form-grid{display:grid;gap:16px}
 .backup-setting-row{display:grid;grid-template-columns:minmax(0,1fr) 120px;align-items:center;gap:16px;min-width:0;font-size:14px}
 .backup-setting-row>span{display:grid;gap:4px}
