@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(css,/@supports \(appearance:base-select\) and selector\(select::picker\(select\)\)/);
+assert.match(css,/select:not\(\[multiple\]\):not\(\[size\]\),select:not\(\[multiple\]\):not\(\[size\]\)::picker\(select\) \{ appearance:base-select; \}/);
+assert.match(css,/max-inline-size:calc\(100vw - 24px\)/);
+assert.match(css,/max-block-size:min\(360px,60dvh\); overflow:auto/);
+assert.match(css,/option:checked \{ background:var\(--surface-muted\); font-weight:600; \}/);
+assert.match(css,/option::checkmark \{ content:'✓'; order:1/);
+assert.match(css,/option:disabled \{ opacity:.5; cursor:not-allowed; \}/);
+assert.match(css,/@media\(prefers-reduced-motion:reduce\) \{ select[^\n]*transition:none; transform:none/);
+assert.match(css,/@media\(forced-colors:active\) \{\s*select[^\n]*background:Canvas; color:CanvasText/);
+assert.match(css,/option \{ min-block-size:44px; \}/);
+assert.match(css,/\.inline-code-control\{[^}]*background:var\(--mat\)/);
+assert.match(css,/\.inline-code-control input\{[^}]*font:400 var\(--control-font-size\)\/var\(--control-line-height\)/);
+console.log('Shared select picker and inline-code appearance source regressions passed; no browser rendering claimed.');
