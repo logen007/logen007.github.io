@@ -37,8 +37,8 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   teal, amber and coral fills with clear light text, following the staking reference
   approved 17 October; avoid gray-tinted muted fills. Charts use vivid saturated
   accents from the same hue families. Keep neutral statuses neutral.
-  Status-colored titles share dedicated tokens: vivid coral for failed and fresh
-  green for passed/published in dark mode; pending titles keep the normal text.
+  Outside tables, status-colored titles share dedicated tokens: vivid coral for
+  failed and fresh green for passed/published in dark mode; pending titles keep normal text.
   Exam entry/exit coverage uses the current surface color. The theme button has no tooltip, keeping
   its accessible label. Light expands from the button; switching to dark contracts
   the light snapshot back into that button. Use an 800ms radial mask with a broad
@@ -48,8 +48,13 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   after a bounded deadline, ignore stale callbacks, and honor a second activation
   by ending the current effect and applying the latest preference immediately.
 
-- Exam-list published titles use success green with no tinted row background (15 October 2026).
-  Elsewhere use success green, draft/pending neutral, failed/error red. Preserve a
+- Owner update 21 October 2026: all application tables use a shared stronger
+  primary hierarchy: names/titles 16px/600 with `--chu` (white in dark, dark text
+  in light). This replaces colored exam/graded table titles; preserve accessible
+  state labels and semantic badges. Secondary text stays smaller, muted and
+  regular, with a 2px gap. Roster name/email share one profile action with a 44px
+  minimum touch target; long names/emails wrap without overflowing the cell.
+  Outside tables use success green, draft/pending neutral, failed/error red. Preserve a
   readable status description (accessible name or concise text); never rely on
   color alone.
 - Table column headings (e.g. Người tạo, Lượt thi) stay on one line

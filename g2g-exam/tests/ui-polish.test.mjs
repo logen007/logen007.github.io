@@ -21,7 +21,7 @@ assert.match(studentResultsHtml({data,user}),/>Mới</);
 attempt.status='ready';
 assert.doesNotMatch(studentResultsHtml({data,user}),/>Mới</);
 html=studentRosterHtml(data,[user],{external:true});
-assert.match(html,/data-action="student-profile"[^>]+>Student<\/button>/);
+assert.match(html,/class="text-link roster-profile"[^>]*data-action="student-profile"[^>]+><span class="roster-student-name">Student<\/span><span class="phu">s@test.invalid<\/span><\/button>/);
 assert.match(html,/class="confirmation-code"/);assert.doesNotMatch(html,/>Thông tin</);
 assert.doesNotMatch(classesHtml({data}),/data-action="edit-class"/);
 assert.match(classesHtml({data,classId:'c'}),/<h1>A1-01<\/h1>/);
