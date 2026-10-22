@@ -53,14 +53,27 @@ export {studentResultsHtml} from './student-results.js';
 
 export {attemptResultHtml as studentAttemptDetailHtml} from './attempt-result.js';
 
-export function examHtml({attempt,exam,sectionIndex,questions,allQuestions=[],online,preview=false,previewSummary=null}){
+export function liveExamHtml({attempt,exam,allQuestions=[],online}){
+  const questionsById=new Map(allQuestions.map(question=>[question.id,question]));
+  const questions=(exam.sections||[]).flatMap(section=>(section.questionIds||[]).map(id=>questionsById.get(id)).filter(Boolean));
+  const required=questions.filter(question=>!isPrefilledQuestion(question));
+  const answered=required.filter(question=>answerPresent(attempt.answers?.[question.id],question)).length;
+  const sidebar=required.map((question,index)=>`<button type="button" class="exam-question-link ${answerPresent(attempt.answers?.[question.id],question)?'is-answered':''}" data-question-jump="${esc(question.id)}" aria-label="Câu ${index+1}${answerPresent(attempt.answers?.[question.id],question)?', đã làm':''}">${index+1}</button>`).join('');
+  const sections=(exam.sections||[]).map((section,sectionIndex)=>examSectionHtml({attempt,exam,sectionIndex,questions:(section.questionIds||[]).map(id=>questionsById.get(id)).filter(Boolean),allQuestions,online,sectionOnly:true})).join('');
+  const header=`<header class="thanh-thi"><span class="exam-mobile-brand"><img src="/brand/favicon" alt=""><strong>Deutschprüfung</strong></span><div class="thong-tin-thi"><span>Prüfungszeit: <strong id="examMainTime">--:--</strong></span></div></header>`;
+  const navigation=`<aside class="exam-question-sidebar" data-exam-question-sidebar><button type="button" class="exam-question-sidebar-toggle" data-exam-question-sidebar-toggle aria-expanded="false" aria-controls="examQuestionSidebar"><span aria-hidden="true">☰</span><span class="sr-only">Mở danh sách câu hỏi</span></button><div class="exam-question-sidebar-panel" id="examQuestionSidebar"><p>Câu hỏi</p><div class="exam-question-legend"><span>Chưa làm</span><span>Đang xem</span><span>Đã làm</span></div><div class="exam-question-links">${sidebar}</div></div></aside>`;
+  const offline=!online?'<div class="offline" role="status">Sie sind offline. Lassen Sie diese Seite geöffnet; Ihre Antworten werden weiterhin auf diesem Gerät gespeichert.</div>':'';
+  return `<div class="thi thi--live">${header}${offline}${navigation}<main class="noi-dung-thi"><div class="exam-free-navigation"><span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${required.length}</span><button class="nut" data-action="submit-exam">Prüfung abgeben</button></div><div class="exam-paper exam-paper--live">${sections}</div></main></div>`;
+}
+
+function examSectionHtml({attempt,exam,sectionIndex,questions,allQuestions=[],online,preview=false,previewSummary=null,sectionOnly=false}){
   const sec=exam.sections[sectionIndex];
   const configuredPart=getExamSpec(exam.provider,exam.level)?.skills
     .find(skill=>skill.key===sec.skillKey||skill.label===sec.skill)?.parts.find(part=>part.name===sec.name);
   const compactGaps=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&sec.name==='Đọc 4';
   const compactHeadings=String(exam.provider).toUpperCase()==='TELC'&&exam.level==='B1'&&sec.questionProfile?.layout==='heading-match';
-  const splitWriting=partUsesSplit(exam,sec)&&(sec.skillKey==='writing'||sec.skill==='Viết');
-  const splitLayout=sec.displaySplit??(splitWriting||(!compactHeadings&&!compactGaps&&(configuredPart?.questionProfile?.splitLayout??sec.questionProfile?.splitLayout)));
+  const splitWriting=!sectionOnly&&partUsesSplit(exam,sec)&&(sec.skillKey==='writing'||sec.skill==='Viết');
+  const splitLayout=sectionOnly?false:sec.displaySplit??(splitWriting||(!compactHeadings&&!compactGaps&&(configuredPart?.questionProfile?.splitLayout??sec.questionProfile?.splitLayout)));
   const orderedQuestions=questions.map((q,originalIndex)=>({q,originalIndex})).sort((a,b)=>Number(Boolean(isPrefilledQuestion(b.q)))-Number(Boolean(isPrefilledQuestion(a.q))));
   const requiredQuestions=questions.filter(q=>!isPrefilledQuestion(q));
   const answered=requiredQuestions.filter(q=>answerPresent(attempt.answers?.[q.id],q)).length;
@@ -78,7 +91,7 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additiona
   const stimulusGroups=[{left:sectionInstruction,right:sectionAudio}];
   const writingPrompts=[sectionInstruction];
   const groupStimuli=splitLayout&&!splitWriting&&!['heading-match','inline-gaps','letter-select'].includes(sec.questionProfile?.layout)&&!sec.questionProfile?.uniqueLetters&&(sec.displaySplit===true||questions.some(q=>q.instructionBlocks?.length));
-  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber,{separateOptions:splitHeadings||compactHeadings,afterQuestion:afterPrompt}):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber,{compact:compactGaps,splitLayout:typeof sec.displaySplit==='boolean'?false:(configuredPart?.questionProfile?.gapSplitLayout??sec.questionProfile?.gapSplitLayout)})+afterPrompt(1):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber,{afterQuestion:afterPrompt})+(sec.questionProfile?.layout==='letter-table'?afterPrompt(1):''):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
+  const questionList=sec.questionProfile?.layout==='heading-match'?headingMatchHtml(sec,questions,attempt.answers||{},questionNumber,{separateOptions:splitHeadings||compactHeadings,afterQuestion:afterPrompt}):sec.questionProfile?.layout==='inline-gaps'?inlineGapsHtml(sec,questions,attempt.answers||{},questionNumber,{compact:compactGaps,splitLayout:sectionOnly?false:(typeof sec.displaySplit==='boolean'?false:(configuredPart?.questionProfile?.gapSplitLayout??sec.questionProfile?.gapSplitLayout))})+afterPrompt(1):(sec.questionProfile?.uniqueLetters||sec.questionProfile?.layout==='letter-select')?letterAnswersHtml(sec,orderedQuestions.map(item=>item.q),attempt.answers||{},questionNumber,{afterQuestion:afterPrompt})+(sec.questionProfile?.layout==='letter-table'?afterPrompt(1):''):`<section class="to-thi" aria-label="Aufgaben">${orderedQuestions.map(({q,originalIndex},displayIndex)=>{
     const example=isPrefilledQuestion(q),scoredIndex=displayIndex-exampleCount;
     const hasStimulus=Array.isArray(q.instructionBlocks)&&q.instructionBlocks.length>0;
     const paired=sec.questionProfile?.pairedQuestions;
@@ -95,16 +108,24 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additiona
     if(groupStimuli)stimulusGroups.at(-1).right+=rendered;
     return rendered;
   }).join('')||'<div class="rong">Dieser Teil enthält noch keine Aufgaben.</div>'}</section>`;
-  const context=preview
+  const context=sectionOnly
+    ?`<section class="exam-live-section" data-exam-section="${esc(sec.id)}"><div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${textHtml(exam.title)}</div><h2>${esc(germanSectionName(sectionLabel(exam,sec)))}</h2></div></div>`
+    :preview
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sectionLabel(exam,sec)))}</h1></div></div>`
     :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${textHtml(exam.title)}</div><h1>${esc(germanSectionName(sectionLabel(exam,sec)))}</h1></div></div>`;
   const paperContent=splitWriting?`<div class="exam-reading-split exam-writing-split"><div class="exam-writing-prompt">${writingPrompts.join('')}</div><div class="exam-writing-response">${sectionAudio}${questionList}</div></div>`:groupStimuli?`<div class="exam-reading-split exam-stimulus-group" data-responsive-stimuli><div>${stimulusGroups.map((group,i)=>`<div data-stimulus-order="${i*2}">${group.left}</div>`).join('')}</div><section class="to-thi" aria-label="Aufgaben">${stimulusGroups.map((group,i)=>`<div data-stimulus-order="${i*2+1}">${group.right}</div>`).join('')}</section></div>`:splitLayout?`<div class="exam-reading-split">${sectionInstruction}<div>${sectionAudio}${questionList}</div></div>`:sectionInstruction+sectionAudio+questionList;
+  const sectionContent=sectionOnly?`${context}<div class="exam-paper-section">${paperContent}</div></section>`:null;
+  if(sectionContent)return sectionContent;
 const body=`<main class="noi-dung-thi">${context}${preview?'':`<div class="exam-free-navigation"><span>Prüfungszeit: <strong id="examMainTime">--:--</strong></span><button class="nut" data-action="submit-exam">Prüfung abgeben</button></div>`}<div class="exam-paper">${paperContent}</div><nav class="dieu-huong-thi" aria-label="Prüfungsnavigation"><button class="nut section-arrow" aria-label="Vorheriger Teil" title="Vorheriger Teil" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${iconHtml('arrowLeft')}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh ${sectionIndex<exam.sections.length-1?'section-arrow':''}" aria-label="${nextLabel}" title="${nextLabel}" data-action="${nextAction}">${sectionIndex<exam.sections.length-1?iconHtml('arrowRight'):nextLabel}</button></nav></main>`;
   const header=preview
     ?`<header class="thanh-thi thanh-thi--preview"><div class="preview-header-row"><button class="text-link navigation-arrow" aria-label="Zurück" title="Zurück" data-action="close-preview">${iconHtml('arrowLeft')}</button><strong class="preview-exam-title" title="${esc(exam.title)}">${textHtml(exam.title)}</strong>${previewOutlineHtml(previewSummary,sectionIndex,exam)}</div></header>`
     :`<header class="thanh-thi"><span class="exam-mobile-brand"><img src="/brand/favicon" alt=""><strong>Deutschprüfung</strong></span><div class="thong-tin-thi"><span>Teil ${sectionIndex+1}/${exam.sections.length}</span></div></header>`;
   const offline=!online?`<div class="offline" role="status">${preview?'Sie sind offline. Vorschauantworten werden nur in dieser Sitzung gespeichert; Audio und Bilder sind möglicherweise nicht verfügbar.':'Sie sind offline. Lassen Sie diese Seite geöffnet; Ihre Antworten werden weiterhin auf diesem Gerät gespeichert.'}</div>`:'';
   return `<div class="thi ${preview?'thi--preview':''}">${header}${offline}${preview?`<div class="preview-shell">${body}</div>`:body}</div>`;
+}
+
+export function examHtml(args){
+  return examSectionHtml(args);
 }
 
 function previewOutlineHtml(summary,sectionIndex,exam){
