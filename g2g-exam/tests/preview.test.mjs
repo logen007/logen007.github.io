@@ -30,6 +30,7 @@ globalThis.sessionStorage={getItem:()=>null};
   assert.match(html,/exam-question-link is-answered/);
   assert.match(html,/aria-label="Mở danh sách câu hỏi"/);
   assert.doesNotMatch(html,/☰/);
+  assert.ok(html.indexOf('exam-question-sidebar-panel')<html.indexOf('exam-question-sidebar-toggle'));
   assert.doesNotMatch(html,/data-action="next-section"|data-action="prev-section"|exam-reading-split/);
 }
 const longChoices=['geben die Deutschen mehr Geld für Bio-Produkte aus.','gibt es viele Probleme mit schlechten Lebensmitteln.','wester mag südamerikanische Tänze und möchte gern'];
