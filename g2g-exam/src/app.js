@@ -434,12 +434,16 @@ function guardExamAudio(){
 function bindExamQuestionSidebar(){
   const sidebar=app.querySelector('[data-exam-question-sidebar]');if(!sidebar)return;
   const toggle=sidebar.querySelector('[data-exam-question-sidebar-toggle]');
-  const setOpen=open=>{sidebar.classList.toggle('is-open',open);toggle?.setAttribute('aria-expanded',String(open));toggle?.setAttribute('aria-label',open?'Đóng danh sách câu hỏi':'Mở danh sách câu hỏi');};
+  const currentNumber=sidebar.querySelector('[data-exam-question-sidebar-current]');let currentIndex=0;
+  const setOpen=open=>{sidebar.classList.toggle('is-open',open);toggle?.setAttribute('aria-expanded',String(open));toggle?.setAttribute('aria-label',`${open?'Đóng':'Mở'} danh sách câu hỏi, câu ${currentIndex+1}`);};
   toggle?.addEventListener('click',()=>setOpen(!sidebar.classList.contains('is-open')));
   const cards=[...app.querySelectorAll('.cau-thi[data-q]')].filter(card=>!card.classList.contains('is-example'));
   const links=[...sidebar.querySelectorAll('[data-question-jump]')];
   const setCurrent=card=>{
     const index=cards.indexOf(card);
+    if(index<0)return;
+    currentIndex=index;if(currentNumber)currentNumber.textContent=String(index+1);
+    toggle?.setAttribute('aria-label',`${sidebar.classList.contains('is-open')?'Đóng':'Mở'} danh sách câu hỏi, câu ${currentIndex+1}`);
     links.forEach((link,linkIndex)=>link.classList.toggle('is-current',linkIndex===index));
   };
   links.forEach(link=>link.addEventListener('click',()=>{
