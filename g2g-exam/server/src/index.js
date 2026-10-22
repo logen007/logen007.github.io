@@ -28,7 +28,8 @@ import {startTrashGarbageCollector} from './trash-gc.js';
 import {submitExpiredAttempts} from './actions/attempts.js';
 import {r2Settings} from './r2-settings.js';
 import {registerMediaDeliveryRoutes} from './media-routes.js';
-import {registerImageSharingRoutes,sharedImageLogUrl} from './image-sharing.js';
+import {registerImageSharingRoutes} from './image-sharing.js';
+import {registerApplicationDefense,requestLogPath} from './application-defense.js';
 import {uploadExtension,imageHeaderMatches} from './media-upload-policy.js';
 import {requestOriginPolicy} from './request-origin.js';
 import {APP_VERSION} from '../../src/release.js';
@@ -53,7 +54,8 @@ if(process.env.NODE_ENV==='production'&&(!process.env.COOKIE_SECRET||/^(developm
 await fs.mkdir(uploadDir,{recursive:true});
 await initDb();
 
-const app=Fastify({logger:{serializers:{req:request=>({method:request.method,url:sharedImageLogUrl(request.url),hostname:request.hostname,remoteAddress:request.ip})}},trustProxy:process.env.TRUST_PROXY==='true'});
+const app=Fastify({logger:{serializers:{req:request=>({method:request.method,url:requestLogPath(request.url),hostname:request.hostname,remoteAddress:request.ip})}},trustProxy:process.env.TRUST_PROXY==='true'});
+registerApplicationDefense(app);
 const r2Media=await r2Settings.start({uploadDir,logger:app.log});
 await app.register(cookie,{secret:process.env.COOKIE_SECRET||'development-only-change-me',hook:'onRequest'});
 const originPolicy=requestOriginPolicy({production:process.env.NODE_ENV==='production',publicUrl:process.env.PUBLIC_URL||'http://localhost:8080',origins:process.env.CORS_ORIGINS||''});

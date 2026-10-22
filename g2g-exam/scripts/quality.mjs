@@ -16,6 +16,7 @@ const integrationTests=[
   'tests/performance.integration.mjs','tests/performance-http.integration.mjs',
 ];
 const extras=[
+  'tests/application-defense.test.mjs',
   'tests/request-origin.test.mjs',
   'tests/confirm-accessibility.test.mjs',
   'tests/deploy-health.test.mjs',

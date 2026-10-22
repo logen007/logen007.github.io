@@ -13,6 +13,7 @@ Keep UI changes separate from grading, transport and persistence changes.
 | Result rendering, tabs and sharing | `src/views/attempt-result.js` |
 | Upload file type/name and safe inline media | `server/src/media-upload-policy.js`, upload owner `index.js`, delivery `media-routes.js` |
 | Credentialed browser origin allowlist | `server/src/request-origin.js`, registered before API handlers in `index.js` |
+| API traffic budgets, baseline response headers, request query redaction | `server/src/application-defense.js`; deployment limits and verification in `docs/SECURITY_DEFENSE.md` |
 | Overlay keyboard lifecycle | `src/ui/dialog-keyboard.js` for existing dialogs, `src/ui/confirm.js` for confirmation settlement/focus |
 | Screen state / navigation wiring | `src/app.js` — delegate rules and data loading |
 | Durable answer writes / lost-receipt replay | `src/repositories/exam-outbox.js`; API transport in `src/repositories/api.js` |
