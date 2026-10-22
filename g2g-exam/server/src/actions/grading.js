@@ -1,5 +1,6 @@
 import {query,withTx,audit,now,uid,appError} from '../db.js';
 import {sendConfiguredMail} from '../mail.js';
+import {reportSafeError} from '../error-reporting.js';
 import {isTeacher,attemptExam,canGrade,questionMap} from './shared.js';
 import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
 import {finalizeOutcome} from '../result-outcome.js';
@@ -136,7 +137,7 @@ export function startResultEmailWorker(logger){
       WHERE status='queued' OR (status='sending' AND updated_at<now()-interval '2 minutes')
         OR (status='failed' AND updated_at<now()-interval '15 minutes')
       ORDER BY created_at LIMIT 1`)).rows[0];
-  },processJob:job=>deliverResultEmail(job.attempt_id,job.id),onError:error=>logger?.error?.({err:error},'Result email worker failed')});
+  },processJob:job=>deliverResultEmail(job.attempt_id,job.id),onError:error=>reportSafeError(logger,error,'email_worker')});
   const timer=setInterval(()=>void pump.tick(),5000);timer.unref();void pump.tick();
   return ()=>{pump.stop();clearInterval(timer);};
 }

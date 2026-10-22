@@ -28,6 +28,13 @@ of preventing every attack, a full WAF, penetration testing or DDoS protection.
 - Request URL logging strips every query/fragment, including OAuth codes and
   image signatures. Existing remote-address/path logging remains; this is not
   whole-log anonymization or a secret-scanning guarantee.
+- Error logging (1.4.1) uses `server/src/error-reporting.js`: only fixed event,
+  operation, bounded HTTP status and an explicit allowlist of operational error
+  codes. Never serialize the original exception/message/stack/cause/config/body.
+  Applied to the HTTP handler, monitor, expiry, AI, email and garbage-collection
+  workers. The existing 4xx client validation contract remains; 5xx stays generic.
+  This intentionally sacrifices raw stack/provider detail in operational logs.
+  It is not a review of every stored error/status field or all external output.
 - Response headers: nosniff, strict-origin-when-cross-origin, DENY framing and
   minimal CSP frame-ancestors/object-src/base-uri. No restrictive script-src,
   COOP/COEP, camera/microphone policy or HSTS added without compatibility evidence.
@@ -72,6 +79,13 @@ new headers/quotas, not existing authorization/origin/upload protections.
 synthetic clocks/clients: budgets, refill/rollback, bounded churn/cleanup,
 aggregate cap, no handler side effects on 429, trusted-peer negative and headers.
 It does not run a browser, real Google, a live DB or a traffic/load test.
+
+Error-log regression: an isolated synthetic provider exception with credential
+sentinels in config/headers/body/message/cause was logged by the previous handler
+(`logLeaks:true`, client generic 500). `tests/error-reporting.test.mjs` exercises
+real Fastify/Pino and now confirms no sentinel reaches logs, including circular
+objects, while normal 4xx validation stays usable. No evidence of an actual
+production credential leak was established; existing logs were not downloaded.
 
 Candidate verification (22 October 2026): HIGH ran 37/38 checks
 successfully, including 200 concurrent submitted attempts behind the same peer

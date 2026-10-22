@@ -1,6 +1,7 @@
 import {withTx,audit,getSettings,appError} from './db.js';
 import {deleteTrashedExam} from './trash-delete.js';
 import {runMediaGarbageCollection} from './media-gc.js';
+import {reportSafeError} from './error-reporting.js';
 
 export const TRASH_RETENTION_DAYS=30;
 export async function emptyTrash(user){
@@ -38,7 +39,7 @@ export function startTrashGarbageCollector({uploadDir,logger=console}={}){
         logger.info?.(result,'expired trash removed');
         await runMediaGarbageCollection({uploadDir,logger});
       }
-    }catch(error){logger.error?.(error,'trash garbage collection failed');}
+    }catch(error){reportSafeError(logger,error,'trash_gc');}
     finally{busy=false;}
   };
   const first=setTimeout(run,10000),timer=setInterval(run,15*60*1000);

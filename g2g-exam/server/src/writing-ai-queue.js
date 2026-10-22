@@ -3,6 +3,7 @@ import {attemptExam,questionMap} from './actions/shared.js';
 import {suggestWritingGrade} from './writing-ai.js';
 import {createProviderJobPump} from './provider-job-pump.js';
 import {aiApiKeyStatus} from './ai-settings.js';
+import {reportSafeError} from './error-reporting.js';
 import {AI_PROVIDER_IDS,normalizeAiProvider} from '../../src/domain/ai-providers.js';
 
 let worker=null,providersExpireAt=0;
@@ -38,7 +39,7 @@ export async function backfillQueue(logger){
       const exam=await attemptExam(attempt),questions=await questionMap(exam);
       await queueWritingAiJobs({query},attempt,exam,questions);
     }
-  }catch(error){logger?.warn?.({err:error},'writing AI queue backfill failed');}
+  }catch(error){reportSafeError(logger,error,'ai_backfill');}
 }
 
 export async function claimJob(provider){
@@ -85,7 +86,7 @@ export async function processJob(job,provider,logger){
       }
       await client.query(`UPDATE writing_ai_jobs SET status=$2,tries=$3,last_error=$4,available_at=now()+($5::text||' seconds')::interval,finished_at=CASE WHEN $2='failed' THEN now() ELSE NULL END,updated_at=now() WHERE id=$1`,[job.id,retry?'queued':'failed',tries,message,String(retry?Math.min(60,2**tries):900)]);
     });
-    logger?.warn?.({err:error,jobId:job.id},'writing AI job failed');
+    reportSafeError(logger,error,'ai_job');
     return {cooldownMs:error.retryAfterMs||15000,error:message};
   }
 }
@@ -103,7 +104,7 @@ export function startWritingAiWorker({logger}={}){
   providersExpireAt=0;
   const pump=createProviderJobPump({getProviders,
     hasWork:async()=>(await query(`SELECT 1 FROM writing_ai_jobs WHERE status='queued' AND available_at<=now() LIMIT 1`)).rowCount>0,
-    claim:claimJob,processJob:(job,provider)=>processJob(job,provider,logger),onError:error=>logger?.error?.({err:error},'writing AI worker failed')});
+    claim:claimJob,processJob:(job,provider)=>processJob(job,provider,logger),onError:error=>reportSafeError(logger,error,'ai_worker')});
   worker=pump;
   let maintenanceBusy=false;
   const recover=async()=>{
@@ -113,7 +114,7 @@ export function startWritingAiWorker({logger}={}){
       await query(`UPDATE writing_ai_jobs SET status='queued',tries=0,available_at=now(),updated_at=now()
         WHERE (status='failed' AND available_at<=now()) OR (status='processing' AND started_at<now()-interval '5 minutes')`);
       await pump.tick();
-    }catch(error){logger?.warn?.({err:error},'writing AI recovery failed');}finally{maintenanceBusy=false;}
+    }catch(error){reportSafeError(logger,error,'ai_recovery');}finally{maintenanceBusy=false;}
   };
   const timer=setInterval(()=>void pump.tick(),2000),recoveryTimer=setInterval(()=>void recover(),60000);
   timer.unref();recoveryTimer.unref();void backfillQueue(logger).then(recover);
