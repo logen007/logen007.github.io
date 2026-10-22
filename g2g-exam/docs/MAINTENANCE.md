@@ -12,7 +12,7 @@ Keep UI changes separate from grading, transport and persistence changes.
 | Result authorization and database reads | `server/src/actions/attempt-review.js` |
 | Result rendering, tabs and sharing | `src/views/attempt-result.js` |
 | Upload file type/name and safe inline media | `server/src/media-upload-policy.js`, upload owner `index.js`, delivery `media-routes.js` |
-| Credentialed browser origin allowlist | `server/src/request-origin.js`, registered before API handlers in `index.js` |
+| Credentialed browser Origin allowlist and missing-Origin Fetch Metadata guard | `server/src/request-origin.js`, registered before API handlers in `index.js`; limits in `docs/SECURITY_DEFENSE.md` |
 | API traffic budgets, baseline response headers, request query redaction | `server/src/application-defense.js`; deployment limits and verification in `docs/SECURITY_DEFENSE.md` |
 | Sanitized HTTP/worker error logging | `server/src/error-reporting.js`; preserve 4xx validation messages, never log raw provider/SQL exceptions |
 | Overlay keyboard lifecycle | `src/ui/dialog-keyboard.js` for existing dialogs, `src/ui/confirm.js` for confirmation settlement/focus |

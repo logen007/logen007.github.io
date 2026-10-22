@@ -7,6 +7,17 @@ of preventing every attack, a full WAF, penetration testing or DDoS protection.
 
 ## Implemented layer
 
+- Browser write-context guard (1.4.2) extends the existing exact Origin allowlist
+  in `server/src/request-origin.js`. Production POST/PUT/PATCH/DELETE without
+  Origin reject Sec-Fetch-Site cross-site/same-site/unknown values before handler
+  work. Explicit trusted Origins still allow approved integrations; opaque,
+  malformed or untrusted Origins cannot be rescued by same-origin metadata.
+  Missing-Origin same-origin/none contexts and clients lacking both headers
+  preserve compatibility. GET/HEAD/OPTIONS and local preview are unchanged.
+  This is defense in depth: scripts outside a browser can spoof metadata and
+  must still authenticate/authorize. Legacy clients without both headers remain
+  a documented limitation; no complete-CSRF or real-browser attack claim.
+
 - API token buckets per client IP, per process: general API capacity 600, refill
   20/second; auth capacity 60, refill 1/second; media API capacity 40, refill
   1/second. Paths/query variants share their class budget. A request costs one
@@ -87,6 +98,13 @@ real Fastify/Pino and now confirms no sentinel reaches logs, including circular
 objects, while normal 4xx validation stays usable. No evidence of an actual
 production credential leak was established; existing logs were not downloaded.
 
+Write-context regression: the previous production policy accepted synthetic
+cross-site/same-site POSTs missing Origin (two fixture-handler writes). The updated
+`tests/request-origin.test.mjs` rejects them and malformed metadata across unsafe
+methods and content types before side effects, while exercising explicit trusted
+sources, GET callback and legacy/local compatibility. No live attack was attempted
+and no actual account compromise was established.
+
 Candidate verification (22 October 2026): HIGH ran 37/38 checks
 successfully, including 200 concurrent submitted attempts behind the same peer
 IP; backend dependency audit returned npm HTTP503. This is incomplete, not a
@@ -99,3 +117,4 @@ combined candidate; SSH is not needed for the existing main auto-deploy path.
 - https://fastify.dev/docs/latest/Reference/Server/#trustproxy
 - https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html
 - https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+- https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
