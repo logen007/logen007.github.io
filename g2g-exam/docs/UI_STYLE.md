@@ -18,11 +18,16 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   Approximate working swatches: green `#22C878`, blue `#1683FF`, amber `#F5AA28`,
   red `#F23E39`. The reference image is authoritative for the visual direction;
   these hexadecimal values are approximations, not sampled measurements.
-  Prefer this vivid green for answered/completed/success states; avoid the pale
+  Prefer this vivid green for success states; avoid the pale
   mint `#67CF9B` and muddy dark greens used in previous exam-sidebar revisions.
   Use neutral charcoal surfaces in dark mode and clear readable labels. Apply
   this preference to future requested UI edits; saving this reference alone does
   not authorize a site-wide recoloring.
+  Later owner refinement (22 October): exam-sidebar answered questions and the
+  completion bar use the configured primary color. The current question uses
+  primary mixed with 18% white and takes precedence over answered styling.
+  These sidebar states use the primary foreground token. Countdown colors retain
+  the time-dependent green/amber/red palette.
 
 - All native disclosure sections slide open and closed through the shared
   disclosure-motion binding, including dynamically rendered sections. Keep content

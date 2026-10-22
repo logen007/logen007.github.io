@@ -101,7 +101,7 @@ assert.match(touchStyles,/\.thi--live \{[^}]*width:min\(1000px,100%\);/);
 assert.match(touchStyles,/\.exam-question-sidebar-toggle \{ display:grid; width:36px;/);
 assert.match(touchStyles,/\.exam-question-sidebar \{ position:fixed; z-index:20; top:0;[\s\S]*?height:100dvh;/);
 assert.match(touchStyles,/\.exam-question-link:hover \{ border-color:var\(--exam-status-blue\);/);
-assert.match(touchStyles,/\.exam-question-link\.is-answered \{ border-color:var\(--exam-status-green\); background:var\(--exam-status-green\); color:#fff;/);
+assert.match(touchStyles,/\.exam-question-link\.is-answered \{ border-color:var\(--brand-primary\); background:var\(--brand-primary\); color:var\(--brand-on-primary\);/);
 assert.match(touchStyles,/\.exam-question-time-pie \{[\s\S]*?background:conic-gradient/);
 assert.match(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/dataset\.questionJump[\s\S]*?scrollIntoView\(\{behavior,block:'start'\}\)/);
 assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea:not\(\.exam-title-input\), \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);
