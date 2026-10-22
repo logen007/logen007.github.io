@@ -1,3 +1,4 @@
+import {examDurationSeconds} from './domain/exam-clock.js';
 import {scrollExamToTop} from './ui/exam-scroll.js';
 import {bindImageSheetSync} from './ui/image-sheet-sync.js';
 import {changeInstructions,moveLegacyInstruction} from './domain/section-instructions.js';
@@ -579,7 +580,9 @@ function startExamTimer(attempt,exam,sectionIndex){
   const totalSeconds=Math.max(1,examDurationSeconds(exam));
   const tick=async()=>{
     const left=getSectionRemainingSeconds(attempt,exam,sectionIndex);
-    const display=`${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`;
+    const display=`${String(Math.floor(left/3600)).padStart(2,'0')}:${String(Math.floor(left%3600/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`;
+    const fraction=left/totalSeconds;
+    const clockRoot=app.querySelector('.thi');if(clockRoot)clockRoot.dataset.timeState=fraction<=.1?'critical':fraction<=.25?'warning':'normal';
     if(el)el.textContent=display;
     if(summary)summary.textContent=display;
     const mainTime=document.getElementById('examMainTime');if(mainTime)mainTime.textContent=display;
