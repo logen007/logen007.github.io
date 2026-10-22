@@ -446,10 +446,16 @@ function bindExamQuestionSidebar(){
     toggle?.setAttribute('aria-label',`${sidebar.classList.contains('is-open')?'Đóng':'Mở'} danh sách câu hỏi, câu ${currentIndex+1}`);
     links.forEach((link,linkIndex)=>link.classList.toggle('is-current',linkIndex===index));
   };
-  links.forEach(link=>link.addEventListener('click',()=>{
+  sidebar.addEventListener('click',event=>{
+    const link=event.target.closest('[data-question-jump]');if(!link||!sidebar.contains(link))return;
+    event.preventDefault();event.stopPropagation();
     const card=cards.find(item=>item.dataset.q===link.dataset.questionJump);
-    if(card){setCurrent(card);setOpen(false);}
-  }));
+    if(!card)return;
+    setCurrent(card);setOpen(false);
+    const behavior=window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth';
+    const scroll=()=>card.scrollIntoView({behavior,block:'start'});
+    if(window.requestAnimationFrame)window.requestAnimationFrame(scroll);else scroll();
+  });
   const updateCurrent=()=>{
     const current=cards.find(card=>card.getBoundingClientRect().bottom>96) || cards.at(-1);
     if(current)setCurrent(current);
