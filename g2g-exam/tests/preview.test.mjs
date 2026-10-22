@@ -28,6 +28,8 @@ globalThis.sessionStorage={getItem:()=>null};
   assert.equal((html.match(/data-exam-section=/g)||[]).length,2);
   assert.equal((html.match(/data-question-jump=/g)||[]).length,2);
   assert.match(html,/exam-question-link is-answered/);
+  assert.match(html,/aria-label="Mở danh sách câu hỏi"/);
+  assert.doesNotMatch(html,/☰/);
   assert.doesNotMatch(html,/data-action="next-section"|data-action="prev-section"|exam-reading-split/);
 }
 const longChoices=['geben die Deutschen mehr Geld für Bio-Produkte aus.','gibt es viele Probleme mit schlechten Lebensmitteln.','wester mag südamerikanische Tänze und möchte gern'];
@@ -85,6 +87,8 @@ assert.ok(publicStatsSource.includes("FROM users WHERE role='teacher'"));
 assert.ok(publicStatsSource.includes("FROM attempts WHERE status IN ('grading','ready','published')"));
 assert.match(readFileSync(new URL('../src/exam-specs/goethe.js',import.meta.url),'utf8'),/Promise.all/);
 const touchStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(touchStyles,/\.thi--live \{ width:min\(1000px,100%\);/);
+assert.match(touchStyles,/\.exam-question-sidebar-toggle \{ display:grid; width:36px;/);
 assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea:not\(\.exam-title-input\), \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);
 assert.doesNotMatch(readFileSync(new URL('../vi.html',import.meta.url),'utf8'),/user-scalable\s*=\s*no|maximum-scale\s*=/);
 assert.match(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/initialFocus\?\.focus\(\{preventScroll:true\}\)/);

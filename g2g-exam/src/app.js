@@ -434,7 +434,7 @@ function guardExamAudio(){
 function bindExamQuestionSidebar(){
   const sidebar=app.querySelector('[data-exam-question-sidebar]');if(!sidebar)return;
   const toggle=sidebar.querySelector('[data-exam-question-sidebar-toggle]');
-  const setOpen=open=>{sidebar.classList.toggle('is-open',open);toggle?.setAttribute('aria-expanded',String(open));};
+  const setOpen=open=>{sidebar.classList.toggle('is-open',open);toggle?.setAttribute('aria-expanded',String(open));toggle?.setAttribute('aria-label',open?'Đóng danh sách câu hỏi':'Mở danh sách câu hỏi');};
   toggle?.addEventListener('click',()=>setOpen(!sidebar.classList.contains('is-open')));
   const cards=[...app.querySelectorAll('.cau-thi[data-q]')].filter(card=>!card.classList.contains('is-example'));
   const links=[...sidebar.querySelectorAll('[data-question-jump]')];
