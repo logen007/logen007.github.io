@@ -379,7 +379,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .the-de .meta { font-size:13px; color:var(--phu); line-height:1.5; white-space:nowrap; }
 .exam-card-footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:12px; margin-top:auto; }
 .exam-card-status { flex:0 0 100%; min-width:0; font-size:13px; line-height:1.5; color:var(--phu); }
-.exam-card-status.exam-new-label { color:var(--brand-text); font-weight:600; }
+.exam-card-status.exam-new-label { color:var(--status-title-success); font-weight:600; }
 .exam-card-footer>.nut { min-height:44px; white-space:normal; text-align:center; }
 .exam-transition { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; overflow:hidden; isolation:isolate; opacity:1; transition:opacity 500ms ease; }
 .exam-transition::before { content:''; position:absolute; inset:0; background:var(--mat); animation:exam-white-fill 1100ms cubic-bezier(.45,0,.25,1) both; }
@@ -442,6 +442,9 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .bang th { font-size:12px; font-weight:500; color:var(--phu); background:var(--table-heading-bg); }.bang tbody tr:hover { background:var(--table-hover-bg); }.bang tr:last-child td { border-bottom:0; }
 .bang tbody td:first-child { font-size:14px; font-weight:600; color:var(--chu); }
 .bang .phu { display:block; color:var(--phu); font-size:12px; font-weight:400; line-height:1.4; margin-top:2px; }.bang td b { font-weight:600; overflow-wrap:anywhere; }
+.table-link.exam-title-status.is-published { color:var(--status-title-success); }
+.table-link.exam-title-status.is-draft { color:var(--phu); }
+.table-link.exam-title-status:hover { text-decoration:underline; text-underline-offset:3px; }
 .hanh-dong-bang { display:flex; gap:6px; flex-wrap:wrap; min-width:max-content; }.bang td:last-child,.bang th:last-child { white-space:nowrap; }
 .table-link { padding:0; border:0; background:none; color:var(--chu); font:600 14px/1.4 var(--font-ui); text-align:left; cursor:pointer; }.table-link:hover { color:var(--brand-text); }.table-link:focus-visible { outline:1px solid var(--focus-ring); outline-offset:2px; border-radius:4px; }
 

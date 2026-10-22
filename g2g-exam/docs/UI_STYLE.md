@@ -50,7 +50,8 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
 
 - Owner update 21 October 2026: all application tables use a shared stronger
   primary hierarchy: names/titles 14px/600 with `--chu` (white in dark, dark text
-  in light). This replaces colored exam/graded table titles; preserve accessible
+  in light). Exam-table status titles are an exception (22 October): published
+  green via `--status-title-success`, draft muted via `--phu`; preserve accessible
   state labels and semantic badges. Secondary text stays smaller, muted and
   regular, with a 2px gap. Roster name/email share one profile action with a 44px
   minimum touch target; long names/emails wrap without overflowing the cell.
@@ -126,6 +127,7 @@ retain the shared 16px floor to avoid automatic input zoom.
 Student catalog cards show “4 kỹ năng” instead of the part count. Never-attempted
 cards show plain “Đề Mới” text in the same footer status row as the latest result,
 not a badge beside provider/level. Preserve the existing new/attempted criterion.
+“Đề Mới” uses the shared success-green text token in light and dark, without a background.
 Code controls (21 October) are editable inline, with a 44px submit arrow on the
 right, accessible labels/placeholders, native Enter submission and inline errors.
 Reuse existing server verification: class code proceeds to verified class choice;
