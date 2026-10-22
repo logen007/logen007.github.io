@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {qualityPlan,parseQualityArgs,runQuality,uiTests} from '../scripts/quality.mjs';
 import {verifyRelease} from '../scripts/verify-release.mjs';
+import {APP_VERSION} from '../src/release.js';
+
+assert.match(APP_VERSION,/^(?:[0-9]|10)\.(?:[0-9]|10)\.(?:[0-9]|10)$/,'Release components must stay within the owner-approved 0–10 range');
 
 for(const risk of ['low','medium','high']){
   const plan=qualityPlan({risk});
