@@ -470,7 +470,7 @@ Borrow hierarchy and purposeful illustration, not assets, claims or product copy
 - File/audio/image pickers use the same border, radius, hover and focus language
   as text controls. Shadows remain reserved for overlays and media previews.
 - Live exams render every part on one scrollable page: no previous/next-part controls and no split-screen reading/answer layout. The live container caps at 1000px; preview keeps its own section navigation and approved layouts.
-- Live exams have a left overlay sidebar that slides in/out without consuming a second content column. It lists scored questions: muted gray is unanswered, yellow is the question currently in view, and green is answered. It supports keyboard focus and direct scroll-to-question.
+- Live exams have a full-height left overlay sidebar that slides in/out without consuming a second content column. It lists scored questions: muted gray is unanswered, yellow is the question currently in view, and green is answered. Selecting a question scrolls directly to it and supports keyboard focus.
 - Site-wide back/previous/next navigation shows arrow icons only, including
   preview headers, builder, grading, results, class details and return-to-edit
   dialogs, with accessible names and
