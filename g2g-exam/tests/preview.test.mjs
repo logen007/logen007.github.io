@@ -90,6 +90,8 @@ assert.match(readFileSync(new URL('../src/exam-specs/goethe.js',import.meta.url)
 const touchStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(touchStyles,/\.thi--live \{ width:min\(1000px,100%\);/);
 assert.match(touchStyles,/\.exam-question-sidebar-toggle \{ display:grid; width:36px;/);
+assert.match(touchStyles,/\.exam-question-sidebar \{ position:fixed; z-index:20; top:0;[\s\S]*?height:100dvh;/);
+assert.match(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/dataset\.questionJump[\s\S]*?scrollIntoView/);
 assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea:not\(\.exam-title-input\), \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);
 assert.doesNotMatch(readFileSync(new URL('../vi.html',import.meta.url),'utf8'),/user-scalable\s*=\s*no|maximum-scale\s*=/);
 assert.match(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/initialFocus\?\.focus\(\{preventScroll:true\}\)/);
