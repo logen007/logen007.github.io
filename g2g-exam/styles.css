@@ -297,6 +297,15 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .muc-ben--icon { width:44px; padding:10px; flex:none; }
 .muc-ben:hover { background:var(--brand-soft); }
 .muc-ben.active { background:var(--brand-primary); color:var(--brand-on-primary); }
+.student-exam-nav { position:relative; flex:none; }
+.student-exam-nav-menu { position:absolute; z-index:80; top:calc(100% + 8px); left:0; min-width:132px; padding:6px; border:1px solid var(--vien); border-radius:14px; background:var(--mat); box-shadow:var(--shadow); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(-5px); transition:opacity .16s ease,transform .16s ease,visibility .16s ease; }
+.student-exam-nav:hover .student-exam-nav-menu,.student-exam-nav:focus-within .student-exam-nav-menu { opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
+.student-exam-nav-menu__level { position:relative; }
+.student-exam-nav-menu__level-trigger,.student-exam-nav-menu__providers button { display:flex; align-items:center; justify-content:space-between; width:100%; min-height:40px; padding:8px 10px; border:0; border-radius:9px; background:transparent; color:var(--chu); text-align:left; font:inherit; font-size:14px; font-weight:600; }
+.student-exam-nav-menu__level-trigger .ui-icon { width:15px; height:15px; color:var(--phu); }
+.student-exam-nav-menu__level-trigger:hover,.student-exam-nav-menu__level:focus-within .student-exam-nav-menu__level-trigger,.student-exam-nav-menu__providers button:hover,.student-exam-nav-menu__providers button:focus-visible { background:var(--brand-soft); color:var(--brand-text); outline:none; }
+.student-exam-nav-menu__providers { position:absolute; z-index:1; top:-6px; left:calc(100% + 7px); min-width:116px; padding:6px; border:1px solid var(--vien); border-radius:14px; background:var(--mat); box-shadow:var(--shadow); opacity:0; visibility:hidden; pointer-events:none; transform:translateX(-5px); transition:opacity .16s ease,transform .16s ease,visibility .16s ease; }
+.student-exam-nav-menu__level:hover .student-exam-nav-menu__providers,.student-exam-nav-menu__level:focus-within .student-exam-nav-menu__providers { opacity:1; visibility:visible; pointer-events:auto; transform:translateX(0); }
 .header-account { margin-left:auto; display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .header-utilities { display:flex; align-items:center; gap:8px; margin-left:auto; flex-shrink:0; }
 .header-utilities .header-account { margin-left:0; }
@@ -1237,7 +1246,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 
 /* Responsive dimensions are grouped by breakpoint so they cannot be undone later. */
 @media(max-width:1240px) {
-  .thanh-dau { flex-wrap:wrap; gap:12px; }.thanh-ben,.site-nav { order:3; flex-basis:100%; justify-content:flex-start; overflow-x:auto; padding:2px; }.header-account { margin-left:auto; }
+  .thanh-dau { flex-wrap:wrap; gap:12px; }.thanh-ben,.site-nav { order:3; flex-basis:100%; justify-content:flex-start; overflow:visible; padding:2px; }.header-account { margin-left:auto; }
   .goethe-layout { grid-template-columns:224px minmax(0,1fr); }.goethe-outline,.goethe-editor { padding:20px; }.goethe-choices { gap:10px; }.goethe-choices label { gap:6px; }
 }
 @media(max-width:960px) {

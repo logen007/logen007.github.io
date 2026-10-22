@@ -201,7 +201,10 @@ const student={id:'s',name:'Lan <script>',level:'B1',classId:'c',picture:'https:
 const profileData={...data,classes:[{id:'c',code:'PRIVATE-CLASS'}]};
 const profile=studentProfileCardHtml(profileData,student);
 assert.ok(profile.includes('Lan &lt;script&gt;'));
-assert.ok(profile.includes('PRIVATE-CLASS'));
+assert.ok(profile.includes('Lớp PRIVATE-CLASS'));
+const visitorProfile=studentProfileCardHtml({...profileData,classes:[{id:'visitor',code:'Extend'}]},{...student,classId:'visitor'});
+assert.ok(visitorProfile.includes('Học viên Vãng lai'));
+assert.doesNotMatch(visitorProfile,/Lớp Extend/);
 assert.ok(profile.includes('B1'));
 assert.ok(profile.includes('data-action="share-profile"'));
 assert.ok(profile.includes('data-edit-student-name'));

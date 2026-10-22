@@ -336,6 +336,19 @@ try{
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
     assert.match(source,/\[data-action="admin-tab"\][^\n]+await flushBuilderDraft\(\)[^\n]+ui.adminTab/);
   });
+  await test('Student exam menu filters by level then Goethe or Telc',()=>{
+    const html=topbarHtml({user:{id:'student',role:'student',name:'Student'},mode:'api',online:true,ui:{view:'student-home'},studentExamMenu:[
+      {id:'g-a1',status:'published',level:'A1',provider:'GOETHE'},
+      {id:'t-a1',status:'published',level:'A1',provider:'TELC'},
+      {id:'fid-b1',status:'published',level:'B1',provider:'FID'}
+    ]});
+    assert.match(html,/student-exam-nav-menu/);
+    assert.match(html,/data-exam-level="A1" data-exam-provider="GOETHE"/);
+    assert.match(html,/data-exam-level="A1" data-exam-provider="TELC"/);
+    assert.match(html,/>Goethe<\/button>/);
+    assert.match(html,/>Telc<\/button>/);
+    assert.doesNotMatch(html,/fid-b1|Loại đề B1/);
+  });
   await test('Admin utility tabs show accessible icons without visible labels',()=>{
     for(const adminTab of ['dashboard','exams','teachers']){
       const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin',adminTab}});
