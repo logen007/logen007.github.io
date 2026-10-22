@@ -17,6 +17,7 @@ const integrationTests=[
 ];
 const extras=[
   'tests/application-defense.test.mjs',
+  'tests/error-reporting.test.mjs',
   'tests/request-origin.test.mjs',
   'tests/confirm-accessibility.test.mjs',
   'tests/deploy-health.test.mjs',

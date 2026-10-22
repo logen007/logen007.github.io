@@ -30,6 +30,7 @@ import {r2Settings} from './r2-settings.js';
 import {registerMediaDeliveryRoutes} from './media-routes.js';
 import {registerImageSharingRoutes} from './image-sharing.js';
 import {registerApplicationDefense,requestLogPath} from './application-defense.js';
+import {registerSafeErrorHandler,reportSafeError} from './error-reporting.js';
 import {uploadExtension,imageHeaderMatches} from './media-upload-policy.js';
 import {requestOriginPolicy} from './request-origin.js';
 import {APP_VERSION} from '../../src/release.js';
@@ -191,7 +192,7 @@ app.get('/brand/:kind',async(request,reply)=>{
 });
 app.get('/api/whoami',async request=>({user:await currentUser(request)}));
 
-app.setErrorHandler((error,_request,reply)=>{app.log.error(error);const status=Number(error.statusCode)||500;reply.code(status).send({error:status>=500?'Lỗi máy chủ. Vui lòng thử lại.':error.message,code:status});});
+registerSafeErrorHandler(app);
 app.setNotFoundHandler((request,reply)=>{if(request.url.startsWith('/api/'))return reply.code(404).send({error:'API không tồn tại.'});if(/^\/(assets|src|specs)\//.test(request.url))return reply.code(404).send({error:'Tài nguyên không tồn tại.'});return reply.sendFile('vi.html');});
 
 const {startMonitorHistory}=await import('./monitor-history.js');
@@ -206,7 +207,7 @@ const stopTrashGc=startTrashGarbageCollector({uploadDir,logger:app.log});
 const stopWritingAi=startWritingAiWorker({logger:app.log});
 const stopResultEmails=startResultEmailWorker(app.log);
 let expiryBusy=false;
-const expiryTimer=setInterval(async()=>{if(expiryBusy)return;expiryBusy=true;try{await submitExpiredAttempts();}catch(error){app.log.error(error);}finally{expiryBusy=false;}},5000);
+const expiryTimer=setInterval(async()=>{if(expiryBusy)return;expiryBusy=true;try{await submitExpiredAttempts();}catch(error){reportSafeError(app.log,error,'attempt_expiry');}finally{expiryBusy=false;}},5000);
 expiryTimer.unref();
 export {app};
 const stop=async()=>{try{await app.close();await pool.end();}finally{process.exit(0);}};

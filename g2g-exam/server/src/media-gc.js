@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {withMediaMutation} from './media-backup-lock.js';
+import {reportSafeError} from './error-reporting.js';
 
 const UPLOAD_RE=/\/uploads\/([A-Za-z0-9._-]+)/g;
 let lastStatus={lastRunAt:null,lastSuccessAt:null,error:null,scanned:0,deleted:0,deletedBytes:0,referenced:0};
@@ -69,7 +70,7 @@ export function startMediaGarbageCollector({uploadDir,logger=console}={}){
   const intervalHours=Math.max(1,Number(process.env.MEDIA_GC_INTERVAL_HOURS||6));
   const run=()=>runMediaGarbageCollection({uploadDir,logger}).catch(error=>{
     lastStatus={...lastStatus,lastRunAt:new Date().toISOString(),error:String(error?.message||error)};
-    logger?.error?.(error,'media garbage collection failed');
+    reportSafeError(logger,error,'media_gc');
   });
   const first=setTimeout(run,Math.max(1,Number(process.env.MEDIA_GC_START_DELAY_SECONDS||10))*1000);first.unref?.();
   const timer=setInterval(run,intervalHours*60*60*1000);timer.unref?.();

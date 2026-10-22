@@ -2,6 +2,7 @@ import os from 'node:os';
 import {query} from './db.js';
 import {sampleCpu} from './cpu-metrics.js';
 import {r2Settings} from './r2-settings.js';
+import {reportSafeError} from './error-reporting.js';
 
 export function startMonitorHistory(logger){
   let busy=false,stopped=false;
@@ -13,7 +14,7 @@ export function startMonitorHistory(logger){
       await query('INSERT INTO monitor_samples(cpu,memory,r2_bytes,r2_error) VALUES($1,$2,$3,$4)',
         [cpu.usagePercent,(os.totalmem()-os.freemem())/os.totalmem()*100,r2?.syncedBytes??null,Boolean(r2?.error)]);
       await query("DELETE FROM monitor_samples WHERE sampled_at < now()-interval '366 days'");
-    }catch(error){logger.error(error,'Monitor sample failed');}finally{busy=false;}
+    }catch(error){reportSafeError(logger,error,'monitor_sample');}finally{busy=false;}
   };
   void collect();
   const timer=setInterval(collect,60000);timer.unref();
