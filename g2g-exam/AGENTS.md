@@ -268,6 +268,10 @@ Thứ tự ưu tiên:
 
 Phiên bản được đặt tại `src/release.js`. Mỗi bản cập nhật sau
 phải tăng phiên bản theo major.minor.patch; mặc định tăng patch cho sửa nhỏ.
+Owner đổi quy tắc ngày 22/10/2026: bắt đầu từ 1.4.0, mỗi thành phần là số nguyên
+từ 0 đến tối đa 10 (bao gồm 10). Sau patch 10, tăng minor và đặt patch về 0:
+1.4.10 → 1.5.0; sau minor 10: 1.10.10 → 2.0.0. Không dùng .11 hoặc .252.
+Nếu major đã là 10 và cần chuyển tiếp, hỏi owner thay vì tự vượt giới hạn.
 Thông báo cập nhật chỉ hiện khi máy chủ báo phiên bản khác, và chỉ tải lại
 ở màn hình an toàn; không ngắt editor, chấm bài hoặc bài thi đang làm.
 
