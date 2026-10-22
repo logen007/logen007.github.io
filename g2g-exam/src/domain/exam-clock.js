@@ -6,7 +6,7 @@ export function examSkillDurations(exam){
     const key=skill||(Number.isFinite(configured)&&configured>0?undefined:`section:${index}`);
     const previous=skills.get(key);
     const minutes=Number.isFinite(configured)&&configured>0?configured:(previous?.minutes||0)+Math.max(0,Number(section.timeMinutes)||0);
-    skills.set(key,{name:skill||section.name||`Phần ${index+1}`,minutes});
+    skills.set(key,{name:skill||section.name||`Phần ${index+1}`,minutes,parts:(previous?.parts||0)+1});
   }
   return [...skills.values()];
 }

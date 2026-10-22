@@ -469,8 +469,8 @@ Borrow hierarchy and purposeful illustration, not assets, claims or product copy
   Submission and cancellation dialogs, buttons and completion feedback are in Vietnamese.
 - File/audio/image pickers use the same border, radius, hover and focus language
   as text controls. Shadows remain reserved for overlays and media previews.
-- Exam navigation stays after the questions: no sticky surface/background/border.
-  Exam structure navigation is preview-only.
+- Live exams render every part on one scrollable page: no previous/next-part controls and no split-screen reading/answer layout. The live container caps at 1200px; preview keeps its own section navigation and approved layouts.
+- Live exams have a left overlay sidebar that slides in/out without consuming a second content column. It lists scored questions: muted gray is unanswered, yellow is the question currently in view, and green is answered. It supports keyboard focus and direct scroll-to-question.
 - Site-wide back/previous/next navigation shows arrow icons only, including
   preview headers, builder, grading, results, class details and return-to-edit
   dialogs, with accessible names and

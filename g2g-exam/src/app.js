@@ -68,7 +68,7 @@ import {gradebookHtml,bindGradebook} from './views/gradebook.js';
 import {confirmAction} from './ui/confirm.js';
 import {confirmExamStart} from './ui/exam-start-confirm.js';
 import {
-  loginHtml,studentHomeHtml,studentResultsHtml,studentAttemptDetailHtml,examHtml,submittedHtml,expiredHtml,answerPresent
+  loginHtml,studentHomeHtml,studentResultsHtml,studentAttemptDetailHtml,examHtml,liveExamHtml,submittedHtml,expiredHtml,answerPresent
 } from './views/student.js';
 import {
   adminShellHtml,dashboardHtml,examAdminHtml,
@@ -278,14 +278,14 @@ function examView(){
     return;
   }
   const sectionIndex=Math.min(attempt.currentSectionIndex||0,Math.max(0,exam.sections.length-1));
-  const section=exam.sections[sectionIndex];
-  const questions=(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean);
-  app.innerHTML=examHtml({attempt,exam,sectionIndex,questions,allQuestions:data.questions,online:ui.online});
+  const questions=(exam.sections||[]).flatMap(section=>(section.questionIds||[]).map(id=>byId(data.questions,id)).filter(Boolean));
+  app.innerHTML=liveExamHtml({attempt,exam,allQuestions:data.questions,online:ui.online});
   examPreloader.update(attempt.id,examMediaUrls(exam,data.questions,sectionIndex));
   const examBrandIcon=app.querySelector('.exam-mobile-brand img');if(examBrandIcon)examBrandIcon.onerror=()=>examBrandIcon.remove();
   bindExamInputs(attempt,questions);
   void mountExamRuntime({state:data,examRoot:app.querySelector('.thi'),saveAnswer:(qid,value)=>queueAnswer(attempt.id,qid,value,0)}).catch(error=>console.error('Part runtime',error));
   bindSectionAudio(attempt,{preview:false});
+  bindExamQuestionSidebar();
   startExamTimer(attempt,exam,sectionIndex);
 }
 
@@ -349,6 +349,8 @@ function bindExamInputs(attempt,questions){
     app.querySelectorAll('[data-current-answer-count]').forEach(item=>{item.textContent=`${answered}/${required.length}`;});
     const question=questions.find(item=>item.id===qid),card=app.querySelector(`.cau-thi[data-q="${qid}"]`);
     if(card&&question)card.classList.toggle('is-answered',answerPresent(value,question));
+    const position=required.findIndex(item=>item.id===qid),link=app.querySelectorAll('[data-question-jump]')[position];
+    if(link&&question){const answeredNow=answerPresent(value,question);link.classList.toggle('is-answered',answeredNow);link.setAttribute('aria-label',`Câu ${position+1}${answeredNow?', đã làm':''}`);}
   };
   bindLetterAnswers(app,questions,attempt.answers||{},(qid,value)=>{setLocalAnswer(qid,value);queueAnswer(attempt.id,qid,value,0);});
   app.querySelectorAll('.answer-one').forEach(el=>el.onchange=()=>{
@@ -429,8 +431,35 @@ function guardExamAudio(){
   notify('Bitte hören Sie das Audio bis zum Ende an.');
   return true;
 }
+function bindExamQuestionSidebar(){
+  const sidebar=app.querySelector('[data-exam-question-sidebar]');if(!sidebar)return;
+  const toggle=sidebar.querySelector('[data-exam-question-sidebar-toggle]');
+  const setOpen=open=>{sidebar.classList.toggle('is-open',open);toggle?.setAttribute('aria-expanded',String(open));};
+  toggle?.addEventListener('click',()=>setOpen(!sidebar.classList.contains('is-open')));
+  const cards=[...app.querySelectorAll('.cau-thi[data-q]')].filter(card=>!card.classList.contains('is-example'));
+  const links=[...sidebar.querySelectorAll('[data-question-jump]')];
+  const setCurrent=card=>{
+    const index=cards.indexOf(card);
+    links.forEach((link,linkIndex)=>link.classList.toggle('is-current',linkIndex===index));
+  };
+  links.forEach(link=>link.addEventListener('click',()=>{
+    const card=cards.find(item=>item.dataset.q===link.dataset.questionJump);
+    card?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
+    card?.querySelector('input,select,textarea,button')?.focus({preventScroll:true});
+    if(card)setCurrent(card);
+  }));
+  const updateCurrent=()=>{
+    const current=cards.find(card=>card.getBoundingClientRect().bottom>96) || cards.at(-1);
+    if(current)setCurrent(current);
+  };
+  window.addEventListener('scroll',updateCurrent,{passive:true});
+  updateCurrent();
+}
 function bindSectionAudio(attempt,{preview}){
-  const root=app.querySelector('[data-section-audio]');if(!root)return;
+  const roots=app.querySelectorAll?.('[data-section-audio]')||[app.querySelector?.('[data-section-audio]')].filter(Boolean);
+  roots.forEach(root=>bindOneSectionAudio(root,attempt,{preview}));
+}
+function bindOneSectionAudio(root,attempt,{preview}){
   const button=root.querySelector('.section-audio-play'),status=root.querySelector('.section-audio-status');
   const progress=root.querySelector('.section-audio-progress'),progressFill=progress?.querySelector('i');
   const audios=[...root.querySelectorAll('.section-audio-segment')];

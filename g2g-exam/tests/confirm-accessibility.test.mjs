@@ -30,14 +30,15 @@ try{
   const exam={title:'Đề <img src=x onerror=alert(1)>',sections:[{skill:'Nghe',timeMinutes:10},{skill:'Nghe',timeMinutes:15},{skill:'Đọc',timeMinutes:30}]};
   const rejected=confirmExamStart(exam);
   assert.match(doc.getElementById('site-confirm-message').textContent,/Đề <img/);
+  assert.match(doc.getElementById('site-confirm-message').textContent,/tổng thời gian làm bài 55 phút/);
   assert.equal(doc.querySelector('#site-confirm img'),null,'Exam metadata is rendered as text, never HTML');
-  assert.deepEqual([...doc.querySelectorAll('.site-confirm-details li')].map(item=>item.textContent),['Nghe — 25 phút','Đọc — 30 phút']);
+  assert.deepEqual([...doc.querySelectorAll('.site-confirm-details li')].map(item=>item.textContent),['Nghe — 2 phần · 25 phút','Đọc — 1 phần · 30 phút']);
   assert.equal(doc.querySelector('[data-confirm-cancel] span').textContent,'Huỷ thi');
   assert.equal(doc.querySelector('[data-confirm-accept] span').textContent,'Bắt đầu ngay');
   key('Escape');assert.equal(await rejected,false);
   const confirmed=confirmExamStart(exam);doc.querySelector('[data-confirm-accept]').click();assert.equal(await confirmed,true);
   let previews=0,starts=0;
-  const codeRepo={mode:'api',call:async(action,payload)=>{assert.equal(action,'previewAttemptStart');assert.equal(payload.code,'ABCDE');previews++;return {title:exam.title,skills:[{name:'Nghe',minutes:20}]};},startAttemptSecure:async()=>{starts++;throw Error('Synthetic start failure');}};
+  const codeRepo={mode:'api',call:async(action,payload)=>{assert.equal(action,'previewAttemptStart');assert.equal(payload.code,'ABCDE');previews++;return {title:exam.title,skills:[{name:'Nghe',minutes:20,parts:1}]};},startAttemptSecure:async()=>{starts++;throw Error('Synthetic start failure');}};
   openCodeEntry({repo:codeRepo,initialCode:'ABCDE',onStarted:()=>assert.fail('Failed/cancelled starts never navigate')});
   const codeModal=doc.getElementById('modal'),codeForm=codeModal.querySelector('form');
   const submit=()=>codeForm.onsubmit({preventDefault(){},currentTarget:codeForm});

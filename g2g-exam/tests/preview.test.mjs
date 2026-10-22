@@ -16,9 +16,20 @@ import {sectionPromptHtml} from '../src/views/student.js';
   assert.doesNotMatch(sectionPromptHtml({...section,instructionImageUrl:''}),/<img|\[img\]/i);
   assert.ok(sectionPromptHtml({...section,instruction:'Before'}).indexOf('<img')>0);
 }
-import {examHtml,studentExamCardHtml,submittedHtml,expiredHtml,answerPresent} from '../src/views/student.js';
+import {examHtml,liveExamHtml,studentExamCardHtml,submittedHtml,expiredHtml,answerPresent} from '../src/views/student.js';
 const originalStorage=globalThis.sessionStorage;
 globalThis.sessionStorage={getItem:()=>null};
+{
+  const questions=[{id:'one',type:'single',title:'One',choices:['A','B']},{id:'two',type:'single',title:'Two',choices:['A','B']}];
+  const exam={id:'live',title:'One page',level:'A1',sections:[{id:'first',name:'Đọc 1',questionIds:['one'],questionProfile:{}},{id:'second',name:'Đọc 2',questionIds:['two'],questionProfile:{}}]};
+  const html=liveExamHtml({attempt:{id:'attempt',answers:{two:0}},exam,allQuestions:questions,online:true});
+  assert.match(html,/thi--live/);
+  assert.match(html,/exam-paper--live/);
+  assert.equal((html.match(/data-exam-section=/g)||[]).length,2);
+  assert.equal((html.match(/data-question-jump=/g)||[]).length,2);
+  assert.match(html,/exam-question-link is-answered/);
+  assert.doesNotMatch(html,/data-action="next-section"|data-action="prev-section"|exam-reading-split/);
+}
 const longChoices=['geben die Deutschen mehr Geld für Bio-Produkte aus.','gibt es viele Probleme mit schlechten Lebensmitteln.','wester mag südamerikanische Tänze und möchte gern'];
 const optionQuestion={id:'long-layout',type:'single',maxScore:1,title:'Question',choices:longChoices};
 for(const preview of [false,true]){
