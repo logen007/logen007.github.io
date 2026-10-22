@@ -18,7 +18,7 @@ assert.equal(examDurationSeconds(skillTimed),65*60);
 assert.deepEqual(examSkillDurations(skillTimed),[{name:'Nghe',minutes:20,parts:3},{name:'Đọc',minutes:25,parts:2},{name:'Viết',minutes:20,parts:2}]);
 assert.deepEqual(examSkillDurations({sections:[{skill:'Đọc',timeMinutes:10},{skill:'Đọc',timeMinutes:15},{skillKey:'Viết',timeMinutes:20}]}),[{name:'Đọc',minutes:25,parts:2},{name:'Viết',minutes:20,parts:1}]);
 assert.equal(examSkillDurations({sections:[]}).length,0);
-assert.match(appSource,/if\(!existingAttemptId&&!await confirmExamStart\(byId\(data.exams,examId\)\)\)return;/,'Existing sessions resume without a new-start confirmation');
+assert.match(appSource,/if\(!existingAttemptId&&!await confirmExamStart\(byId\(data.exams,examId\),origin=>\{trigger=origin;\}\)\)return;/,'Existing sessions resume without a new-start confirmation');
 assert.equal(examDeadlineMs(attempt,skillTimed),Date.parse('2026-10-10T01:05:00Z'));
 assert.equal(examDeadlineMs(attempt,exam),Date.parse('2026-10-10T00:30:00Z'));
 assert.equal(submissionTiming(attempt,exam,Date.parse('2026-10-10T00:10:00Z')).durationSeconds,600);

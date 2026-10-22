@@ -1,7 +1,7 @@
 import {iconHtml} from './icons.js';
 import {esc} from './format.js';
 let cancelActiveConfirmation=null;
-export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',cancelLabel='Hủy',danger=false,confirmIcon= danger?'trash':'arrowRight',cancelIcon='close',extraAction=null,details=[],onCancel=()=>{}}={}){
+export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',cancelLabel='Hủy',danger=false,confirmIcon= danger?'trash':'arrowRight',cancelIcon='close',extraAction=null,details=[],heading='',summary='',dialogClass='',onCancel=()=>{}}={}){
   cancelActiveConfirmation?.();
   const previousFocus=document.activeElement;
   const overlay=document.createElement('div');
@@ -9,11 +9,22 @@ export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',can
   overlay.className='site-confirm-backdrop';
   overlay.innerHTML='<div class="site-confirm" role="alertdialog" aria-modal="true" aria-labelledby="site-confirm-message"><p id="site-confirm-message"></p><div class="site-confirm-actions"><button type="button" class="nut" data-confirm-cancel>Hủy</button><button type="button" class="nut chinh" data-confirm-accept></button></div></div>';
   overlay.querySelector('#site-confirm-message').textContent=message;
+  const dialog=overlay.querySelector('[role="alertdialog"]');
+  if(dialogClass)dialog.classList.add(dialogClass);
+  if(heading){
+    const title=document.createElement('h2');title.id='site-confirm-title';title.textContent=heading;
+    dialog.prepend(title);dialog.setAttribute('aria-labelledby',title.id);
+    dialog.setAttribute('aria-describedby','site-confirm-message');
+  }
+  if(summary){
+    const text=document.createElement('p');text.className='site-confirm-summary';text.textContent=summary;
+    overlay.querySelector('#site-confirm-message').after(text);
+  }
   if(details.length){
     const list=document.createElement('ul');list.className='site-confirm-details';list.id='site-confirm-details';
     for(const detail of details){const item=document.createElement('li');item.textContent=detail;list.append(item);}
-    overlay.querySelector('#site-confirm-message').after(list);
-    overlay.querySelector('[role="alertdialog"]').setAttribute('aria-describedby',list.id);
+    (overlay.querySelector('.site-confirm-summary')||overlay.querySelector('#site-confirm-message')).after(list);
+    dialog.setAttribute('aria-describedby',heading?`site-confirm-message ${list.id}`:list.id);
   }
   overlay.querySelector('[data-confirm-cancel]').innerHTML=iconHtml(cancelIcon)+'<span>'+esc(cancelLabel)+'</span>';
   const accept=overlay.querySelector('[data-confirm-accept]');
@@ -35,7 +46,12 @@ export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',can
     }
   };
   overlay.querySelector('[data-confirm-cancel]').onclick=cancel;
-  accept.onclick=()=>{if(close())onConfirm();};
+  accept.onclick=()=>{
+    if(closed)return;
+    const rect=accept.getBoundingClientRect();
+    const origin={rect:{left:rect.left,top:rect.top,width:rect.width,height:rect.height},backgroundColor:window.getComputedStyle?.(accept).backgroundColor};
+    if(close())onConfirm(origin);
+  };
   if(extraAction){
     const extra=document.createElement('button');
     extra.type='button';extra.className='text-link site-confirm-extra';

@@ -1240,7 +1240,7 @@ async function beginAttempt(examId,restart,trigger,existingAttemptId=null){
   if(startingAttempt)return;
   startingAttempt=true;
   try{
-  if(!existingAttemptId&&!await confirmExamStart(byId(data.exams,examId)))return;
+  if(!existingAttemptId&&!await confirmExamStart(byId(data.exams,examId),origin=>{trigger=origin;}))return;
   clearTimeout(realtimeRenderTimer);
   return await withExamTransition(async covered=>{
   const attempt=existingAttemptId?byId((await repo.getState()).attempts,existingAttemptId):await act(()=>repo.mode==='api'?repo.startAttemptSecure(examId,{restart}):repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});

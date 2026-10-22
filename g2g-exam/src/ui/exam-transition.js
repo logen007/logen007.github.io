@@ -10,7 +10,7 @@ export async function withExamTransition(start,trigger,{exit=false,message='Đã
   overlay.className='exam-transition';overlay.tabIndex=-1;
   if(exit)overlay.classList.add('exam-transition--exit');
   if(danger)overlay.classList.add('exam-transition--danger');
-  const rect=trigger?.getBoundingClientRect?.();
+  const rect=trigger?.rect||trigger?.getBoundingClientRect?.();
   const x=rect?rect.left+rect.width/2:window.innerWidth/2;
   const y=rect?rect.top+rect.height/2:window.innerHeight/2;
   const radius=Math.hypot(Math.max(x,window.innerWidth-x),Math.max(y,window.innerHeight-y))+32;
@@ -21,7 +21,7 @@ export async function withExamTransition(start,trigger,{exit=false,message='Đã
   // must not recenter the group while the destination page renders.
   overlay.style.setProperty('--transition-center-x',window.innerWidth/2+'px');
   overlay.style.setProperty('--transition-center-y',window.innerHeight/2+'px');
-  const buttonColor=trigger&&window.getComputedStyle?.(trigger).backgroundColor;
+  const buttonColor=trigger?.backgroundColor||(trigger&&window.getComputedStyle?.(trigger).backgroundColor);
   if(buttonColor&&buttonColor!=='transparent'&&buttonColor!=='rgba(0, 0, 0, 0)')overlay.style.setProperty('--wave-color',buttonColor);
   if(danger)overlay.style.setProperty('--wave-color','var(--do)');
   overlay.setAttribute('role','status');overlay.setAttribute('aria-live','polite');

@@ -16,12 +16,13 @@ export function openCodeEntry({repo,examId,onStarted,initialCode=''}){
       const code=form.elements.code.value.trim().toUpperCase();
       const summary=await repo.call('previewAttemptStart',{examId,code});
       if(!modal.isConnected)return;
-      if(!await confirmExamStart(summary))return;
+      let transitionOrigin=button;
+      if(!await confirmExamStart(summary,origin=>{transitionOrigin=origin;}))return;
       if(!modal.isConnected)return;
       await withExamTransition(async covered=>{
         const attempt=await repo.startAttemptSecure(examId,{code});
         await covered;modal.remove();await onStarted(attempt.id);
-      },button);
+      },transitionOrigin);
     }catch(error){form.querySelector('[data-error]').textContent=error.message;}
     finally{button.disabled=false;}
   };
