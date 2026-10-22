@@ -510,6 +510,12 @@ input::placeholder,textarea::placeholder { color:#777d85; opacity:1; }
 .site-confirm { width:min(420px,100%); padding:28px; border:1px solid var(--vien); border-radius:20px; background:var(--mat); box-shadow:var(--shadow); }
 .site-confirm p { margin:0; color:var(--chu); font-size:16px; line-height:1.55; }
 .site-confirm-details { margin:16px 0 0; padding-left:20px; color:var(--chu); line-height:1.7; max-height:40vh; overflow:auto; overflow-wrap:anywhere; }
+.exam-start-confirm h2 { margin:0 0 10px; font-size:24px; font-weight:650; letter-spacing:-.03em; }
+.exam-start-confirm #site-confirm-message { margin:0; color:var(--phu); font-size:15px; line-height:1.5; }
+.exam-start-confirm .site-confirm-summary { margin:16px 0 0; font-size:17px; font-weight:600; color:var(--chu); }
+.exam-start-confirm .site-confirm-details { list-style:none; padding:0; margin:14px 0 0; font-size:14px; }
+.exam-start-confirm .site-confirm-details li { padding:10px 0; border-bottom:1px solid var(--vien); }
+.exam-start-confirm .site-confirm-details li:last-child { border-bottom:0; }
 .site-confirm-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:stretch; gap:10px; margin-top:24px; }
 .site-confirm-actions > .nut { width:100%; min-width:0; padding:10px 12px; }
 .site-confirm-actions > .nut > span { min-width:0; overflow-wrap:anywhere; }
