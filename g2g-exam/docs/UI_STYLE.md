@@ -25,8 +25,9 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   not authorize a site-wide recoloring.
   Later owner refinement (22 October): exam-sidebar answered questions and the
   completion bar use the configured primary color. The current question uses
-  primary mixed with 18% white and takes precedence over answered styling.
-  These sidebar states use the primary foreground token. Countdown colors retain
+  a soft neutral highlight (12% foreground over the muted surface), with normal
+  text color, and takes precedence over answered styling. Answered questions use
+  the primary foreground token. Countdown colors retain
   the time-dependent green/amber/red palette.
 
 - All native disclosure sections slide open and closed through the shared
