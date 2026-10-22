@@ -24,12 +24,20 @@ of preventing every attack, a full WAF, penetration testing or DDoS protection.
   token. Aggregate API capacity 2400, refill 200/second bounds identifier churn.
 - Rejections occur in onRequest before auth/DB/body parsing/handler work, return
   HTTP429, Retry-After seconds and no-store. No permanent IP ban or account lock.
-  Static assets/media outside `/api/` and OPTIONS are not counted; existing CORS
+  Static assets/media exclusions and OPTIONS are not counted; existing CORS
   and origin guards still apply. These defaults require real workload tuning,
   especially a school behind one NAT; isolated tests are not load benchmarks.
   The 600 burst preserves the existing 200-student simultaneous-submit regression
   after its setup traffic, which exceeded the initial 240-token candidate.
-- The client table is bounded at 10,000 entries, swept lazily once/minute for
+- Public HTML/fallback traffic budget (1.4.3): capacity 600/refill 10 per second
+  per peer; separate aggregate capacity 1200/refill 100 per second. Login pages,
+  runtime config and random scan/fallback paths share it. Unknown `/api/` paths
+  still use the API budget. Page tokens AND the client-tracking table are separate
+  from API tokens/table so page-identifier churn cannot force API overflow.
+  Bundles/source/specs/fonts, local/shared media prefixes, favicon and legacy CSS
+  are excluded; this does NOT rate-limit all public bytes. Static/media floods,
+  slow connections and bandwidth saturation still need edge/proxy protection.
+- Each API/page client table is bounded at 10,000 entries (20,000 total), swept lazily once/minute for
   10-minute idle entries. New clients at capacity share a class overflow bucket,
   never evicting existing exhausted budgets. Restart resets all in-memory budgets;
   replicas have separate budgets. No distributed enforcement is claimed.
@@ -90,6 +98,11 @@ new headers/quotas, not existing authorization/origin/upload protections.
 synthetic clocks/clients: budgets, refill/rollback, bounded churn/cleanup,
 aggregate cap, no handler side effects on 429, trusted-peer negative and headers.
 It does not run a browser, real Google, a live DB or a traffic/load test.
+The public-page tests also cover path/query churn, HTML 429/no-store, a separate
+page aggregate and tracking table, static/media exclusions, and 200 peers sharing
+one IP during entry. A normal HEAD on production returned no Cloudflare-specific
+headers; that is not proof that no CDN/WAF exists. Provider configuration remains
+unverified. No production flood or rate-limit exhaustion test was sent.
 
 Error-log regression: an isolated synthetic provider exception with credential
 sentinels in config/headers/body/message/cause was logged by the previous handler

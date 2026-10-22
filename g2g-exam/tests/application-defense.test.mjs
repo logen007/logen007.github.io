@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import Fastify from '../server/node_modules/fastify/fastify.js';
 import {createRequestDefense,registerApplicationDefense,requestLogPath,DEFENSE_BUDGETS} from '../server/src/application-defense.js';
 let time=0;
-const tiny={api:{capacity:2,perSecond:1},auth:{capacity:2,perSecond:1},upload:{capacity:2,perSecond:1}};
+const tiny={api:{capacity:2,perSecond:1},auth:{capacity:2,perSecond:1},upload:{capacity:2,perSecond:1},page:{capacity:2,perSecond:1}};
 const limiter=createRequestDefense({now:()=>time,maxEntries:3,budgets:tiny});
 const req=(url='/api/actions/save',ip='192.0.2.1',method='POST')=>({url,ip,method});
 assert.equal(limiter.check(req()).allowed,true);
@@ -33,6 +33,26 @@ assert.ok(DEFENSE_BUDGETS.auth.capacity<DEFENSE_BUDGETS.api.capacity);
 const globalLimiter=createRequestDefense({now:()=>0});
 for(let i=0;i<2400;i++)assert.equal(globalLimiter.check(req('/api/state',`client-${i}`)).allowed,true);
 assert.deepEqual(globalLimiter.check(req('/api/state','next')),{allowed:false,retryAfter:1,scope:'aggregate'});
+const pageLimiter=createRequestDefense({now:()=>0,budgets:tiny});
+assert.equal(pageLimiter.check(req('/?variant=1')).allowed,true);
+assert.equal(pageLimiter.check(req('/adm')).allowed,true);
+assert.deepEqual(pageLimiter.check(req('/random-scan-path')),{allowed:false,retryAfter:1,scope:'page'});
+assert.equal(pageLimiter.check(req('/student','192.0.2.2')).allowed,true,'Different peers keep their own page budget');
+assert.equal(pageLimiter.check(req('/api/actions/saveAnswers')).allowed,true,'Page exhaustion does not spend the client API quota');
+const pageAggregate=createRequestDefense({now:()=>0});
+for(let i=0;i<1200;i++)assert.equal(pageAggregate.check(req('/random-'+i,'peer-'+i)).allowed,true);
+assert.deepEqual(pageAggregate.check(req('/','next')),{allowed:false,retryAfter:1,scope:'page_aggregate'});
+assert.equal(pageAggregate.check(req('/api/state','next')).allowed,true,'Public-page exhaustion does not drain aggregate API tokens');
+for(const url of ['/assets/app.js','/src/app.js','/specs/a.json','/fonts/font.woff2','/uploads/audio.mp3','/shared-exam-images/a.jpg','/styles.css','/enhancements.css','/favicon.ico']){
+  assert.equal(pageAggregate.check(req(url)).allowed,true,'Static/media exclusions are not HTML budget consumption');
+}
+const sharedNat=createRequestDefense({now:()=>0});
+for(let i=0;i<200;i++)for(const path of ['/','/runtime-config.js'])assert.equal(sharedNat.check(req(path)).allowed,true,'200 learners can enter behind one peer IP');
+const separated=createRequestDefense({now:()=>0,maxEntries:2,budgets:tiny});
+for(let i=0;i<10;i++)separated.check(req('/scan','scan-'+i));
+assert.equal(separated.size,2,'Page identifiers are bounded');
+for(const peer of ['student-a','student-b'])for(let i=0;i<2;i++)assert.equal(separated.check(req('/api/state',peer)).allowed,true,'Page-table churn cannot force new API clients into an overflow bucket');
+assert.equal(separated.size,4,'Independent page/API tables remain bounded at twice maxEntries');
 
 time=0;let writes=0;
 const app=Fastify({trustProxy:false});
@@ -56,6 +76,9 @@ try{
     assert.equal(response.headers['content-security-policy'],"frame-ancestors 'none'; object-src 'none'; base-uri 'self'");
   }
   time=1000;assert.equal((await send('198.51.100.4')).statusCode,200,'Retry after cooldown succeeds');
+  assert.equal((await app.inject('/')).statusCode,200);
+  assert.equal((await app.inject('/')).statusCode,200);
+  const pageDenied=await app.inject('/');assert.equal(pageDenied.statusCode,429);assert.equal(pageDenied.headers['cache-control'],'no-store');
 }finally{await app.close();}
 const source=readFileSync(new URL('../server/src/index.js',import.meta.url),'utf8');
 assert.match(source,/registerApplicationDefense\(app\)/);
