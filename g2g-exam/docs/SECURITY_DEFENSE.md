@@ -47,7 +47,10 @@ per-IP enforcement in production until this boundary is verified.
 
 Before release: HIGH quality gate and exact-candidate protected CI must pass;
 registry errors are blockers, not clean audits. Inspect live trusted-proxy setup
-with operator access before enabling reliance on IP budgets. No production attack
+with operator access before claiming reliable per-IP enforcement. On 22 October,
+the owner explicitly authorized application-only release via GitHub auto-deploy
+without waiting for SSH; proxy/origin trust remains unverified, not a resolved
+security finding. No infrastructure change is included. No production attack
 traffic, secrets, DB mutation or infrastructure changes are part of these tests.
 Rollback is a normal revert PR, no schema migration. Rollback removes only these
 new headers/quotas, not existing authorization/origin/upload protections.
@@ -70,12 +73,14 @@ synthetic clocks/clients: budgets, refill/rollback, bounded churn/cleanup,
 aggregate cap, no handler side effects on 429, trusted-peer negative and headers.
 It does not run a browser, real Google, a live DB or a traffic/load test.
 
-Candidate verification (22 October 2026, not released): HIGH ran 37/38 checks
+Candidate verification (22 October 2026): HIGH ran 37/38 checks
 successfully, including 200 concurrent submitted attempts behind the same peer
 IP; backend dependency audit returned npm HTTP503. This is incomplete, not a
 clean security audit. A read-only SSH attempt timed out, so live proxy/origin
-trust could not be verified. Keep the candidate unmerged until both blockers
-are resolved. Web audit returned zero advisories in that run only.
+trust could not be verified. Subsequent exact-candidate GitHub Actions run
+39716883144 passed both check and dependency-audit. Web audit returned zero
+advisories in the local run only. Required checks must pass again on the final
+combined candidate; SSH is not needed for the existing main auto-deploy path.
 
 - https://fastify.dev/docs/latest/Reference/Server/#trustproxy
 - https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html
