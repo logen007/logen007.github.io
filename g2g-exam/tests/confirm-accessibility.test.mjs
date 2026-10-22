@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import {confirmAction} from '../src/ui/confirm.js';
+import {confirmExamStart} from '../src/ui/exam-start-confirm.js';
+import {openCodeEntry} from '../src/views/exam-access.js';
 import {mountDialog} from '../src/views/classes.js';
 import {mountBackupPage} from '../src/views/backup-page.js';
 import {clearBackupData} from '../src/settings/backup-data.js';
 const {JSDOM}=await import(process.env.G2G_JSDOM_PATH);
 const dom=new JSDOM('<button id="outside">Background</button>');
-const previous=globalThis.document;globalThis.document=dom.window.document;
+const previous=globalThis.document,previousWindow=globalThis.window;globalThis.document=dom.window.document;globalThis.window=dom.window;
+dom.window.matchMedia=()=>({matches:true});
 try{
   const doc=document,outside=doc.getElementById('outside');outside.focus();
   let cancelled=0,accepted=0;
@@ -24,6 +27,30 @@ try{
   const action=doc.querySelector('[data-confirm-accept]');action.click();action.click();
   assert.equal(accepted,1,'A detached stale button cannot repeat the action');
   assert.equal(doc.activeElement,outside);
+  const exam={title:'Đề <img src=x onerror=alert(1)>',sections:[{skill:'Nghe',timeMinutes:10},{skill:'Nghe',timeMinutes:15},{skill:'Đọc',timeMinutes:30}]};
+  const rejected=confirmExamStart(exam);
+  assert.match(doc.getElementById('site-confirm-message').textContent,/Đề <img/);
+  assert.equal(doc.querySelector('#site-confirm img'),null,'Exam metadata is rendered as text, never HTML');
+  assert.deepEqual([...doc.querySelectorAll('.site-confirm-details li')].map(item=>item.textContent),['Nghe — 25 phút','Đọc — 30 phút']);
+  assert.equal(doc.querySelector('[data-confirm-cancel] span').textContent,'Huỷ thi');
+  assert.equal(doc.querySelector('[data-confirm-accept] span').textContent,'Bắt đầu ngay');
+  key('Escape');assert.equal(await rejected,false);
+  const confirmed=confirmExamStart(exam);doc.querySelector('[data-confirm-accept]').click();assert.equal(await confirmed,true);
+  let previews=0,starts=0;
+  const codeRepo={mode:'api',call:async(action,payload)=>{assert.equal(action,'previewAttemptStart');assert.equal(payload.code,'ABCDE');previews++;return {title:exam.title,skills:[{name:'Nghe',minutes:20}]};},startAttemptSecure:async()=>{starts++;throw Error('Synthetic start failure');}};
+  openCodeEntry({repo:codeRepo,initialCode:'ABCDE',onStarted:()=>assert.fail('Failed/cancelled starts never navigate')});
+  const codeModal=doc.getElementById('modal'),codeForm=codeModal.querySelector('form');
+  const submit=()=>codeForm.onsubmit({preventDefault(){},currentTarget:codeForm});
+  const pending=submit();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(previews,1);assert.equal(starts,0,'Preview does not start the timer or consume a code');
+  await submit();assert.equal(previews,1,'Double submission while confirming is ignored');
+  key('Escape');await pending;
+  assert.equal(codeModal.isConnected,true);assert.equal(codeForm.elements.code.value,'ABCDE');
+  assert.equal(codeForm.querySelector('button').disabled,false);
+  const retry=submit();await new Promise(resolve=>setImmediate(resolve));
+  doc.querySelector('[data-confirm-accept]').click();await retry;
+  assert.equal(starts,1);assert.equal(codeForm.querySelector('[data-error]').textContent,'Synthetic start failure');
+  codeModal.remove();outside.focus();
   const modal=mountDialog('Synthetic profile','<input id="name"><button>Save</button>');
   const close=modal.querySelector('[data-dismiss]'),save=modal.querySelector('button:not([data-dismiss])');
   save.focus();key('Tab');assert.equal(doc.activeElement,close);
@@ -93,4 +120,4 @@ try{
     root.remove();clearBackupData();
   }finally{Object.assign(globalThis,saved);}
   console.log('Confirmation DOM: forward/backward focus loop, background containment, Escape, restoration and replacement cleanup passed.');
-}finally{globalThis.document=previous;dom.window.close();}
+}finally{globalThis.document=previous;globalThis.window=previousWindow;dom.window.close();}

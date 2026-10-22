@@ -20,16 +20,30 @@ try{
     startupGate:{isReady:()=>true},ATTEMPT_STATUS:{IN_PROGRESS:'in_progress'},byId:(items,id)=>items.find(x=>x.id===id),
     clearTimeout,setTimeout,document:{getElementById:()=>null,querySelector:()=>null},window:{scrollTo(){}},
     withExamTransition:async fn=>fn(Promise.resolve()),
+    confirmExamStart:async()=>true,
     startAttempt:state=>{const local={...attempt,id:'local-a'};state.attempts.push(local);return local;},
     notify:message=>{throw Error(message);},
   };
   context.render=()=>{if(!context.startingAttempt)repo.setPollingScope(context.ui.view==='exam'?'full':'catalog');};
   context.act=async fn=>{const result=await fn();context.data=await repo.getState();return result;};
   vm.createContext(context);vm.runInContext(subscription+'\n'+begin,context);
+  let resolveConfirmation,confirmations=0;
+  context.confirmExamStart=()=>{confirmations++;return new Promise(resolve=>{resolveConfirmation=resolve;});};
+  const cancelled=context.beginAttempt('e',false,null);
+  await context.beginAttempt('e',false,null);
+  assert.equal(confirmations,1,'Repeated clicks cannot open duplicate start confirmations');
+  assert.equal(started,false,'No start request before confirmation');
+  resolveConfirmation(false);await cancelled;
+  assert.equal(started,false,'Cancel never creates an attempt');
+  assert.equal(context.startingAttempt,false);
+  context.confirmExamStart=async()=>true;
   await context.beginAttempt('e',false,null);
   assert.equal(context.ui.view,'exam','Background catalog render must not cancel the start response');
   assert.equal(context.ui.attemptId,'server-a');
   assert.equal(context.startingAttempt,false);
+  context.confirmExamStart=()=>assert.fail('Resuming an existing attempt must not prompt again');
+  await context.beginAttempt(null,false,null,'server-a');
+  context.confirmExamStart=async()=>true;
   clearTimeout(context.realtimeRenderTimer);
   context.act=async()=>{throw Error('network');};
   await assert.rejects(context.beginAttempt('e',false,null),/network/);

@@ -1,5 +1,6 @@
 import {mountDialog} from './classes.js';
 import {withExamTransition} from '../ui/exam-transition.js';
+import {confirmExamStart} from '../ui/exam-start-confirm.js';
 import {examLearningLevel,normalizeStudentLevel} from '../domain/student-profile.js';
 import {textHtml,esc} from '../ui/format.js';
 
@@ -9,15 +10,20 @@ export const formatICTDateTime=value=>new Intl.DateTimeFormat('vi-VN',{timeZone:
 export function openCodeEntry({repo,examId,onStarted,initialCode=''}){
   const modal=mountDialog('Nhập mã đề',`<form class="profile-form"><p>Mỗi mã dùng một lần. Bắt đầu rồi bỏ dở vẫn tính đã dùng.</p><label>Mã thi<input name="code" value="${esc(initialCode)}" maxlength="5" minlength="5" pattern="[A-Za-z0-9]{5}" required autocomplete="off" autocapitalize="characters" placeholder="ABCDE"></label><p data-error role="alert"></p><button class="nut chinh" type="submit">Bắt đầu thi</button></form>`);
   modal.querySelector('form').onsubmit=async event=>{
-    event.preventDefault();const form=event.currentTarget,button=form.querySelector('button');button.disabled=true;
+    event.preventDefault();const form=event.currentTarget,button=form.querySelector('button');if(button.disabled)return;button.disabled=true;
     try{
       if(repo.mode!=='api')throw new Error('Mã thi cần kết nối máy chủ; không dùng trong bản demo.');
       const code=form.elements.code.value.trim().toUpperCase();
+      const summary=await repo.call('previewAttemptStart',{examId,code});
+      if(!modal.isConnected)return;
+      if(!await confirmExamStart(summary))return;
+      if(!modal.isConnected)return;
       await withExamTransition(async covered=>{
         const attempt=await repo.startAttemptSecure(examId,{code});
         await covered;modal.remove();await onStarted(attempt.id);
       },button);
-    }catch(error){form.querySelector('[data-error]').textContent=error.message;button.disabled=false;}
+    }catch(error){form.querySelector('[data-error]').textContent=error.message;}
+    finally{button.disabled=false;}
   };
 }
 
