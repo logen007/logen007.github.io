@@ -1,0 +1,64 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import Fastify from '../server/node_modules/fastify/fastify.js';
+import {createRequestDefense,registerApplicationDefense,requestLogPath,DEFENSE_BUDGETS} from '../server/src/application-defense.js';
+let time=0;
+const tiny={api:{capacity:2,perSecond:1},auth:{capacity:2,perSecond:1},upload:{capacity:2,perSecond:1}};
+const limiter=createRequestDefense({now:()=>time,maxEntries:3,budgets:tiny});
+const req=(url='/api/actions/save',ip='192.0.2.1',method='POST')=>({url,ip,method});
+assert.equal(limiter.check(req()).allowed,true);
+assert.equal(limiter.check(req('/api/commit?different=1')).allowed,true);
+assert.deepEqual(limiter.check(req()),{allowed:false,retryAfter:1,scope:'api'});
+assert.equal(limiter.check(req('/api/auth/google')).allowed,true,'Auth has its own quota');
+assert.equal(limiter.check(req('/api/auth/google/one-tap')).allowed,true);
+assert.equal(limiter.check(req('/api/auth/google/callback')).allowed,false,'Auth paths share one quota');
+assert.equal(limiter.check(req('/assets/app.js')).allowed,true);
+assert.equal(limiter.check(req('/api/auth/google','192.0.2.1','OPTIONS')).allowed,true);
+time=1000;assert.equal(limiter.check(req()).allowed,true,'Budget refills');
+assert.equal(limiter.check(req()).allowed,false);
+time=0;assert.equal(limiter.check(req()).allowed,false,'Clock rollback does not mint tokens');
+time=1000;assert.equal(limiter.check(req('/api/media/image')).allowed,true);
+assert.equal(limiter.size,3);
+for(let i=0;i<1000;i++)limiter.check(req('/api/actions/save',`new-${i}`));
+assert.equal(limiter.size,3,'Identifier churn cannot grow memory or evict an existing exhausted bucket');
+assert.equal(limiter.check(req()).allowed,false);
+time=602000;assert.equal(limiter.check(req()).allowed,true);assert.equal(limiter.size,1,'Idle entries are swept');
+assert.throws(()=>createRequestDefense({maxEntries:0}));
+assert.equal(requestLogPath('/api/auth/google/callback?code=PRIVATE&state=SECRET'),'/api/auth/google/callback');
+assert.equal(requestLogPath('/shared-exam-images/a.jpg?signature=PRIVATE#x'),'/shared-exam-images/a.jpg');
+const defaultLimiter=createRequestDefense({now:()=>time});
+for(let i=0;i<DEFENSE_BUDGETS.api.capacity;i++)assert.equal(defaultLimiter.check(req('/api/actions/saveAnswers')).allowed,true,'API burst budget permits shared-NAT traffic');
+assert.equal(defaultLimiter.check(req('/api/actions/saveAnswers')).allowed,false,'API budget still rejects an excessive burst');
+assert.ok(DEFENSE_BUDGETS.auth.capacity<DEFENSE_BUDGETS.api.capacity);
+const globalLimiter=createRequestDefense({now:()=>0});
+for(let i=0;i<2400;i++)assert.equal(globalLimiter.check(req('/api/state',`client-${i}`)).allowed,true);
+assert.deepEqual(globalLimiter.check(req('/api/state','next')),{allowed:false,retryAfter:1,scope:'aggregate'});
+
+time=0;let writes=0;
+const app=Fastify({trustProxy:false});
+registerApplicationDefense(app,{limiter:createRequestDefense({now:()=>time,budgets:tiny})});
+app.post('/api/auth/google/one-tap',async()=>{writes++;return {ok:true};});
+app.get('/',async(_req,reply)=>reply.type('text/html').send('<!doctype html><title>Fixture</title>'));
+app.get('/api/state',async()=>({ok:true}));
+app.get('/api/failure',async()=>{throw new Error('Fixture');});
+try{
+  const send=forwarded=>app.inject({method:'POST',url:'/api/auth/google/one-tap',headers:{'x-forwarded-for':forwarded},payload:{}});
+  assert.equal((await send('198.51.100.1')).statusCode,200);
+  assert.equal((await send('198.51.100.2')).statusCode,200);
+  const denied=await send('198.51.100.3');
+  assert.equal(denied.statusCode,429,'Forged forwarded headers do not bypass direct-peer budgets');
+  assert.equal(writes,2,'Rejected request never reaches handler');
+  assert.equal(denied.headers['retry-after'],'1');assert.equal(denied.headers['cache-control'],'no-store');
+  for(const response of [denied,await app.inject('/'),await app.inject('/api/state'),await app.inject('/api/failure')]){
+    assert.equal(response.headers['x-content-type-options'],'nosniff');
+    assert.equal(response.headers['x-frame-options'],'DENY');
+    assert.equal(response.headers['referrer-policy'],'strict-origin-when-cross-origin');
+    assert.equal(response.headers['content-security-policy'],"frame-ancestors 'none'; object-src 'none'; base-uri 'self'");
+  }
+  time=1000;assert.equal((await send('198.51.100.4')).statusCode,200,'Retry after cooldown succeeds');
+}finally{await app.close();}
+const source=readFileSync(new URL('../server/src/index.js',import.meta.url),'utf8');
+assert.match(source,/registerApplicationDefense\(app\)/);
+assert.ok(source.indexOf('registerApplicationDefense(app)')<source.indexOf('registerAuthRoutes(app)'));
+assert.match(source,/url:requestLogPath\(request.url\)/);
+console.log('Application defense: bounded quotas/refill/churn, spoofed-header negative, 429 before side effects, headers and request-query redaction passed in isolated Fastify. Not a production attack/load test.');

@@ -75,6 +75,7 @@ Không giấu baseline bằng allowlist rỗng hoặc `continue-on-error`.
 | Score/result/publication | `gradebook`, `provisional-result`, `attempt-result`, `publication` + `publication.integration.mjs` |
 | Attempt save/network | `test:sync`, `test:performance`, `exam-completion.integration.mjs`, `performance-http.integration.mjs`; deadline/conflict/offline/retry |
 | Auth/access | `production-auth`, `security-preflight`, `backend-access.integration.mjs`; owner/admin/student negatives |
+| Application defense | `application-defense.test.mjs` (HIGH + CI), `request-origin.test.mjs`, production HTTP/SQL regression for shared-NAT submission bursts; proxy/edge trust still needs operator verification, see `SECURITY_DEFENSE.md` |
 | Media/R2 | `test:r2`, `media-gc`, `copy-media`, `image-paste`; references, fallback, upload limits |
 | Speaking/delete/archive | `speaking-lab`, `speaking-devices`, SQL `speaking-lab`/`speaking-archive`, DOM `speaking-phone`; retries, CSRF, Drive ownership |
 | Backup/restore/deployment | `backup-*`, isolated restore workflow, Docker import closure `vps-backend`; do not run a real restore on production |
