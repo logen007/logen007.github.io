@@ -153,7 +153,7 @@ window.addEventListener('online',()=>{ui.online=true;if(ui.view!=='exam')render(
 window.addEventListener('offline',()=>{ui.online=false;if(ui.view!=='exam')render();});
 
 function layout(content){
-  return topbarHtml({user,mode:repo.mode,online:ui.online,ui,canSwitchRole:Boolean(authenticatedUser?.canTestRoles||isMaster(authenticatedUser))})+content;
+  return topbarHtml({user,mode:repo.mode,online:ui.online,ui,canSwitchRole:Boolean(authenticatedUser?.canTestRoles||isMaster(authenticatedUser)),studentExamMenu:(data.exams||[]).filter(exam=>exam.status==='published')})+content;
 }
 
 function notify(msg){
@@ -1098,6 +1098,12 @@ function bindGlobal(){
     }catch(error){notify(error?.message||'Không đổi được kiểu tài khoản thử nghiệm.');}
   });
   app.querySelectorAll('[data-action="student-home"]').forEach(b=>b.onclick=()=>{ui.view='student-home';render();});
+  app.querySelectorAll('[data-action="student-exam-menu"]').forEach(button=>button.onclick=()=>{
+    ui.examLevelFilter=button.dataset.examLevel;
+    ui.examFilter=button.dataset.examProvider;
+    ui.view='student-home';
+    render();
+  });
   app.querySelectorAll('[data-action="student-results"]').forEach(b=>b.onclick=()=>{ui.view='student-results';render();});
   app.querySelectorAll('[data-action="student-attempt-detail"]').forEach(b=>b.onclick=async event=>{
     if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
