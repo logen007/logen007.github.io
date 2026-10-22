@@ -48,8 +48,8 @@ export function confirmAction(message,onConfirm,{confirmLabel='Tiếp tục',can
   overlay.querySelector('[data-confirm-cancel]').onclick=cancel;
   accept.onclick=()=>{
     if(closed)return;
-    const rect=accept.getBoundingClientRect();
-    const origin={rect:{left:rect.left,top:rect.top,width:rect.width,height:rect.height},backgroundColor:window.getComputedStyle?.(accept).backgroundColor};
+    const rect=accept.getBoundingClientRect?.();
+    const origin=rect?{rect:{left:rect.left,top:rect.top,width:rect.width,height:rect.height},backgroundColor:globalThis.window?.getComputedStyle?.(accept).backgroundColor}:null;
     if(close())onConfirm(origin);
   };
   if(extraAction){
