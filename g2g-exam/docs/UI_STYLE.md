@@ -13,6 +13,17 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
 
 ## Visual hierarchy
 
+- Owner color reference approved 22 October 2026: use fresh saturated status
+  colors matching [the supplied reference](references/status-palette-2026-10-22.png).
+  Approximate working swatches: green `#22C878`, blue `#1683FF`, amber `#F5AA28`,
+  red `#F23E39`. The reference image is authoritative for the visual direction;
+  these hexadecimal values are approximations, not sampled measurements.
+  Prefer this vivid green for answered/completed/success states; avoid the pale
+  mint `#67CF9B` and muddy dark greens used in previous exam-sidebar revisions.
+  Use neutral charcoal surfaces in dark mode and clear readable labels. Apply
+  this preference to future requested UI edits; saving this reference alone does
+  not authorize a site-wide recoloring.
+
 - All native disclosure sections slide open and closed through the shared
   disclosure-motion binding, including dynamically rendered sections. Keep content
   mounted during closing, allow reversing mid-animation, and skip reduced motion.
