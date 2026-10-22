@@ -31,6 +31,7 @@ globalThis.sessionStorage={getItem:()=>null};
   assert.match(html,/exam-question-link is-answered/);
   assert.match(html,/aria-label="Mở danh sách câu hỏi, câu 1"/);
   assert.match(html,/data-exam-question-sidebar-current>1/);
+  assert.doesNotMatch(html,/Chưa làm|Đang xem|Đã làm/);
   assert.doesNotMatch(html,/☰/);
   assert.ok(html.indexOf('exam-question-sidebar-panel')<html.indexOf('exam-question-sidebar-toggle'));
   assert.doesNotMatch(html,/data-action="next-section"|data-action="prev-section"|exam-reading-split/);
