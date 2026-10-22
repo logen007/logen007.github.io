@@ -347,6 +347,8 @@ function bindExamInputs(attempt,questions){
     attempt.answers={...(attempt.answers||{}),[qid]:value};
     const required=questions.filter(question=>!isPrefilledQuestion(question)),answered=required.filter(question=>answerPresent(attempt.answers[question.id],question)).length;
     app.querySelectorAll('[data-current-answer-count]').forEach(item=>{item.textContent=`${answered}/${required.length}`;});
+    app.querySelectorAll('[data-exam-sidebar-answer-progress]').forEach(item=>{item.textContent=`${answered}/${required.length}`;});
+    app.querySelectorAll('[data-exam-sidebar-answer-progress-bar]').forEach(item=>item.style.setProperty('--exam-answer-progress',`${required.length?Math.round(answered/required.length*100):0}%`));
     const question=questions.find(item=>item.id===qid),card=app.querySelector(`.cau-thi[data-q="${qid}"]`);
     if(card&&question)card.classList.toggle('is-answered',answerPresent(value,question));
     const position=required.findIndex(item=>item.id===qid),link=app.querySelectorAll('[data-question-jump]')[position];
@@ -574,12 +576,15 @@ async function submitAttemptFast(attemptId){
 
 function startExamTimer(attempt,exam,sectionIndex){
   const section=exam.sections[sectionIndex],el=document.getElementById('examTimer'),summary=document.getElementById('examTimeSummary');
+  const totalSeconds=Math.max(1,examDurationSeconds(exam));
   const tick=async()=>{
     const left=getSectionRemainingSeconds(attempt,exam,sectionIndex);
     const display=`${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`;
     if(el)el.textContent=display;
     if(summary)summary.textContent=display;
     const mainTime=document.getElementById('examMainTime');if(mainTime)mainTime.textContent=display;
+    app.querySelectorAll('[data-exam-sidebar-time]').forEach(item=>{item.textContent=display;});
+    app.querySelectorAll('[data-exam-sidebar-time-ring]').forEach(item=>item.style.setProperty('--exam-time-progress',`${Math.max(0,Math.min(100,left/totalSeconds*100))}`));
     if(left<=0&&!timerBusy){
       clearTimer();
       timerBusy=true;
