@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {examDurationSeconds,examDeadlineMs,submissionTiming} from '../src/domain/exam-clock.js';
+import {examDurationSeconds,examSkillDurations,examDeadlineMs,submissionTiming} from '../src/domain/exam-clock.js';
 import {duplicateExam,detachLockedDraftQuestions} from '../src/domain/exams.js';
 import {updateQuestion} from '../src/domain/questions.js';
 import {submittedHtml,unansweredExamQuestions} from '../src/views/student.js';
@@ -15,6 +15,10 @@ assert.ok(appSource.includes('return repo.submitAttemptSecure(attemptId)'));
 assert.ok(!timeoutPath.includes('guardExamAudio'));
 const skillTimed={settings:{skillSettings:{Nghe:{timeMinutes:20},Đọc:{timeMinutes:25},Viết:{timeMinutes:20}}},sections:[{skill:'Nghe',timeMinutes:20},{skill:'Nghe',timeMinutes:20},{skill:'Nghe',timeMinutes:20},{skill:'Đọc',timeMinutes:25},{skill:'Đọc',timeMinutes:25},{skill:'Viết',timeMinutes:20},{skill:'Viết',timeMinutes:20}]};
 assert.equal(examDurationSeconds(skillTimed),65*60);
+assert.deepEqual(examSkillDurations(skillTimed),[{name:'Nghe',minutes:20},{name:'Đọc',minutes:25},{name:'Viết',minutes:20}]);
+assert.deepEqual(examSkillDurations({sections:[{skill:'Đọc',timeMinutes:10},{skill:'Đọc',timeMinutes:15},{skillKey:'Viết',timeMinutes:20}]}),[{name:'Đọc',minutes:25},{name:'Viết',minutes:20}]);
+assert.equal(examSkillDurations({sections:[]}).length,0);
+assert.match(appSource,/if\(!existingAttemptId&&!await confirmExamStart\(byId\(data.exams,examId\)\)\)return;/,'Existing sessions resume without a new-start confirmation');
 assert.equal(examDeadlineMs(attempt,skillTimed),Date.parse('2026-10-10T01:05:00Z'));
 assert.equal(examDeadlineMs(attempt,exam),Date.parse('2026-10-10T00:30:00Z'));
 assert.equal(submissionTiming(attempt,exam,Date.parse('2026-10-10T00:10:00Z')).durationSeconds,600);

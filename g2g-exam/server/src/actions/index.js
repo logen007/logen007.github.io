@@ -12,7 +12,7 @@ import {saveClass,saveStudentProfile,saveStudentName,saveAccountName} from './cl
 import {verifyClassCode,enrollInClass} from './class-enrollment.js';
 import {saveOralScore} from './oral.js';
 import {saveExamAccess,listExamCodes,createExamCode,acknowledgePromotion} from './exam-access.js';
-import {startAttempt,saveAnswers,startPartAudio,completePartAudio,setAttemptSection,abandonAttempt,submitAttempt} from './attempts.js';
+import {startAttempt,previewAttemptStart,saveAnswers,startPartAudio,completePartAudio,setAttemptSection,abandonAttempt,submitAttempt} from './attempts.js';
 import {saveManualGrade,publishAttemptResult,deliverResultEmail,suggestWritingGradeForAttempt} from './grading.js';
 import {updateSystemSettings,updateSmtpSecret,updateAiApiKey,retryFailedWritingAiJobs,testSmtp,getInfrastructureStatus,getWritingAiQueueStatus,setUserRole,setTeacherByEmail} from './settings.js';
 
@@ -47,6 +47,7 @@ export async function handleAction(user,name,data={}){
     case 'saveOralScore': return saveOralScore(user,data);
     case 'getAttemptReview': return getAttemptReview(user,data);
     case 'startAttemptSecure': return startAttempt(user,data);
+    case 'previewAttemptStart': return previewAttemptStart(user,data);
     case 'saveAnswers': return saveAnswers(user,data);
     case 'startPartAudio': return startPartAudio(user,data);
     case 'completePartAudio': return completePartAudio(user,data);

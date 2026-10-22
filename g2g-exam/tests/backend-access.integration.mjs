@@ -27,7 +27,7 @@ try{
   assert.equal(lightStatus.smtp.secretConfigured,false);
   await assert.rejects(()=>updateSystemSettings({role:'master'},{settings:{...structuredClone(DEFAULT_SETTINGS),theme:{primaryColor:'#123456',contentWidth:99999}}}),error=>error.statusCode===400&&/Chiều rộng/.test(error.message));
   const {createExamCode,saveExamAccess,expireCodes}=await import('../server/src/actions/exam-access.js');
-  const {startAttempt,abandonAttempt,submitAttempt}=await import('../server/src/actions/attempts.js');
+  const {startAttempt,previewAttemptStart,abandonAttempt,submitAttempt}=await import('../server/src/actions/attempts.js');
   const {publishAttemptResult}=await import('../server/src/actions/grading.js');
   const {saveOralScore}=await import('../server/src/actions/oral.js');
   const {loadState}=await import('../server/src/state.js');
@@ -109,7 +109,18 @@ try{
   const before=await loadState(student);assert.equal(before.questions.length,0);assert.equal(before.exams[0].hasActiveCodes,false);
   const code=await createExamCode(teacher,{examId:'e',expiresAt:new Date(Date.now()+60000).toISOString()});
   assert.match(code.code,/^[A-Z0-9]{5}$/);
+  await assert.rejects(()=>previewAttemptStart(teacher,{code:code.code}),error=>error.statusCode===403);
+  await assert.rejects(()=>previewAttemptStart(student,{examId:'e'}),/nhập mã/);
+  await assert.rejects(()=>previewAttemptStart(student,{code:code.code,examId:'wrong'}),/không hợp lệ/);
+  const beforePreview=await query('SELECT * FROM attempts ORDER BY id');
+  const preview=await previewAttemptStart(student,{code:code.code});
+  assert.deepEqual(Object.keys(preview).sort(),['skills','title']);
+  assert.equal(preview.title,'Protected');
+  assert.ok(preview.skills.length>0);
+  assert.deepEqual((await query('SELECT * FROM attempts ORDER BY id')).rows,beforePreview.rows,'Preview never creates or deletes attempts');
+  assert.equal((await query('SELECT 1 FROM exam_code_uses WHERE code_id=$1',[code.id])).rowCount,0,'Preview never consumes the code');
   const started=await startAttempt(student,{code:code.code});
+  await assert.rejects(()=>previewAttemptStart(student,{code:code.code}),/đã sử dụng/);
   const {loadAttemptSync}=await import('../server/src/attempt-sync.js');
   const initialSync=await loadAttemptSync(student,started.attemptId);
   assert.equal(initialSync.attempt.id,started.attemptId);

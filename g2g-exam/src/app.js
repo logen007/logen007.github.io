@@ -66,6 +66,7 @@ import {openAccountProfile} from './views/account-profile.js';
 import {openExamAccess,openCodeEntry,showPromotion} from './views/exam-access.js';
 import {gradebookHtml,bindGradebook} from './views/gradebook.js';
 import {confirmAction} from './ui/confirm.js';
+import {confirmExamStart} from './ui/exam-start-confirm.js';
 import {
   loginHtml,studentHomeHtml,studentResultsHtml,studentAttemptDetailHtml,examHtml,submittedHtml,expiredHtml,answerPresent
 } from './views/student.js';
@@ -1216,8 +1217,9 @@ function bindViewSpecific(){
 async function beginAttempt(examId,restart,trigger,existingAttemptId=null){
   if(startingAttempt)return;
   startingAttempt=true;
-  clearTimeout(realtimeRenderTimer);
   try{
+  if(!existingAttemptId&&!await confirmExamStart(byId(data.exams,examId)))return;
+  clearTimeout(realtimeRenderTimer);
   return await withExamTransition(async covered=>{
   const attempt=existingAttemptId?byId((await repo.getState()).attempts,existingAttemptId):await act(()=>repo.mode==='api'?repo.startAttemptSecure(examId,{restart}):repo.transaction(st=>startAttempt(st,user,examId,{restart})),null,{rerender:false});
   if(attempt?.status===ATTEMPT_STATUS.IN_PROGRESS){await covered;data=await repo.getState();ui.attemptId=attempt.id;ui.view='exam';startingAttempt=false;render();window.scrollTo(0,0);}

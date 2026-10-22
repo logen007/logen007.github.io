@@ -1,14 +1,17 @@
-export function examDurationSeconds(exam){
-  const counted=new Set(),settings=exam.settings?.skillSettings||{};
-  const minutes=(exam.sections||[]).reduce((sum,section)=>{
+export function examSkillDurations(exam){
+  const skills=new Map(),settings=exam.settings?.skillSettings||{};
+  for(const [index,section] of (exam.sections||[]).entries()){
     const skill=section.skill||section.skillKey;
     const configured=Number(settings[skill]?.timeMinutes);
-    if(Number.isFinite(configured)&&configured>0){
-      if(counted.has(skill))return sum;
-      counted.add(skill);return sum+configured;
-    }
-    return sum+Math.max(0,Number(section.timeMinutes)||0);
-  },0);
+    const key=skill||(Number.isFinite(configured)&&configured>0?undefined:`section:${index}`);
+    const previous=skills.get(key);
+    const minutes=Number.isFinite(configured)&&configured>0?configured:(previous?.minutes||0)+Math.max(0,Number(section.timeMinutes)||0);
+    skills.set(key,{name:skill||section.name||`Phần ${index+1}`,minutes});
+  }
+  return [...skills.values()];
+}
+export function examDurationSeconds(exam){
+  const minutes=examSkillDurations(exam).reduce((sum,skill)=>sum+skill.minutes,0);
   return Math.max(60,minutes*60);
 }
 export function examDeadlineMs(attempt,exam){

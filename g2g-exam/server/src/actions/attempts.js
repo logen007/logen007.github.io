@@ -5,31 +5,50 @@ import {query,withTx,getSettings,audit,uid,now,appError} from '../db.js';
 import {examById,attemptExam,questionMap,scoreQuestion,resultFor,sectionMeta} from './shared.js';
 import {codeHash,checkCodeRate} from './exam-access.js';
 import {isAutomaticWritingForm,scoreWritingForm} from '../writing-form.js';
-import {examDeadlineMs,submissionTiming} from '../../../src/domain/exam-clock.js';
+import {examDeadlineMs,submissionTiming,examSkillDurations} from '../../../src/domain/exam-clock.js';
 import {letterAnswerError} from '../../../src/domain/letter-answers.js';
 import {queueWritingAiJobs} from '../writing-ai-queue.js';
 import {shuffledGapSnapshot} from '../../../src/domain/gap-bank.js';
 import {releasedExam} from '../exam-releases.js';
+
+async function resolveStartExam(user,{examId,code},client,{lock=false}={}){
+  if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
+  if(!user.canTestRoles&&!user.profileCompletedAt)throw appError(409,'Vui lòng hoàn tất họ tên và mã lớp trước khi thi.');
+  let access;
+  if(code){
+    access=(await client.query('SELECT * FROM exam_codes WHERE code_hash=$1 AND expires_at>now()'+(lock?' FOR UPDATE':''),[codeHash(code)])).rows[0];
+    if(!access||Date.parse(access.expires_at)<=Date.now()||(examId&&examId!==access.exam_id))throw appError(403,'Mã thi không hợp lệ hoặc đã hết hạn.');
+    examId=access.exam_id;
+  }
+  if(lock)await client.query('SELECT id FROM exams WHERE id=$1 FOR UPDATE',[examId]);
+  const currentExam=await examById(examId,client);
+  const exam=await releasedExam(currentExam,client);
+  if(exam.status!=='published')throw appError(409,'Bài thi chưa mở cho học viên.');
+  if(exam.hidden&&!access)throw appError(403,'Vui lòng nhập mã thi.');
+  if(access&&(await client.query('SELECT 1 FROM exam_code_uses WHERE code_id=$1 AND student_id=$2',[access.id,user.id])).rowCount)throw appError(409,'Bạn đã sử dụng mã thi này.');
+  return {access,examId,currentExam,exam};
+}
+
+export async function previewAttemptStart(user,payload){
+  if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
+  if(payload.code)await checkCodeRate(user);
+  const settings=await getSettings();
+  if(settings.operations.maintenanceMode)throw appError(409,settings.operations.maintenanceMessage);
+  return withTx(async client=>{
+    const {exam}=await resolveStartExam(user,payload,client);
+    // Only safe metadata: no question content, answers, media, or attempt writes.
+    return {title:exam.title,skills:examSkillDurations(exam)};
+  });
+}
 
 export async function startAttempt(user,{examId,restart=false,code}){
   if(user.role!=='student')throw appError(403,'Chỉ học viên được bắt đầu bài thi.');
   if(!user.canTestRoles&&!user.profileCompletedAt)throw appError(409,'Vui lòng hoàn tất họ tên và mã lớp trước khi thi.');
   const settings=await getSettings();
   if(code)await checkCodeRate(user);
-
   return withTx(async client=>{
-    let access;
-    if(code){
-      access=(await client.query('SELECT * FROM exam_codes WHERE code_hash=$1 AND expires_at>now() FOR UPDATE',[codeHash(code)])).rows[0];
-      if(!access||Date.parse(access.expires_at)<=Date.now()||(examId&&examId!==access.exam_id))throw appError(403,'Mã thi không hợp lệ hoặc đã hết hạn.');
-      examId=access.exam_id;
-    }
-    await client.query('SELECT id FROM exams WHERE id=$1 FOR UPDATE',[examId]);
-    const currentExam=await examById(examId,client);
-    const exam=await releasedExam(currentExam,client);
-    if(exam.status!=='published')throw appError(409,'Bài thi chưa mở cho học viên.');
-    if(exam.hidden&&!access)throw appError(403,'Vui lòng nhập mã thi.');
-    if(access&&(await client.query('SELECT 1 FROM exam_code_uses WHERE code_id=$1 AND student_id=$2',[access.id,user.id])).rowCount)throw appError(409,'Bạn đã sử dụng mã thi này.');
+    const resolved=await resolveStartExam(user,{examId,code},client,{lock:true});
+    const {access,currentExam,exam}=resolved;examId=resolved.examId;
     await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`,[`${user.id}:${examId}`]);
     const rows=(await client.query(`SELECT * FROM attempts WHERE student_id=$1 AND exam_id=$2 ORDER BY attempt_no DESC FOR UPDATE`,[user.id,examId])).rows;
     const current=rows.find(row=>row.status==='in_progress');
