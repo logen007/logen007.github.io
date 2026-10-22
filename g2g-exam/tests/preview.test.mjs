@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import './login.test.mjs';
 import './audio-runtime.test.mjs';
+import './exam-question-sidebar.test.mjs';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {iconHtml} from '../src/ui/icons.js';
@@ -103,7 +104,7 @@ assert.match(touchStyles,/\.exam-question-sidebar \{ position:fixed; z-index:20;
 assert.match(touchStyles,/\.exam-question-link:hover \{ border-color:var\(--exam-status-blue\);/);
 assert.match(touchStyles,/\.exam-question-link\.is-answered \{ border-color:var\(--brand-primary\); background:var\(--brand-primary\); color:var\(--brand-on-primary\);/);
 assert.match(touchStyles,/\.exam-question-time-pie \{[\s\S]*?background:conic-gradient/);
-assert.match(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/dataset\.questionJump[\s\S]*?scrollIntoView\(\{behavior,block:'start'\}\)/);
+assert.match(readFileSync(new URL('../src/ui/exam-question-sidebar.js',import.meta.url),'utf8'),/view\.scrollTo\(\{top,behavior:/);
 assert.match(touchStyles,/@media \(any-pointer:coarse\) \{[\s\S]*?select, textarea:not\(\.exam-title-input\), \[contenteditable="true"\][\s\S]*?font-size:16px !important;/);
 assert.doesNotMatch(readFileSync(new URL('../vi.html',import.meta.url),'utf8'),/user-scalable\s*=\s*no|maximum-scale\s*=/);
 assert.match(readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),/initialFocus\?\.focus\(\{preventScroll:true\}\)/);

@@ -1,4 +1,6 @@
 import {examDurationSeconds} from './domain/exam-clock.js';
+import {bindExamQuestionSidebar} from './ui/exam-question-sidebar.js';
+let clearExamQuestionSidebar=()=>{};
 import {scrollExamToTop} from './ui/exam-scroll.js';
 import {bindImageSheetSync} from './ui/image-sheet-sync.js';
 import {changeInstructions,moveLegacyInstruction} from './domain/section-instructions.js';
@@ -286,7 +288,7 @@ function examView(){
   bindExamInputs(attempt,questions);
   void mountExamRuntime({state:data,examRoot:app.querySelector('.thi'),saveAnswer:(qid,value)=>queueAnswer(attempt.id,qid,value,0)}).catch(error=>console.error('Part runtime',error));
   bindSectionAudio(attempt,{preview:false});
-  bindExamQuestionSidebar();
+  clearExamQuestionSidebar=bindExamQuestionSidebar(app);
   startExamTimer(attempt,exam,sectionIndex);
 }
 
@@ -433,38 +435,6 @@ function guardExamAudio(){
   if(ui.view!=='exam'||!examAudioPlaying())return false;
   notify('Bitte hören Sie das Audio bis zum Ende an.');
   return true;
-}
-function bindExamQuestionSidebar(){
-  const sidebar=app.querySelector('[data-exam-question-sidebar]');if(!sidebar)return;
-  const toggle=sidebar.querySelector('[data-exam-question-sidebar-toggle]');
-  const currentNumber=sidebar.querySelector('[data-exam-question-sidebar-current]');let currentIndex=0;
-  const setOpen=open=>{sidebar.classList.toggle('is-open',open);toggle?.setAttribute('aria-expanded',String(open));toggle?.setAttribute('aria-label',`${open?'Đóng':'Mở'} danh sách câu hỏi, câu ${currentIndex+1}`);};
-  toggle?.addEventListener('click',()=>setOpen(!sidebar.classList.contains('is-open')));
-  const cards=[...app.querySelectorAll('.cau-thi[data-q]')].filter(card=>!card.classList.contains('is-example'));
-  const links=[...sidebar.querySelectorAll('[data-question-jump]')];
-  const setCurrent=card=>{
-    const index=cards.indexOf(card);
-    if(index<0)return;
-    currentIndex=index;if(currentNumber)currentNumber.textContent=String(index+1);
-    toggle?.setAttribute('aria-label',`${sidebar.classList.contains('is-open')?'Đóng':'Mở'} danh sách câu hỏi, câu ${currentIndex+1}`);
-    links.forEach((link,linkIndex)=>link.classList.toggle('is-current',linkIndex===index));
-  };
-  sidebar.addEventListener('click',event=>{
-    const link=event.target.closest('[data-question-jump]');if(!link||!sidebar.contains(link))return;
-    event.preventDefault();event.stopPropagation();
-    const card=cards.find(item=>item.dataset.q===link.dataset.questionJump);
-    if(!card)return;
-    setCurrent(card);setOpen(false);
-    const behavior=window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth';
-    const scroll=()=>card.scrollIntoView({behavior,block:'start'});
-    if(window.requestAnimationFrame)window.requestAnimationFrame(scroll);else scroll();
-  });
-  const updateCurrent=()=>{
-    const current=cards.find(card=>card.getBoundingClientRect().bottom>96) || cards.at(-1);
-    if(current)setCurrent(current);
-  };
-  window.addEventListener('scroll',updateCurrent,{passive:true});
-  updateCurrent();
 }
 function bindSectionAudio(attempt,{preview}){
   const roots=app.querySelectorAll?.('[data-section-audio]')||[app.querySelector?.('[data-section-audio]')].filter(Boolean);
@@ -843,6 +813,7 @@ function render(){
       return viewLoadPromise;
     }
   }
+  clearExamQuestionSidebar();
   clearSplitReading();
   titleResizeObserver?.disconnect();
   clearTimer();
