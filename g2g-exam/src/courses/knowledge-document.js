@@ -10,7 +10,7 @@ export function knowledgeDocument(lesson,document){
       if(node.nodeType===3)return node.textContent?[{type:'text',text:node.textContent,...(marks.length?{marks}:{})}]:[];
       if(node.nodeName==='BR')return [{type:'hardBreak'}];
       const tag=node.nodeName,kind=node.classList?.contains('instruction-token')?'box':node.classList?.contains('text-signature')?'signature':node.classList?.contains('text-headline')?'headline':'';
-      const mark=['STRONG','B'].includes(tag)?{type:'bold'}:['EM','I'].includes(tag)?{type:'italic'}:tag==='U'?{type:'underline'}:kind?{type:'legacyMarkup',attrs:{kind}}:null;
+      const mark=kind?{type:'legacyMarkup',attrs:{kind}}:['STRONG','B'].includes(tag)?{type:'bold'}:['EM','I'].includes(tag)?{type:'italic'}:tag==='U'?{type:'underline'}:null;
       return Array.from(node.childNodes).flatMap(child=>walk(child,mark?[...marks,mark]:marks));
     };
     return walk(holder);
