@@ -213,6 +213,7 @@ try{
   assert.match(priced.querySelector('.course-card-actions button').textContent,/Xem khóa học · 690[.,]000 đ/,'Paid course button displays its actual price');
   assert.equal(root.querySelectorAll('.course-card [data-course-action="detail"]').length,1,'Card retains one accessible detail button rather than nested/duplicate controls');
   assert.match(css,/\.course-card\s*\{[^}]*position:relative;/);
+  assert.match(css,/\.course-card h2\s*\{[^}]*-webkit-box-orient:vertical;[^}]*-webkit-line-clamp:2;[^}]*overflow:hidden;/,'Only course-card titles are visually clamped to two lines');
   assert.match(css,/\.course-card-actions>\[data-course-action="detail"\]:not\(:disabled\)::after\s*\{[^}]*position:absolute; inset:0;/,'Existing detail button hit area spans the whole card');
   await action('detail');assert.doesNotMatch(root.textContent,/Hallo dùng để/);assert.doesNotMatch(root.querySelector('.course-detail-main').textContent,/\bteacher\b/,'Student course detail hides the author name');
   assert.ok(root.querySelector('.course-detail-hero.feature-surface h1'));assert.equal(root.querySelector('.course-detail-meta>.exam-level').textContent,'A1');assert.ok(root.querySelector('.course-detail-curriculum .course-curriculum-groups'));
