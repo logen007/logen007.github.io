@@ -18,7 +18,7 @@ const ask=(message,confirmLabel='Tiếp tục')=>new Promise(resolve=>confirmAct
 export function createCoursesController({root,context,layout,navigate,repaint,notify,bindAudio,request=courseRequest,uploadImage=uploadQuestionImage}){
   let state=fresh({page:'catalog'}),routeKey='',generation=0,loadController=null,searchTimer=null,practiceTimer=null,savingPractice=null,busy=false;
   const user=()=>context().user;
-  const markDirty=()=>{state.dirty=true;const indicator=root.querySelector('[data-course-dirty]');if(indicator)indicator.textContent='Có thay đổi chưa lưu';};
+  const markDirty=()=>{state.dirty=true;const indicator=root.querySelector('[data-course-dirty]');if(indicator){indicator.hidden=false;indicator.textContent='Có thay đổi chưa lưu';}};
   const api=(suffix,options)=>request(suffix,options);
   const currentLesson=()=>state.editor&&courseLessons(state.editor.course).find(lesson=>lesson.id===state.editLesson);
   const setStatus=message=>{state.practiceSaveStatus=message;const label=root.querySelector('[data-course-save-status]');if(label)label.textContent=message;};
@@ -144,22 +144,24 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       const id=uuid('course'),blank={title:'',coverUrl:'',price:0,level:'A1',shortDescription:'',description:'',chapters:[]};
       await api(coursePath(id),{method:'PUT',body:{version:0,course:blank}});return go({page:'edit',id,step:'info'});
     }
-    if(name==='save-course'||name==='save-lesson'){await saveEditor();if(name==='save-lesson')state.editLesson='';repaint();notify('Đã lưu khóa học.');return;}
+    if(name==='save-course'){await saveEditor();repaint();return;}
+    if(name==='save-lesson')return go({page:'edit',id:state.editor.id,step:'content',chapter:state.route.chapter});
     if(name==='editor-step')return go({page:'edit',id:state.editor.id,step:button.dataset.step});
-    if(name==='add-chapter'){await collectEditor();course.chapters.push({id:uuid('chapter'),title:'Chương mới',knowledge:[],exercises:[]});markDirty();repaint();return;}
+    if(name==='edit-chapter')return go({page:'edit',id:state.editor.id,step:'content',chapter:id});
+    if(name==='add-chapter'){await collectEditor();const chapter={id:uuid('chapter'),title:'Chương mới',knowledge:[],exercises:[]};course.chapters.push(chapter);markDirty();return go({page:'edit',id:state.editor.id,step:'content',chapter:chapter.id});}
     if(name.startsWith('chapter-')){
       await collectEditor();const index=course.chapters.findIndex(c=>c.id===id);if(index<0)return;
       if(name==='chapter-remove'){if(!await ask('Bỏ chương và các bài khỏi bản nháp? Lịch sử học của học viên không thay đổi.','Bỏ chương'))return;course.chapters.splice(index,1);}
       else{const next=index+(name==='chapter-up'?-1:1);if(next>=0&&next<course.chapters.length)[course.chapters[index],course.chapters[next]]=[course.chapters[next],course.chapters[index]];}
-      markDirty();repaint();return;
+      markDirty();if(name==='chapter-remove')return go({page:'edit',id:state.editor.id,step:'content'});repaint();return;
     }
     if(name==='add-lesson'){
       const chapter=course.chapters.find(c=>c.id===button.dataset.chapter),kind=button.dataset.kind;if(!chapter)return;
       const lesson={id:uuid('lesson'),kind:kind==='knowledge'?'knowledge':'exercise',title:kind==='knowledge'?'Bài kiến thức mới':'Bộ bài tập mới',trial:false,...(kind==='knowledge'?{body:'',imageUrl:''}:{exercise:newCourseExercise()})};
-      chapter[kind].push(lesson);state.editLesson=lesson.id;state.sources=null;markDirty();repaint();return;
+      chapter[kind].push(lesson);markDirty();return go({page:'edit',id:state.editor.id,step:'content',chapter:chapter.id,lesson:lesson.id});
     }
-    if(name==='edit-lesson'){await collectEditor();state.editLesson=id;state.sources=null;repaint();return;}
-    if(name==='close-lesson'){await collectEditor();state.editLesson='';repaint();return;}
+    if(name==='edit-lesson'){const chapter=course.chapters.find(chapter=>[...chapter.knowledge,...chapter.exercises].some(lesson=>lesson.id===id));if(chapter)return go({page:'edit',id:state.editor.id,step:'content',chapter:chapter.id,lesson:id});return;}
+    if(name==='close-lesson')return go({page:'edit',id:state.editor.id,step:'content',chapter:state.route.chapter});
     if(name.startsWith('lesson-')){
       const chapter=course.chapters.find(c=>c.id===button.dataset.chapter),items=chapter?.[button.dataset.kind];if(!items)return;
       const index=items.findIndex(item=>item.id===id);if(index<0)return;
@@ -262,7 +264,8 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       if(field.dataset.courseField)state.editor.course[field.dataset.courseField]=field.type==='number'?Number(field.value):field.value;
       if(field.dataset.courseChapterTitle){const chapter=state.editor.course.chapters.find(c=>c.id===field.dataset.courseChapterTitle);if(chapter)chapter.title=field.value;}
       if(field.dataset.courseLessonField){const lesson=currentLesson();if(lesson)lesson[field.dataset.courseLessonField]=field.type==='checkbox'?field.checked:field.value;}
-      if(root.querySelector('.course-editor-main')?.contains(field)){markDirty();const preview=root.querySelector('.course-knowledge-editor+details .course-prose');if(preview&&field.dataset.courseLessonField==='body')preview.innerHTML=textHtml(field.value);}
+      if(root.querySelector('.course-authoring')?.contains(field)){markDirty();const preview=root.querySelector('.course-knowledge-editor+details .course-prose');if(preview&&field.dataset.courseLessonField==='body')preview.innerHTML=textHtml(field.value);}
+      if(field.dataset.courseField==='level'){const badge=root.querySelector('.builder-meta .exam-level');if(badge){badge.dataset.level=field.value;badge.textContent=field.value;}}
     }
     if(field.closest('.course-practice'))queuePractice();
   };

@@ -44,8 +44,20 @@ previous image and entered text on failure, and allow selecting the same file ag
 `tests/courses-ui.test.mjs` binds the real global image-paste handler around course
 authoring to cover that interaction, retry and save/publish persistence. The upload
 transport is injected in this DOM test; it does not prove a native OS dialog or
-browser rendering. Authoring layout is scoped to `.course-authoring`, using the
-existing tokens and responsive stacked fields rather than changing catalog/exams.
+browser rendering.
+
+Owner refinement (23 October): authoring follows the existing exam builder, not a
+separate four-step wizard. Reuse its editable title, metadata/back row, settings,
+preview/publication toolbar and `goethe-layout` / outline / editor surfaces.
+The outline lists chapters, then knowledge and exercise lessons; selection opens
+that item on the right. General settings include cover, level, price and descriptions.
+Chapter/lesson selections use the course URL and flush pending edits before
+navigation; failed saves retain the current editor. Keep explicit course draft
+saving and the existing publication/enrollment semantics (course publication does
+not use the exam's unpublish lock). Preserve the first-click image-picker fix.
+Scope course-specific differences to `.course-authoring`; catalog, exams and
+student learning remain unchanged. DOM/SQL regression covers heading edits,
+outline navigation/save failures, previews and publication, not visual acceptance.
 
 For this large update the owner explicitly approved local tests and browser
 checks with synthetic data (23 October). The default no-local-test workflow for
