@@ -192,7 +192,7 @@ const pageHistory=createPageHistory({beforeLeave:async()=>{
 function syncViewUrl(){
   if(!user)return;
   const url=new URL(window.location.href);
-  for(const key of ['edit','preview','section','view','tab','attempt','settings','class','course','lesson','course-page','course-step'])url.searchParams.delete(key);
+  for(const key of ['edit','preview','section','view','tab','attempt','settings','class','course','chapter','lesson','course-page','course-step'])url.searchParams.delete(key);
   if(ui.view==='courses')writeCourseRoute(url,ui.courseRoute||{page:isStudent(user)?'catalog':'manage'});
   else if(ui.view==='builder'&&ui.builderExamId){
     url.searchParams.set('edit',ui.builderExamId);
@@ -851,7 +851,7 @@ function render(){
   bindGlobal();
   bindViewSpecific();
   clearSplitReading=bindSplitReading(app);
-  const titleField=document.getElementById('examTitle');
+  const titleField=app.querySelector('.exam-title-input');
   if(titleField){
     const fitTitle=()=>{titleField.style.height='auto';titleField.style.height=titleField.scrollHeight+'px';};
     fitTitle();titleField.addEventListener('input',fitTitle);

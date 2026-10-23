@@ -15,9 +15,9 @@ export async function courseRequest(path,{method='GET',body,signal}={}){
 export const coursePath=(id,suffix='')=>'/'+encodeURIComponent(id)+suffix;
 export function readCourseRoute(url,user){
   const params=new URL(url).searchParams,page=params.get('course-page')||(user?.role==='student'?'catalog':'manage');
-  return {page:['catalog','mine','manage','detail','learn','edit','members'].includes(page)?page:'catalog',id:params.get('course')||'',lesson:params.get('lesson')||'',step:params.get('course-step')||'info'};
+  return {page:['catalog','mine','manage','detail','learn','edit','members'].includes(page)?page:'catalog',id:params.get('course')||'',chapter:params.get('chapter')||'',lesson:params.get('lesson')||'',step:params.get('course-step')||'info'};
 }
 export function writeCourseRoute(url,route){
   url.searchParams.set('view','courses');url.searchParams.set('course-page',route.page||'catalog');
-  for(const [param,value] of [['course',route.id],['lesson',route.lesson],['course-step',route.step]])if(value)url.searchParams.set(param,value);
+  for(const [param,value] of [['course',route.id],['chapter',route.chapter],['lesson',route.lesson],['course-step',route.step]])if(value)url.searchParams.set(param,value);else url.searchParams.delete(param);
 }

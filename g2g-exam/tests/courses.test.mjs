@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
 import {normalizeCourse,normalizeCourseExercise,assertCoursePublishable,courseMediaUrl,publicCourseExercise,gradeCourseExercise,validateCourseAnswers} from '../src/domain/courses.js';
+import {readCourseRoute,writeCourseRoute} from '../src/courses/api.js';
+const editorUrl=new URL('https://fixture.invalid/?view=courses');
+writeCourseRoute(editorUrl,{page:'edit',id:'course-1',step:'content',chapter:'chapter-1',lesson:'lesson-1'});
+assert.deepEqual(readCourseRoute(editorUrl.href,{role:'teacher'}),{page:'edit',id:'course-1',step:'content',chapter:'chapter-1',lesson:'lesson-1'});
+writeCourseRoute(editorUrl,{page:'edit',id:'course-1',step:'info'});
+assert.equal(editorUrl.searchParams.has('chapter'),false);assert.equal(editorUrl.searchParams.has('lesson'),false,'Settings navigation clears stale content selections');
 const exercise=normalizeCourseExercise({section:{id:'part',questionProfile:{layout:'choices'}},questions:[{id:'q',type:'single',title:'Hallo?',choices:['Hallo','Nein'],correctAnswer:0,maxScore:2,explanation:'Lời chào.'}]});
 const course=normalizeCourse({title:'A1',coverUrl:'/uploads/course.jpg',price:0,shortDescription:'Tiếng Đức A1',chapters:[{id:'c1',title:'Chào hỏi',knowledge:[{id:'k1',title:'Kiến thức',body:'Hallo!'}],exercises:[{id:'e1',title:'Bài tập',exercise}]}]});
 assert.doesNotThrow(()=>assertCoursePublishable(course));
