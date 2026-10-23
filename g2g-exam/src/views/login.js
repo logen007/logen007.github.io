@@ -14,7 +14,7 @@ export function loginHtml({mode,general=currentPublicSettings().general||{}}){
   return `<main class="landing">
     <header class="landing-header"><a class="landing-brand thuong-hieu" href="/" aria-label="Trang chủ"><span class="logo">${logo}</span><span class="ten-he-thong"><strong data-brand-name>${esc(name)}</strong><small data-brand-organization>${esc(organization)}</small></span></a><div class="landing-header-actions">${colorModeButtonHtml()}</div></header>
     <div class="landing-main">
-      <div class="landing-intro"><div class="landing-copy"><h1 id="landing-title">Thi thử trước.<br> <span>Tự tin khi thi thật.</span></h1></div>
+      <div class="landing-intro"><div class="landing-copy feature-surface"><h1 id="landing-title">Thi thử trước.<br> <span>Tự tin khi thi thật.</span></h1></div>
       <section class="landing-signin" aria-label="Đăng nhập"><p class="landing-lead">Luyện đề tiếng Đức. Làm bài, xem kết quả và biết mình cần ôn gì.</p><div class="landing-login"><button type="button" class="dang-nhap-google landing-cta" id="googleLogin">${googleMark}<span data-google-login-label>Tiếp tục với Google</span></button><span class="landing-free">${iconHtml('example')} Hoàn toàn miễn phí</span>${demo}</div></section></div>
       <section class="landing-product" aria-labelledby="landing-title">
         <figure class="landing-visual" aria-label="Minh họa trải nghiệm luyện thi, không phải kết quả thực tế">

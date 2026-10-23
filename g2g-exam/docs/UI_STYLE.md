@@ -13,6 +13,20 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
 
 ## Visual hierarchy
 
+- Owner featured-surface reference (24 October 2026): inspired by Cloudflare's
+  colored feature blocks and login pattern. Use the configured primary/background
+  contrast pair, a low-opacity fine-line pattern and slow background-only motion
+  on selected marketing/intro blocks. Shared owner: `.feature-surface` in styles.css;
+  initially applied only to the login heading block and course-detail hero.
+  Text, controls and layout stay still; the decorative pseudo-element has no
+  pointer events or accessibility content and is clipped to the rounded surface.
+  Respect reduced motion (static pattern) and forced colors (no pattern). Do not
+  add this effect to forms, study/exam content, tables, every card or every button.
+  Use existing tokens and actual course images; do not copy Cloudflare branding,
+  illustrations or add a video/canvas dependency. Contrast and reading order take
+  precedence over decorative density. This is a reusable visual treatment, not
+  authorization for a wholesale site redesign.
+
 - Owner color reference approved 22 October 2026: use fresh saturated status
   colors matching [the supplied reference](references/status-palette-2026-10-22.png).
   Approximate working swatches: green `#22C878`, blue `#1683FF`, amber `#F5AA28`,
