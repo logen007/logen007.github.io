@@ -11,13 +11,21 @@ export function bindExamQuestionSidebar(root,view=window){
     const target=node?.closest('.cau-thi,.heading-match-question,.letter-question,.inline-gap,td')||node;
     return {link,target,number:link.textContent.trim()};
   }).filter(entry=>entry.target);
-  let current=entries[0],chosen=null,frame=null,numberAnimation=null;
+  const reel=number?root.ownerDocument.createElement('span'):null;
+  if(reel){
+    reel.className='exam-question-number-reel';
+    for(const entry of entries){
+      const row=root.ownerDocument.createElement('span');
+      row.className='exam-question-number-row';row.textContent=entry.number;reel.append(row);
+    }
+    number.setAttribute('aria-hidden','true');number.replaceChildren(reel);
+  }
+  let current=entries[0],chosen=null,frame=null;
   const showNumber=value=>{
-    if(!number||number.textContent===value)return;
-    const direction=Number(value)>Number(number.textContent)?1:-1;
-    numberAnimation?.cancel();numberAnimation=null;number.textContent=value;
-    if(number.animate&&!view.matchMedia('(prefers-reduced-motion: reduce)').matches)
-      numberAnimation=number.animate([{transform:`translateY(${direction*50}%)`,opacity:.5},{transform:'translateY(0)',opacity:1}],{duration:100,easing:'ease-out'});
+    if(!reel||number.dataset.current===value)return;
+    number.dataset.current=value;
+    reel.style.transition=view.matchMedia('(prefers-reduced-motion: reduce)').matches?'none':'';
+    reel.style.transform=`translateY(-${entries.findIndex(entry=>entry.number===value)*1.35}em)`;
   };
   const setOpen=open=>{
     sidebar.classList.toggle('is-open',open);
@@ -78,7 +86,6 @@ export function bindExamQuestionSidebar(root,view=window){
     view.removeEventListener('resize',schedule);view.removeEventListener('wheel',interrupt);
     view.removeEventListener('touchstart',interrupt);observer?.disconnect();
     if(frame!==null)view.cancelAnimationFrame(frame);
-    numberAnimation?.cancel();
-    if(number)number.textContent=current?.number||'1';
+    if(number){number.textContent=current?.number||'1';delete number.dataset.current;}
   };
 }
