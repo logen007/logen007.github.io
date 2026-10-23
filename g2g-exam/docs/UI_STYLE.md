@@ -346,7 +346,7 @@ Borrow hierarchy and purposeful illustration, not assets, claims or product copy
   [img] uses the section image at the marker; no repeated trailing image.
 
 - Instruction/prompt text wrapped in square brackets, e.g. [Richtig], renders
-  bold on a primary fill with white text, no border and a subtle 4px radius.
+  bold on a primary fill with black text, no border and a subtle 4px radius.
   Keep raw text in editors. Instruction letters [a]–[h] and explicit [box] tokens
   use the same treatment. This instruction-only rule
   does not alter dropdown gap parsing or answer text. Paired formatting and
