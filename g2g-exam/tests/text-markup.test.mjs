@@ -193,6 +193,7 @@ assert.deepEqual(inlineGapErrors(gaps),[]);
 assert.match(inlineGapsHtml(gaps,[{id:'q1',choices:['A','B']},{id:'q2',choices:['A','B']}],{},0),/<strong class="text-bold">Important text<\/strong>/);
 assert.match(letterAnswersHtml({questionProfile:{layout:'letter-select'}},[{id:'q',title:'[b]Question[b]',choices:['A','B'],maxScore:1}],{},0),/<strong class="text-bold">Question<\/strong>/);
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(css,/\.instruction-token \{[^}]*border:0;[^}]*border-radius:4px;[^}]*background:var\(--brand-primary\); color:#fff;/,'Instruction boxes use primary fill, white text, no border and subtle corners');
 assert.match(css,/\.form-line \{ grid-template-columns:minmax\(0,32%\) minmax\(0,1fr\); gap:8px;/);
 assert.match(css,/\.writing-form-question \.writing-paper \{ width:100%;[^}]*transform:none;/);
 assert.match(css,/\.writing-form-question \.writing-paper \{[^}]*padding:20px 18px;/);
