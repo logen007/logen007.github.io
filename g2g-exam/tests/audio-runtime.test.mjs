@@ -14,12 +14,13 @@ const context=vm.createContext({
 });
 vm.runInContext(helpers,context);
 class Audio extends EventTarget{
- duration=NaN;currentTime=0;ended=false;loads=0;plays=0;
+ duration=NaN;currentTime=0;ended=false;paused=true;loads=0;plays=0;
  load(){this.loads++;}
- play(){this.plays++;return Promise.resolve();}
+ play(){this.plays++;this.paused=false;this.ended=false;return Promise.resolve();}
 }
 const runTimers=()=>{const pending=[...timers.values()];timers.clear();for(const item of pending)item.fn();};
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
+const finish=audio=>{audio.paused=true;audio.ended=true;audio.onended();};
 
 const stalled=new Audio(),waiting=context.readAudioDuration(stalled);
 assert.equal(timers.size,1,'Missing metadata must have a bounded wait');
@@ -60,9 +61,14 @@ const root={dataset:{sectionAudio:'section',storageKey:'fixture'},
  classList:{add:name=>classes.add(name),remove:name=>classes.delete(name)},
  querySelector:selector=>({'.section-audio-play':button,'.section-audio-status':status,'.section-audio-progress':progress})[selector],
  querySelectorAll:()=>[segment]};
-Object.assign(context,{app:{querySelector:()=>root},notify:message=>notices.push(message),
+let audioRoots=[root];
+const allAudios=()=>audioRoots.flatMap(item=>item.querySelectorAll('.section-audio-segment'));
+Object.assign(context,{app:{
+ querySelector:selector=>selector==='[data-audio-busy="true"]'?[...audioRoots,...allAudios()].find(item=>item.dataset.audioBusy==='true'):audioRoots[0],
+ querySelectorAll:selector=>selector==='audio'?allAudios():selector==='[data-section-audio]'?audioRoots:[]
+},notify:message=>notices.push(message),
  sessionStorage:{setItem(){},removeItem(){}},templateRequest:async url=>{requests.push(url);return {ok:true};}});
-vm.runInContext(source.slice(source.indexOf('function bindSectionAudio('),source.indexOf('function readAudioDuration(')),context);
+vm.runInContext(source.slice(source.indexOf('function examAudioPlaying('),source.indexOf('function readAudioDuration(')),context);
 context.bindSectionAudio({id:'attempt'},{preview:false});
 const timeoutClick=button.onclick();assert.equal(root.dataset.audioBusy,'true');
 runTimers();await timeoutClick;
@@ -72,9 +78,46 @@ assert.match(notices.at(-1),/Audiodauer/);
 
 segment.duration=1;
 const successClick=button.onclick();await settle();
-assert.equal(segment.plays,1);segment.onended();await settle();
-assert.equal(segment.plays,2,'Configured repeat count is preserved');segment.onended();await successClick;
+assert.equal(segment.plays,1);finish(segment);await settle();
+assert.equal(segment.plays,2,'Configured repeat count is preserved');finish(segment);await successClick;
 assert.deepEqual(requests,['/actions/startPartAudio','/actions/completePartAudio']);
 assert.equal(button.disabled,true);assert.equal(root.dataset.audioBusy,undefined);
 assert.equal(classes.has('is-playing'),false);assert.equal(frames.size,0);
+// Claim the whole part before metadata or server awaits, not just the current segment.
+const makeSection=(id,duration)=>{
+ const audio=new Audio();audio.duration=duration;audio.dataset={repeat:'1',label:id};
+ const button={disabled:false},status={textContent:''},progress={hidden:true,querySelector:()=>({style:{}}),setAttribute(){}};
+ const root={dataset:{sectionAudio:id,storageKey:id},classList:{add(){},remove(){}},
+  querySelector:selector=>({'.section-audio-play':button,'.section-audio-status':status,'.section-audio-progress':progress})[selector],querySelectorAll:()=>[audio]};
+ return {root,audio,button,status};
+};
+for(const preview of [false,true]){
+ const first=makeSection('first',NaN),second=makeSection('second',1);
+ audioRoots=[first.root,second.root];context.bindSectionAudio({id:'attempt'},{preview});
+ const requestCount=requests.length,pending=first.button.onclick();
+ await second.button.onclick();
+ assert.equal(second.audio.plays,0,'A second part cannot start while the first waits for metadata');
+ assert.equal(second.button.disabled,false,'Blocked playback does not consume or disable the other part');
+ assert.equal(second.root.dataset.audioBusy,undefined);assert.equal(requests.length,requestCount);
+ first.audio.duration=1;first.audio.dispatchEvent(new Event('loadedmetadata'));await settle();
+ assert.equal(first.audio.plays,1);
+ await second.button.onclick();
+ assert.equal(second.audio.plays,0,'A second part cannot overlap active playback in live or preview');
+ assert.equal(requests.length,requestCount+(preview?0:1),'Blocked playback never starts a server-owned session');
+ finish(first.audio);await pending;
+ const next=second.button.onclick();await settle();
+ assert.equal(second.audio.plays,1,'Another part is available after the current part completes');
+ finish(second.audio);await next;
+ assert.equal(timers.size,0);assert.equal(frames.size,0);
+ assert.equal(first.root.dataset.audioBusy,undefined);assert.equal(second.root.dataset.audioBusy,undefined);
+ assert.match(notices.at(-1),/một audio/);
+ // Legacy per-question audio uses the same reservation and actual playing-state guard.
+ assert.equal(context.claimAudioPlayback(first.audio),true);
+ assert.equal(context.claimAudioPlayback(second.audio),false);
+ delete first.audio.dataset.audioBusy;first.audio.paused=false;first.audio.ended=false;
+ assert.equal(context.claimAudioPlayback(second.audio),false);
+ first.audio.paused=true;
+ assert.equal(context.claimAudioPlayback(second.audio),true);delete second.audio.dataset.audioBusy;
+}
+assert.equal((source.match(/if\(!claimAudioPlayback\(audio\)\)return;/g)||[]).length,2,'Both live and preview legacy audio buttons use the shared playback guard');
 console.log('Audio runtime: bounded metadata, success/error cleanup, resume rejection and no late replay passed.');
