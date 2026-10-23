@@ -389,6 +389,8 @@ try{
     assert.doesNotMatch(css,/\.thanh-dau\[data-current-role="student"\] \.site-nav\s*\{[^}]*repeat\(2,/);
     assert.match(css,/\.site-nav \.muc-ben\s*\{[^}]*min-width:0;[^}]*padding-inline:8px/);
     assert.match(css,/\.student-exam-nav-menu__providers\s*\{[^}]*position:static; display:none;/);
+    assert.match(css,/\.student-exam-nav-menu::before\s*\{[^}]*top:-10px;[^}]*height:10px;/,'Transparent bridge covers the 8px trigger gap');
+    assert.match(css,/\.student-exam-nav-menu__providers::before\s*\{[^}]*left:-9px;[^}]*width:9px;/,'Second-level hover bridge covers its 7px gap');
   });
   await test('My courses appears only in the student avatar menu',()=>{
     for(const role of ['student','teacher','master']){
