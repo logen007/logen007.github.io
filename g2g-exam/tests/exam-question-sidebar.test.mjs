@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {bindExamQuestionSidebar} from '../src/ui/exam-question-sidebar.js';
 
 class Element{
@@ -15,7 +16,8 @@ class Element{
   matches(selector){return selector==='.cau-thi'&&this.card;}
 }
 const view=new Element();
-Object.assign(view,{scrollY:0,innerHeight:700,matchMedia:()=>({matches:false})});
+let mobile=false,reducedMotion=false;
+Object.assign(view,{scrollY:0,innerHeight:700,matchMedia:query=>({matches:query==='(max-width:680px)'?mobile:reducedMotion})});
 let next=0;const frames=new Map(),timers=new Map();
 view.requestAnimationFrame=fn=>{frames.set(++next,fn);return next;};
 view.cancelAnimationFrame=id=>frames.delete(id);
@@ -53,10 +55,49 @@ view.scrollY=targets[1].top-96;view.emit('wheel');view.emit('scroll');flush();
 assert.equal(number.textContent,'9','Manual scroll uses the real sidebar number');
 targets[1].top+=650;view.emit('resize');flush();
 assert.equal(number.textContent,'20','Layout updates reconsider the visible question');
+toggle.emit('click');
+assert.equal(sidebar.classList.contains('is-open'),true);
+click(links[0]);
+assert.equal(sidebar.classList.contains('is-open'),true,'Desktop question jumps keep the sidebar open');
+assert.equal(toggle.attrs['aria-expanded'],'true');
+assert.match(toggle.attrs['aria-label'],/^Đóng danh sách câu hỏi, câu 1$/);
+mobile=true;
+click(links[1]);
+assert.equal(sidebar.classList.contains('is-open'),false,'Mobile question jumps still close the sidebar');
+assert.equal(toggle.attrs['aria-expanded'],'false');
+assert.match(toggle.attrs['aria-label'],/^Mở danh sách câu hỏi, câu 9$/);
 cleanup();
 for(const listeners of view.events.values())assert.equal(listeners.size,0);
 assert.equal(frames.size,0);assert.equal(timers.size,0);
 cleanup=bindExamQuestionSidebar(root,view);
 assert.equal(view.events.get('scroll').size,1,'Rebinding has exactly one active scroll listener');
 cleanup();
+// A real DOM-like number strip: roll through intermediate integers, retarget and clean up.
+root.ownerDocument.createElement=()=>{
+  const node=new Element();node.style={};node.children=[];
+  node.appendChild=child=>node.children.push(child);return node;
+};
+number.replaceChildren=(...children)=>{number.children=children;};
+number.textContent='1';view.scrollY=0;mobile=false;
+const advance=time=>{for(const [id,fn]of [...frames]){frames.delete(id);fn(time);}};
+cleanup=bindExamQuestionSidebar(root,view);
+click(links[1]);advance(0);advance(100);
+assert.equal(number.children[0].className,'exam-question-number-track');
+assert.ok(Number(number.children[0].children[0].textContent)>1);
+assert.ok(Number(number.children[0].children[0].textContent)<9);
+assert.match(number.children[0].style.transform,/translateY\(-/,'Increasing numbers slide up');
+advance(240);assert.equal(number.textContent,'9');
+click(links[0]);advance(300);advance(400);
+assert.ok(Number(number.children[0].children[0].textContent)<9,'Decreasing numbers move back through smaller values');
+click(links[2]);advance(420);advance(660);
+assert.equal(number.textContent,'20','Rapid reversal finishes at the latest question');
+reducedMotion=true;click(links[1]);
+assert.equal(number.textContent,'9','Reduced motion updates immediately');
+assert.equal(view.lastScroll.behavior,'auto');
+reducedMotion=false;click(links[3]);assert.ok(frames.size>0);
+cleanup();assert.equal(frames.size,0,'Cleanup cancels the number animation');
+assert.equal(number.textContent,'25');
+const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(css,/\.exam-question-sidebar-panel \{[^}]*border-radius:0;/,'Sidebar panel has square corners');
+assert.match(css,/\.exam-question-sidebar:has\(\.exam-question-link\.is-current\.is-answered\) \.exam-question-sidebar-toggle \{ color:var\(--brand-primary\); \}/,'Toggle text follows the answered state of the current question');
 console.log('Sidebar: ordinary, heading, gap and table targets; real numbering, smooth jump, manual scroll and cleanup passed.');
