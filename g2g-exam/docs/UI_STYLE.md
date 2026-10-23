@@ -286,9 +286,15 @@ Borrow hierarchy and purposeful illustration, not assets, claims or product copy
   including examples and preview, across all part templates. Use compact card
   padding, wrapped captions and uncropped responsive images.
 
-- Student writing tasks show no question number or automatically generated
-  “Schreiben Sie … Wörter” hint above the answer field. Preserve the authored
+- Student writing tasks show their continuous whole-exam question number, including
+  single-task sections and form writing. Examples remain unnumbered. Do not add an
+  automatically generated “Schreiben Sie … Wörter” hint above the answer field. Preserve the authored
   prompt, including any word limits it explicitly contains, and the word counter.
+
+- Text answer choices automatically share equal-width columns when their actual
+  container has room (240px minimum per choice); wrap onto fewer columns on narrow
+  screens or in split layouts without horizontal overflow. Preserve existing compact
+  binary choices and illustrated-answer layouts.
 
 - The total beside each skill is the sum of raw question maxima across all
   parts of that skill, including live editor changes. No weights, multipliers,
