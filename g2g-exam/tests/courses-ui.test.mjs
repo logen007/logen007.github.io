@@ -208,6 +208,9 @@ try{
   await action('manage');assert.equal(root.querySelectorAll('table.bang tbody tr').length,1);assert.ok(root.querySelector('.table-link.is-published'));assert.ok(root.querySelector('[data-course-action="members"]'),'Member management stays in the management list');
   await action('preview-managed');assert.ok(root.querySelector('[data-course-action="close-preview"]'));await action('close-preview');assert.equal(route.step,'info');
   user=student;route={page:'catalog'};paint();await idle();assert.equal(root.querySelectorAll('.course-card').length,1);
+  assert.equal(root.querySelectorAll('.course-card [data-course-action="detail"]').length,1,'Card retains one accessible detail button rather than nested/duplicate controls');
+  assert.match(css,/\.course-card\s*\{[^}]*position:relative;/);
+  assert.match(css,/\.course-card-actions>\[data-course-action="detail"\]:not\(:disabled\)::after\s*\{[^}]*position:absolute; inset:0;/,'Existing detail button hit area spans the whole card');
   await action('detail');assert.doesNotMatch(root.textContent,/Hallo dùng để/);assert.doesNotMatch(root.querySelector('.course-detail-main').textContent,/\bteacher\b/,'Student course detail hides the author name');
   assert.ok(root.querySelector('.course-detail-hero.feature-surface h1'));assert.equal(root.querySelector('.course-detail-meta>.exam-level').textContent,'A1');assert.ok(root.querySelector('.course-detail-curriculum .course-curriculum-groups'));
   assert.equal(root.querySelector('.course-detail-curriculum.feature-surface,.course-enroll-card.feature-surface'),null,'Decorative motion stays out of curriculum and enrollment controls');

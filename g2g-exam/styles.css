@@ -1752,7 +1752,9 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .course-filters { display:grid; grid-template-columns:minmax(0,2fr) minmax(150px,1fr) minmax(150px,1fr); gap:16px; }
 .course-filters label,.course-field { display:grid; gap:8px; min-width:0; font-size:14px; }
 .course-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; align-items:stretch; }
-.course-card { display:flex; flex-direction:column; align-items:stretch; gap:12px; min-width:0; margin:0; padding:24px; border-radius:24px; }
+.course-card { position:relative; display:flex; flex-direction:column; align-items:stretch; gap:12px; min-width:0; margin:0; padding:24px; border-radius:24px; }
+.course-card-actions>[data-course-action="detail"]:not(:disabled)::after { content:''; position:absolute; inset:0; border-radius:24px; cursor:pointer; }
+.course-card:has([data-course-action="detail"]):hover { border-color:var(--brand-border); }
 .course-card h2 { font-size:20px; line-height:1.4; overflow-wrap:anywhere; }
 .course-cover { display:block; width:100%; height:auto; aspect-ratio:16/10; object-fit:cover; border-radius:16px; }
 .course-cover--empty { display:grid; place-items:center; background:var(--surface-muted); color:var(--phu); }
