@@ -6,6 +6,7 @@ import {randomUUID} from 'node:crypto';
 import {createCourseService} from '../server/src/course-service.js';
 import {registerCourseRoutes} from '../server/src/course-routes.js';
 import {knowledgeDocument,documentKnowledgeBlocks} from '../src/courses/knowledge-document.js';
+import {courseLearningHtml} from '../src/courses/views.js';
 const {JSDOM}=await import(process.env.G2G_JSDOM_PATH);
 const {PGlite}=await import(process.env.G2G_PGLITE_PATH);
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost/?view=courses',pretendToBeVisual:true});
@@ -209,6 +210,9 @@ try{
   user=student;route={page:'catalog'};paint();await idle();assert.equal(root.querySelectorAll('.course-card').length,1);
   await action('detail');assert.doesNotMatch(root.textContent,/Hallo dùng để/);await action('enroll');
   assert.equal(controller.getState().lesson.lesson.kind,'knowledge');assert.ok(root.querySelector('.course-prose strong'));
+  assert.deepEqual([...root.querySelectorAll('.course-outline .course-outline-categories button')].map(button=>button.textContent.trim()),['Kiến thức','Bài tập']);
+  assert.equal(root.querySelector('.course-outline h3,.course-outline .course-lesson-row small'),null,'Learning sidebar omits repeated headings and lesson metadata');
+  assert.equal(root.querySelector('.course-outline [aria-current="step"]').dataset.lesson,knowledgeId);
   assert.equal(root.querySelector('.course-lesson-image').getAttribute('src'),'/uploads/synthetic-lesson.png','Uploaded lesson image survives save, publish and enrollment');
   assert.deepEqual([...root.querySelector('.course-knowledge-content').children].filter(node=>node.tagName!=='DIV'||node.textContent.trim()).map(node=>node.tagName),['DIV','FIGURE','DIV','FIGURE']);
   assert.equal(root.querySelector('.course-knowledge-content figure').dataset.align,'right');assert.match(root.querySelector('.course-knowledge-content').textContent,/Sau ảnh/);
@@ -229,6 +233,9 @@ try{
   assert.equal(controller.getState().practiceResult.score,1);assert.match(root.textContent,/2\/2 bài hoàn thành/);
   assert.equal((await service.memberResults(teacher,courseId,(await service.members(teacher,courseId)).members[0].id)).submissions.length,2);
   const source=(await service.getCourse(teacher,courseId,{edit:true})).course;
+  const chapter=source.chapters[0],many={id:courseId,...source,lessonCount:4,chapters:[{...chapter,knowledge:[chapter.knowledge[0],{...chapter.knowledge[0],id:'extra-knowledge'}],exercises:[chapter.exercises[0],{...chapter.exercises[0],id:'extra-exercise'}]}]};
+  const fragment=document.createElement('div');fragment.innerHTML=courseLearningHtml({detail:many,lesson:{lesson:chapter.knowledge[0]},practiceAnswers:{}});
+  assert.deepEqual([...fragment.querySelectorAll('.course-outline .course-lesson-row')].map(button=>button.textContent.trim()),['Kiến thức 1','Kiến thức 2','Bài tập 1','Bài tập 2'],'Compact labels retain access to every lesson, not just the first');
   await service.save(teacher,'paid-ui',{version:0,course:{...source,price:690000}});await service.publish(teacher,'paid-ui',{version:1});
   route={page:'detail',id:'paid-ui'};paint();await idle();await action('enroll');
   assert.equal(controller.getState().detail.enrollment.status,'pending');

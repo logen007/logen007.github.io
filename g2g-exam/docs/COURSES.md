@@ -79,6 +79,12 @@ Chapter/lesson selections use the course URL and flush pending edits before
 navigation; failed saves retain the current editor. Authoring autosaves without
 rebuilding inputs, hides successful-save status and offers retry only on error.
 No manual Save button, draft-mode label or member management in the editor.
+The learning sidebar uses the same two-column category row: short “Kiến thức” and
+“Bài tập” buttons without repeated headings, lesson-name lines or question-count
+metadata. Keep real lesson titles in tooltips/accessibility labels; when a category
+has multiple lessons, number its short buttons so no lesson becomes unreachable.
+Course-detail curriculum descriptions remain unchanged; completion/current styles
+and trial/enrollment authorization still apply.
 Serialize saves, drain edits typed during a request, replay uncertain writes before
 newer payloads and retain optimistic version checks. Keep existing publication and
 enrollment semantics; publication now uses the exam-style unpublish lock described below.

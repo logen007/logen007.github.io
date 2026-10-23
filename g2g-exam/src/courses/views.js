@@ -31,9 +31,15 @@ export function courseCatalogHtml(state,user){
     ${!state.catalog?.courses?.length?empty(manage?'Chưa có khóa học. Tạo khóa học đầu tiên để bắt đầu.':mine?'Bạn chưa đăng ký khóa học nào.':'Chưa có khóa học phù hợp.'):''}
     ${state.catalog?.total>(state.catalog?.courses.length||0)?courseButton('Xem thêm','more'):''}</main>`;
 }
-const lessonButton=(lesson,route,done=new Set(),current='')=>`<button type="button" class="course-lesson-row ${done.has(lesson.id)?'is-complete':''} ${current===lesson.id?'is-current':''}" data-course-action="lesson" data-lesson="${esc(lesson.id)}" data-id="${esc(route.id)}" ${current===lesson.id?'aria-current="step"':''}><span>${esc(lesson.title)}</span><small>${lesson.kind==='knowledge'?'Kiến thức':'Bài tập'}${done.has(lesson.id)?' · Hoàn thành':lesson.kind==='exercise'?` · ${lesson.questionCount||0} câu`:''}${lesson.trial?' · Học thử':''}</small></button>`;
-function outlineHtml(course,{clickable=false,done=new Set(),current=''}={}){
-  return (course.chapters||[]).map((chapter,index)=>`<details class="course-chapter" open><summary>${String(index+1).padStart(2,'0')} · ${esc(chapter.title)}</summary>${[['Kiến thức',chapter.knowledge],['Bài tập',chapter.exercises]].map(([label,lessons])=>lessons.length?`<div class="course-outline-group"><h3>${label}</h3>${lessons.map(lesson=>clickable||lesson.trial?lessonButton(lesson,{id:course.id},done,current):`<div class="course-lesson-row"><span>${esc(lesson.title)}</span><small>${lesson.kind==='knowledge'?'Kiến thức':`${lesson.questionCount} câu · Tự chấm`}</small></div>`).join('')}</div>`:'').join('')}</details>`).join('');
+const lessonButton=(lesson,route,done=new Set(),current='',label='')=>`<button type="button" class="course-lesson-row ${done.has(lesson.id)?'is-complete':''} ${current===lesson.id?'is-current':''}" data-course-action="lesson" data-lesson="${esc(lesson.id)}" data-id="${esc(route.id)}" title="${esc(lesson.title)}" ${label?`aria-label="${esc(label+' — '+lesson.title)}"`:''} ${current===lesson.id?'aria-current="step"':''}><span>${esc(label||lesson.title)}</span>${label?'':`<small>${lesson.kind==='knowledge'?'Kiến thức':'Bài tập'}${done.has(lesson.id)?' · Hoàn thành':lesson.kind==='exercise'?` · ${lesson.questionCount||0} câu`:''}${lesson.trial?' · Học thử':''}</small>`}</button>`;
+function outlineHtml(course,{clickable=false,done=new Set(),current='',compact=Boolean(current)}={}){
+  return (course.chapters||[]).map((chapter,index)=>{
+    const groups=[['Kiến thức',chapter.knowledge],['Bài tập',chapter.exercises]].map(([label,lessons])=>{
+      const entries=lessons.map((lesson,at)=>{const short=compact?label+(lessons.length>1?' '+(at+1):''):'';return clickable||lesson.trial?lessonButton(lesson,{id:course.id},done,current,short):`<div class="course-lesson-row" title="${esc(lesson.title)}"><span>${esc(short||lesson.title)}</span>${compact?'':`<small>${lesson.kind==='knowledge'?'Kiến thức':`${lesson.questionCount} câu · Tự chấm`}</small>`}</div>`;}).join('');
+      return compact?`<div class="course-outline-lessons">${entries}</div>`:lessons.length?`<div class="course-outline-group"><h3>${label}</h3>${entries}</div>`:'';
+    }).join('');
+    return `<details class="course-chapter" open><summary>${String(index+1).padStart(2,'0')} · ${esc(chapter.title)}</summary>${compact?`<div class="course-outline-categories">${groups}</div>`:groups}</details>`;
+  }).join('');
 }
 export function courseDetailHtml(state){
   const course=state.detail,enrollment=course.enrollment,active=enrollment?.status==='active';
