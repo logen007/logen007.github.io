@@ -46,18 +46,32 @@ authoring to cover that interaction, retry and save/publish persistence. The upl
 transport is injected in this DOM test; it does not prove a native OS dialog or
 browser rendering.
 
+The server must not attach a flowing `data` listener to a multipart stream before
+the asynchronous media-backup lock has been acquired: incoming header bytes can
+otherwise disappear while waiting. Attach the size counter immediately beside
+the pipeline inside the guard. Production-route HTTP regression delays that guard
+for JPEG/PNG uploads and checks exact saved bytes, while retaining MIME mismatch,
+HTML/SVG rejection and cleanup assertions. This is transport proof, not image
+decoding or production/VPS verification.
+
 Owner refinement (23 October): authoring follows the existing exam builder, not a
 separate four-step wizard. Reuse its editable title, metadata/back row, settings,
 preview/publication toolbar and `goethe-layout` / outline / editor surfaces.
-The outline lists chapters, then knowledge and exercise lessons; selection opens
-that item on the right. General settings include cover, level, price and descriptions.
+The outline lists chapter names and their lessons with concise kind icons; omit
+repeated category headings, empty placeholders and the redundant general-settings
+button. General settings stay in the top gear and include cover, level, price and descriptions.
 Chapter/lesson selections use the course URL and flush pending edits before
-navigation; failed saves retain the current editor. Keep explicit course draft
-saving and the existing publication/enrollment semantics (course publication does
-not use the exam's unpublish lock). Preserve the first-click image-picker fix.
-Scope course-specific differences to `.course-authoring`; catalog, exams and
-student learning remain unchanged. DOM/SQL regression covers heading edits,
-outline navigation/save failures, previews and publication, not visual acceptance.
+navigation; failed saves retain the current editor. Authoring autosaves without
+rebuilding inputs, hides successful-save status and offers retry only on error.
+No manual Save button, draft-mode label or member management in the editor.
+Serialize saves, drain edits typed during a request, replay uncertain writes before
+newer payloads and retain optimistic version checks. Keep existing publication and
+enrollment semantics (course publication does not use the exam's unpublish lock);
+internal unpublished storage is not a separate UI mode. Preserve first-click image picking.
+Teacher management uses the exam-list table/filter/actions; member management lives
+there. Student catalog cards and learning remain unchanged. DOM/SQL regression covers
+autosave concurrency/retry, navigation/save failures, previews and publication, not
+visual acceptance. Course-specific styling stays scoped; exam layouts are unchanged.
 
 For this large update the owner explicitly approved local tests and browser
 checks with synthetic data (23 October). The default no-local-test workflow for

@@ -14,8 +14,10 @@ import {DEFAULT_SETTINGS} from '../server/src/defaults.js';
 import {ExamOutbox} from '../src/repositories/exam-outbox.js';
 const {PGlite}=await import(process.env.G2G_PGLITE_PATH);
 const db=new PGlite(),tx=new AsyncLocalStorage(),scratch=await fs.mkdtemp(path.join(os.tmpdir(),'g2g-http-'));
-let revision=0,queries=0,summaryLoads=0;
+let revision=0,queries=0,summaryLoads=0,mediaLockWait=null,mediaLockEntered=()=>{};
 const query=async(sql,args)=>{
+  if(sql.includes('pg_try_advisory_lock_shared')){mediaLockEntered();if(mediaLockWait)await mediaLockWait;return {rows:[{locked:true}],rowCount:1};}
+  if(sql.includes('pg_advisory_unlock_shared'))return {rows:[],rowCount:0};
   queries++;if(sql.includes('FROM questions ORDER BY'))summaryLoads++;
   const result=await (tx.getStore()||db).query(sql,args);
   if(/^\s*(INSERT|UPDATE|DELETE)/.test(sql)&&result.affectedRows)revision++;
@@ -23,6 +25,7 @@ const query=async(sql,args)=>{
 };
 const secret='synthetic-test-cookie-secret';
 process.env.COOKIE_SECRET=secret;process.env.NODE_ENV='test';
+process.env.BACKUP_MEDIA_GUARD_ENABLED='true';
 process.env.SETTINGS_ENCRYPTION_KEY='synthetic-sharing-encryption-key';
 process.env.WEB_PUBLIC_DIR=path.resolve(process.env.G2G_PREVIEW_PORT&&process.env.G2G_COURSE_PREVIEW_DIR||'.web-build');process.env.WEB_ASSETS_DIR=path.join(scratch,'assets');process.env.UPLOAD_DIR=path.join(scratch,'uploads');
 if(process.env.G2G_PREVIEW_PORT)process.env.PORT=process.env.G2G_PREVIEW_PORT;
@@ -102,6 +105,18 @@ try{
     return app.inject({method:'POST',url:'/api/media/'+route,headers:{cookie:cookie(user),'content-type':'multipart/form-data; boundary='+boundary},payload:Buffer.concat([Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${type}\r\n\r\n`),bytes,Buffer.from(`\r\n--${boundary}--\r\n`)])});
   };
   const image=await upload('image','image/png','payload.html');assert.equal(image.statusCode,200);assert.match(image.json().url,/\.png$/);
+  // The real multipart handler must not consume image bytes before the async
+  // backup guard grants access. Header fixtures test byte preservation, not decoding.
+  const jpeg=Buffer.from('ffd8ffe000104a46494600010100000100010000ffd9','hex');
+  for(const [mime,name,bytes] of [['image/jpeg','course-cover.jpg',jpeg],['image/png','course-cover.png',png]]){
+    let release,entered;
+    mediaLockWait=new Promise(resolve=>{release=resolve;});const waiting=new Promise(resolve=>{entered=resolve;});mediaLockEntered=entered;
+    const pending=upload('image',mime,name,'admin',bytes);
+    await waiting;await new Promise(resolve=>setImmediate(resolve));release();
+    const response=await pending;mediaLockWait=null;mediaLockEntered=()=>{};
+    assert.equal(response.statusCode,200,'Valid '+mime+' headers survive a delayed backup guard: '+response.body);
+    assert.deepEqual(await fs.readFile(path.join(process.env.UPLOAD_DIR,path.basename(response.json().url))),bytes,'Upload preserves every byte while the guard waits');
+  }
   const {imageSharing}=await import('../server/src/image-sharing.js');
   const imageOrigin='http://localhost:8080',imageSource=imageOrigin+image.json().url;
   const grant=(await imageSharing.issue({urls:[imageSource],origin:imageOrigin})).get(imageSource),sharedUrl=new URL(grant.url);

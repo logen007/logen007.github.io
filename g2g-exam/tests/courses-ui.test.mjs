@@ -19,7 +19,7 @@ const query=async(sql,args=[])=>{const r=await(tx.getStore()||db).query(sql,args
 const service=createCourseService({query,withTx:fn=>db.transaction(client=>tx.run(client,()=>fn({query}))),uid:prefix=>prefix+'-'+randomUUID(),audit:async()=>{}});
 const {default:Fastify}=await import('../server/node_modules/fastify/fastify.js');
 const app=Fastify(),teacher={id:'teacher',role:'teacher'},student={id:'student',role:'student'};
-let user=teacher,route={page:'manage'},controller,failSave=false,dropProgressReceipt=false,failUpload=false;
+let user=teacher,route={page:'manage'},controller,failSave=false,dropProgressReceipt=false,failUpload=false,holdEditorSave=null,editorSaveEntered=()=>{},dropEditorReceipt=false;
 const root=document.querySelector('#app'),notices=[];
 const pickerClicks=[],uploads=[];
 // Observe before the production capture handler, including events it cancels.
@@ -32,8 +32,11 @@ const uploadImage=async(file,{slot})=>{
 };
 const request=async(suffix,options={})=>{
   if(failSave&&options.method==='PUT')throw Error('Synthetic network failure');
+  const authoring=options.method==='PUT'&&options.body?.course;
+  if(authoring){editorSaveEntered();if(holdEditorSave)await holdEditorSave;}
   const response=await app.inject({method:options.method||'GET',url:'/api/courses'+suffix,headers:{'x-user':user.id},...(options.body===undefined?{}:{payload:options.body})});
   const data=response.json();if(response.statusCode>=400)throw Error(data.message||data.error);
+  if(authoring&&dropEditorReceipt){dropEditorReceipt=false;throw Error('Synthetic lost editor receipt');}
   if(dropProgressReceipt&&suffix.endsWith('/progress')&&options.method==='PUT'){dropProgressReceipt=false;throw Error('Synthetic lost save receipt');}
   return data;
 };
@@ -62,18 +65,35 @@ try{
   for(const u of [teacher,student])await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4::jsonb)',[u.id,u.id+'@test.invalid',u.role,JSON.stringify({name:u.id})]);
   registerCourseRoutes(app,{service,userFor:async request=>request.headers['x-user']==='teacher'?teacher:student});
   controller=createCoursesController({root,context:()=>({user}),layout:html=>html,navigate:next=>{route=next;paint();},repaint:paint,notify:m=>notices.push(m),request,uploadImage});
-  paint();await idle();await action('create');
+  paint();await idle();assert.ok(root.querySelector('.course-management .table-wrap table.bang'));assert.equal(root.querySelector('.course-grid'),null);
+  await action('create');
   const courseId=controller.getState().editor.id;
   assert.ok(root.querySelector('.course-authoring>.tieu-de-trang .builder-title .exam-title-input[data-course-field="title"]'));
   assert.ok(root.querySelector('.goethe-layout>.goethe-outline.course-builder-outline'));
   assert.ok(root.querySelector('.goethe-layout>.goethe-editor.course-editor-main'));
   assert.equal(root.querySelector('.course-editor-steps'),null,'No separate four-step wizard');
+  assert.equal(root.querySelector('[data-course-action="save-course"],[data-course-action="save-lesson"],[data-course-action="members"]'),null,'No manual save or member management in the editor');
+  assert.equal(root.querySelector('.course-builder-outline [data-step="info"]'),null,'General settings only live in the top gear');
+  assert.doesNotMatch(root.textContent,/Bản nháp/);
   assert.ok(root.querySelector('.course-builder-actions [data-course-action="preview-course"]'));
   assert.ok(root.querySelector('.course-builder-actions [data-course-action="publish"]'));
   assert.ok(root.querySelector('.course-info-identity [data-course-field="price"]'),'Fees live with general settings');
   fill('[data-course-field="title"]','Khóa A1 thử nghiệm');
   assert.equal(root.querySelector('[data-course-dirty]').hidden,false,'Editing the heading marks the draft dirty');
   fill('[data-course-field="shortDescription"]','Học và luyện tập');
+  const heading=root.querySelector('[data-course-field="title"]');
+  await until(()=>!controller.getState().dirty,'debounced authoring autosave');
+  assert.equal((await service.getCourse(teacher,courseId,{edit:true})).course.title,'Khóa A1 thử nghiệm');
+  assert.equal(root.querySelector('[data-course-field="title"]'),heading,'Autosave does not rebuild the active editor');
+  assert.equal(root.querySelector('[data-course-dirty]').hidden,true,'Successful autosave stays quiet');
+  let release,entered;holdEditorSave=new Promise(resolve=>{release=resolve;});const started=new Promise(resolve=>{entered=resolve;});editorSaveEntered=entered;
+  fill('[data-course-field="description"]','First revision');const saving=controller.flushEditor();await started;
+  fill('[data-course-field="description"]','New typing while saving');release();await saving;holdEditorSave=null;editorSaveEntered=()=>{};
+  assert.equal((await service.getCourse(teacher,courseId,{edit:true})).course.description,'New typing while saving','Drain edits arriving during an in-flight save');
+  assert.equal(root.querySelector('[data-course-field="description"]').value,'New typing while saving');
+  dropEditorReceipt=true;fill('[data-course-field="description"]','Uncertain write');await assert.rejects(controller.flushEditor(),/lost editor receipt/);
+  fill('[data-course-field="description"]','Latest after uncertain write');await controller.flushEditor();
+  assert.equal((await service.getCourse(teacher,courseId,{edit:true})).course.description,'Latest after uncertain write','Replay the uncertain snapshot before saving newer typing');
   assert.ok(root.querySelector('.course-authoring .course-info-card .course-info-layout .course-info-fields'));
   assert.ok(root.querySelector('.course-info-identity [data-course-field="level"]'));
   await chooseImage('cover');assert.equal(controller.getState().editor.course.coverUrl,'/uploads/synthetic-cover.png');
@@ -87,6 +107,7 @@ try{
   await action('add-chapter');
   assert.equal((await service.getCourse(teacher,courseId,{edit:true})).course.coverUrl,'/uploads/synthetic-cover.png');
   const chapterId=controller.getState().editor.course.chapters[0].id;
+  assert.doesNotMatch(root.querySelector('.course-builder-outline').textContent,/Thông tin khóa học|Chưa có bài|Kiến thức|Bài tập/,'No repeated group labels or empty placeholders');
   assert.equal(route.chapter,chapterId,'Chapter selection has its own route');
   fill('[data-course-chapter-title]','Chào hỏi');
   await action('add-lesson','[data-kind="knowledge"]');
@@ -98,7 +119,9 @@ try{
   failSave=true;assert.equal(await controller.beforeLeave(),false);assert.equal(root.querySelector('#courseKnowledgeBody').value,'[b]Guten Tag[/b] — Xin chào.');assert.equal(controller.isDirty(),true);
   await action('editor-step','[data-step="info"]');assert.equal(route.lesson,knowledgeId,'Failed save blocks outline navigation');
   assert.equal(root.querySelector('#courseKnowledgeBody').value,'[b]Guten Tag[/b] — Xin chào.');
-  failSave=false;await action('save-lesson');
+  assert.equal(root.querySelector('[data-course-action="retry-save"]').hidden,false);
+  failSave=false;await action('retry-save');assert.equal(root.querySelector('[data-course-dirty]').hidden,true);
+  await action('close-lesson');
   await action('add-lesson','[data-kind="exercises"]');
   assert.equal(root.querySelector('[data-course-template]').value,'choices','Do not silently select listening for ordinary choices');
   fill('[data-course-lesson-field="title"]','Luyện chào hỏi');fill('[data-field="title"]','Chọn lời chào');
@@ -106,13 +129,15 @@ try{
   root.querySelector('[data-field="correct"][value="0"]').click();
   fill('[data-course-explanation]','Hallo dùng để chào hỏi.');
   const exerciseId=controller.getState().editLesson;
-  await action('save-lesson');assert.equal(route.lesson,undefined,'Saving returns to the chapter, not a stale lesson URL');
+  await action('close-lesson');assert.equal(route.lesson,undefined,'Returning flushes changes and clears the lesson URL');
   await action('edit-lesson',`[data-id="${knowledgeId}"]`);assert.equal(root.querySelector('#courseKnowledgeBody').value,'[b]Guten Tag[/b] — Xin chào.');
   await action('edit-lesson',`[data-id="${exerciseId}"]`);assert.equal(root.querySelector('[data-field="title"]').value,'Chọn lời chào');
   await action('preview-course');assert.ok(root.querySelector('[data-course-action="close-preview"]'));
   await action('close-preview');assert.equal(controller.getState().editLesson,exerciseId);
   await action('publish');
   assert.equal(controller.getState().editor.status,'published');
+  await action('manage');assert.equal(root.querySelectorAll('table.bang tbody tr').length,1);assert.ok(root.querySelector('.table-link.is-published'));assert.ok(root.querySelector('[data-course-action="members"]'),'Member management stays in the management list');
+  await action('preview-managed');assert.ok(root.querySelector('[data-course-action="close-preview"]'));await action('close-preview');assert.equal(route.step,'info');
   user=student;route={page:'catalog'};paint();await idle();assert.equal(root.querySelectorAll('.course-card').length,1);
   await action('detail');assert.doesNotMatch(root.textContent,/Hallo dùng để/);await action('enroll');
   assert.equal(controller.getState().lesson.lesson.kind,'knowledge');assert.ok(root.querySelector('.course-prose strong'));

@@ -39,7 +39,7 @@ export function createCourseService({query,withTx,uid,audit}){
     if(params.fee==='free')where.push("(m.metadata->>'price')::numeric=0");
     if(params.fee==='paid')where.push("(m.metadata->>'price')::numeric>0");
     const limit=Math.min(60,Math.max(1,Math.floor(Number(params.limit)||40))),offset=Math.min(1000000,Math.max(0,Math.floor(Number(params.offset)||0)));
-    const result=await query(`SELECT c.id,c.owner_id,c.status,c.version,c.published_version,m.metadata,
+    const result=await query(`SELECT c.id,c.owner_id,c.status,c.version,c.published_version,c.updated_at,m.metadata,
       coalesce(u.data->>'name',u.email) AS teacher_name,e.id AS enrollment_id,e.status AS enrollment_status,e.amount,
       (SELECT count(*)::int FROM course_progress p WHERE p.enrollment_id=e.id AND p.completed_at IS NOT NULL) AS completed,
       count(*) OVER()::int AS total
@@ -48,7 +48,7 @@ export function createCourseService({query,withTx,uid,audit}){
       LEFT JOIN course_releases r ON r.course_id=c.id AND r.version=${mine?'e.release_version':'c.published_version'}
       CROSS JOIN LATERAL (SELECT ${manage?'c.metadata':'r.metadata'} AS metadata) m
       ${where.length?'WHERE '+where.join(' AND '):''} ORDER BY c.updated_at DESC,c.id LIMIT ${add(limit)} OFFSET ${add(offset)}`,values);
-    return {courses:result.rows.map(row=>({id:row.id,...row.metadata,teacherName:row.teacher_name,status:row.status,version:row.version,completed:row.completed,
+    return {courses:result.rows.map(row=>({id:row.id,...row.metadata,teacherName:row.teacher_name,status:row.status,version:row.version,updatedAt:row.updated_at,completed:row.completed,
       enrollment:row.enrollment_id?{id:row.enrollment_id,status:row.enrollment_status,amount:row.amount}:null})),total:result.rows[0]?.total||0};
   }
   async function getCourse(user,id,{edit=false}={}){

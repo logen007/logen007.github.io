@@ -163,9 +163,12 @@ async function saveUpload(request,{kind,maxBytes,mimePrefix,defaultExt},user=nul
     ?`${imageStem}-${randomUUID().slice(0,8)}.jpg`
     :`${Date.now()}-${randomUUID()}${ext||defaultExt}`;
   const dest=path.join(uploadDir,name);let size=0;
-  part.file.on('data',chunk=>{size+=chunk.length;if(size>maxBytes)part.file.destroy(appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`));});
   await withMediaMutation(async()=>{
     try{
+      // A data listener starts flowing. Attach it only after the async backup
+      // lock is acquired, immediately beside pipeline, or the image header can
+      // be consumed and discarded while waiting for the database.
+      part.file.on('data',chunk=>{size+=chunk.length;if(size>maxBytes)part.file.destroy(appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`));});
       await pipeline(part.file,createWriteStream(dest,{flags:'wx'}));
       if(part.file.truncated||size>maxBytes)throw appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`);
       if(mimePrefix==='image/'){
