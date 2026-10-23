@@ -11,6 +11,7 @@ const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost/?view=courses'
 for(const name of ['window','document','sessionStorage','localStorage','HTMLElement','HTMLInputElement','Event','CustomEvent','MutationObserver'])globalThis[name]=dom.window[name];
 window.scrollTo=()=>{};window.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});
 const {createCoursesController}=await import('../src/courses/controller.js');
+const {bindImagePaste}=await import('../src/ui/image-paste.js');
 const {newCourseExercise,courseEditorContext,courseExerciseEditorHtml,bindCourseExerciseEditor,collectCourseExercise}=await import('../src/courses/exercise-editor.js');
 const {assertCoursePublishable}=await import('../src/domain/courses.js');
 const db=new PGlite(),tx=new AsyncLocalStorage();
@@ -18,8 +19,17 @@ const query=async(sql,args=[])=>{const r=await(tx.getStore()||db).query(sql,args
 const service=createCourseService({query,withTx:fn=>db.transaction(client=>tx.run(client,()=>fn({query}))),uid:prefix=>prefix+'-'+randomUUID(),audit:async()=>{}});
 const {default:Fastify}=await import('../server/node_modules/fastify/fastify.js');
 const app=Fastify(),teacher={id:'teacher',role:'teacher'},student={id:'student',role:'student'};
-let user=teacher,route={page:'manage'},controller,failSave=false,dropProgressReceipt=false;
+let user=teacher,route={page:'manage'},controller,failSave=false,dropProgressReceipt=false,failUpload=false;
 const root=document.querySelector('#app'),notices=[];
+const pickerClicks=[],uploads=[];
+// Observe before the production capture handler, including events it cancels.
+document.addEventListener('click',event=>{if(event.target.matches('[data-course-upload]'))pickerClicks.push(event);},true);
+const unbindImagePaste=bindImagePaste(document,{notify:m=>notices.push(m)});
+const uploadImage=async(file,{slot})=>{
+  uploads.push({file,slot});
+  if(failUpload)throw Error('Synthetic upload failure');
+  return slot==='course-cover'?'/uploads/synthetic-cover.png':'/uploads/synthetic-lesson.png';
+};
 const request=async(suffix,options={})=>{
   if(failSave&&options.method==='PUT')throw Error('Synthetic network failure');
   const response=await app.inject({method:options.method||'GET',url:'/api/courses'+suffix,headers:{'x-user':user.id},...(options.body===undefined?{}:{payload:options.body})});
@@ -33,21 +43,46 @@ const idle=()=>until(()=>!controller.getState().loading&&!root.hasAttribute('ari
 const click=async selector=>{const button=root.querySelector(selector);assert.ok(button,'Missing '+selector);button.click();await idle();};
 const action=(name,extra='')=>click(`[data-course-action="${name}"]${extra}`);
 const fill=(selector,value)=>{const input=root.querySelector(selector);assert.ok(input,'Missing '+selector);input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));return input;};
+const chooseImage=async slot=>{
+  await Promise.resolve(); // The real global observer must process the new form first.
+  const button=root.querySelector(`[data-course-pick="${slot}"]`),input=root.querySelector(`[data-course-upload="${slot}"]`),before=pickerClicks.length;
+  assert.ok(button);assert.ok(input);assert.ok(input.hasAttribute('data-image-picker-direct'));
+  button.click();
+  assert.equal(pickerClicks.length,before+1,slot+' opens the picker on the first click');
+  assert.equal(pickerClicks.at(-1).defaultPrevented,false,slot+' is not intercepted as a hidden paste target');
+  assert.equal(input.hasAttribute('data-image-paste-target'),false);
+  const file=new dom.window.File(['synthetic image'],'synthetic.png',{type:'image/png'});
+  Object.defineProperty(input,'files',{value:[file],configurable:true});
+  input.dispatchEvent(new Event('change',{bubbles:true}));
+  assert.equal(button.disabled,true);assert.match(root.querySelector(`[data-course-upload-status="${slot}"]`).textContent,/Đang tải/);
+  await idle();assert.equal(input.value,'','Same-file selection can be retried');
+};
 try{
   await db.exec(await fs.readFile(new URL('../server/schema.sql',import.meta.url),'utf8'));
   for(const u of [teacher,student])await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4::jsonb)',[u.id,u.id+'@test.invalid',u.role,JSON.stringify({name:u.id})]);
   registerCourseRoutes(app,{service,userFor:async request=>request.headers['x-user']==='teacher'?teacher:student});
-  controller=createCoursesController({root,context:()=>({user}),layout:html=>html,navigate:next=>{route=next;paint();},repaint:paint,notify:m=>notices.push(m),request});
+  controller=createCoursesController({root,context:()=>({user}),layout:html=>html,navigate:next=>{route=next;paint();},repaint:paint,notify:m=>notices.push(m),request,uploadImage});
   paint();await idle();await action('create');
   const courseId=controller.getState().editor.id;
   fill('[data-course-field="title"]','Khóa A1 thử nghiệm');fill('[data-course-field="shortDescription"]','Học và luyện tập');
-  // Uploaded URL is fixture data; upload transport is covered by the browser and HTTP suite.
-  controller.getState().editor.course.coverUrl='/uploads/synthetic-cover.png';
+  assert.ok(root.querySelector('.course-authoring .course-info-card .course-info-layout .course-info-fields'));
+  assert.ok(root.querySelector('.course-info-identity [data-course-field="level"]'));
+  await chooseImage('cover');assert.equal(controller.getState().editor.course.coverUrl,'/uploads/synthetic-cover.png');
+  assert.equal(root.querySelector('.course-cover-picker img').getAttribute('src'),'/uploads/synthetic-cover.png');
+  failUpload=true;await chooseImage('cover');
+  assert.equal(controller.getState().editor.course.coverUrl,'/uploads/synthetic-cover.png','Failed replacement keeps the previous image');
+  assert.equal(root.querySelector('[data-course-field="title"]').value,'Khóa A1 thử nghiệm','Upload failure keeps entered fields');
+  assert.equal(root.querySelector('[data-course-pick="cover"]').disabled,false);
+  assert.match(root.querySelector('[data-course-upload-status="cover"]').textContent,/Chưa tải được/);
+  failUpload=false;await chooseImage('cover');assert.equal(uploads.length,3);
   await action('editor-step','[data-step="content"]');await action('add-chapter');
+  assert.equal((await service.getCourse(teacher,courseId,{edit:true})).course.coverUrl,'/uploads/synthetic-cover.png');
   const chapterId=controller.getState().editor.course.chapters[0].id;
   fill('[data-course-chapter-title]','Chào hỏi');
   await action('add-lesson','[data-kind="knowledge"]');
   fill('[data-course-lesson-field="title"]','Hallo!');fill('#courseKnowledgeBody','[b]Guten Tag[/b] — Xin chào.');
+  await chooseImage('lesson');assert.equal(root.querySelector('.course-lesson-image').getAttribute('src'),'/uploads/synthetic-lesson.png');
+  assert.equal(root.querySelector('#courseKnowledgeBody').value,'[b]Guten Tag[/b] — Xin chào.');
   failSave=true;assert.equal(await controller.beforeLeave(),false);assert.equal(root.querySelector('#courseKnowledgeBody').value,'[b]Guten Tag[/b] — Xin chào.');assert.equal(controller.isDirty(),true);
   failSave=false;await action('save-lesson');
   await action('add-lesson','[data-kind="exercises"]');
@@ -62,6 +97,7 @@ try{
   user=student;route={page:'catalog'};paint();await idle();assert.equal(root.querySelectorAll('.course-card').length,1);
   await action('detail');assert.doesNotMatch(root.textContent,/Hallo dùng để/);await action('enroll');
   assert.equal(controller.getState().lesson.lesson.kind,'knowledge');assert.ok(root.querySelector('.course-prose strong'));
+  assert.equal(root.querySelector('.course-lesson-image').getAttribute('src'),'/uploads/synthetic-lesson.png','Uploaded lesson image survives save, publish and enrollment');
   await action('complete-lesson');assert.equal(controller.getState().lesson.lesson.id,exerciseId);
   const qId=controller.getState().lesson.lesson.exercise.questions[0].id;
   dropProgressReceipt=true;root.querySelector('.answer-one[value="1"]').click();await assert.rejects(controller.flushPractice(),/lost save receipt/);
@@ -107,5 +143,5 @@ try{
     if(type==='multiple')assert.deepEqual(roundtrip.questions[0].correctAnswer,[0,2]);
     if(type==='gaps')assert.ok(roundtrip.section.gapPassage.some(part=>part.gap===0));
   }
-  assert.ok(chapterId);console.log('Courses DOM/HTTP/SQL: teacher authoring, failed-save retention, publication, student enrollment, completion, autosave, retake, resume and 8 shared exercise families passed.');
-}finally{await app.close();await db.close();dom.window.close();}
+  assert.ok(chapterId);console.log('Courses DOM/HTTP/SQL: first-click cover/lesson pickers with global image paste, failed-upload retry, compact authoring, failed-save retention, publication, enrollment, completion, autosave, retake, resume and 8 shared exercise families passed.');
+}finally{unbindImagePaste();await app.close();await db.close();dom.window.close();}

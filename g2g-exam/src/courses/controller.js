@@ -15,7 +15,7 @@ const fresh=route=>({route,loading:true,error:'',filters:{search:'',level:'',fee
 const uuid=prefix=>prefix+'-'+crypto.randomUUID();
 const ask=(message,confirmLabel='Tiếp tục')=>new Promise(resolve=>confirmAction(message,()=>resolve(true),{confirmLabel,onCancel:()=>resolve(false)}));
 
-export function createCoursesController({root,context,layout,navigate,repaint,notify,bindAudio,request=courseRequest}){
+export function createCoursesController({root,context,layout,navigate,repaint,notify,bindAudio,request=courseRequest,uploadImage=uploadQuestionImage}){
   let state=fresh({page:'catalog'}),routeKey='',generation=0,loadController=null,searchTimer=null,practiceTimer=null,savingPractice=null,busy=false;
   const user=()=>context().user;
   const markDirty=()=>{state.dirty=true;const indicator=root.querySelector('[data-course-dirty]');if(indicator)indicator.textContent='Có thay đổi chưa lưu';};
@@ -222,6 +222,8 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   }
   root.addEventListener('click',event=>{
     const button=event.target.closest('button');if(!button||button.disabled||!root.contains(button))return;
+    // Keep native selection in the original user gesture (including Safari/iOS).
+    if(button.dataset.coursePick){event.preventDefault();if(!busy)root.querySelector(`[data-course-upload="${button.dataset.coursePick}"]`)?.click();return;}
     if(button.dataset.courseAction){event.preventDefault();void perform(button,()=>action(button.dataset.courseAction,button));return;}
     const editor=root.querySelector('[data-course-exercise-editor]');if(!editor?.contains(button))return;
     const standard=button.dataset.action,promptAction=button.dataset.sectionInstructionAction;
@@ -267,10 +269,16 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   root.addEventListener('input',input);root.addEventListener('change',input);
   root.addEventListener('change',event=>{
     const input=event.target;if(!input.dataset.courseUpload||!input.files?.[0])return;
-    const button=input.closest('label');void perform(button,async()=>{
-      await collectEditor();const url=await uploadQuestionImage(input.files[0],{slot:'course-'+input.dataset.courseUpload});
-      if(input.dataset.courseUpload==='cover')state.editor.course.coverUrl=url;else currentLesson().imageUrl=url;
-      markDirty();repaint();
+    const slot=input.dataset.courseUpload,button=root.querySelector(`[data-course-pick="${slot}"]`),status=root.querySelector(`[data-course-upload-status="${slot}"]`),file=input.files[0];
+    if(!button||busy)return;
+    void perform(button,async()=>{
+      if(status)status.textContent='Đang tải ảnh…';
+      try{
+        await collectEditor();const url=await uploadImage(file,{slot:'course-'+slot});
+        if(slot==='cover')state.editor.course.coverUrl=url;else currentLesson().imageUrl=url;
+        markDirty();repaint();
+      }catch(error){if(status)status.textContent='Chưa tải được ảnh. Chọn lại để thử.';throw error;}
+      finally{input.value='';}
     });
   });
   return {mount,beforeLeave,isDirty:()=>state.dirty||state.practiceDirty||busy,
