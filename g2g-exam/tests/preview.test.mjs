@@ -67,12 +67,25 @@ import {compactBinaryChoices} from '../src/domain/question-display.js';
 import {renderQuestionHtml} from '../src/views/student.js';
 {
   const html=renderQuestionHtml({id:'writing-clean',type:'writing',maxScore:10,title:'[b]Eigene Anleitung[/b]'},'Hallo',{id:'preview'},{singleQuestion:true,questionNumber:1,wordRange:[20,30]});
-  assert.doesNotMatch(html,/question-number|Schreiben Sie 20–30 Wörter/);
+  assert.match(html,/class="question-number">1\.<\/strong>/);
+  assert.doesNotMatch(html,/Schreiben Sie 20–30 Wörter/);
   assert.match(html,/<strong class="text-bold">Eigene Anleitung<\/strong>/);
   assert.match(html,/Hallo/);
-  assert.match(html,/aria-label="Schriftliche Antwort"/);
+  assert.match(html,/aria-label="Schriftliche Antwort 1"/);
   assert.match(renderQuestionHtml({id:'writing-numbered',type:'writing',maxScore:10},'',{id:'preview'},{questionNumber:42}),/aria-label="Schriftliche Antwort 42"/);
   assert.match(html,/word-count/);
+  for(const writing of [{writingFormVersion:1},{formFrame:true}]){
+    const form=renderQuestionHtml({id:'numbered-form',type:'writing',rubric:[],...writing},{},{id:'preview'},{singleQuestion:true,questionNumber:43,formFrame:writing.formFrame});
+    assert.match(form,/class="question-number">43\.<\/strong>/,'Writing forms display their global question number');
+  }
+  const example=renderQuestionHtml({id:'writing-example',type:'writing',example:true},'',{id:'preview'},{questionNumber:40,singleQuestion:true});
+  assert.doesNotMatch(example,/class="question-number"/,'Examples never consume or display a question number');
+  const questions=[{id:'reading',type:'single',title:'Read',choices:['A','B']},{id:'write1',type:'writing',title:'SMS'},{id:'write2',type:'writing',title:'Email'}];
+  const exam={id:'numbered-writing',title:'Writing numbers',level:'A2',sections:questions.map((q,i)=>({id:`section-${i}`,name:i?'Viết':'Đọc',skillKey:i?'writing':'reading',questionIds:[q.id],questionProfile:{}}))};
+  const live=liveExamHtml({attempt:{id:'a',answers:{}},exam,allQuestions:questions,online:true});
+  assert.deepEqual([...live.matchAll(/class="question-number">(\d+)\.<\/strong>/g)].map(match=>Number(match[1])),[1,2,3],'Writing continues numbering across single-task sections');
+  const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+  assert.match(css,/\.exam-paper \.answer-options--long \{ grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,240px\),1fr\)\); \}/,'Text answers fill equal responsive columns instead of always stacking');
 }
 
 for(const preview of [false,true]){

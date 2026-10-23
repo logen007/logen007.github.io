@@ -221,8 +221,8 @@ export function renderQuestionHtml(q,answer,attempt,{singleQuestion=false,linedP
   const isExample=Boolean(isPrefilledQuestion(q)),exampleTitle=isExample&&showExampleTitle?'<div class="question-example-title">Beispiel</div>':'';
   const questionAnchorId=`exam-question-${q.id}`;
   if(isExample){answer=exampleAnswer(q);questionNumber=null;}
-  if(q.type==='writing'&&singleQuestion)questionNumber=null;
-  if(q.type==='writing'&&(formFrame||q.writingFormVersion===1))return `<div class="cau-thi writing-form-question ${isExample?'is-example':''}" id="${esc(questionAnchorId)}" data-q="${esc(q.id)}">${exampleTitle}${writingFormDisplay(q,answer,{readOnly:isExample})}</div>`;
+  const numberLabel=questionNumber?`<strong class="question-number">${questionNumber}${questionNumber==='_'?'':'.'}</strong> `:'';
+  if(q.type==='writing'&&(formFrame||q.writingFormVersion===1))return `<div class="cau-thi writing-form-question ${isExample?'is-example':''}" id="${esc(questionAnchorId)}" data-q="${esc(q.id)}">${exampleTitle}${numberLabel?`<div class="noi">${numberLabel}</div>`:''}${writingFormDisplay(q,answer,{readOnly:isExample})}</div>`;
   const played=sessionStorage.getItem(`g2g.audio.${attempt.id}.${q.id}`);
   const audio=!hideAudio&&q.audioUrl?`<div class="audio-thi"><audio id="audio-${q.id}" preload="metadata" src="${esc(q.audioUrl)}"></audio><button class="nut nho chinh play-audio" data-q="${q.id}" title="Das Audio wird gemäß den Prüfungsregeln abgespielt." ${played?'disabled':''}>${played?'Audio abgespielt':'Audio abspielen'}</button>${preview?'':'<span class="phu-de">Das Audio wird gemäß den Prüfungsregeln abgespielt.</span>'}</div>`:'';
   const publicTitle=q.type==='writing'&&q.aiGradingRules&&q.title===q.aiGradingRules?'':q.title||'';
@@ -231,7 +231,7 @@ export function renderQuestionHtml(q,answer,attempt,{singleQuestion=false,linedP
   const isSharedInstruction=normalizedPrompt.length>12&&normalizedSection.includes(normalizedPrompt);
   const questionText=rawPrompt==='Nháp'||isSharedInstruction?'':rawPrompt;
   const questionAriaText=questionText.replace(/\[img\]/gi,' ').replace(/\s+/g,' ').trim();
-  const prompt=`${q.instruction?`<div class="question-instruction">${instructionTextHtml(q.instruction)}</div>`:''}${questionText||questionNumber?`<div class="noi">${questionNumber?`<strong class="question-number">${questionNumber}${questionNumber==='_'?'':'.'}</strong> `:''}${questionPromptHtml(hideStimulus?questionText.replace(/\[img\]/gi,''):questionText,q)}</div>`:''}`;
+  const prompt=`${q.instruction?`<div class="question-instruction">${instructionTextHtml(q.instruction)}</div>`:''}${questionText||questionNumber?`<div class="noi">${numberLabel}${questionPromptHtml(hideStimulus?questionText.replace(/\[img\]/gi,''):questionText,q)}</div>`:''}`;
   const stimulus=hasStimulus&&!hideStimulus?questionStimulusHtml(q,{hideImage:/\[img\]/i.test(questionText)}):'';
   const head=exampleTitle+stimulus+(prompt||audio?`<div class="preview-question-heading">${prompt?`<div class="preview-question-prompt">${prompt}</div>`:''}${audio}</div>`:'');
   const root=`cau-thi ${isExample?'is-example ':''}${answerPresent(answer,q)?'is-answered':''}`;

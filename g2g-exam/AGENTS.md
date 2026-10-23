@@ -230,8 +230,8 @@ Hãy chỉ ra chính xác phần còn thiếu và hỏi lại trước khi xây 
 
 Rule được duyệt 13/10/2026: số câu là thứ tự liên tục của toàn đề thi, không
 đếm lại theo bài hoặc kỹ năng. Dùng chung quy tắc ở editor, bài thi, xem trước,
-kết quả/chấm bài và mọi thông báo lỗi. Ví dụ không chiếm số; bài viết một câu
-có thể ẩn nhãn nhưng vẫn giữ thứ tự chung. Không đổi số trong nội dung tác giả
+kết quả/chấm bài và mọi thông báo lỗi. Ví dụ không chiếm số; mọi bài viết, kể cả
+phần chỉ có một câu, đều hiện nhãn theo thứ tự chung (owner cập nhật 23/10/2026). Không đổi số trong nội dung tác giả
 đã nhập hoặc mã định danh dữ liệu.
 
 Mọi khung đề bài dùng chung cấu trúc: nội dung, tải ảnh, max-width ảnh có đơn vị
