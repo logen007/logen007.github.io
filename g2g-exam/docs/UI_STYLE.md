@@ -596,6 +596,11 @@ Borrow hierarchy and purposeful illustration, not assets, claims or product copy
   an underscore or dash. Keep scored question pairs separate.
   In letter-answer question lists, display the example as "0." instead of "_";
   it still does not advance the scored-question numbering.
+- Exam and preview audio allow only one active playback flow at a time, including
+  metadata/server preparation and the intervals between repeated segments. Block
+  starting another flow without consuming its listen allowance; keep the current
+  flow uninterrupted and preserve configured repeat counts. Release the reservation
+  on completion or failure. Legacy question audio uses the same guard.
 - Put prompt and audio control together; answer options fill the following row.
   Short text choices share one row with 2, 3 or 4 equal columns matching the
   visible option count, including mobile and examples. Keep gaps and 44px touch

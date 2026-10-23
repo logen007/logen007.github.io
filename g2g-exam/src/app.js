@@ -386,6 +386,7 @@ function bindExamInputs(attempt,questions){
   app.querySelectorAll('.play-audio').forEach(btn=>btn.onclick=async()=>{
     const qid=btn.dataset.q,key=`g2g.audio.${attempt.id}.${qid}`,audio=document.getElementById(`audio-${qid}`);
     if(!audio||sessionStorage.getItem(key))return;
+    if(!claimAudioPlayback(audio))return;
     try{
       sessionStorage.setItem(key,'1');
       btn.disabled=true;
@@ -398,7 +399,7 @@ function bindExamInputs(attempt,questions){
       btn.disabled=false;
       btn.textContent='Audio abspielen';
       notify('Das Audio konnte nicht abgespielt werden. Bitte prüfen Sie Ihre Verbindung oder die Audiodatei.');
-    }
+    }finally{delete audio.dataset.audioBusy;}
   });
 }
 
@@ -423,8 +424,10 @@ function bindPreviewInputs(attempt,questions){
   app.querySelectorAll('.play-audio').forEach(btn=>btn.onclick=async()=>{
     const qid=btn.dataset.q,key=`g2g.audio.${attempt.id}.${qid}`,audio=document.getElementById(`audio-${qid}`);
     if(!audio||sessionStorage.getItem(key))return;
+    if(!claimAudioPlayback(audio))return;
     try{sessionStorage.setItem(key,'1');btn.disabled=true;btn.textContent='Audio';audio.addEventListener('ended',()=>{btn.textContent='Audio abgespielt';},{once:true});await audio.play();}
     catch{sessionStorage.removeItem(key);btn.disabled=false;btn.textContent='Audio abspielen';notify('Dieses Audio konnte nicht abgespielt werden.');}
+    finally{delete audio.dataset.audioBusy;}
   });
 }
 
@@ -434,6 +437,14 @@ function examAudioPlaying(){
 function guardExamAudio(){
   if(ui.view!=='exam'||!examAudioPlaying())return false;
   notify('Bitte hören Sie das Audio bis zum Ende an.');
+  return true;
+}
+function claimAudioPlayback(owner){
+  if(examAudioPlaying()){
+    notify('Chỉ có thể phát một audio tại một thời điểm. Vui lòng nghe hết audio đang phát.');
+    return false;
+  }
+  owner.dataset.audioBusy='true';
   return true;
 }
 function bindSectionAudio(attempt,{preview}){
@@ -451,9 +462,8 @@ function bindOneSectionAudio(root,attempt,{preview}){
     progress?.setAttribute('aria-valuenow',String(Math.round(percent)));
   };
   button.onclick=async()=>{
-    if(button.disabled)return;
+    if(button.disabled||!claimAudioPlayback(root))return;
     button.disabled=true;
-    if(!preview)root.dataset.audioBusy='true';
     let locked=false;
     try{
       const durations=await Promise.all(audios.map(readAudioDuration));
