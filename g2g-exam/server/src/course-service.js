@@ -13,11 +13,12 @@ export function createCourseService({query,withTx,uid,audit}){
   const student=user=>{if(user?.role!=='student')fail(403,'Chỉ học viên được đăng ký học.');};
   const normalize=fn=>{try{return fn();}catch(error){fail(400,error.message);}};
   const expected=(row,version)=>{if(row.version!==Number(version))fail(409,'Nội dung đã thay đổi ở phiên khác. Hãy tải lại trước khi lưu.');};
-  const owned=async(client,user,id,lock=false)=>{
+  const owned=async(client,user,id,lock=false,includeDeleted=false)=>{
     teacher(user);
     const row=(await client.query(`SELECT * FROM courses WHERE id=$1${lock?' FOR UPDATE':''}`,[id])).rows[0];
     if(!row)fail(404,'Không tìm thấy khóa học.');
     if(row.owner_id!==user.id&&user.role!=='master')fail(403,'Bạn không quản lý khóa học này.');
+    if(row.metadata.deletedAt&&!includeDeleted)fail(404,'Khóa học đã được xóa.');
     return row;
   };
   const db={query};
@@ -43,7 +44,7 @@ export function createCourseService({query,withTx,uid,audit}){
     const manage=params.manage==='1',mine=params.mine==='1';if(manage)teacher(user);
     const values=[user.id],where=[];
     const add=value=>{values.push(value);return `$${values.length}`;};
-    if(manage){if(user.role!=='master')where.push('c.owner_id=$1');}
+    if(manage){where.push("c.metadata->>'deletedAt' IS NULL");if(user.role!=='master')where.push('c.owner_id=$1');}
     else if(mine)where.push('e.id IS NOT NULL');
     else where.push("c.status='published'");
     if(params.search)where.push(`m.metadata->>'title' ILIKE ${add('%'+String(params.search).slice(0,150)+'%')}`);
@@ -68,7 +69,7 @@ export function createCourseService({query,withTx,uid,audit}){
     const existing=(await query('SELECT id,status,release_version,amount FROM course_enrollments WHERE course_id=$1 AND student_id=$2',[id,user.id])).rows[0];
     const release=(await query(`SELECT r.snapshot,r.version,r.metadata,u.data->>'name' AS teacher_name FROM courses c JOIN course_releases r ON r.course_id=c.id AND r.version=${existing?'$2':'c.published_version'} JOIN users u ON u.id=c.owner_id WHERE c.id=$1 ${existing?'':"AND c.status='published'"}`,existing?[id,existing.release_version]:[id])).rows[0];
     if(!release)fail(404,'Khóa học chưa được xuất bản hoặc đã ngừng đăng ký.');
-    return {id,version:release.version,publicationLabel:release.metadata.publicationLabel,...courseMetadata(release.snapshot),description:release.snapshot.description,teacherName:release.teacher_name,
+    return {id,version:release.version,publicationLabel:release.metadata.publicationLabel,...courseMetadata(release.snapshot),description:release.snapshot.description,...(release.snapshot.descriptionBlocks?{descriptionBlocks:release.snapshot.descriptionBlocks}:{}),teacherName:release.teacher_name,
       chapters:courseOutline(release.snapshot),enrollment:existing?{id:existing.id,status:existing.status,amount:existing.amount}:null,
       progress:existing?.status==='active'?await progress(db,existing.id):[]};
   }
@@ -78,6 +79,8 @@ export function createCourseService({query,withTx,uid,audit}){
     return withTx(async client=>{
       const found=(await client.query('SELECT * FROM courses WHERE id=$1 FOR UPDATE',[id])).rows[0];
       if(found){if(found.owner_id!==user.id&&user.role!=='master')fail(403,'Bạn không quản lý khóa học này.');
+        if(found.metadata.deletedAt)fail(409,'Khóa học đã được xóa. Vui lòng tải lại danh sách.');
+        if(Array.isArray(found.draft.descriptionBlocks)&&!Array.isArray(input.course.descriptionBlocks))fail(409,'Mô tả khóa học dùng trình soạn thảo mới. Vui lòng tải lại trang trước khi chỉnh sửa.');
         const incoming=new Map(courseLessons(input.course).map(lesson=>[lesson.id,lesson]));
         if(courseLessons(found.draft).some(lesson=>incoming.has(lesson.id)&&(lesson.contentVersion>=1&&!Array.isArray(incoming.get(lesson.id).blocks)||lesson.contentVersion>=2&&input.knowledgeLayout!==KNOWLEDGE_LAYOUT_VERSION)))fail(409,'Bài kiến thức dùng trình soạn thảo mới. Vui lòng tải lại trang trước khi chỉnh sửa.');
         if(JSON.stringify(normalizeCourse(found.draft))===JSON.stringify(course))return {id,version:found.version,status:found.status,publishedVersion:found.published_version,course};
@@ -139,6 +142,15 @@ export function createCourseService({query,withTx,uid,audit}){
       const key=uid('enrollment');
       await client.query('INSERT INTO course_enrollments(id,course_id,student_id,release_version,status,amount) VALUES($1,$2,$3,$4,$5,$6)',[key,id,user.id,row.published_version,status,price]);
       await audit(user,'enroll_course','course',id,{enrollmentId:key,status,amount:price},client);return {id:key,status,amount:price};
+    });
+  }
+  async function remove(user,id,{version}){
+    return withTx(async client=>{
+      const row=await owned(client,user,id,true,true);
+      if(row.metadata.deletedAt)return {id,version:row.version,status:'archived'};
+      expected(row,version);
+      await client.query("UPDATE courses SET status='archived',metadata=metadata||jsonb_build_object('deletedAt',now()),version=version+1,updated_at=now() WHERE id=$1",[id]);
+      await audit(user,'trash_course','course',id,{},client);return {id,version:row.version+1,status:'archived'};
     });
   }
   async function confirmEnrollment(user,id,enrollmentId,{approve}){
@@ -228,5 +240,5 @@ export function createCourseService({query,withTx,uid,audit}){
     const lesson=lessonIn(row.snapshot,lessonId);if(!lesson.trial||lesson.kind!=='exercise')fail(403,'Bài tập này không cho học thử.');
     return normalize(()=>gradeCourseExercise(lesson.exercise,answers));
   }
-  return {catalog,getCourse,save,publish,unpublish,archive,enroll,confirmEnrollment,getLesson,saveProgress,submit,tryExercise,members,memberResults,sources};
+  return {catalog,getCourse,save,publish,unpublish,archive,remove,enroll,confirmEnrollment,getLesson,saveProgress,submit,tryExercise,members,memberResults,sources};
 }

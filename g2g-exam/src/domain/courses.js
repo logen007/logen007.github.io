@@ -82,6 +82,11 @@ export function normalizeCourse(input={}){
   }));
   const result={title:text(input.title,200),coverUrl:courseMediaUrl(input.coverUrl),price,level:COURSE_LEVELS.includes(input.level)?input.level:'A1',
     shortDescription:text(input.shortDescription,600),description:text(input.description,30000),chapters};
+  if(input.descriptionBlocks!==undefined){
+    const content=normalizeKnowledgeBlocks(input.descriptionBlocks,courseMediaUrl);
+    if(content.body.length>30000)throw new Error('Mô tả khóa học tối đa 30.000 ký tự.');
+    result.description=content.body;result.descriptionBlocks=content.blocks;
+  }
   if(courseLessons(result).length>300||JSON.stringify(result).length>800000)throw new Error('Khóa học quá lớn. Vui lòng chia nhỏ nội dung.');
   return result;
 }

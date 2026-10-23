@@ -8,13 +8,13 @@ import {bindImageRemoval} from '../ui/image-remove.js';
 import {confirmAction} from '../ui/confirm.js';
 import {uploadCourseImage,validateImageFile} from '../media.js';
 import {COURSE_IMAGE_MAX_BYTES} from '../domain/media-limits.js';
-import {knowledgeBlocks,MAX_KNOWLEDGE_BLOCKS,KNOWLEDGE_LAYOUT_VERSION} from '../domain/course-knowledge.js';
+import {knowledgeBlocks,courseDescriptionContent,MAX_KNOWLEDGE_BLOCKS,KNOWLEDGE_LAYOUT_VERSION} from '../domain/course-knowledge.js';
 import {questionProfileAt} from '../domain/question-profile.js';
 
 const fresh=route=>({route,loading:true,error:'',filters:{search:'',level:'',fee:''},catalog:null,dirty:false,practiceDirty:false,practiceAnswers:{},practiceResult:null,editLesson:'',pendingAudio:new Map()});
 const uuid=prefix=>prefix+'-'+crypto.randomUUID();
 const publishedActions=new Set(['catalog','mine','manage','detail','edit','members','learn','reload','more','preview-managed','editor-step','edit-chapter','edit-category','edit-lesson','close-lesson','preview-exercise','preview-course','close-preview','unpublish','archive']);
-const ask=(message,confirmLabel='Tiếp tục')=>new Promise(resolve=>confirmAction(message,()=>resolve(true),{confirmLabel,onCancel:()=>resolve(false)}));
+const ask=(message,confirmLabel='Tiếp tục',options={})=>new Promise(resolve=>confirmAction(message,()=>resolve(true),{...options,confirmLabel,onCancel:()=>resolve(false)}));
 
 export function createCoursesController({root,context,layout,navigate,repaint,notify,bindAudio,request=courseRequest,uploadImage=uploadCourseImage}){
   let state=fresh({page:'catalog'}),routeKey='',generation=0,loadController=null,searchTimer=null,practiceTimer=null,savingPractice=null,busy=false,editorTimer=null,editorRevision=0,savingEditor=null,knowledgeBinding=null,knowledgeRuntime=null;
@@ -26,7 +26,8 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   const markDirty=()=>{if(readOnly())return;state.dirty=true;editorRevision++;editorStatus('Chưa lưu…');queueEditor();};
   const api=(suffix,options)=>request(suffix,options);
   const currentLesson=()=>state.editor&&courseLessons(state.editor.course).find(lesson=>lesson.id===state.editLesson);
-  const blocks=()=>{const lesson=currentLesson();if(lesson?.kind!=='knowledge')throw Error('Hãy chọn bài kiến thức.');return lesson.blocks??=knowledgeBlocks(lesson);};
+  const editorContent=()=>state.editLesson?currentLesson():courseDescriptionContent(state.editor.course);
+  const blocks=()=>knowledgeBlocks(editorContent());
   const setStatus=message=>{state.practiceSaveStatus=message;const label=root.querySelector('[data-course-save-status]');if(label)label.textContent=message;};
 
   async function load({append=false}={}){
@@ -75,7 +76,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       knowledgeRuntime??=import('./knowledge-visual-editor.js');
       void knowledgeRuntime.then(({bindKnowledgeVisualEditor})=>{
         if(!knowledgeRoot.isConnected)return;
-        knowledgeBinding=bindKnowledgeVisualEditor(knowledgeRoot,{lesson:currentLesson(),notify,onChange:items=>{currentLesson().blocks=items;markDirty();},onFiles:(files,options)=>void uploadFiles(files,'lesson',knowledgeRoot.querySelector('[data-course-pick="lesson"]'),options)});
+        knowledgeBinding=bindKnowledgeVisualEditor(knowledgeRoot,{lesson:editorContent(),label:state.editLesson?'Nội dung kiến thức':'Mô tả khóa học',notify,onChange:items=>{if(state.editLesson)currentLesson().blocks=items;else{state.editor.course.descriptionBlocks=items;state.editor.course.description=items.filter(item=>item.type==='text').map(item=>item.text).join('\n\n');}markDirty();},onFiles:(files,options)=>void uploadFiles(files,'lesson',knowledgeRoot.querySelector('[data-course-pick="lesson"]'),options)});
       }).catch(error=>{if(knowledgeRoot.isConnected){knowledgeRoot.dataset.ready='error';knowledgeRoot.querySelector('[data-knowledge-canvas]').textContent='Không mở được trình soạn. Vui lòng tải lại trang.';notify(error.message);}});
     }
     const editor=root.querySelector('[data-course-exercise-editor]');
@@ -177,6 +178,22 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     if(name==='lesson')return go({page:'learn',id,lesson:button.dataset.lesson});
     if(name==='reload'){await load();return;}
     if(name==='more'){await load({append:true});return;}
+    if(name==='copy-course'){
+      if(state.route.page!=='manage')return;
+      if(state.pendingCourseCopy?.sourceId!==id){
+        const source=await api(coursePath(id,'?edit=1'));
+        state.pendingCourseCopy={sourceId:id,id:uuid('course'),course:normalizeCourse({...source.course,title:(source.course.title||'Khóa học').slice(0,190)+' (bản sao)'})};
+      }
+      const copy=state.pendingCourseCopy;
+      await api(coursePath(copy.id),{method:'PUT',body:{version:0,knowledgeLayout:KNOWLEDGE_LAYOUT_VERSION,course:copy.course}});
+      state.pendingCourseCopy=null;return go({page:'edit',id:copy.id,step:'info'});
+    }
+    if(name==='delete-course'){
+      if(state.route.page!=='manage')return;
+      const item=state.catalog?.courses.find(course=>course.id===id);if(!item)return;
+      if(!await ask('Xóa khóa học này khỏi danh sách? Học viên đã đăng ký vẫn giữ nguyên bài học, tiến độ và kết quả.','Xóa khóa học',{danger:true}))return;
+      await api(coursePath(id,'/delete'),{method:'POST',body:{version:item.version}});await load();return;
+    }
     if(name==='create'){
       const id=uuid('course'),blank={title:'',coverUrl:'',price:0,level:'A1',shortDescription:'',description:'',chapters:[]};
       await api(coursePath(id),{method:'PUT',body:{version:0,course:blank}});return go({page:'edit',id,step:'info'});

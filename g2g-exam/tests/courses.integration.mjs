@@ -96,7 +96,10 @@ try{
   assert.equal((await service.catalog(student,{mine:'1'})).courses.length,2);
   assert.equal((await service.catalog(teacher,{manage:'1',search:'A1'})).courses.length,3);
   const rich=makeCourse();rich.chapters[0].knowledge[0].blocks=[{id:'text-a',type:'text',text:'Before'},{id:'image-a',type:'image',url:'/uploads/block-a.jpg',align:'left',width:50},{id:'text-b',type:'text',text:'After'},{id:'image-b',type:'image',url:'/uploads/block-b.jpg',align:'right',width:75}];
+  rich.descriptionBlocks=[{id:'description-text',type:'text',text:'**Giới thiệu**',align:'center'},{id:'description-image',type:'image',url:'/uploads/description.jpg',align:'right',width:37}];
   let richSaved=await service.save(teacher,'blocks',{version:0,course:rich});
+  const staleDescription=structuredClone(richSaved.course);delete staleDescription.descriptionBlocks;
+  await assert.rejects(service.save(teacher,'blocks',{version:richSaved.version,course:staleDescription}),code(409));
   const stale=structuredClone(richSaved.course);delete stale.chapters[0].knowledge[0].blocks;
   await assert.rejects(service.save(teacher,'blocks',{version:richSaved.version,course:stale}),code(409));
   assert.equal((await service.getCourse(teacher,'blocks',{edit:true})).course.chapters[0].knowledge[0].blocks.length,4,'An old client cannot silently discard blocks');
@@ -104,6 +107,7 @@ try{
   richSaved=await service.save(teacher,'blocks',{version:richSaved.version,course:richSaved.course});
   await service.publish(teacher,'blocks',{version:richSaved.version});await service.enroll(student,'blocks');
   const richLesson=(await service.getLesson(student,'blocks','knowledge')).lesson;
+  assert.deepEqual((await service.getCourse(student,'blocks')).descriptionBlocks,richSaved.course.descriptionBlocks,'Published descriptions retain shared formatting and image layout');
   assert.deepEqual(richLesson.blocks.map(b=>b.id),['text-a','image-a','text-b','image-b']);
   assert.equal(richLesson.blocks[1].width,50);assert.equal(richLesson.blocks[3].align,'right');assert.equal(richLesson.body,'Updated before\n\nAfter');
   assert.equal((await service.getLesson(student,'course','knowledge')).lesson.body,'PRIVATE LESSON BODY','Legacy enrolled releases are unchanged');
@@ -132,11 +136,20 @@ try{
   const legacyEditor=await service.getCourse(teacher,'blocks',{edit:true});assert.equal(legacyEditor.publicationLabel,'1.0.0');
   const legacyUnlock=await service.unpublish(teacher,'blocks',{version:legacyEditor.version});const legacyPublish=await service.publish(teacher,'blocks',{version:legacyUnlock.version});assert.equal(legacyPublish.reused,true);assert.equal(legacyPublish.publicationLabel,'1.0.0');
   assert.deepEqual((await query("SELECT snapshot FROM course_releases WHERE course_id='blocks'")).rows[0].snapshot,legacySnapshot,'Legacy publication content is not migrated or rewritten');
+  const deleting=await service.getCourse(teacher,'blocks',{edit:true});
+  await assert.rejects(service.remove(student,'blocks',{version:deleting.version}),code(403));await assert.rejects(service.remove(other,'blocks',{version:deleting.version}),code(403));await assert.rejects(service.remove(teacher,'blocks',{version:deleting.version-1}),code(409));
+  const removed=await service.remove(teacher,'blocks',{version:deleting.version});assert.equal((await service.remove(teacher,'blocks',{version:deleting.version})).version,removed.version);
+  assert.equal((await service.catalog(teacher,{manage:'1'})).courses.some(c=>c.id==='blocks'),false);assert.equal((await service.catalog(master,{manage:'1'})).courses.some(c=>c.id==='blocks'),false);
+  await assert.rejects(service.getCourse(teacher,'blocks',{edit:true}),code(404));await assert.rejects(service.save(teacher,'blocks',{version:removed.version,course:deleting.course}),code(409));await assert.rejects(service.publish(master,'blocks',{version:removed.version}),code(404));await assert.rejects(service.enroll(second,'blocks'),code(404));
+  assert.equal((await service.getCourse(student,'blocks')).enrollment.status,'active');assert.deepEqual((await service.getLesson(student,'blocks','knowledge')).lesson.blocks,richLesson.blocks);
+  assert.equal((await service.submit(student,'blocks','exercise',{answers:{question:0},requestKey:crypto.randomUUID()})).score,2,'Soft delete preserves enrolled grading');
+  assert.deepEqual((await query("SELECT snapshot FROM course_releases WHERE course_id='blocks'")).rows[0].snapshot,legacySnapshot,'Soft delete does not touch releases or media references');
   const {default:Fastify}=await import('../server/node_modules/fastify/fastify.js');
   const app=Fastify();registerCourseRoutes(app,{service,userFor:async request=>{const user=[student,teacher,other,master,second].find(u=>u.id===request.headers['x-test-user']);if(!user)throw Object.assign(new Error('Login required'),{statusCode:401});return user;}});
   try{
     assert.equal((await app.inject({method:'GET',url:'/api/courses'})).statusCode,401);
     assert.equal((await app.inject({method:'GET',url:'/api/courses/paid?edit=1',headers:{'x-test-user':'student'}})).statusCode,403);
+    assert.equal((await app.inject({method:'POST',url:'/api/courses/paid/delete',headers:{'x-test-user':'student'},payload:{version:2}})).statusCode,403);
     for(const actor of ['student','other'])assert.equal((await app.inject({method:'POST',url:'/api/courses/paid/unpublish',headers:{'x-test-user':actor},payload:{version:2}})).statusCode,403);
     assert.equal((await app.inject({method:'PUT',url:'/api/courses/paid',headers:{'x-test-user':'teacher'},payload:{version:2,course:{...makeCourse(600000),title:'Blocked HTTP edit'}}})).statusCode,409);
     const response=await app.inject({method:'GET',url:'/api/courses/paid',headers:{'x-test-user':'second'}});assert.equal(response.statusCode,200);assert.doesNotMatch(response.body,/PRIVATE|correctAnswer/);
