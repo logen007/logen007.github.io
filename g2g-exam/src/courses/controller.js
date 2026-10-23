@@ -173,7 +173,13 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     if(name==='preview-managed')return go({page:'edit',id,step:'preview'});
     if(name==='editor-step')return go({page:'edit',id:state.editor.id,step:button.dataset.step});
     if(name==='edit-chapter')return go({page:'edit',id:state.editor.id,step:'content',chapter:id});
-    if(name==='edit-category')return go({page:'edit',id:state.editor.id,step:'content',chapter:button.dataset.chapter,kind:button.dataset.kind});
+    if(name==='edit-category'){
+      const chapter=course.chapters.find(item=>item.id===button.dataset.chapter),kind=button.dataset.kind;
+      if(!chapter||!['knowledge','exercises'].includes(kind))return;
+      const lesson=chapter[kind][0];
+      if(!lesson)return action('add-lesson',button);
+      return go({page:'edit',id:state.editor.id,step:'content',chapter:chapter.id,kind,lesson:lesson.id});
+    }
     if(name==='add-chapter'){await collectEditor();const chapter={id:uuid('chapter'),title:'Chương mới',knowledge:[],exercises:[]};course.chapters.push(chapter);markDirty();return go({page:'edit',id:state.editor.id,step:'content',chapter:chapter.id});}
     if(name.startsWith('chapter-')){
       await collectEditor();const index=course.chapters.findIndex(c=>c.id===id);if(index<0)return;
