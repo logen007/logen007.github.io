@@ -60,7 +60,9 @@ preview/publication toolbar and `goethe-layout` / outline / editor surfaces.
 The outline truncates chapter names on one line (full name in the tooltip) and
 places two short category buttons, “Kiến thức” and “Bài tập”, on one row beneath
 each chapter. The selected category opens its lesson list in the main pane;
-the chapter gear opens its settings. Omit empty placeholders and the redundant
+the chapter gear opens its settings. Each chapter uses an explicit `minmax(0,1fr)`
+track and a shrinkable title button: text ellipsis alone cannot constrain an
+implicit auto track's intrinsic width. Omit empty placeholders and the redundant
 general-settings button. General settings stay in the top gear and include cover,
 level, price and descriptions. Hide the redundant cover/description headings
 visually while retaining accessible labels. The cover uses a taller 4:3 preview.

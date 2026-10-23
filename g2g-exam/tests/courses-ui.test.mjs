@@ -87,6 +87,8 @@ try{
   for(const name of ['shortDescription','description'])assert.ok(root.querySelector(`[data-course-field="${name}"]`).closest('label').querySelector('span.sr-only'),'Descriptions retain accessible labels only');
   assert.match(root.querySelector('.course-cover-field').textContent,/Tối đa 1 MB/);
   assert.match(css,/\.course-authoring \.builder-meta>\.exam-level \{ align-self:center;/);
+  assert.match(css,/\.course-outline-chapter \{[^}]*grid-template-columns:minmax\(0,1fr\);/,'Chapter track must shrink inside the sidebar, not inherit a long title minimum');
+  assert.match(css,/\.course-outline-chapter-title \{[^}]*min-width:0;/,'Title button must shrink before its child can ellipsize');
   assert.match(css,/\.course-outline-chapter-title>span \{[^}]*text-overflow:ellipsis;[^}]*white-space:nowrap;/);
   assert.match(css,/\.course-outline-categories \{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   fill('[data-course-field="title"]','Khóa A1 thử nghiệm');
