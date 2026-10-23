@@ -91,11 +91,35 @@ the staff-only `/api/media/course-image` route. Original and optimized uploads a
 limited to 1 MiB (labelled 1 MB); the server enforces the same limit independently.
 Existing stored images are not rewritten. Exam images retain their 8 MiB limit.
 
-Knowledge uses ordered text/image blocks, up to 100 per lesson. Users can select
-multiple images, insert after a block, drag by the grip or use up/down controls,
-remove a block, and set image alignment/width plus optional alt text. Text uses the
-existing safe markup, not arbitrary HTML. The editor itself shows image placement;
-there is no duplicate preview underneath. The top global preview remains.
+Knowledge now uses one visual writing canvas, not separate raw textareas. The
+WordPress-like interaction reference is the official
+[Image block](https://wordpress.org/documentation/article/image-block/): insert
+at the caret, select an image to expose its tools, move/replace/remove it and adjust
+alignment/width/alt text. Support multi-file picking and native image-file paste/drop
+through the same 1 MiB upload path. Capture/mapping of the selection during an
+asynchronous upload must preserve newly typed text; insertion next to a selected
+image must not silently replace it. An image batch is one undo operation.
+
+Use the MIT Tiptap core/PM/StarterKit/Image packages pinned at 3.32.0, bundled locally
+and lazy-loaded only when opening a knowledge editor. This dependency owns rich
+selection, composition, native image dragging and undo/redo instead of a bespoke
+contenteditable implementation. No CDN, editor account, service key or WordPress
+server/plugin installation. Initial scope is paragraphs, bold/italic/underline,
+H2 headings, images and history, not a complete WordPress CMS or arbitrary HTML.
+Controls reuse the application tokens and focus/selection rules. Image tools appear
+only for a selected image. Autosave never remounts the writing surface/history.
+There is no duplicate preview underneath; the top global preview remains.
+
+The editor's document is temporary UI state. Save the existing ordered safe
+text/image `blocks`, at most 100, using the existing formatting markers (including
+`[headline]`); do not introduce a new stored document schema. Preserve old image,
+text and formatting content on opening. Repair missing/duplicate paragraph IDs
+created by splitting/pasting before saving. Reject content over existing limits.
+Pasted HTML is parsed through a restricted editor schema, external pasted image
+tags are removed, and uploaded files alone use the image path. No active HTML,
+iframes, links, embedded data URLs, new image URL shortcuts or scripts are stored.
+Failed uploads retain content/selection and successful partial batches; retry only
+the unuploaded files. Destroy the editor and pending selection bookmarks on exit.
 
 Compatibility: unedited legacy `body`/`imageUrl` records and immutable releases
 remain readable without a migration. Editing adapts them in memory; the next normal
@@ -109,7 +133,8 @@ and downgrade-write guard while block records exist. Do not roll back to an old
 writer/server that silently strips blocks, and do not remove stored blocks.
 
 CI regressions cover block validation/order, legacy compatibility, stale-client
-write rejection, real SQL save/publication/enrollment, DOM insertion/reorder,
+write rejection, real SQL save/publication/enrollment, actual Tiptap/ProseMirror
+formatting/history, mapped caret insertion, image controls and paste/drop entry,
 1 MiB client/HTTP limits, and media-GC references. Codec/transport mocks and DOM
 drag events are not evidence of native picker, drag UX, or visual acceptance.
 

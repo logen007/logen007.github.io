@@ -15,6 +15,8 @@ const paths={
   type:'<path d="M4 6V4h16v2M12 4v16M8 20h8"/>',
   arrowLeft:'<path d="M20 12H4m7-7-7 7 7 7"/>',
   arrowRight:'<path d="M4 12h16m-7-7 7 7-7 7"/>',
+  undo:'<path d="m9 4-5 5 5 5M4 9h10a6 6 0 0 1 0 12"/>',
+  redo:'<path d="m15 4 5 5-5 5m5-5H10a6 6 0 0 0 0 12"/>',
   arrowUp:'<path d="M12 20V4m-7 7 7-7 7 7"/>',
   arrowDown:'<path d="M12 4v16m-7-7 7 7 7-7"/>',
   profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
