@@ -1816,6 +1816,8 @@ button.course-lesson-row:focus-visible { outline:1px solid var(--focus-ring); ou
 .course-outline-categories>.goethe-part { display:flex; justify-content:center; padding-inline:8px; margin:0; min-width:0; white-space:nowrap; }
 .course-editor-main { display:grid; align-content:start; gap:24px; min-width:0; }
 .course-editor-main h2 { font-size:22px; font-weight:500; }
+.course-chapter-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto; }
+.course-chapter-title { min-height:44px; font-size:22px; font-weight:500; }
 .course-info-card { display:grid; gap:24px; min-width:0; }
 .course-info-layout { display:grid; grid-template-columns:240px minmax(0,1fr); gap:24px; align-items:start; min-width:0; }
 .course-cover-field { display:grid; align-content:start; gap:8px; min-width:0; font-size:14px; }

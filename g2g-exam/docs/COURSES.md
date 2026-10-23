@@ -60,7 +60,11 @@ preview/publication toolbar and `goethe-layout` / outline / editor surfaces.
 The outline truncates chapter names on one line (full name in the tooltip) and
 places two short category buttons, “Kiến thức” and “Bài tập”, on one row beneath
 each chapter. The selected category opens its lesson list in the main pane;
-the chapter gear opens its settings. Each chapter uses an explicit `minmax(0,1fr)`
+the chapter gear opens its settings, with the actual chapter name editable directly
+in the heading row (no separate “Chương N” heading or duplicate name field).
+Category lists omit that entire chapter-settings toolbar and show only their own
+lessons and actions. Renaming still uses the existing autosave/navigation flush.
+Each chapter uses an explicit `minmax(0,1fr)`
 track and a shrinkable title button: text ellipsis alone cannot constrain an
 implicit auto track's intrinsic width. Omit empty placeholders and the redundant
 general-settings button. General settings stay in the top gear and include cover,

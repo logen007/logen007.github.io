@@ -124,8 +124,15 @@ try{
   assert.deepEqual([...root.querySelectorAll('.course-outline-categories button')].map(button=>button.textContent.trim()),['Kiến thức','Bài tập']);
   assert.equal(route.chapter,chapterId,'Chapter selection has its own route');
   assert.equal(root.querySelector('[data-course-chapter-title]').closest('label'),null,'Chapter name has no visible label');
+  const chapterTitle=root.querySelector('.course-chapter-toolbar>.course-chapter-title');
+  assert.ok(chapterTitle);assert.equal(chapterTitle.value,controller.getState().editor.course.chapters[0].title);
+  assert.equal(root.querySelectorAll('[data-course-chapter-title]').length,1,'One editable title replaces both heading and duplicate input');
+  assert.equal(root.querySelector('.course-editor-main>.course-toolbar').nextElementSibling.matches('.course-chapter-columns'),true);
   const longTitle='Chào hỏi '.repeat(12);fill('[data-course-chapter-title]',longTitle);
   await action('edit-category','[data-kind="knowledge"]');assert.equal(root.querySelector('.course-outline-chapter-title').title,longTitle);
+  assert.equal((await service.getCourse(teacher,courseId,{edit:true})).course.chapters[0].title,longTitle,'Inline chapter title uses the existing flush-before-navigation save');
+  assert.equal(root.querySelector('[data-course-chapter-title],.course-chapter-toolbar'),null,'Knowledge list has no chapter title/editor controls');
+  assert.equal(root.querySelector('.course-editor-main h2'),null,'No generic Chapter 1 heading above the knowledge list');
   assert.equal(root.querySelector('[data-course-action="add-lesson"][data-kind="exercises"]'),null,'Category opens only its own lesson list');
   await action('add-lesson','[data-kind="knowledge"]');
   fill('[data-course-lesson-field="title"]','Hallo!');fill('#courseKnowledgeBody','[b]Guten Tag[/b] — Xin chào.');
@@ -157,6 +164,8 @@ try{
   failSave=false;await action('retry-save');assert.equal(root.querySelector('[data-course-dirty]').hidden,true);
   await action('close-lesson');
   await action('edit-category','[data-kind="exercises"]');
+  assert.equal(root.querySelector('[data-course-chapter-title],.course-chapter-toolbar'),null,'Exercise list has no chapter title/editor controls');
+  assert.equal(root.querySelector('.course-editor-main h2'),null);
   await action('add-lesson','[data-kind="exercises"]');
   assert.equal(root.querySelector('[data-course-template]').value,'choices','Do not silently select listening for ordinary choices');
   fill('[data-course-lesson-field="title"]','Luyện chào hỏi');fill('[data-field="title"]','Chọn lời chào');
