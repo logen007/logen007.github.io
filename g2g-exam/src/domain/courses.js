@@ -2,6 +2,7 @@ import {scoreQuestion} from './question-score.js';
 import {letterAnswerError} from './letter-answers.js';
 import {isPrefilledQuestion} from './question-display.js';
 import {inlineGapErrors} from './inline-gaps.js';
+import {normalizeKnowledgeBlocks,knowledgeBlocks} from './course-knowledge.js';
 
 export const COURSE_LEVELS=['A1','A2','B1','B2','C1','C2'];
 export const COURSE_EXERCISE_TYPES={
@@ -76,7 +77,7 @@ export function normalizeCourse(input={}){
   const seen=new Set(),takeId=value=>{const key=id(value);if(seen.has(key))throw new Error('Mã chương/bài học bị trùng.');seen.add(key);return key;};
   const price=number(input.price??0);if(!Number.isSafeInteger(price))throw new Error('Học phí phải là số nguyên VND.');
   const chapters=list(input.chapters||[],50).map(chapter=>({id:takeId(chapter.id),title:text(chapter.title,200),
-    knowledge:list(chapter.knowledge||[],100).map(lesson=>({id:takeId(lesson.id),kind:'knowledge',title:text(lesson.title,200),body:text(lesson.body,100000),imageUrl:courseMediaUrl(lesson.imageUrl),trial:Boolean(lesson.trial)})),
+    knowledge:list(chapter.knowledge||[],100).map(lesson=>({id:takeId(lesson.id),kind:'knowledge',title:text(lesson.title,200),body:text(lesson.body,100000),imageUrl:courseMediaUrl(lesson.imageUrl),trial:Boolean(lesson.trial),...(lesson.blocks!==undefined?normalizeKnowledgeBlocks(lesson.blocks,courseMediaUrl):{})})),
     exercises:list(chapter.exercises||[],100).map(lesson=>({id:takeId(lesson.id),kind:'exercise',title:text(lesson.title,200),trial:Boolean(lesson.trial),exercise:normalizeCourseExercise(lesson.exercise)})),
   }));
   const result={title:text(input.title,200),coverUrl:courseMediaUrl(input.coverUrl),price,level:COURSE_LEVELS.includes(input.level)?input.level:'A1',
@@ -92,7 +93,7 @@ export function assertCoursePublishable(course){
     if(!chapter.title.trim())throw new Error('Vui lòng đặt tên chương.');
     for(const lesson of [...chapter.knowledge,...chapter.exercises]){
       if(!lesson.title.trim())throw new Error('Vui lòng đặt tên bài học.');
-      if(lesson.kind==='knowledge'&&!lesson.body.trim())throw new Error(`Bài “${lesson.title}” chưa có nội dung.`);
+      if(lesson.kind==='knowledge'&&!knowledgeBlocks(lesson).some(block=>block.type==='image'?block.url:block.text.trim()))throw new Error(`Bài “${lesson.title}” chưa có nội dung.`);
       if(lesson.kind==='exercise'){
         if(lesson.exercise.section.questionProfile.pairedQuestions&&lesson.exercise.questions.length%2)throw new Error('Bài tập dạng cặp cần đủ hai câu mỗi nhóm.');
         const gapErrors=inlineGapErrors(lesson.exercise.section);if(gapErrors.length)throw new Error(gapErrors[0]);

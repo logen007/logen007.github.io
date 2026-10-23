@@ -192,7 +192,7 @@ const pageHistory=createPageHistory({beforeLeave:async()=>{
 function syncViewUrl(){
   if(!user)return;
   const url=new URL(window.location.href);
-  for(const key of ['edit','preview','section','view','tab','attempt','settings','class','course','chapter','lesson','course-page','course-step'])url.searchParams.delete(key);
+  for(const key of ['edit','preview','section','view','tab','attempt','settings','class','course','chapter','lesson','course-kind','course-page','course-step'])url.searchParams.delete(key);
   if(ui.view==='courses')writeCourseRoute(url,ui.courseRoute||{page:isStudent(user)?'catalog':'manage'});
   else if(ui.view==='builder'&&ui.builderExamId){
     url.searchParams.set('edit',ui.builderExamId);

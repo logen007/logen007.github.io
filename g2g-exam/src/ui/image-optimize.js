@@ -8,7 +8,7 @@ export function imagePositionName({skill='exam',part=1,question,slot='prompt'}={
   const clean=value=>String(value).toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,24);
   return [names[skill]||names[String(skill).toLowerCase()]||'exam',Math.max(1,Number(part)||1),question?'q'+Math.max(1,Number(question)||1):'',clean(slot)].filter(Boolean).join('-')+'.jpg';
 }
-export async function optimizeExamImage(file,position){
+export async function optimizeExamImage(file,position,{maxBytes=8*1024*1024}={}){
   const url=URL.createObjectURL(file);
   try{
     const img=new Image();
@@ -21,7 +21,7 @@ export async function optimizeExamImage(file,position){
     ctx.drawImage(img,0,0,size.width,size.height);
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.85));
     if(!blob||blob.type!=='image/jpeg')throw new Error('Không thể chuyển ảnh sang JPG.');
-    if(blob.size>8*1024*1024)throw new Error('Ảnh sau tối ưu vẫn quá lớn. Vui lòng chọn ảnh nhỏ hơn.');
+    if(blob.size>maxBytes)throw new Error(`Ảnh sau tối ưu vượt ${maxBytes/1024/1024} MB. Vui lòng chọn ảnh nhỏ hơn.`);
     return new File([blob],imagePositionName(position),{type:'image/jpeg'});
   }finally{URL.revokeObjectURL(url);}
 }

@@ -3,7 +3,7 @@ import {saveInlineGapDraft,bindGapPositions} from '../part-templates/default/inl
 import {saveHeadingMatchDraft} from '../part-templates/default/heading-match-builder.js';
 import {sectionInstructions,instructionPatch,instructionAudioKey,changeInstructions} from '../domain/section-instructions.js';
 import {normalizeCourseExercise,COURSE_EXERCISE_TYPES} from '../domain/courses.js';
-import {uploadQuestionImage} from '../media.js';
+import {uploadCourseImage} from '../media.js';
 import {collectReadingBlocks,bindReadingBlocks} from '../ui/reading-blocks.js';
 import {imageValue} from '../ui/image-remove.js';
 import {esc} from '../ui/format.js';
@@ -44,7 +44,7 @@ export function bindCourseExerciseEditor(root,context,pending,notify,onDirty){
   }
 }
 async function imageFrom(input,previous,control){
-  const file=input?.files?.[0],uploaded=file?await uploadQuestionImage(file,{slot:'course-practice'}):undefined;
+  const file=input?.files?.[0],uploaded=file?await uploadCourseImage(file,{slot:'course-practice'}):undefined;
   const value=imageValue(input,uploaded,control?.dataset.removeQuestionImage==='true'||control?.dataset.removeSectionImage==='true'?'':previous||'');
   if(file)input.value='';return value;
 }
@@ -59,7 +59,7 @@ export async function collectCourseExercise(root,context,pending){
       imageMaxWidth:control.querySelector('[data-prompt-width]')?.value||null,audioUrl:clip.url,audioName:clip.name});
   }
   if(blocks.length)Object.assign(section,instructionPatch(blocks));
-  const reading=await collectReadingBlocks(root,{slot:'course-reading'});if(reading)section.readingBlocks=reading;
+  const reading=await collectReadingBlocks(root,{scope:'course',slot:'course-reading'});if(reading)section.readingBlocks=reading;
   saveInlineGapDraft(root,data,{id:exam.ownerId,role:'teacher'},exam,section);
   saveHeadingMatchDraft(root,data,{id:exam.ownerId,role:'teacher'},exam,section);
   for(const card of root.querySelectorAll('.part-question')){

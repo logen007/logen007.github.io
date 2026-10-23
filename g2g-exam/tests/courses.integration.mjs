@@ -81,6 +81,18 @@ try{
   assert.equal((await service.getLesson(student,'course','knowledge')).lesson.body,'PRIVATE LESSON BODY','Archiving does not erase prior access');
   assert.equal((await service.catalog(student,{mine:'1'})).courses.length,2);
   assert.equal((await service.catalog(teacher,{manage:'1',search:'A1'})).courses.length,3);
+  const rich=makeCourse();rich.chapters[0].knowledge[0].blocks=[{id:'text-a',type:'text',text:'Before'},{id:'image-a',type:'image',url:'/uploads/block-a.jpg',align:'left',width:50},{id:'text-b',type:'text',text:'After'},{id:'image-b',type:'image',url:'/uploads/block-b.jpg',align:'right',width:75}];
+  let richSaved=await service.save(teacher,'blocks',{version:0,course:rich});
+  const stale=structuredClone(richSaved.course);delete stale.chapters[0].knowledge[0].blocks;
+  await assert.rejects(service.save(teacher,'blocks',{version:richSaved.version,course:stale}),code(409));
+  assert.equal((await service.getCourse(teacher,'blocks',{edit:true})).course.chapters[0].knowledge[0].blocks.length,4,'An old client cannot silently discard blocks');
+  richSaved.course.chapters[0].knowledge[0].blocks[0].text='Updated before';
+  richSaved=await service.save(teacher,'blocks',{version:richSaved.version,course:richSaved.course});
+  await service.publish(teacher,'blocks',{version:richSaved.version});await service.enroll(student,'blocks');
+  const richLesson=(await service.getLesson(student,'blocks','knowledge')).lesson;
+  assert.deepEqual(richLesson.blocks.map(b=>b.id),['text-a','image-a','text-b','image-b']);
+  assert.equal(richLesson.blocks[1].width,50);assert.equal(richLesson.blocks[3].align,'right');assert.equal(richLesson.body,'Updated before\n\nAfter');
+  assert.equal((await service.getLesson(student,'course','knowledge')).lesson.body,'PRIVATE LESSON BODY','Legacy enrolled releases are unchanged');
   const {default:Fastify}=await import('../server/node_modules/fastify/fastify.js');
   const app=Fastify();registerCourseRoutes(app,{service,userFor:async request=>{const user=[student,teacher,other,master,second].find(u=>u.id===request.headers['x-test-user']);if(!user)throw Object.assign(new Error('Login required'),{statusCode:401});return user;}});
   try{

@@ -38,9 +38,9 @@ try{
   const sql=[];
   const refs=await referencedUploadNames({query:async statement=>{
     sql.push(statement);
-    return {rows:statement.includes('questions')?[{data:{audioUrl:'/uploads/question.mp3'}}]:statement==='SELECT draft FROM courses'?[{draft:{coverUrl:'/uploads/course-cover.jpg'}}]:statement.includes('course_releases')?[{snapshot:{chapters:[{audioUrl:'/uploads/course-audio.mp3'}]}}]:statement.includes('settings')?[{data:{general:{logoUrl:'/uploads/logo.png'}}}]:[]};
+    return {rows:statement.includes('questions')?[{data:{audioUrl:'/uploads/question.mp3'}}]:statement==='SELECT draft FROM courses'?[{draft:{coverUrl:'/uploads/course-cover.jpg',chapters:[{knowledge:[{blocks:[{type:'image',url:'/uploads/block-draft.jpg'}]}]}]}}]:statement.includes('course_releases')?[{snapshot:{chapters:[{audioUrl:'/uploads/course-audio.mp3',knowledge:[{blocks:[{type:'image',url:'/uploads/block-release.jpg'}]}]}]}}]:statement.includes('settings')?[{data:{general:{logoUrl:'/uploads/logo.png'}}}]:[]};
   }});
-  assert.deepEqual([...refs].sort(),['course-audio.mp3','course-cover.jpg','logo.png','question.mp3']);
+  assert.deepEqual([...refs].sort(),['block-draft.jpg','block-release.jpg','course-audio.mp3','course-cover.jpg','logo.png','question.mp3']);
   assert.equal(sql.some(statement=>statement.includes('question_groups')),false);
   assert.deepEqual(sql,[
     'SELECT data FROM questions',
