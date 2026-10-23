@@ -77,6 +77,11 @@ try{
   route={page:'detail',id:courseId};paint();await idle();route={page:'learn',id:courseId,lesson:exerciseId};paint();await idle();
   assert.equal(controller.getState().practiceResult.score,1);assert.match(root.textContent,/2\/2 bài hoàn thành/);
   assert.equal((await service.memberResults(teacher,courseId,(await service.members(teacher,courseId)).members[0].id)).submissions.length,2);
+  const source=(await service.getCourse(teacher,courseId,{edit:true})).course;
+  await service.save(teacher,'paid-ui',{version:0,course:{...source,price:690000}});await service.publish(teacher,'paid-ui',{version:1});
+  route={page:'detail',id:'paid-ui'};paint();await idle();await action('enroll');
+  assert.equal(controller.getState().detail.enrollment.status,'pending');
+  assert.match(root.textContent,/Đăng ký đang chờ/);assert.equal(root.querySelector('[data-course-action="enroll"]'),null,'Same-route enrollment refreshes without leaving a misleading register button');
   // Exercise editor round trips every supported family through the actual shared editor.
   for(const type of ['choices','binary','listening','multiple','letters','matching','headings','gaps']){
     const exercise=newCourseExercise(type),context=courseEditorContext(exercise,teacher),pending=new Map();

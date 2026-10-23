@@ -120,7 +120,9 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   async function go(route){
     // Internal navigation occurs inside a serialized action; it still saves drafts.
     if(state.route.page==='edit'&&state.dirty)await saveEditor();
-    await flushPractice();navigate(route);window.scrollTo({top:0,behavior:'instant'});
+    await flushPractice();
+    if(JSON.stringify(state.route)===JSON.stringify(route))await load();else navigate(route);
+    window.scrollTo({top:0,behavior:'instant'});
   }
   async function nextLesson(delta=1){
     const lessons=courseLessons(state.detail),at=lessons.findIndex(item=>item.id===state.lesson.lesson.id),next=lessons[at+delta];
