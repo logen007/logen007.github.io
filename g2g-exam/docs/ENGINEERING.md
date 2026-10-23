@@ -36,8 +36,10 @@ ranh giới cứng, kể cả khi UI/UX được ưu tiên cao.
 4. **Self review.** Đọc diff cuối cùng, không chỉ đoạn vừa viết: đơn giản hóa được
    không; có duplicate, edge case, leak dữ liệu, quyền sai, race hoặc module bị
    ảnh hưởng không? Tách kết quả tự review khỏi review độc lập của người khác.
-5. **Automated test.** Chọn gate theo rủi ro trong `QUALITY_GATES.md`, bổ sung test
-   theo owner. Chạy thật và giữ exit status. Không gọi source-string assertion là
+5. **Automated test.** Phân loại rủi ro theo `QUALITY_GATES.md`, bổ sung regression
+   theo owner khi cần, nhưng không tự chạy test/syntax/build local theo yêu cầu
+   23/10/2026 ở `AGENTS.md` mục 10. Dùng kết quả CI bắt buộc trên đúng candidate;
+   chỉ chạy local khi người dùng yêu cầu. Không gọi source-string assertion là
    E2E, screenshot, kiểm tra accessibility toàn diện hoặc browser rendering.
 6. **Quality gate.** Chỉ gọi đủ điều kiện phát hành khi test/build bắt buộc đạt,
    không có blocker security/specification, UI checklist được đáp ứng, có rollback
@@ -65,12 +67,12 @@ thế nào? Giữ tác vụ chính rõ hơn trang trí. Không thêm animation c
 Không cần tạo component JS cho mọi wrapper. Extract khi giảm trùng lặp hoặc làm
 rõ ownership; không làm thư viện UI mới song song với `.nut`, `.truong`, `.icon-btn`.
 
-Owner preference (19 October 2026): prioritize fast, scoped edits; owner handles
-visual acceptance. For LOW-risk text-only changes, skip browser/screenshot matrices,
-repeat audits and redundant local full suites. Run only changed-file syntax and
-the nearest regression locally; required CI tests/build still gate the exact
-candidate before release. This preference does not waive security or higher-risk
-checks, or authorize bypassing protected checks. State when visuals were not reviewed.
+Owner preference (updated 23 October 2026): prioritize fast, scoped edits; owner
+handles visual acceptance. Do not start local tests, syntax gates or builds unless
+the user asks. Do not repeat CI locally. Required GitHub checks still gate the exact
+candidate before release; do not disable or bypass them. The authoritative rule
+and handling of uncovered high-risk changes are in `AGENTS.md` section 10. State
+when visuals were not reviewed.
 
 Với thành phần bị thay đổi, kiểm tra hoặc đánh dấu N/A có lý do cho **default,
 hover, focus-visible, active, selected, disabled, loading, empty, error, success**.

@@ -177,15 +177,15 @@ Nếu không xác định được thì không được tự suy đoán.
 
 ## 10. Sau khi code
 
-Phải chạy:
+Owner cập nhật ngày 23/10/2026: không tự chạy test, syntax gate hoặc build local
+trừ khi người dùng yêu cầu. Sửa đúng phạm vi, tự đọc lại diff và ưu tiên đưa bản
+cập nhật lên ngay qua quy trình PR đã được cho phép.
 
-- syntax check;
-- automated tests liên quan;
-- full G2G Exam test nếu thay đổi kiến trúc hoặc nghiệp vụ;
-- kiểm tra không tạo duplicate logic/rule mới;
-- đảm bảo mọi chức năng đều có ý nghĩa và sử dụng được.
-
-Không merge vào main khi test fail.
+Các kiểm tra bắt buộc trên GitHub vẫn là điều kiện merge: chờ đúng candidate
+đạt, không tắt/bypass check, không bật auto-merge hoặc dùng main để thử việc.
+Kiểm thử và build do CI thực hiện không cần chạy lặp lại local. Nếu thiếu bằng
+chứng an toàn cần thiết cho thay đổi rủi ro cao mà CI không bao phủ, báo rõ phần
+còn thiếu và xin hướng xử lý thay vì tự bỏ qua. Không báo đã test khi chưa chạy.
 
 
 ## 11. Phạm vi thay đổi
@@ -215,11 +215,8 @@ trừ khi dependency thực sự yêu cầu.
 - Không thực hiện thao tác lặp hoặc kiểm tra ngoài phạm vi chỉ để “cho chắc”.
   Khi có blocker, báo sớm với bằng chứng; không hứa thời gian hoàn thành khi
   không có cơ sở.
-- Kiểm thử theo mức ảnh hưởng: thay đổi UI nhỏ chạy kiểm tra liên quan; thay đổi
-  logic điểm, lưu bài, phân quyền, kiến trúc hoặc khi CI bắt buộc phải chạy full
-  test theo Mục 10. Tài liệu thuần không chạy full test.
-- Quy tắc này không thay thế Mục 10: luôn chạy syntax check và automated tests
-  liên quan sau khi code; không merge vào main khi các kiểm thử bắt buộc thất bại.
+- Áp dụng quy tắc mới nhất ở Mục 10: không tự chạy kiểm thử/build local, kể cả
+  cho tài liệu quy trình. Giữ các gate CI bắt buộc và không merge khi chúng lỗi.
 
 
 ## 12. Quy tắc khi yêu cầu chưa rõ

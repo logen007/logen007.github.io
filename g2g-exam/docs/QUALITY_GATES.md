@@ -3,6 +3,11 @@
 Đây là nguồn điều phối kiểm thử. Các script/test hiện hữu vẫn sở hữu assertion;
 `scripts/quality.mjs` chỉ chạy chúng, không triển khai hay thay luật sản phẩm.
 
+Theo yêu cầu owner 23/10/2026 (`AGENTS.md` mục 10), các profile/lệnh dưới đây
+không phải thao tác local mặc định: chỉ chạy local khi người dùng yêu cầu.
+Giữ CI bắt buộc trên đúng candidate; không chạy lại local khi CI đã bao phủ,
+không vô hiệu hóa hoặc bypass kiểm tra bảo vệ main.
+
 ## Chọn rủi ro theo ảnh hưởng, không theo số dòng
 
 | Mức | Ví dụ | Automated gate tối thiểu | Bổ sung trước release |
@@ -12,8 +17,8 @@
 | HIGH | điểm/deadline/snapshot, auth, delete/restore, migration, secret, deploy/shared architecture | MEDIUM + security/SQL/HTTP/DOM isolation, R2/backup/speaking checks và dependency audit | approved spec, independent review khi có, rollback, E2E nếu được cho phép; không miễn security/visual khi chưa chứng minh |
 
 CI hiện hữu vẫn yêu cầu các check của nó; chọn LOW local không bỏ được CI. Tài
-liệu thuần: diff/link/command review + `npm run test:workflow` nếu chạm hướng dẫn
-workflow; không ép full test cho thay đổi prose không ảnh hưởng code/config.
+liệu thuần: đọc lại diff/link/command; không tự chạy test local kể cả khi chạm
+hướng dẫn workflow. CI bắt buộc vẫn quyết định điều kiện merge.
 Nếu UI đổi structural layout/shared tokens, nâng ít nhất MEDIUM. Khi có nghi ngờ,
 nâng rủi ro thay vì chọn ít test nhất. Test lỗi là lỗi, không ghi “không liên quan”
 nếu chưa tái hiện ở baseline hoặc chỉ ra dependency cụ thể.
