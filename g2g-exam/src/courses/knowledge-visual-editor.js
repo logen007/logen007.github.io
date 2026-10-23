@@ -21,7 +21,7 @@ const KnowledgeImage=Image.extend({
     return ['img',mergeAttributes(rest,{class:'course-lesson-image','data-align':safeAlign,'data-width':safeWidth,style:`width:${safeWidth}%;margin-left:${safeAlign==='left'?'0':'auto'};margin-right:${safeAlign==='right'?'0':'auto'}`})];
   },
 });
-export function bindKnowledgeVisualEditor(root,{lesson,onChange,onFiles,notify}){
+export function bindKnowledgeVisualEditor(root,{lesson,onChange,onFiles,notify,label='Nội dung kiến thức'}){
   const canvas=root.querySelector('[data-knowledge-canvas]'),points=new Set();let editor;
   const ids=Extension.create({name:'knowledgeIds',addGlobalAttributes:()=>[{types:['paragraph','heading','image'],attributes:{blockId:{default:null,parseHTML:element=>element.dataset.knowledgeId,renderHTML:attrs=>attrs.blockId?{'data-knowledge-id':attrs.blockId}:{}}}}],
     addProseMirrorPlugins:()=>[new Plugin({
@@ -41,7 +41,7 @@ export function bindKnowledgeVisualEditor(root,{lesson,onChange,onFiles,notify})
   const capture=(position=null)=>{const selection=position===null?editor.state.selection:Selection.near(editor.state.doc.resolve(position)),point={bookmark:selection.getBookmark(),afterNode:selection instanceof NodeSelection};points.add(point);return point;};
   canvas.innerHTML='';
   editor=new Editor({element:canvas,content:knowledgeDocument(lesson,root.ownerDocument),extensions:[StarterKit.configure({heading:{levels:[2]},code:false,codeBlock:false,blockquote:false,horizontalRule:false,bulletList:false,orderedList:false,listItem:false,listKeymap:false,link:false,strike:false}),KnowledgeImage,LegacyMarkup,ids,alignment],
-    editorProps:{attributes:{role:'textbox','aria-label':'Nội dung kiến thức','aria-multiline':'true',spellcheck:'true'},
+    editorProps:{attributes:{role:'textbox','aria-label':label,'aria-multiline':'true',spellcheck:'true'},
       handlePaste:(_view,event)=>{const files=imageFiles(event.clipboardData);if(files.length){event.preventDefault();onFiles(files,{point:capture()});return true;}return false;},
       handleDrop:(view,event,_slice,moved)=>{const files=imageFiles(event.dataTransfer);if(files.length){event.preventDefault();onFiles(files,{point:capture(view.posAtCoords({left:event.clientX,top:event.clientY})?.pos??null)});return true;}return !moved&&Boolean(event.dataTransfer?.getData('text/html')?.match(/<img\b/i));},
       transformPastedHTML:html=>{const holder=root.ownerDocument.createElement('div');holder.innerHTML=html;holder.querySelectorAll('img').forEach(img=>img.remove());return holder.innerHTML;},

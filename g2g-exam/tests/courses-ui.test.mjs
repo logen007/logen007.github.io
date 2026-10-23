@@ -94,7 +94,9 @@ try{
   assert.ok(root.querySelector('.course-info-identity [data-course-field="price"]'),'Fees live with general settings');
   assert.equal(window.getComputedStyle(root.querySelector('[data-course-action="retry-save"]')).display,'none','Retry stays hidden unless saving fails');
   assert.equal(root.querySelector('.course-info-card h2'),null);assert.equal(root.querySelector('.course-cover-field>span'),null);
-  for(const name of ['shortDescription','description'])assert.ok(root.querySelector(`[data-course-field="${name}"]`).closest('label').querySelector('span.sr-only'),'Descriptions retain accessible labels only');
+  assert.ok(root.querySelector('[data-course-field="shortDescription"]').closest('label').querySelector('span.sr-only'));
+  assert.ok(root.querySelector('.course-info-description [data-knowledge-editor] .tiptap[aria-label="Mô tả khóa học"]'),'Description uses the shared knowledge editor');
+  const describe=value=>rich().commands.setContent(knowledgeDocument({id:'description',body:value},document));
   assert.match(root.querySelector('.course-cover-field').textContent,/Tối đa 1 MB/);
   assert.match(css,/\.course-authoring \.builder-meta>\.exam-level \{ align-self:center;/);
   assert.match(css,/\.course-outline-chapter \{[^}]*grid-template-columns:minmax\(0,1fr\);/,'Chapter track must shrink inside the sidebar, not inherit a long title minimum');
@@ -110,12 +112,12 @@ try{
   assert.equal(root.querySelector('[data-course-field="title"]'),heading,'Autosave does not rebuild the active editor');
   assert.equal(root.querySelector('[data-course-dirty]').hidden,true,'Successful autosave stays quiet');
   let release,entered;holdEditorSave=new Promise(resolve=>{release=resolve;});const started=new Promise(resolve=>{entered=resolve;});editorSaveEntered=entered;
-  fill('[data-course-field="description"]','First revision');const saving=controller.flushEditor();await started;
-  fill('[data-course-field="description"]','New typing while saving');release();await saving;holdEditorSave=null;editorSaveEntered=()=>{};
+  describe('First revision');const saving=controller.flushEditor();await started;
+  describe('New typing while saving');release();await saving;holdEditorSave=null;editorSaveEntered=()=>{};
   assert.equal((await service.getCourse(teacher,courseId,{edit:true})).course.description,'New typing while saving','Drain edits arriving during an in-flight save');
-  assert.equal(root.querySelector('[data-course-field="description"]').value,'New typing while saving');
-  dropEditorReceipt=true;fill('[data-course-field="description"]','Uncertain write');await assert.rejects(controller.flushEditor(),/lost editor receipt/);
-  fill('[data-course-field="description"]','Latest after uncertain write');await controller.flushEditor();
+  assert.equal(rich().getText(),'New typing while saving');
+  dropEditorReceipt=true;describe('Uncertain write');await assert.rejects(controller.flushEditor(),/lost editor receipt/);
+  describe('Latest after uncertain write');await controller.flushEditor();
   assert.equal((await service.getCourse(teacher,courseId,{edit:true})).course.description,'Latest after uncertain write','Replay the uncertain snapshot before saving newer typing');
   assert.ok(root.querySelector('.course-authoring .course-info-card .course-info-layout .course-info-fields'));
   assert.ok(root.querySelector('.course-info-identity [data-course-field="level"]'));
@@ -250,6 +252,21 @@ try{
   route={page:'detail',id:'paid-ui'};paint();await idle();await action('enroll');
   assert.equal(controller.getState().detail.enrollment.status,'pending');
   assert.match(root.textContent,/Đăng ký đang chờ/);assert.equal(root.querySelector('[data-course-action="enroll"]'),null,'Same-route enrollment refreshes without leaving a misleading register button');
+  user=teacher;route={page:'manage'};paint();await idle();
+  assert.equal(root.querySelector('table.bang td:first-child small,.hanh-dong-bang [data-course-action="edit"]'),null,'No chapter/lesson subtitle or redundant gear in management');
+  assert.ok(root.querySelector('[data-course-action="copy-course"]'));assert.ok(root.querySelector('[data-course-action="delete-course"]'));
+  const copiesBefore=(await query('SELECT count(*)::int AS n FROM courses')).rows[0].n;
+  failSave=true;await action('copy-course',`[data-id="${courseId}"]`);failSave=false;
+  assert.equal(route.page,'manage');const copyId=controller.getState().pendingCourseCopy.id;
+  dropEditorReceipt=true;await action('copy-course',`[data-id="${courseId}"]`);assert.equal(route.page,'manage');await action('copy-course',`[data-id="${courseId}"]`);
+  assert.equal(route.id,copyId);assert.equal(controller.getState().editor.status,'draft');assert.equal(controller.getState().editor.publishedVersion,null);
+  assert.match(controller.getState().editor.course.title,/\(bản sao\)$/);assert.deepEqual(controller.getState().editor.course.chapters,source.chapters);
+  assert.equal((await query('SELECT count(*)::int AS n FROM courses')).rows[0].n,copiesBefore+1,'Lost copy receipt retries the same ID, not a second course');
+  assert.equal((await service.members(teacher,copyId)).members.length,0,'Copy excludes enrollments and results');
+  await action('manage');
+  root.querySelector(`[data-course-action="delete-course"][data-id="${copyId}"]`).click();await until(()=>document.querySelector('[data-confirm-cancel]'),'delete confirmation');document.querySelector('[data-confirm-cancel]').click();await idle();assert.ok(root.querySelector(`[data-course-action="delete-course"][data-id="${copyId}"]`));
+  root.querySelector(`[data-course-action="delete-course"][data-id="${copyId}"]`).click();await until(()=>document.querySelector('[data-confirm-accept]'),'delete confirmation');assert.ok(document.querySelector('.site-confirm-danger'));document.querySelector('[data-confirm-accept]').click();await idle();
+  assert.equal(root.querySelector(`[data-course-action="copy-course"][data-id="${copyId}"]`),null);assert.ok((await query('SELECT metadata FROM courses WHERE id=$1',[copyId])).rows[0].metadata.deletedAt,'Delete hides but retains the course');
   // Exercise editor round trips every supported family through the actual shared editor.
   for(const type of ['choices','binary','listening','multiple','letters','matching','headings','gaps']){
     const exercise=newCourseExercise(type),context=courseEditorContext(exercise,teacher),pending=new Map();

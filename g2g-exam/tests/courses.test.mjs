@@ -58,4 +58,10 @@ assert.deepEqual(gaps.section.gapPassage,['Ich ',{gap:0},'.']);assert.deepEqual(
 const withExample=normalizeCourseExercise({section:{questionProfile:{layout:'letter-select',uniqueLetters:true}},questions:[{id:'example',type:'single',example:true,choices:['A','B'],correctAnswer:0},{id:'real',type:'single',choices:['A','B'],correctAnswer:1}]});
 assert.equal(publicCourseExercise(withExample).questions[0].correctAnswer,0);
 assert.throws(()=>gradeCourseExercise(withExample,{real:0}));assert.equal(gradeCourseExercise(withExample,{real:1}).score,1);
+const described=normalizeCourse({...course,descriptionBlocks:[{id:'intro',type:'text',text:'**Giới thiệu**',align:'center'},{id:'cover',type:'image',url:'/uploads/description.jpg',alt:'Illustration',align:'right',width:37}]});
+assert.equal(described.description,'**Giới thiệu**');assert.equal(described.descriptionBlocks[1].width,37);
+assert.deepEqual(normalizeCourse(described),described);
+assert.equal(normalizeCourse({...course,description:'Legacy text'}).descriptionBlocks,undefined,'Legacy descriptions remain unchanged until edited');
+assert.throws(()=>normalizeCourse({...course,descriptionBlocks:[{id:'long',type:'text',text:'x'.repeat(30001)}]}),/30.000/);
+assert.throws(()=>normalizeCourse({...course,descriptionBlocks:[{id:'bad',type:'image',url:'javascript:alert(1)'}]}));
 console.log('Courses domain: validation, private projection, objective scoring, examples, matching and gap structure passed.');

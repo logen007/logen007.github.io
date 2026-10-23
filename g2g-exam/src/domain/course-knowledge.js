@@ -1,5 +1,6 @@
 export const MAX_KNOWLEDGE_BLOCKS=100;
 export const KNOWLEDGE_LAYOUT_VERSION=1;
+export const courseDescriptionContent=course=>({id:'course-description',body:course.description||'',...(Array.isArray(course.descriptionBlocks)?{blocks:course.descriptionBlocks}:{})});
 export const KNOWLEDGE_TEXT_ALIGNS=['left','center','right','justify'];
 export const KNOWLEDGE_IMAGE_ALIGNS=['left','center','right'];
 export const knowledgeImageWidth=value=>Math.max(10,Math.min(100,Math.round(Number(value)||100)));

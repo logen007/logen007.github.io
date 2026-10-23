@@ -10,6 +10,7 @@ export function registerCourseRoutes(app,{service,userFor}){
   route('POST','/api/courses/:id/publish',(u,p,b)=>service.publish(u,p.id,b));
   route('POST','/api/courses/:id/unpublish',(u,p,b)=>service.unpublish(u,p.id,b));
   route('POST','/api/courses/:id/archive',(u,p,b)=>service.archive(u,p.id,b));
+  route('POST','/api/courses/:id/delete',(u,p,b)=>service.remove(u,p.id,b));
   route('POST','/api/courses/:id/enroll',(u,p)=>service.enroll(u,p.id));
   route('POST','/api/courses/:id/enrollments/:enrollmentId/confirm',(u,p,b)=>service.confirmEnrollment(u,p.id,p.enrollmentId,b));
   route('GET','/api/courses/:id/members',(u,p)=>service.members(u,p.id));
