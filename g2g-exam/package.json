@@ -20,6 +20,10 @@
   },
   "dependencies": {
     "@100mslive/hms-video-store": "0.15.3",
+    "@tiptap/core": "3.32.0",
+    "@tiptap/extension-image": "3.32.0",
+    "@tiptap/pm": "3.32.0",
+    "@tiptap/starter-kit": "3.32.0",
     "qrcode": "1.5.4"
   }
 }
