@@ -19,29 +19,37 @@ export function letterAnswersHtml(section,questions,answers,startNumber,{afterQu
   const body=layout==='letter-table'
     ?`<div class="letter-table-scroll"><table class="letter-table"><thead><tr><th scope="row">${esc(section.tableHeading??'Person')}</th>${items.map(({q,number})=>`<th scope="col">${number}<span>${textHtml(q.title==='Nháp'?'':q.title)}</span></th>`).join('')}</tr></thead><tbody><tr><th scope="row">Lösung</th>${items.map(({q})=>`<td>${letterAnswerControl(q,answers[q.id],layout)}</td>`).join('')}</tr></tbody></table></div>`
     :items.map(({q,number},index)=>`<div class="letter-question"><label for="letter-${esc(q.id)}"><b>${number}${number==='_'?'':'.'}</b> ${textHtml(q.title==='Nháp'?'':q.title)}</label>${letterAnswerControl(q,answers[q.id],layout).replace('<input ','<input id="letter-'+esc(q.id)+'" ')}</div>${afterQuestion(index+1)}`).join('');
-  return `<section class="letter-answers" data-letter-section data-repeatable-letters="${esc((section.questionProfile.repeatableLetters||[]).join(','))}" data-unique-letters="${section.questionProfile.uniqueLetters!==false}">${body}<p class="letter-answer-error" role="status" aria-live="polite"></p></section>`;
+  return `<section class="letter-answers" data-letter-question-ids="${esc(JSON.stringify(questions.map(q=>q.id)))}" data-letter-section data-repeatable-letters="${esc((section.questionProfile.repeatableLetters||[]).join(','))}" data-unique-letters="${section.questionProfile.uniqueLetters!==false}">${body}<p class="letter-answer-error" role="status" aria-live="polite"></p></section>`;
 }
 
 export function bindLetterAnswers(root,questions,answers,onSave){
-  const controls=[...root.querySelectorAll('[data-letter-answer]')];if(!controls.length)return;
-  const section={questionProfile:{uniqueLetters:root.querySelector('[data-letter-section]')?.dataset.uniqueLetters!=='false',repeatableLetters:(root.querySelector('[data-letter-section]')?.dataset.repeatableLetters||'').split(',').filter(Boolean)},questionIds:questions.map(q=>q.id)};
-  const refresh=()=>controls.forEach(el=>{
-    syncLetterPicker(el);
-    const display=el.parentElement?.querySelector('.inline-gap-value');
-    if(display)display.textContent=selectedLetterLabel(el.selectedOptions[0],el.dataset?.fullSelection==='true'||el.classList?.contains('inline-gap-native-text'));
-    for(const option of el.querySelectorAll('option')){
-      if(option.value==='')continue;
-      option.disabled=Boolean(letterAnswerError(section,questions,{...answers,[el.dataset.q]:Number(option.value)}));
-    }
-  });
-  controls.forEach(el=>el.onchange=()=>{
-    const q=questions.find(q=>q.id===el.dataset.q),raw=el.value.trim().toUpperCase();
-    const value=raw===''?null:el.tagName==='SELECT'?Number(raw):(q.choices||[]).findIndex(c=>choiceLetter(c)===raw);
-    const error=letterAnswerError(section,questions,{...answers,[q.id]:value});
-    const feedback=root.querySelector('.letter-answer-error');if(feedback)feedback.textContent=error;
-    if(error){const previous=answers[q.id];el.value=previous==null?'':el.tagName==='SELECT'?String(previous):choiceLetter(q.choices[previous]).toLowerCase();return;}
-    answers[q.id]=value;onSave(q.id,value);refresh();
-  });
-  controls.forEach(bindLetterPicker);
-  refresh();
+  const groups=new Map();
+  for(const control of root.querySelectorAll('[data-letter-answer]')){
+    const scope=control.closest?.('[data-letter-section]')||root;
+    if(!groups.has(scope))groups.set(scope,[]);
+    groups.get(scope).push(control);
+  }
+  for(const [scope,controls]of groups){
+    const host=scope===root?root.querySelector('[data-letter-section]')||root:scope;
+    const section={questionProfile:{uniqueLetters:host.dataset?.uniqueLetters!=='false',repeatableLetters:(host.dataset?.repeatableLetters||'').split(',').filter(Boolean)},questionIds:host.dataset?.letterQuestionIds?JSON.parse(host.dataset.letterQuestionIds):questions.map(q=>q.id)};
+    const refresh=()=>controls.forEach(el=>{
+      syncLetterPicker(el);
+      const display=el.parentElement?.querySelector('.inline-gap-value');
+      if(display)display.textContent=selectedLetterLabel(el.selectedOptions[0],el.dataset?.fullSelection==='true'||el.classList?.contains('inline-gap-native-text'));
+      for(const option of el.querySelectorAll('option')){
+        if(option.value==='')continue;
+        option.disabled=Boolean(letterAnswerError(section,questions,{...answers,[el.dataset.q]:Number(option.value)}));
+      }
+    });
+    controls.forEach(el=>el.onchange=()=>{
+      const q=questions.find(q=>q.id===el.dataset.q),raw=el.value.trim().toUpperCase();
+      const value=raw===''?null:el.tagName==='SELECT'?Number(raw):(q.choices||[]).findIndex(c=>choiceLetter(c)===raw);
+      const error=letterAnswerError(section,questions,{...answers,[q.id]:value});
+      const feedback=scope.querySelector('.letter-answer-error');if(feedback)feedback.textContent=error;
+      if(error){const previous=answers[q.id];el.value=previous==null?'':el.tagName==='SELECT'?String(previous):choiceLetter(q.choices[previous]).toLowerCase();return;}
+      answers[q.id]=value;onSave(q.id,value);refresh();
+    });
+    controls.forEach(bindLetterPicker);
+    refresh();
+  }
 }

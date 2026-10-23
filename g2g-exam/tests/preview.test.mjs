@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import './login.test.mjs';
 import './audio-runtime.test.mjs';
 import './exam-question-sidebar.test.mjs';
+import './letter-answer-groups.test.mjs';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {iconHtml} from '../src/ui/icons.js';

@@ -11,38 +11,13 @@ export function bindExamQuestionSidebar(root,view=window){
     const target=node?.closest('.cau-thi,.heading-match-question,.letter-question,.inline-gap,td')||node;
     return {link,target,number:link.textContent.trim()};
   }).filter(entry=>entry.target);
-  let current=entries[0],pending=null,chosen=null,frame=null,settle=null;
-  let numberFrame=null,numberValue=Number(number?.textContent)||1,numberTarget=null;
+  let current=entries[0],chosen=null,frame=null,numberAnimation=null;
   const showNumber=value=>{
-    if(!number||numberTarget===Number(value))return;
-    numberTarget=Number(value);
-    if(numberFrame!==null)view.cancelAnimationFrame(numberFrame);
-    numberFrame=null;
-    const document=number.ownerDocument||root.ownerDocument;
-    if(numberValue===numberTarget||!document?.createElement||view.matchMedia('(prefers-reduced-motion: reduce)').matches){
-      numberValue=numberTarget;number.textContent=String(numberTarget);return;
-    }
-    const from=numberValue,to=numberTarget,track=document.createElement('span');
-    const first=document.createElement('span'),second=document.createElement('span');
-    track.className='exam-question-number-track';
-    first.className=second.className='exam-question-number-digit';
-    track.appendChild(first);track.appendChild(second);
-    number.setAttribute('aria-hidden','true');number.replaceChildren(track);
-    const draw=value=>{
-      const base=Math.floor(value);
-      first.textContent=String(base);second.textContent=String(base+1);
-      track.style.transform=`translateY(${-(value-base)*50}%)`;
-    };
-    let started=null;
-    const tick=time=>{
-      numberFrame=null;
-      if(started===null)started=time;
-      const progress=view.matchMedia('(prefers-reduced-motion: reduce)').matches?1:Math.min(1,(time-started)/240);
-      numberValue=from+(to-from)*(1-(1-progress)**3);
-      if(progress===1){numberValue=to;number.textContent=String(to);return;}
-      draw(numberValue);numberFrame=view.requestAnimationFrame(tick);
-    };
-    draw(from);numberFrame=view.requestAnimationFrame(tick);
+    if(!number||number.textContent===value)return;
+    const direction=Number(value)>Number(number.textContent)?1:-1;
+    numberAnimation?.cancel();numberAnimation=null;number.textContent=value;
+    if(number.animate&&!view.matchMedia('(prefers-reduced-motion: reduce)').matches)
+      numberAnimation=number.animate([{transform:`translateY(${direction*50}%)`,opacity:.5},{transform:'translateY(0)',opacity:1}],{duration:100,easing:'ease-out'});
   };
   const setOpen=open=>{
     sidebar.classList.toggle('is-open',open);
@@ -61,7 +36,6 @@ export function bindExamQuestionSidebar(root,view=window){
   };
   const update=()=>{
     frame=null;
-    if(pending)return;
     const visible=entries.map(entry=>({entry,rect:entry.target.getBoundingClientRect()}))
       .filter(({rect})=>rect.height>0&&rect.bottom>0&&rect.top<view.innerHeight);
     if(!visible.length)return;
@@ -69,11 +43,12 @@ export function bindExamQuestionSidebar(root,view=window){
     const covering=visible.filter(({rect})=>rect.top<=96&&rect.bottom>96);
     const closest=covering.at(-1)||visible.reduce((best,item)=>Math.abs(item.rect.top-96)<Math.abs(best.rect.top-96)?item:best);
     const active=visible.find(item=>item.entry===current);
+    const selected=visible.find(item=>item.entry===chosen);
     const atEnd=view.scrollY+view.innerHeight>=root.ownerDocument.documentElement.scrollHeight-2;
-    setCurrent(active&&(Math.abs(active.rect.top-closest.rect.top)<4||atEnd&&active.entry===chosen)?active.entry:closest.entry);
+    setCurrent(selected&&(Math.abs(selected.rect.top-closest.rect.top)<4||atEnd)?selected.entry:active&&Math.abs(active.rect.top-closest.rect.top)<4?active.entry:closest.entry);
   };
   const schedule=()=>{if(frame===null)frame=view.requestAnimationFrame(update);};
-  const finish=()=>{pending=null;view.clearTimeout(settle);schedule();};
+  const finish=()=>schedule();
   const interrupt=()=>{chosen=null;finish();};
   const toggleOpen=()=>setOpen(!sidebar.classList.contains('is-open'));
   const jump=event=>{
@@ -81,11 +56,11 @@ export function bindExamQuestionSidebar(root,view=window){
     if(!link||!sidebar.contains(link))return;
     const entry=entries.find(item=>item.link===link);if(!entry)return;
     event.preventDefault();event.stopPropagation();
-    view.clearTimeout(settle);chosen=entry;pending=entry;setCurrent(entry);
+    chosen=entry;
     if(view.matchMedia('(max-width:680px)').matches)setOpen(false);
     const top=Math.max(0,view.scrollY+entry.target.getBoundingClientRect().top-96);
     view.scrollTo({top,behavior:view.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
-    settle=view.setTimeout(finish,1200);
+    schedule();
   };
   toggle?.addEventListener('click',toggleOpen);
   sidebar.addEventListener('click',jump);
@@ -102,8 +77,8 @@ export function bindExamQuestionSidebar(root,view=window){
     view.removeEventListener('scroll',schedule);view.removeEventListener('scrollend',finish);
     view.removeEventListener('resize',schedule);view.removeEventListener('wheel',interrupt);
     view.removeEventListener('touchstart',interrupt);observer?.disconnect();
-    view.clearTimeout(settle);if(frame!==null)view.cancelAnimationFrame(frame);
-    if(numberFrame!==null)view.cancelAnimationFrame(numberFrame);
+    if(frame!==null)view.cancelAnimationFrame(frame);
+    numberAnimation?.cancel();
     if(number)number.textContent=current?.number||'1';
   };
 }
