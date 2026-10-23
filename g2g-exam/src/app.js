@@ -620,7 +620,7 @@ async function leaveExam(view,message,{danger=false}={}){
 
 function confirmAbandonExam(){
   const attemptId=ui.attemptId;
-  confirmAction('Bạn có chắc muốn hủy bài thi? Các câu trả lời sẽ bị xóa vĩnh viễn và không được chấm điểm. Bạn sẽ quay về danh sách đề thi.',async()=>{
+  confirmAction('Bài thi này sẽ bị xóa vĩnh viễn và không được chấm!',async()=>{
     if(submitBusy||timerBusy||ui.view!=='exam'||ui.attemptId!==attemptId)return;
     submitBusy=true;clearTimer();stopActiveAudio();
     for(const pending of saveTimers.values())clearTimeout(pending);

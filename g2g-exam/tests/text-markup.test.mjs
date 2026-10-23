@@ -84,6 +84,7 @@ assert.match(confirmationSource,/esc\(confirmLabel\)/);
 assert.match(confirmationSource,/extra\.onclick=\(\)=>\{if\(close\(\)\)extraAction.onClick\(\);\}/);
 assert.match(confirmationSource,/esc\(extraAction.label\)/);
 const cancelExamSource=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+assert.match(cancelExamSource,/confirmAction\('Bài thi này sẽ bị xóa vĩnh viễn và không được chấm!',async\(\)=>\{/);
 assert.match(cancelExamSource,/function render\(\)\{\s*if\(!startupGate.isReady\(\)\)return;/);
 assert.match(cancelExamSource,/repo.subscribe\(next=>\{\s*data=next;\s*if\(!startupGate.isReady\(\)\)return;/);
 assert.ok(cancelExamSource.indexOf('const initialUrl=new URL(window.location.href)')<cancelExamSource.indexOf('await createRepository()'));
