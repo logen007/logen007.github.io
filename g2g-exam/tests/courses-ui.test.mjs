@@ -209,7 +209,8 @@ try{
   await action('preview-managed');assert.ok(root.querySelector('[data-course-action="close-preview"]'));await action('close-preview');assert.equal(route.step,'info');
   user=student;route={page:'catalog'};paint();await idle();assert.equal(root.querySelectorAll('.course-card').length,1);
   await action('detail');assert.doesNotMatch(root.textContent,/Hallo dùng để/);assert.doesNotMatch(root.querySelector('.course-detail-main').textContent,/\bteacher\b/,'Student course detail hides the author name');
-  assert.ok(root.querySelector('.course-detail-hero h1'));assert.equal(root.querySelector('.course-detail-meta>.exam-level').textContent,'A1');assert.ok(root.querySelector('.course-detail-curriculum .course-curriculum-groups'));
+  assert.ok(root.querySelector('.course-detail-hero.feature-surface h1'));assert.equal(root.querySelector('.course-detail-meta>.exam-level').textContent,'A1');assert.ok(root.querySelector('.course-detail-curriculum .course-curriculum-groups'));
+  assert.equal(root.querySelector('.course-detail-curriculum.feature-surface,.course-enroll-card.feature-surface'),null,'Decorative motion stays out of curriculum and enrollment controls');
   assert.equal(root.querySelectorAll('.course-detail-layout>.course-enroll-card').length,1,'Image, price and enrollment action remain grouped in the right column');await action('enroll');
   assert.equal(controller.getState().lesson.lesson.kind,'knowledge');assert.ok(root.querySelector('.course-prose strong'));
   assert.deepEqual([...root.querySelectorAll('.course-outline .course-outline-categories button')].map(button=>button.textContent.trim()),['Kiến thức','Bài tập']);
