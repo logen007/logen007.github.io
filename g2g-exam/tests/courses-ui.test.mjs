@@ -6,6 +6,7 @@ import {randomUUID} from 'node:crypto';
 import {createCourseService} from '../server/src/course-service.js';
 import {registerCourseRoutes} from '../server/src/course-routes.js';
 import {knowledgeDocument,documentKnowledgeBlocks} from '../src/courses/knowledge-document.js';
+import {courseLearningHtml} from '../src/courses/views.js';
 const {JSDOM}=await import(process.env.G2G_JSDOM_PATH);
 const {PGlite}=await import(process.env.G2G_PGLITE_PATH);
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost/?view=courses',pretendToBeVisual:true});
@@ -27,7 +28,7 @@ const query=async(sql,args=[])=>{const r=await(tx.getStore()||db).query(sql,args
 const service=createCourseService({query,withTx:fn=>db.transaction(client=>tx.run(client,()=>fn({query}))),uid:prefix=>prefix+'-'+randomUUID(),audit:async()=>{}});
 const {default:Fastify}=await import('../server/node_modules/fastify/fastify.js');
 const app=Fastify(),teacher={id:'teacher',role:'teacher'},student={id:'student',role:'student'};
-let user=teacher,route={page:'manage'},controller,failSave=false,dropProgressReceipt=false,failUpload=false,holdEditorSave=null,editorSaveEntered=()=>{},dropEditorReceipt=false;
+let user=teacher,route={page:'manage'},controller,failSave=false,dropProgressReceipt=false,failUpload=false,holdEditorSave=null,editorSaveEntered=()=>{},dropEditorReceipt=false,dropPublicationReceipt=false;
 const root=document.querySelector('#app'),notices=[];
 const pickerClicks=[],uploads=[];
 // Observe before the production capture handler, including events it cancels.
@@ -39,11 +40,13 @@ const uploadImage=async(file,{slot})=>{
   return slot==='course-cover'?'/uploads/synthetic-cover.png':'/uploads/synthetic-lesson.png';
 };
 const request=async(suffix,options={})=>{
+  if(suffix.endsWith('/publish')&&options.method==='POST')assert.equal(root.querySelector('[data-course-field="title"]').disabled,true,'Freeze authoring before sending publication');
   if(failSave&&options.method==='PUT')throw Error('Synthetic network failure');
   const authoring=options.method==='PUT'&&options.body?.course;
   if(authoring){editorSaveEntered();if(holdEditorSave)await holdEditorSave;}
   const response=await app.inject({method:options.method||'GET',url:'/api/courses'+suffix,headers:{'x-user':user.id},...(options.body===undefined?{}:{payload:options.body})});
   const data=response.json();if(response.statusCode>=400)throw Error(data.message||data.error);
+  if(dropPublicationReceipt&&suffix.endsWith('/publish')&&options.method==='POST'){dropPublicationReceipt=false;throw Error('Synthetic lost publication receipt');}
   if(authoring&&dropEditorReceipt){dropEditorReceipt=false;throw Error('Synthetic lost editor receipt');}
   if(dropProgressReceipt&&suffix.endsWith('/progress')&&options.method==='PUT'){dropProgressReceipt=false;throw Error('Synthetic lost save receipt');}
   return data;
@@ -194,11 +197,22 @@ try{
   await action('close-preview');assert.equal(controller.getState().editLesson,exerciseId);
   await action('publish');
   assert.equal(controller.getState().editor.status,'published');
+  assert.equal(root.querySelector('[data-course-field="title"]').disabled,true);assert.equal(root.querySelector('[data-course-action="publish"]'),null);assert.match(root.querySelector('.exam-publication-version').textContent,/1\.0\.0/);assert.doesNotMatch(root.textContent,/Cập nhật xuất bản/);
+  assert.equal(root.querySelector('[data-course-action="add-chapter"]').disabled,true);
+  await action('edit-category','[data-kind="knowledge"]');assert.equal(root.querySelector('[data-knowledge-editor]'),null,'Published knowledge is rendered without an editable engine');assert.ok(root.querySelector('.course-knowledge-content'));
+  const lockedTitle=controller.getState().editor.course.chapters[0].knowledge[0].title;fill('[data-course-lesson-field="title"]','Forged edit');assert.equal(controller.getState().editor.course.chapters[0].knowledge[0].title,lockedTitle);assert.equal(controller.isDirty(),false,'Synthetic input cannot dirty a published course');
+  await action('unpublish');assert.equal(controller.getState().editor.status,'draft');assert.equal(root.querySelector('[data-course-lesson-field="title"]').disabled,false);assert.ok(rich(),'Explicit unpublish restores the detailed editor');assert.equal(root.querySelector('.exam-publication-version').textContent,'v1.0.0');
+  fill('[data-course-lesson-field="title"]','Hallo nochmal!');dropPublicationReceipt=true;await action('publish');
+  assert.equal(controller.getState().editor.status,'published','Lost publish receipt reloads authoritative status instead of leaving an editable stale draft');assert.equal(root.querySelector('.exam-publication-version').textContent,'v1.0.1');assert.equal(root.querySelector('[data-course-action="unpublish"]').disabled,false);
+  assert.equal((await query('SELECT count(*)::int AS n FROM course_releases WHERE course_id=$1',[courseId])).rows[0].n,2);
   await action('manage');assert.equal(root.querySelectorAll('table.bang tbody tr').length,1);assert.ok(root.querySelector('.table-link.is-published'));assert.ok(root.querySelector('[data-course-action="members"]'),'Member management stays in the management list');
   await action('preview-managed');assert.ok(root.querySelector('[data-course-action="close-preview"]'));await action('close-preview');assert.equal(route.step,'info');
   user=student;route={page:'catalog'};paint();await idle();assert.equal(root.querySelectorAll('.course-card').length,1);
-  await action('detail');assert.doesNotMatch(root.textContent,/Hallo dùng để/);await action('enroll');
+  await action('detail');assert.doesNotMatch(root.textContent,/Hallo dùng để/);assert.doesNotMatch(root.querySelector('.course-detail-main').textContent,/Giáo viên teacher/,'Student course detail hides the author name');await action('enroll');
   assert.equal(controller.getState().lesson.lesson.kind,'knowledge');assert.ok(root.querySelector('.course-prose strong'));
+  assert.deepEqual([...root.querySelectorAll('.course-outline .course-outline-categories button')].map(button=>button.textContent.trim()),['Kiến thức','Bài tập']);
+  assert.equal(root.querySelector('.course-outline h3,.course-outline .course-lesson-row small'),null,'Learning sidebar omits repeated headings and lesson metadata');
+  assert.equal(root.querySelector('.course-outline [aria-current="step"]').dataset.lesson,knowledgeId);
   assert.equal(root.querySelector('.course-lesson-image').getAttribute('src'),'/uploads/synthetic-lesson.png','Uploaded lesson image survives save, publish and enrollment');
   assert.deepEqual([...root.querySelector('.course-knowledge-content').children].filter(node=>node.tagName!=='DIV'||node.textContent.trim()).map(node=>node.tagName),['DIV','FIGURE','DIV','FIGURE']);
   assert.equal(root.querySelector('.course-knowledge-content figure').dataset.align,'right');assert.match(root.querySelector('.course-knowledge-content').textContent,/Sau ảnh/);
@@ -219,6 +233,9 @@ try{
   assert.equal(controller.getState().practiceResult.score,1);assert.match(root.textContent,/2\/2 bài hoàn thành/);
   assert.equal((await service.memberResults(teacher,courseId,(await service.members(teacher,courseId)).members[0].id)).submissions.length,2);
   const source=(await service.getCourse(teacher,courseId,{edit:true})).course;
+  const chapter=source.chapters[0],many={id:courseId,...source,lessonCount:4,chapters:[{...chapter,knowledge:[chapter.knowledge[0],{...chapter.knowledge[0],id:'extra-knowledge'}],exercises:[chapter.exercises[0],{...chapter.exercises[0],id:'extra-exercise'}]}]};
+  const fragment=document.createElement('div');fragment.innerHTML=courseLearningHtml({detail:many,lesson:{lesson:chapter.knowledge[0]},practiceAnswers:{}});
+  assert.deepEqual([...fragment.querySelectorAll('.course-outline .course-lesson-row')].map(button=>button.textContent.trim()),['Kiến thức 1','Kiến thức 2','Bài tập 1','Bài tập 2'],'Compact labels retain access to every lesson, not just the first');
   await service.save(teacher,'paid-ui',{version:0,course:{...source,price:690000}});await service.publish(teacher,'paid-ui',{version:1});
   route={page:'detail',id:'paid-ui'};paint();await idle();await action('enroll');
   assert.equal(controller.getState().detail.enrollment.status,'pending');
