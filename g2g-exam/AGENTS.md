@@ -217,6 +217,12 @@ trừ khi dependency thực sự yêu cầu.
   không có cơ sở.
 - Áp dụng quy tắc mới nhất ở Mục 10: không tự chạy kiểm thử/build local, kể cả
   cho tài liệu quy trình. Giữ các gate CI bắt buộc và không merge khi chúng lỗi.
+- Owner nhắc lại 23/10/2026: chỉnh sửa nhỏ dùng luồng gọn — tìm đúng owner,
+  sửa tối thiểu, đọc diff + `git diff --check`, rồi commit/PR và merge ngay khi
+  CI bắt buộc đạt. Không thêm kế hoạch/tài liệu riêng, nghiên cứu, refactor,
+  kiểm tra lặp hoặc mở rộng tính năng ngoài yêu cầu. Không kiểm tra VPS/version
+  sau phát hành khi chưa được yêu cầu. Chỉ thêm bước khi có rủi ro cụ thể hoặc
+  dependency thực sự; báo ngắn gọn lý do, không dùng “cho chắc” để kéo dài việc.
 
 
 ## 12. Quy tắc khi yêu cầu chưa rõ

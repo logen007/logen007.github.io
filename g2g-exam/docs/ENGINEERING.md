@@ -22,6 +22,9 @@ ranh giới cứng, kể cả khi UI/UX được ưu tiên cao.
 
 ## Chu trình cho mỗi yêu cầu
 
+Chỉnh sửa nhỏ áp dụng luồng gọn ở `AGENTS.md` mục 11.1; các bước dưới đây
+là nội dung cần xét theo phạm vi, không phải các vòng công việc/tài liệu riêng.
+
 1. **Understand.** Đọc request mới nhất, status/diff, tài liệu và owner liên quan.
    Ghi nhận mục tiêu, điều kiện đạt, phần không đổi, rủi ro và dependency.
    Nếu không đụng luật thi, ghi N/A thay vì tự gán provider/part. Chỉ hỏi khi thiếu

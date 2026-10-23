@@ -127,6 +127,7 @@ try{
   await action('add-chapter');
   assert.equal((await service.getCourse(teacher,courseId,{edit:true})).course.coverUrl,'/uploads/synthetic-cover.png');
   const chapterId=controller.getState().editor.course.chapters[0].id;
+  assert.equal(root.querySelector('.course-outline-chapter-title .ui-icon'),null,'Chapter titles remain clickable without gear icons');
   assert.doesNotMatch(root.querySelector('.course-builder-outline').textContent,/Thông tin khóa học|Chưa có bài/,'No redundant settings or empty placeholders');
   assert.deepEqual([...root.querySelectorAll('.course-outline-categories button')].map(button=>button.textContent.trim()),['Kiến thức','Bài tập']);
   assert.equal(route.chapter,chapterId,'Chapter selection has its own route');
