@@ -208,7 +208,9 @@ try{
   await action('manage');assert.equal(root.querySelectorAll('table.bang tbody tr').length,1);assert.ok(root.querySelector('.table-link.is-published'));assert.ok(root.querySelector('[data-course-action="members"]'),'Member management stays in the management list');
   await action('preview-managed');assert.ok(root.querySelector('[data-course-action="close-preview"]'));await action('close-preview');assert.equal(route.step,'info');
   user=student;route={page:'catalog'};paint();await idle();assert.equal(root.querySelectorAll('.course-card').length,1);
-  await action('detail');assert.doesNotMatch(root.textContent,/Hallo dùng để/);assert.doesNotMatch(root.querySelector('.course-detail-main').textContent,/Giáo viên teacher/,'Student course detail hides the author name');await action('enroll');
+  await action('detail');assert.doesNotMatch(root.textContent,/Hallo dùng để/);assert.doesNotMatch(root.querySelector('.course-detail-main').textContent,/\bteacher\b/,'Student course detail hides the author name');
+  assert.ok(root.querySelector('.course-detail-hero h1'));assert.equal(root.querySelector('.course-detail-meta>.exam-level').textContent,'A1');assert.ok(root.querySelector('.course-detail-curriculum .course-curriculum-groups'));
+  assert.equal(root.querySelectorAll('.course-detail-layout>.course-enroll-card').length,1,'Image, price and enrollment action remain grouped in the right column');await action('enroll');
   assert.equal(controller.getState().lesson.lesson.kind,'knowledge');assert.ok(root.querySelector('.course-prose strong'));
   assert.deepEqual([...root.querySelectorAll('.course-outline .course-outline-categories button')].map(button=>button.textContent.trim()),['Kiến thức','Bài tập']);
   assert.equal(root.querySelector('.course-outline h3,.course-outline .course-lesson-row small'),null,'Learning sidebar omits repeated headings and lesson metadata');

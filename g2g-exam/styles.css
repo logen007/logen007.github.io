@@ -1761,6 +1761,21 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .course-card-actions { display:grid; gap:8px; margin-top:auto; }
 .course-detail-layout { display:grid; grid-template-columns:minmax(0,1fr) 360px; align-items:start; gap:28px; }
 .course-detail-main { display:grid; gap:20px; min-width:0; }
+.course-detail-hero { display:grid; gap:20px; min-width:0; padding:clamp(24px,3vw,40px); border:1px solid var(--vien); border-radius:24px; background:linear-gradient(135deg,var(--brand-soft),transparent 65%),var(--mat); }
+.course-detail-meta { display:flex; flex-wrap:wrap; align-items:center; gap:12px; color:var(--phu); font-size:14px; }
+.course-detail-meta>.nhan { flex:none; width:auto; }
+.course-detail-hero h1 { max-width:24ch; font-size:clamp(28px,3.2vw,44px); font-weight:550; line-height:1.15; letter-spacing:-.035em; overflow-wrap:anywhere; }
+.course-detail-intro { max-width:65ch; color:var(--phu); font-size:16px; line-height:1.7; overflow-wrap:anywhere; }
+.course-detail-description { padding:4px 4px 0; min-width:0; }
+.course-detail-curriculum { display:grid; gap:12px; min-width:0; }
+.course-detail-curriculum>h2 { margin-bottom:4px; font-size:24px; font-weight:550; letter-spacing:-.025em; }
+.course-detail-curriculum .course-chapter { padding:20px; min-width:0; }
+.course-detail-curriculum summary { line-height:1.5; overflow-wrap:anywhere; }
+.course-detail-curriculum summary::marker { color:var(--brand-text); }
+.course-curriculum-groups { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; min-width:0; }
+.course-curriculum-groups>.course-outline-group { min-width:0; gap:8px; }
+.course-detail-curriculum .course-lesson-row { min-height:44px; font-size:14px; }
+.course-detail-curriculum .course-lesson-row small { display:none; }
 .course-enroll-card { position:sticky; top:24px; display:grid; gap:16px; margin:0; padding:24px; border-radius:24px; }
 .course-enroll-card .course-price { font-size:32px; }
 .course-prose { white-space:pre-wrap; line-height:1.7; overflow-wrap:anywhere; }
