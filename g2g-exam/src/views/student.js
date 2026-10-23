@@ -81,7 +81,7 @@ export function liveExamHtml({attempt,exam,allQuestions=[],online}){
   return `<div class="thi thi--live">${header}${offline}${navigation}<main class="noi-dung-thi"><div class="exam-free-navigation"><span data-current-answer-count aria-label="Beantwortete Aufgaben">${answered}/${required.length}</span><button class="nut" data-action="submit-exam">Prüfung abgeben</button></div><div class="exam-paper exam-paper--live">${sections}</div></main></div>`;
 }
 
-function examSectionHtml({attempt,exam,sectionIndex,questions,allQuestions=[],online,preview=false,previewSummary=null,sectionOnly=false}){
+function examSectionHtml({attempt,exam,sectionIndex,questions,allQuestions=[],online,preview=false,previewSummary=null,sectionOnly=false,contentOnly=false}){
   const sec=exam.sections[sectionIndex];
   const configuredPart=getExamSpec(exam.provider,exam.level)?.skills
     .find(skill=>skill.key===sec.skillKey||skill.label===sec.skill)?.parts.find(part=>part.name===sec.name);
@@ -129,6 +129,7 @@ const sectionInstruction=sec.instruction||sec.instructionImageUrl||sec.additiona
     ?`<div class="exam-context"><div class="exam-title-block"><h1 id="preview-section-title" tabindex="-1">${esc(germanSectionName(sectionLabel(exam,sec)))}</h1></div></div>`
     :`<div class="exam-context"><div class="exam-title-block"><div class="nhan-muc">${esc(exam.level)} · ${textHtml(exam.title)}</div><h1>${esc(germanSectionName(sectionLabel(exam,sec)))}</h1></div></div>`;
   const paperContent=splitWriting?`<div class="exam-reading-split exam-writing-split"><div class="exam-writing-prompt">${writingPrompts.join('')}</div><div class="exam-writing-response">${sectionAudio}${questionList}</div></div>`:groupStimuli?`<div class="exam-reading-split exam-stimulus-group" data-responsive-stimuli><div>${stimulusGroups.map((group,i)=>`<div data-stimulus-order="${i*2}">${group.left}</div>`).join('')}</div><section class="to-thi" aria-label="Aufgaben">${stimulusGroups.map((group,i)=>`<div data-stimulus-order="${i*2+1}">${group.right}</div>`).join('')}</section></div>`:splitLayout?`<div class="exam-reading-split">${sectionInstruction}<div>${sectionAudio}${questionList}</div></div>`:sectionInstruction+sectionAudio+questionList;
+  if(contentOnly)return paperContent;
   const sectionContent=sectionOnly?`${context}<div class="exam-paper-section">${paperContent}</div></section>`:null;
   if(sectionContent)return sectionContent;
 const body=`<main class="noi-dung-thi">${context}${preview?'':`<div class="exam-free-navigation"><span>Prüfungszeit: <strong id="examMainTime">--:--</strong></span><button class="nut" data-action="submit-exam">Prüfung abgeben</button></div>`}<div class="exam-paper">${paperContent}</div><nav class="dieu-huong-thi" aria-label="Prüfungsnavigation"><button class="nut section-arrow" aria-label="Vorheriger Teil" title="Vorheriger Teil" data-action="${previousAction}" ${sectionIndex===0?'disabled':''}>${iconHtml('arrowLeft')}</button>${preview?'':`<span class="tien-do" id="saveState">${currentCount} - <b id="examTimeSummary">--:--</b></span>`}<button class="nut chinh ${sectionIndex<exam.sections.length-1?'section-arrow':''}" aria-label="${nextLabel}" title="${nextLabel}" data-action="${nextAction}">${sectionIndex<exam.sections.length-1?iconHtml('arrowRight'):nextLabel}</button></nav></main>`;
@@ -141,6 +142,13 @@ const body=`<main class="noi-dung-thi">${context}${preview?'':`<div class="exam-
 
 export function examHtml(args){
   return examSectionHtml(args);
+}
+
+// Course practice shares the exact part composition, without exam chrome/timers.
+export function practiceExerciseHtml(exercise,answers={},level='A1'){
+  const {section,questions}=exercise;
+  return examSectionHtml({attempt:{id:'practice',answers},exam:{id:'practice',title:'Bài tập',level,sections:[section]},sectionIndex:0,
+    questions,allQuestions:questions,online:true,preview:true,sectionOnly:true,contentOnly:true});
 }
 
 function previewOutlineHtml(summary,sectionIndex,exam){
@@ -235,14 +243,14 @@ export function renderQuestionHtml(q,answer,attempt,{singleQuestion=false,linedP
   const stimulus=hasStimulus&&!hideStimulus?questionStimulusHtml(q,{hideImage:/\[img\]/i.test(questionText)}):'';
   const head=exampleTitle+stimulus+(prompt||audio?`<div class="preview-question-heading">${prompt?`<div class="preview-question-prompt">${prompt}</div>`:''}${audio}</div>`:'');
   const root=`cau-thi ${isExample?'is-example ':''}${answerPresent(answer,q)?'is-answered':''}`;
-  if(['single','cloze','truefalse'].includes(q.type)){
+  if(['single','cloze','truefalse','multiple'].includes(q.type)){
     const choices=(q.choices||[]).map((choice,index)=>({choice,index})).filter(({choice})=>{const text=String(typeof choice==='object'?choice?.text||'':choice||'').trim();return Boolean((text&&text!=='Nháp')||String(typeof choice==='object'?choice?.imageUrl||'':'').trim());});
-    const compact=compactBinaryChoices(choices.map(({choice})=>choice));
+    const multiple=q.type==='multiple',compact=!multiple&&compactBinaryChoices(choices.map(({choice})=>choice));
     const shortColumns=shortChoiceColumns(choices.map(({choice})=>choice));
     const illustrated=choices.some(({choice})=>choice?.imageUrl);
-    return `<div class="${root}${compact?' cau-thi--binary':''}" id="${esc(questionAnchorId)}" data-q="${q.id}">${head}<div style="--answer-columns:${shortColumns||1}" class="answer-options ${shortColumns?'answer-options--short ':!illustrated?'answer-options--long ':''}${choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}${mobileThreeChoices?' answer-options--mobile-three':''}" role="radiogroup" aria-label="${esc(questionAriaText||'Antwort auswählen')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="${isExample?'':'answer-one'}" type="radio" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(compact?text||'':`${letter}. ${text||''}`)}" value="${index}" ${String(answer)===String(index)?'checked':''} ${isExample?'disabled':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span>${compact?'':`<strong class="answer-letter">${letter}.</strong> `}${textHtml(text)}</span></span></label>`;}).join('')}</div></div>`;
+    return `<div class="${root}${compact?' cau-thi--binary':''}" id="${esc(questionAnchorId)}" data-q="${q.id}">${head}<div style="--answer-columns:${shortColumns||1}" class="answer-options ${shortColumns?'answer-options--short ':!illustrated?'answer-options--long ':''}${choices.some(({choice})=>choice?.imageUrl)?'answer-options--illustrated':''}${mobileThreeChoices?' answer-options--mobile-three':''}" role="${multiple?'group':'radiogroup'}" aria-label="${esc(questionAriaText||'Antwort auswählen')}">${choices.map(({choice,index})=>{const rawText=typeof choice==='object'?choice.text:choice,text=String(rawText||'').trim()==='Nháp'?'':rawText,imageUrl=typeof choice==='object'?choice.imageUrl||'':'',letter=String.fromCharCode(65+index);return `<label class="answer-option"><input class="${isExample?'':multiple?'answer-many':'answer-one'}" type="${multiple?'checkbox':'radio'}" name="answer-${q.id}" data-q="${q.id}" aria-label="${esc(compact?text||'':`${letter}. ${text||''}`)}" value="${index}" ${(multiple?Array.isArray(answer)&&answer.includes(index):String(answer)===String(index))?'checked':''} ${isExample?'disabled':''}><span class="answer-option-body">${imageUrl?`<img src="${esc(imageUrl)}" alt="">`:''}<span>${compact?'':`<strong class="answer-letter">${letter}.</strong> `}${textHtml(text)}</span></span></label>`;}).join('')}</div></div>`;
   }
-  if(q.type==='matching')return `<div class="${root}" id="${esc(questionAnchorId)}" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div class="matching-row"><b>${esc(p[0])}</b><select class="dap-an ${isExample?'':'answer-match'}" data-q="${q.id}" data-i="${i}" ${isExample?'disabled':''}><option value="">Antwort auswählen</option>${[...new Set((q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;
+  if(q.type==='matching')return `<div class="${root}" id="${esc(questionAnchorId)}" data-q="${q.id}">${head}${(q.pairs||[]).map((p,i)=>`<div class="matching-row"><b>${esc(p[0])}</b><select class="dap-an ${isExample?'':'answer-match'}" data-q="${q.id}" data-i="${i}" ${isExample?'disabled':''}><option value="">Antwort auswählen</option>${[...new Set(q.matchOptions||(q.pairs||[]).map(x=>x[1]))].map(v=>`<option value="${esc(v)}" ${Array.isArray(answer)&&answer[i]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`).join('')}</div>`;
   if(q.type==='writing'){
     if(captureWritingPrompt)captureWritingPrompt(head);
     return `<div class="${root}" id="${esc(questionAnchorId)}" data-q="${q.id}">${captureWritingPrompt?'':head}${Array.isArray(q.rubric)&&q.rubric.length?writingFieldsHtml(q,answer,{framed:formFrame}):`<textarea class="viet ${q.handwriting!==false?'lined-writing-paper ':''}${isExample?'':'answer-text'}" data-q="${q.id}" aria-label="Schriftliche Antwort${questionNumber?` ${esc(questionNumber)}`:''}" placeholder="Schreiben Sie hier..." ${isExample?'disabled':''}>${esc(answer||'')}</textarea><div class="phu-de" style="text-align:right"><span class="word-count">${countWords(answer||'')}</span> Wörter</div>`}</div>`;

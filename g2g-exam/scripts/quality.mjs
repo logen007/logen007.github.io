@@ -10,6 +10,7 @@ export const uiTests=[
   'tests/name-confirm.test.mjs','tests/speaking-lab.test.mjs',
 ];
 const integrationTests=[
+  'tests/courses.integration.mjs','tests/courses-ui.test.mjs',
   'tests/backend-access.integration.mjs','tests/exam-completion.integration.mjs',
   'tests/publication.integration.mjs','tests/speaking-lab.integration.mjs',
   'tests/speaking-archive.integration.mjs',

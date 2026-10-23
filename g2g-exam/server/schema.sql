@@ -19,6 +19,64 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 
+-- Additive course module. Releases/enrollments preserve prior learning content.
+CREATE TABLE IF NOT EXISTS courses (
+  id text PRIMARY KEY,
+  owner_id text NOT NULL REFERENCES users(id),
+  status text NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','published','archived')),
+  version integer NOT NULL DEFAULT 1 CHECK(version>0),
+  published_version integer,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  draft jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS courses_owner_idx ON courses(owner_id,status);
+CREATE INDEX IF NOT EXISTS courses_catalog_idx ON courses(status,published_version);
+CREATE TABLE IF NOT EXISTS course_releases (
+  course_id text NOT NULL REFERENCES courses(id),
+  version integer NOT NULL CHECK(version>0),
+  metadata jsonb NOT NULL,
+  snapshot jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(course_id,version)
+);
+CREATE TABLE IF NOT EXISTS course_enrollments (
+  id text PRIMARY KEY,
+  course_id text NOT NULL,
+  student_id text NOT NULL REFERENCES users(id),
+  release_version integer NOT NULL,
+  status text NOT NULL CHECK(status IN ('pending','active','rejected')),
+  amount integer NOT NULL CHECK(amount>=0),
+  confirmed_by text REFERENCES users(id),
+  confirmed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(course_id,student_id),
+  FOREIGN KEY(course_id,release_version) REFERENCES course_releases(course_id,version)
+);
+CREATE INDEX IF NOT EXISTS course_enrollment_student_idx ON course_enrollments(student_id,status);
+CREATE INDEX IF NOT EXISTS course_enrollment_course_idx ON course_enrollments(course_id,status);
+CREATE TABLE IF NOT EXISTS course_progress (
+  enrollment_id text NOT NULL REFERENCES course_enrollments(id),
+  lesson_id text NOT NULL,
+  revision integer NOT NULL DEFAULT 1,
+  answers jsonb NOT NULL DEFAULT '{}'::jsonb,
+  last_operation text,
+  completed_at timestamptz,
+  last_seen_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(enrollment_id,lesson_id)
+);
+CREATE TABLE IF NOT EXISTS course_submissions (
+  id text PRIMARY KEY,
+  enrollment_id text NOT NULL REFERENCES course_enrollments(id),
+  lesson_id text NOT NULL,
+  request_key text NOT NULL,
+  result jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(enrollment_id,request_key)
+);
+CREATE INDEX IF NOT EXISTS course_submission_lesson_idx ON course_submissions(enrollment_id,lesson_id,created_at DESC);
+
 CREATE TABLE IF NOT EXISTS questions (
   id text PRIMARY KEY,
   owner_id text NOT NULL REFERENCES users(id),
