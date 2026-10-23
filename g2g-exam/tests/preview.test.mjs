@@ -349,13 +349,17 @@ try{
   await test('Header keeps role-appropriate menus in builder and grading views',()=>{
     for(const role of ['master','teacher'])for(const view of ['admin','builder','grading-detail']){
       const html=topbarHtml({user:{id:role,role},mode:'api',online:true,ui:{view}});
-      assert.equal(actionButtons(html,'admin-tab').length,role==='master'?8:4);
-      assert.ok(html.indexOf('data-tab="courses"')<html.indexOf('data-tab="exams"'),'Courses precede exams for staff');
+      assert.equal(actionButtons(html,'admin-tab').length,role==='master'?6:4);
+      if(role==='master')assert.doesNotMatch(html,/data-tab="courses"|data-tab="exams"/);
+      else{
+        assert.match(html,/data-tab="courses"/);
+        assert.match(html,/data-tab="exams"/);
+        assert.ok(html.indexOf('data-tab="courses"')<html.indexOf('data-tab="exams"'),'Courses precede exams for teachers');
+      }
       if(role==='master')assert.match(html,/data-tab="speaking"/);
       else assert.doesNotMatch(html,/data-tab="speaking"/);
       if(role==='master')assert.doesNotMatch(html,/data-tab="classes"/);
       else assert.match(html,/data-tab="classes"/);
-      assert.match(html,/data-tab="exams"/);
     }
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
     assert.match(source,/\[data-action="admin-tab"\][^\n]+await flushBuilderDraft\(\)[^\n]+ui.adminTab/);
