@@ -462,6 +462,7 @@ function bindOneSectionAudio(root,attempt,{preview,repeatable=false}){
   const progress=root.querySelector('.section-audio-progress'),progressFill=progress?.querySelector('i');
   const audios=[...root.querySelectorAll('.section-audio-segment')];
   if(!button||!audios.length)return;
+  if(preview&&repeatable)status.textContent='Audio beliebig oft abspielen';
   const setProgress=value=>{
     const percent=Math.max(0,Math.min(100,Number(value)||0));
     if(progressFill)progressFill.style.width=`${percent}%`;

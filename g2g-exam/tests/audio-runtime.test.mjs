@@ -122,6 +122,7 @@ for(const preview of [false,true]){
 assert.equal((source.match(/if\(!claimAudioPlayback\(audio\)\)return;/g)||[]).length,2,'Both live and preview legacy audio buttons use the shared playback guard');
 const practice=makeSection('practice',1);audioRoots=[practice.root];
 const beforePractice=requests.length;context.bindSectionAudio({id:'course-practice'},{preview:true,repeatable:true});
+assert.equal(practice.status.textContent,'Audio beliebig oft abspielen','Practice must not advertise the one-listen exam restriction');
 for(let turn=0;turn<2;turn++){
  const playing=practice.button.onclick();await settle();assert.equal(practice.audio.plays,turn+1);
  finish(practice.audio);await playing;assert.equal(practice.button.disabled,false,'Course practice can listen again without consuming an exam session');
