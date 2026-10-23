@@ -37,6 +37,7 @@ COPY src/domain/result-summary.js /app/src/domain/result-summary.js
 COPY src/domain/attempt-review.js /app/src/domain/attempt-review.js
 COPY src/domain/provisional-result.js /app/src/domain/provisional-result.js
 COPY src/domain/question-score.js /app/src/domain/question-score.js
+COPY src/domain/courses.js /app/src/domain/courses.js
 COPY src/domain/exam-clock.js /app/src/domain/exam-clock.js
 COPY src/domain/exam-last-edit.js /app/src/domain/exam-last-edit.js
 COPY src/domain/ai-providers.js /app/src/domain/ai-providers.js

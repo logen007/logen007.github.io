@@ -11,7 +11,9 @@ import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
-import {initDb,getSettings,getDataRevision,appError,pool,withTx} from './db.js';
+import {initDb,getSettings,getDataRevision,appError,pool,withTx,query,uid,audit} from './db.js';
+import {createCourseService} from './course-service.js';
+import {registerCourseRoutes} from './course-routes.js';
 import {createStateCache} from './state-cache.js';
 import {registerAuthRoutes,currentUser,requireUser,requireRole} from './auth.js';
 import {loadState,commitOperations} from './state.js';
@@ -95,6 +97,7 @@ try{await fs.cp(path.join(publicDir,'assets'),assetDir,{recursive:true});}catch(
 await app.register(fastifyStatic,{root:assetDir,prefix:'/assets/',decorateReply:false,preCompressed:true});
 await app.register(fastifyStatic,{root:publicDir,prefix:'/',index:['index.html'],preCompressed:true});
 await registerAuthRoutes(app);
+registerCourseRoutes(app,{service:createCourseService({query,withTx,uid,audit}),userFor:requireUser});
 await registerBackupGoogleRoutes(app);
 registerSpeakingLabRoutes(app);
 startSpeakingLabWorker(app);

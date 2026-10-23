@@ -19,6 +19,9 @@ Keep UI changes separate from grading, transport and persistence changes.
 | Screen state / navigation wiring | `src/app.js` — delegate rules and data loading |
 | Durable answer writes / lost-receipt replay | `src/repositories/exam-outbox.js`; API transport in `src/repositories/api.js` |
 | Server action routing | `server/src/actions/index.js` — delegate handlers |
+| Course authoring, catalog and learning UI | `src/courses/`; reuse exam editors/renderers; acceptance in `docs/COURSES.md` |
+| Course normalization, safe projections and objective practice | `src/domain/courses.js`; arithmetic delegates to shared `question-score.js` |
+| Course permissions, immutable releases, enrollment/progress | `server/src/course-service.js`, registered by `course-routes.js`; additive tables in `server/schema.sql` |
 
 ## Safe change checklist
 

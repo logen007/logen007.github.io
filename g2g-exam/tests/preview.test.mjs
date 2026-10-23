@@ -3,6 +3,7 @@ import './login.test.mjs';
 import './audio-runtime.test.mjs';
 import './exam-question-sidebar.test.mjs';
 import './letter-answer-groups.test.mjs';
+import './courses.test.mjs';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {iconHtml} from '../src/ui/icons.js';
@@ -348,7 +349,8 @@ try{
   await test('Header keeps role-appropriate menus in builder and grading views',()=>{
     for(const role of ['master','teacher'])for(const view of ['admin','builder','grading-detail']){
       const html=topbarHtml({user:{id:role,role},mode:'api',online:true,ui:{view}});
-      assert.equal(actionButtons(html,'admin-tab').length,role==='master'?7:3);
+      assert.equal(actionButtons(html,'admin-tab').length,role==='master'?8:4);
+      assert.ok(html.indexOf('data-tab="courses"')<html.indexOf('data-tab="exams"'),'Courses precede exams for staff');
       if(role==='master')assert.match(html,/data-tab="speaking"/);
       else assert.doesNotMatch(html,/data-tab="speaking"/);
       if(role==='master')assert.doesNotMatch(html,/data-tab="classes"/);
@@ -364,6 +366,7 @@ try{
       {id:'t-a1',status:'published',level:'A1',provider:'TELC'},
       {id:'fid-b1',status:'published',level:'B1',provider:'FID'}
     ]});
+    assert.ok(html.indexOf('data-action="open-courses"')<html.indexOf('data-action="student-home"'),'Courses precede exams for students');
     assert.match(html,/student-exam-nav-menu/);
     assert.match(html,/data-exam-level="A1" data-exam-provider="GOETHE"/);
     assert.match(html,/data-exam-level="A1" data-exam-provider="TELC"/);
@@ -747,7 +750,7 @@ try{
     assert.match(source,/audios\.map\(audio=>Math\.max\(1,Number\(audio\.dataset\.repeat\)\|\|1\)\)/);
     assert.match(source,/completedDuration\+currentTime/);
     assert.match(source,/requestAnimationFrame\(tick\)/);
-    assert.match(source,/\['exam','preview-exam','builder','grading-detail'\]\.includes\(ui\.view\)/);
+    assert.match(source,/\['exam','preview-exam','builder','grading-detail','courses'\]\.includes\(ui\.view\)/);
     assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.section-audio-status\s*\{[^}]*color:var\(--chu\)/);
     assert.match(source,/function stopActiveAudio\(\)[\s\S]*audio\.onpause=null;audio\.onended=null;audio\.onerror=null;[\s\S]*audio\.pause\(\)/);
     assert.match(source,/function render\(\)[\s\S]*stopActiveAudio\(\)/);

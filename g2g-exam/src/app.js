@@ -1,4 +1,6 @@
 import {examDurationSeconds} from './domain/exam-clock.js';
+import {createCoursesController} from './courses/controller.js';
+import {readCourseRoute,writeCourseRoute} from './courses/api.js';
 import {bindExamQuestionSidebar} from './ui/exam-question-sidebar.js';
 let clearExamQuestionSidebar=()=>{};
 import {scrollExamToTop} from './ui/exam-scroll.js';
@@ -43,8 +45,8 @@ import {createGradeAutosave} from './ui/grade-autosave.js';
 import {showPublishErrors} from './ui/publish-errors.js';
 import {bindImageRemoval,imageValue} from './ui/image-remove.js';
 import {bindImagePaste} from './ui/image-paste.js';
-let gradeAutosave=null,gradePublishing=false;
-window.addEventListener('beforeunload',event=>{if(gradeAutosave?.pending||gradePublishing){event.preventDefault();event.returnValue='';}});
+let gradeAutosave=null,gradePublishing=false,courses=null;
+window.addEventListener('beforeunload',event=>{if(gradeAutosave?.pending||gradePublishing||courses?.isDirty()){event.preventDefault();event.returnValue='';}});
 import {createRepository} from './repository.js';
 import {viewStateScope,needsStateLoad} from './repositories/state-scope.js';
 import {settingsRouteTab,writeSettingsRoute} from './settings/route.js';
@@ -137,6 +139,9 @@ const ui={
   gradeAttemptId:null,gradeMode:'best',examFilter:'all',review:null,previewExamId:null,previewSectionIndex:0,previewAnswers:{},infrastructure:isMaster(user)?readCachedInfrastructure():null,online:navigator.onLine,
 };
 
+courses=createCoursesController({root:app,context:()=>({user,mode:repo.mode}),layout,notify,repaint:()=>render(),bindAudio:bindSectionAudio,
+  navigate:route=>{ui.courseRoute=route;ui.view='courses';ui.adminTab='courses';render();}});
+
 repo.subscribe(next=>{
   data=next;
   if(!startupGate.isReady())return;
@@ -148,12 +153,12 @@ repo.subscribe(next=>{
     realtimeRenderTimer=setTimeout(()=>render(),80);
     return;
   }
-  if(['exam','preview-exam','builder','grading-detail'].includes(ui.view)||(ui.view==='admin'&&['settings','backup','speaking'].includes(ui.adminTab))||document.getElementById('modal')||document.querySelector('.g2g-settings-page')||document.querySelector('[data-name-form]:not([hidden])')||document.activeElement?.matches('[data-student-search]'))return;
+  if(['exam','preview-exam','builder','grading-detail','courses'].includes(ui.view)||(ui.view==='admin'&&['settings','backup','speaking'].includes(ui.adminTab))||document.getElementById('modal')||document.querySelector('.g2g-settings-page')||document.querySelector('[data-name-form]:not([hidden])')||document.activeElement?.matches('[data-student-search]'))return;
   clearTimeout(realtimeRenderTimer);
   realtimeRenderTimer=setTimeout(()=>render(),80);
 });
-window.addEventListener('online',()=>{ui.online=true;if(ui.view!=='exam')render();});
-window.addEventListener('offline',()=>{ui.online=false;if(ui.view!=='exam')render();});
+window.addEventListener('online',()=>{ui.online=true;if(!['exam','courses'].includes(ui.view))render();});
+window.addEventListener('offline',()=>{ui.online=false;if(!['exam','courses'].includes(ui.view))render();});
 
 function layout(content){
   return topbarHtml({user,mode:repo.mode,online:ui.online,ui,canSwitchRole:Boolean(authenticatedUser?.canTestRoles||isMaster(authenticatedUser)),studentExamMenu:(data.exams||[]).filter(exam=>exam.status==='published')})+content;
@@ -187,8 +192,9 @@ const pageHistory=createPageHistory({beforeLeave:async()=>{
 function syncViewUrl(){
   if(!user)return;
   const url=new URL(window.location.href);
-  for(const key of ['edit','preview','section','view','tab','attempt','settings','class'])url.searchParams.delete(key);
-  if(ui.view==='builder'&&ui.builderExamId){
+  for(const key of ['edit','preview','section','view','tab','attempt','settings','class','course','lesson','course-page','course-step'])url.searchParams.delete(key);
+  if(ui.view==='courses')writeCourseRoute(url,ui.courseRoute||{page:isStudent(user)?'catalog':'manage'});
+  else if(ui.view==='builder'&&ui.builderExamId){
     url.searchParams.set('edit',ui.builderExamId);
     if(ui.builderSectionId)url.searchParams.set('section',ui.builderSectionId);
   }
@@ -447,11 +453,11 @@ function claimAudioPlayback(owner){
   owner.dataset.audioBusy='true';
   return true;
 }
-function bindSectionAudio(attempt,{preview}){
+function bindSectionAudio(attempt,{preview,repeatable=false}){
   const roots=app.querySelectorAll?.('[data-section-audio]')||[app.querySelector?.('[data-section-audio]')].filter(Boolean);
-  roots.forEach(root=>bindOneSectionAudio(root,attempt,{preview}));
+  roots.forEach(root=>bindOneSectionAudio(root,attempt,{preview,repeatable}));
 }
-function bindOneSectionAudio(root,attempt,{preview}){
+function bindOneSectionAudio(root,attempt,{preview,repeatable=false}){
   const button=root.querySelector('.section-audio-play'),status=root.querySelector('.section-audio-status');
   const progress=root.querySelector('.section-audio-progress'),progressFill=progress?.querySelector('i');
   const audios=[...root.querySelectorAll('.section-audio-segment')];
@@ -484,13 +490,13 @@ function bindOneSectionAudio(root,attempt,{preview}){
       }
       if(!preview)await templateRequest('/actions/completePartAudio',{method:'POST',body:{attemptId:attempt.id,sectionId:root.dataset.sectionAudio}});
       root.classList.remove('is-playing');progress.hidden=true;
-      setProgress(100);status.textContent='Audio wurde bereits abgespielt';
+      setProgress(100);status.textContent=preview&&repeatable?'Audio erneut abspielen':'Audio wurde bereits abgespielt';
     }catch(error){
       if(!locked){sessionStorage.removeItem(root.dataset.storageKey);button.disabled=false;}
       root.classList.remove('is-playing');progress.hidden=true;
       status.textContent=locked&&!preview?'Audio wurde bereits abgespielt':'Audio konnte nicht geladen werden';
       notify(error?.message||'Das Audio konnte nicht abgespielt werden.');
-    }finally{delete root.dataset.audioBusy;}
+    }finally{delete root.dataset.audioBusy;if(preview&&repeatable)button.disabled=false;}
   };
 }
 
@@ -831,6 +837,7 @@ function render(){
   if(!user){ui.view='login';loginView();return;}
   syncViewUrl();
   if(ui.view==='student-home')studentHomeView();
+  else if(ui.view==='courses')courses.mount(ui.courseRoute||{page:isStudent(user)?'catalog':'manage'});
   else if(ui.view==='student-results')studentResultsView();
   else if(ui.view==='student-attempt-detail')app.innerHTML=layout(studentAttemptDetailHtml({review:ui.review,user}));
   else if(ui.view==='exam')examView();
@@ -882,6 +889,7 @@ function setBuilderSaveStatus(state,text){
 }
 
 async function flushBuilderDraft(){
+  if(ui.view==='courses'&&!await courses.beforeLeave())return false;
   if(gradePublishing)return false;
   if(ui.view==='grading-detail'&&gradeAutosave&&!await gradeAutosave.flush())return false;
   if(ui.view!=='builder'||document.getElementById('examTitle')?.disabled)return true;
@@ -1086,14 +1094,16 @@ function bindGlobal(){
       authenticatedUser=user;data=await repo.getState();ui.view=isStudent(user)?'student-home':'admin';ui.adminTab='exams';render();
     }catch(error){notify(error?.message||'Không đổi được kiểu tài khoản thử nghiệm.');}
   });
-  app.querySelectorAll('[data-action="student-home"]').forEach(b=>b.onclick=()=>{ui.view='student-home';render();});
-  app.querySelectorAll('[data-action="student-exam-menu"]').forEach(button=>button.onclick=()=>{
+  app.querySelectorAll('[data-action="open-courses"]').forEach(button=>button.onclick=async()=>{if(!await flushBuilderDraft())return;await courses.open({page:button.dataset.coursePage||(isStudent(user)?'catalog':'manage')});});
+  app.querySelectorAll('[data-action="student-home"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;ui.view='student-home';render();});
+  app.querySelectorAll('[data-action="student-exam-menu"]').forEach(button=>button.onclick=async()=>{
+    if(!await flushBuilderDraft())return;
     ui.examLevelFilter=button.dataset.examLevel;
     ui.examFilter=button.dataset.examProvider;
     ui.view='student-home';
     render();
   });
-  app.querySelectorAll('[data-action="student-results"]').forEach(b=>b.onclick=()=>{ui.view='student-results';render();});
+  app.querySelectorAll('[data-action="student-results"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;ui.view='student-results';render();});
   app.querySelectorAll('[data-action="student-attempt-detail"]').forEach(b=>b.onclick=async event=>{
     if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
     event.preventDefault();
@@ -1137,7 +1147,7 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="preview-select-section"]').forEach(select=>select.onchange=()=>showPreviewSection(Number(select.value)||0));
   app.querySelectorAll('[data-action="reset-preview"]').forEach(b=>b.onclick=()=>{ui.previewAnswers={};ui.previewSectionIndex=0;window.scrollTo(0,0);render();notify('Đã làm lại phần xem trước.');});
   app.querySelectorAll('[data-action="close-preview"]').forEach(b=>b.onclick=()=>{ui.builderExamId=ui.previewExamId;ui.previewAnswers={};ui.view=ui.previewReturnView==='admin'?'admin':'builder';render();window.scrollTo(0,0);});
-  app.querySelectorAll('[data-action="admin-tab"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;ui.adminTab=b.dataset.tab;ui.view='admin';render();});
+  app.querySelectorAll('[data-action="admin-tab"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;if(b.dataset.tab==='courses'){await courses.open({page:'manage'});return;}ui.adminTab=b.dataset.tab;ui.view='admin';render();});
   app.querySelectorAll('[data-action="retry-ai-grading"]').forEach(button=>button.onclick=async()=>{
     button.disabled=true;
     try{const result=await repo.call('retryFailedWritingAiJobs');ui.infrastructure=await refreshInfrastructure({summaryOnly:false});notify(result.retriedJobs?`Đã đưa ${result.retriedJobs} bài lỗi vào hàng đợi AI.`:'Không có bài lỗi cần chạy lại.');render();}
@@ -1350,6 +1360,8 @@ async function openBuilder(id,sectionId=null){
 }
 
 function bindBuilder(){
+  // Course exercises bind the shared editor against their own isolated draft.
+  if(ui.view==='courses')return;
   const exam=byId(data.exams,ui.builderExamId);
   if(!exam)return;
   app.querySelectorAll('[data-part-display]').forEach(button=>button.onclick=async()=>{
@@ -1605,7 +1617,8 @@ if(directBuilderExam&&user&&!isStudent(user)){
 else{
   const previewId=initialUrl.searchParams.get('preview'),previewExam=previewId&&byId(data.exams,previewId);
   const requestedView=initialUrl.searchParams.get('view'),requestedAttempt=initialUrl.searchParams.get('attempt');
-  if(previewExam&&user&&!isStudent(user)){ui.previewExamId=previewId;ui.previewSectionIndex=Math.max(0,Number(initialUrl.searchParams.get('section'))||0);ui.view='preview-exam';}
+  if(user&&(requestedView==='courses'||initialUrl.searchParams.get('tab')==='courses')){ui.courseRoute=readCourseRoute(initialUrl.href,user);ui.view='courses';ui.adminTab='courses';}
+  else if(previewExam&&user&&!isStudent(user)){ui.previewExamId=previewId;ui.previewSectionIndex=Math.max(0,Number(initialUrl.searchParams.get('section'))||0);ui.view='preview-exam';}
   else if(requestedView==='results'&&isStudent(user)){
     ui.view='student-results';
     if(requestedAttempt)try{ui.review=await loadStudentReview(requestedAttempt);ui.view='student-attempt-detail';}catch(error){notify(error.message||'Không mở được kết quả.');}

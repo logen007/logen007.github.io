@@ -24,7 +24,7 @@ const query=async(sql,args)=>{
 const secret='synthetic-test-cookie-secret';
 process.env.COOKIE_SECRET=secret;process.env.NODE_ENV='test';
 process.env.SETTINGS_ENCRYPTION_KEY='synthetic-sharing-encryption-key';
-process.env.WEB_PUBLIC_DIR=path.resolve('.web-build');process.env.WEB_ASSETS_DIR=path.join(scratch,'assets');process.env.UPLOAD_DIR=path.join(scratch,'uploads');
+process.env.WEB_PUBLIC_DIR=path.resolve(process.env.G2G_PREVIEW_PORT&&process.env.G2G_COURSE_PREVIEW_DIR||'.web-build');process.env.WEB_ASSETS_DIR=path.join(scratch,'assets');process.env.UPLOAD_DIR=path.join(scratch,'uploads');
 if(process.env.G2G_PREVIEW_PORT)process.env.PORT=process.env.G2G_PREVIEW_PORT;
 globalThis.__httpDb={query,withTx:fn=>db.transaction(client=>tx.run(client,()=>fn({query}))),getSettings:async()=>structuredClone(DEFAULT_SETTINGS),getDataRevision:()=>revision,audit:async()=>{},initDb:async()=>{},now:()=>new Date().toISOString(),uid:()=>process.env.G2G_PREVIEW_PORT?randomUUID():'new-test-attempt',appError:(statusCode,message)=>Object.assign(new Error(message),{statusCode})};
 globalThis.__testFastify=options=>{
@@ -44,6 +44,7 @@ globalThis.__testFastify=options=>{
       done(null,payload);
     });
     app.get('/__fixture/admin',(_request,reply)=>reply.header('Set-Cookie','g2g_session='+encodeURIComponent(sign('admin',secret))+'; Path=/; HttpOnly; SameSite=Lax').redirect('/adm'));
+    for(const [role,id,page] of [['teacher','course-teacher','manage'],['student','s0','catalog'],['master','admin','manage']])app.get('/__fixture/course-'+role,(_request,reply)=>reply.header('Set-Cookie','g2g_session='+encodeURIComponent(sign(id,secret))+'; Path=/; HttpOnly; SameSite=Lax').redirect('/?view=courses&course-page='+page));
     app.get('/__fixture/stalled.wav',(_request,reply)=>{
       reply.hijack();reply.raw.writeHead(200,{'Content-Type':'audio/wav'});reply.raw.flushHeaders();
     });
@@ -85,6 +86,8 @@ try{
       await query("INSERT INTO questions(id,owner_id,data) VALUES($1,'admin',$2)",[audioQuestion.id,JSON.stringify(audioQuestion)]);
       await query("INSERT INTO exams(id,owner_id,status,data) VALUES($1,'admin','published',$2)",[audioExam.id,JSON.stringify(audioExam)]);
     }
+    const {seedBrowserCourses}=await import('./fixtures/course-browser.mjs');
+    await seedBrowserCourses(globalThis.__httpDb,process.env.UPLOAD_DIR);
   }
   await query("INSERT INTO exams(id,owner_id,status,data) VALUES('e','admin','published',$1)",[JSON.stringify(exam)]);
   await query("INSERT INTO questions(id,owner_id,data) VALUES('q','admin',$1)",[JSON.stringify(question)]);

@@ -51,6 +51,12 @@ jobs:
       - name: Check exam codes and promotions against SQL
         working-directory: g2g-exam
         run: G2G_PGLITE_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js" node tests/backend-access.integration.mjs
+      - name: Check courses authoring, enrollment and automatic practice
+        working-directory: g2g-exam
+        env:
+          G2G_PGLITE_PATH: ${{ runner.temp }}/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js
+          G2G_JSDOM_PATH: ${{ runner.temp }}/g2g-test-db/node_modules/jsdom/lib/api.js
+        run: node tests/courses.integration.mjs && node tests/courses-ui.test.mjs
       - name: Check completion threshold and expiry against SQL
         working-directory: g2g-exam
         run: G2G_PGLITE_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js" node tests/exam-completion.integration.mjs
