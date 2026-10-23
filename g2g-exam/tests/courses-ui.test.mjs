@@ -80,6 +80,7 @@ try{
   registerCourseRoutes(app,{service,userFor:async request=>request.headers['x-user']==='teacher'?teacher:student});
   controller=createCoursesController({root,context:()=>({user}),layout:html=>html,navigate:next=>{route=next;paint();},repaint:paint,notify:m=>notices.push(m),request,uploadImage});
   paint();await idle();assert.ok(root.querySelector('.course-management .table-wrap table.bang'));assert.equal(root.querySelector('.course-grid'),null);
+  assert.match(css,/\.course-management \.table-link\.course-title \{ color:var\(--brand-text\); \}/,'Course titles use the primary yellow text token independently of publication');
   await action('create');
   const courseId=controller.getState().editor.id;
   assert.ok(root.querySelector('.course-authoring>.tieu-de-trang .builder-title .exam-title-input[data-course-field="title"]'));

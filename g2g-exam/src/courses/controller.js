@@ -191,7 +191,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     if(name==='delete-course'){
       if(state.route.page!=='manage')return;
       const item=state.catalog?.courses.find(course=>course.id===id);if(!item)return;
-      if(!await ask('Xóa khóa học này khỏi danh sách? Học viên đã đăng ký vẫn giữ nguyên bài học, tiến độ và kết quả.','Xóa khóa học',{danger:true}))return;
+      if(!await ask('Chuyển khóa học này vào Thùng rác? Học viên đã đăng ký vẫn giữ nguyên bài học, tiến độ và kết quả.','Chuyển vào Thùng rác',{danger:true}))return;
       await api(coursePath(id,'/delete'),{method:'POST',body:{version:item.version}});await load();return;
     }
     if(name==='create'){

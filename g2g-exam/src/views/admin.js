@@ -24,10 +24,10 @@ export function teachersAdminHtml({data,user}){
 }
 
 export function trashAdminHtml({data,retentionDays=30}){
-  const exams=data.exams.filter(x=>x.status==='trash'),qs=data.questions.filter(x=>x.status==='trash');
-  return `<div class="tieu-de-trang exam-list-heading"><div><h1>Thùng rác</h1></div><button class="nut nguy" data-action="empty-trash" ${!exams.length&&!qs.length?'disabled':''}>Dọn sạch</button></div><p class="phu-de">Dữ liệu xóa sau ${esc(retentionDays)} ngày. Xóa đề sẽ xóa cả lịch sử bài làm và bảng điểm của đề. Câu hỏi, media còn được sử dụng sẽ được giữ lại.</p>${trashTableHtml(exams,'exam')}${qs.length?`<h3 style="margin-top:20px">Câu hỏi</h3>${trashTableHtml(qs,'question')}`:''}`;
+  const exams=data.exams.filter(x=>x.status==='trash'),qs=data.questions.filter(x=>x.status==='trash'),courses=data.trashedCourses||[];
+  return `<div class="tieu-de-trang exam-list-heading"><div><h1>Thùng rác</h1></div><button class="nut nguy" data-action="empty-trash" ${!exams.length&&!qs.length?'disabled':''}>Dọn sạch</button></div><p class="phu-de">Dữ liệu xóa sau ${esc(retentionDays)} ngày. Xóa đề sẽ xóa cả lịch sử bài làm và bảng điểm của đề. Câu hỏi, media còn được sử dụng sẽ được giữ lại.</p>${trashTableHtml(exams,'exam')}${courses.length?`<h3>Khóa học</h3><p class="phu-de">Khóa học được giữ trong Thùng rác để khôi phục, không xóa lịch sử học viên.</p>${trashTableHtml(courses,'course')}`:''}${qs.length?`<h3 style="margin-top:20px">Câu hỏi</h3>${trashTableHtml(qs,'question')}`:''}`;
 }
 
 export function trashTableHtml(items,type){
-  return `<div class="table-wrap"><table class="bang"><tbody>${items.map(x=>`<tr><td><b>${esc(x.title)}</b></td><td>${esc(x.ownerName||'')}</td><td><div class="hanh-dong-bang"><button class="nut nho" data-action="restore-${type}" data-id="${x.id}">Khôi phục</button><button class="nut nho nguy" data-action="permanent-${type}" data-id="${x.id}">Xóa vĩnh viễn</button></div></td></tr>`).join('')||'<tr><td class="rong">Trống</td></tr>'}</tbody></table></div>`;
+  return `<div class="table-wrap"><table class="bang"><tbody>${items.map(x=>`<tr><td><b>${esc(x.title)}</b></td><td>${esc(x.ownerName||'')}</td><td><div class="hanh-dong-bang"><button class="nut nho" data-action="restore-${type}" data-id="${esc(x.id)}" data-version="${esc(x.version??0)}">Khôi phục</button>${type==='course'?'':`<button class="nut nho nguy" data-action="permanent-${type}" data-id="${esc(x.id)}">Xóa vĩnh viễn</button>`}</div></td></tr>`).join('')||'<tr><td class="rong">Trống</td></tr>'}</tbody></table></div>`;
 }

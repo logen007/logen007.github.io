@@ -1748,6 +1748,7 @@ select:not([multiple]), .inline-gap-trigger { appearance:none; -webkit-appearanc
 .course-toolbar,.course-lesson-footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
 .course-toolbar:empty { display:none; }
 .course-management>.tieu-de-trang,.course-management>.exam-filter { margin:0; }
+.course-management .table-link.course-title { color:var(--brand-text); }
 .course-manage-search { flex:1 1 200px; max-width:320px; min-width:0; }
 .course-filters { display:grid; grid-template-columns:minmax(0,2fr) minmax(150px,1fr) minmax(150px,1fr); gap:16px; }
 .course-filters label,.course-field { display:grid; gap:8px; min-width:0; font-size:14px; }

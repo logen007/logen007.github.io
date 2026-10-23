@@ -30,6 +30,8 @@ assert.doesNotMatch(html,/<h3>Bài thi<\/h3>/,'Trash omits the redundant exam se
 assert.match(html,/Dữ liệu xóa sau 17 ngày/);assert.doesNotMatch(html,/>Câu hỏi</);
 data.questions.push({id:'q',status:'trash',title:'Deleted'});
 assert.match(trashAdminHtml({data}),/>Câu hỏi</);
+data.trashedCourses=[{id:'trashed-course',title:'Khóa học đã xóa',ownerName:'Teacher',version:4}];
+html=trashAdminHtml({data});assert.match(html,/>Khóa học</);assert.match(html,/data-action="restore-course" data-id="trashed-course" data-version="4"/);assert.doesNotMatch(html,/data-action="permanent-course"/);
 html=teachersAdminHtml({data,user:teacher});
 assert.match(html,/<th>Lần thi<\/th><th>Lớp<\/th>/);assert.doesNotMatch(html,/>Đặt làm Giáo viên</);
 assert.match(examAdminHtml({data,user:teacher}),/class="nhan exam-provider" data-provider="TELC"/);

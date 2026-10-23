@@ -1,6 +1,6 @@
 import {examDurationSeconds} from './domain/exam-clock.js';
 import {createCoursesController} from './courses/controller.js';
-import {readCourseRoute,writeCourseRoute} from './courses/api.js';
+import {readCourseRoute,writeCourseRoute,courseRequest,coursePath} from './courses/api.js';
 import {bindExamQuestionSidebar} from './ui/exam-question-sidebar.js';
 let clearExamQuestionSidebar=()=>{};
 import {scrollExamToTop} from './ui/exam-scroll.js';
@@ -1243,6 +1243,7 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="student-grade-detail"]').forEach(b=>b.onclick=()=>studentGradeModal(b.dataset.id));
   app.querySelectorAll('[data-action="toggle-teacher"]').forEach(b=>b.onclick=()=>toggleTeacher(b.dataset.id));
   app.querySelectorAll('[data-action="restore-exam"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>restoreExam(st,user,b.dataset.id)),'Đã khôi phục bài thi.'));
+  app.querySelectorAll('[data-action="restore-course"]').forEach(b=>b.onclick=()=>act(async()=>{await courseRequest(coursePath(b.dataset.id,'/restore'),{method:'POST',body:{version:Number(b.dataset.version)}});await repo.reload();},'Đã khôi phục khóa học.'));
   app.querySelectorAll('[data-action="restore-question"]').forEach(b=>b.onclick=()=>act(()=>repo.transaction(st=>restoreQuestion(st,user,b.dataset.id)),'Đã khôi phục câu hỏi.'));
   app.querySelectorAll('[data-action="permanent-exam"]').forEach(b=>b.onclick=()=>confirmAction('Xóa vĩnh viễn đề và toàn bộ bài làm, bảng điểm liên quan? Không thể khôi phục.',()=>act(()=>repo.transaction(st=>permanentlyDeleteExam(st,user,b.dataset.id)),'Đã xóa vĩnh viễn đề và lịch sử bài làm.'),{confirmLabel:'Xóa vĩnh viễn',danger:true}));
   app.querySelector('[data-action="empty-trash"]')?.addEventListener('click',()=>confirmAction('Xóa vĩnh viễn tất cả đề trong Thùng rác cùng bài làm và bảng điểm liên quan? Không thể khôi phục. Câu hỏi và media còn được sử dụng sẽ được giữ lại.',()=>act(()=>repo.mode==='api'?(async()=>{const result=await repo.call('emptyTrash');await repo.reload();return result;})():repo.transaction(st=>{
