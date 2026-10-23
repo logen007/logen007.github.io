@@ -61,8 +61,10 @@ The outline truncates chapter names on one line (full name in the tooltip) and
 places two short category buttons, “Kiến thức” and “Bài tập”, on one row beneath
 each chapter. Clicking a category opens its first existing lesson's detailed editor
 directly; an empty category creates one lesson and opens it. Existing extra lessons
-remain accessible via the editor's Back action and chapter overview, never deleted
-or merged. Reopening a nonempty category must not create a duplicate.
+remain accessible via the chapter gear/overview, never deleted or merged.
+Reopening a nonempty category must not create a duplicate. Detailed knowledge and
+exercise editors omit the Back button, visible lesson-name label and trial checkbox.
+Keep the name input accessible; hiding the checkbox must not rewrite existing trial flags.
 The chapter gear opens its settings, with the actual chapter name editable directly
 in the heading row (no separate “Chương N” heading or duplicate name field).
 Category lists omit that entire chapter-settings toolbar and show only their own
@@ -106,8 +108,15 @@ selection, composition, native image dragging and undo/redo instead of a bespoke
 contenteditable implementation. No CDN, editor account, service key or WordPress
 server/plugin installation. Initial scope is paragraphs, bold/italic/underline,
 H2 headings, images and history, not a complete WordPress CMS or arbitrary HTML.
-Controls reuse the application tokens and focus/selection rules. Image tools appear
-only for a selected image. Autosave never remounts the writing surface/history.
+Controls reuse the application tokens and focus/selection rules. The writing canvas
+alone omits its focus rectangle by owner request; toolbar/input keyboard focus stays
+visible. Text paragraphs and H2 headings support left/center/right/justified alignment;
+image alignment uses the same toolbar (justify disabled for images). Image tools appear
+only for a selected image. Width is an integer 10–100 percent, adjusted by number,
+slider or corner handles; centered resizing follows both sides of the center.
+Corner keys adjust 1%, Shift 10%, Home/End select bounds. Pointer moves preview only,
+pointer-up commits one undoable change, cancellation/blur restores the saved size,
+and editor disposal removes drag listeners. Autosave never remounts the writing surface/history.
 There is no duplicate preview underneath; the top global preview remains.
 
 The editor's document is temporary UI state. Save the existing ordered safe
@@ -123,18 +132,28 @@ the unuploaded files. Destroy the editor and pending selection bookmarks on exit
 
 Compatibility: unedited legacy `body`/`imageUrl` records and immutable releases
 remain readable without a migration. Editing adapts them in memory; the next normal
-save persists `blocks` with `contentVersion:1`. Normalization also mirrors joined
+save persists `blocks` with `contentVersion:1` for classic layout, or version 2 when
+text has a non-left `align` or image width is not a legacy 25/50/75/100 preset.
+Default left text alignment is omitted to keep old normalized shapes stable.
+Normalization also mirrors joined
 text into `body` and the first image into `imageUrl` for old readers (which cannot
 display all new images or their ordering). The server rejects an old client that
-would drop blocks from an existing block lesson; it must reload. Block image URLs
+would drop blocks from an existing block lesson; it must reload. Saving an existing
+version-2 lesson requires the authoring envelope capability `knowledgeLayout:1`,
+owned by `KNOWLEDGE_LAYOUT_VERSION`, so an old visual converter cannot silently
+strip text alignment/custom width. The new editor can deliberately reset layout
+to classic values. No persisted SQL migration or release rewrite is performed.
+Block image URLs
 remain included in recursive media-reference discovery for drafts and releases.
 Rollback may hide the new editor, but must retain the expanded validator/readers
-and downgrade-write guard while block records exist. Do not roll back to an old
+and downgrade-write/capability guards while block records exist. Do not roll back to an old
 writer/server that silently strips blocks, and do not remove stored blocks.
 
 CI regressions cover block validation/order, legacy compatibility, stale-client
 write rejection, real SQL save/publication/enrollment, actual Tiptap/ProseMirror
-formatting/history, mapped caret insertion, image controls and paste/drop entry,
+formatting/history, paragraph/heading alignment and custom image width through
+save/publication/enrollment, pointer resize commit/cancel/disposal with controlled
+geometry, mapped caret insertion, image controls and paste/drop entry,
 1 MiB client/HTTP limits, and media-GC references. Codec/transport mocks and DOM
 drag events are not evidence of native picker, drag UX, or visual acceptance.
 

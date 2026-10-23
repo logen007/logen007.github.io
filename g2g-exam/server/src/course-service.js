@@ -1,4 +1,5 @@
 import {normalizeCourse,assertCoursePublishable,courseMetadata,courseOutline,courseLessons,publicCourseExercise,validateCourseAnswers,gradeCourseExercise,normalizeCourseExercise} from '../../src/domain/courses.js';
+import {KNOWLEDGE_LAYOUT_VERSION} from '../../src/domain/course-knowledge.js';
 
 // Injected database boundary lets the same service run against isolated SQL in CI.
 export function createCourseService({query,withTx,uid,audit}){
@@ -67,7 +68,7 @@ export function createCourseService({query,withTx,uid,audit}){
       const found=(await client.query('SELECT * FROM courses WHERE id=$1 FOR UPDATE',[id])).rows[0];
       if(found){if(found.owner_id!==user.id&&user.role!=='master')fail(403,'Bạn không quản lý khóa học này.');
         const incoming=new Map(courseLessons(input.course).map(lesson=>[lesson.id,lesson]));
-        if(courseLessons(found.draft).some(lesson=>lesson.contentVersion===1&&incoming.has(lesson.id)&&!Array.isArray(incoming.get(lesson.id).blocks)))fail(409,'Bài kiến thức dùng trình soạn thảo mới. Vui lòng tải lại trang trước khi chỉnh sửa.');
+        if(courseLessons(found.draft).some(lesson=>incoming.has(lesson.id)&&(lesson.contentVersion>=1&&!Array.isArray(incoming.get(lesson.id).blocks)||lesson.contentVersion>=2&&input.knowledgeLayout!==KNOWLEDGE_LAYOUT_VERSION)))fail(409,'Bài kiến thức dùng trình soạn thảo mới. Vui lòng tải lại trang trước khi chỉnh sửa.');
         if(JSON.stringify(normalizeCourse(found.draft))===JSON.stringify(course))return {id,version:found.version,status:found.status,publishedVersion:found.published_version,course};
         expected(found,input.version);
         await client.query('UPDATE courses SET draft=$2::jsonb,metadata=$3::jsonb,version=version+1,updated_at=now() WHERE id=$1',[id,JSON.stringify(course),JSON.stringify(courseMetadata(course))]);
