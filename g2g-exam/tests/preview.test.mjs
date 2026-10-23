@@ -591,6 +591,7 @@ try{
   });
 
   await test('Compact binary answers share question row without letter prefixes and retain radio behavior',()=>{
+    assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.cau-thi--binary>\.answer-options \{[^}]*margin:0 0 0 auto;/,'Binary answer pairs align to the right, including when wrapped below the prompt');
     for(const choices of [['+','-'],['+','−'],['Ja','Nein'],['Falsch','Richtig']]){
       assert.ok(compactBinaryChoices(choices));
       for(const example of [false,true]){
