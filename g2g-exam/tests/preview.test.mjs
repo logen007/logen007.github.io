@@ -374,6 +374,19 @@ try{
     assert.match(html,/>Telc<\/button>/);
     assert.doesNotMatch(html,/fid-b1|Loại đề B1/);
   });
+  await test('My courses appears only in the student avatar menu',()=>{
+    for(const role of ['student','teacher','master']){
+      const html=topbarHtml({user:{id:role,role},mode:'api',online:true,ui:{view:'courses',courseRoute:{page:'mine'}}});
+      const nav=html.match(/<nav[^>]*>[\s\S]*?<\/nav>/)?.[0]||'';
+      const menu=html.match(/<div id="accountRoleMenu"[\s\S]*?<\/div>/)?.[0]||'';
+      assert.doesNotMatch(nav,/Khóa học của tôi|data-course-page="mine"/);
+      if(role==='student'){
+        assert.match(menu,/data-action="open-courses" data-course-page="mine" aria-current="true"/);
+        assert.match(menu,/<span>Khóa học của tôi<\/span>/);
+        assert.equal((html.match(/data-course-page="mine"/g)||[]).length,1);
+      }else assert.doesNotMatch(menu,/data-course-page="mine"/);
+    }
+  });
   await test('Admin utility tabs show accessible icons without visible labels',()=>{
     for(const adminTab of ['dashboard','exams','teachers']){
       const html=topbarHtml({user:{id:'master',role:'master',name:'Admin'},mode:'api',online:true,ui:{view:'admin',adminTab}});
