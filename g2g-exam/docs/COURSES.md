@@ -35,6 +35,18 @@ migration or production-data rewrite.
 Use existing styles, media upload, safe text markup and authentication/origin
 guards. Course media must be included in media-reference/backup discovery.
 
+Course cover and knowledge-image buttons open the native picker on the first
+click, synchronously within the user gesture. Their hidden file inputs must use
+`data-image-picker-direct`: otherwise the global image-paste capture intercepts
+the hidden input activation and prevents the picker from opening. Keep the shared
+upload validation/transport in `src/media.js`; show upload progress, retain the
+previous image and entered text on failure, and allow selecting the same file again.
+`tests/courses-ui.test.mjs` binds the real global image-paste handler around course
+authoring to cover that interaction, retry and save/publish persistence. The upload
+transport is injected in this DOM test; it does not prove a native OS dialog or
+browser rendering. Authoring layout is scoped to `.course-authoring`, using the
+existing tokens and responsive stacked fields rather than changing catalog/exams.
+
 For this large update the owner explicitly approved local tests and browser
 checks with synthetic data (23 October). The default no-local-test workflow for
 other tasks stays unchanged. Add domain,
