@@ -33,6 +33,11 @@ try{
   const {loadState}=await import('../server/src/state.js');
   const teacher={id:'t',role:'teacher',name:'Teacher'},student={id:'s',role:'student',name:'Student',level:'A1',profileCompletedAt:'2026-01-01'};
   for(const user of [teacher,student])await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4)',[user.id,`${user.id}@example.test`,user.role,JSON.stringify(user)]);
+  await query("INSERT INTO courses(id,owner_id,status,draft,metadata) VALUES('trashed-course','t','archived','{\"privateBody\":\"not-in-trash-list\"}','{\"title\":\"Deleted course\",\"deletedAt\":\"2026-10-24T00:00:00Z\"}')");
+  const courseTrash=(await loadState({id:'master',role:'master'})).trashedCourses;
+  assert.equal(courseTrash[0].id,'trashed-course');assert.doesNotMatch(JSON.stringify(courseTrash),/privateBody|not-in-trash-list/);
+  assert.equal((await loadState(teacher)).trashedCourses,undefined,'Course trash is master-only');
+  assert.equal((await loadState({id:'master',role:'master'},{summaryOnly:true})).trashedCourses,undefined,'Dashboard summaries do not load course trash');
   const {saveClass,saveStudentProfile,saveStudentName,saveAccountName}=await import('../server/src/actions/classes.js');
   await saveAccountName(teacher,{name:'Teacher Updated',id:'s',role:'master'});
   assert.equal((await query("SELECT data FROM users WHERE id='t'")).rows[0].data.name,'Teacher Updated');

@@ -80,6 +80,7 @@ try{
   registerCourseRoutes(app,{service,userFor:async request=>request.headers['x-user']==='teacher'?teacher:student});
   controller=createCoursesController({root,context:()=>({user}),layout:html=>html,navigate:next=>{route=next;paint();},repaint:paint,notify:m=>notices.push(m),request,uploadImage});
   paint();await idle();assert.ok(root.querySelector('.course-management .table-wrap table.bang'));assert.equal(root.querySelector('.course-grid'),null);
+  assert.match(css,/\.course-management \.table-link\.course-title \{ color:var\(--brand-text\); \}/,'Course titles use the primary yellow text token independently of publication');
   await action('create');
   const courseId=controller.getState().editor.id;
   assert.ok(root.querySelector('.course-authoring>.tieu-de-trang .builder-title .exam-title-input[data-course-field="title"]'));
@@ -207,7 +208,7 @@ try{
   fill('[data-course-lesson-field="title"]','Hallo nochmal!');dropPublicationReceipt=true;await action('publish');
   assert.equal(controller.getState().editor.status,'published','Lost publish receipt reloads authoritative status instead of leaving an editable stale draft');assert.equal(root.querySelector('.exam-publication-version').textContent,'v1.0.1');assert.equal(root.querySelector('[data-course-action="unpublish"]').disabled,false);
   assert.equal((await query('SELECT count(*)::int AS n FROM course_releases WHERE course_id=$1',[courseId])).rows[0].n,2);
-  await action('manage');assert.equal(root.querySelectorAll('table.bang tbody tr').length,1);assert.ok(root.querySelector('.table-link.is-published'));assert.ok(root.querySelector('[data-course-action="members"]'),'Member management stays in the management list');
+  await action('manage');assert.equal(root.querySelectorAll('table.bang tbody tr').length,1);assert.ok(root.querySelector('.table-link.course-title[title$="Đã xuất bản"]'));assert.ok(root.querySelector('[data-course-action="members"]'),'Member management stays in the management list');
   await action('preview-managed');assert.ok(root.querySelector('[data-course-action="close-preview"]'));await action('close-preview');assert.equal(route.step,'info');
   user=student;route={page:'catalog'};paint();await idle();assert.equal(root.querySelectorAll('.course-card').length,1);
   assert.equal(root.querySelector('.course-card-actions button span').textContent,'Xem khóa học · Miễn phí');assert.ok(root.querySelector('.course-card-actions button svg'));assert.equal(root.querySelector('.course-card>.course-price'),null,'Price is part of the CTA, not a duplicated heading');

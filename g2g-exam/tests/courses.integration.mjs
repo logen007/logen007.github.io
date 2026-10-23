@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import {AsyncLocalStorage} from 'node:async_hooks';
-import {createCourseService} from '../server/src/course-service.js';
+import {createCourseService,loadTrashedCourses} from '../server/src/course-service.js';
 import {registerCourseRoutes} from '../server/src/course-routes.js';
 import {KNOWLEDGE_LAYOUT_VERSION} from '../src/domain/course-knowledge.js';
 const {PGlite}=await import(process.env.G2G_PGLITE_PATH);
@@ -144,6 +144,13 @@ try{
   assert.equal((await service.getCourse(student,'blocks')).enrollment.status,'active');assert.deepEqual((await service.getLesson(student,'blocks','knowledge')).lesson.blocks,richLesson.blocks);
   assert.equal((await service.submit(student,'blocks','exercise',{answers:{question:0},requestKey:crypto.randomUUID()})).score,2,'Soft delete preserves enrolled grading');
   assert.deepEqual((await query("SELECT snapshot FROM course_releases WHERE course_id='blocks'")).rows[0].snapshot,legacySnapshot,'Soft delete does not touch releases or media references');
+  const trash=await loadTrashedCourses(query);assert.ok(trash.some(c=>c.id==='blocks'&&c.version===removed.version));assert.doesNotMatch(JSON.stringify(trash),/PRIVATE|descriptionBlocks|chapters|snapshot/,'Trash projects metadata only');
+  await assert.rejects(service.restore(teacher,'blocks',{version:removed.version}),code(403));await assert.rejects(service.restore(student,'blocks',{version:removed.version}),code(403));
+  await assert.rejects(service.restore(master,'blocks',{version:removed.version-1}),code(409));
+  const restored=await service.restore(master,'blocks',{version:removed.version});assert.equal(restored.status,'draft');assert.equal((await service.restore(master,'blocks',{version:removed.version})).version,restored.version,'Restore receipt retry is idempotent');
+  assert.equal((await loadTrashedCourses(query)).some(c=>c.id==='blocks'),false);assert.ok((await service.catalog(teacher,{manage:'1'})).courses.some(c=>c.id==='blocks'));
+  assert.equal((await service.catalog(second)).courses.some(c=>c.id==='blocks'),false,'Restore never republishes');
+  assert.deepEqual((await service.getLesson(student,'blocks','knowledge')).lesson.blocks,richLesson.blocks,'Restore preserves the enrolled release');
   const {default:Fastify}=await import('../server/node_modules/fastify/fastify.js');
   const app=Fastify();registerCourseRoutes(app,{service,userFor:async request=>{const user=[student,teacher,other,master,second].find(u=>u.id===request.headers['x-test-user']);if(!user)throw Object.assign(new Error('Login required'),{statusCode:401});return user;}});
   try{

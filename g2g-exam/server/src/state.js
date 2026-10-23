@@ -4,6 +4,7 @@ import {isPrefilledQuestion} from '../../src/domain/question-display.js';
 import {manualGroups} from '../../src/domain/manual-grading.js';
 import {query,withTx,audit,appError,getSettings} from './db.js';
 import {deleteTrashedExam} from './trash-delete.js';
+import {loadTrashedCourses} from './course-service.js';
 import {publicWritingRows,writingFormScore,normalizeWritingRows} from './writing-form.js';
 import {expireCodes} from './actions/exam-access.js';
 import {preserveAttemptSnapshots} from './exam-snapshots.js';
@@ -78,6 +79,7 @@ export async function loadState(user,{summaryOnly=false,attemptId=null}={}){
   }
   if(!summaryOnly)await ensureClassCodes();
   state.trashRetentionDays=(await getSettings()).operations.trashRetentionDays;
+  if(user.role==='master'&&!summaryOnly)state.trashedCourses=await loadTrashedCourses(query);
   state.users=(await rows(`SELECT u.id,u.email,u.role,u.active,u.data,k.code AS confirmation_code FROM users u
     LEFT JOIN class_confirmation_codes k ON k.student_id=u.id AND k.used_at IS NULL AND k.email=lower(u.email)
       AND u.role='student' AND coalesce(u.data->>'classId','')=''

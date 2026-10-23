@@ -5,6 +5,11 @@ import {publicationLabel} from './exam-release-content.js';
 
 const contentHash=course=>createHash('sha256').update(JSON.stringify(normalizeCourse(course))).digest('hex');
 
+export async function loadTrashedCourses(query){
+  return (await query(`SELECT c.id,c.version,c.metadata->>'title' AS title,c.metadata->>'deletedAt' AS "deletedAt",coalesce(u.data->>'name',u.email) AS "ownerName"
+    FROM courses c JOIN users u ON u.id=c.owner_id WHERE c.metadata->>'deletedAt' IS NOT NULL ORDER BY c.updated_at DESC,c.id`)).rows;
+}
+
 // Injected database boundary lets the same service run against isolated SQL in CI.
 export function createCourseService({query,withTx,uid,audit}){
   const fail=(status,message)=>{throw Object.assign(new Error(message),{statusCode:status});};
@@ -153,6 +158,16 @@ export function createCourseService({query,withTx,uid,audit}){
       await audit(user,'trash_course','course',id,{},client);return {id,version:row.version+1,status:'archived'};
     });
   }
+  async function restore(user,id,{version}){
+    if(user.role!=='master')fail(403,'Chỉ quản trị cấp cao được khôi phục từ Thùng rác.');
+    return withTx(async client=>{
+      const row=await owned(client,user,id,true,true);
+      if(!row.metadata.deletedAt)return {id,version:row.version,status:row.status};
+      expected(row,version);
+      await client.query("UPDATE courses SET status='draft',metadata=metadata-'deletedAt',version=version+1,updated_at=now() WHERE id=$1",[id]);
+      await audit(user,'restore_course','course',id,{},client);return {id,version:row.version+1,status:'draft'};
+    });
+  }
   async function confirmEnrollment(user,id,enrollmentId,{approve}){
     if(user.role!=='master')fail(403,'Chỉ quản trị được xác nhận học phí và mở khóa đăng ký.');
     if(typeof approve!=='boolean')fail(400,'Trạng thái xác nhận không hợp lệ.');
@@ -240,5 +255,5 @@ export function createCourseService({query,withTx,uid,audit}){
     const lesson=lessonIn(row.snapshot,lessonId);if(!lesson.trial||lesson.kind!=='exercise')fail(403,'Bài tập này không cho học thử.');
     return normalize(()=>gradeCourseExercise(lesson.exercise,answers));
   }
-  return {catalog,getCourse,save,publish,unpublish,archive,remove,enroll,confirmEnrollment,getLesson,saveProgress,submit,tryExercise,members,memberResults,sources};
+  return {catalog,getCourse,save,publish,unpublish,archive,remove,restore,enroll,confirmEnrollment,getLesson,saveProgress,submit,tryExercise,members,memberResults,sources};
 }
