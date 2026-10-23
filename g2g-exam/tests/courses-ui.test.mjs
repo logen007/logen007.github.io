@@ -6,7 +6,7 @@ import {randomUUID} from 'node:crypto';
 import {createCourseService} from '../server/src/course-service.js';
 import {registerCourseRoutes} from '../server/src/course-routes.js';
 import {knowledgeDocument,documentKnowledgeBlocks} from '../src/courses/knowledge-document.js';
-import {courseLearningHtml} from '../src/courses/views.js';
+import {courseLearningHtml,courseCatalogHtml} from '../src/courses/views.js';
 const {JSDOM}=await import(process.env.G2G_JSDOM_PATH);
 const {PGlite}=await import(process.env.G2G_PGLITE_PATH);
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost/?view=courses',pretendToBeVisual:true});
@@ -208,6 +208,9 @@ try{
   await action('manage');assert.equal(root.querySelectorAll('table.bang tbody tr').length,1);assert.ok(root.querySelector('.table-link.is-published'));assert.ok(root.querySelector('[data-course-action="members"]'),'Member management stays in the management list');
   await action('preview-managed');assert.ok(root.querySelector('[data-course-action="close-preview"]'));await action('close-preview');assert.equal(route.step,'info');
   user=student;route={page:'catalog'};paint();await idle();assert.equal(root.querySelectorAll('.course-card').length,1);
+  assert.equal(root.querySelector('.course-card-actions button span').textContent,'Xem khóa học · Miễn phí');assert.ok(root.querySelector('.course-card-actions button svg'));assert.equal(root.querySelector('.course-card>.course-price'),null,'Price is part of the CTA, not a duplicated heading');
+  const priced=document.createElement('div');priced.innerHTML=courseCatalogHtml({route:{page:'catalog'},filters:{},catalog:{courses:[{id:'priced',title:'Paid',price:690000,chapterCount:1,lessonCount:2}]}},student);
+  assert.match(priced.querySelector('.course-card-actions button').textContent,/Xem khóa học · 690[.,]000 đ/,'Paid course button displays its actual price');
   assert.equal(root.querySelectorAll('.course-card [data-course-action="detail"]').length,1,'Card retains one accessible detail button rather than nested/duplicate controls');
   assert.match(css,/\.course-card\s*\{[^}]*position:relative;/);
   assert.match(css,/\.course-card-actions>\[data-course-action="detail"\]:not\(:disabled\)::after\s*\{[^}]*position:absolute; inset:0;/,'Existing detail button hit area spans the whole card');
