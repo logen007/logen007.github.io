@@ -378,6 +378,18 @@ try{
     assert.match(html,/>Telc<\/button>/);
     assert.doesNotMatch(html,/fid-b1|Loại đề B1/);
   });
+  await test('Mobile student navigation keeps its three actions on one row',()=>{
+    const html=topbarHtml({user:{id:'student',role:'student'},mode:'api',online:true});
+    const nav=html.match(/<nav class="site-nav"[^>]*>[\s\S]*?<\/nav>/)?.[0]||'';
+    assert.equal(actionButtons(nav,'open-courses').length,1);
+    assert.equal(actionButtons(nav,'student-home').length,1);
+    assert.equal(actionButtons(nav,'student-results').length,1);
+    const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+    assert.match(css,/\.thanh-dau\[data-current-role="student"\] \.site-nav\s*\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+    assert.doesNotMatch(css,/\.thanh-dau\[data-current-role="student"\] \.site-nav\s*\{[^}]*repeat\(2,/);
+    assert.match(css,/\.site-nav \.muc-ben\s*\{[^}]*min-width:0;[^}]*padding-inline:8px/);
+    assert.match(css,/\.student-exam-nav-menu__providers\s*\{[^}]*position:static; display:none;/);
+  });
   await test('My courses appears only in the student avatar menu',()=>{
     for(const role of ['student','teacher','master']){
       const html=topbarHtml({user:{id:role,role},mode:'api',online:true,ui:{view:'courses',courseRoute:{page:'mine'}}});
