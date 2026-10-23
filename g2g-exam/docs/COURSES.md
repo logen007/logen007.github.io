@@ -57,9 +57,13 @@ decoding or production/VPS verification.
 Owner refinement (23 October): authoring follows the existing exam builder, not a
 separate four-step wizard. Reuse its editable title, metadata/back row, settings,
 preview/publication toolbar and `goethe-layout` / outline / editor surfaces.
-The outline lists chapter names and their lessons with concise kind icons; omit
-repeated category headings, empty placeholders and the redundant general-settings
-button. General settings stay in the top gear and include cover, level, price and descriptions.
+The outline truncates chapter names on one line (full name in the tooltip) and
+places two short category buttons, “Kiến thức” and “Bài tập”, on one row beneath
+each chapter. The selected category opens its lesson list in the main pane;
+the chapter gear opens its settings. Omit empty placeholders and the redundant
+general-settings button. General settings stay in the top gear and include cover,
+level, price and descriptions. Hide the redundant cover/description headings
+visually while retaining accessible labels. The cover uses a taller 4:3 preview.
 Chapter/lesson selections use the course URL and flush pending edits before
 navigation; failed saves retain the current editor. Authoring autosaves without
 rebuilding inputs, hides successful-save status and offers retry only on error.
@@ -73,9 +77,36 @@ there. Student catalog cards and learning remain unchanged. DOM/SQL regression c
 autosave concurrency/retry, navigation/save failures, previews and publication, not
 visual acceptance. Course-specific styling stays scoped; exam layouts are unchanged.
 
-For this large update the owner explicitly approved local tests and browser
-checks with synthetic data (23 October). The default no-local-test workflow for
-other tasks stays unchanged. Add domain,
+Course images (cover, knowledge and exercise images) use `uploadCourseImage` and
+the staff-only `/api/media/course-image` route. Original and optimized uploads are
+limited to 1 MiB (labelled 1 MB); the server enforces the same limit independently.
+Existing stored images are not rewritten. Exam images retain their 8 MiB limit.
+
+Knowledge uses ordered text/image blocks, up to 100 per lesson. Users can select
+multiple images, insert after a block, drag by the grip or use up/down controls,
+remove a block, and set image alignment/width plus optional alt text. Text uses the
+existing safe markup, not arbitrary HTML. The editor itself shows image placement;
+there is no duplicate preview underneath. The top global preview remains.
+
+Compatibility: unedited legacy `body`/`imageUrl` records and immutable releases
+remain readable without a migration. Editing adapts them in memory; the next normal
+save persists `blocks` with `contentVersion:1`. Normalization also mirrors joined
+text into `body` and the first image into `imageUrl` for old readers (which cannot
+display all new images or their ordering). The server rejects an old client that
+would drop blocks from an existing block lesson; it must reload. Block image URLs
+remain included in recursive media-reference discovery for drafts and releases.
+Rollback may hide the new editor, but must retain the expanded validator/readers
+and downgrade-write guard while block records exist. Do not roll back to an old
+writer/server that silently strips blocks, and do not remove stored blocks.
+
+CI regressions cover block validation/order, legacy compatibility, stale-client
+write rejection, real SQL save/publication/enrollment, DOM insertion/reorder,
+1 MiB client/HTTP limits, and media-GC references. Codec/transport mocks and DOM
+drag events are not evidence of native picker, drag UX, or visual acceptance.
+
+For the original 1.7.0 update the owner explicitly approved local tests and browser
+checks with synthetic data (23 October). That approval does not carry over to these
+later refinements; use the default no-local-test workflow unless newly requested. Add domain,
 route/SQL authorization, publication/progress/idempotency and UI regressions to
 mandatory CI. No bypass/auto-merge. Browser testing requires explicit permission.
 Do not claim production/visual verification from static or mocked evidence.

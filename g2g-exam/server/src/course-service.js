@@ -66,6 +66,8 @@ export function createCourseService({query,withTx,uid,audit}){
     return withTx(async client=>{
       const found=(await client.query('SELECT * FROM courses WHERE id=$1 FOR UPDATE',[id])).rows[0];
       if(found){if(found.owner_id!==user.id&&user.role!=='master')fail(403,'Bạn không quản lý khóa học này.');
+        const incoming=new Map(courseLessons(input.course).map(lesson=>[lesson.id,lesson]));
+        if(courseLessons(found.draft).some(lesson=>lesson.contentVersion===1&&incoming.has(lesson.id)&&!Array.isArray(incoming.get(lesson.id).blocks)))fail(409,'Bài kiến thức dùng trình soạn thảo mới. Vui lòng tải lại trang trước khi chỉnh sửa.');
         if(JSON.stringify(normalizeCourse(found.draft))===JSON.stringify(course))return {id,version:found.version,status:found.status,publishedVersion:found.published_version,course};
         expected(found,input.version);
         await client.query('UPDATE courses SET draft=$2::jsonb,metadata=$3::jsonb,version=version+1,updated_at=now() WHERE id=$1',[id,JSON.stringify(course),JSON.stringify(courseMetadata(course))]);

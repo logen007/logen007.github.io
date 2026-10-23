@@ -117,6 +117,16 @@ try{
     assert.equal(response.statusCode,200,'Valid '+mime+' headers survive a delayed backup guard: '+response.body);
     assert.deepEqual(await fs.readFile(path.join(process.env.UPLOAD_DIR,path.basename(response.json().url))),bytes,'Upload preserves every byte while the guard waits');
   }
+  const courseImage=await upload('course-image','image/png','course.png');assert.equal(courseImage.statusCode,200);
+  const oneMB=Buffer.alloc(1024*1024);jpeg.copy(oneMB);
+  const exactLimit=await upload('course-image','image/jpeg','limit.jpg','admin',oneMB);assert.equal(exactLimit.statusCode,200,'Course image at 1 MB is accepted');
+  assert.deepEqual(await fs.readFile(path.join(process.env.UPLOAD_DIR,path.basename(exactLimit.json().url))),oneMB);
+  const filesBeforeLimit=await fs.readdir(process.env.UPLOAD_DIR),overLimit=Buffer.concat([oneMB,Buffer.from([0])]);
+  const rejected=await upload('course-image','image/jpeg','over.jpg','admin',overLimit);assert.equal(rejected.statusCode,413);assert.match(rejected.body,/1 MB/);
+  assert.deepEqual(await fs.readdir(process.env.UPLOAD_DIR),filesBeforeLimit,'Rejected course images leave no partial file');
+  assert.equal((await upload('course-image','image/png','student.png','s0')).statusCode,403);
+  assert.equal((await app.inject({method:'POST',url:'/api/media/course-image'})).statusCode,401);
+  assert.equal((await upload('image','image/jpeg','exam.jpg','admin',overLimit)).statusCode,200,'Existing exam uploads retain the 8 MB limit');
   const {imageSharing}=await import('../server/src/image-sharing.js');
   const imageOrigin='http://localhost:8080',imageSource=imageOrigin+image.json().url;
   const grant=(await imageSharing.issue({urls:[imageSource],origin:imageOrigin})).get(imageSource),sharedUrl=new URL(grant.url);

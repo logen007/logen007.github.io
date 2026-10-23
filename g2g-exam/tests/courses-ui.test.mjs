@@ -8,6 +8,10 @@ import {registerCourseRoutes} from '../server/src/course-routes.js';
 const {JSDOM}=await import(process.env.G2G_JSDOM_PATH);
 const {PGlite}=await import(process.env.G2G_PGLITE_PATH);
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost/?view=courses',pretendToBeVisual:true});
+// Exercise the actual cascade responsible for a hidden Retry appearing. This
+// intentionally tests only these rules, not layout or visual acceptance.
+const css=await fs.readFile(new URL('../styles.css',import.meta.url),'utf8'),style=dom.window.document.createElement('style');
+style.textContent=['.text-link {','.course-builder-actions>[hidden] {'].map(prefix=>css.slice(css.indexOf(prefix),css.indexOf('}',css.indexOf(prefix))+1)).join('\n');dom.window.document.head.append(style);
 for(const name of ['window','document','sessionStorage','localStorage','HTMLElement','HTMLInputElement','Event','CustomEvent','MutationObserver'])globalThis[name]=dom.window[name];
 window.scrollTo=()=>{};window.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});
 const {createCoursesController}=await import('../src/courses/controller.js');
@@ -46,7 +50,7 @@ const idle=()=>until(()=>!controller.getState().loading&&!root.hasAttribute('ari
 const click=async selector=>{const button=root.querySelector(selector);assert.ok(button,'Missing '+selector);button.click();await idle();};
 const action=(name,extra='')=>click(`[data-course-action="${name}"]${extra}`);
 const fill=(selector,value)=>{const input=root.querySelector(selector);assert.ok(input,'Missing '+selector);input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));return input;};
-const chooseImage=async slot=>{
+const chooseImage=async(slot,count=1)=>{
   await Promise.resolve(); // The real global observer must process the new form first.
   const button=root.querySelector(`[data-course-pick="${slot}"]`),input=root.querySelector(`[data-course-upload="${slot}"]`),before=pickerClicks.length;
   assert.ok(button);assert.ok(input);assert.ok(input.hasAttribute('data-image-picker-direct'));
@@ -54,10 +58,10 @@ const chooseImage=async slot=>{
   assert.equal(pickerClicks.length,before+1,slot+' opens the picker on the first click');
   assert.equal(pickerClicks.at(-1).defaultPrevented,false,slot+' is not intercepted as a hidden paste target');
   assert.equal(input.hasAttribute('data-image-paste-target'),false);
-  const file=new dom.window.File(['synthetic image'],'synthetic.png',{type:'image/png'});
-  Object.defineProperty(input,'files',{value:[file],configurable:true});
+  const files=Array.from({length:count},(_,i)=>new dom.window.File(['synthetic image'],'synthetic-'+i+'.png',{type:'image/png'}));
+  Object.defineProperty(input,'files',{value:files,configurable:true});
   input.dispatchEvent(new Event('change',{bubbles:true}));
-  assert.equal(button.disabled,true);assert.match(root.querySelector(`[data-course-upload-status="${slot}"]`).textContent,/Đang tải/);
+  assert.equal(button.disabled,true);
   await idle();assert.equal(input.value,'','Same-file selection can be retried');
 };
 try{
@@ -78,6 +82,13 @@ try{
   assert.ok(root.querySelector('.course-builder-actions [data-course-action="preview-course"]'));
   assert.ok(root.querySelector('.course-builder-actions [data-course-action="publish"]'));
   assert.ok(root.querySelector('.course-info-identity [data-course-field="price"]'),'Fees live with general settings');
+  assert.equal(window.getComputedStyle(root.querySelector('[data-course-action="retry-save"]')).display,'none','Retry stays hidden unless saving fails');
+  assert.equal(root.querySelector('.course-info-card h2'),null);assert.equal(root.querySelector('.course-cover-field>span'),null);
+  for(const name of ['shortDescription','description'])assert.ok(root.querySelector(`[data-course-field="${name}"]`).closest('label').querySelector('span.sr-only'),'Descriptions retain accessible labels only');
+  assert.match(root.querySelector('.course-cover-field').textContent,/Tối đa 1 MB/);
+  assert.match(css,/\.course-authoring \.builder-meta>\.exam-level \{ align-self:center;/);
+  assert.match(css,/\.course-outline-chapter-title>span \{[^}]*text-overflow:ellipsis;[^}]*white-space:nowrap;/);
+  assert.match(css,/\.course-outline-categories \{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   fill('[data-course-field="title"]','Khóa A1 thử nghiệm');
   assert.equal(root.querySelector('[data-course-dirty]').hidden,false,'Editing the heading marks the draft dirty');
   fill('[data-course-field="shortDescription"]','Học và luyện tập');
@@ -107,21 +118,43 @@ try{
   await action('add-chapter');
   assert.equal((await service.getCourse(teacher,courseId,{edit:true})).course.coverUrl,'/uploads/synthetic-cover.png');
   const chapterId=controller.getState().editor.course.chapters[0].id;
-  assert.doesNotMatch(root.querySelector('.course-builder-outline').textContent,/Thông tin khóa học|Chưa có bài|Kiến thức|Bài tập/,'No repeated group labels or empty placeholders');
+  assert.doesNotMatch(root.querySelector('.course-builder-outline').textContent,/Thông tin khóa học|Chưa có bài/,'No redundant settings or empty placeholders');
+  assert.deepEqual([...root.querySelectorAll('.course-outline-categories button')].map(button=>button.textContent.trim()),['Kiến thức','Bài tập']);
   assert.equal(route.chapter,chapterId,'Chapter selection has its own route');
-  fill('[data-course-chapter-title]','Chào hỏi');
+  assert.equal(root.querySelector('[data-course-chapter-title]').closest('label'),null,'Chapter name has no visible label');
+  const longTitle='Chào hỏi '.repeat(12);fill('[data-course-chapter-title]',longTitle);
+  await action('edit-category','[data-kind="knowledge"]');assert.equal(root.querySelector('.course-outline-chapter-title').title,longTitle);
+  assert.equal(root.querySelector('[data-course-action="add-lesson"][data-kind="exercises"]'),null,'Category opens only its own lesson list');
   await action('add-lesson','[data-kind="knowledge"]');
   fill('[data-course-lesson-field="title"]','Hallo!');fill('#courseKnowledgeBody','[b]Guten Tag[/b] — Xin chào.');
   const knowledgeId=controller.getState().editLesson;
-  assert.equal(route.lesson,knowledgeId);assert.equal(root.querySelector('.course-builder-outline [aria-current="page"][data-id]').dataset.id,knowledgeId);
+  assert.equal(route.lesson,knowledgeId);assert.equal(root.querySelector('.course-builder-outline [data-course-action="edit-category"][aria-current="page"]').dataset.kind,'knowledge');
+  assert.equal(root.querySelector('.course-editor-main details'),null,'No duplicate preview below the knowledge editor');
   await chooseImage('lesson');assert.equal(root.querySelector('.course-lesson-image').getAttribute('src'),'/uploads/synthetic-lesson.png');
+  assert.equal(root.querySelector('[data-course-upload="lesson"]').multiple,true);
+  await chooseImage('lesson',2);assert.equal(root.querySelectorAll('.course-knowledge-block figure').length,3,'A single picker selection inserts multiple image blocks');
+  const knowledge=()=>controller.getState().editor.course.chapters[0].knowledge[0];
+  const firstImageId=knowledge().blocks.find(b=>b.type==='image').id;
+  fill(`[data-block="${firstImageId}"][data-knowledge-block-field="align"]`,'right');fill(`[data-block="${firstImageId}"][data-knowledge-block-field="width"]`,'50');
+  assert.equal(root.querySelector(`[data-knowledge-block="${firstImageId}"] figure`).style.getPropertyValue('--knowledge-image-width'),'50%');
+  await action('knowledge-add-text',`[data-after="${firstImageId}"]`);
+  const addedText=knowledge().blocks.find(b=>b.type==='text'&&b.id!==knowledge().blocks[0].id).id;
+  fill(`[data-knowledge-block="${addedText}"] textarea`,'Sau ảnh');
+  await action('knowledge-up',`[data-block="${addedText}"]`);assert.equal(knowledge().blocks[1].id,addedText);
+  // Native drag event path plus keyboard/touch alternatives above. No OS drag UI claim.
+  root.querySelector(`[data-course-drag-block="${addedText}"]`).dispatchEvent(new Event('dragstart',{bubbles:true}));
+  root.querySelector(`[data-knowledge-block="${firstImageId}"]`).dispatchEvent(new dom.window.MouseEvent('drop',{bubbles:true,cancelable:true,clientY:1}));await idle();
+  assert.equal(knowledge().blocks[2].id,addedText,'Drop after image preserves ordered text/image content');
+  const lastImage=knowledge().blocks.at(-1).id;await action('knowledge-remove',`[data-block="${lastImage}"]`);assert.equal(knowledge().blocks.filter(b=>b.type==='image').length,2);
   assert.equal(root.querySelector('#courseKnowledgeBody').value,'[b]Guten Tag[/b] — Xin chào.');
   failSave=true;assert.equal(await controller.beforeLeave(),false);assert.equal(root.querySelector('#courseKnowledgeBody').value,'[b]Guten Tag[/b] — Xin chào.');assert.equal(controller.isDirty(),true);
   await action('editor-step','[data-step="info"]');assert.equal(route.lesson,knowledgeId,'Failed save blocks outline navigation');
   assert.equal(root.querySelector('#courseKnowledgeBody').value,'[b]Guten Tag[/b] — Xin chào.');
   assert.equal(root.querySelector('[data-course-action="retry-save"]').hidden,false);
+  assert.notEqual(window.getComputedStyle(root.querySelector('[data-course-action="retry-save"]')).display,'none');
   failSave=false;await action('retry-save');assert.equal(root.querySelector('[data-course-dirty]').hidden,true);
   await action('close-lesson');
+  await action('edit-category','[data-kind="exercises"]');
   await action('add-lesson','[data-kind="exercises"]');
   assert.equal(root.querySelector('[data-course-template]').value,'choices','Do not silently select listening for ordinary choices');
   fill('[data-course-lesson-field="title"]','Luyện chào hỏi');fill('[data-field="title"]','Chọn lời chào');
@@ -130,9 +163,11 @@ try{
   fill('[data-course-explanation]','Hallo dùng để chào hỏi.');
   const exerciseId=controller.getState().editLesson;
   await action('close-lesson');assert.equal(route.lesson,undefined,'Returning flushes changes and clears the lesson URL');
+  await action('edit-category','[data-kind="knowledge"]');
   await action('edit-lesson',`[data-id="${knowledgeId}"]`);assert.equal(root.querySelector('#courseKnowledgeBody').value,'[b]Guten Tag[/b] — Xin chào.');
+  await action('close-lesson');await action('edit-category','[data-kind="exercises"]');
   await action('edit-lesson',`[data-id="${exerciseId}"]`);assert.equal(root.querySelector('[data-field="title"]').value,'Chọn lời chào');
-  await action('preview-course');assert.ok(root.querySelector('[data-course-action="close-preview"]'));
+  await action('preview-course');assert.ok(root.querySelector('[data-course-action="close-preview"]'));assert.equal(root.querySelectorAll('.course-knowledge-content figure').length,2);
   await action('close-preview');assert.equal(controller.getState().editLesson,exerciseId);
   await action('publish');
   assert.equal(controller.getState().editor.status,'published');
@@ -142,6 +177,8 @@ try{
   await action('detail');assert.doesNotMatch(root.textContent,/Hallo dùng để/);await action('enroll');
   assert.equal(controller.getState().lesson.lesson.kind,'knowledge');assert.ok(root.querySelector('.course-prose strong'));
   assert.equal(root.querySelector('.course-lesson-image').getAttribute('src'),'/uploads/synthetic-lesson.png','Uploaded lesson image survives save, publish and enrollment');
+  assert.deepEqual([...root.querySelector('.course-knowledge-content').children].map(node=>node.tagName),['DIV','FIGURE','DIV','FIGURE']);
+  assert.equal(root.querySelector('.course-knowledge-content figure').dataset.align,'right');assert.match(root.querySelector('.course-knowledge-content').textContent,/Sau ảnh/);
   await action('complete-lesson');assert.equal(controller.getState().lesson.lesson.id,exerciseId);
   const qId=controller.getState().lesson.lesson.exercise.questions[0].id;
   dropProgressReceipt=true;root.querySelector('.answer-one[value="1"]').click();await assert.rejects(controller.flushPractice(),/lost save receipt/);

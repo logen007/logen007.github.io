@@ -36,6 +36,7 @@ import {registerSafeErrorHandler,reportSafeError} from './error-reporting.js';
 import {uploadExtension,imageHeaderMatches} from './media-upload-policy.js';
 import {requestOriginPolicy} from './request-origin.js';
 import {APP_VERSION} from '../../src/release.js';
+import {COURSE_IMAGE_MAX_BYTES} from '../../src/domain/media-limits.js';
 import {registerBackupGoogleRoutes,downloadBackupFile} from './backup-google.js';
 import {startBackupScheduler} from './backup-job.js';
 import {withMediaMutation} from './media-backup-lock.js';
@@ -168,9 +169,9 @@ async function saveUpload(request,{kind,maxBytes,mimePrefix,defaultExt},user=nul
       // A data listener starts flowing. Attach it only after the async backup
       // lock is acquired, immediately beside pipeline, or the image header can
       // be consumed and discarded while waiting for the database.
-      part.file.on('data',chunk=>{size+=chunk.length;if(size>maxBytes)part.file.destroy(appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`));});
+      part.file.on('data',chunk=>{size+=chunk.length;if(size>maxBytes)part.file.destroy(appError(413,`Tệp ${kind} tối đa ${maxBytes/1024/1024} MB.`));});
       await pipeline(part.file,createWriteStream(dest,{flags:'wx'}));
-      if(part.file.truncated||size>maxBytes)throw appError(413,`Tệp ${kind} vượt quá giới hạn cho phép.`);
+      if(part.file.truncated||size>maxBytes)throw appError(413,`Tệp ${kind} tối đa ${maxBytes/1024/1024} MB.`);
       if(mimePrefix==='image/'){
         const file=await fs.open(dest,'r'),header=Buffer.alloc(4096);
         let bytesRead;try{({bytesRead}=await file.read(header,0,header.length,0));}finally{await file.close();}
@@ -183,8 +184,10 @@ async function saveUpload(request,{kind,maxBytes,mimePrefix,defaultExt},user=nul
 
 app.post('/api/media/audio',async request=>saveUpload(request,{kind:'âm thanh',maxBytes:25*1024*1024,mimePrefix:'audio/',defaultExt:'.audio'}));
 app.post('/api/media/image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:8*1024*1024,mimePrefix:'image/',defaultExt:'.img'}));
+app.post('/api/media/course-image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:COURSE_IMAGE_MAX_BYTES,mimePrefix:'image/',defaultExt:'.img'}));
 app.post('/api/demo/media/audio',async request=>saveUpload(request,{kind:'âm thanh',maxBytes:25*1024*1024,mimePrefix:'audio/',defaultExt:'.audio'},demoUploadUser(request)));
 app.post('/api/demo/media/image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:8*1024*1024,mimePrefix:'image/',defaultExt:'.img'},demoUploadUser(request)));
+app.post('/api/demo/media/course-image',async request=>saveUpload(request,{kind:'hình ảnh',maxBytes:COURSE_IMAGE_MAX_BYTES,mimePrefix:'image/',defaultExt:'.img'},demoUploadUser(request)));
 registerMediaDeliveryRoutes(app,{uploadDir,r2Media,authenticate:async request=>{if(!demoMediaUploadsEnabled)await requireUser(request);}});
 app.get('/brand/:kind',async(request,reply)=>{
   const key=request.params.kind==='logo'?'logoUrl':request.params.kind==='favicon'?'faviconUrl':null;
