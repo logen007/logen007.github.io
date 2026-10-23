@@ -10,7 +10,7 @@ export function topbarHtml({user,mode,online,ui={},canSwitchRole=false,studentEx
   const brandLogo=mode==='local'||!general.logoUrl?'G2G':`<img src="${esc(logoUrl)}" alt="G2G Career" width="48" height="48">`;
   const role=isStudent(user)?'Học viên':isMaster(user)?'Quản trị cấp cao':'Giáo viên';
   const tabs=user&&!isStudent(user)
-    ?(isMaster(user)?[['dashboard','Tổng quan','grades'],['courses','Khóa học','student'],['exams','Đề Thi','exams'],['speaking','Thi Nói thử nghiệm','speaking'],['backup','Backup','backup'],['teachers','Người dùng','users'],['trash','Thùng rác','trash'],['settings','Cài đặt','settings']]:[['courses','Khóa học','student'],['exams','Đề Thi','exams'],['grades','Bài Thi','grading'],['classes','Lớp học','users']])
+    ?(isMaster(user)?[['dashboard','Tổng quan','grades'],['speaking','Thi Nói thử nghiệm','speaking'],['backup','Backup','backup'],['teachers','Người dùng','users'],['trash','Thùng rác','trash'],['settings','Cài đặt','settings']]:[['courses','Khóa học','student'],['exams','Đề Thi','exams'],['grades','Bài Thi','grading'],['classes','Lớp học','users']])
     :[];
   const menuItems=studentExamMenu.filter(exam=>exam?.level&&['GOETHE','TELC'].includes(String(exam.provider||'').toUpperCase()));
   const levelOrder=['A1','A2','B1','B2','C1','C2'];
