@@ -61,11 +61,11 @@ The outline truncates chapter names on one line (full name in the tooltip) and
 places two short category buttons, “Kiến thức” and “Bài tập”, on one row beneath
 each chapter. Clicking a category opens its first existing lesson's detailed editor
 directly; an empty category creates one lesson and opens it. Existing extra lessons
-remain accessible via the chapter gear/overview, never deleted or merged.
+remain accessible via the clickable chapter title/overview, never deleted or merged.
 Reopening a nonempty category must not create a duplicate. Detailed knowledge and
 exercise editors omit the Back button, visible lesson-name label and trial checkbox.
 Keep the name input accessible; hiding the checkbox must not rewrite existing trial flags.
-The chapter gear opens its settings, with the actual chapter name editable directly
+The chapter title opens its settings, with the actual chapter name editable directly
 in the heading row (no separate “Chương N” heading or duplicate name field).
 Category lists omit that entire chapter-settings toolbar and show only their own
 lessons and actions. Renaming still uses the existing autosave/navigation flush.
@@ -81,8 +81,8 @@ rebuilding inputs, hides successful-save status and offers retry only on error.
 No manual Save button, draft-mode label or member management in the editor.
 Serialize saves, drain edits typed during a request, replay uncertain writes before
 newer payloads and retain optimistic version checks. Keep existing publication and
-enrollment semantics (course publication does not use the exam's unpublish lock);
-internal unpublished storage is not a separate UI mode. Preserve first-click image picking.
+enrollment semantics; publication now uses the exam-style unpublish lock described below.
+Internal unpublished storage is not a separate UI mode. Preserve first-click image picking.
 Teacher management uses the exam-list table/filter/actions; member management lives
 there. Student catalog cards and learning remain unchanged. DOM/SQL regression covers
 autosave concurrency/retry, navigation/save failures, previews and publication, not
@@ -92,6 +92,31 @@ Course images (cover, knowledge and exercise images) use `uploadCourseImage` and
 the staff-only `/api/media/course-image` route. Original and optimized uploads are
 limited to 1 MiB (labelled 1 MB); the server enforces the same limit independently.
 Existing stored images are not rewritten. Exam images retain their 8 MiB limit.
+
+Publication refinement (23 October): reuse the exam publication label renderer and
+server label generator, immutable JSONB snapshots and the existing global API gzip
+compression (`server/src/index.js`, accepted gzip + JSON over 1 KiB). Do not invent
+a separate opaque compressed snapshot format: JSONB storage/media discovery,
+backups and legacy releases stay compatible. This is transport compression, not a
+new downloadable ZIP or a claimed measured storage saving.
+Published courses are read-only in both controller/UI and server, including master
+and stale/forged clients. Only explicit `POST /unpublish` unlocks authoring; it hides
+new enrollment/catalog access but active/pending enrollment references, content,
+progress and scoring remain pinned to their original release. Published identical
+save-receipt replays are harmless no-ops; changed writes return 409.
+Publication has a separate ordinal/label from optimistic authoring revisions.
+New releases store their hash/ordinal/label in release metadata; old release rows
+need no rewrite and derive the ordinal from existing release order. Changed content
+creates the next publication version; unchanged republishing reuses the previous
+snapshot/version as exams do. Serialize publish/unpublish under the course row lock,
+check expected authoring revisions and tolerate lost receipts without duplication.
+Freeze authoring while publishing; resync authoritative status if its receipt is
+lost. Existing already-published authoring becomes read-only without rewriting it.
+No schema migration, enrollment repinning or production-data edit. Rolling back UI
+may hide the new controls, but retain server write lock/unpublish semantics while
+these contracts are in use; old clients must reload rather than edit published data.
+CI covers role/version/HTTP guards, no-op/retry publication, UI read-only/unlock,
+lost publication receipts and enrolled learning/grading throughout unpublication.
 
 Knowledge now uses one visual writing canvas, not separate raw textareas. The
 WordPress-like interaction reference is the official

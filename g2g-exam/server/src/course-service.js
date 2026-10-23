@@ -1,5 +1,9 @@
 import {normalizeCourse,assertCoursePublishable,courseMetadata,courseOutline,courseLessons,publicCourseExercise,validateCourseAnswers,gradeCourseExercise,normalizeCourseExercise} from '../../src/domain/courses.js';
 import {KNOWLEDGE_LAYOUT_VERSION} from '../../src/domain/course-knowledge.js';
+import {createHash} from 'node:crypto';
+import {publicationLabel} from './exam-release-content.js';
+
+const contentHash=course=>createHash('sha256').update(JSON.stringify(normalizeCourse(course))).digest('hex');
 
 // Injected database boundary lets the same service run against isolated SQL in CI.
 export function createCourseService({query,withTx,uid,audit}){
@@ -17,6 +21,13 @@ export function createCourseService({query,withTx,uid,audit}){
     return row;
   };
   const db={query};
+  const publication=async(client,id,version)=>{
+    if(!version)return {};
+    const row=(await client.query('SELECT metadata,(SELECT count(*)::int FROM course_releases WHERE course_id=$1 AND version<=$2) AS ordinal FROM course_releases WHERE course_id=$1 AND version=$2',[id,version])).rows[0];
+    if(!row)return {};
+    const ordinal=Number(row.metadata.publicationVersion)||row.ordinal;
+    return {publicationVersion:ordinal,publicationLabel:row.metadata.publicationLabel||publicationLabel(ordinal)};
+  };
   const enrollment=async(client,user,id,lock=false)=>{
     const row=(await client.query(`SELECT e.*,r.snapshot FROM course_enrollments e JOIN course_releases r ON r.course_id=e.course_id AND r.version=e.release_version WHERE e.course_id=$1 AND e.student_id=$2${lock?' FOR UPDATE OF e':''}`,[id,user.id])).rows[0];
     if(!row||row.status!=='active')fail(403,'Bạn chưa được mở quyền học khóa này.');
@@ -40,7 +51,7 @@ export function createCourseService({query,withTx,uid,audit}){
     if(params.fee==='free')where.push("(m.metadata->>'price')::numeric=0");
     if(params.fee==='paid')where.push("(m.metadata->>'price')::numeric>0");
     const limit=Math.min(60,Math.max(1,Math.floor(Number(params.limit)||40))),offset=Math.min(1000000,Math.max(0,Math.floor(Number(params.offset)||0)));
-    const result=await query(`SELECT c.id,c.owner_id,c.status,c.version,c.published_version,c.updated_at,m.metadata,
+    const result=await query(`SELECT c.id,c.owner_id,c.status,c.version,c.published_version,c.updated_at,m.metadata-'contentHash' AS metadata,
       coalesce(u.data->>'name',u.email) AS teacher_name,e.id AS enrollment_id,e.status AS enrollment_status,e.amount,
       (SELECT count(*)::int FROM course_progress p WHERE p.enrollment_id=e.id AND p.completed_at IS NOT NULL) AS completed,
       count(*) OVER()::int AS total
@@ -53,11 +64,11 @@ export function createCourseService({query,withTx,uid,audit}){
       enrollment:row.enrollment_id?{id:row.enrollment_id,status:row.enrollment_status,amount:row.amount}:null})),total:result.rows[0]?.total||0};
   }
   async function getCourse(user,id,{edit=false}={}){
-    if(edit){const row=await owned(db,user,id);return {id:row.id,version:row.version,status:row.status,publishedVersion:row.published_version,course:row.draft};}
+    if(edit){const row=await owned(db,user,id);return {id:row.id,version:row.version,status:row.status,publishedVersion:row.published_version,...await publication(db,id,row.published_version),course:row.draft};}
     const existing=(await query('SELECT id,status,release_version,amount FROM course_enrollments WHERE course_id=$1 AND student_id=$2',[id,user.id])).rows[0];
-    const release=(await query(`SELECT r.snapshot,r.version,u.data->>'name' AS teacher_name FROM courses c JOIN course_releases r ON r.course_id=c.id AND r.version=${existing?'$2':'c.published_version'} JOIN users u ON u.id=c.owner_id WHERE c.id=$1 AND (c.status='published'${existing?" OR c.status='archived'":''})`,existing?[id,existing.release_version]:[id])).rows[0];
+    const release=(await query(`SELECT r.snapshot,r.version,r.metadata,u.data->>'name' AS teacher_name FROM courses c JOIN course_releases r ON r.course_id=c.id AND r.version=${existing?'$2':'c.published_version'} JOIN users u ON u.id=c.owner_id WHERE c.id=$1 ${existing?'':"AND c.status='published'"}`,existing?[id,existing.release_version]:[id])).rows[0];
     if(!release)fail(404,'Khóa học chưa được xuất bản hoặc đã ngừng đăng ký.');
-    return {id,version:release.version,...courseMetadata(release.snapshot),description:release.snapshot.description,teacherName:release.teacher_name,
+    return {id,version:release.version,publicationLabel:release.metadata.publicationLabel,...courseMetadata(release.snapshot),description:release.snapshot.description,teacherName:release.teacher_name,
       chapters:courseOutline(release.snapshot),enrollment:existing?{id:existing.id,status:existing.status,amount:existing.amount}:null,
       progress:existing?.status==='active'?await progress(db,existing.id):[]};
   }
@@ -70,6 +81,7 @@ export function createCourseService({query,withTx,uid,audit}){
         const incoming=new Map(courseLessons(input.course).map(lesson=>[lesson.id,lesson]));
         if(courseLessons(found.draft).some(lesson=>incoming.has(lesson.id)&&(lesson.contentVersion>=1&&!Array.isArray(incoming.get(lesson.id).blocks)||lesson.contentVersion>=2&&input.knowledgeLayout!==KNOWLEDGE_LAYOUT_VERSION)))fail(409,'Bài kiến thức dùng trình soạn thảo mới. Vui lòng tải lại trang trước khi chỉnh sửa.');
         if(JSON.stringify(normalizeCourse(found.draft))===JSON.stringify(course))return {id,version:found.version,status:found.status,publishedVersion:found.published_version,course};
+        if(found.status==='published')fail(409,'Khóa học đã xuất bản. Hãy bỏ xuất bản trước khi chỉnh sửa.');
         expected(found,input.version);
         await client.query('UPDATE courses SET draft=$2::jsonb,metadata=$3::jsonb,version=version+1,updated_at=now() WHERE id=$1',[id,JSON.stringify(course),JSON.stringify(courseMetadata(course))]);
       }else{
@@ -83,12 +95,29 @@ export function createCourseService({query,withTx,uid,audit}){
   async function publish(user,id,{version}){
     return withTx(async client=>{
       const row=await owned(client,user,id,true);
-      if(row.status==='published'&&row.published_version===row.version&&[row.version,row.version-1].includes(Number(version)))return {id,version:row.version,status:'published'};
+      if(row.status==='published'){
+        if(![row.version,row.version-1].includes(Number(version)))expected(row,version);
+        return {id,version:row.version,status:'published',publishedVersion:row.published_version,...await publication(client,id,row.published_version),reused:true};
+      }
       expected(row,version);
       const course=normalize(()=>{const c=normalizeCourse(row.draft);assertCoursePublishable(c);return c;}),next=row.version+1;
-      await client.query('INSERT INTO course_releases(course_id,version,metadata,snapshot) VALUES($1,$2,$3::jsonb,$4::jsonb)',[id,next,JSON.stringify(courseMetadata(course)),JSON.stringify(course)]);
-      await client.query("UPDATE courses SET status='published',published_version=$2,version=$2,updated_at=now() WHERE id=$1",[id,next]);
-      await audit(user,'publish_course','course',id,{version:next},client);return {id,version:next,status:'published'};
+      const previous=(await client.query('SELECT version,metadata,snapshot,(SELECT count(*)::int FROM course_releases WHERE course_id=$1) AS ordinal FROM course_releases WHERE course_id=$1 ORDER BY version DESC LIMIT 1',[id])).rows[0];
+      const hash=contentHash(course),reused=Boolean(previous&&(previous.metadata.contentHash||contentHash(previous.snapshot))===hash);
+      const ordinal=reused?(Number(previous.metadata.publicationVersion)||previous.ordinal):(Number(previous?.metadata.publicationVersion)||previous?.ordinal||0)+1;
+      const label=publicationLabel(ordinal),releaseVersion=reused?previous.version:next;
+      if(!reused)await client.query('INSERT INTO course_releases(course_id,version,metadata,snapshot) VALUES($1,$2,$3::jsonb,$4::jsonb)',[id,next,JSON.stringify({...courseMetadata(course),contentHash:hash,publicationVersion:ordinal,publicationLabel:label}),JSON.stringify(course)]);
+      await client.query("UPDATE courses SET status='published',published_version=$2,version=$3,updated_at=now() WHERE id=$1",[id,releaseVersion,next]);
+      await audit(user,'publish_course','course',id,{version:label,reused},client);return {id,version:next,status:'published',publishedVersion:releaseVersion,publicationVersion:ordinal,publicationLabel:label,reused};
+    });
+  }
+  async function unpublish(user,id,{version}){
+    return withTx(async client=>{
+      const row=await owned(client,user,id,true);
+      if(row.status==='draft'&&[row.version,row.version-1].includes(Number(version)))return {id,version:row.version,status:'draft'};
+      expected(row,version);
+      if(row.status!=='published')fail(409,'Khóa học này chưa được xuất bản.');
+      await client.query("UPDATE courses SET status='draft',version=version+1,updated_at=now() WHERE id=$1",[id]);
+      await audit(user,'unpublish_course','course',id,{},client);return {id,version:row.version+1,status:'draft'};
     });
   }
   async function archive(user,id,{version}){
@@ -199,5 +228,5 @@ export function createCourseService({query,withTx,uid,audit}){
     const lesson=lessonIn(row.snapshot,lessonId);if(!lesson.trial||lesson.kind!=='exercise')fail(403,'Bài tập này không cho học thử.');
     return normalize(()=>gradeCourseExercise(lesson.exercise,answers));
   }
-  return {catalog,getCourse,save,publish,archive,enroll,confirmEnrollment,getLesson,saveProgress,submit,tryExercise,members,memberResults,sources};
+  return {catalog,getCourse,save,publish,unpublish,archive,enroll,confirmEnrollment,getLesson,saveProgress,submit,tryExercise,members,memberResults,sources};
 }

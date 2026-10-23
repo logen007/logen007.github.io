@@ -27,7 +27,7 @@ const query=async(sql,args=[])=>{const r=await(tx.getStore()||db).query(sql,args
 const service=createCourseService({query,withTx:fn=>db.transaction(client=>tx.run(client,()=>fn({query}))),uid:prefix=>prefix+'-'+randomUUID(),audit:async()=>{}});
 const {default:Fastify}=await import('../server/node_modules/fastify/fastify.js');
 const app=Fastify(),teacher={id:'teacher',role:'teacher'},student={id:'student',role:'student'};
-let user=teacher,route={page:'manage'},controller,failSave=false,dropProgressReceipt=false,failUpload=false,holdEditorSave=null,editorSaveEntered=()=>{},dropEditorReceipt=false;
+let user=teacher,route={page:'manage'},controller,failSave=false,dropProgressReceipt=false,failUpload=false,holdEditorSave=null,editorSaveEntered=()=>{},dropEditorReceipt=false,dropPublicationReceipt=false;
 const root=document.querySelector('#app'),notices=[];
 const pickerClicks=[],uploads=[];
 // Observe before the production capture handler, including events it cancels.
@@ -39,11 +39,13 @@ const uploadImage=async(file,{slot})=>{
   return slot==='course-cover'?'/uploads/synthetic-cover.png':'/uploads/synthetic-lesson.png';
 };
 const request=async(suffix,options={})=>{
+  if(suffix.endsWith('/publish')&&options.method==='POST')assert.equal(root.querySelector('[data-course-field="title"]').disabled,true,'Freeze authoring before sending publication');
   if(failSave&&options.method==='PUT')throw Error('Synthetic network failure');
   const authoring=options.method==='PUT'&&options.body?.course;
   if(authoring){editorSaveEntered();if(holdEditorSave)await holdEditorSave;}
   const response=await app.inject({method:options.method||'GET',url:'/api/courses'+suffix,headers:{'x-user':user.id},...(options.body===undefined?{}:{payload:options.body})});
   const data=response.json();if(response.statusCode>=400)throw Error(data.message||data.error);
+  if(dropPublicationReceipt&&suffix.endsWith('/publish')&&options.method==='POST'){dropPublicationReceipt=false;throw Error('Synthetic lost publication receipt');}
   if(authoring&&dropEditorReceipt){dropEditorReceipt=false;throw Error('Synthetic lost editor receipt');}
   if(dropProgressReceipt&&suffix.endsWith('/progress')&&options.method==='PUT'){dropProgressReceipt=false;throw Error('Synthetic lost save receipt');}
   return data;
@@ -194,6 +196,14 @@ try{
   await action('close-preview');assert.equal(controller.getState().editLesson,exerciseId);
   await action('publish');
   assert.equal(controller.getState().editor.status,'published');
+  assert.equal(root.querySelector('[data-course-field="title"]').disabled,true);assert.equal(root.querySelector('[data-course-action="publish"]'),null);assert.match(root.querySelector('.exam-publication-version').textContent,/1\.0\.0/);assert.doesNotMatch(root.textContent,/Cập nhật xuất bản/);
+  assert.equal(root.querySelector('[data-course-action="add-chapter"]').disabled,true);
+  await action('edit-category','[data-kind="knowledge"]');assert.equal(root.querySelector('[data-knowledge-editor]'),null,'Published knowledge is rendered without an editable engine');assert.ok(root.querySelector('.course-knowledge-content'));
+  const lockedTitle=controller.getState().editor.course.chapters[0].knowledge[0].title;fill('[data-course-lesson-field="title"]','Forged edit');assert.equal(controller.getState().editor.course.chapters[0].knowledge[0].title,lockedTitle);assert.equal(controller.isDirty(),false,'Synthetic input cannot dirty a published course');
+  await action('unpublish');assert.equal(controller.getState().editor.status,'draft');assert.equal(root.querySelector('[data-course-lesson-field="title"]').disabled,false);assert.ok(rich(),'Explicit unpublish restores the detailed editor');assert.equal(root.querySelector('.exam-publication-version').textContent,'v1.0.0');
+  fill('[data-course-lesson-field="title"]','Hallo nochmal!');dropPublicationReceipt=true;await action('publish');
+  assert.equal(controller.getState().editor.status,'published','Lost publish receipt reloads authoritative status instead of leaving an editable stale draft');assert.equal(root.querySelector('.exam-publication-version').textContent,'v1.0.1');assert.equal(root.querySelector('[data-course-action="unpublish"]').disabled,false);
+  assert.equal((await query('SELECT count(*)::int AS n FROM course_releases WHERE course_id=$1',[courseId])).rows[0].n,2);
   await action('manage');assert.equal(root.querySelectorAll('table.bang tbody tr').length,1);assert.ok(root.querySelector('.table-link.is-published'));assert.ok(root.querySelector('[data-course-action="members"]'),'Member management stays in the management list');
   await action('preview-managed');assert.ok(root.querySelector('[data-course-action="close-preview"]'));await action('close-preview');assert.equal(route.step,'info');
   user=student;route={page:'catalog'};paint();await idle();assert.equal(root.querySelectorAll('.course-card').length,1);

@@ -13,14 +13,17 @@ import {questionProfileAt} from '../domain/question-profile.js';
 
 const fresh=route=>({route,loading:true,error:'',filters:{search:'',level:'',fee:''},catalog:null,dirty:false,practiceDirty:false,practiceAnswers:{},practiceResult:null,editLesson:'',pendingAudio:new Map()});
 const uuid=prefix=>prefix+'-'+crypto.randomUUID();
+const publishedActions=new Set(['catalog','mine','manage','detail','edit','members','learn','reload','more','preview-managed','editor-step','edit-chapter','edit-category','edit-lesson','close-lesson','preview-exercise','preview-course','close-preview','unpublish','archive']);
 const ask=(message,confirmLabel='Tiếp tục')=>new Promise(resolve=>confirmAction(message,()=>resolve(true),{confirmLabel,onCancel:()=>resolve(false)}));
 
 export function createCoursesController({root,context,layout,navigate,repaint,notify,bindAudio,request=courseRequest,uploadImage=uploadCourseImage}){
   let state=fresh({page:'catalog'}),routeKey='',generation=0,loadController=null,searchTimer=null,practiceTimer=null,savingPractice=null,busy=false,editorTimer=null,editorRevision=0,savingEditor=null,knowledgeBinding=null,knowledgeRuntime=null;
   const user=()=>context().user;
+  const published=()=>state.editor?.status==='published';
+  const readOnly=()=>published()||state.publicationBusy;
   const editorStatus=(message,error=false)=>{state.editorSaveStatus=message;state.editorSaveError=error;const indicator=root.querySelector('[data-course-dirty]');if(indicator){indicator.hidden=!message;indicator.textContent=message;indicator.dataset.state=error?'error':'pending';}const retry=root.querySelector('[data-course-action="retry-save"]');if(retry)retry.hidden=!error;};
   const queueEditor=()=>{clearTimeout(editorTimer);if(state.route.page==='edit'&&state.dirty&&!state.editorSaveError)editorTimer=setTimeout(()=>{if(!busy)void saveEditor().catch(error=>notify(error.message));},600);};
-  const markDirty=()=>{state.dirty=true;editorRevision++;editorStatus('Chưa lưu…');queueEditor();};
+  const markDirty=()=>{if(readOnly())return;state.dirty=true;editorRevision++;editorStatus('Chưa lưu…');queueEditor();};
   const api=(suffix,options)=>request(suffix,options);
   const currentLesson=()=>state.editor&&courseLessons(state.editor.course).find(lesson=>lesson.id===state.editLesson);
   const blocks=()=>{const lesson=currentLesson();if(lesson?.kind!=='knowledge')throw Error('Hãy chọn bài kiến thức.');return lesson.blocks??=knowledgeBlocks(lesson);};
@@ -63,9 +66,10 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       void load();
     }
     if(state.editor&&state.editLesson&&currentLesson()?.kind==='exercise')state.exerciseContext=courseEditorContext(currentLesson().exercise,user());
-    if(state.editor&&state.editLesson&&currentLesson()?.kind==='knowledge')blocks();
+    if(state.editor&&!readOnly()&&state.editLesson&&currentLesson()?.kind==='knowledge')blocks();
     root.innerHTML=layout(coursePageHtml(state,user()));
     if(state.loading||state.error)return;
+    if(readOnly())for(const field of root.querySelectorAll('.course-authoring input,.course-authoring textarea,.course-authoring select,.course-authoring button'))if(state.publicationBusy||field.tagName!=='BUTTON'||!publishedActions.has(field.dataset.courseAction))field.disabled=true;
     const knowledgeRoot=root.querySelector('[data-knowledge-editor]');
     if(knowledgeRoot){
       knowledgeRuntime??=import('./knowledge-visual-editor.js');
@@ -75,7 +79,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       }).catch(error=>{if(knowledgeRoot.isConnected){knowledgeRoot.dataset.ready='error';knowledgeRoot.querySelector('[data-knowledge-canvas]').textContent='Không mở được trình soạn. Vui lòng tải lại trang.';notify(error.message);}});
     }
     const editor=root.querySelector('[data-course-exercise-editor]');
-    if(editor){bindCourseExerciseEditor(editor,state.exerciseContext,state.pendingAudio,notify,markDirty);bindImageRemoval(editor,markDirty);}
+    if(editor&&!readOnly()){bindCourseExerciseEditor(editor,state.exerciseContext,state.pendingAudio,notify,markDirty);bindImageRemoval(editor,markDirty);}
     const exercise=state.lesson?.lesson.kind==='exercise'&&!state.practiceResult?state.lesson.lesson.exercise:state.previewExercise;
     if(exercise){
       bindLetterAnswers(root,exercise.questions,state.practiceAnswers,(id,value)=>{state.practiceAnswers[id]=value;queuePractice();});
@@ -85,7 +89,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   }
   async function collectEditor(){
     const lesson=currentLesson(),editor=root.querySelector('[data-course-exercise-editor]');
-    if(lesson?.kind==='exercise'&&editor){lesson.exercise=await collectCourseExercise(editor,state.exerciseContext,state.pendingAudio);state.pendingAudio.clear();}
+    if(!readOnly()&&lesson?.kind==='exercise'&&editor){lesson.exercise=await collectCourseExercise(editor,state.exerciseContext,state.pendingAudio);state.pendingAudio.clear();}
     return lesson;
   }
   async function saveEditor(){
@@ -103,7 +107,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
           const pending=target.pendingEditorSave;editorStatus('Đang lưu…');
           const saved=await api(coursePath(target.editor.id),{method:'PUT',body:pending.body});
           if(target!==state)return;
-          if(pending.revision===editorRevision){target.editor=saved;target.dirty=false;}
+          if(pending.revision===editorRevision){target.editor={...target.editor,...saved};target.dirty=false;}
           else Object.assign(target.editor,{version:saved.version,status:saved.status,publishedVersion:saved.publishedVersion});
           target.pendingEditorSave=null;
         }
@@ -168,6 +172,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   }
   async function action(name,button){
     const id=button.dataset.id||state.route.id,course=state.editor?.course;
+    if(published()&&!publishedActions.has(name))throw Error('Hãy bỏ xuất bản khóa học trước khi chỉnh sửa.');
     if(['catalog','mine','manage','detail','edit','members','learn'].includes(name))return go({page:name,id:['catalog','mine','manage'].includes(name)?'':id});
     if(name==='lesson')return go({page:'learn',id,lesson:button.dataset.lesson});
     if(name==='reload'){await load();return;}
@@ -184,7 +189,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       const chapter=course.chapters.find(item=>item.id===button.dataset.chapter),kind=button.dataset.kind;
       if(!chapter||!['knowledge','exercises'].includes(kind))return;
       const lesson=chapter[kind][0];
-      if(!lesson)return action('add-lesson',button);
+      if(!lesson)return published()?go({page:'edit',id:state.editor.id,step:'content',chapter:chapter.id,kind}):action('add-lesson',button);
       return go({page:'edit',id:state.editor.id,step:'content',chapter:chapter.id,kind,lesson:lesson.id});
     }
     if(name==='add-chapter'){await collectEditor();const chapter={id:uuid('chapter'),title:'Chương mới',knowledge:[],exercises:[]};course.chapters.push(chapter);markDirty();return go({page:'edit',id:state.editor.id,step:'content',chapter:chapter.id});}
@@ -229,7 +234,14 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     if(name==='preview-exercise'){await saveEditor();state.previewExercise=structuredClone(currentLesson().exercise);state.practiceAnswers={};repaint();return;}
     if(name==='preview-course'){await saveEditor();state.previewCourse=true;repaint();return;}
     if(name==='close-preview'){if(state.route.step==='preview')return go({page:'edit',id:state.editor.id,step:'info'});state.previewExercise=null;state.previewCourse=false;repaint();return;}
-    if(name==='publish'){await saveEditor();const published=await api(coursePath(state.editor.id,'/publish'),{method:'POST',body:{version:state.editor.version}});Object.assign(state.editor,published,{publishedVersion:published.version});repaint();return;}
+    if(name==='publish'){
+      await saveEditor();state.publicationBusy=true;repaint();
+      try{Object.assign(state.editor,await api(coursePath(state.editor.id,'/publish'),{method:'POST',body:{version:state.editor.version}}));}
+      catch(error){await load();throw error;}
+      finally{state.publicationBusy=false;repaint();}
+      return;
+    }
+    if(name==='unpublish'){const receipt=await api(coursePath(state.editor.id,'/unpublish'),{method:'POST',body:{version:state.editor.version}});Object.assign(state.editor,receipt);repaint();return;}
     if(name==='archive'){
       if(!await ask('Ngừng nhận đăng ký mới? Học viên đã đăng ký vẫn học bình thường.','Ngừng đăng ký'))return;
       await saveEditor();await api(coursePath(state.editor.id,'/archive'),{method:'POST',body:{version:state.editor.version}});return go({page:'manage'});
@@ -262,9 +274,9 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   root.addEventListener('click',event=>{
     const button=event.target.closest('button');if(!button||button.disabled||!root.contains(button))return;
     // Keep native selection in the original user gesture (including Safari/iOS).
-    if(button.dataset.coursePick){event.preventDefault();if(!busy){knowledgeBinding?.release(state.knowledgeUpload?.point);state.knowledgeUpload=button.dataset.coursePick==='lesson'?{point:knowledgeBinding?.capture(),replaceId:button.hasAttribute('data-knowledge-replace')?knowledgeBinding?.selectedImage():null}:null;state.uploadButton=button;const input=root.querySelector(`[data-course-upload="${button.dataset.coursePick}"]`);if(input){input.multiple=button.dataset.coursePick==='lesson'&&!state.knowledgeUpload?.replaceId;input.click();}}return;}
+    if(button.dataset.coursePick){event.preventDefault();if(!busy&&!published()){knowledgeBinding?.release(state.knowledgeUpload?.point);state.knowledgeUpload=button.dataset.coursePick==='lesson'?{point:knowledgeBinding?.capture(),replaceId:button.hasAttribute('data-knowledge-replace')?knowledgeBinding?.selectedImage():null}:null;state.uploadButton=button;const input=root.querySelector(`[data-course-upload="${button.dataset.coursePick}"]`);if(input){input.multiple=button.dataset.coursePick==='lesson'&&!state.knowledgeUpload?.replaceId;input.click();}}return;}
     if(button.dataset.courseAction){event.preventDefault();void perform(button,()=>action(button.dataset.courseAction,button));return;}
-    const editor=root.querySelector('[data-course-exercise-editor]');if(!editor?.contains(button))return;
+    const editor=root.querySelector('[data-course-exercise-editor]');if(published()||!editor?.contains(button))return;
     const standard=button.dataset.action,promptAction=button.dataset.sectionInstructionAction;
     if(!promptAction&&!['add-inline-question','remove-inline-question','toggle-question-example','add-question-instruction','remove-question-instruction','move-question-instruction'].includes(standard))return;
     event.preventDefault();void perform(button,async()=>{
@@ -299,6 +311,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       searchTimer=setTimeout(()=>{const active=root.ownerDocument.activeElement,id=active?.id,start=active?.selectionStart;void load().then(()=>{const next=id&&root.querySelector('#'+id);if(next){next.focus();if(start!=null&&next.setSelectionRange)next.setSelectionRange(start,start);}});},field.tagName==='SELECT'?0:300);return;
     }
     if(state.route.page==='edit'){
+      if(readOnly())return;
       if(field.dataset.courseField)state.editor.course[field.dataset.courseField]=field.type==='number'?Number(field.value):field.value;
       if(field.dataset.courseChapterTitle){const chapter=state.editor.course.chapters.find(c=>c.id===field.dataset.courseChapterTitle);if(chapter)chapter.title=field.value;}
       if(field.dataset.courseLessonField){const lesson=currentLesson();if(lesson)lesson[field.dataset.courseLessonField]=field.type==='checkbox'?field.checked:field.value;}
@@ -310,7 +323,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   root.addEventListener('input',input);root.addEventListener('change',input);
   async function uploadFiles(files,slot,button,options={}){
     const binding=knowledgeBinding;
-    if(busy||!button){binding?.release(options.point);return;}
+    if(busy||!button||published()){binding?.release(options.point);return;}
     return perform(button,async()=>{
       const status=root.querySelector(`[data-course-upload-status="${slot}"]`);if(status)status.textContent='Đang tải ảnh…';
       const urls=[];let uploadError;

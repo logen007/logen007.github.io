@@ -24,6 +24,12 @@ try{
   assert.equal((await service.save(teacher,'course',{version:0,course:makeCourse()})).version,1,'Lost save receipts replay without manufacturing a new content version');
   await assert.rejects(service.save(teacher,'course',{version:0,course:{...makeCourse(),title:'Conflicting edit'}}),code(409));
   const first=await service.publish(teacher,'course',{version:1});assert.equal(first.version,2);
+  assert.equal(first.publicationLabel,'1.0.0');assert.equal(first.publicationVersion,1);assert.equal(first.snapshot,undefined);
+  assert.equal((await service.getCourse(teacher,'course',{edit:true})).publicationLabel,'1.0.0');
+  await assert.rejects(service.unpublish(student,'course',{version:2}),code(403));await assert.rejects(service.unpublish(other,'course',{version:2}),code(403));
+  await assert.rejects(service.unpublish(teacher,'course',{version:1}),code(409));
+  await assert.rejects(service.save(teacher,'course',{version:2,course:{...makeCourse(),status:'draft',title:'FORGED DRAFT'}}),code(409),'Published writes cannot unlock themselves');
+  assert.equal((await service.getCourse(teacher,'course',{edit:true})).course.title,'Tiếng Đức A1');
   assert.equal((await service.publish(teacher,'course',{version:1})).version,2,'Publish retry does not duplicate a release');
   const catalog=await service.catalog(student);assert.equal(catalog.courses.length,1);
   assert.ok(!JSON.stringify(catalog).includes('chapters'));assert.ok(!JSON.stringify(catalog).includes('PRIVATE'));
@@ -51,7 +57,14 @@ try{
   const members=await service.members(teacher,'course');assert.equal(members.members[0].completed,1);
   assert.equal((await service.memberResults(teacher,'course',enrolled.id)).submissions.length,1);
   const edited=makeCourse();edited.chapters[0].knowledge[0].body='NEW BODY';edited.chapters[0].exercises[0].exercise.questions[0].correctAnswer=1;
-  draft=await service.save(teacher,'course',{version:2,course:edited});await service.publish(teacher,'course',{version:draft.version});
+  const unlocked=await service.unpublish(teacher,'course',{version:2});assert.equal(unlocked.version,3);
+  assert.equal((await service.unpublish(teacher,'course',{version:2})).version,3,'Lost unpublish receipts replay without changing versions');
+  assert.equal((await service.catalog(student)).courses.length,0);await assert.rejects(service.enroll(second,'course'),code(404));
+  await assert.rejects(service.getCourse(second,'course'),code(404));
+  assert.equal((await service.getCourse(student,'course')).enrollment.status,'active','An enrolled learner can open the course while it is unpublished');
+  assert.equal((await service.getLesson(student,'course','knowledge')).lesson.body,'PRIVATE LESSON BODY');
+  assert.equal((await service.submit(student,'course','exercise',{answers:{question:0},requestKey:crypto.randomUUID()})).score,2,'Unpublishing does not interrupt old-release grading');
+  draft=await service.save(teacher,'course',{version:unlocked.version,course:edited});const updated=await service.publish(teacher,'course',{version:draft.version});assert.equal(updated.publicationLabel,'1.0.1');
   assert.equal((await service.getLesson(student,'course','knowledge')).lesson.body,'PRIVATE LESSON BODY','Existing enrollment pins its immutable release');
   assert.equal((await service.submit(student,'course','exercise',{answers:{question:0},requestKey:crypto.randomUUID()})).score,2);
   await service.enroll(second,'course');assert.equal((await service.getLesson(second,'course','knowledge')).lesson.body,'NEW BODY');
@@ -78,7 +91,7 @@ try{
   await assert.rejects(service.sources(other,'source-exam','source-part'),code(403));await assert.rejects(service.sources(student),code(403));
   await query("UPDATE questions SET owner_id='other' WHERE id='source-q'");
   await assert.rejects(service.sources(teacher,'source-exam','source-part'),code(403));
-  await service.archive(teacher,'course',{version:4});assert.equal((await service.catalog(student)).courses.some(c=>c.id==='course'),false);
+  await service.archive(teacher,'course',{version:updated.version});assert.equal((await service.catalog(student)).courses.some(c=>c.id==='course'),false);
   assert.equal((await service.getLesson(student,'course','knowledge')).lesson.body,'PRIVATE LESSON BODY','Archiving does not erase prior access');
   assert.equal((await service.catalog(student,{mine:'1'})).courses.length,2);
   assert.equal((await service.catalog(teacher,{manage:'1',search:'A1'})).courses.length,3);
@@ -106,14 +119,26 @@ try{
   const layoutLesson=(await service.getLesson(student,'layout','knowledge')).lesson;
   assert.equal(layoutLesson.blocks[0].align,'justify');assert.equal(layoutLesson.blocks[1].width,37,'Publication and enrollment preserve layout');
   layoutSaved=await service.getCourse(teacher,'layout',{edit:true});
-  await service.save(teacher,'layout',{version:layoutSaved.version,knowledgeLayout:KNOWLEDGE_LAYOUT_VERSION,course:oldWriter});
+  const layoutUnlocked=await service.unpublish(teacher,'layout',{version:layoutSaved.version});
+  const unchanged=await service.publish(teacher,'layout',{version:layoutUnlocked.version});assert.equal(unchanged.reused,true);assert.equal(unchanged.publicationLabel,'1.0.0');
+  assert.equal((await query("SELECT count(*)::int AS n FROM course_releases WHERE course_id='layout'")).rows[0].n,1,'Unchanged republish reuses immutable content like exams');
+  const editingLayout=await service.unpublish(teacher,'layout',{version:unchanged.version});
+  await service.save(teacher,'layout',{version:editingLayout.version,knowledgeLayout:KNOWLEDGE_LAYOUT_VERSION,course:oldWriter});
   assert.equal((await service.getCourse(teacher,'layout',{edit:true})).course.chapters[0].knowledge[0].contentVersion,1,'A capable editor can deliberately reset to classic layout');
   assert.equal((await service.getLesson(student,'layout','knowledge')).lesson.blocks[0].align,'justify','Resetting authoring never rewrites an enrolled release');
+  // Model pre-version-label releases without rewriting their immutable content.
+  const legacySnapshot=(await query("SELECT snapshot FROM course_releases WHERE course_id='blocks'")).rows[0].snapshot;
+  await query("UPDATE course_releases SET metadata=metadata-'contentHash'-'publicationLabel'-'publicationVersion' WHERE course_id='blocks'");
+  const legacyEditor=await service.getCourse(teacher,'blocks',{edit:true});assert.equal(legacyEditor.publicationLabel,'1.0.0');
+  const legacyUnlock=await service.unpublish(teacher,'blocks',{version:legacyEditor.version});const legacyPublish=await service.publish(teacher,'blocks',{version:legacyUnlock.version});assert.equal(legacyPublish.reused,true);assert.equal(legacyPublish.publicationLabel,'1.0.0');
+  assert.deepEqual((await query("SELECT snapshot FROM course_releases WHERE course_id='blocks'")).rows[0].snapshot,legacySnapshot,'Legacy publication content is not migrated or rewritten');
   const {default:Fastify}=await import('../server/node_modules/fastify/fastify.js');
   const app=Fastify();registerCourseRoutes(app,{service,userFor:async request=>{const user=[student,teacher,other,master,second].find(u=>u.id===request.headers['x-test-user']);if(!user)throw Object.assign(new Error('Login required'),{statusCode:401});return user;}});
   try{
     assert.equal((await app.inject({method:'GET',url:'/api/courses'})).statusCode,401);
     assert.equal((await app.inject({method:'GET',url:'/api/courses/paid?edit=1',headers:{'x-test-user':'student'}})).statusCode,403);
+    for(const actor of ['student','other'])assert.equal((await app.inject({method:'POST',url:'/api/courses/paid/unpublish',headers:{'x-test-user':actor},payload:{version:2}})).statusCode,403);
+    assert.equal((await app.inject({method:'PUT',url:'/api/courses/paid',headers:{'x-test-user':'teacher'},payload:{version:2,course:{...makeCourse(600000),title:'Blocked HTTP edit'}}})).statusCode,409);
     const response=await app.inject({method:'GET',url:'/api/courses/paid',headers:{'x-test-user':'second'}});assert.equal(response.statusCode,200);assert.doesNotMatch(response.body,/PRIVATE|correctAnswer/);
   }finally{await app.close();}
   console.log('Courses isolated SQL/HTTP: schema retry, ownership, answer secrecy, enrollment, revisions, grading, idempotency and archive passed.');
