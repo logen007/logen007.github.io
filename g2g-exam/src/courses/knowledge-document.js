@@ -18,7 +18,7 @@ export function knowledgeDocument(lesson,document){
   const content=knowledgeBlocks(lesson).map(block=>{
     if(block.type==='image')return {type:'image',attrs:{blockId:block.id,src:block.url,alt:block.alt||'',align:block.align||'center',width:block.width||100}};
     const heading=block.text.match(/^\[headline\]([\s\S]*)\[\/headline\]$/i);
-    return {type:heading?'heading':'paragraph',attrs:{blockId:block.id,...(heading?{level:2}:{})},content:inline(heading?heading[1]:block.text)};
+    return {type:heading?'heading':'paragraph',attrs:{blockId:block.id,textAlign:block.align||'left',...(heading?{level:2}:{})},content:inline(heading?heading[1]:block.text)};
   });
   return {type:'doc',content:content.length?content:[{type:'paragraph',attrs:{blockId:'block-'+crypto.randomUUID()}}]};
 }
@@ -30,5 +30,5 @@ export function documentKnowledgeBlocks(document){
   };
   return (document.content||[]).map(node=>node.type==='image'
     ?{id:node.attrs.blockId,type:'image',url:node.attrs.src,alt:node.attrs.alt||'',align:node.attrs.align||'center',width:Number(node.attrs.width)||100}
-    :{id:node.attrs.blockId,type:'text',text:node.type==='heading'?`[headline]${inline(node)}[/headline]`:inline(node)});
+    :{id:node.attrs.blockId,type:'text',text:node.type==='heading'?`[headline]${inline(node)}[/headline]`:inline(node),...(node.attrs.textAlign&&node.attrs.textAlign!=='left'?{align:node.attrs.textAlign}:{})});
 }

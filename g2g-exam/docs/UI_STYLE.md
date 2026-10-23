@@ -107,6 +107,8 @@ derived from the active theme text rather than saturated brand yellow. Keep
 keyboard focus visible on buttons, links and fields; do not use it for selection.
 Inline code fields draw the input focus around their rounded shared shell only;
 the submit arrow retains its own keyboard focus. Forced colors use Highlight.
+Owner exception (23 October): the course knowledge writing canvas has no focus
+rectangle; its formatting toolbar, resize handles and form fields retain keyboard focus.
 
 Filter dropdowns, profile forms and exam access controls use the shared form rule in styles.css:
 44px height, 14px horizontal padding, one native chevron and common focus/hover states.

@@ -1850,14 +1850,30 @@ button.course-lesson-row:focus-visible { outline:1px solid var(--focus-ring); ou
 .course-knowledge-toolbar [aria-pressed="true"] { background:var(--brand-primary); color:var(--brand-on-primary); border-color:var(--brand-primary); }
 .course-knowledge-toolbar-divider { width:1px; height:24px; background:var(--vien); }
 .course-knowledge-image-tools>.truong { width:auto; min-width:72px; }
-.course-knowledge-image-tools>input { flex:1 1 160px; }
+.course-knowledge-image-tools>input[type="text"],.course-knowledge-image-tools>input:not([type]) { flex:1 1 160px; }
+.course-knowledge-image-size { display:flex; align-items:center; gap:8px; font-size:14px; }
+.course-knowledge-image-size>.truong { width:76px; min-width:0; }
+.course-knowledge-image-tools>input[type="range"] { width:120px; min-width:72px; accent-color:var(--brand-primary); }
 .course-knowledge-canvas { padding:20px; min-width:0; }
 .course-knowledge-canvas .tiptap { min-height:380px; min-width:0; overflow-wrap:anywhere; line-height:1.7; }
-.course-knowledge-canvas .tiptap:focus-visible { outline:1px solid var(--focus-ring); outline-offset:8px; }
+.course-knowledge-canvas .tiptap,.course-knowledge-canvas .tiptap:focus,.course-knowledge-canvas .tiptap:focus-visible { outline:none; border:0; box-shadow:none; }
 .course-knowledge-canvas .tiptap p { margin:0 0 12px; min-height:1.7em; white-space:pre-wrap; }
 .course-knowledge-canvas .tiptap h2 { margin:20px 0 12px; }
 .course-knowledge-canvas .tiptap img { display:block; max-width:100%; height:auto; max-height:none; object-fit:contain; cursor:grab; }
 .course-knowledge-canvas .tiptap .ProseMirror-selectednode { outline:none; }
+.course-knowledge-image-node { position:relative; max-width:100%; margin:12px 0; }
+.course-knowledge-image-node[data-align="center"] { margin-inline:auto; }
+.course-knowledge-image-node[data-align="right"] { margin-left:auto; margin-right:0; }
+.course-knowledge-canvas .tiptap .course-knowledge-image-node>img { width:100%; margin:0; }
+.course-knowledge-resize-handle { display:none; position:absolute; bottom:0; width:24px; height:24px; padding:0; border:0; background:transparent; border-radius:4px; touch-action:none; }
+.course-knowledge-resize-handle::after { content:''; position:absolute; width:10px; height:10px; bottom:4px; background:var(--brand-primary); border:1px solid var(--brand-on-primary); border-radius:2px; }
+.course-knowledge-resize-handle[data-knowledge-resize="left"] { left:0; cursor:nesw-resize; }
+.course-knowledge-resize-handle[data-knowledge-resize="right"] { right:0; cursor:nwse-resize; }
+.course-knowledge-resize-handle[data-knowledge-resize="left"]::after { left:4px; }
+.course-knowledge-resize-handle[data-knowledge-resize="right"]::after { right:4px; }
+.course-knowledge-image-node[data-selected="true"]>.course-knowledge-resize-handle,.course-knowledge-image-node[data-resizing]>.course-knowledge-resize-handle { display:block; }
+.course-knowledge-image-node[data-align="left"]>[data-knowledge-resize="left"],.course-knowledge-image-node[data-align="right"]>[data-knowledge-resize="right"] { display:none; }
+@media(any-pointer:coarse) { .course-knowledge-resize-handle { width:44px; height:44px; } }
 .course-knowledge-editor[data-empty="true"] .tiptap>p:first-child::before { content:'Viết nội dung… hoặc chèn ảnh'; color:var(--phu); float:left; height:0; pointer-events:none; }
 .course-knowledge-upload-status { display:block; padding:0 12px; }
 .course-knowledge-upload-status:empty { display:none; }

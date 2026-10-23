@@ -23,6 +23,7 @@ try{
   const editor=mount({id:'first',body:'Hallo Welt'});assert.equal(main.querySelectorAll('[contenteditable="true"]').length,1);assert.equal(main.querySelector('textarea'),null);
   editor.commands.setTextSelection({from:1,to:6});command('bold');assert.equal(blocks()[0].text,'[b]Hallo[/b] Welt');assert.ok(main.querySelector('.tiptap strong'));
   command('undo');assert.equal(blocks()[0].text,'Hallo Welt');command('redo');assert.equal(blocks()[0].text,'[b]Hallo[/b] Welt');
+  for(const align of ['center','right','justify','left']){command('align-'+align);assert.equal(blocks()[0].align,align==='left'?undefined:align);assert.equal(main.querySelector('.tiptap p').style.textAlign,align);assert.equal(main.querySelector(`[data-knowledge-command="align-${align}"]`).getAttribute('aria-pressed'),'true');}
   editor.commands.setTextSelection(7);const point=binding.capture();
   editor.commands.insertContentAt(1,'Neu '); // User continues typing while upload waits.
   binding.insertImages(['/uploads/one.jpg','/uploads/two.jpg'],{point});
@@ -33,14 +34,29 @@ try{
   const firstImage=blocks().find(block=>block.type==='image').id;selectImage(firstImage);
   binding.insertImages(['/uploads/adjacent.jpg'],{point:binding.capture()});assert.equal(blocks().filter(block=>block.type==='image').length,3,'Insert next to a selected image, never replace it implicitly');command('undo');selectImage(firstImage);
   assert.equal(main.querySelector('[data-knowledge-image-tools]').hidden,false);
-  for(const [key,value] of [['align','right'],['width','50'],['alt','Ảnh <minh họa>']]){const input=main.querySelector(`[data-knowledge-image-field="${key}"]`);input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));}
-  assert.equal(blocks().find(block=>block.id===firstImage).width,50);assert.equal(main.querySelector(`img[data-knowledge-id="${firstImage}"]`).style.width,'50%');
+  command('align-right');assert.equal(blocks().find(block=>block.id===firstImage).align,'right');assert.equal(main.querySelector('[data-knowledge-command="align-justify"]').disabled,true);
+  for(const [key,value] of [['width','37'],['alt','Ảnh <minh họa>']]){const input=main.querySelector(`[data-knowledge-image-field="${key}"]`);input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));}
+  const imageView=()=>main.querySelector(`.course-knowledge-image-node[data-knowledge-id="${firstImage}"]`);
+  assert.equal(blocks().find(block=>block.id===firstImage).width,37);assert.equal(imageView().style.width,'37%');
   assert.equal(main.querySelector(`img[data-knowledge-id="${firstImage}"]`).alt,'Ảnh <minh họa>');
+  // Controlled geometry only: verify pointer transaction/cancel/history, not drag UX.
+  editor.view.dom.getBoundingClientRect=()=>({width:1000,left:0,right:1000,top:0,bottom:600,height:600});
+  const pointer=(target,type,x)=>{const event=new window.MouseEvent(type,{clientX:x,button:0,bubbles:true,cancelable:true});Object.defineProperty(event,'pointerId',{value:7});target.dispatchEvent(event);};
+  pointer(imageView().querySelector('[data-knowledge-resize="left"]'),'pointerdown',500);pointer(document,'pointermove',400);
+  assert.equal(imageView().style.width,'47%');assert.equal(blocks().find(block=>block.id===firstImage).width,37,'Pointer moves preview only, without autosave transactions');
+  pointer(document,'pointerup',400);assert.equal(blocks().find(block=>block.id===firstImage).width,47);command('undo');assert.equal(blocks().find(block=>block.id===firstImage).width,37);
+  selectImage(firstImage);pointer(imageView().querySelector('[data-knowledge-resize="left"]'),'pointerdown',500);pointer(document,'pointermove',400);pointer(document,'pointercancel',400);
+  assert.equal(imageView().style.width,'37%');assert.equal(blocks().find(block=>block.id===firstImage).width,37);
+  command('align-center');pointer(imageView().querySelector('[data-knowledge-resize="right"]'),'pointerdown',500);pointer(document,'pointermove',550);pointer(document,'pointerup',550);
+  assert.equal(blocks().find(block=>block.id===firstImage).width,47,'Centered image resizes on both sides of its center');
+  imageView().querySelector('[data-knowledge-resize="right"]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',shiftKey:true,bubbles:true}));assert.equal(blocks().find(block=>block.id===firstImage).width,57);
+  imageView().querySelector('[data-knowledge-resize="right"]').dispatchEvent(new KeyboardEvent('keydown',{key:'Home',bubbles:true}));assert.equal(blocks().find(block=>block.id===firstImage).width,10);
+  const width=main.querySelector('input[type="number"][data-knowledge-image-field="width"]');width.value='37';width.dispatchEvent(new Event('input',{bubbles:true}));
   binding.insertImages(['/uploads/replaced.jpg'],{replaceId:firstImage});assert.equal(blocks().find(block=>block.id===firstImage).url,'/uploads/replaced.jpg');
   command('undo');assert.equal(blocks().find(block=>block.id===firstImage).url,'/uploads/one.jpg');
   selectImage(firstImage);command('image-up');assert.equal(blocks()[0].id,firstImage);command('image-down');assert.equal(blocks()[1].id,firstImage);
   selectImage(firstImage);command('image-remove');assert.equal(blocks().some(block=>block.id===firstImage),false);command('undo');assert.equal(blocks().some(block=>block.id===firstImage),true);
-  editor.commands.setTextSelection(2);command('heading');assert.match(blocks()[0].text,/^\[headline\]/);command('heading');assert.doesNotMatch(blocks()[0].text,/^\[headline\]/);
+  editor.commands.setTextSelection(2);command('heading');assert.match(blocks()[0].text,/^\[headline\]/);command('align-center');assert.equal(blocks()[0].align,'center');command('heading');assert.doesNotMatch(blocks()[0].text,/^\[headline\]/);assert.equal(blocks()[0].align,'center','Changing paragraph style retains alignment');
   editor.commands.setTextSelection(2);editor.commands.splitBlock();assert.equal(new Set(blocks().map(block=>block.id)).size,blocks().length,'Enter repairs inherited duplicate IDs before persistence');
   const before=blocks();editor.commands.setContent({type:'doc',content:Array.from({length:101},()=>({type:'paragraph'}))});assert.deepEqual(blocks(),before);assert.match(notices.at(-1),/100/);
   editor.commands.setContent({type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'x'.repeat(100001)}]}]});assert.deepEqual(blocks(),before);assert.match(notices.at(-1),/100.000/);
@@ -53,6 +69,8 @@ try{
   const dropEvent={dataTransfer:{files:[file]},clientX:0,clientY:0,preventDefault(){this.prevented=true;}};
   editor.view.someProp('handleDrop',handle=>handle({posAtCoords:()=>({pos:1})},dropEvent,null,false));assert.equal(dropEvent.prevented,true);assert.equal(pastes.length,2);binding.release(pastes[1].options.point);
   assert.equal(editor.schema.nodes.image.spec.draggable,true,'Native image drag remains delegated to the editor engine');
-  const final=saved;binding.destroy();assert.equal(editor.isDestroyed,true);mount({id:'reopen',blocks:final});assert.deepEqual(normalizeKnowledgeBlocks(blocks(),courseMediaUrl).blocks,final,'Visual content reopens from the existing safe block shape');
+  const final=saved;selectImage(firstImage);pointer(imageView().querySelector('[data-knowledge-resize="right"]'),'pointerdown',500);binding.destroy();pointer(document,'pointermove',100);pointer(document,'pointerup',100);assert.equal(editor.isDestroyed,true);mount({id:'reopen',blocks:final});assert.deepEqual(normalizeKnowledgeBlocks(blocks(),courseMediaUrl).blocks,final,'Visual content reopens with text alignment and custom image size; destroyed drag has no pending writes');
+  binding.editor.commands.setContent(knowledgeDocument({blocks:[{id:'paragraph',type:'text',text:'Paragraph'},{id:'heading',type:'text',text:'[headline]Heading[/headline]'}]},document));
+  binding.editor.commands.setTextSelection({from:1,to:binding.editor.state.doc.content.size-1});command('align-justify');assert.ok(blocks().every(block=>block.align==='justify'),'One selection aligns paragraphs and headings together');
   console.log('Visual knowledge editor: real formatting/history, caret image batches, mapped async insertion, image controls, paste/drop entry, IDs/limits, safe markup and reopen passed.');
 }finally{binding?.destroy();dom.window.close();}

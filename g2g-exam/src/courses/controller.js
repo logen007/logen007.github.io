@@ -8,7 +8,7 @@ import {bindImageRemoval} from '../ui/image-remove.js';
 import {confirmAction} from '../ui/confirm.js';
 import {uploadCourseImage,validateImageFile} from '../media.js';
 import {COURSE_IMAGE_MAX_BYTES} from '../domain/media-limits.js';
-import {knowledgeBlocks,MAX_KNOWLEDGE_BLOCKS} from '../domain/course-knowledge.js';
+import {knowledgeBlocks,MAX_KNOWLEDGE_BLOCKS,KNOWLEDGE_LAYOUT_VERSION} from '../domain/course-knowledge.js';
 import {questionProfileAt} from '../domain/question-profile.js';
 
 const fresh=route=>({route,loading:true,error:'',filters:{search:'',level:'',fee:''},catalog:null,dirty:false,practiceDirty:false,practiceAnswers:{},practiceResult:null,editLesson:'',pendingAudio:new Map()});
@@ -98,7 +98,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
         while(target===state&&target.dirty){
           if(!target.pendingEditorSave){
             const revision=editorRevision;await collectEditor();
-            target.pendingEditorSave={revision,body:{version:target.editor.version,course:normalizeCourse(target.editor.course)}};
+            target.pendingEditorSave={revision,body:{version:target.editor.version,knowledgeLayout:KNOWLEDGE_LAYOUT_VERSION,course:normalizeCourse(target.editor.course)}};
           }
           const pending=target.pendingEditorSave;editorStatus('Đang lưu…');
           const saved=await api(coursePath(target.editor.id),{method:'PUT',body:pending.body});

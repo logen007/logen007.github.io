@@ -13,12 +13,22 @@ const exercise=normalizeCourseExercise({section:{id:'part',questionProfile:{layo
 const course=normalizeCourse({title:'A1',coverUrl:'/uploads/course.jpg',price:0,shortDescription:'Tiếng Đức A1',chapters:[{id:'c1',title:'Chào hỏi',knowledge:[{id:'k1',title:'Kiến thức',body:'Hallo!'}],exercises:[{id:'e1',title:'Bài tập',exercise}]}]});
 assert.doesNotThrow(()=>assertCoursePublishable(course));
 assert.equal(course.chapters[0].knowledge[0].blocks,undefined,'Legacy records keep their original shape until edited');
+const withTrial=structuredClone(course);withTrial.chapters[0].knowledge[0].trial=true;withTrial.chapters[0].exercises[0].trial=true;
+assert.equal(normalizeCourse(withTrial).chapters[0].knowledge[0].trial,true);assert.equal(normalizeCourse(withTrial).chapters[0].exercises[0].trial,true,'Removing authoring trial controls does not alter existing flags');
 const legacy=knowledgeBlocks({id:'k1',imageUrl:'/uploads/old.jpg',body:'Old text'});
 assert.deepEqual(legacy.map(b=>b.type),['image','text']);
 const ordered=[{id:'text-a',type:'text',text:'Before'},{id:'image-a',type:'image',url:'/uploads/a.jpg',align:'right',width:50,alt:'Alt'},{id:'text-b',type:'text',text:'After'},{id:'image-b',type:'image',url:'/uploads/b.jpg',align:'center',width:100}];
 const normalized=normalizeKnowledgeBlocks(ordered,courseMediaUrl);
 assert.equal(normalized.contentVersion,1);assert.equal(normalized.body,'Before\n\nAfter');assert.equal(normalized.imageUrl,'/uploads/a.jpg');
 assert.deepEqual(normalizeKnowledgeBlocks(normalized.blocks,courseMediaUrl),normalized);
+for(const align of ['center','right','justify']){
+  const layout=normalizeKnowledgeBlocks([{id:'text',type:'text',text:'Aligned',align},{id:'image',type:'image',url:'/uploads/a.jpg',width:37}],courseMediaUrl);
+  assert.equal(layout.contentVersion,2);assert.equal(layout.blocks[0].align,align);assert.equal(layout.blocks[1].width,37);
+  assert.deepEqual(normalizeKnowledgeBlocks(layout.blocks,courseMediaUrl),layout,'New layout is stable across retries');
+}
+assert.equal(normalizeKnowledgeBlocks([{id:'text',type:'text',text:'Left',align:'left'}],courseMediaUrl).blocks[0].align,undefined,'Default alignment retains the old shape');
+for(const width of [9,101,37.5,NaN])assert.throws(()=>normalizeKnowledgeBlocks([{id:'image',type:'image',url:'/uploads/a.jpg',width}],courseMediaUrl));
+assert.throws(()=>normalizeKnowledgeBlocks([{id:'text',type:'text',align:'float'}],courseMediaUrl));
 assert.equal(moveKnowledgeBlock(ordered,'image-b','text-a'),true);assert.equal(ordered[0].id,'image-b');
 assert.equal(moveKnowledgeBlock(ordered,'image-b','image-a',true),true);assert.equal(ordered[2].id,'image-b');
 assert.equal(moveKnowledgeBlock(ordered,'missing','text-a'),false);assert.equal(moveKnowledgeBlock(ordered,'text-a','text-a'),false);
