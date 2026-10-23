@@ -600,9 +600,10 @@ Borrow hierarchy and purposeful illustration, not assets, claims or product copy
   Short text choices share one row with 2, 3 or 4 equal columns matching the
   visible option count, including mobile and examples. Keep gaps and 44px touch
   height; long text and image choices retain their readable layouts.
-  Binary +/−, Ja/Nein and Richtig/Falsch controls sit beside the question when
-  space permits, without A/B prefixes. Preserve radio semantics and 44px touch
-  targets; wrap below the question on narrow screens. Apply to examples too.
+  Binary +/−, Ja/Nein and Richtig/Falsch controls form a right-aligned pair beside
+  the question when space permits, consistently aligned across rows without A/B
+  prefixes. Preserve radio semantics and 44px touch targets; wrap below the question
+  on narrow screens while keeping right alignment. Apply to examples too.
   Selecting an answer does not bold its body text; retain normal weight and
   use the existing fill and border. Option letters stay bold.
   Selectable answer cards that already show selection with a border and fill
