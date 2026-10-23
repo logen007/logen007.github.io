@@ -4,7 +4,7 @@ import {bindExamQuestionSidebar} from '../src/ui/exam-question-sidebar.js';
 
 class Element{
   constructor(dataset={},textContent=''){
-    this.dataset=dataset;this.textContent=textContent;this.attrs={};this.events=new Map();
+    this.dataset=dataset;this.textContent=textContent;this.attrs={};this.events=new Map();this.style={};this.children=[];
     const classes=new Set();this.classList={contains:x=>classes.has(x),toggle:(x,on)=>on?classes.add(x):classes.delete(x)};
   }
   addEventListener(type,fn){if(!this.events.has(type))this.events.set(type,new Set());this.events.get(type).add(fn);}
@@ -14,6 +14,8 @@ class Element{
   removeAttribute(k){delete this.attrs[k];}
   closest(selector){return selector==='[data-question-jump]'?this.link||null:this.target||this;}
   matches(selector){return selector==='.cau-thi'&&this.card;}
+  append(child){this.children.push(child);}
+  replaceChildren(...children){this.children=children;}
 }
 const view=new Element();
 let mobile=false,reducedMotion=false;
@@ -37,30 +39,31 @@ sidebar.querySelector=s=>s.includes('-toggle')?toggle:number;
 sidebar.querySelectorAll=()=>links;sidebar.contains=node=>links.includes(node);
 root.querySelector=s=>s==='[data-exam-question-sidebar]'?sidebar:null;
 root.querySelectorAll=()=>controls;
-root.ownerDocument={documentElement:{scrollHeight:5000}};
+root.ownerDocument={documentElement:{scrollHeight:5000},createElement:()=>new Element()};
+const currentNumber=()=>number.dataset.current;
 const click=link=>{link.link=link;sidebar.emit('click',{target:link,preventDefault(){},stopPropagation(){}});};
 let cleanup=bindExamQuestionSidebar(root,view);
-assert.equal(number.textContent,'1');
+assert.equal(currentNumber(),'1');
 for(const i of [1,2,3]){
   click(links[i]);
   assert.equal(view.lastScroll.top,targets[i].top-96);
   assert.equal(view.lastScroll.behavior,'smooth');
   view.emit('scroll');flush();
-  assert.equal(number.textContent,links[i].textContent);
+  assert.equal(currentNumber(),links[i].textContent);
   assert.equal(links[i].attrs['aria-current'],'true');
   view.emit('scroll');flush();
-  assert.equal(number.textContent,links[i].textContent,'The number follows the actual scroll position');
+  assert.equal(currentNumber(),links[i].textContent,'The number follows the actual scroll position');
   view.emit('scrollend');flush();
-  assert.equal(number.textContent,links[i].textContent);
+  assert.equal(currentNumber(),links[i].textContent);
 }
 const gapTop=targets[2].top;targets[2].top=targets[1].top;
 click(links[2]);view.emit('scroll');flush();
-assert.equal(number.textContent,'20','Explicit selection is preserved for gaps on the same row');
+assert.equal(currentNumber(),'20','Explicit selection is preserved for gaps on the same row');
 targets[2].top=gapTop;
 view.scrollY=targets[1].top-96;view.emit('wheel');view.emit('scroll');flush();
-assert.equal(number.textContent,'9','Manual scroll uses the real sidebar number');
+assert.equal(currentNumber(),'9','Manual scroll uses the real sidebar number');
 targets[1].top+=650;view.emit('resize');flush();
-assert.equal(number.textContent,'20','Layout updates reconsider the visible question');
+assert.equal(currentNumber(),'20','Layout updates reconsider the visible question');
 toggle.emit('click');
 assert.equal(sidebar.classList.contains('is-open'),true);
 click(links[0]);
@@ -82,33 +85,39 @@ assert.equal(view.events.get('scroll').size,1,'Rebinding has exactly one active 
 cleanup();
 // Smooth scrolling progresses independently of clicks: never count ahead of the viewport.
 targets.forEach((target,i)=>{target.top=[100,500,800,1200][i];});
-const animations=[];
-number.animate=(keyframes,options)=>{const animation={keyframes,options,cancelled:false,cancel(){this.cancelled=true;}};animations.push(animation);return animation;};
 number.textContent='1';view.scrollY=0;mobile=false;instantScroll=false;
 cleanup=bindExamQuestionSidebar(root,view);
+const reel=number.children[0];
+assert.deepEqual(reel.children.map(row=>row.textContent),['1','9','20','25'],'All question numbers are mounted together in one ordered vertical reel');
+assert.equal(reel.style.transform,'translateY(-0em)');
+assert.equal(number.attrs['aria-hidden'],'true','The button accessible label announces only the current question, not the whole reel');
 click(links[3]);flush();
-assert.equal(number.textContent,'1','Clicking a far question must not show its number before scrolling there');
+assert.equal(currentNumber(),'1','Clicking a far question must not show its number before scrolling there');
+assert.equal(reel.style.transform,'translateY(-0em)','The reel does not move ahead of the viewport');
 view.scrollY=404;view.emit('scroll');flush();
-assert.equal(number.textContent,'9');
-assert.equal(animations.at(-1).keyframes[0].transform,'translateY(50%)','Increasing numbers enter from below');
+assert.equal(currentNumber(),'9');
+assert.equal(reel.style.transform,'translateY(-1.35em)','Increasing numbers move the whole reel upward by one equal row');
 view.scrollY=704;view.emit('scroll');flush();
-assert.equal(number.textContent,'20','Intermediate questions stay synchronized during a long jump');
+assert.equal(currentNumber(),'20','Intermediate questions stay synchronized during a long jump');
+assert.equal(reel.style.transform,'translateY(-2.7em)');
 view.scrollY=1104;view.emit('scrollend');flush();
-assert.equal(number.textContent,'25','Destination number appears only when the destination is reached');
+assert.equal(currentNumber(),'25','Destination number appears only when the destination is reached');
+assert.equal(number.children[0],reel,'The persistent reel is not replaced between numbers');
 view.scrollY=404;view.emit('wheel');view.emit('scroll');flush();
-assert.equal(number.textContent,'9');
-assert.equal(animations.at(-1).keyframes[0].transform,'translateY(-50%)','Decreasing numbers enter from above');
-assert.equal(animations.at(-2).cancelled,true,'A new visible question cancels the previous visual transition');
-const count=animations.length;
+assert.equal(currentNumber(),'9');
+assert.equal(reel.style.transform,'translateY(-1.35em)','Decreasing numbers move the same reel downward without resetting it');
 reducedMotion=true;click(links[2]);flush();
-assert.equal(number.textContent,'20','Reduced motion follows the immediate scroll position');
+assert.equal(currentNumber(),'20','Reduced motion follows the immediate scroll position');
 assert.equal(view.lastScroll.behavior,'auto');
-assert.equal(animations.length,count,'Reduced motion does not start an animation');
+assert.equal(reel.style.transition,'none','Reduced motion updates the reel without a transition');
 reducedMotion=false;view.scrollY=1104;view.emit('scroll');flush();
-const last=animations.at(-1);cleanup();
-assert.equal(frames.size,0);assert.equal(last.cancelled,true,'Cleanup cancels the visual transition');
+assert.equal(reel.style.transition,'','Normal motion restores the shared reel transition');
+cleanup();
+assert.equal(frames.size,0);
 assert.equal(number.textContent,'25');
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(css,/\.exam-question-sidebar-panel \{[^}]*border-radius:0;/,'Sidebar panel has square corners');
 assert.match(css,/\.exam-question-sidebar:has\(\.exam-question-link\.is-current\.is-answered\) \.exam-question-sidebar-toggle \{ color:var\(--brand-primary\); \}/,'Toggle text follows the answered state of the current question');
+assert.match(css,/\.exam-question-number-reel \{[^}]*transition:transform 100ms linear;/,'Only the persistent vertical reel moves');
+assert.match(css,/\.exam-question-number-row \{[^}]*height:1\.35em; line-height:1\.35;/,'Every number occupies an equally spaced row matching the clipped viewport');
 console.log('Sidebar: ordinary, heading, gap and table targets; real numbering, smooth jump, manual scroll and cleanup passed.');
