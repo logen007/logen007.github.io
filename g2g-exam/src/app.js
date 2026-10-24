@@ -137,9 +137,11 @@ const saveTimers=new Map();
 const publishingExams=new Set();
 const pendingAudioUploads=new Map();
 
+function defaultLanding(user){
+  return {view:user?(isStudent(user)?'courses':'admin'):'login',adminTab:isMaster(user)?'dashboard':'exams',courseRoute:{page:'catalog'}};
+}
 const ui={
-  view:user?(isStudent(user)?'student-home':'admin'):'login',
-  adminTab:isMaster(user)?'dashboard':'exams',examId:null,attemptId:null,builderExamId:null,builderSectionId:null,
+  ...defaultLanding(user),examId:null,attemptId:null,builderExamId:null,builderSectionId:null,
   gradeAttemptId:null,gradeMode:'best',examFilter:'all',review:null,previewExamId:null,previewSectionIndex:0,previewAnswers:{},infrastructure:isMaster(user)?readCachedInfrastructure():null,online:navigator.onLine,
 };
 
@@ -281,7 +283,7 @@ function loginView(){
 function restoreSignedInRoute(){
   const route=readSpeakingExamRoute(initialUrl.href,user);
   if(route){ui.speakingRoute=route;ui.view='speaking-exams';}
-  else ui.view=isStudent(user)?'student-home':'admin';
+  else{Object.assign(ui,defaultLanding(user));if(isStudent(user)&&initialUrl.searchParams.get('view')==='home')ui.view='student-home';else if(initialUrl.searchParams.get('view')==='courses')ui.courseRoute=readCourseRoute(initialUrl.href,user);}
 }
 
 function studentHomeView(){app.innerHTML=layout(studentHomeHtml({data,user,filter:ui.examFilter,levelFilter:ui.examLevelFilter,kindFilter:ui.examKindFilter||''}));}
@@ -1112,7 +1114,7 @@ function bindGlobal(){
     if(!authenticatedUser?.canTestRoles&&!isMaster(authenticatedUser))return;
     try{
       user=typeof repo.switchTestRole==='function'?await repo.switchTestRole(button.dataset.role):{...authenticatedUser,role:button.dataset.role};
-      authenticatedUser=user;data=await repo.getState();ui.view=isStudent(user)?'student-home':'admin';ui.adminTab='exams';render();
+      authenticatedUser=user;data=await repo.getState();Object.assign(ui,defaultLanding(user));render();
     }catch(error){notify(error?.message||'Không đổi được kiểu tài khoản thử nghiệm.');}
   });
   app.querySelectorAll('[data-action="open-courses"]').forEach(button=>button.onclick=async()=>{if(!await flushBuilderDraft())return;await courses.open({page:button.dataset.coursePage||(isStudent(user)?'catalog':'manage')});});
@@ -1684,6 +1686,7 @@ else{
   const requestedView=initialUrl.searchParams.get('view'),requestedAttempt=initialUrl.searchParams.get('attempt');
   if(user&&requestedView==='speaking-exams'){ui.speakingRoute=readSpeakingExamRoute(initialUrl.href,user);if(['reviews','grade'].includes(ui.speakingRoute.page))ui.gradeKind='speaking';ui.view='speaking-exams';}
   else if(user&&(requestedView==='courses'||initialUrl.searchParams.get('tab')==='courses')){ui.courseRoute=readCourseRoute(initialUrl.href,user);ui.view='courses';ui.adminTab='courses';}
+  else if(requestedView==='home'&&isStudent(user))ui.view='student-home';
   else if(previewExam&&user&&!isStudent(user)){ui.previewExamId=previewId;ui.previewSectionIndex=Math.max(0,Number(initialUrl.searchParams.get('section'))||0);ui.view='preview-exam';}
   else if(requestedView==='results'&&isStudent(user)){
     ui.view='student-results';
