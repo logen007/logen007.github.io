@@ -160,6 +160,7 @@
   --r-sm:12px;
   --pill:999px;
   --control-height:44px;
+  --code-entry-width:144px;
   --control-height-sm:40px;
   --editor-control:40px;
   --control-font-size:14px;
@@ -1332,11 +1333,12 @@ select:focus,textarea:focus { outline:none; box-shadow:none; border-color:var(--
 .student-catalog .the-de h3{font-size:var(--student-exam-title-size);line-height:1.45;height:2.9em;letter-spacing:-.02em}
 .student-catalog .exam-card-status,.student-catalog .the-de .meta{font-size:13px;line-height:1.5}
 .student-catalog .exam-card-tags .nhan{font-size:12px;line-height:1.4}
-.student-catalog .exam-filter{display:grid;grid-template-columns:repeat(2,minmax(0,132px)) 120px;gap:12px;align-items:start}
+.student-catalog .exam-filter{display:grid;grid-template-columns:repeat(2,minmax(0,132px)) var(--code-entry-width);gap:12px;align-items:start}
 .student-catalog .exam-filter .filter-field{min-width:0;max-width:none}
 .student-catalog .exam-filter>.nut{justify-self:end;min-width:0;max-width:100%;white-space:normal;text-align:center}
-@media(max-width:600px){.student-catalog .learner-name h1{font-size:20px}.student-catalog .learner-stats{gap:16px 12px}.student-catalog .learner-stats strong{font-size:20px}.student-catalog .learner-stats .exam-latest-result{font-size:15px}.student-catalog .exam-card-status,.student-catalog .the-de .meta{font-size:12px}.student-catalog .exam-filter{grid-template-columns:repeat(2,minmax(0,1fr)) 110px;gap:6px}.student-catalog .exam-filter select{padding-left:6px;padding-right:16px;background-position:right 4px center;background-size:10px}.student-catalog .exam-filter>.inline-code-entry{width:110px}}
-.inline-code-entry{display:grid;gap:4px;margin:0;min-width:0;width:120px;max-width:100%;justify-self:end}
+@media(max-width:600px){.student-catalog .learner-name h1{font-size:20px}.student-catalog .learner-stats{gap:16px 12px}.student-catalog .learner-stats strong{font-size:20px}.student-catalog .learner-stats .exam-latest-result{font-size:15px}.student-catalog .exam-card-status,.student-catalog .the-de .meta{font-size:12px}.student-catalog .exam-filter{grid-template-columns:repeat(2,minmax(0,1fr)) var(--code-entry-width);gap:6px}.student-catalog .exam-filter select{padding-left:6px;padding-right:16px;background-position:right 4px center;background-size:10px}}
+.inline-code-entry{display:grid;gap:4px;margin:0;min-width:0;width:var(--code-entry-width);max-width:100%;justify-self:end}
+@media(max-width:600px){:root{--code-entry-width:132px}}
 .inline-code-control{display:flex;align-items:center;min-width:0;height:var(--control-height);min-height:var(--control-height);padding:0 4px 0 var(--control-pad-x);border:1px solid var(--control-border);border-radius:var(--pill);background:var(--mat);color:var(--chu);transition:border-color var(--motion-fast)}
 .inline-code-control:hover:not(:has(input:disabled,input:focus)){border-color:var(--control-border-hover)}
 .inline-code-control:has(input:focus){border-color:var(--focus-ring)}
@@ -1346,7 +1348,7 @@ select:focus,textarea:focus { outline:none; box-shadow:none; border-color:var(--
 .inline-code-control .icon-btn{width:calc(var(--control-height) - 2px);height:calc(var(--control-height) - 2px);border:0;background:transparent;color:var(--chu)}
 .inline-code-control .icon-btn:hover:not(:disabled){background:var(--brand-soft);color:var(--brand-text)}
 .inline-code-entry small{font-size:12px;color:var(--do);overflow-wrap:anywhere}
-.learner-actions>.inline-code-entry{flex:0 0 120px;align-self:start}
+.learner-actions>.inline-code-entry{flex:0 0 var(--code-entry-width);align-self:start}
 /* Result-only scale: do not change teacher grading or the exam workspace. */
 .result-page{--control-font-size:14px;font-size:14px;line-height:1.55;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .result-page .result-name h1{font-size:22px;line-height:1.3;overflow-wrap:anywhere}

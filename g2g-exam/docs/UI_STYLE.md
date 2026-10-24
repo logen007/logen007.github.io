@@ -179,9 +179,11 @@ touch targets; editable touch controls retain the shared 16px accessibility rule
 Use text-size-adjust:100% in this catalog only to stabilize automatic inflation,
 without disabling browser zoom. Keep long text wrap-safe and exam typography unchanged.
 The catalog filter row uses two equal 132px maximum desktop tracks and a
-compact 120px inline exam-code input. On mobile the dropdowns share two equal
-columns beside a 110px code input on the same row; use compact dropdown padding.
-Class-code inputs stay 120px wide rather than growing with the Share action.
+144px inline exam-code input. On mobile the dropdowns share two equal
+columns beside a 132px code input on the same row; use compact dropdown padding.
+Owner update (24 October): both exam/class code fields use the shared
+`--code-entry-width` (144px desktop, 132px mobile), capped at available width;
+class-code inputs keep that width rather than growing with the Share action.
 The adjacent profile Share action uses the same field height, border, surface,
 regular control typography and muted text, with the shared outline Share icon;
 do not inherit a separately themed secondary-button border or bold label.

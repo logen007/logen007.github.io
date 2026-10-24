@@ -24,6 +24,12 @@ for(const kind of ['class','exam']){
   await form.onsubmit(event);assert.equal(error.textContent,'Synthetic rejection');assert.equal(button.disabled,false);assert.equal(input.value,'AB123');
 }
 const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.match(css,/--code-entry-width:144px/);
+assert.match(css,/@media\(max-width:600px\)\{:root\{--code-entry-width:132px\}\}/);
+assert.match(css,/\.inline-code-entry\{[^}]*width:var\(--code-entry-width\);max-width:100%/);
+assert.match(css,/\.learner-actions>\.inline-code-entry\{flex:0 0 var\(--code-entry-width\)/);
+assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\) var\(--code-entry-width\)/,'Mobile exam grid reserves the same larger width as the class code field');
 assert.match(app,/bindCodeEntry\(app,'class',code=>openClassEnrollment\(\{repo,user,onSaved:profileSaved,initialCode:code\}\)\)/);
 assert.match(app,/bindCodeEntry\(app,'exam',[\s\S]*?openCodeEntry\(\{repo,initialCode:code/);
 const access=readFileSync(new URL('../src/views/exam-access.js',import.meta.url),'utf8');
