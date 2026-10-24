@@ -37,8 +37,9 @@ function applyCurrentTheme(color,layout={}){
   currentAsciiReveal=layout?.asciiRevealEnabled!==false;
   const root=globalThis.document?.documentElement;
   if(root?.dataset){
-    const value=currentAsciiReveal?'on':'off',changed=root.dataset.asciiReveal!==value;
-    root.dataset.asciiReveal=value;
+    // Global state must not match the per-content [data-ascii-reveal] selector.
+    const value=currentAsciiReveal?'on':'off',changed=root.dataset.asciiEnabled!==value;
+    root.dataset.asciiEnabled=value;
     const win=root.ownerDocument?.defaultView;
     if(changed&&win)win.dispatchEvent(new win.Event('g2g-ascii-preference'));
   }

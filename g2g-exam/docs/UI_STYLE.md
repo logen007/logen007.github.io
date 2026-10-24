@@ -24,6 +24,11 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   Preserve the existing neutral startup rule: no initial page-wide ASCII skeleton.
   The shared switch is Settings → Chung → Giao diện thương hiệu → Hiệu ứng ASCII
   (`theme.asciiRevealEnabled`, enabled by default for existing settings). Use the
+  root attribute `data-ascii-enabled` for this preference; reserve
+  `data-ascii-reveal` exclusively for content targets. They must never share the
+  same attribute, or the root will suppress every nested target. Regression must
+  initialize the real public theme on a document-connected view before binding.
+  Use the
   existing Save action, public theme projection and startup cache; demo changes
   remain browser-local. A saved off value stops active/queued reveals immediately
   and suppresses subsequent reveals without affecting other animations. A saved
