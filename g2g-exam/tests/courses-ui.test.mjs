@@ -262,12 +262,17 @@ try{
   assert.equal(root.querySelector('.course-detail-layout').outerHTML,sameView.querySelector('.course-detail-layout').outerHTML,'Detail preview uses identical learner markup, not a second presentation');
   await action('lesson',`[data-lesson="${knowledgeId}"]`);
   assert.equal(root.querySelectorAll('.course-lesson-content .course-knowledge-content figure').length,2);
+  assert.equal(root.querySelector('.course-shell>[data-course-action="detail"]'),null,'Knowledge preview omits the redundant course-name back button');
+  assert.equal(root.querySelectorAll('[data-course-action="close-preview"]').length,1);
   sameView.innerHTML=courseLearningHtml(controller.getState().preview.current);
+  assert.ok(sameView.querySelector('.course-shell>[data-course-action="detail"]'),'Actual learner lesson navigation keeps its course back button');
   assert.equal(root.querySelector('.course-learning-layout').outerHTML,sameView.querySelector('.course-learning-layout').outerHTML,'Knowledge preview uses the exact learner sidebar, body and footer');
   await action('complete-lesson');assert.equal(controller.getState().preview.current.lesson.lesson.id,exerciseId);
+  assert.equal(root.querySelector('.course-shell>[data-course-action="detail"]'),null,'Exercise preview omits the same redundant back control');
   assert.match(root.querySelector('.course-practice').textContent,/Chọn lời chào mới nhất/,'Preview uses the just-saved edits');
   root.querySelector('.answer-one[value="0"]').click();await action('submit-practice');assert.equal(controller.getState().preview.current.practiceResult.score,1);
   sameView.innerHTML=courseLearningHtml(controller.getState().preview.current);
+  assert.equal(root.querySelector('.course-shell>[data-course-action="detail"]'),null,'Preview results do not bring the duplicate button back');
   assert.equal(root.querySelector('.course-learning-layout').outerHTML,sameView.querySelector('.course-learning-layout').outerHTML,'Exercise result preview uses the exact learner result view');
   await action('retake');root.querySelector('.answer-one[value="1"]').click();await action('submit-practice');assert.equal(controller.getState().preview.current.practiceResult.score,0);
   assert.equal(controller.getState().preview.detail.progress.length,2,'Preview completion is simulated only in its own session');
