@@ -1357,7 +1357,7 @@ async function createNewExam(){
     heading.id='newExamDialogTitle';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby',heading.id);
     modal.querySelector('[data-close]').setAttribute('aria-label','Đóng');
     bindDialogKeyboard(modal,{onDismiss:()=>resolve(null)});
-    const kindField=document.createElement('div');kindField.className='choice-field';kindField.innerHTML='<b>Kiểu đề</b><div class="choice-buttons"><button type="button" id="newExamKind" aria-label="Kiểu đề: Viết" aria-pressed="false">Viết</button></div>';modal.querySelector('.exam-setup-grid').prepend(kindField);
+    const kindField=document.createElement('div');kindField.className='choice-field';kindField.innerHTML='<b>Kiểu đề</b><div class="choice-buttons"><button type="button" id="newExamKind" aria-label="Kiểu đề: Viết" aria-pressed="false">Viết</button></div>';modal.querySelector('.exam-setup-name').insertAdjacentElement('beforebegin',kindField);
     const kindButton=kindField.querySelector('#newExamKind');
     for(const nextLevel of ['C1','C2']){const button=document.createElement('button');button.type='button';button.dataset.level=nextLevel;button.textContent=nextLevel;modal.querySelector('#newExamLevels').append(button);}
     let provider='GOETHE',level='A1',kind='written';
@@ -1371,7 +1371,7 @@ async function createNewExam(){
     const suggest=()=>{if(!title.value)title.placeholder=`Ví dụ: ${provider} ${level} – ${kind==='speaking'?'Đề nói':'Đề thi thử'} 01`;};
     modal.querySelectorAll('[data-level]').forEach(button=>button.onclick=()=>{level=button.dataset.level;syncLevels();});
     modal.querySelectorAll('[data-provider]').forEach(button=>button.onclick=()=>{provider=button.dataset.provider;syncLevels();});
-    kindButton.onclick=()=>{kind=kind==='written'?'speaking':'written';kindButton.textContent=kind==='speaking'?'Nói':'Viết';kindButton.setAttribute('aria-label','Kiểu đề: '+kindButton.textContent);kindButton.setAttribute('aria-pressed',String(kind==='speaking'));suggest();};
+    kindButton.onclick=()=>{kind=kind==='written'?'speaking':'written';kindButton.textContent=kind==='speaking'?'Nói':'Viết';kindButton.classList.toggle('active',kind==='speaking');kindButton.setAttribute('aria-label','Kiểu đề: '+kindButton.textContent);kindButton.setAttribute('aria-pressed',String(kind==='speaking'));suggest();};
     syncLevels();
     modal.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{modal.remove();resolve(null);});
     modal.querySelector('#confirmNewExam').onclick=()=>{const value=title.value.trim()||(kind==='speaking'?`${provider} ${level} – Đề nói mới`:`${provider} ${level} – Bản nháp`);modal.remove();resolve({level,provider,kind,title:value});};
