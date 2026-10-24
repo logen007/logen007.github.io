@@ -58,8 +58,8 @@ try{
  for(const [id,user] of Object.entries(users))await query('INSERT INTO users(id,email,role,data) VALUES($1,$2,$3,$4::jsonb)',[id,id+'@example.test',user.role,JSON.stringify({name:id.toUpperCase(),level:'A1',classId:['d','f'].includes(id)?'class-2':'class-1',profileCompletedAt:new Date(time).toISOString()})]);
  assert.equal((await send('POST','','a',{title:'No',level:'B1'})).statusCode,403);
  assert.equal((await send('POST','','t',{title:'No',level:'B1'},{origin:'https://evil.test'})).statusCode,403);
- let {exam}=await must(send('POST','','t',{title:'G2G speaking',level:'B1'})),examId=exam.id;
- assert.equal(exam.kind,'speaking');assert.equal(exam.provider,null);
+ let {exam}=await must(send('POST','','t',{title:'G2G speaking',level:'B1',provider:'GOETHE'})),examId=exam.id;
+ assert.equal(exam.kind,'speaking');assert.equal(exam.provider,'GOETHE');
  assert.equal((await send('GET','/'+examId,'x')).statusCode,403);
  assert.equal((await send('GET','/'+examId,'a')).statusCode,403);
  assert.equal((await send('POST','/'+examId+'/publish','t',{})).statusCode,400,'Incomplete publication rejected');

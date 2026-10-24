@@ -38,7 +38,8 @@ must not change the existing ordinary exam or isolated speaking-trial rules.
 ## Implementation contracts
 
 Existing `exams` and `exam_releases` own authoring/publication. New exam JSON uses
-`kind:'speaking'`, `provider:null`, `learningLevel:null`, ordinary title/level/status
+`kind:'speaking'`, a separate `provider` (GOETHE/TELC/FID; legacy null remains valid),
+`learningLevel:null`, ordinary title/level/status
 metadata, `sections:[]`, and `speaking:{stages:[...]}`. Each stage has
 `id,title,instruction,promptA,promptB,imageAUrl,imageBUrl,seconds,speakerSeat` and
 `criteria:[{id,label,maxScore}]`; speakerSeat is `both`, `A` or `B`.

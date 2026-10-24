@@ -17,7 +17,7 @@ const isTeacher=u=>u?.role==='teacher'||u?.role==='master';
 export function speakingCatalogExam(exam){
   const safe={};
   for(const key of ['id','kind','title','level','status','ownerId','ownerName','hidden','locked','publicationVersion','publicationLabel','updatedAt','createdAt'])if(exam[key]!==undefined)safe[key]=exam[key];
-  safe.provider=null;safe.learningLevel=null;safe.sections=[];
+  safe.provider=exam.provider??null;safe.learningLevel=null;safe.sections=[];
   safe.partCount=exam.speaking?.stages?.length??exam.partCount??0;
   safe.durationSeconds=exam.speaking?.stages?.reduce((sum,part)=>sum+(Number(part.seconds)||0),0)??exam.durationSeconds??0;
   return safe;
