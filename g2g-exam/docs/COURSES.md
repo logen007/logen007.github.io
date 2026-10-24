@@ -150,6 +150,18 @@ pointer-up commits one undoable change, cancellation/blur restores the saved siz
 and editor disposal removes drag listeners. Autosave never remounts the writing surface/history.
 There is no duplicate preview underneath; the top global preview remains.
 
+Authoring preview uses the same `courseDetailHtml` and `courseLearningHtml` as the
+learner, not a flattened all-lessons page or a standalone exercise sheet. Start
+global preview on the course detail, navigate the real curriculum/sidebar and
+render one selected lesson at a time; exercise preview opens that lesson directly.
+Use the same course level, safe exercise projection, knowledge layout, question
+renderer, validation, scoring and result view. Show only a separate return-to-edit
+toolbar indicating this is a preview. Flush pending authoring before entry and
+preserve the selected editor on return. A cloned in-memory session simulates
+answers, completion, retakes and navigation, including published courses; preview
+actions must never reach enrollment/progress/submission APIs or change any pinned
+learner version. Empty courses still show their real detail without invented lessons.
+
 The editor's document is temporary UI state. Save the existing ordered safe
 text/image `blocks`, at most 100, using the existing formatting markers (including
 `[headline]`); do not introduce a new stored document schema. Preserve old image,
