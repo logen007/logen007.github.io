@@ -1,5 +1,6 @@
 import {courseRequest,coursePath} from './api.js';
 import {coursePageHtml} from './views.js';
+import {createCoursePreview,coursePreviewAction} from './preview.js';
 import {courseLessons,normalizeCourse,validateCourseAnswers} from '../domain/courses.js';
 import {newCourseExercise,newCourseQuestion,courseEditorContext,bindCourseExerciseEditor,collectCourseExercise,changeCoursePrompt} from './exercise-editor.js';
 import {bindLetterAnswers} from '../ui/letter-answers.js';
@@ -55,7 +56,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       if(target!==state||token!==generation)return;
       Object.assign(state,data,{loading:false});
       if(route.page==='edit'&&route.lesson&&courseLessons(state.editor.course).some(l=>l.id===route.lesson))state.editLesson=route.lesson;
-      if(route.page==='edit'&&route.step==='preview')state.previewCourse=true;
+      if(route.page==='edit'&&route.step==='preview')state.preview=createCoursePreview(state.editor);
       repaint();
     }catch(error){if(target!==state||token!==generation||loadController.signal.aborted)return;state.loading=false;state.error=error.message;repaint();}
   }
@@ -81,12 +82,12 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     }
     const editor=root.querySelector('[data-course-exercise-editor]');
     if(editor&&!readOnly()){bindCourseExerciseEditor(editor,state.exerciseContext,state.pendingAudio,notify,markDirty);bindImageRemoval(editor,markDirty);}
-    const exercise=state.lesson?.lesson.kind==='exercise'&&!state.practiceResult?state.lesson.lesson.exercise:state.previewExercise;
+    const practice=state.preview?.current||(!state.preview?state:null);
+    const exercise=practice?.lesson?.lesson.kind==='exercise'&&!practice.practiceResult?practice.lesson.lesson.exercise:null;
     if(exercise){
-      bindLetterAnswers(root,exercise.questions,state.practiceAnswers,(id,value)=>{state.practiceAnswers[id]=value;queuePractice();});
+      bindLetterAnswers(root,exercise.questions,practice.practiceAnswers,(id,value)=>{practice.practiceAnswers[id]=value;queuePractice();});
       bindAudio?.({id:'course-practice'},{preview:true,repeatable:true});
     }
-    if(state.previewCourse)bindAudio?.({id:'course-preview'},{preview:true,repeatable:true});
   }
   async function collectEditor(){
     const lesson=currentLesson(),editor=root.querySelector('[data-course-exercise-editor]');
@@ -118,13 +119,15 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     try{await savingEditor;}finally{savingEditor=null;}
   }
   function readPractice(){
+    const practice=state.preview?.current||state;
     const answers=readExamAnswers(root);
     for(const input of root.querySelectorAll('[data-letter-answer]'))if(!input.disabled)answers[input.dataset.q]=input.value===''?null:Number(input.value);
     for(const input of root.querySelectorAll('.answer-many')){answers[input.dataset.q]??=[];if(input.checked)answers[input.dataset.q].push(Number(input.value));}
-    Object.assign(state.practiceAnswers,answers);
-    return structuredClone(state.practiceAnswers);
+    Object.assign(practice.practiceAnswers,answers);
+    return structuredClone(practice.practiceAnswers);
   }
   function queuePractice(){
+    if(state.preview){if(state.preview.current?.lesson.lesson.kind==='exercise'&&!state.preview.current.practiceResult)readPractice();return;}
     if(state.route.page!=='learn'||state.lesson?.lesson.kind!=='exercise'||state.lesson.trial||state.practiceResult)return;
     readPractice();state.practiceDirty=true;setStatus('Chưa lưu…');clearTimeout(practiceTimer);
     practiceTimer=setTimeout(()=>flushPractice().catch(error=>{setStatus('Chưa lưu · '+error.message);notify(error.message);}),700);
@@ -173,6 +176,14 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   }
   async function action(name,button){
     const id=button.dataset.id||state.route.id,course=state.editor?.course;
+    if(state.preview){
+      const answers=state.preview.current?.lesson.lesson.kind==='exercise'&&!state.preview.current.practiceResult?readPractice():undefined;
+      if(name==='close-preview'){
+        state.preview=null;
+        if(state.route.step==='preview')return go({page:'edit',id:state.editor.id,step:'info'});
+      }else coursePreviewAction(state.preview,name,{lessonId:button.dataset.lesson,answers});
+      repaint();return; // Preview actions must never reach enrollment/progress APIs.
+    }
     if(published()&&!publishedActions.has(name))throw Error('Hãy bỏ xuất bản khóa học trước khi chỉnh sửa.');
     if(['catalog','mine','manage','detail','edit','members','learn'].includes(name))return go({page:name,id:['catalog','mine','manage'].includes(name)?'':id});
     if(name==='lesson')return go({page:'learn',id,lesson:button.dataset.lesson});
@@ -248,9 +259,8 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       await collectEditor();const q=currentLesson().exercise.questions.find(q=>q.id===button.dataset.q);if(!q)return;
       if(name==='add-pair')q.pairs.push(['','']);else q.pairs.splice(Number(button.dataset.index),1);markDirty();repaint();return;
     }
-    if(name==='preview-exercise'){await saveEditor();state.previewExercise=structuredClone(currentLesson().exercise);state.practiceAnswers={};repaint();return;}
-    if(name==='preview-course'){await saveEditor();state.previewCourse=true;repaint();return;}
-    if(name==='close-preview'){if(state.route.step==='preview')return go({page:'edit',id:state.editor.id,step:'info'});state.previewExercise=null;state.previewCourse=false;repaint();return;}
+    if(name==='preview-exercise'){await saveEditor();state.preview=createCoursePreview(state.editor,state.editLesson);repaint();return;}
+    if(name==='preview-course'){await saveEditor();state.preview=createCoursePreview(state.editor);repaint();return;}
     if(name==='publish'){
       await saveEditor();state.publicationBusy=true;repaint();
       try{Object.assign(state.editor,await api(coursePath(state.editor.id,'/publish'),{method:'POST',body:{version:state.editor.version}}));}
@@ -322,6 +332,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   });
   const input=event=>{
     const field=event.target;
+    if(state.preview){if(field.closest('.course-practice'))queuePractice();return;}
     if(field.closest('[data-knowledge-editor]'))return;
     if(field.dataset.courseFilter){
       state.filters[field.dataset.courseFilter]=field.value;clearTimeout(searchTimer);
