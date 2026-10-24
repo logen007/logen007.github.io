@@ -1,5 +1,5 @@
 import {hmsRequest,hmsPresence} from './speaking-hms.js';
-import {SPEAKING_PREP_SECONDS,SPEAKING_RECOVERY_SECONDS} from '../../src/speaking/exam-model.js';
+import {speakingPreparationSeconds,SPEAKING_RECOVERY_SECONDS} from '../../src/speaking/exam-model.js';
 
 export const SPEAKING_EXAM_TERMINAL=new Set(['completed','cancelled','interrupted']);
 export const SPEAKING_ROOM_CAPACITY_LOCK='g2g-speaking-room-capacity';
@@ -40,7 +40,7 @@ export async function tickSpeakingExam(d,config,{time=Date.now(),request=hmsRequ
   return;
  }
  if(d.state==='preparing'){
-  d.prepDeadline??=time+SPEAKING_PREP_SECONDS*1000;
+  d.prepDeadline??=time+speakingPreparationSeconds(d.examSnapshot?.speaking)*1000;
   if(time>=d.prepDeadline||d.members.every(m=>d.ready[m.id])){d.state='joining';d.joinDeadline=time+120000;d.error='';}
   else return;
  }

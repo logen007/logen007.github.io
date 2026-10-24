@@ -63,7 +63,7 @@ try{
  assert.equal((await send('GET','/'+examId,'x')).statusCode,403);
  assert.equal((await send('GET','/'+examId,'a')).statusCode,403);
  assert.equal((await send('POST','/'+examId+'/publish','t',{})).statusCode,400,'Incomplete publication rejected');
- const edit={...exam,speaking:{stages:[stage,{...stage,id:'part-2',title:'Second part',promptA:'PRIVATE_A_TWO',promptB:'PRIVATE_B_TWO',speakerSeat:'B',criteria:[{id:'fluency',label:'Fluency',maxScore:5}]}]}};
+ const edit={...exam,speaking:{preparationSeconds:180,stages:[stage,{...stage,id:'part-2',title:'Second part',promptA:'PRIVATE_A_TWO',promptB:'PRIVATE_B_TWO',speakerSeat:'B',criteria:[{id:'fluency',label:'Fluency',maxScore:5}]}]}};
  const saveBody={version:exam.version,exam:edit};exam=(await must(send('PUT','/'+examId,'t',saveBody))).exam;
  assert.equal((await must(send('PUT','/'+examId,'t',saveBody))).exam.version,exam.version,'Lost save response exact retry is idempotent');
  assert.equal((await send('PUT','/'+examId,'t',{...saveBody,exam:{...edit,title:'Stale change'}})).statusCode,409);
@@ -80,6 +80,7 @@ try{
  const queue=await must(send('POST','/'+examId+'/queue','a',{}));assert.equal(queue.queue.state,'waiting');assert.equal(queue.queue.examId,examId);
  const parallel=await Promise.all([send('POST','/'+examId+'/queue','b',{}),send('POST','/'+examId+'/queue','c',{})]);for(const r of parallel)assert.equal(r.statusCode,200,r.body);
  const paired=parallel.map(r=>r.json()).find(v=>v.session),id=paired.session.id,p='/sessions/'+id;
+ assert.equal(paired.session.prepDeadline,time+180000);assert.equal(paired.session.preparationSeconds,180,'Preparation uses the immutable published timing');
  assert.equal((await query('SELECT count(*)::int AS n FROM speaking_exam_sessions')).rows[0].n,1,'Concurrent requests create exactly one pair');
  assert.equal((await query('SELECT count(*)::int AS n FROM speaking_exam_members WHERE active=true')).rows[0].n,2);
  assert.equal((await must(send('GET','/queue','a'))).session.id,id,'Existing account resumes same pair');
@@ -191,6 +192,9 @@ try{
  let entered,release;const enteredPromise=new Promise(resolve=>entered=resolve),wait=new Promise(resolve=>release=resolve);deferredCreate={enter:entered,wait};
  const slowWorker=worker();await enteredPromise;time+=120001;await must(send('POST','/sessions/'+fencedId+'/leave','a',{}));release();await slowWorker;deferredCreate=null;
  assert.equal((await view(fencedId)).state,'finishing','Late old worker does not resurrect cancelled attempt');await worker();assert.equal((await view(fencedId)).state,'interrupted');
+ // Missing persisted deadline is recovered using the pinned custom duration.
+ const recoverPrep={...(await sessionRow(id)).data,state:'preparing',roomId:null,roomRequestedAt:null,roomReserved:false,ready:{},markers:[],connectedConsent:{}};delete recoverPrep.prepDeadline;
+ await tickSpeakingExam(recoverPrep,null,{time});assert.equal(recoverPrep.prepDeadline,time+180000);assert.equal(recoverPrep.state,'preparing');
  // Pure deadline transition also survives a process restart with no requests.
  const preparing={...(await sessionRow(id)).data,id:'synthetic-prep',state:'preparing',roomId:null,roomRequestedAt:null,roomReserved:false,prepDeadline:time,ready:{},markers:[],connectedConsent:{}};
  await tickSpeakingExam(preparing,config,{time,request:provider.request,presence:provider.presence});assert.equal(preparing.state,'joining');

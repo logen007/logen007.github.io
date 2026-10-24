@@ -66,7 +66,10 @@ try{
  await controller.mount({page:'edit',examId:exam.id});await settle();
  assert.equal(el('.goethe-outline'),null);assert.equal(el('[data-sx-action="part-add"]'),null);
  assert.equal(root.querySelectorAll('[data-sx-part]').length,1);assert.equal(contentEditors.length,2);
- assert.equal(el('[data-sx-minutes]').value,'1');input('[data-sx-minutes]','2.5');
+ assert.equal(el('[data-sx-minutes]'),null);assert.equal(el('[data-sx-field="stages.0.instruction"]'),null);
+ await click('settings');assert.equal(document.querySelector('#sx-level'),null);assert.equal(document.querySelector('#sx-provider'),null);
+ const callMinutes=document.querySelector('#sx-call-minutes'),prepMinutes=document.querySelector('#sx-prep-minutes');assert.equal(callMinutes.value,'1');assert.equal(prepMinutes.value,'20');
+ callMinutes.value='2.5';callMinutes.dispatchEvent(new dom.window.Event('input',{bubbles:true}));prepMinutes.value='3';prepMinutes.dispatchEvent(new dom.window.Event('input',{bubbles:true}));document.querySelector('[data-dismiss]').click();
  const richA=[{id:'text-a',type:'text',text:'**Updated first A**',align:'center'},{id:'image-a',type:'image',url:'/media/synthetic-a',alt:'A image',align:'right',width:50}];
  contentEditors[0].onChange(richA);await controller.beforeLeave();
  assert.equal(parityExam.speaking.stages[0].seconds,150);assert.deepEqual(parityExam.speaking.stages[0].promptABlocks,richA);
@@ -74,8 +77,8 @@ try{
  const preview=document.querySelector('[data-editor-preview]');assert.match(preview.textContent,/Updated first A/);assert.equal(preview.querySelector('img').getAttribute('src'),'/media/synthetic-a');
  document.querySelector('[data-preview-seat="B"]').click();assert.match(preview.textContent,/ĐỀ RIÊNG B/);assert.doesNotMatch(preview.textContent,/Updated first A/);assert.equal(preview.querySelector('img'),null);
  document.querySelector('[data-dismiss]').click();
- await click('settings');const level=document.querySelector('#sx-level');level.value='B2';level.dispatchEvent(new dom.window.Event('change',{bubbles:true}));document.querySelector('[data-dismiss]').click();
- await controller.beforeLeave();assert.equal(parityExam.level,'B2');assert.deepEqual(parityExam.speaking.stages[0].promptABlocks,richA);
+ await click('settings');assert.equal(document.querySelector('#sx-prep-minutes').value,'3');document.querySelector('[data-dismiss]').click();
+ await controller.beforeLeave();assert.equal(parityExam.speaking.preparationSeconds,180);assert.equal(parityExam.level,'B1');assert.deepEqual(parityExam.speaking.stages[0].promptABlocks,richA);
  assert.ok(parityRequests.every(item=>item.path==='/exam-a'),'Author preview never starts a real session');
  await settle();contentEditors.at(-2).onFiles([{type:'image/png'},{type:'image/jpeg'}],{point:{}});await settle();await controller.beforeLeave();
  assert.equal(parityExam.speaking.stages[0].promptABlocks.length,2);assert.ok(parityExam.speaking.stages[0].promptABlocks.every(block=>block.url==='/media/uploaded-test'));
@@ -84,7 +87,7 @@ try{
  // Old multi-part drafts remain intact, while empty drafts open one task automatically.
  fixture({currentUser:teacher,request:async()=>({exam:{...clone(exam),speaking:{stages:[]}}})});
  await controller.mount({page:'edit',examId:exam.id});assert.equal(root.querySelectorAll('[data-sx-part]').length,1);
- assert.equal(el('[data-sx-action="part-add"]'),null);assert.equal(el('[data-sx-minutes]').value,'');
+ assert.equal(el('[data-sx-action="part-add"]'),null);assert.equal(el('[data-sx-minutes]'),null);
  const legacy={...clone(exam),speaking:{stages:[clone(part),{...clone(part),id:'legacy-b'}]}};
  fixture({currentUser:teacher,request:async()=>({exam:legacy})});await controller.mount({page:'edit',examId:exam.id});assert.equal(root.querySelectorAll('[data-sx-part]').length,2);assert.equal(el('.goethe-outline'),null);
 

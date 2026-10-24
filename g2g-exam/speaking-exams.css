@@ -135,7 +135,6 @@
 .sx-shell.sx-editor{max-width:none}
 .sx-editor .sx-single-editor{display:grid;gap:32px}
 .sx-editor .sx-single-editor>.sx-author-fields>.sx-part{padding:0}
-.sx-editor .sx-speaking-time{width:min(240px,100%)}
 .sx-editor .sx-rich-prompt{min-width:0}
 .sx-editor-dialog{width:min(900px,calc(100vw - 32px))}
 .sx-editor-dialog>.sx-field{margin-top:20px}

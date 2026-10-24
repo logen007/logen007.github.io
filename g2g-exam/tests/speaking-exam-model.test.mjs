@@ -13,6 +13,9 @@ assert.equal(isSpeakingExam(exam),true);
 for(const ordinary of [{provider:'TELC'},{kind:'ordinary'},null])assert.equal(isSpeakingExam(ordinary),false);
 assert.deepEqual(speakingExamErrors(exam),[]);
 assert.deepEqual(normalizeSpeakingConfig({}),{stages:[]});
+assert.equal(normalizeSpeakingConfig({...config,preparationSeconds:180}).preparationSeconds,180);
+for(const preparationSeconds of [null,0,-1,29,1201,NaN,Infinity,false])assert.throws(()=>normalizeSpeakingConfig({...config,preparationSeconds}));
+assert.deepEqual(speakingExamErrors({...exam,speaking:{stages:[stage('empty-instruction',{instruction:''})],preparationSeconds:180}}),[]);
 assert.deepEqual(normalizeSpeakingConfig({stages:[{criteria:[{label:'Chưa có điểm'}]}]}),{stages:[{id:'',title:'',instruction:'',promptA:'',promptB:'',imageAUrl:'',imageBUrl:'',seconds:null,speakerSeat:'both',criteria:[{id:'',label:'Chưa có điểm',maxScore:null}]}]});
 assert.equal(normalizeSpeakingConfig({stages:[stage('n',{seconds:'120',criteria:[{id:'n-score',label:'Điểm',maxScore:'0.5'}]})]}).stages[0].criteria[0].maxScore,0.5);
 assert.equal(speakingMaxScore(config),40);
@@ -28,7 +31,7 @@ for(const mutate of [
  e=>e.title='',e=>e.level='A0',e=>e.provider='UNKNOWN',e=>e.learningLevel='B2',
  e=>e.sections=[{skillKey:'speaking'}],e=>e.sections={},e=>e.speaking.stages=[],
  e=>e.speaking.stages[0].promptA='',e=>e.speaking.stages[0].promptB='',
- e=>e.speaking.stages[0].instruction='',e=>e.speaking.stages[0].speakerSeat='C',
+ e=>e.speaking.stages[0].instruction='x'.repeat(3001),e=>e.speaking.stages[0].speakerSeat='C',
  e=>e.speaking.stages[0].seconds=29,e=>e.speaking.stages[0].seconds=1201,
  e=>e.speaking.stages[0].seconds=30.5,e=>e.speaking.stages[0].criteria=[],
  e=>e.speaking.stages[0].criteria[0].maxScore=0,
