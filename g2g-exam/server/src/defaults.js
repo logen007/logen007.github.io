@@ -1,7 +1,7 @@
 export const DEFAULT_SETTINGS={
   version:5,
   general:{systemName:'Luyện thi tiếng Đức',organizationName:'G2G Career',supportEmail:'admin@g2gcareer.com',publicUrl:process.env.PUBLIC_URL||'https://exam.g2gcareer.com',logoUrl:'',faviconUrl:''},
-  theme:{primaryColor:'#111827'},
+  theme:{primaryColor:'#111827',asciiRevealEnabled:true},
   auth:{googleLoginEnabled:true,allowNewStudents:true,allowedDomain:'',teacherEmails:[]},
   ai:{providerPreference:'groq'},
   exam:{allowRestart:true},

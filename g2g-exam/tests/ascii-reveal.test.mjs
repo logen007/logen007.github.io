@@ -74,6 +74,14 @@ for(const options of [{reduced:true},{slow:true},{saveData:true},{tainted:true}]
   const f=fixture(options);assert.doesNotThrow(()=>f.visible(f.initial));assert.equal(f.layers.length,0,'Unsupported/inaccessible images retain normal content');f.cleanup();
 }
 {
+  const f=fixture();f.doc.documentElement.dataset={asciiReveal:'off'};f.visible(f.initial);
+  assert.equal(f.layers.length,0,'Saved global off preference prevents initial ASCII reveal');
+  f.doc.documentElement.dataset.asciiReveal='on';const next=f.target({id:'enabled'});f.discover(next);f.visible(next);assert.equal(f.layers.length,1);
+  f.doc.documentElement.dataset.asciiReveal='off';f.win.emit('g2g-ascii-preference');
+  assert.equal(f.layers.length,0,'Turning ASCII off immediately cancels active decorative layers');assert.equal(f.frames.size,0);
+  f.cleanup();assert.equal(f.win.listeners.get('g2g-ascii-preference').size,0,'Preference listener is disposed');
+}
+{
   const f=fixture({text:true});f.visible(f.initial);assert.equal(f.layers.length,1,'Featured text uses its actual text geometry');f.reduced.matches=true;f.reduced.emit('change');assert.equal(f.layers.length,0);f.cleanup();
 }
 {

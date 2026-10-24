@@ -126,7 +126,7 @@ function collectForm(){
   return {
     ...settings,
     general:{...settings.general,systemName:val('sName'),organizationName:val('sOrg'),supportEmail:val('sSupport'),feedbackEmail:val('sFeedbackEmail'),publicUrl:val('sUrl'),examMessages:val('sExamMessages')},
-    theme:{...settings.theme,...selectedLayout(),...selectedButtons(),primaryColor:selectedThemeColor()},
+    theme:{...settings.theme,...selectedLayout(),...selectedButtons(),primaryColor:selectedThemeColor(),asciiRevealEnabled:chk('sAsciiReveal')},
     auth:{...settings.auth,googleLoginEnabled:chk('sGoogle'),allowNewStudents:chk('sSignup'),allowedDomain:val('sDomain').replace(/^@/,'').toLowerCase()},
     exam:{...settings.exam},
     smtp:{...settings.smtp,enabled:chk('sSmtp'),host:val('sHost'),port:Number(val('sPort')||587),security:val('sSecurity'),username:val('sUser'),fromName:val('sFromName'),fromEmail:val('sFrom'),replyTo:val('sReply'),timeoutMs:Number(val('sTimeout')||20000),rejectUnauthorized:chk('sTlsVerify')},
@@ -173,7 +173,7 @@ async function save(){
   buttons.forEach(button=>button.disabled=true);
   try{
     if(localOnly){
-      saveLocalTheme(selectedThemeColor(),{...selectedLayout(),...selectedButtons()});
+      saveLocalTheme(selectedThemeColor(),{...selectedLayout(),...selectedButtons(),asciiRevealEnabled:chk('sAsciiReveal')});
       settings={theme:currentTheme()};
       setState('Đã lưu giao diện demo trên trình duyệt này.');
       return;

@@ -22,6 +22,12 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   Use one short reveal after a genuine load/navigation; never delay ready content,
   fake progress or replay on autosave, polling, theme changes or ordinary rerenders.
   Preserve the existing neutral startup rule: no initial page-wide ASCII skeleton.
+  The shared switch is Settings → Chung → Giao diện thương hiệu → Hiệu ứng ASCII
+  (`theme.asciiRevealEnabled`, enabled by default for existing settings). Use the
+  existing Save action, public theme projection and startup cache; demo changes
+  remain browser-local. A saved off value stops active/queued reveals immediately
+  and suppresses subsequent reveals without affecting other animations. Reduced
+  motion and existing device/accessibility safeguards still take precedence.
   Keep exam questions, answer controls, editors, timers, grading, data tables and critical
   status/error text immediately readable and outside the decorative layer.
   Reserve final dimensions to avoid layout shift; keep real semantic DOM/alt text,
