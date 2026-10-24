@@ -132,7 +132,7 @@ await test('Demo áp dụng màu đã lưu trước khi đọc cấu hình; khô
     return {ok:true,json:async()=>({theme:{primaryColor:'#087A56'}})};
   };
   const initialization=initializeTheme();
-  assert.equal(globalThis.document.documentElement.dataset.asciiReveal,'off','Cached off applies synchronously before the public request resolves');
+  assert.equal(globalThis.document.documentElement.dataset.asciiEnabled,'off','Cached off applies synchronously before the public request resolves');
   assert.equal(variables.get('--brand-primary'),'#FFEE00');
   await initialization;
   assert.equal(currentTheme().primaryColor,'#FFEE00');
@@ -158,7 +158,7 @@ await test('Chế độ thật dùng màu server, không dùng màu riêng của
   globalThis.document.documentElement.dataset={};
   acceptPublicSettings({theme:{primaryColor:'#175CD3',asciiRevealEnabled:false}});
   assert.equal(currentTheme().asciiRevealEnabled,false);
-  assert.equal(globalThis.document.documentElement.dataset.asciiReveal,'off');
+  assert.equal(globalThis.document.documentElement.dataset.asciiEnabled,'off');
   assert.equal(JSON.parse(globalThis.localStorage.getItem('g2g.theme.public.v1.layout')).asciiRevealEnabled,false,'Server preference is retained for startup before the next public-settings fetch');
   acceptPublicSettings({theme:{primaryColor:'#175CD3',contentWidth:1400,cardRadius:16,background:'warm'}});
   assert.equal(currentTheme().contentWidth,1400);

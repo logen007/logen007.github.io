@@ -11,10 +11,12 @@ import {dashboardHtml} from '../src/views/dashboard.js';
 import {ASCII_REVEAL_SELECTOR,ASCII_REVEAL_EXCLUDED,bindAsciiReveals} from '../src/ui/ascii-reveal.js';
 import {studentHomeHtml} from '../src/views/student.js';
 import {examAdminHtml} from '../src/views/admin.js';
+import {acceptPublicSettings} from '../src/settings/theme.js';
 const {JSDOM}=await import(process.env.G2G_JSDOM_PATH);
 const {PGlite}=await import(process.env.G2G_PGLITE_PATH);
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost/?view=courses',pretendToBeVisual:true});
 const asciiScope=dom.window.document.createElement('div');
+dom.window.document.body.append(asciiScope);
 asciiScope.innerHTML=dashboardHtml({data:{users:[],exams:[{id:'scope',provider:'GOETHE',level:'A1'}],attempts:[]}});
 assert.ok(asciiScope.querySelector('.dashboard-bars').closest(ASCII_REVEAL_SELECTOR).classList.contains('dashboard-panel'),'Dashboard activity chart participates as card content, not just a heading');
 assert.ok(asciiScope.querySelector('.distribution-chart').closest(ASCII_REVEAL_SELECTOR),'Distribution chart content participates');
@@ -34,8 +36,22 @@ for(const node of asciiScope.querySelectorAll('.exam-catalog-table thead,.exam-c
 const selected=[];
 dom.window.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});
 dom.window.IntersectionObserver=class{observe(element){selected.push(element);}unobserve(){}disconnect(){}};
+const applyAsciiTheme=enabled=>{
+  const previous=globalThis.document;globalThis.document=dom.window.document;
+  try{acceptPublicSettings({theme:{primaryColor:'#175CD3',asciiRevealEnabled:enabled}});}finally{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;}
+};
+applyAsciiTheme(true);
+assert.equal(dom.window.document.documentElement.dataset.asciiEnabled,'on');
+assert.equal(dom.window.document.documentElement.matches(ASCII_REVEAL_SELECTOR),false,'Global ON state must not opt the HTML root into content reveal');
+asciiScope.innerHTML=studentHomeHtml({data:asciiData,user:asciiUser});
+const stopRealAscii=bindAsciiReveals(asciiScope);
+assert.equal(selected.length,3,'After real public-theme initialization, a document-connected learner profile and both exam cards are still observed');
+applyAsciiTheme(false);selected.length=0;applyAsciiTheme(true);
+assert.equal(selected.length,3,'Real theme off/on event re-observes connected content, without the HTML root swallowing targets');
+stopRealAscii();selected.length=0;
 asciiScope.innerHTML='<div class="admin-dashboard"><h2>Safe panel title</h2><div role="alert"><h2>Critical error</h2></div><table><tbody><tr><td><h2>Data</h2></td></tr></tbody></table><button><h2>Action</h2></button></div><div class="course-authoring"><h1 data-ascii-reveal="text">Editor</h1></div><div class="exam-paper"><h1 data-ascii-reveal="text">Exam</h1></div>';
 const stopAsciiScope=bindAsciiReveals(asciiScope);assert.deepEqual(selected.map(node=>node.textContent),['Safe panel title'],'Actual DOM scope excludes critical/interactive/exam surfaces');stopAsciiScope();delete dom.window.IntersectionObserver;
+asciiScope.remove();
 // Exercise the actual cascade responsible for a hidden Retry appearing. This
 // intentionally tests only these rules, not layout or visual acceptance.
 const css=await fs.readFile(new URL('../styles.css',import.meta.url),'utf8'),style=dom.window.document.createElement('style');
