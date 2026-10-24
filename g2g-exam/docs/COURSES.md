@@ -155,8 +155,10 @@ learner, not a flattened all-lessons page or a standalone exercise sheet. Start
 global preview on the course detail, navigate the real curriculum/sidebar and
 render one selected lesson at a time; exercise preview opens that lesson directly.
 Use the same course level, safe exercise projection, knowledge layout, question
-renderer, validation, scoring and result view. Show only a separate return-to-edit
-toolbar indicating this is a preview. Flush pending authoring before entry and
+renderer, validation, scoring and result view. Keep a single return-to-edit button
+above preview detail; omit its redundant learner catalog-back button and extra
+preview/progress disclaimer. Actual learner catalog navigation stays unchanged.
+Flush pending authoring before entry and
 preserve the selected editor on return. A cloned in-memory session simulates
 answers, completion, retakes and navigation, including published courses; preview
 actions must never reach enrollment/progress/submission APIs or change any pinned

@@ -254,7 +254,11 @@ try{
   await action('preview-course');assert.ok(root.querySelector('[data-course-action="close-preview"]'));
   const previewCalls=courseApiCalls.length,previewEditor=JSON.stringify(controller.getState().editor),sameView=document.createElement('div');
   assert.ok(root.querySelector('.course-detail-layout'),'Global preview opens the actual learner course-detail layout');
+  assert.equal(root.querySelectorAll('[data-course-action="close-preview"]').length,1,'Preview retains one return-to-editor control');
+  assert.equal(root.querySelector('[data-course-action="catalog"]'),null,'No redundant learner catalog back button inside authoring preview');
+  assert.doesNotMatch(root.textContent,/Xem trước giao diện học viên|Không lưu tiến độ thật/);
   sameView.innerHTML=courseDetailHtml({detail:controller.getState().preview.detail});
+  assert.ok(sameView.querySelector('[data-course-action="catalog"]'),'Actual learner course details keep their catalog navigation');
   assert.equal(root.querySelector('.course-detail-layout').outerHTML,sameView.querySelector('.course-detail-layout').outerHTML,'Detail preview uses identical learner markup, not a second presentation');
   await action('lesson',`[data-lesson="${knowledgeId}"]`);
   assert.equal(root.querySelectorAll('.course-lesson-content .course-knowledge-content figure').length,2);
