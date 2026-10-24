@@ -1428,7 +1428,9 @@ select:focus,textarea:focus { outline:none; box-shadow:none; border-color:var(--
 .student-result-list { display:grid; gap:16px; }
 .tieu-de-trang.exam-list-heading { flex-wrap:nowrap; align-items:center; gap:12px; }
 .tieu-de-trang.exam-list-heading > div:first-child { flex:1 1 auto; min-width:0; }
-.exam-list-heading > .nut { flex:0 0 auto; white-space:nowrap; }
+.exam-list-heading > .nhom-nut { width:auto; flex:0 0 auto; }
+.exam-list-heading > .nut,.exam-list-heading > .nhom-nut .nut { flex:0 0 auto; white-space:nowrap; }
+.exam-list-heading h1 { white-space:nowrap; }
 .instruction-content { display:grid; gap:12px; min-width:0; }
 .landing-copy p > strong { color:var(--brand-text); }
 .class-picker-field { position:relative; display:block; width:100%; }
