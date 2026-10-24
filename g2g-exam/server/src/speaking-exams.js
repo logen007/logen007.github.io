@@ -4,7 +4,7 @@ import {requireUser,requireRole} from './auth.js';
 import {createExamRelease} from './exam-releases.js';
 import {readHmsConfig,hmsRequest,hmsPresence,hmsToken} from './speaking-hms.js';
 import {streamDriveRecording} from './speaking-drive.js';
-import {isSpeakingExam,normalizeSpeakingConfig,speakingExamErrors,validateSpeakingReview,speakingPublishedResult,speakingSessionView,SPEAKING_CLASS_PRIORITY_SECONDS,SPEAKING_PREP_SECONDS} from '../../src/speaking/exam-model.js';
+import {isSpeakingExam,normalizeSpeakingConfig,speakingExamErrors,validateSpeakingReview,speakingPublishedResult,speakingSessionView,SPEAKING_CLASS_PRIORITY_SECONDS,speakingPreparationSeconds} from '../../src/speaking/exam-model.js';
 import {SPEAKING_EXAM_TERMINAL,SPEAKING_ROOM_CAPACITY_LOCK,finishSpeakingSession,tickSpeakingExam} from './speaking-exam-runtime.js';
 
 const LEVELS=new Set(['A1','A2','B1','B2','C1','C2']),QUEUE_TTL=120000,LEASE_MS=120000;
@@ -133,7 +133,7 @@ export function createSpeakingExamService(options={}){
    if(!published)throw appError(409,'Phiên bản đề nói không còn sẵn sàng.');
    const own=(await c.query('SELECT data,email FROM users WHERE id=$1',[user.id])).rows[0];
    const id='speaking-exam-'+crypto.randomUUID(),members=[{id:user.id,name:safeName(own),seat:'A',classId:entry.class_id},{id:partner.student_id,name:safeName(partner),seat:'B',classId:partner.class_id}];
-   const data={id,examId:entry.exam_id,publicationVersion:entry.publication_version,examSnapshot:published.snapshot,members,state:'preparing',revision:1,matchedAt:time,prepDeadline:time+SPEAKING_PREP_SECONDS*1000,ready:{},connectedConsent:{},stageIndex:-1,deadline:null,remaining:null,votes:{},presence:[],markers:[],reviews:{},recordingStatus:null};
+   const data={id,examId:entry.exam_id,publicationVersion:entry.publication_version,examSnapshot:published.snapshot,members,state:'preparing',revision:1,matchedAt:time,prepDeadline:time+speakingPreparationSeconds(published.snapshot.speaking)*1000,ready:{},connectedConsent:{},stageIndex:-1,deadline:null,remaining:null,votes:{},presence:[],markers:[],reviews:{},recordingStatus:null};
    const row={id,owner_id:published.owner_id,exam_id:entry.exam_id,publication_version:entry.publication_version,state:'preparing',data};
    await c.query("INSERT INTO speaking_exam_sessions(id,owner_id,exam_id,publication_version,state,data) VALUES($1,$2,$3,$4,'preparing',$5::jsonb)",[id,row.owner_id,row.exam_id,row.publication_version,JSON.stringify(data)]);
    for(const m of members)await c.query('INSERT INTO speaking_exam_members(session_id,student_id,seat) VALUES($1,$2,$3)',[id,m.id,m.seat]);

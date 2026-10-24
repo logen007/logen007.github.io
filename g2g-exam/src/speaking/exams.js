@@ -1,5 +1,5 @@
 import {speakingExamRequest as request} from './exam-route.js';
-import {speakingExamErrors,validateSpeakingReview} from './exam-model.js';
+import {speakingExamErrors,validateSpeakingReview,speakingPreparationSeconds} from './exam-model.js';
 import {speakingEditorHtml,speakingQueueHtml,speakingSessionHtml,preparationHtml,stageHtml,terminalHtml,speakingReviewsHtml,speakingGradingHtml,speakingResultsHtml,speakingStateLabel,sxButton} from './exam-views.js';
 import {createSpeakingAutosave} from './exam-autosave.js';
 import {createSpeakingExamCall} from './exam-call.js';
@@ -56,12 +56,20 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
  function editorDialog(preview=false){
   closeEditorDialog?.();
   const modal=document.createElement('div');modal.className='hop-chon';
-  modal.innerHTML=`<section class="noi-hop sx-editor-dialog" role="dialog" aria-modal="true" aria-label="${preview?'Xem trước đề nói':'Cài đặt đề'}"><div class="tieu-de-trang"><h2>${preview?'Xem trước':'Cài đặt đề'}</h2><button class="icon-btn" data-dismiss aria-label="Đóng">×</button></div>${preview?`<div class="nhom-nut" role="group" aria-label="Thí sinh">${['A','B'].map(seat=>`<button class="nut ${seat==='A'?'chinh':''}" data-preview-seat="${seat}" aria-pressed="${seat==='A'}">Thí sinh ${seat}</button>`).join('')}</div><div class="sx-shell" data-editor-preview></div>`:`<div class="sx-field"><label for="sx-provider">Loại đề</label><select id="sx-provider" class="truong">${[['','G2G'],['GOETHE','Goethe'],['TELC','TELC'],['FID','FID']].map(([value,label])=>`<option value="${value}" ${value===(exam.provider||'')?'selected':''}>${label}</option>`).join('')}</select></div><div class="sx-field"><label for="sx-level">Trình độ</label><select id="sx-level" class="truong">${['A1','A2','B1','B2','C1','C2'].map(level=>`<option ${level===exam.level?'selected':''}>${level}</option>`).join('')}</select></div>`}</section>`;
+  modal.innerHTML=`<section class="noi-hop sx-editor-dialog" role="dialog" aria-modal="true" aria-label="${preview?'Xem trước đề nói':'Cài đặt đề'}"><div class="tieu-de-trang"><h2>${preview?'Xem trước':'Cài đặt đề'}</h2><button class="icon-btn" data-dismiss aria-label="Đóng">×</button></div>${preview?`<div class="nhom-nut" role="group" aria-label="Thí sinh">${['A','B'].map(seat=>`<button class="nut ${seat==='A'?'chinh':''}" data-preview-seat="${seat}" aria-pressed="${seat==='A'}">Thí sinh ${seat}</button>`).join('')}</div><div class="sx-shell" data-editor-preview></div>`:`<div class="sx-field"><label for="sx-call-minutes">Thời lượng thi khi gọi (phút)</label><input id="sx-call-minutes" class="truong" type="number" min="0.5" max="20" step="any" value="${exam.speaking.stages[0]?.seconds==null?'':exam.speaking.stages[0].seconds/60}"></div><div class="sx-field"><label for="sx-prep-minutes">Thời gian xem đề mỗi thí sinh (phút)</label><input id="sx-prep-minutes" class="truong" type="number" min="0.5" max="20" step="any" value="${speakingPreparationSeconds(exam.speaking)/60}"></div><p data-sx-timing-error role="alert" hidden></p>`}</section>`;
   document.body.append(modal);closeEditorDialog=bindDialogKeyboard(modal,{onDismiss:()=>{closeEditorDialog=null;}});
   if(preview){
    const showSeat=seat=>{modal.querySelector('[data-editor-preview]').innerHTML=preparationHtml(exam.speaking.stages.map(stage=>({title:stage.title,instruction:stage.instruction,prompt:stage['prompt'+seat],image:stage['image'+seat+'Url'],...(stage['prompt'+seat+'Blocks']?{blocks:stage['prompt'+seat+'Blocks']}:{})})));for(const button of modal.querySelectorAll('[data-preview-seat]')){const active=button.dataset.previewSeat===seat;button.classList.toggle('chinh',active);button.setAttribute('aria-pressed',String(active));}};
    modal.addEventListener('click',event=>{const button=event.target.closest('[data-preview-seat]');if(button)showSeat(button.dataset.previewSeat);});showSeat('A');
-  }else modal.addEventListener('change',event=>{if(exam.status==='published')return;if(event.target.id==='sx-provider')exam.provider=event.target.value||null;else if(event.target.id==='sx-level')exam.level=event.target.value;else return;save.changed();renderEditor();});
+  }else modal.addEventListener('input',event=>{
+   if(exam.status==='published'||!['sx-call-minutes','sx-prep-minutes'].includes(event.target.id))return;
+   const input=event.target,value=input.value===''?null:Number(input.value)*60,problem=modal.querySelector('[data-sx-timing-error]');
+   if(input.id==='sx-prep-minutes'){
+    if(!Number.isInteger(value)||value<30||value>1200){input.setCustomValidity('Nhập thời gian từ 0,5 đến 20 phút.');problem.hidden=false;problem.textContent=input.validationMessage;return;}
+    exam.speaking.preparationSeconds=value;
+   }else if(exam.speaking.stages[0])exam.speaking.stages[0].seconds=value;
+   input.setCustomValidity('');problem.hidden=true;save.changed();
+  });
   modal.querySelector('button')?.focus();
  }
  function editorSave(){
@@ -157,6 +165,7 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
   if(session.state!=='preparing')show('[data-sx-match]',false);
   show('[data-sx-preparing]',session.state==='preparing');
   if(session.state==='preparing'){
+   setText('[data-sx-prep-duration]','Tối đa '+((session.preparationSeconds??1200)/60)+' phút');
    const next=JSON.stringify(session.preparation);if(next!==prepKey){prepKey=next;find('[data-sx-prep-prompts]').innerHTML=preparationHtml(session.preparation);}
    setText('[data-sx-readiness]',session.members.map(member=>member.name+': '+(member.ready?'Sẵn sàng':'Đang chuẩn bị')).join(' · '));
    const button=find('[data-sx-action="ready"]'),ready=Boolean(session.ready?.[getUser()?.id]);button.disabled=ready||operation;button.querySelector('span').textContent=ready?'Đã sẵn sàng':'Tôi đã sẵn sàng';

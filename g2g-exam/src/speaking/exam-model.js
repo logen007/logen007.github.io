@@ -34,11 +34,15 @@ export function speakingPromptContent(stage,seat){
  return {id:stage.id+'-'+seat,body:stage['prompt'+seat]||'',imageUrl:stage['image'+seat+'Url']||'',...(Array.isArray(stage['prompt'+seat+'Blocks'])?{blocks:stage['prompt'+seat+'Blocks']}:{})};
 }
 
+export function speakingPreparationSeconds(config){return config?.preparationSeconds??SPEAKING_PREP_SECONDS;}
+
 export function normalizeSpeakingConfig(input={}){
  if(!object(input)||input.stages!=null&&!Array.isArray(input.stages))fail('Cấu trúc đề nói không hợp lệ.');
  const stages=input.stages||[];
  if(stages.length>SPEAKING_MAX_STAGES)fail('Đề nói có tối đa 20 phần.');
- return {stages:stages.map(stage=>{
+ const preparationSeconds=input.preparationSeconds===undefined?undefined:number(input.preparationSeconds);
+ if(preparationSeconds!==undefined&&(!Number.isInteger(preparationSeconds)||preparationSeconds<30||preparationSeconds>SPEAKING_PREP_SECONDS))fail('Thời gian xem đề phải từ 0,5 đến 20 phút.');
+ return {...(preparationSeconds!==undefined?{preparationSeconds}:{}),stages:stages.map(stage=>{
   if(!object(stage)||stage.criteria!=null&&!Array.isArray(stage.criteria))fail('Cấu trúc phần thi hoặc tiêu chí không hợp lệ.');
   const seconds=number(stage.seconds);
   if(seconds!==null&&!Number.isFinite(seconds))fail('Thời lượng phần thi không hợp lệ.');
@@ -62,7 +66,7 @@ function configErrors(config){
   if(!validId(stage.id)||stageIds.has(stage.id))errors.push(label+': mã phần thi không hợp lệ hoặc bị trùng.');
   stageIds.add(stage.id);
   if(!stage.title||stage.title.length>100)errors.push(label+': cần tiêu đề từ 1 đến 100 ký tự.');
-  if(!stage.instruction||stage.instruction.length>3000)errors.push(label+': cần hướng dẫn từ 1 đến 3.000 ký tự.');
+  if(stage.instruction.length>3000)errors.push(label+': hướng dẫn tối đa 3.000 ký tự.');
   if(!['A','B'].every(seat=>stage['prompt'+seat]||stage['prompt'+seat+'Blocks']?.some(block=>block.type==='image'))||stage.promptA.length>10000||stage.promptB.length>10000)errors.push(label+': cần đề A và B, mỗi đề tối đa 10.000 ký tự.');
   if(!Number.isInteger(stage.seconds)||stage.seconds<SPEAKING_STAGE_MIN_SECONDS||stage.seconds>SPEAKING_STAGE_MAX_SECONDS)errors.push(label+': thời lượng phải từ 0,5 đến 20 phút.');
   if(!['both','A','B'].includes(stage.speakerSeat))errors.push(label+': lượt nói không hợp lệ.');
@@ -155,7 +159,7 @@ export function speakingSessionView(row,user,now=Date.now()){
  const active=['running','paused'].includes(data.state),archive=data.driveArchive;
  const view={id:row.id,examId:data.examId,publicationVersion:data.publicationVersion,publicationLabel:exam.publicationLabel||'',title:exam.title||'',level:exam.level||'',state:data.state,revision:data.revision||0,serverNow:now,manage:staff,participant:Boolean(member),seat,
   members:members.map(item=>({id:item.id,name:item.name,seat:item.seat,ready:Boolean(data.ready?.[item.id]),presence:memberPresence(data,item.id)})),
-  canJoin:Boolean(member)&&['joining','starting','running','paused'].includes(data.state)&&Boolean(data.roomReady??data.roomId),prepDeadline:data.prepDeadline||null,
+  canJoin:Boolean(member)&&['joining','starting','running','paused'].includes(data.state)&&Boolean(data.roomReady??data.roomId),prepDeadline:data.prepDeadline||null,preparationSeconds:speakingPreparationSeconds(exam.speaking),
   ready:Object.fromEntries(members.map(item=>[item.id,Boolean(data.ready?.[item.id])])),
   preparation:member&&data.state==='preparing'?stages.map(stage=>privateStage(stage,seat,members,true)):[],
   stageIndex:data.stageIndex??null,stageCount:stages.length,stage:active?privateStage(stages[data.stageIndex],seat,members):null,
