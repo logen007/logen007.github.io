@@ -20,10 +20,10 @@ const user={id:'a',name:'An',role:'student'},teacher={id:'teacher',name:'Cô Mai
 const members=[{id:'a',name:'An',seat:'A',ready:false},{id:'b',name:'Bình',seat:'B',ready:false}];
 const sessionBase=()=>({id:'session-a',examId:exam.id,title:exam.title,state:'preparing',revision:1,serverNow:Date.now(),seat:'A',participant:true,members:clone(members),ready:{},prepDeadline:Date.now()+1200000,preparation:[{id:part.id,title:part.title,instruction:part.instruction,prompt:part.promptA,image:'',isSpeaker:true}],stageIndex:-1,stageCount:1,canJoin:false});
 const media=()=>{const tracks=['audio','video'].map(kind=>({kind,readyState:'live',enabled:true,muted:false,stop(){this.readyState='ended';},addEventListener(){}}));return {getTracks:()=>tracks};};
-let controller;
+let controller,contentEditors=[];
 function fixture({request,phone=true,currentUser=user,createCall,drawQr,acquirePreview}={}){
- controller?.dispose();root.innerHTML='';const routes=[],events=[];
- controller=createSpeakingExamsController({root,context:()=>({user:currentUser}),layout:html=>html,navigate:route=>routes.push(route),notify:text=>events.push(text),afterRender:()=>events.push('paint'),services:{request,isPhone:()=>phone,createCall,drawQr,acquirePreview:acquirePreview||(async()=>media())}});
+ controller?.dispose();root.innerHTML='';contentEditors=[];const routes=[],events=[];
+ controller=createSpeakingExamsController({root,context:()=>({user:currentUser}),layout:html=>html,navigate:route=>routes.push(route),notify:text=>events.push(text),afterRender:()=>events.push('paint'),services:{uploadImage:async()=>'/media/uploaded-test',bindContentEditor:(node,options)=>{const instance={node,...options,destroyed:false};contentEditors.push(instance);node.dataset.ready='true';return {capture:()=>({}),release:()=>{},selectedImage:()=>null,insertImages:urls=>options.onChange(urls.map((url,index)=>({id:'uploaded-'+index,type:'image',url,alt:'',align:'center',width:50}))),destroy:()=>{instance.destroyed=true;}};},request,isPhone:()=>phone,createCall,drawQr,acquirePreview:acquirePreview||(async()=>media())}});
  return {routes,events};
 }
 try{
@@ -60,28 +60,33 @@ try{
  await click('publish');assert.equal(authored.status,'draft');assert.match(el('[data-sx-error]').textContent,/tiêu chí/);
  assert.ok(requests.every(r=>!r.path.includes('speaking-lab')));
 
- // Authoring uses the written builder shell and edits only the selected part.
- let parityExam={...clone(exam),speaking:{stages:[clone(part),{...clone(part),id:'part-b',title:'Bài thứ hai',promptA:'SECOND A',promptB:'SECOND B',criteria:[{id:'criterion-b',label:'Trao đổi',maxScore:20}]}]}};
- const parityRequests=[];
+ // A single speaking task uses the shared course editor without a left outline.
+ let parityExam=clone(exam);const parityRequests=[];
  fixture({currentUser:teacher,request:async(path,options={})=>{parityRequests.push({path,...options});if(options.method==='PUT')parityExam={...clone(options.body.exam),version:parityExam.version+1};return {exam:clone(parityExam)};}});
- await controller.mount({page:'edit',examId:exam.id});
- assert.ok(el('.goethe-layout>.goethe-outline'));assert.ok(el('.goethe-layout>.goethe-editor'));
- assert.equal(root.querySelectorAll('[data-sx-part]').length,1);
- input('[data-sx-field="stages.0.promptA"]','Updated first A');
- el('[data-sx-action="part-select"][data-id="part-b"]').click();await settle();
- assert.equal(el('[data-sx-field="stages.1.promptA"]').value,'SECOND A');
- assert.equal(el('[data-sx-field="stages.0.promptA"]'),null);
- await click('part-up');assert.equal(el('[data-sx-field="stages.0.title"]').value,'Bài thứ hai','Selection follows stable part ID after reordering');
+ await controller.mount({page:'edit',examId:exam.id});await settle();
+ assert.equal(el('.goethe-outline'),null);assert.equal(el('[data-sx-action="part-add"]'),null);
+ assert.equal(root.querySelectorAll('[data-sx-part]').length,1);assert.equal(contentEditors.length,2);
+ assert.equal(el('[data-sx-minutes]').value,'1');input('[data-sx-minutes]','2.5');
+ const richA=[{id:'text-a',type:'text',text:'**Updated first A**',align:'center'},{id:'image-a',type:'image',url:'/media/synthetic-a',alt:'A image',align:'right',width:50}];
+ contentEditors[0].onChange(richA);await controller.beforeLeave();
+ assert.equal(parityExam.speaking.stages[0].seconds,150);assert.deepEqual(parityExam.speaking.stages[0].promptABlocks,richA);
  await click('preview');
- const preview=document.querySelector('[data-editor-preview]');assert.match(preview.textContent,/SECOND A/);assert.doesNotMatch(preview.textContent,/SECOND B/);
- document.querySelector('[data-preview-seat="B"]').click();assert.match(preview.textContent,/SECOND B/);assert.doesNotMatch(preview.textContent,/Updated first A/);
- document.querySelector('[data-dismiss]').click();assert.equal(document.querySelector('[data-editor-preview]'),null);
+ const preview=document.querySelector('[data-editor-preview]');assert.match(preview.textContent,/Updated first A/);assert.equal(preview.querySelector('img').getAttribute('src'),'/media/synthetic-a');
+ document.querySelector('[data-preview-seat="B"]').click();assert.match(preview.textContent,/ĐỀ RIÊNG B/);assert.doesNotMatch(preview.textContent,/Updated first A/);assert.equal(preview.querySelector('img'),null);
+ document.querySelector('[data-dismiss]').click();
  await click('settings');const level=document.querySelector('#sx-level');level.value='B2';level.dispatchEvent(new dom.window.Event('change',{bubbles:true}));document.querySelector('[data-dismiss]').click();
- await controller.beforeLeave();assert.equal(parityExam.level,'B2');assert.equal(parityExam.speaking.stages[1].promptA,'Updated first A');
+ await controller.beforeLeave();assert.equal(parityExam.level,'B2');assert.deepEqual(parityExam.speaking.stages[0].promptABlocks,richA);
  assert.ok(parityRequests.every(item=>item.path==='/exam-a'),'Author preview never starts a real session');
- await click('part-add');assert.equal(el('[data-sx-field="stages.2.title"]').value,'','New parts open immediately');
- assert.equal(root.querySelectorAll('[data-sx-part]').length,1);
- controller.dispose();assert.equal(document.querySelector('[role="dialog"]'),null);
+ await settle();contentEditors.at(-2).onFiles([{type:'image/png'},{type:'image/jpeg'}],{point:{}});await settle();await controller.beforeLeave();
+ assert.equal(parityExam.speaking.stages[0].promptABlocks.length,2);assert.ok(parityExam.speaking.stages[0].promptABlocks.every(block=>block.url==='/media/uploaded-test'));
+ controller.dispose();assert.ok(contentEditors.every(editor=>editor.destroyed),'Shared editor bindings are cleaned up');
+ assert.equal(document.querySelector('[role="dialog"]'),null);
+ // Old multi-part drafts remain intact, while empty drafts open one task automatically.
+ fixture({currentUser:teacher,request:async()=>({exam:{...clone(exam),speaking:{stages:[]}}})});
+ await controller.mount({page:'edit',examId:exam.id});assert.equal(root.querySelectorAll('[data-sx-part]').length,1);
+ assert.equal(el('[data-sx-action="part-add"]'),null);assert.equal(el('[data-sx-minutes]').value,'');
+ const legacy={...clone(exam),speaking:{stages:[clone(part),{...clone(part),id:'legacy-b'}]}};
+ fixture({currentUser:teacher,request:async()=>({exam:legacy})});await controller.mount({page:'edit',examId:exam.id});assert.equal(root.querySelectorAll('[data-sx-part]').length,2);assert.equal(el('.goethe-outline'),null);
 
  // An aborted/late old route read cannot replace the current editor's model.
  let resolveOld,oldWritePaths=[];

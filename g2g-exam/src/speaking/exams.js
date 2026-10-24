@@ -1,12 +1,12 @@
 import {speakingExamRequest as request} from './exam-route.js';
-import {speakingExamErrors,validateSpeakingReview,speakingMaxScore,SPEAKING_MAX_STAGES} from './exam-model.js';
+import {speakingExamErrors,validateSpeakingReview} from './exam-model.js';
 import {speakingEditorHtml,speakingQueueHtml,speakingSessionHtml,preparationHtml,stageHtml,terminalHtml,speakingReviewsHtml,speakingGradingHtml,speakingResultsHtml,speakingStateLabel,sxButton} from './exam-views.js';
 import {createSpeakingAutosave} from './exam-autosave.js';
 import {createSpeakingExamCall} from './exam-call.js';
 import {acquirePreview,mediaAvailable,mediaErrorText,stopMedia} from './devices.js';
 import {isPhone,clockText} from './model.js';
 import {drawQr} from './qr.js';
-import {uploadQuestionImage} from '../media.js';
+import {bindSpeakingContentEditors} from './exam-content-editor.js';
 import {confirmAction} from '../ui/confirm.js';
 import {esc} from '../ui/format.js';
 import {bindDialogKeyboard} from '../ui/dialog-keyboard.js';
@@ -21,7 +21,7 @@ const ask=(message,options={})=>new Promise(resolve=>confirmAction(message,()=>r
 
 export function createSpeakingExamsController({root,context,layout,navigate,notify=()=>{},onChanged=()=>{},afterRender=()=>{},services={}}){
  let route=null,key='',generation=0,abort=null,live=false,exam=null,session=null,queue=null,items=[],nextOffset=null,save=null,reviewSave=null;
- let selectedPart='',closeEditorDialog=null;
+ let closeEditorDialog=null,contentBinding=null;
  let selectedStudent='',reviewDraft=null,stream=null,deviceEpoch=0,devicesBusy=false,checked=false,call=null,clock=null,poll=null,refreshing=null;
  let offset=0,prepKey='',stageKey='',terminalKey='',matchShown=false,operation=false,uploadBusy=false,leaving=null,connectedPending=false,connectedFlight=null;
  const getUser=()=>context()?.user;
@@ -34,7 +34,7 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
  const report=problem=>{if(problem?.name!=='AbortError')error(problem);};
  const api=(path,options={})=>(services.request||request)(path,{...options,signal:abort?.signal});
  const stopPreview=()=>{deviceEpoch++;stopMedia(stream);stream=null;checked=false;const video=find('[data-sx-preview]');if(video)video.srcObject=null;};
- const clearRuntime=()=>{closeEditorDialog?.();closeEditorDialog=null;window.removeEventListener('resize',fitTitle);clearTimeout(poll);clearInterval(clock);poll=null;clock=null;abort?.abort();abort=null;stopPreview();devicesBusy=false;operation=false;void call?.dispose();call=null;save?.dispose();reviewSave?.dispose();save=null;reviewSave=null;refreshing=null;connectedPending=false;connectedFlight=null;};
+ const clearRuntime=()=>{contentBinding?.destroy();contentBinding=null;closeEditorDialog?.();closeEditorDialog=null;window.removeEventListener('resize',fitTitle);clearTimeout(poll);clearInterval(clock);poll=null;clock=null;abort?.abort();abort=null;stopPreview();devicesBusy=false;operation=false;void call?.dispose();call=null;save?.dispose();reviewSave?.dispose();save=null;reviewSave=null;refreshing=null;connectedPending=false;connectedFlight=null;};
  const status=(state,problem)=>{
   setText('[data-sx-save]',({changed:'Đang chờ lưu…',saving:'Đang lưu…',saved:'Đã lưu',error:'Chưa lưu được'})[state]||'');
   if(route?.page==='edit')show('[data-sx-save]',state!=='saved');
@@ -52,14 +52,14 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
   poll=setTimeout(()=>void refresh().catch(report),delay);
  };
  function fitTitle(){const title=find('.exam-title-input');if(title){title.style.height='auto';title.style.height=title.scrollHeight+'px';}}
- const renderEditor=()=>{if(!exam.speaking.stages.some(part=>part.id===selectedPart))selectedPart=exam.speaking.stages[0]?.id||'';paint(speakingEditorHtml(exam,selectedPart));fitTitle();if(save)status(save.dirty()?'changed':'saved');window.addEventListener('resize',fitTitle);};
+ const renderEditor=()=>{contentBinding?.destroy();contentBinding=null;paint(speakingEditorHtml(exam));fitTitle();if(save)status(save.dirty()?'changed':'saved');window.addEventListener('resize',fitTitle);if(exam.status!=='published')contentBinding=bindSpeakingContentEditors(root,{exam,bindEditor:services.bindContentEditor,uploadImage:services.uploadImage,onChange:()=>save?.changed(),onBusy:value=>{uploadBusy=value;},notify});};
  function editorDialog(preview=false){
   closeEditorDialog?.();
   const modal=document.createElement('div');modal.className='hop-chon';
   modal.innerHTML=`<section class="noi-hop sx-editor-dialog" role="dialog" aria-modal="true" aria-label="${preview?'Xem trước đề nói':'Cài đặt đề'}"><div class="tieu-de-trang"><h2>${preview?'Xem trước':'Cài đặt đề'}</h2><button class="icon-btn" data-dismiss aria-label="Đóng">×</button></div>${preview?`<div class="nhom-nut" role="group" aria-label="Thí sinh">${['A','B'].map(seat=>`<button class="nut ${seat==='A'?'chinh':''}" data-preview-seat="${seat}" aria-pressed="${seat==='A'}">Thí sinh ${seat}</button>`).join('')}</div><div class="sx-shell" data-editor-preview></div>`:`<div class="sx-field"><label for="sx-provider">Loại đề</label><select id="sx-provider" class="truong">${[['','G2G'],['GOETHE','Goethe'],['TELC','TELC'],['FID','FID']].map(([value,label])=>`<option value="${value}" ${value===(exam.provider||'')?'selected':''}>${label}</option>`).join('')}</select></div><div class="sx-field"><label for="sx-level">Trình độ</label><select id="sx-level" class="truong">${['A1','A2','B1','B2','C1','C2'].map(level=>`<option ${level===exam.level?'selected':''}>${level}</option>`).join('')}</select></div>`}</section>`;
   document.body.append(modal);closeEditorDialog=bindDialogKeyboard(modal,{onDismiss:()=>{closeEditorDialog=null;}});
   if(preview){
-   const showSeat=seat=>{modal.querySelector('[data-editor-preview]').innerHTML=preparationHtml(exam.speaking.stages.map(stage=>({title:stage.title,instruction:stage.instruction,prompt:stage['prompt'+seat],image:stage['image'+seat+'Url']})));for(const button of modal.querySelectorAll('[data-preview-seat]')){const active=button.dataset.previewSeat===seat;button.classList.toggle('chinh',active);button.setAttribute('aria-pressed',String(active));}};
+   const showSeat=seat=>{modal.querySelector('[data-editor-preview]').innerHTML=preparationHtml(exam.speaking.stages.map(stage=>({title:stage.title,instruction:stage.instruction,prompt:stage['prompt'+seat],image:stage['image'+seat+'Url'],...(stage['prompt'+seat+'Blocks']?{blocks:stage['prompt'+seat+'Blocks']}:{})})));for(const button of modal.querySelectorAll('[data-preview-seat]')){const active=button.dataset.previewSeat===seat;button.classList.toggle('chinh',active);button.setAttribute('aria-pressed',String(active));}};
    modal.addEventListener('click',event=>{const button=event.target.closest('[data-preview-seat]');if(button)showSeat(button.dataset.previewSeat);});showSeat('A');
   }else modal.addEventListener('change',event=>{if(exam.status==='published')return;if(event.target.id==='sx-provider')exam.provider=event.target.value||null;else if(event.target.id==='sx-level')exam.level=event.target.value;else return;save.changed();renderEditor();});
   modal.querySelector('button')?.focus();
@@ -87,7 +87,8 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
   try{
    if(route.page==='edit'){
     const result=await api('/'+encodeURIComponent(route.examId));if(current!==generation)return;exam=result.exam;
-    renderEditor();editorSave();
+    const empty=exam.status!=='published'&&!exam.speaking.stages.length;if(empty)exam.speaking.stages.push({id:uid(),title:exam.title.slice(0,100),instruction:'',promptA:'',promptB:'',imageAUrl:'',imageBUrl:'',seconds:null,speakerSeat:'both',criteria:[{id:uid(),label:'',maxScore:null}]});
+    renderEditor();editorSave();if(empty)save.changed();
    }else if(route.page==='queue'){
     paint(speakingQueueHtml({phone:phone()}));if(!phone()){void qr();return;}
     await refresh();beginClock();
@@ -201,7 +202,7 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
  }
  function changeField(input){
   if(route?.page!=='edit'||exam.status==='published')return;
-  const path=input.dataset.sxField.split('.'),value=input.type==='number'?(input.value===''?null:Number(input.value)):input.value;
+  const path=input.dataset.sxField.split('.'),value=input.type==='number'?(input.value===''?null:Number(input.value)*(input.hasAttribute('data-sx-minutes')?60:1)):input.value;
   if(path.length===1&&['title','level'].includes(path[0]))exam[path[0]]=value;
   else if(path[0]==='stages'){
    const stage=exam.speaking.stages[Number(path[1])];if(!stage)return;
@@ -209,8 +210,8 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
    else if(path.length===5&&path[2]==='criteria'&&['label','maxScore'].includes(path[4])){const criterion=stage.criteria[Number(path[3])];if(criterion)criterion[path[4]]=value;else return;}
    else return;
   }else return;
+  if(path[0]==='title'&&exam.speaking.stages.length===1)exam.speaking.stages[0].title=value.slice(0,100);
   error(null);save.changed();if(path[0]==='title')fitTitle();
-  if(path[0]==='stages'){const stage=exam.speaking.stages[Number(path[1])],button=[...root.querySelectorAll('[data-sx-action="part-select"]')].find(node=>node.dataset.id===stage.id);if(button){button.querySelector('span').textContent=stage.title||'Bài '+(Number(path[1])+1);button.title=stage.title||'Bài '+(Number(path[1])+1);button.querySelector('small').textContent=stage.criteria.reduce((sum,item)=>sum+(Number(item.maxScore)||0),0)+' điểm';}setText('.goethe-skill>div>span',speakingMaxScore(exam.speaking)+' điểm');}
  }
  function changeReview(){
   if(!session.hasRecording||session.reviews?.[selectedStudent]?.publishedAt)return;
@@ -219,14 +220,7 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
   try{const checked=validateSpeakingReview(session.examSnapshot.speaking,reviewDraft);setText('[data-sx-grade-total]',checked.total+' / '+checked.maxScore+' điểm');error(null);}
   catch(problem){error(problem);}
  }
- async function upload(input){
-  const file=input.files?.[0],stage=exam?.speaking.stages[Number(input.dataset.sxUpload)],seat=input.dataset.seat;if(!file||!stage||exam.status==='published'||uploadBusy)return;
-  uploadBusy=true;const current=generation;input.disabled=true;
-  try{const url=await (services.uploadImage||uploadQuestionImage)(file);if(current!==generation)return;stage['image'+seat+'Url']=url;save.changed();renderEditor();}
-  catch(problem){report(problem);}finally{uploadBusy=false;input.disabled=false;input.value='';}
- }
  async function editorAction(action,button){
-  if(action==='part-select'){selectedPart=button.dataset.id;renderEditor();return;}
   if(action==='preview'){editorDialog(true);return;}
   if(action==='settings'){if(exam.status!=='published')editorDialog();return;}
   if(action==='retry-save'){await save.flush();return;}
@@ -237,15 +231,8 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
   }
   if(exam.status==='published')return;
   const stages=exam.speaking.stages,index=Number(button.dataset.index),stage=stages[index];
-  if(action==='part-add'){
-   if(stages.length>=SPEAKING_MAX_STAGES)throw Error('Đề nói có tối đa 20 phần.');
-   stages.push({id:uid(),title:'',instruction:'',promptA:'',promptB:'',imageAUrl:'',imageBUrl:'',seconds:null,speakerSeat:'both',criteria:[{id:uid(),label:'',maxScore:null}]});selectedPart=stages.at(-1).id;
-  }else if(action==='part-remove'&&stage){if(!await ask('Bỏ phần thi này khỏi đề?',{confirmLabel:'Bỏ phần thi',danger:true}))return;stages.splice(index,1);}
-  else if(action==='part-up'&&index>0)[stages[index-1],stages[index]]=[stages[index],stages[index-1]];
-  else if(action==='part-down'&&index<stages.length-1)[stages[index+1],stages[index]]=[stages[index],stages[index+1]];
-  else if(action==='criterion-add'&&stage)stage.criteria.push({id:uid(),label:'',maxScore:null});
+  if(action==='criterion-add'&&stage)stage.criteria.push({id:uid(),label:'',maxScore:null});
   else if(action==='criterion-remove'&&stage)stage.criteria.splice(Number(button.dataset.criterion),1);
-  else if(action==='remove-image'&&stage&&['A','B'].includes(button.dataset.seat))stage['image'+button.dataset.seat+'Url']='';
   else return;
   save.changed();renderEditor();
  }
@@ -293,10 +280,10 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
  }
  const click=event=>{const button=event.target.closest?.('[data-sx-action]');if(button&&root.contains(button)){event.preventDefault();void action(button);}};
  const input=event=>{const target=event.target;if(target.matches('[data-sx-field]'))changeField(target);else if(target.matches('[data-sx-score],[data-sx-feedback]'))changeReview();};
- const change=event=>{if(event.target.matches('[data-sx-upload]'))void upload(event.target);};
+
  const visibility=()=>{if(live&&!root.ownerDocument.hidden)void refresh().catch(report);};
  const unload=event=>{if(live&&(operation||uploadBusy||save?.dirty()||reviewSave?.dirty()||queue||route?.page==='session'&&activeStates.has(session?.state))){event.preventDefault();event.returnValue='';}};
- function attach(){if(live)return;live=true;root.addEventListener('click',click);root.addEventListener('input',input);root.addEventListener('change',change);root.ownerDocument.addEventListener('visibilitychange',visibility);globalThis.window?.addEventListener('beforeunload',unload);}
+ function attach(){if(live)return;live=true;root.addEventListener('click',click);root.addEventListener('input',input);root.ownerDocument.addEventListener('visibilitychange',visibility);globalThis.window?.addEventListener('beforeunload',unload);}
  async function mount(next,force=false){
   const nextKey=JSON.stringify([getUser()?.id,next]);attach();
   if(key===nextKey&&!force){if(route.page==='session')updateSession();return;}
@@ -316,6 +303,6 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
  }
  async function go(next){if(await beforeLeave(true)){navigate(next);return true;}return false;}
  async function open(next){if(await beforeLeave()){navigate(next);return true;}return false;}
- function dispose(){generation++;clearRuntime();live=false;key='';route=null;root.removeEventListener('click',click);root.removeEventListener('input',input);root.removeEventListener('change',change);root.ownerDocument.removeEventListener('visibilitychange',visibility);globalThis.window?.removeEventListener('beforeunload',unload);}
+ function dispose(){generation++;clearRuntime();live=false;key='';route=null;root.removeEventListener('click',click);root.removeEventListener('input',input);root.ownerDocument.removeEventListener('visibilitychange',visibility);globalThis.window?.removeEventListener('beforeunload',unload);}
  return {mount,open,beforeLeave,dispose};
 }
