@@ -130,3 +130,13 @@
  .sx-shell .sx-score-field{grid-template-columns:minmax(0,1fr) 88px}
 }
 @media(prefers-reduced-motion:reduce){.sx-shell :is(.speaking-spinner,.sx-match){animation:none}}
+
+/* Reuse the written builder layout; constrain long part titles inside its column. */
+.sx-shell.sx-editor{max-width:none}
+.sx-editor .goethe-editor>.sx-author-fields>.sx-part{padding:0}
+.sx-editor .goethe-part{min-width:0;gap:10px}
+.sx-editor .goethe-part>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sx-editor .goethe-part>small{flex-shrink:0}
+.sx-editor-dialog{width:min(900px,calc(100vw - 32px))}
+.sx-editor-dialog>.sx-field{margin-top:20px}
+.sx-editor-dialog .sx-shell{padding-bottom:0}
