@@ -35,7 +35,11 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   the upstream MIT notice if reusing its code. Implemented via the original shared
   `src/ui/ascii-reveal.js` adapter owns the selector policy: dashboard h2/h3,
   course/student exam card titles, list-page headings, opt-in course covers and
-  featured login/course headings. Use a 640ms diagonal decode, at most two image
+  featured login/course headings. Owner refinement: use a 1.1s decode with a brief
+  220ms glyph phase, then a diagonal reveal. Animate similar-density ASCII glyphs
+  about 10 times/second without changing their source silhouette/color; no strobe
+  or continuous loop. Reuse sampled pixels and stop if frame work is too expensive.
+  Keep at most two image
   canvases, 12 small heading layers and a shared 9,000-cell/30fps work budget.
   Heading identities remain stable across dashboard refreshes; changed content
   cancels its old overlay immediately. Pointer/keyboard interaction also cancels.

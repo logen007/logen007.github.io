@@ -5,7 +5,7 @@ import {bindAsciiReveals} from '../src/ui/ascii-reveal.js';
 // Deterministic DOM/canvas boundary, not browser rendering or a visual baseline.
 function fixture(options={}){
   const events=()=>({listeners:new Map(),addEventListener(name,fn){if(!this.listeners.has(name))this.listeners.set(name,new Set());this.listeners.get(name).add(fn);},removeEventListener(name,fn){this.listeners.get(name)?.delete(fn);},emit(name){for(const fn of [...this.listeners.get(name)||[]])fn();}});
-  const layers=[],targets=[],frames=new Map(),observed=new Set();let mutations,intersections,id=0,reads=0,painted=0;
+  const layers=[],targets=[],frames=new Map(),observed=new Set(),paintedGlyphs=[];let mutations,intersections,id=0,reads=0,painted=0;
   const reduced={...events(),matches:Boolean(options.reduced)},forced={...events(),matches:false};
   const style={backgroundColor:'rgb(255, 255, 255)',color:'rgb(0, 0, 0)',font:'400 32px sans-serif',borderRadius:'18px',objectFit:'cover'};
   const win={...events(),navigator:{hardwareConcurrency:options.slow?2:8,connection:{saveData:Boolean(options.saveData)}},location:{pathname:'/courses',search:''},innerHeight:900,performance:{now:()=>0},NodeFilter:{SHOW_TEXT:4},
@@ -17,7 +17,7 @@ function fixture(options={}){
     createElement(){
       const canvas={style:{},setAttribute(name,value){this[name]=value;},remove(){const at=layers.indexOf(this);if(at>=0)layers.splice(at,1);},
         getContext(){return {
-          drawImage(){},fillRect(){},clearRect(){},fillText(){painted++;},
+          drawImage(){},fillRect(){},clearRect(){},fillText(value){painted++;paintedGlyphs.push(value);},
           getImageData(){reads++;if(options.tainted)throw Error('Tainted image');return {data:Uint8ClampedArray.from({length:canvas.width*canvas.height*4},(_,i)=>[128,64,32,255][i%4])};},
         };},
       };
@@ -33,11 +33,13 @@ function fixture(options={}){
     discover:element=>mutations([{addedNodes:[element]}]),
     mutate:records=>mutations(records),
     step:time=>{const pending=[...frames.values()];frames.clear();pending.forEach(fn=>fn(time));},
-    get reads(){return reads;},get painted(){return painted;}};
+    get reads(){return reads;},get painted(){return painted;},get glyphs(){return paintedGlyphs;}};
 }
 {
   const f=fixture();f.visible(f.initial);assert.equal(f.layers.length,1);assert.equal(f.layers[0]['aria-hidden'],'true');assert.equal(f.initial.isConnected,true,'Real content is never removed or hidden');assert.ok(f.painted>0);
-  f.step(0);f.step(400);assert.equal(f.layers.length,1,'The reveal remains noticeable beyond the old 360ms cutoff');f.step(800);assert.equal(f.layers.length,0);assert.equal(f.frames.size,0,'One short decode stops its frame loop');
+  f.step(0);const firstGlyphs=f.glyphs.slice(-10),reads=f.reads;f.step(120);
+  assert.notDeepEqual(f.glyphs.slice(-10),firstGlyphs,'Glyphs actually animate instead of a static ASCII wipe');assert.equal(f.reads,reads,'Animated glyphs reuse the sampled source without extra pixel reads');
+  f.step(800);assert.equal(f.layers.length,1,'The decode remains visible beyond the old 640ms cutoff');f.step(1200);assert.equal(f.layers.length,0);assert.equal(f.frames.size,0,'One short decode stops its frame loop');
   const same=f.target();f.discover(same);f.visible(same);assert.equal(f.layers.length,0,'Same route/content does not replay on ordinary rerenders');f.cleanup();
 }
 for(const options of [{reduced:true},{slow:true},{saveData:true},{tainted:true}]){
