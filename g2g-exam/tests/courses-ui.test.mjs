@@ -7,9 +7,23 @@ import {createCourseService} from '../server/src/course-service.js';
 import {registerCourseRoutes} from '../server/src/course-routes.js';
 import {knowledgeDocument,documentKnowledgeBlocks} from '../src/courses/knowledge-document.js';
 import {courseLearningHtml,courseCatalogHtml} from '../src/courses/views.js';
+import {dashboardHtml} from '../src/views/dashboard.js';
+import {ASCII_REVEAL_SELECTOR,bindAsciiReveals} from '../src/ui/ascii-reveal.js';
 const {JSDOM}=await import(process.env.G2G_JSDOM_PATH);
 const {PGlite}=await import(process.env.G2G_PGLITE_PATH);
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost/?view=courses',pretendToBeVisual:true});
+const asciiScope=dom.window.document.createElement('div');
+asciiScope.innerHTML=dashboardHtml({data:{users:[],exams:[],attempts:[]}});
+assert.ok(asciiScope.querySelectorAll(ASCII_REVEAL_SELECTOR).length>=4,'Real dashboard card headings participate in ASCII reveal');
+asciiScope.innerHTML=courseCatalogHtml({route:{page:'catalog'},filters:{},catalog:{courses:[{id:'ascii-course',title:'Course title',price:0,chapterCount:1,lessonCount:2,coverUrl:'/uploads/ascii.jpg'}]}},{role:'student'});
+assert.ok(asciiScope.querySelector('.course-card h2').matches(ASCII_REVEAL_SELECTOR)&&asciiScope.querySelector('.course-cover').matches(ASCII_REVEAL_SELECTOR),'Both real course cover and card heading participate');
+asciiScope.innerHTML='<main class="student-catalog"><article class="the-de"><h3>Exam card</h3><button>Start</button></article></main>';
+assert.equal(asciiScope.querySelectorAll(ASCII_REVEAL_SELECTOR).length,1,'Student exam card titles participate, not buttons');
+const selected=[];
+dom.window.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});
+dom.window.IntersectionObserver=class{observe(element){selected.push(element);}unobserve(){}disconnect(){}};
+asciiScope.innerHTML='<div class="admin-dashboard"><h2>Safe panel title</h2><div role="alert"><h2>Critical error</h2></div><table><tbody><tr><td><h2>Data</h2></td></tr></tbody></table><button><h2>Action</h2></button></div><div class="course-authoring"><h1 data-ascii-reveal="text">Editor</h1></div><div class="exam-paper"><h1 data-ascii-reveal="text">Exam</h1></div>';
+const stopAsciiScope=bindAsciiReveals(asciiScope);assert.deepEqual(selected.map(node=>node.textContent),['Safe panel title'],'Actual DOM scope excludes critical/interactive/exam surfaces');stopAsciiScope();delete dom.window.IntersectionObserver;
 // Exercise the actual cascade responsible for a hidden Retry appearing. This
 // intentionally tests only these rules, not layout or visual acceptance.
 const css=await fs.readFile(new URL('../styles.css',import.meta.url),'utf8'),style=dom.window.document.createElement('style');
