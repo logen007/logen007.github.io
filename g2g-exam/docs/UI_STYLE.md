@@ -26,7 +26,10 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   (`theme.asciiRevealEnabled`, enabled by default for existing settings). Use the
   existing Save action, public theme projection and startup cache; demo changes
   remain browser-local. A saved off value stops active/queued reveals immediately
-  and suppresses subsequent reveals without affecting other animations. Reduced
+  and suppresses subsequent reveals without affecting other animations. A saved
+  off→on transition starts a fresh reveal session: clear seen identities and
+  re-observe existing eligible nodes, without requiring a reload. Repeated on
+  notifications, theme refreshes and polling do not reset that session. Reduced
   motion and existing device/accessibility safeguards still take precedence.
   Keep exam questions, answer controls, editors, timers, grading, data tables and critical
   status/error text immediately readable and outside the decorative layer.
