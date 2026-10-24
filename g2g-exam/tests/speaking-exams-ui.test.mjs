@@ -60,6 +60,29 @@ try{
  await click('publish');assert.equal(authored.status,'draft');assert.match(el('[data-sx-error]').textContent,/tiêu chí/);
  assert.ok(requests.every(r=>!r.path.includes('speaking-lab')));
 
+ // Authoring uses the written builder shell and edits only the selected part.
+ let parityExam={...clone(exam),speaking:{stages:[clone(part),{...clone(part),id:'part-b',title:'Bài thứ hai',promptA:'SECOND A',promptB:'SECOND B',criteria:[{id:'criterion-b',label:'Trao đổi',maxScore:20}]}]}};
+ const parityRequests=[];
+ fixture({currentUser:teacher,request:async(path,options={})=>{parityRequests.push({path,...options});if(options.method==='PUT')parityExam={...clone(options.body.exam),version:parityExam.version+1};return {exam:clone(parityExam)};}});
+ await controller.mount({page:'edit',examId:exam.id});
+ assert.ok(el('.goethe-layout>.goethe-outline'));assert.ok(el('.goethe-layout>.goethe-editor'));
+ assert.equal(root.querySelectorAll('[data-sx-part]').length,1);
+ input('[data-sx-field="stages.0.promptA"]','Updated first A');
+ el('[data-sx-action="part-select"][data-id="part-b"]').click();await settle();
+ assert.equal(el('[data-sx-field="stages.1.promptA"]').value,'SECOND A');
+ assert.equal(el('[data-sx-field="stages.0.promptA"]'),null);
+ await click('part-up');assert.equal(el('[data-sx-field="stages.0.title"]').value,'Bài thứ hai','Selection follows stable part ID after reordering');
+ await click('preview');
+ const preview=document.querySelector('[data-editor-preview]');assert.match(preview.textContent,/SECOND A/);assert.doesNotMatch(preview.textContent,/SECOND B/);
+ document.querySelector('[data-preview-seat="B"]').click();assert.match(preview.textContent,/SECOND B/);assert.doesNotMatch(preview.textContent,/Updated first A/);
+ document.querySelector('[data-dismiss]').click();assert.equal(document.querySelector('[data-editor-preview]'),null);
+ await click('settings');const level=document.querySelector('#sx-level');level.value='B2';level.dispatchEvent(new dom.window.Event('change',{bubbles:true}));document.querySelector('[data-dismiss]').click();
+ await controller.beforeLeave();assert.equal(parityExam.level,'B2');assert.equal(parityExam.speaking.stages[1].promptA,'Updated first A');
+ assert.ok(parityRequests.every(item=>item.path==='/exam-a'),'Author preview never starts a real session');
+ await click('part-add');assert.equal(el('[data-sx-field="stages.2.title"]').value,'','New parts open immediately');
+ assert.equal(root.querySelectorAll('[data-sx-part]').length,1);
+ controller.dispose();assert.equal(document.querySelector('[role="dialog"]'),null);
+
  // An aborted/late old route read cannot replace the current editor's model.
  let resolveOld,oldWritePaths=[];
  fixture({currentUser:teacher,request:async(path,options={})=>{
