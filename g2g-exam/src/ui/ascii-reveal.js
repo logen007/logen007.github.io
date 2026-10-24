@@ -111,6 +111,8 @@ export function bindAsciiReveals(root){
         cells.push({x,y,density:Math.max(1,Math.round(tone*(glyphs.length-1))),color:image||block?`rgb(${pixels[at]},${pixels[at+1]},${pixels[at+2]})`:style.color});
       }
       const protectedNodes=[...element.querySelectorAll(excluded),...element.querySelectorAll('img')].filter(node=>node.tagName!=='IMG'||!node.complete||!node.naturalWidth||new URL(node.currentSrc||node.src,win.location.href).origin!==win.location.origin);
+      // A failed/timed-out chart decode leaves the real chart visible, never blank.
+      protectedNodes.push(...[...element.querySelectorAll('svg')].filter(svg=>!graphics.some(graphic=>graphic.element===svg)));
       const holes=protectedNodes.map(node=>node.getBoundingClientRect()).map(rect=>({x:rect.left-box.left-2,y:rect.top-box.top-2,width:rect.width+4,height:rect.height+4}));
       const item={element,canvas,context,cols,rows,cellW,cellH,image,cells,holes,background:backdrop,start:null};
       paint(item,0,0);
