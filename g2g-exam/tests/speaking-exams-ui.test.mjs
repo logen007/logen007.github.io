@@ -74,6 +74,7 @@ try{
  contentEditors[0].onChange(richA);await controller.beforeLeave();
  assert.equal(parityExam.speaking.stages[0].seconds,150);assert.deepEqual(parityExam.speaking.stages[0].promptABlocks,richA);
  await click('preview');
+ assert.equal(document.querySelector('.sx-dialog-heading h2'),null);assert.equal(document.querySelectorAll('.sx-dialog-heading [data-preview-seat]').length,2);
  const preview=document.querySelector('[data-editor-preview]');assert.match(preview.textContent,/Updated first A/);assert.equal(preview.querySelector('img').getAttribute('src'),'/media/synthetic-a');
  document.querySelector('[data-preview-seat="B"]').click();assert.match(preview.textContent,/ĐỀ RIÊNG B/);assert.doesNotMatch(preview.textContent,/Updated first A/);assert.equal(preview.querySelector('img'),null);
  document.querySelector('[data-dismiss]').click();
@@ -87,7 +88,9 @@ try{
  // Old multi-part drafts remain intact, while empty drafts open one task automatically.
  fixture({currentUser:teacher,request:async()=>({exam:{...clone(exam),speaking:{stages:[]}}})});
  await controller.mount({page:'edit',examId:exam.id});assert.equal(root.querySelectorAll('[data-sx-part]').length,1);
- assert.equal(el('[data-sx-action="part-add"]'),null);assert.equal(el('[data-sx-minutes]'),null);
+ assert.equal(el('[data-sx-action="part-add"]'),null);assert.equal(el('[data-sx-minutes]'),null);assert.equal(root.querySelectorAll('.sx-criterion').length,0);
+ await click('settings');assert.equal(document.querySelector('#sx-call-minutes').value,'15');assert.equal(document.querySelector('#sx-prep-minutes').value,'20');
+ const timingLabels=[...document.querySelectorAll('.sx-editor-dialog .sx-field label')].map(label=>label.textContent);assert.deepEqual(timingLabels,['Thời gian xem đề','Thời gian thi']);document.querySelector('[data-dismiss]').click();
  const legacy={...clone(exam),speaking:{stages:[clone(part),{...clone(part),id:'legacy-b'}]}};
  fixture({currentUser:teacher,request:async()=>({exam:legacy})});await controller.mount({page:'edit',examId:exam.id});assert.equal(root.querySelectorAll('[data-sx-part]').length,2);assert.equal(el('.goethe-outline'),null);
 
