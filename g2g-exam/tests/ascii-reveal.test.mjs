@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {bindAsciiReveals} from '../src/ui/ascii-reveal.js';
+import {paintAsciiBlock,prepareAsciiGraphics} from '../src/ui/ascii-snapshot.js';
 
 // Deterministic DOM/canvas boundary, not browser rendering or a visual baseline.
 function fixture(options={}){
   const events=()=>({listeners:new Map(),addEventListener(name,fn){if(!this.listeners.has(name))this.listeners.set(name,new Set());this.listeners.get(name).add(fn);},removeEventListener(name,fn){this.listeners.get(name)?.delete(fn);},emit(name){for(const fn of [...this.listeners.get(name)||[]])fn();}});
-  const layers=[],targets=[],frames=new Map(),observed=new Set(),paintedGlyphs=[];let mutations,intersections,id=0,reads=0,painted=0;
+  const layers=[],targets=[],frames=new Map(),observed=new Set(),paintedGlyphs=[],cleared=[];let mutations,intersections,id=0,reads=0,painted=0;
   const reduced={...events(),matches:Boolean(options.reduced)},forced={...events(),matches:false};
   const style={backgroundColor:'rgb(255, 255, 255)',color:'rgb(0, 0, 0)',font:'400 32px sans-serif',borderRadius:'18px',objectFit:'cover'};
   const win={...events(),navigator:{hardwareConcurrency:options.slow?2:8,connection:{saveData:Boolean(options.saveData)}},location:{pathname:'/courses',search:''},innerHeight:900,performance:{now:()=>0},NodeFilter:{SHOW_TEXT:4},
@@ -17,7 +18,7 @@ function fixture(options={}){
     createElement(){
       const canvas={style:{},setAttribute(name,value){this[name]=value;},remove(){const at=layers.indexOf(this);if(at>=0)layers.splice(at,1);},
         getContext(){return {
-          drawImage(){},fillRect(){},clearRect(){},fillText(value){painted++;paintedGlyphs.push(value);},
+          drawImage(){},fillRect(){},clearRect(...args){cleared.push(args);},fillText(value){painted++;paintedGlyphs.push(value);},
           getImageData(){reads++;if(options.tainted)throw Error('Tainted image');return {data:Uint8ClampedArray.from({length:canvas.width*canvas.height*4},(_,i)=>[128,64,32,255][i%4])};},
         };},
       };
@@ -28,12 +29,39 @@ function fixture(options={}){
   const root={ownerDocument:doc,nodeType:1,matches:()=>false,querySelectorAll:()=>targets};
   function target(extra={}){const element={...events(),ownerDocument:doc,nodeType:1,tagName:'IMG',src:'/cover.jpg',currentSrc:'/cover.jpg',complete:true,naturalWidth:640,naturalHeight:320,isConnected:true,textContent:'Hi',parentElement:null,matches:()=>true,querySelectorAll:()=>[],closest:()=>null,contains(node){return node===this;},getBoundingClientRect:()=>({left:0,top:0,bottom:160,width:320,height:160}),...extra};targets.push(element);return element;}
   const initial=target(options.text?{tagName:'H1'}:{}),cleanup=bindAsciiReveals(root);
-  return {win,doc,reduced,forced,layers,observed,initial,cleanup,frames,target,
+  return {win,doc,reduced,forced,layers,observed,initial,cleanup,frames,target,cleared,
     visible:element=>intersections([{target:element,isIntersecting:true}]),
     discover:element=>mutations([{addedNodes:[element]}]),
     mutate:records=>mutations(records),
     step:time=>{const pending=[...frames.values()];frames.clear();pending.forEach(fn=>fn(time));},
     get reads(){return reads;},get painted(){return painted;},get glyphs(){return paintedGlyphs;}};
+}
+{
+  const f=fixture();f.initial.tagName='SECTION';
+  const hole={getBoundingClientRect:()=>({left:20,top:30,width:80,height:44})};
+  f.initial.querySelectorAll=selector=>selector.includes('button')?[hole]:[];
+  f.visible(f.initial);assert.equal(f.layers.length,1,'Card body receives a single content layer');
+  assert.ok(f.cleared.some(args=>JSON.stringify(args)==='[18,28,84,48]'),'Controls get transparent holes instead of being visually hidden');
+  const nested=f.target({parentElement:{closest:()=>f.initial}});f.discover(nested);assert.equal(f.observed.has(nested),false,'Nested titles/covers do not create duplicate layers over a card');f.cleanup();
+}
+{
+  const images=[],timers=new Map();let next=0,received;
+  const svg={closest:()=>null,querySelectorAll:()=>[],getBoundingClientRect:()=>({width:120,height:90}),cloneNode:()=>({style:{setProperty(){}},setAttribute(){},querySelectorAll:()=>[]})};
+  const win={setTimeout:fn=>{timers.set(++next,fn);return next;},clearTimeout:id=>timers.delete(id),getComputedStyle:()=>({getPropertyValue:()=>''}),Image:class{constructor(){images.push(this);}},XMLSerializer:class{serializeToString(){return '<svg/>';}}};
+  const element={querySelectorAll:()=>[svg]},cancel=prepareAsciiGraphics(element,win,value=>received=value);
+  cancel();assert.equal(images[0].onload,null);assert.equal(timers.size,0,'Cancelled chart preparation leaves no timer/load listener');assert.equal(received,undefined);
+  prepareAsciiGraphics(element,win,value=>received=value);images.at(-1).onerror();assert.deepEqual(received,[],'Failed SVG decode falls back without blocking content');
+  prepareAsciiGraphics(element,win,value=>received=value);images.at(-1).onload();assert.equal(received[0].element,svg,'Decoded chart is tied to its real DOM geometry');
+}
+{
+  const calls=[],box={left:10,top:20},bar={tagName:'SPAN',closest:()=>null,getBoundingClientRect:()=>({left:30,top:50,width:12,height:80})};
+  const ctx={fillRect:(...args)=>calls.push(['bar',...args]),drawImage:(...args)=>calls.push(['svg',...args])};
+  const svg={getBoundingClientRect:()=>({left:50,top:60,width:100,height:100})},image={};
+  paintAsciiBlock({querySelectorAll:()=>[bar]},ctx,box,[{element:svg,image}],{getComputedStyle:()=>({backgroundColor:'rgb(20, 150, 80)'})},'button');
+  assert.deepEqual(calls,[['bar',20,30,12,80],['svg',image,40,40,100,100]],'Actual bar geometry and decoded SVG graphics enter the content raster');
+  bar.closest=()=>({});calls.length=0;
+  paintAsciiBlock({querySelectorAll:()=>[bar]},ctx,box,[],{},'button');assert.equal(calls.length,0,'Excluded controls are not sampled');
+  let ready=false;prepareAsciiGraphics({querySelectorAll:()=>[]},{},()=>{ready=true;});assert.equal(ready,true,'Text-only content starts without async delay');
 }
 {
   const f=fixture();f.visible(f.initial);assert.equal(f.layers.length,1);assert.equal(f.layers[0]['aria-hidden'],'true');assert.equal(f.initial.isConnected,true,'Real content is never removed or hidden');assert.ok(f.painted>0);
