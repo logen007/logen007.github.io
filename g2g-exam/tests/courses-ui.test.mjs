@@ -80,7 +80,8 @@ try{
   registerCourseRoutes(app,{service,userFor:async request=>request.headers['x-user']==='teacher'?teacher:student});
   controller=createCoursesController({root,context:()=>({user}),layout:html=>html,navigate:next=>{route=next;paint();},repaint:paint,notify:m=>notices.push(m),request,uploadImage});
   paint();await idle();assert.ok(root.querySelector('.course-management .table-wrap table.bang'));assert.equal(root.querySelector('.course-grid'),null);
-  assert.match(css,/\.course-management \.table-link\.course-title \{ color:var\(--brand-text\); \}/,'Course titles use the primary yellow text token independently of publication');
+  assert.match(css,/\.course-management \.table-link\.course-title \{[^}]*-webkit-line-clamp:3; line-clamp:3;[^}]*max-height:4.2em;[^}]*overflow:hidden;[^}]*color:var\(--brand-text\); \}/,'Course table titles retain yellow text and truncate to three lines');
+  assert.match(css,/\.course-management \.bang :is\(th,td\):first-child \{ width:40%; min-width:320px; \}/,'Title column cannot collapse into a narrow stack of words');
   await action('create');
   const courseId=controller.getState().editor.id;
   assert.ok(root.querySelector('.course-authoring>.tieu-de-trang .builder-title .exam-title-input[data-course-field="title"]'));
