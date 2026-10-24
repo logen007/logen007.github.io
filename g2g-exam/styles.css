@@ -1764,7 +1764,7 @@ select:focus,textarea:focus { outline:none; box-shadow:none; border-color:var(--
 .course-management .bang { min-width:1080px; }
 .course-management .bang :is(th,td):first-child { width:40%; min-width:320px; }
 .course-management .bang td:nth-child(4) { white-space:nowrap; }
-.course-management .table-link.course-title { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; width:100%; max-width:100%; max-height:4.2em; overflow:hidden; overflow-wrap:anywhere; white-space:normal; line-height:1.4; color:var(--brand-text); }
+.course-management .table-link.course-title { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; width:100%; max-width:100%; max-height:4.2em; overflow:hidden; overflow-wrap:anywhere; white-space:normal; line-height:1.4; }
 .course-manage-search { flex:1 1 200px; max-width:320px; min-width:0; }
 .course-filters { display:grid; grid-template-columns:minmax(0,2fr) minmax(150px,1fr) minmax(150px,1fr); gap:16px; }
 .course-filters label,.course-field { display:grid; gap:8px; min-width:0; font-size:14px; }

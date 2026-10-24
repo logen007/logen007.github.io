@@ -141,7 +141,8 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
 
 - Owner update 21 October 2026: all application tables use a shared stronger
   primary hierarchy: names/titles 14px/600 with `--chu` (white in dark, dark text
-  in light). Exam-table status titles are an exception (22 October): published
+  in light). Exam/course-table status titles are an exception (course update
+  approved 24 October): published
   green via `--status-title-success`, draft muted via `--phu`; preserve accessible
   state labels and semantic badges. Secondary text stays smaller, muted and
   regular, with a 2px gap. Roster name/email share one profile action with a 44px
