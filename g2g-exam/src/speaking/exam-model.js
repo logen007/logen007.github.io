@@ -89,7 +89,9 @@ export function speakingExamErrors(exam){
  const errors=[];
  if(!text(exam.title))errors.push('Vui lòng đặt tên đề nói.');
  if(!['A1','A2','B1','B2','C1','C2'].includes(exam.level))errors.push('Trình độ đề nói không hợp lệ.');
- if(exam.provider!=null&&!['GOETHE','TELC','FID'].includes(exam.provider)||exam.learningLevel!=null||!Array.isArray(exam.sections)||exam.sections.length)errors.push('Đề nói phải dùng cấu trúc G2G riêng.');
+ // Provider and audience level are metadata, not written-exam structure.
+ if(exam.provider!=null&&!['GOETHE','TELC','FID'].includes(exam.provider))errors.push('Loại đề không hợp lệ.');
+ if(exam.sections!=null&&(!Array.isArray(exam.sections)||exam.sections.length))errors.push('Đề nói không dùng các phần của đề viết.');
  try{errors.push(...configErrors(normalizeSpeakingConfig(exam.speaking)));}catch(error){errors.push(error.message);}
  return errors;
 }

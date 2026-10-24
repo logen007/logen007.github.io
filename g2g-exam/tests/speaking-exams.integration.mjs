@@ -68,8 +68,10 @@ try{
  assert.equal((await must(send('PUT','/'+examId,'t',saveBody))).exam.version,exam.version,'Lost save response exact retry is idempotent');
  assert.equal((await send('PUT','/'+examId,'t',{...saveBody,exam:{...edit,title:'Stale change'}})).statusCode,409);
  assert.equal((await send('POST','/'+examId+'/publish','t',{version:1})).statusCode,409);
+ const audience=exam.level;await query("UPDATE exams SET data=data||$2::jsonb WHERE id=$1",[examId,JSON.stringify({learningLevel:audience})]);
  const publishBody={version:exam.version};exam=(await must(send('POST','/'+examId+'/publish','t',publishBody))).exam;
  assert.equal((await must(send('POST','/'+examId+'/publish','t',publishBody))).exam.version,exam.version,'Lost publication acknowledgement retry does not create another version');
+ assert.equal(exam.learningLevel,audience,'Audience metadata does not block speaking publication');
  assert.equal(exam.publicationVersion,1);assert.equal((await query('SELECT count(*)::int AS n FROM exam_releases')).rows[0].n,1);
  assert.equal((await send('PUT','/'+examId,'t',{version:exam.version,exam:edit})).statusCode,409);
  const copy=(await must(send('POST','/'+examId+'/copy','t',{}))).exam;assert.equal(copy.status,'draft');assert.deepEqual(copy.speaking,edit.speaking);assert.equal(copy.publicationVersion,undefined);

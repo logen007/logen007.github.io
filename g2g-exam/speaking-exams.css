@@ -137,7 +137,9 @@
 .sx-editor .sx-single-editor>.sx-author-fields>.sx-part{padding:0}
 .sx-editor .sx-rich-prompt{min-width:0}
 .sx-editor-dialog{width:min(600px,calc(100vw - 32px))}
-.sx-editor-dialog>.sx-field{margin-top:20px}
+.sx-editor-dialog>.sx-field{display:grid;gap:8px;min-width:0;margin-top:20px}
+.sx-editor-dialog>.sx-field>.truong{width:100%;min-width:0}
+.sx-editor-dialog>.sx-field>label{font-size:14px;color:var(--phu)}
 .sx-editor-dialog .sx-shell{padding-bottom:0}
 
 .sx-dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px}
