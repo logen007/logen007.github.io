@@ -2,6 +2,7 @@ import {normalizeKnowledgeBlocks} from '../domain/course-knowledge.js';
 
 // Custom G2G paired speaking policy; independent of official exam and trial rules.
 export const SPEAKING_PREP_SECONDS=1200;
+export const SPEAKING_DEFAULT_CALL_SECONDS=900;
 export const SPEAKING_CLASS_PRIORITY_SECONDS=60;
 export const SPEAKING_RECOVERY_SECONDS=120;
 export const SPEAKING_STAGE_MIN_SECONDS=30;
@@ -70,7 +71,6 @@ function configErrors(config){
   if(!['A','B'].every(seat=>stage['prompt'+seat]||stage['prompt'+seat+'Blocks']?.some(block=>block.type==='image'))||stage.promptA.length>10000||stage.promptB.length>10000)errors.push(label+': cần đề A và B, mỗi đề tối đa 10.000 ký tự.');
   if(!Number.isInteger(stage.seconds)||stage.seconds<SPEAKING_STAGE_MIN_SECONDS||stage.seconds>SPEAKING_STAGE_MAX_SECONDS)errors.push(label+': thời lượng phải từ 0,5 đến 20 phút.');
   if(!['both','A','B'].includes(stage.speakerSeat))errors.push(label+': lượt nói không hợp lệ.');
-  if(!stage.criteria.length)errors.push(label+': cần ít nhất một tiêu chí chấm điểm.');
   for(const criterion of stage.criteria){
    if(!validId(criterion.id)||criterionIds.has(criterion.id))errors.push(label+': mã tiêu chí không hợp lệ hoặc bị trùng.');
    criterionIds.add(criterion.id);
@@ -111,7 +111,6 @@ function reviewForCriteria(rubric,review,{complete=false}={}){
   if(!object(criterion)||!validId(criterion.id)||criteria.has(criterion.id)||!Number.isFinite(criterion.maxScore)||criterion.maxScore<=0)fail('Cấu trúc tiêu chí chấm điểm không hợp lệ.');
   criteria.set(criterion.id,criterion);
  }
- if(!criteria.size)fail('Đề nói cần tiêu chí chấm điểm.');
  for(const [id,score] of Object.entries(review.scores||{})){
   const criterion=criteria.get(id);
   if(!criterion)fail('Tiêu chí chấm điểm không thuộc phiên bản đề thi này.');
@@ -144,7 +143,7 @@ function privateStage(stage,seat,members,preparing=false){
 export function speakingPublishedResult(config,review){
  if(!review?.publishedAt)return null;
  try{
-  if(!Array.isArray(config?.stages)||!config.stages.length||config.stages.length>SPEAKING_MAX_STAGES||config.stages.some(stage=>!Array.isArray(stage?.criteria)||!stage.criteria.length))return null;
+  if(!Array.isArray(config?.stages)||!config.stages.length||config.stages.length>SPEAKING_MAX_STAGES||config.stages.some(stage=>!Array.isArray(stage?.criteria)))return null;
   const normalized=reviewForCriteria(config.stages.flatMap(stage=>stage.criteria),review,{complete:true});
   return {...normalized,publishedAt:review.publishedAt};
  }catch{return null;}

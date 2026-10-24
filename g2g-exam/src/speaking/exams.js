@@ -1,5 +1,5 @@
 import {speakingExamRequest as request} from './exam-route.js';
-import {speakingExamErrors,validateSpeakingReview,speakingPreparationSeconds} from './exam-model.js';
+import {speakingExamErrors,validateSpeakingReview,speakingPreparationSeconds,SPEAKING_DEFAULT_CALL_SECONDS} from './exam-model.js';
 import {speakingEditorHtml,speakingQueueHtml,speakingSessionHtml,preparationHtml,stageHtml,terminalHtml,speakingReviewsHtml,speakingGradingHtml,speakingResultsHtml,speakingStateLabel,sxButton} from './exam-views.js';
 import {createSpeakingAutosave} from './exam-autosave.js';
 import {createSpeakingExamCall} from './exam-call.js';
@@ -56,7 +56,7 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
  function editorDialog(preview=false){
   closeEditorDialog?.();
   const modal=document.createElement('div');modal.className='hop-chon';
-  modal.innerHTML=`<section class="noi-hop sx-editor-dialog" role="dialog" aria-modal="true" aria-label="${preview?'Xem trước đề nói':'Cài đặt đề'}"><div class="tieu-de-trang"><h2>${preview?'Xem trước':'Cài đặt đề'}</h2><button class="icon-btn" data-dismiss aria-label="Đóng">×</button></div>${preview?`<div class="nhom-nut" role="group" aria-label="Thí sinh">${['A','B'].map(seat=>`<button class="nut ${seat==='A'?'chinh':''}" data-preview-seat="${seat}" aria-pressed="${seat==='A'}">Thí sinh ${seat}</button>`).join('')}</div><div class="sx-shell" data-editor-preview></div>`:`<div class="sx-field"><label for="sx-call-minutes">Thời lượng thi khi gọi (phút)</label><input id="sx-call-minutes" class="truong" type="number" min="0.5" max="20" step="any" value="${exam.speaking.stages[0]?.seconds==null?'':exam.speaking.stages[0].seconds/60}"></div><div class="sx-field"><label for="sx-prep-minutes">Thời gian xem đề mỗi thí sinh (phút)</label><input id="sx-prep-minutes" class="truong" type="number" min="0.5" max="20" step="any" value="${speakingPreparationSeconds(exam.speaking)/60}"></div><p data-sx-timing-error role="alert" hidden></p>`}</section>`;
+  modal.innerHTML=`<section class="noi-hop sx-editor-dialog" role="dialog" aria-modal="true" aria-label="${preview?'Xem trước đề nói':'Cài đặt đề'}"><div class="sx-dialog-heading">${preview?`<div class="nhom-nut" role="group" aria-label="Thí sinh">${['A','B'].map(seat=>`<button class="nut ${seat==='A'?'chinh':''}" data-preview-seat="${seat}" aria-pressed="${seat==='A'}">Thí sinh ${seat}</button>`).join('')}</div>`:'<h2>Cài đặt đề</h2>'}<button class="icon-btn" data-dismiss aria-label="Đóng">×</button></div>${preview?`<div class="sx-shell" data-editor-preview></div>`:`<div class="sx-field"><label for="sx-prep-minutes">Thời gian xem đề</label><input id="sx-prep-minutes" class="truong" type="number" min="0.5" max="20" step="any" value="${speakingPreparationSeconds(exam.speaking)/60}"></div><div class="sx-field"><label for="sx-call-minutes">Thời gian thi</label><input id="sx-call-minutes" class="truong" type="number" min="0.5" max="20" step="any" value="${exam.speaking.stages[0]?.seconds==null?'':exam.speaking.stages[0].seconds/60}"></div><p data-sx-timing-error role="alert" hidden></p>`}</section>`;
   document.body.append(modal);closeEditorDialog=bindDialogKeyboard(modal,{onDismiss:()=>{closeEditorDialog=null;}});
   if(preview){
    const showSeat=seat=>{modal.querySelector('[data-editor-preview]').innerHTML=preparationHtml(exam.speaking.stages.map(stage=>({title:stage.title,instruction:stage.instruction,prompt:stage['prompt'+seat],image:stage['image'+seat+'Url'],...(stage['prompt'+seat+'Blocks']?{blocks:stage['prompt'+seat+'Blocks']}:{})})));for(const button of modal.querySelectorAll('[data-preview-seat]')){const active=button.dataset.previewSeat===seat;button.classList.toggle('chinh',active);button.setAttribute('aria-pressed',String(active));}};
@@ -95,8 +95,10 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
   try{
    if(route.page==='edit'){
     const result=await api('/'+encodeURIComponent(route.examId));if(current!==generation)return;exam=result.exam;
-    const empty=exam.status!=='published'&&!exam.speaking.stages.length;if(empty)exam.speaking.stages.push({id:uid(),title:exam.title.slice(0,100),instruction:'',promptA:'',promptB:'',imageAUrl:'',imageBUrl:'',seconds:null,speakerSeat:'both',criteria:[{id:uid(),label:'',maxScore:null}]});
-    renderEditor();editorSave();if(empty)save.changed();
+    const empty=exam.status!=='published'&&!exam.speaking.stages.length;if(empty)exam.speaking.stages.push({id:uid(),title:exam.title.slice(0,100),instruction:'',promptA:'',promptB:'',imageAUrl:'',imageBUrl:'',seconds:SPEAKING_DEFAULT_CALL_SECONDS,speakerSeat:'both',criteria:[]});
+    const defaultTiming=exam.status!=='published'&&exam.speaking.stages.length===1&&exam.speaking.stages[0].seconds==null;if(defaultTiming)exam.speaking.stages[0].seconds=SPEAKING_DEFAULT_CALL_SECONDS;
+    let emptyRubric=false;if(exam.status!=='published')for(const stage of exam.speaking.stages){const kept=stage.criteria.filter(item=>item.label?.trim()||item.maxScore!=null);if(kept.length!==stage.criteria.length){stage.criteria=kept;emptyRubric=true;}}
+    renderEditor();editorSave();if(empty||defaultTiming||emptyRubric)save.changed();
    }else if(route.page==='queue'){
     paint(speakingQueueHtml({phone:phone()}));if(!phone()){void qr();return;}
     await refresh();beginClock();
@@ -226,7 +228,7 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
   if(!session.hasRecording||session.reviews?.[selectedStudent]?.publishedAt)return;
   reviewDraft=readReview();
   reviewSave.changed();
-  try{const checked=validateSpeakingReview(session.examSnapshot.speaking,reviewDraft);setText('[data-sx-grade-total]',checked.total+' / '+checked.maxScore+' điểm');error(null);}
+  try{const checked=validateSpeakingReview(session.examSnapshot.speaking,reviewDraft);setText('[data-sx-grade-total]',checked.maxScore?checked.total+' / '+checked.maxScore+' điểm':'Chỉ nhận xét');error(null);}
   catch(problem){error(problem);}
  }
  async function editorAction(action,button){

@@ -1,2 +1,2 @@
 // Bump for each deployment; both the running client and server use this source.
-export const APP_VERSION='2.0.0';
+export const APP_VERSION='2.0.1';

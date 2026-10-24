@@ -33,7 +33,7 @@ for(const mutate of [
  e=>e.speaking.stages[0].promptA='',e=>e.speaking.stages[0].promptB='',
  e=>e.speaking.stages[0].instruction='x'.repeat(3001),e=>e.speaking.stages[0].speakerSeat='C',
  e=>e.speaking.stages[0].seconds=29,e=>e.speaking.stages[0].seconds=1201,
- e=>e.speaking.stages[0].seconds=30.5,e=>e.speaking.stages[0].criteria=[],
+ e=>e.speaking.stages[0].seconds=30.5,
  e=>e.speaking.stages[0].criteria[0].maxScore=0,
  e=>e.speaking.stages[0].criteria[0].maxScore=-1,
  e=>e.speaking.stages[0].criteria[0].maxScore=Infinity,
@@ -47,6 +47,12 @@ for(const image of ['https://external.example/private.jpg','javascript:alert(1)'
 for(const input of [{stages:{}},{stages:[null]},{stages:[{criteria:{}}]}])assert.throws(()=>normalizeSpeakingConfig(input));
 const before=clone(config);normalizeSpeakingConfig(config);assert.deepEqual(config,before,'Normalization must not mutate pinned config');
 
+const noRubric={stages:[stage('feedback-only',{criteria:[]})]};
+assert.deepEqual(speakingExamErrors({...exam,speaking:noRubric}),[]);
+const feedbackOnly=validateSpeakingReview(noRubric,{scores:{},feedback:'Nhận xét riêng'},{complete:true});
+assert.deepEqual(feedbackOnly,{scores:{},feedback:'Nhận xét riêng',total:0,maxScore:0,complete:true});
+assert.equal(speakingPublishedResult(noRubric,{...feedbackOnly,publishedAt:1700000000000}).feedback,'Nhận xét riêng');
+assert.throws(()=>validateSpeakingReview(noRubric,{scores:{invented:5}},{complete:true}));
 const fullScores=Object.fromEntries(config.stages.flatMap(part=>part.criteria.map(criterion=>[criterion.id,criterion.maxScore])));
 const review=validateSpeakingReview(config,{scores:fullScores,feedback:'  Nội dung riêng của A  '},{complete:true});
 assert.deepEqual(review,{scores:fullScores,feedback:'Nội dung riêng của A',total:40,maxScore:40,complete:true});
