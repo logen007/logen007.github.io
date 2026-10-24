@@ -22,7 +22,7 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   Use one short reveal after a genuine load/navigation; never delay ready content,
   fake progress or replay on autosave, polling, theme changes or ordinary rerenders.
   Preserve the existing neutral startup rule: no initial page-wide ASCII skeleton.
-  Keep exam questions, answer controls, editors, timers, grading, tables and critical
+  Keep exam questions, answer controls, editors, timers, grading, data tables and critical
   status/error text immediately readable and outside the decorative layer.
   Reserve final dimensions to avoid layout shift; keep real semantic DOM/alt text,
   mark decorative glyphs aria-hidden and pointer-inert, and do not move focus.
@@ -35,17 +35,25 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   the upstream MIT notice if reusing its code. Implemented via the original shared
   `src/ui/ascii-reveal.js` adapter owns the selector policy: entire dashboard
   activity/distribution/top-student/CPU/resource/R2/AI cards, course/student exam
-  cards and learner statistics, list-page headings, opt-in course covers and
+  cards and the full learner profile/level emblem, list-page headings, opt-in course covers and
   featured login/course headings. Owner refinement: use a 1.1s decode with a brief
   220ms glyph phase, then a diagonal reveal. Animate similar-density ASCII glyphs
   about 10 times/second without changing their source silhouette/color; no strobe
   or continuous loop. Reuse sampled pixels and stop if frame work is too expensive.
   `ascii-snapshot.js` captures local bar fills, loaded images and themed SVG
   geometry once; skip external avatars rather than taint an entire card. Cut
-  transparent holes around controls, tables, badges, errors and critical statuses
-  so they remain readable. Nested heading/cover targets do not duplicate the card.
+  transparent holes around controls, data tables, semantic badges, errors and critical
+  statuses so they remain readable. Exam provider/level chips and “Đề Mới” are
+  ordinary identification metadata and participate with their card. The teacher's
+  explicitly scoped `.exam-catalog-table` is the only table exception: reveal its
+  header/rows, leaving title-action buttons and other controls readable. Do not
+  apply this to question, grading, result or other administrative tables.
+  Nested heading/cover targets do not duplicate the card.
   Keep at most two standalone image
-  canvases, 12 layers and a shared 36,000-cell/30fps work budget.
+  canvases, 12 layers and a shared 36,000-cell/30fps work budget. Queue excess
+  visible targets until capacity is available instead of silently dropping them;
+  scrolling, interaction or stale data cancels that queue. Exam card/row identity
+  uses the actual exam ID, not its possibly duplicated title.
   Card identities remain stable across dashboard refreshes; changed content
   cancels its old overlay immediately. Pointer/keyboard interaction also cancels.
   It samples already loaded assets without new requests; tainted images

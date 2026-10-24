@@ -105,6 +105,21 @@ for(const options of [{reduced:true},{slow:true},{saveData:true},{tainted:true}]
   const updated=f.target({tagName:'H2',id:'dashboard-growth',textContent:'42 học viên'});f.discover(updated);f.visible(updated);
   assert.equal(f.layers.length,0,'Stable heading identities do not replay on changed background values');f.cleanup();
 }
+{
+  const f=fixture({text:true});f.initial.getAttribute=()=> 'exam:one';f.visible(f.initial);
+  const sameTitle=f.target({tagName:'H3',getAttribute:()=> 'exam:two'});f.discover(sameTitle);f.visible(sameTitle);
+  assert.equal(f.layers.length,2,'Separate exam IDs still reveal when their displayed title/content is identical');f.cleanup();
+}
+{
+  const f=fixture({text:true});f.visible(f.initial);
+  for(let i=0;i<12;i++){
+    const heading=f.target({tagName:'H3',id:'exam-'+i,getBoundingClientRect:()=>({left:0,top:0,bottom:28,width:160,height:28})});
+    f.discover(heading);f.visible(heading);
+  }
+  assert.equal(f.layers.length,12,'Simultaneous work remains bounded');
+  f.step(0);f.step(1200);assert.equal(f.layers.length,1,'Overflow targets are queued and reveal after capacity is released, not silently discarded');
+  f.step(1232);f.step(2400);assert.equal(f.layers.length,0);assert.equal(f.frames.size,0);f.cleanup();
+}
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');assert.match(css,/\.ascii-reveal-layer \{[^}]*pointer-events:none; user-select:none/);
 const login=readFileSync(new URL('../src/views/login.js',import.meta.url),'utf8'),courses=readFileSync(new URL('../src/courses/views.js',import.meta.url),'utf8');
 assert.match(login,/id="landing-title" data-ascii-reveal="text"/);assert.match(courses,/<img data-ascii-reveal="image" class="course-cover/);assert.match(courses,/<h1 data-ascii-reveal="text"/);
