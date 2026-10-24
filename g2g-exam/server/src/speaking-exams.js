@@ -142,6 +142,13 @@ export function createSpeakingExamService(options={}){
  async function mutate(user,id,action,input){return db.withTx(async c=>{
   const row=await session(c,user,id,true),d=row.data,time=clock();
   if(!member(user,row))throw appError(403,'Chỉ thí sinh được điều khiển bài thi.');
+  if(action==='ready'){
+   // Readiness only moves forward within this immutable pair. Both candidates
+   // may act on the same displayed revision without making the other retry.
+   if(!Number.isSafeInteger(input?.revision)||input.revision<1||input.revision>d.revision)throw conflict();
+   if(d.ready?.[user.id]&&['preparing','joining'].includes(d.state))return speakingSessionView(row,user,time);
+   if(d.state!=='preparing')throw conflict();
+  }
   if(d.runtimeLease?.until>time)throw appError(409,'Đang cập nhật phòng thi. Vui lòng thử lại.');
   // Revoke an expired worker fence before a candidate write. A late provider
   // response must not overwrite a cancellation after its lease expired.
@@ -149,8 +156,6 @@ export function createSpeakingExamService(options={}){
   if(action==='leave'){
    if(!SPEAKING_EXAM_TERMINAL.has(d.state))finishSpeakingSession(d,d.state==='preparing'?'cancelled':'interrupted','Một thí sinh đã rời bài thi. Bạn có thể tìm bạn thi lại.',time);
   }else if(action==='ready'){
-   if(d.ready?.[user.id]&&['preparing','joining'].includes(d.state))return speakingSessionView(row,user,time);
-   if(d.state!=='preparing'||input?.revision!==d.revision)throw conflict();
    d.ready[user.id]=true;
    if(time>=d.prepDeadline||d.members.every(m=>d.ready[m.id])){d.state='joining';d.joinDeadline=time+120000;}
   }else if(action==='connected'){

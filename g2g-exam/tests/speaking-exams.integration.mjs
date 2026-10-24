@@ -89,8 +89,17 @@ try{
  assert.equal(a.preparation[1].prompt,'PRIVATE_'+ownSeat+'_TWO','Preparation includes own prompt even in passive speaking part');
  assert.equal((await send('GET',p,other)).statusCode,403);assert.equal((await send('GET',p+'/grading','x')).statusCode,403);
  assert.equal((await send('POST',p+'/join','a',{})).statusCode,409,'No call token in preparation');
- a=await must(send('POST',p+'/ready','a',{revision:a.revision}));assert.equal(a.state,'preparing');
- a=await must(send('POST',p+'/ready',partner,{revision:a.revision}));assert.equal(a.state,'joining');
+ const readyRevision=a.revision;
+ for(const revision of [0,-1,readyRevision+1,'1',null])assert.equal((await send('POST',p+'/ready','a',{revision})).statusCode,409,'Invalid or future readiness revisions are rejected');
+ const readyResponses=await Promise.all([send('POST',p+'/ready','a',{revision:readyRevision}),send('POST',p+'/ready',partner,{revision:readyRevision})]);
+ for(const response of readyResponses)assert.equal(response.statusCode,200,response.body);
+ a=await view(id);assert.equal(a.state,'joining','Both candidates enter joining on their first concurrent ready click');assert.ok(a.members.every(m=>m.ready));
+ const joinedRevision=a.revision;
+ await query("UPDATE speaking_exam_sessions SET data=jsonb_set(data,'{runtimeLease}',$2::jsonb) WHERE id=$1",[id,JSON.stringify({id:'synthetic-ready-lease',until:time+60000})]);
+ for(const student of ['a',partner]){const repeated=await must(send('POST',p+'/ready',student,{revision:readyRevision}));assert.equal(repeated.state,'joining');assert.equal(repeated.revision,joinedRevision,'Repeated ready does not change revision or reverse state, including during a worker lease');}
+ assert.equal((await sessionRow(id)).data.runtimeLease.id,'synthetic-ready-lease','Idempotent ready does not revoke an active worker fence');
+ assert.equal((await send('POST',p+'/ready','a',{revision:joinedRevision+1})).statusCode,409,'Future revision is rejected even after becoming ready');
+ await query("UPDATE speaking_exam_sessions SET data=data-'runtimeLease' WHERE id=$1",[id]);
  await worker();a=await view(id);assert.equal(a.canJoin,true);
  const join=await must(send('POST',p+'/join','a',{})),claims=JSON.parse(Buffer.from(join.token.split('.')[1],'base64url'));assert.equal(claims.type,'app');assert.equal(claims.user_id,'a');assert.equal(claims.role,'student');
  let row=await sessionRow(id);const roomId=row.data.roomId;peers.set(roomId,{a:media('a'),[partner]:media(partner)});

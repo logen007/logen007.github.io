@@ -185,7 +185,8 @@ try{
     assert.match(policy.body,/<article>[\s\S]+<h1>/,'Policy content is static and remains available without JavaScript');
   }
   const assets=[...html.body.matchAll(/(?:src|href)="(\/assets\/[^" ]+)"/g)].map(match=>match[1]);
-  assert.equal(assets.length,4);
+  assert.equal(assets.length,5);
+  assert.ok(assets.some(url=>/^\/assets\/speaking-exams-[a-f0-9]+\.css$/.test(url)),'The paired speaking stylesheet is hashed and served with the application');
   for(const url of assets){const response=await app.inject({url,headers:{'accept-encoding':'br,gzip'}});assert.equal(response.statusCode,200);assert.ok(response.headers['cache-control'].includes('immutable'));assert.equal(response.headers['content-encoding'],'br');assert.ok(response.headers.vary.includes('Accept-Encoding'));}
   assert.equal((await app.inject('/assets/missing-old-chunk.js')).statusCode,404);
   const first=await app.inject({url:'/api/state-summary',headers:{cookie:cookie('admin'),'accept-encoding':'gzip'}});

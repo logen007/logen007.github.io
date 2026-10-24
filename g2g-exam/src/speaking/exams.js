@@ -160,7 +160,7 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
   const terminal=doneStates.has(session.state);show('[data-sx-terminal]',terminal);show('.sx-session-controls',activeStates.has(session.state));
   if(terminal){
    stopPreview();if(call?.isJoined()||call?.isJoining())void call.leave();
-   const key=JSON.stringify([session.state,session.result,session.driveArchive]);if(key!==terminalKey){terminalKey=key;find('[data-sx-terminal]').innerHTML=terminalHtml(session);}
+   const key=JSON.stringify([session.state,session.result,session.archiveState,session.driveArchive]);if(key!==terminalKey){terminalKey=key;find('[data-sx-terminal]').innerHTML=terminalHtml(session);}
   }
   if(session.error)error(session.error);
  }

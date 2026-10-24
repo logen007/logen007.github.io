@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createSpeakingExamsController} from '../src/speaking/exams.js';
 import {createSpeakingAutosave} from '../src/speaking/exam-autosave.js';
 import {createSpeakingExamCall} from '../src/speaking/exam-call.js';
+import {terminalHtml} from '../src/speaking/exam-views.js';
 import {validateSpeakingReview} from '../src/speaking/exam-model.js';
 const {JSDOM}=await import(process.env.G2G_JSDOM_PATH);
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost/?view=speaking-exams',pretendToBeVisual:true});
@@ -26,6 +27,10 @@ function fixture({request,phone=true,currentUser=user,createCall,drawQr,acquireP
  return {routes,events};
 }
 try{
+ const learnerReceipt=terminalHtml({state:'completed',archiveState:'saved'});
+ assert.match(learnerReceipt,/Video đã lưu an toàn/);assert.ok(!learnerReceipt.includes('Chưa có xác nhận lưu thành công'));
+ assert.match(terminalHtml({state:'completed',archiveState:'queued'}),/Chưa có xác nhận lưu thành công/);
+ assert.match(terminalHtml({state:'completed',driveArchive:{state:'saved'}}),/Video đã lưu an toàn/);
  // Changes typed while a save is in flight are drained in order with new versions.
  let content='one',releaseFirst,writes=[],accepted=[];
  const autosave=createSpeakingAutosave({version:1,delay:60000,read:()=>({content}),write:async(value,version)=>{writes.push({value,version});if(writes.length===1)await new Promise(resolve=>releaseFirst=resolve);return {version:version+1};},accept:result=>accepted.push(result.version)});
@@ -111,6 +116,13 @@ try{
  state={...state,state:'running',revision:7,finished:false,deadline:Date.now()+30000};document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();assert.equal(el('[data-sx-action="next"]').textContent.trim(),'Sẵn sàng chuyển phần');
  const leaving=controller.beforeLeave();await settle();document.querySelector('[data-confirm-cancel]').click();assert.equal(await leaving,false);assert.equal(adapter.isJoined(),true);
  const leave=controller.beforeLeave();await settle();document.querySelector('[data-confirm-accept]').click();assert.equal(await leave,true);assert.ok(left>0);assert.equal(f.routes.length,0);
+
+ // Archiving changes independently from the completed call state and has no URLs.
+ let receipt={...sessionBase(),state:'completed',preparation:[],archiveState:'queued'};
+ fixture({request:async path=>{assert.equal(path,'/sessions/session-a');return clone(receipt);}});
+ await controller.mount({page:'session',id:receipt.id});assert.match(el('[data-sx-terminal]').textContent,/Chưa có xác nhận lưu thành công/);
+ receipt={...receipt,archiveState:'saved',revision:receipt.revision+1};document.dispatchEvent(new dom.window.Event('visibilitychange'));await settle();
+ assert.match(el('[data-sx-terminal]').textContent,/Video đã lưu an toàn/);assert.ok(!el('[data-sx-terminal]').textContent.includes('Chưa có xác nhận lưu thành công'));
 
  // Candidate grades save separately and playback survives switching/publication.
  let grade={...sessionBase(),state:'completed',hasRecording:true,archiveState:'saved',driveArchive:{state:'saved'},examSnapshot:clone(exam),reviews:{},markers:[],recordingStartedAt:Date.now()},gradeWrites=[];
