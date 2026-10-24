@@ -362,7 +362,8 @@ try{
       else assert.match(html,/data-tab="classes"/);
     }
     const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-    assert.match(source,/\[data-action="admin-tab"\][^\n]+await flushBuilderDraft\(\)[^\n]+ui.adminTab/);
+    const tabHandler=source.match(/\[data-action="admin-tab"\][\s\S]*?(?=app\.querySelectorAll)/)?.[0]||'';
+    assert.match(tabHandler,/await flushBuilderDraft\(\)[\s\S]*ui\.adminTab/);
   });
   await test('Student exam menu filters by level then Goethe or Telc',()=>{
     const html=topbarHtml({user:{id:'student',role:'student',name:'Student'},mode:'api',online:true,ui:{view:'student-home'},studentExamMenu:[
