@@ -1,18 +1,19 @@
 import {prepareAsciiGraphics,paintAsciiBlock} from './ascii-snapshot.js';
 // One treatment for entire non-critical card content, not heading-only animation.
-export const ASCII_REVEAL_SELECTOR='[data-ascii-reveal],.admin-dashboard .dashboard-panel,.admin-dashboard .dashboard-ai-queue,.admin-dashboard .dashboard-cpu-card,.admin-dashboard .dashboard-capacity-card,.admin-dashboard .dashboard-r2-card,.admin-dashboard .dashboard-backup-card,.admin-dashboard h2,.admin-dashboard h3,.course-card,.student-catalog .the-de,.student-catalog .learner-stats,.exam-list-heading h1,.student-results-heading h1,.course-shell>.tieu-de-trang h1';
+export const ASCII_REVEAL_SELECTOR='[data-ascii-reveal],.admin-dashboard .dashboard-panel,.admin-dashboard .dashboard-ai-queue,.admin-dashboard .dashboard-cpu-card,.admin-dashboard .dashboard-capacity-card,.admin-dashboard .dashboard-r2-card,.admin-dashboard .dashboard-backup-card,.admin-dashboard h2,.admin-dashboard h3,.course-card,.student-catalog .the-de,.student-catalog .learner-card,.exam-catalog-table thead,.exam-catalog-table tbody tr,.exam-list-heading h1,.student-results-heading h1,.course-shell>.tieu-de-trang h1';
 const selector=ASCII_REVEAL_SELECTOR,glyphs=' .:-=+*#%@',duration=1100,hold=220;
 const variants=[' ','.`',':;','-_','=~','+x','*o','#H','%8','@&'];
-const excluded='.course-authoring,.course-learning-layout,.exam-paper,.goethe-editor,.grading-detail,.grading-review,table,[role=dialog],[role=alert],[role=status],[role=group],.dashboard-state,.dashboard-services,.dashboard-warning,.exam-card-status,.exam-latest-result,.nhan,button,a,summary,form,input,select,textarea,[contenteditable]';
+export const ASCII_REVEAL_EXCLUDED='.course-authoring,.course-learning-layout,.exam-paper,.goethe-editor,.grading-detail,.grading-review,table:not(.exam-catalog-table),[role=dialog],[role=alert],[role=status],[role=group],.dashboard-state,.dashboard-services,.dashboard-warning,.exam-card-status:not(.exam-new-label),.exam-latest-result,.nhan:not(.exam-provider):not(.exam-level),button,a,summary,form,input,select,textarea,[contenteditable]';
+const excluded=ASCII_REVEAL_EXCLUDED;
 
 export function bindAsciiReveals(root){
   const doc=root.ownerDocument,win=doc.defaultView;
   if(!win.IntersectionObserver||!win.MutationObserver||!win.requestAnimationFrame)return ()=>{};
   const reduced=win.matchMedia('(prefers-reduced-motion: reduce)'),forced=win.matchMedia('(forced-colors: active)');
-  const registered=new WeakSet(),seen=new Set(),active=new Set(),waiting=new Map(),preparing=new Map();let frame=0,disposed=false,lastPaint=-Infinity;
+  const registered=new WeakSet(),seen=new Set(),active=new Set(),waiting=new Map(),preparing=new Map(),deferred=new Map();let frame=0,disposed=false,lastPaint=-Infinity;
   const allowed=()=>!disposed&&!doc.hidden&&!reduced.matches&&!forced.matches&&!win.navigator.connection?.saveData&&!(win.navigator.hardwareConcurrency>0&&win.navigator.hardwareConcurrency<=2);
   const remove=item=>{item.canvas.remove();active.delete(item);};
-  const stop=()=>{win.cancelAnimationFrame(frame);frame=0;for(const cancel of preparing.values())cancel();preparing.clear();for(const item of [...active])remove(item);};
+  const stop=()=>{win.cancelAnimationFrame(frame);frame=0;deferred.clear();for(const cancel of preparing.values())cancel();preparing.clear();for(const item of [...active])remove(item);};
   const background=element=>{
     for(let node=element;node;node=node.parentElement){const color=win.getComputedStyle(node).backgroundColor;if(color&&color!=='transparent'&&color!=='rgba(0, 0, 0, 0)')return color;}
     return win.getComputedStyle(doc.documentElement).getPropertyValue('--mat').trim()||'#fff';
@@ -45,9 +46,12 @@ export function bindAsciiReveals(root){
       else if(until!==item.until){for(let y=0;y<item.rows;y++)for(let x=0;x<item.cols;x++)if(x+y>=item.until&&x+y<until)item.context.clearRect(x*item.cellW,y*item.cellH,item.cellW+1,item.cellH+1);item.until=until;}
     }
     if(win.performance.now()-started>24){stop();return;}
-    if(active.size)frame=win.requestAnimationFrame(tick);
+    // A full viewport can exceed the simultaneous-work cap. Queue, don't discard.
+    for(const [element,graphics] of [...deferred].slice(0,2))reveal(element,graphics);
+    if((active.size||deferred.size)&&!frame)frame=win.requestAnimationFrame(tick);
   }
   function reveal(element,graphics=[]){
+    deferred.delete(element);
     if(!allowed()||!element.isConnected||element.closest(excluded))return;
     const image=element.tagName==='IMG',block=!image&&!/^H[1-6]$/.test(element.tagName),dashboard=element.closest('.admin-dashboard');
     let identity=element.getAttribute?.('data-ascii-key')||element.id;
@@ -60,7 +64,7 @@ export function bindAsciiReveals(root){
     const box=element.getBoundingClientRect();
     if(box.width<24||box.height<14||box.width*box.height>900000||box.bottom<=0||box.top>=win.innerHeight)return;
     const cols=Math.min(image||block?100:140,Math.ceil(box.width/(image||block?8:5))),rows=Math.min(60,Math.ceil(box.height/(image||block?10:7)));
-    if(active.size>=12||[...active].reduce((sum,item)=>sum+item.cols*item.rows,cols*rows)>36000||image&&[...active].filter(item=>item.image).length>=2)return;
+    if(active.size>=12||[...active].reduce((sum,item)=>sum+item.cols*item.rows,cols*rows)>36000||image&&[...active].filter(item=>item.image).length>=2){deferred.set(element,graphics);return;}
     seen.add(key);if(seen.size>500)seen.delete(seen.values().next().value);
     let canvas;
     try{
@@ -146,6 +150,7 @@ export function bindAsciiReveals(root){
   const changes=new win.MutationObserver(records=>{
     for(const record of records)for(const node of record.addedNodes)scan(node);
     for(const [element,clear] of waiting)if(!element.isConnected)clear();
+    for(const element of deferred.keys())if(!element.isConnected||records.some(record=>record.target&&element.contains(record.target)))deferred.delete(element);
     for(const [element,cancel] of preparing)if(!element.isConnected||records.some(record=>record.target&&element.contains(record.target))){cancel();preparing.delete(element);}
     for(const item of [...active])if(!item.element.isConnected||records.some(record=>record.target&&item.element.contains(record.target)))remove(item);
   });
