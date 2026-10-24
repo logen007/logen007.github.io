@@ -14,6 +14,14 @@ import {questionMetadata,examMetadata,attemptPublicMetadata,attemptPrivateMetada
 
 const stripId=x=>{const y=structuredClone(x||{});delete y.id;return y;};
 const isTeacher=u=>u?.role==='teacher'||u?.role==='master';
+export function speakingCatalogExam(exam){
+  const safe={};
+  for(const key of ['id','kind','title','level','status','ownerId','ownerName','hidden','locked','publicationVersion','publicationLabel','updatedAt','createdAt'])if(exam[key]!==undefined)safe[key]=exam[key];
+  safe.provider=null;safe.learningLevel=null;safe.sections=[];
+  safe.partCount=exam.speaking?.stages?.length??exam.partCount??0;
+  safe.durationSeconds=exam.speaking?.stages?.reduce((sum,part)=>sum+(Number(part.seconds)||0),0)??exam.durationSeconds??0;
+  return safe;
+}
 function publicQuestion(data){const q=structuredClone(data||{});if(q.type==='writing'&&q.aiGradingRules&&q.title===q.aiGradingRules)q.title='Nháp';delete q.aiGradingRules;if(!isPrefilledQuestion(q))delete q.correctAnswer;if(q.writingFormVersion===1&&!isPrefilledQuestion(q))q.rubric=publicWritingRows(q.rubric);else if(q.writingFormVersion!==1)delete q.rubric;if(Array.isArray(q.pairs)&&!isPrefilledQuestion(q)){const rights=q.pairs.map(x=>x[1]).sort(()=>Math.random()-.5);q.pairs=q.pairs.map((x,i)=>[x[0],rights[i]]);}return q;}
 async function rows(sql,args=[]){return (await query(sql,args)).rows;}
 async function allowedExamIds(user){if(user.role==='master'||user.role==='teacher')return null;return new Set();}
@@ -46,6 +54,8 @@ export async function loadState(user,{summaryOnly=false,attemptId=null}={}){
     state.users=[user];
     state.exams=(await rows(`SELECT id,owner_id,status,locked,data FROM exams WHERE ${session?'id=$1':"status='published'"} ORDER BY updated_at DESC`,session?[session.exam_id]:[])).map(r=>rowEntity(r));
     state.exams=await Promise.all(state.exams.map(exam=>releasedExam(exam)));
+    // Speaking prompts are released only to a matched participant's private seat.
+    state.exams=state.exams.map(exam=>exam.kind==='speaking'?speakingCatalogExam(exam):exam);
     const attempts=session?[session]:await rows(`SELECT id,public_data,CASE WHEN status='in_progress' THEN private_data ELSE '{}'::jsonb END AS private_data,status,exam_id FROM attempts WHERE student_id=$1 ORDER BY created_at DESC`,[user.id]);
     state.attempts=attempts.map(r=>({id:r.id,...r.public_data}));
     const neededIds=[...new Set(state.exams.filter(exam=>!exam.questionSnapshot&&!attempts.some(a=>a.exam_id===exam.id&&a.status==='in_progress'&&a.private_data?.examSnapshot)).flatMap(exam=>(exam.sections||[]).flatMap(section=>section.questionIds||[])))];
@@ -87,6 +97,7 @@ export async function loadState(user,{summaryOnly=false,attemptId=null}={}){
     ORDER BY u.created_at DESC`)).map(r=>({...r.data,id:r.id,email:r.email,role:r.role,active:r.active,confirmationCode:r.role==='student'?r.confirmation_code:null}));
   state.questions=(await rows(`SELECT id,owner_id,status,locked,${summaryOnly?questionMetadata('data'):'data'} AS data FROM questions ORDER BY updated_at DESC`)).map(r=>rowEntity(r,summaryOnly));
   state.exams=(await rows(`SELECT id,owner_id,status,locked,${summaryOnly?examMetadata('data'):'data'} AS data FROM exams ORDER BY updated_at DESC`)).map(r=>rowEntity(r,summaryOnly));
+  if(user.role!=='master')state.exams=state.exams.map(exam=>exam.kind==='speaking'&&exam.ownerId!==user.id?speakingCatalogExam(exam):exam);
   const allowed=await allowedExamIds(user);
   const [ars,writingJobs]=await Promise.all([
     rows(`SELECT id,exam_id,${summaryOnly?attemptPublicMetadata('public_data'):'public_data'} AS public_data,${summaryOnly?attemptPrivateMetadata('private_data'):'private_data'} AS private_data FROM attempts ORDER BY created_at DESC`),
@@ -130,11 +141,21 @@ async function applyExam(c,user,op){
     await deleteTrashedExam(c,op.id);return;
   }
   const item=op.item||{};
+  if(!current.rowCount&&(item.kind==='speaking'||item.speaking))throw appError(409,'Tạo đề nói bằng trình biên soạn đề nói.');
   try{for(const section of item.sections||[])if(section.audioFlow!=null)section.audioFlow=normalizeAudioFlow(section.audioFlow);}
   catch(error){throw appError(400,error.message);}
   if(!current.rowCount){delete item.publicationVersion;delete item.publicationLabel;}
   if(!current.rowCount){if(!isTeacher(user)||item.ownerId!==user.id)throw appError(403,'Không có quyền tạo bài thi.');await c.query(`INSERT INTO exams(id,owner_id,status,locked,data) VALUES($1,$2,$3,$4,$5::jsonb)`,[op.id,user.id,item.status||'draft',Boolean(item.locked),JSON.stringify(stripId(item))]);return;}
   const old=current.rows[0],oldData=old.data||{};if(!(user.role==='master'||old.owner_id===user.id))throw appError(403,'Không có quyền sửa bài thi này.');if(old.status==='trash'&&item.status!=='trash'&&user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được khôi phục bài thi.');if(item.ownerId&&item.ownerId!==old.owner_id)throw appError(403,'Không được chuyển chủ sở hữu bài thi.');
+  if(oldData.kind==='speaking'){
+    const trash=item.status==='trash'&&old.status!=='trash',restore=old.status==='trash'&&item.status==='draft'&&user.role==='master';
+    if(!trash&&!restore)throw appError(409,'Chỉnh sửa hoặc xuất bản đề nói bằng trình biên soạn đề nói.');
+    const preserved={...oldData,status:trash?'trash':'draft',updatedAt:new Date().toISOString()};
+    if(trash)preserved.deletedAt=preserved.updatedAt;else delete preserved.deletedAt;
+    await c.query('UPDATE exams SET status=$2,data=$3::jsonb,updated_at=now() WHERE id=$1',[op.id,preserved.status,JSON.stringify(preserved)]);
+    return;
+  }
+  if(item.kind==='speaking'||item.speaking)throw appError(409,'Không thể đổi đề thông thường thành đề nói.');
   // Publication pointers are server-owned; stale editor saves cannot roll back a release.
   if(oldData.publicationVersion&&['published','draft'].includes(old.status)&&['published','draft'].includes(item.status))item.status=old.status;
   for(const key of ['publicationVersion','publicationLabel']){delete item[key];if(oldData[key]!=null)item[key]=oldData[key];}

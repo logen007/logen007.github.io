@@ -73,6 +73,12 @@ jobs:
       - name: Check speaking video Drive archive
         working-directory: g2g-exam
         run: G2G_PGLITE_PATH="$RUNNER_TEMP/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js" node tests/speaking-archive.integration.mjs
+      - name: Check paired speaking exams with isolated providers
+        working-directory: g2g-exam
+        env:
+          G2G_PGLITE_PATH: ${{ runner.temp }}/g2g-test-db/node_modules/@electric-sql/pglite/dist/index.js
+          G2G_JSDOM_PATH: ${{ runner.temp }}/g2g-test-db/node_modules/jsdom/lib/api.js
+        run: node tests/speaking-exam-model.test.mjs && node tests/speaking-exam-entry.test.mjs && node tests/speaking-exams.integration.mjs && node tests/speaking-exam-guards.integration.mjs && node tests/speaking-exams-ui.test.mjs
       - name: Check bundled web and phone entry
         working-directory: g2g-exam
         run: npm run build:web && node tests/speaking-qr.test.mjs

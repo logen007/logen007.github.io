@@ -15,7 +15,7 @@ export async function runTrashGarbageCollection({manualUser=null}={}){
     const settings=await getSettings(client),configured=Number(settings.operations.trashRetentionDays);
     const days=Number.isInteger(configured)&&configured>=1&&configured<=3650?configured:TRASH_RETENTION_DAYS;
     const cutoff=new Date(Date.now()-(manualUser?0:days*86400000)).toISOString();
-    const exams=await client.query("SELECT id FROM exams WHERE status='trash' AND trashed_at<=$1",[cutoff]);
+    const exams=await client.query("SELECT id FROM exams WHERE status='trash' AND trashed_at<=$1 AND NOT EXISTS(SELECT 1 FROM speaking_exam_sessions s WHERE s.exam_id=exams.id) AND NOT EXISTS(SELECT 1 FROM speaking_exam_queue q WHERE q.exam_id=exams.id)",[cutoff]);
     for(const exam of exams.rows)await deleteTrashedExam(client,exam.id);
     const questions=await client.query(`DELETE FROM questions q WHERE status='trash' AND trashed_at<=$1
       AND NOT EXISTS(SELECT 1 FROM exams e, jsonb_array_elements(COALESCE(e.data->'sections','[]')) s WHERE s->'questionIds' ? q.id)

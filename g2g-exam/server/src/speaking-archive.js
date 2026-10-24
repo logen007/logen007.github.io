@@ -51,7 +51,7 @@ export function registerSpeakingArchiveRoutes(app){
    if(!['completed','cancelled','interrupted'].includes(d.state)&&!(d.state==='scheduled'&&!d.roomId))throw appError(409,'Hãy kết thúc ca và chờ xử lý bản ghi xong trước khi xóa.');
    if(archive.state==='uploading')throw appError(409,'Video đang chuyển lên Drive. Hãy chờ chuyển xong trước khi xóa.');
    if(d.assetId||archive.fileId)await deleteDriveRecordings(row.id,archive,async fileIds=>{
-    const shared=await c.query(`SELECT id FROM speaking_lab_sessions WHERE id<>$1 AND data->'driveArchive'->>'fileId'=ANY($2::text[]) LIMIT 1`,[row.id,fileIds]);
+    const shared=await c.query(`SELECT id FROM speaking_lab_sessions WHERE id<>$1 AND data->'driveArchive'->>'fileId'=ANY($2::text[]) UNION ALL SELECT id FROM speaking_exam_sessions WHERE data->'driveArchive'->>'fileId'=ANY($2::text[]) LIMIT 1`,[row.id,fileIds]);
     if(shared.rows.length)throw appError(409,'File đang được ca khác tham chiếu. Chưa xóa dữ liệu.');
    });
    await c.query('DELETE FROM speaking_lab_sessions WHERE id=$1',[row.id]);

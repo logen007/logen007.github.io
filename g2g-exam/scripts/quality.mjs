@@ -8,12 +8,14 @@ export const uiTests=[
   'tests/theme.test.mjs','tests/badge-colors.test.mjs','tests/disclosure-motion.test.mjs',
   'tests/dashboard.test.mjs','tests/monitor-chart.test.mjs','tests/exam-access.test.mjs',
   'tests/name-confirm.test.mjs','tests/speaking-lab.test.mjs',
+  'tests/speaking-exam-model.test.mjs','tests/speaking-exam-entry.test.mjs',
 ];
 const integrationTests=[
   'tests/courses.integration.mjs','tests/courses-ui.test.mjs',
   'tests/backend-access.integration.mjs','tests/exam-completion.integration.mjs',
   'tests/publication.integration.mjs','tests/speaking-lab.integration.mjs',
   'tests/speaking-archive.integration.mjs',
+  'tests/speaking-exams.integration.mjs','tests/speaking-exam-guards.integration.mjs',
   'tests/performance.integration.mjs','tests/performance-http.integration.mjs',
 ];
 const extras=[
@@ -39,7 +41,7 @@ export function qualityPlan({risk='medium',tests=[]}={}){
   if(risk!=='low')steps.push(npmStep('test'));
   steps.push(...[...new Set([...uiTests,...tests])].map(nodeStep));
   if(risk!=='low')steps.push(npmStep('test:performance'));
-  if(risk==='high')steps.push(nodeStep('tests/backend-dependencies.test.mjs'),npmStep('test:r2'),...extras.map(nodeStep),...integrationTests.filter(f=>!f.includes('performance-http')).map(nodeStep),nodeStep('tests/speaking-phone.test.mjs'));
+  if(risk==='high')steps.push(nodeStep('tests/backend-dependencies.test.mjs'),npmStep('test:r2'),...extras.map(nodeStep),...integrationTests.filter(f=>!f.includes('performance-http')).map(nodeStep),nodeStep('tests/speaking-phone.test.mjs'),nodeStep('tests/speaking-exams-ui.test.mjs'));
   steps.push(npmStep('build:web'));
   if(risk==='high')steps.push(nodeStep('tests/performance-http.integration.mjs'),nodeStep('tests/speaking-qr.test.mjs'),
     {name:'dependency-audit:web',command:'npm',args:['audit','--audit-level=high']},

@@ -46,9 +46,13 @@ export function registerSpeakingLabRoutes(app){
  });
  app.post('/api/speaking-lab/config',async request=>{
   const user=await requireRole(request,'master');
-  const active=await query(`SELECT id FROM speaking_lab_sessions WHERE data->>'roomId' IS NOT NULL AND data->>'state' NOT IN ('completed','cancelled','interrupted') LIMIT 1`);
-  if(active.rows.length)throw appError(409,'Hãy kết thúc các phòng đang mở trước khi thay cấu hình.');
-  return saveHmsConfig(request.body||{},user);
+  return withTx(async c=>{
+   await c.query("SELECT pg_advisory_xact_lock(hashtext('g2g-speaking-room-capacity'))");
+   const pendingRecording="data->>'recordingId' IS NOT NULL AND coalesce(data->>'recordingStatus','')<>'failed' AND coalesce(data->'driveArchive'->>'state','')<>'saved'";
+   const active=await c.query(`SELECT id FROM speaking_lab_sessions WHERE (data->>'roomId' IS NOT NULL AND data->>'state' NOT IN ('completed','cancelled','interrupted')) OR (${pendingRecording}) UNION ALL SELECT id FROM speaking_exam_sessions WHERE coalesce((data->>'roomReserved')::boolean,false) OR (data->>'roomId' IS NOT NULL AND NOT coalesce((data->>'roomClosed')::boolean,false)) OR (${pendingRecording}) LIMIT 1`);
+   if(active.rows.length)throw appError(409,'Hãy kết thúc phòng thi và chờ lưu xong các bản ghi trước khi thay cấu hình.');
+   return saveHmsConfig(request.body||{},user,c);
+  });
  });
  app.get('/api/speaking-lab/sessions',async request=>{
   const user=await requireRole(request,'master');
@@ -79,11 +83,13 @@ export function registerSpeakingLabRoutes(app){
  app.post('/api/speaking-lab/sessions/:id/join',async request=>{
   const user=await requireUser(request);phone(request);
   return locked(request.params.id,user,async(row,c)=>{
-   const d=row.data;member(row,user);joinWindow(d);const config=await readHmsConfig();
+   const d=row.data;member(row,user);joinWindow(d);let config=await readHmsConfig();
    if(!config)throw appError(503,'Quản trị viên chưa kết nối 100ms.');
    if(!d.roomId){
-    await c.query("SELECT pg_advisory_xact_lock(hashtext('g2g-speaking-lab-open'))");
-    const count=await c.query(`SELECT id FROM speaking_lab_sessions WHERE data->>'roomId' IS NOT NULL AND data->>'state' NOT IN ('completed','cancelled','interrupted')`);
+    await c.query("SELECT pg_advisory_xact_lock(hashtext('g2g-speaking-room-capacity'))");
+    config=await readHmsConfig(c);
+    if(!config)throw appError(503,'Quản trị viên chưa kết nối 100ms.');
+    const count=await c.query(`SELECT id FROM speaking_lab_sessions WHERE data->>'roomId' IS NOT NULL AND data->>'state' NOT IN ('completed','cancelled','interrupted') UNION ALL SELECT id FROM speaking_exam_sessions WHERE coalesce((data->>'roomReserved')::boolean,false) OR data->>'roomId' IS NOT NULL AND NOT coalesce((data->>'roomClosed')::boolean,false)`);
     if(count.rows.length>=4)throw appError(409,'Khu thử chỉ mở tối đa 4 phòng cùng lúc.');
     const room=await hmsRequest(config,'rooms',{method:'POST',body:{name:'g2g-speaking-'+row.id,description:'Isolated G2G speaking trial',template_id:config.templateId,max_duration_seconds:3600}});
     if(!/^[a-zA-Z0-9_-]+$/.test(room.id||''))throw appError(502,'100ms chưa trả mã phòng hợp lệ.');

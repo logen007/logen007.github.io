@@ -8,6 +8,7 @@ import {configuredPartErrors} from './configured-part-validation.js';
 import {examQuestionNumbers} from './question-numbering.js';
 import {normalizeAudioFlow} from './part-audio.js';
 import {normalizeInstructions} from './section-instructions.js';
+import {isSpeakingExam,speakingExamErrors} from '../speaking/exam-model.js';
 
 function normalizeSection(input={},index=0){
   return {
@@ -271,6 +272,7 @@ export function moveQuestion(state,user,examId,sectionId,questionId,direction){
 }
 
 export function validateExamForPublish(state,exam){
+  if(isSpeakingExam(exam))return speakingExamErrors(exam);
   const errors=[];
   if(!exam?.title?.trim())errors.push('Bài thi chưa có tên. Nhập tên đề ở đầu trang.');
   if(!exam?.sections?.length)errors.push('Bài thi chưa có phần nào. Thêm phần thi trước khi xuất bản.');

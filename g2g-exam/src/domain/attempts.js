@@ -34,6 +34,7 @@ export function startAttempt(state,user,examId,{restart=false}={}){
   if(!isStudent(user))throw new Error('Chỉ học viên mới được bắt đầu bài thi.');
   const exam=byId(state.exams,examId);
   if(!exam||exam.status!=='published')throw new Error('Bài thi chưa mở cho học viên.');
+  if(exam.kind==='speaking')throw new Error('Đề nói cần ghép cặp. Hãy mở phòng thi nói.');
   const current=(state.attempts||[]).find(attempt=>attempt.examId===examId&&attempt.studentId===user.id&&attempt.status===ATTEMPT_STATUS.IN_PROGRESS);
   if(current)state.attempts.splice(state.attempts.indexOf(current),1);
   const attemptNo=1+Math.max(0,...(state.attempts||[]).filter(attempt=>attempt.examId===examId&&attempt.studentId===user.id&&!([ATTEMPT_STATUS.IN_PROGRESS,ATTEMPT_STATUS.ABANDONED].includes(attempt.status))).map(attempt=>Number(attempt.attemptNo||0)));

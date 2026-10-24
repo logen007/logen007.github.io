@@ -55,6 +55,7 @@ export async function publishExamRelease(user,{examId},onProgress=()=>{}){
   const result=await withTx(async client=>{
     const row=(await client.query('SELECT * FROM exams WHERE id=$1 FOR UPDATE',[examId])).rows[0];
     if(!row||row.status==='trash')throw appError(404,'Không tìm thấy đề thi.');
+    if(row.data.kind==='speaking')throw appError(409,'Xuất bản đề nói bằng trình biên soạn đề nói.');
     if(user.role!=='master'&&row.owner_id!==user.id)throw appError(403,'Không có quyền xuất bản đề.');
     const release=await createExamRelease(client,row,{onProgress});
     await audit(user,'publish','exam',examId,{version:release.version,reused:release.reused},client);
@@ -70,6 +71,7 @@ export async function unpublishExamRelease(user,{examId}){
   return withTx(async client=>{
     const row=(await client.query('SELECT * FROM exams WHERE id=$1 FOR UPDATE',[examId])).rows[0];
     if(!row||row.status==='trash')throw appError(404,'Không tìm thấy đề thi.');
+    if(row.data.kind==='speaking')throw appError(409,'Bỏ xuất bản đề nói bằng trình biên soạn đề nói.');
     if(user.role!=='master'&&row.owner_id!==user.id)throw appError(403,'Không có quyền bỏ xuất bản đề.');
     await client.query("UPDATE exams SET status='draft',data=data||'{\"status\":\"draft\"}'::jsonb,updated_at=now() WHERE id=$1",[examId]);
     await audit(user,'unpublish','exam',examId,{},client);

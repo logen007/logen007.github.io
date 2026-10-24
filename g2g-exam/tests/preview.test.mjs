@@ -781,7 +781,7 @@ try{
     assert.match(source,/audios\.map\(audio=>Math\.max\(1,Number\(audio\.dataset\.repeat\)\|\|1\)\)/);
     assert.match(source,/completedDuration\+currentTime/);
     assert.match(source,/requestAnimationFrame\(tick\)/);
-    assert.match(source,/\['exam','preview-exam','builder','grading-detail','courses'\]\.includes\(ui\.view\)/);
+    assert.match(source,/\['exam','preview-exam','builder','grading-detail','courses','speaking-exams'\]\.includes\(ui\.view\)/);
     assert.match(readFileSync(new URL('../styles.css',import.meta.url),'utf8'),/\.section-audio-status\s*\{[^}]*color:var\(--chu\)/);
     assert.match(source,/function stopActiveAudio\(\)[\s\S]*audio\.onpause=null;audio\.onended=null;audio\.onerror=null;[\s\S]*audio\.pause\(\)/);
     assert.match(source,/function render\(\)[\s\S]*stopActiveAudio\(\)/);

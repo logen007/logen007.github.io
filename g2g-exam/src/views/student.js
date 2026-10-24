@@ -24,6 +24,7 @@ import {writingFormDisplay} from '../ui/writing-form.js';
 import {resultClass,resultLabel} from '../domain/gradebook.js';
 import {STUDENT_LEVELS,examLearningLevel} from '../domain/student-profile.js';
 import {studentProfileCardHtml} from './student-profile-card.js';
+import {speakingExamCardHtml,speakingType,examTypeLabel} from '../speaking/catalog.js';
 
 export {loginHtml} from './login.js';
 
@@ -32,12 +33,13 @@ export function studentHomeHtml({data,user,filter='all',levelFilter=''}){
   const attempts=getStudentResults(data,user.id);
   const latest=getLatestPublishedAttempt(data,user.id),best=getBestPublishedAttempt(data,user.id);
   const latestExam=latest&&byId(data.exams,latest.examId);
-  const types=['GOETHE','TELC','FID'];
-  const visible=exams.filter(ex=>(filter==='all'||ex.provider===filter)&&(!levelFilter||examLearningLevel(ex)===levelFilter));
-  return `<main class="khung student-catalog">${studentProfileCardHtml(data,user)}<div class="exam-filter" aria-label="Lọc đề thi"><label class="filter-field"><select aria-label="Loại đề" data-exam-provider-filter><option value="all">Loại đề</option>${types.map(type=>`<option value="${esc(type)}" ${filter===type?'selected':''}>${esc(type)}</option>`).join('')}</select></label><label class="filter-field"><select aria-label="Trình độ" data-exam-level-filter><option value="">Trình độ</option>${STUDENT_LEVELS.map(level=>`<option ${levelFilter===level?'selected':''}>${level}</option>`).join('')}</select></label>${codeEntryHtml('exam')}</div><section class="danh-sach-de">${visible.map(ex=>studentExamCardHtml(ex,attempts,data)).join('')||'<p>Chưa có đề luyện thuộc loại này.</p>'}</section></main>`;
+  const types=['GOETHE','TELC','FID','SPEAKING'];
+  const visible=exams.filter(ex=>(filter==='all'||speakingType(ex)===filter)&&(!levelFilter||examLearningLevel(ex)===levelFilter));
+  return `<main class="khung student-catalog">${studentProfileCardHtml(data,user)}<div class="exam-filter" aria-label="Lọc đề thi"><label class="filter-field"><select aria-label="Loại đề" data-exam-provider-filter><option value="all">Loại đề</option>${types.map(type=>`<option value="${esc(type)}" ${filter===type?'selected':''}>${esc(examTypeLabel(type))}</option>`).join('')}</select></label><label class="filter-field"><select aria-label="Trình độ" data-exam-level-filter><option value="">Trình độ</option>${STUDENT_LEVELS.map(level=>`<option ${levelFilter===level?'selected':''}>${level}</option>`).join('')}</select></label>${codeEntryHtml('exam')}</div><section class="danh-sach-de">${visible.map(ex=>studentExamCardHtml(ex,attempts,data)).join('')||'<p>Chưa có đề luyện thuộc loại này.</p>'}</section></main>`;
 }
 
 export function studentExamCardHtml(ex,attempts,data){
+  if(ex.kind==='speaking')return speakingExamCardHtml(ex);
   const mine=attempts.filter(a=>a.examId===ex.id);
   const published=mine.filter(a=>a.status===ATTEMPT_STATUS.PUBLISHED);
   const latest=[...published].sort((a,b)=>String(b.publishedAt||b.submittedAt||b.startedAt).localeCompare(String(a.publishedAt||a.submittedAt||a.startedAt)))[0];
