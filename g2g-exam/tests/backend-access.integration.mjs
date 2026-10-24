@@ -26,6 +26,14 @@ try{
   assert.equal(lightStatus.resources,undefined);
   assert.equal(lightStatus.smtp.secretConfigured,false);
   await assert.rejects(()=>updateSystemSettings({role:'master'},{settings:{...structuredClone(DEFAULT_SETTINGS),theme:{primaryColor:'#123456',contentWidth:99999}}}),error=>error.statusCode===400&&/Chiều rộng/.test(error.message));
+  await assert.rejects(()=>updateSystemSettings({role:'master'},{settings:{theme:{asciiRevealEnabled:'false'}}}),error=>error.statusCode===400&&/ASCII/.test(error.message));
+  for(const role of ['teacher','student'])await assert.rejects(()=>updateSystemSettings({role},{settings:{theme:{asciiRevealEnabled:false}}}),error=>error.statusCode===403);
+  await query("INSERT INTO settings(id,data) VALUES('global',$1) ON CONFLICT(id) DO NOTHING",[JSON.stringify(DEFAULT_SETTINGS)]);
+  for(const asciiRevealEnabled of [false,true]){
+    const saved=await updateSystemSettings({id:'settings-master',role:'master'},{settings:{theme:{asciiRevealEnabled}}});
+    assert.equal(saved.settings.theme.asciiRevealEnabled,asciiRevealEnabled);
+    assert.equal((await query("SELECT data FROM settings WHERE id='global'")).rows[0].data.theme.asciiRevealEnabled,asciiRevealEnabled,'ASCII switch survives a real settings SQL write');
+  }
   const {createExamCode,saveExamAccess,expireCodes}=await import('../server/src/actions/exam-access.js');
   const {startAttempt,previewAttemptStart,abandonAttempt,submitAttempt}=await import('../server/src/actions/attempts.js');
   const {publishAttemptResult}=await import('../server/src/actions/grading.js');

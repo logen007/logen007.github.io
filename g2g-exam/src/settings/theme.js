@@ -6,7 +6,8 @@ import {initializeColorMode} from './color-mode.js';
 export {DEFAULT_PRIMARY_COLOR,normalizeThemeColor,themePalette,colorContrast} from './palette.js';
 let currentLayout=normalizeLayout();
 let currentButtons=normalizeButtonTheme();
-const appearance=value=>({...normalizeLayout(value),...normalizeButtonTheme(value)});
+let currentAsciiReveal=true;
+const appearance=value=>({...normalizeLayout(value),...normalizeButtonTheme(value),asciiRevealEnabled:value?.asciiRevealEnabled!==false});
 function readLayout(key){try{return JSON.parse(globalThis.localStorage?.getItem(key+'.layout')||'null');}catch{return null;}}
 function storeLayout(key,value){try{globalThis.localStorage?.setItem(key+'.layout',JSON.stringify(value));}catch{}}
 export function applyLayout(value,target=globalThis.document?.documentElement){
@@ -33,6 +34,14 @@ export function applyTheme(value,target=globalThis.document?.documentElement,opt
   return palette;
 }
 function applyCurrentTheme(color,layout={}){
+  currentAsciiReveal=layout?.asciiRevealEnabled!==false;
+  const root=globalThis.document?.documentElement;
+  if(root?.dataset){
+    const value=currentAsciiReveal?'on':'off',changed=root.dataset.asciiReveal!==value;
+    root.dataset.asciiReveal=value;
+    const win=root.ownerDocument?.defaultView;
+    if(changed&&win)win.dispatchEvent(new win.Event('g2g-ascii-preference'));
+  }
   currentLayout=normalizeLayout(layout);
   currentButtons=normalizeButtonTheme(layout);
   applyLayout(currentLayout);
@@ -40,7 +49,7 @@ function applyCurrentTheme(color,layout={}){
   applyTheme(currentColor,globalThis.document?.documentElement,currentButtons);
   globalThis.document?.querySelector('meta[name="theme-color"]')?.setAttribute('content',currentColor);
 }
-export function currentTheme(){return {primaryColor:currentColor,...currentLayout,...currentButtons};}
+export function currentTheme(){return {primaryColor:currentColor,...currentLayout,...currentButtons,asciiRevealEnabled:currentAsciiReveal};}
 export function saveLocalTheme(value,layout={}){
   const color=normalizeThemeColor(value);
   if(!color)throw new Error('Nhập mã màu gồm # và 6 ký tự, ví dụ #111827.');

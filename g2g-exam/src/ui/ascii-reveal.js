@@ -11,7 +11,7 @@ export function bindAsciiReveals(root){
   if(!win.IntersectionObserver||!win.MutationObserver||!win.requestAnimationFrame)return ()=>{};
   const reduced=win.matchMedia('(prefers-reduced-motion: reduce)'),forced=win.matchMedia('(forced-colors: active)');
   const registered=new WeakSet(),seen=new Set(),active=new Set(),waiting=new Map(),preparing=new Map(),deferred=new Map();let frame=0,disposed=false,lastPaint=-Infinity;
-  const allowed=()=>!disposed&&!doc.hidden&&!reduced.matches&&!forced.matches&&!win.navigator.connection?.saveData&&!(win.navigator.hardwareConcurrency>0&&win.navigator.hardwareConcurrency<=2);
+  const allowed=()=>!disposed&&doc.documentElement.dataset?.asciiReveal!=='off'&&!doc.hidden&&!reduced.matches&&!forced.matches&&!win.navigator.connection?.saveData&&!(win.navigator.hardwareConcurrency>0&&win.navigator.hardwareConcurrency<=2);
   const remove=item=>{item.canvas.remove();active.delete(item);};
   const stop=()=>{win.cancelAnimationFrame(frame);frame=0;deferred.clear();for(const cancel of preparing.values())cancel();preparing.clear();for(const item of [...active])remove(item);};
   const background=element=>{
@@ -157,5 +157,7 @@ export function bindAsciiReveals(root){
   changes.observe(root,{childList:true,characterData:true,subtree:true});scan(root);
   for(const event of ['scroll','resize','pagehide','pointerdown','keydown'])win.addEventListener(event,stop,{passive:true,capture:true});
   doc.addEventListener('visibilitychange',stop);reduced.addEventListener('change',stop);forced.addEventListener('change',stop);
-  return ()=>{disposed=true;stop();changes.disconnect();visibility.disconnect();for(const clear of [...waiting.values()])clear();for(const event of ['scroll','resize','pagehide','pointerdown','keydown'])win.removeEventListener(event,stop,true);doc.removeEventListener('visibilitychange',stop);reduced.removeEventListener('change',stop);forced.removeEventListener('change',stop);};
+  const preferenceChanged=()=>{if(!allowed())stop();};
+  win.addEventListener('g2g-ascii-preference',preferenceChanged);
+  return ()=>{disposed=true;stop();changes.disconnect();visibility.disconnect();for(const clear of [...waiting.values()])clear();for(const event of ['scroll','resize','pagehide','pointerdown','keydown'])win.removeEventListener(event,stop,true);win.removeEventListener('g2g-ascii-preference',preferenceChanged);doc.removeEventListener('visibilitychange',stop);reduced.removeEventListener('change',stop);forced.removeEventListener('change',stop);};
 }

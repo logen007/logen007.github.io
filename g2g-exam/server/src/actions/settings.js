@@ -109,6 +109,7 @@ function cleanSettings(input={}){
     settings.general[key]=url;
   }
   settings.theme.primaryColor=String(settings.theme.primaryColor||'').trim();
+  if(typeof settings.theme.asciiRevealEnabled!=='boolean')throw appError(400,'Công tắc ASCII phải là bật hoặc tắt.');
   try{validateLayout(settings.theme);validateButtonTheme(settings.theme);}catch(error){throw appError(400,error.message);}
   Object.assign(settings.theme,normalizeLayout(settings.theme),normalizeButtonTheme(settings.theme));
   settings.auth.allowedDomain=String(settings.auth.allowedDomain||'').trim().toLowerCase().replace(/^@/,'').slice(0,160);

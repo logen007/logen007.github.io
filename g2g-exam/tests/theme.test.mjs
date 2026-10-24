@@ -28,7 +28,9 @@ let passed=0;
 import {normalizeLayout,layoutVariables,validateLayout} from '../src/settings/layout.js';
 import {validateButtonTheme} from '../src/settings/palette.js';
 import {settingsPageHtml} from '../src/settings/view.js';
-import {DEFAULT_SETTINGS} from '../server/src/defaults.js';
+import {DEFAULT_SETTINGS,mergeSettings} from '../server/src/defaults.js';
+assert.equal(mergeSettings({theme:{primaryColor:'#123456'}}).theme.asciiRevealEnabled,true,'Older settings retain enabled ASCII by default');
+assert.equal(mergeSettings({theme:{asciiRevealEnabled:false}}).theme.asciiRevealEnabled,false);
 assert.equal(normalizeLayout({contentWidth:99999}).contentWidth,1600);
 assert.equal(layoutVariables({cardRadius:16,background:'warm'})['--r'],'16px');
 assert.equal(layoutVariables({background:'url(invalid)'})['--nen'],'#F4F5F6');
@@ -51,6 +53,8 @@ assert.equal(normalizeLayout({background:'warm'}).background,'#F7F5F0');
 for(const input of [{contentWidth:0},{contentWidth:1600.5},{contentWidth:'1600'},{background:'toString'},{background:'url(evil)'}])assert.throws(()=>validateLayout(input));
 for(const input of [{secondaryColor:'red'},{selectionStrength:100},{selectionStrength:7.5}])assert.throws(()=>validateButtonTheme(input));
 const page=settingsPageHtml({settings:DEFAULT_SETTINGS,infra:null});
+assert.match(page,/id="sAsciiReveal" type="checkbox" checked/);
+assert.doesNotMatch(settingsPageHtml({settings:{...DEFAULT_SETTINGS,theme:{...DEFAULT_SETTINGS.theme,asciiRevealEnabled:false}},infra:null}),/id="sAsciiReveal" type="checkbox" checked/);
 assert.match(page,/id="sThemePreview" style="[^"]*--dark-brand-primary:/,'Initial preview has its own unsaved dark palette');
 assert.match(page,/id="sAiMistral" type="password"/);
 assert.match(page,/id="sAiMistralSave"/);
@@ -117,10 +121,10 @@ await test('Màu rất sáng, tối và bão hòa đều có chữ đạt tươn
 });
 
 await test('Demo áp dụng màu đã lưu trước khi đọc cấu hình; không gửi yêu cầu ghi server',async()=>{
-  const storage=new Map([['g2g.theme.public.v1','#175CD3'],['g2g.theme.demo.v1','#FFEE00']]);
+  const storage=new Map([['g2g.theme.public.v1','#175CD3'],['g2g.theme.demo.v1','#FFEE00'],['g2g.theme.public.v1.layout',JSON.stringify({asciiRevealEnabled:false})]]);
   const variables=new Map(),requests=[];
   globalThis.localStorage={getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value)};
-  globalThis.document={documentElement:{style:{setProperty:(key,value)=>variables.set(key,value)}},querySelector:()=>null};
+  globalThis.document={documentElement:{dataset:{},style:{setProperty:(key,value)=>variables.set(key,value)}},querySelector:()=>null};
   globalThis.G2G_API_BASE='/api';
   globalThis.G2G_DEMO_BYPASS=true;
   globalThis.fetch=async(url,options)=>{
@@ -128,6 +132,7 @@ await test('Demo áp dụng màu đã lưu trước khi đọc cấu hình; khô
     return {ok:true,json:async()=>({theme:{primaryColor:'#087A56'}})};
   };
   const initialization=initializeTheme();
+  assert.equal(globalThis.document.documentElement.dataset.asciiReveal,'off','Cached off applies synchronously before the public request resolves');
   assert.equal(variables.get('--brand-primary'),'#FFEE00');
   await initialization;
   assert.equal(currentTheme().primaryColor,'#FFEE00');
@@ -140,12 +145,21 @@ await test('Demo áp dụng màu đã lưu trước khi đọc cấu hình; khô
   assert.equal(currentTheme().secondaryColor,'#111827');
   assert.equal(variables.get('--nen'),'#ABCDEF');
   assert.equal(JSON.parse(storage.get('g2g.theme.demo.v1.layout')).contentWidth,1537);
+  saveLocalTheme('#175CD3',{asciiRevealEnabled:false});
+  assert.equal(currentTheme().asciiRevealEnabled,false);
+  assert.equal(JSON.parse(storage.get('g2g.theme.demo.v1.layout')).asciiRevealEnabled,false,'Demo preference persists with the existing appearance cache');
 });
 
 await test('Chế độ thật dùng màu server, không dùng màu riêng của demo',()=>{
   globalThis.G2G_DEMO_BYPASS=false;
   acceptPublicSettings({theme:{primaryColor:'#175CD3'}});
   assert.equal(currentTheme().primaryColor,'#175CD3');
+  assert.equal(currentTheme().asciiRevealEnabled,true,'Missing public flag preserves the enabled default');
+  globalThis.document.documentElement.dataset={};
+  acceptPublicSettings({theme:{primaryColor:'#175CD3',asciiRevealEnabled:false}});
+  assert.equal(currentTheme().asciiRevealEnabled,false);
+  assert.equal(globalThis.document.documentElement.dataset.asciiReveal,'off');
+  assert.equal(JSON.parse(globalThis.localStorage.getItem('g2g.theme.public.v1.layout')).asciiRevealEnabled,false,'Server preference is retained for startup before the next public-settings fetch');
   acceptPublicSettings({theme:{primaryColor:'#175CD3',contentWidth:1400,cardRadius:16,background:'warm'}});
   assert.equal(currentTheme().contentWidth,1400);
   assert.equal(currentTheme().cardRadius,16);
