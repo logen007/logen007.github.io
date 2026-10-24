@@ -24,18 +24,18 @@ import {writingFormDisplay} from '../ui/writing-form.js';
 import {resultClass,resultLabel} from '../domain/gradebook.js';
 import {STUDENT_LEVELS,examLearningLevel} from '../domain/student-profile.js';
 import {studentProfileCardHtml} from './student-profile-card.js';
-import {speakingExamCardHtml,speakingType,examTypeLabel} from '../speaking/catalog.js';
+import {speakingExamCardHtml,examKindFilterHtml,speakingType,examTypeLabel} from '../speaking/catalog.js';
 
 export {loginHtml} from './login.js';
 
-export function studentHomeHtml({data,user,filter='all',levelFilter='',kindFilter='written'}){
+export function studentHomeHtml({data,user,filter='all',levelFilter='',kindFilter=''}){
   const exams=getPublishedExams(data);
   const attempts=getStudentResults(data,user.id);
   const latest=getLatestPublishedAttempt(data,user.id),best=getBestPublishedAttempt(data,user.id);
   const latestExam=latest&&byId(data.exams,latest.examId);
   const types=['GOETHE','TELC','FID'];
-  const visible=exams.filter(ex=>(ex.kind==='speaking'?'speaking':'written')===kindFilter&&(filter==='all'||speakingType(ex)===filter)&&(!levelFilter||examLearningLevel(ex)===levelFilter));
-  return `<main class="khung student-catalog">${studentProfileCardHtml(data,user)}<div class="exam-filter" aria-label="Lọc đề thi"><button class="nut" data-action="toggle-exam-kind" aria-pressed="${kindFilter==='speaking'}">Kiểu đề: ${kindFilter==='speaking'?'Nói':'Viết'}</button><label class="filter-field"><select aria-label="Loại đề" data-exam-provider-filter><option value="all">Loại đề</option>${types.map(type=>`<option value="${esc(type)}" ${filter===type?'selected':''}>${esc(examTypeLabel(type))}</option>`).join('')}</select></label><label class="filter-field"><select aria-label="Trình độ" data-exam-level-filter><option value="">Trình độ</option>${STUDENT_LEVELS.map(level=>`<option ${levelFilter===level?'selected':''}>${level}</option>`).join('')}</select></label>${codeEntryHtml('exam')}</div><section class="danh-sach-de">${visible.map(ex=>studentExamCardHtml(ex,attempts,data)).join('')||'<p>Chưa có đề luyện thuộc loại này.</p>'}</section></main>`;
+  const visible=exams.filter(ex=>(!kindFilter||(ex.kind==='speaking'?'speaking':'written')===kindFilter)&&(filter==='all'||speakingType(ex)===filter)&&(!levelFilter||examLearningLevel(ex)===levelFilter));
+  return `<main class="khung student-catalog">${studentProfileCardHtml(data,user)}<div class="exam-filter" aria-label="Lọc đề thi">${examKindFilterHtml(kindFilter)}<label class="filter-field"><select aria-label="Loại đề" data-exam-provider-filter><option value="all">Loại đề</option>${types.map(type=>`<option value="${esc(type)}" ${filter===type?'selected':''}>${esc(examTypeLabel(type))}</option>`).join('')}</select></label><label class="filter-field"><select aria-label="Trình độ" data-exam-level-filter><option value="">Trình độ</option>${STUDENT_LEVELS.map(level=>`<option ${levelFilter===level?'selected':''}>${level}</option>`).join('')}</select></label>${codeEntryHtml('exam')}</div><section class="danh-sach-de">${visible.map(ex=>studentExamCardHtml(ex,attempts,data)).join('')||'<p>Chưa có đề luyện thuộc loại này.</p>'}</section></main>`;
 }
 
 export function studentExamCardHtml(ex,attempts,data){

@@ -284,7 +284,7 @@ function restoreSignedInRoute(){
   else ui.view=isStudent(user)?'student-home':'admin';
 }
 
-function studentHomeView(){app.innerHTML=layout(studentHomeHtml({data,user,filter:ui.examFilter,levelFilter:ui.examLevelFilter,kindFilter:ui.examKindFilter||'written'}));}
+function studentHomeView(){app.innerHTML=layout(studentHomeHtml({data,user,filter:ui.examFilter,levelFilter:ui.examLevelFilter,kindFilter:ui.examKindFilter||''}));}
 function studentResultsView(){app.innerHTML=layout(studentResultsHtml({data,user}));}
 function submittedView(){app.innerHTML=layout(submittedHtml(byId(data.attempts,ui.attemptId)));}
 
@@ -1134,9 +1134,9 @@ function bindGlobal(){
     if(ui.view==='speaking-exams'){if(!await speakingExams.beforeLeave())return;ui.gradeKind='written';ui.view='admin';ui.adminTab='grades';render();}
     else{if(!await flushBuilderDraft())return;ui.gradeKind='speaking';await speakingExams.open({page:'reviews'});}
   });
-  app.querySelectorAll('[data-action="toggle-exam-kind"]').forEach(button=>button.onclick=()=>{
-    if(ui.view==='student-home')ui.examKindFilter=ui.examKindFilter==='speaking'?'written':'speaking';
-    else ui.adminExamFilters={...ui.adminExamFilters,kind:ui.adminExamFilters?.kind==='speaking'?'written':'speaking'};
+  app.querySelectorAll('[data-exam-kind-filter]').forEach(select=>select.onchange=()=>{
+    if(ui.view==='student-home')ui.examKindFilter=select.value;
+    else ui.adminExamFilters={...ui.adminExamFilters,kind:select.value};
     render();
   });
   app.querySelectorAll('[data-action="student-attempt-detail"]').forEach(b=>b.onclick=async event=>{
