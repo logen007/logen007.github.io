@@ -15,7 +15,8 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
 
 - Owner ASCII reveal reference (24 October 2026):
   [ascii-reveal](https://github.com/quanhoangindex/ascii-reveal) is an approved
-  inspiration for selected course-cover/card images and marketing/featured blocks,
+  inspiration for dashboard section headings, catalog card/list-page titles,
+  course-cover images and marketing/featured blocks,
   not a site-wide replacement for every loading state. Glyphs should resolve into
   the actual image/content silhouette rather than unrelated random decoration.
   Use one short reveal after a genuine load/navigation; never delay ready content,
@@ -32,9 +33,13 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   implementation review, not a framework migration or duplicated per-page effects.
   Review canvas/CORS, performance and fallback behavior before rollout; preserve
   the upstream MIT notice if reusing its code. Implemented via the original shared
-  `src/ui/ascii-reveal.js` adapter: opt-in course catalog/detail covers and featured
-  login/course headings only, 360ms diagonal decode, at most two canvases and about
-  30fps. It samples already loaded assets without new requests; tainted images
+  `src/ui/ascii-reveal.js` adapter owns the selector policy: dashboard h2/h3,
+  course/student exam card titles, list-page headings, opt-in course covers and
+  featured login/course headings. Use a 640ms diagonal decode, at most two image
+  canvases, 12 small heading layers and a shared 9,000-cell/30fps work budget.
+  Heading identities remain stable across dashboard refreshes; changed content
+  cancels its old overlay immediately. Pointer/keyboard interaction also cancels.
+  It samples already loaded assets without new requests; tainted images
   fall back unchanged. No React or upstream code/dependency is bundled.
 
 - Owner featured-surface reference (24 October 2026): inspired by Cloudflare's
