@@ -22,6 +22,12 @@ assert.ok(asciiScope.querySelector('.dashboard-bars').closest(ASCII_REVEAL_SELEC
 assert.ok(asciiScope.querySelector('.distribution-chart').closest(ASCII_REVEAL_SELECTOR),'Distribution chart content participates');
 asciiScope.innerHTML=courseCatalogHtml({route:{page:'catalog'},filters:{},catalog:{courses:[{id:'ascii-course',title:'Course title',price:0,chapterCount:1,lessonCount:2,coverUrl:'/uploads/ascii.jpg'}]}},{role:'student'});
 assert.ok(asciiScope.querySelector('.course-card').matches(ASCII_REVEAL_SELECTOR),'Whole course card content participates');
+asciiScope.innerHTML=courseCatalogHtml({route:{page:'manage'},filters:{},catalog:{courses:['published','draft','archived'].map(status=>({id:status,title:'Course '+status,status,price:0,level:'A1'}))}},{role:'teacher'});
+const courseTitles=[...asciiScope.querySelectorAll('.course-title')];
+assert.ok(courseTitles[0].matches('.exam-title-status.is-published'),'Published course titles reuse the exam success color');
+for(const title of courseTitles.slice(1))assert.ok(title.matches('.exam-title-status.is-draft'),'Unpublished/archived course titles reuse the neutral exam color');
+assert.equal(courseTitles[0].getAttribute('aria-label'),'Course published — Đã xuất bản');
+assert.equal(courseTitles[2].getAttribute('aria-label'),'Course archived — Ngừng đăng ký','Color is accompanied by an accessible real status');
 asciiScope.innerHTML='<main class="student-catalog"><article class="the-de"><h3>Exam card</h3><button>Start</button></article></main>';
 assert.equal(asciiScope.querySelectorAll(ASCII_REVEAL_SELECTOR).length,1,'Student exam card body participates, not buttons');
 const asciiUser={id:'ascii-student',role:'student',name:'Synthetic learner',level:'A1'},asciiData={users:[asciiUser],classes:[],attempts:[],questions:[],exams:[{id:'exam-a',title:'Same title',provider:'GOETHE',level:'A1',status:'published',questionCount:4,durationSeconds:3900},{id:'exam-b',title:'Same title',provider:'GOETHE',level:'A1',status:'published',questionCount:4,durationSeconds:3900}]};
@@ -124,7 +130,8 @@ try{
   registerCourseRoutes(app,{service,userFor:async request=>request.headers['x-user']==='teacher'?teacher:student});
   controller=createCoursesController({root,context:()=>({user}),layout:html=>html,navigate:next=>{route=next;paint();},repaint:paint,notify:m=>notices.push(m),request,uploadImage});
   paint();await idle();assert.ok(root.querySelector('.course-management .table-wrap table.bang'));assert.equal(root.querySelector('.course-grid'),null);
-  assert.match(css,/\.course-management \.table-link\.course-title \{[^}]*-webkit-line-clamp:3; line-clamp:3;[^}]*max-height:4.2em;[^}]*overflow:hidden;[^}]*color:var\(--brand-text\); \}/,'Course table titles retain yellow text and truncate to three lines');
+  assert.match(css,/\.course-management \.table-link\.course-title \{[^}]*-webkit-line-clamp:3; line-clamp:3;[^}]*max-height:4.2em;[^}]*overflow:hidden;/,'Course table titles still truncate to three lines');
+  assert.doesNotMatch(css.match(/\.course-management \.table-link\.course-title \{[^}]*\}/)[0],/color:/,'Course layout must not override shared exam status colors');
   assert.match(css,/\.course-management \.bang :is\(th,td\):first-child \{ width:40%; min-width:320px; \}/,'Title column cannot collapse into a narrow stack of words');
   await action('create');
   const courseId=controller.getState().editor.id;
@@ -247,7 +254,11 @@ try{
   await action('preview-course');assert.ok(root.querySelector('[data-course-action="close-preview"]'));
   const previewCalls=courseApiCalls.length,previewEditor=JSON.stringify(controller.getState().editor),sameView=document.createElement('div');
   assert.ok(root.querySelector('.course-detail-layout'),'Global preview opens the actual learner course-detail layout');
+  assert.equal(root.querySelectorAll('[data-course-action="close-preview"]').length,1,'Preview retains one return-to-editor control');
+  assert.equal(root.querySelector('[data-course-action="catalog"]'),null,'No redundant learner catalog back button inside authoring preview');
+  assert.doesNotMatch(root.textContent,/Xem trước giao diện học viên|Không lưu tiến độ thật/);
   sameView.innerHTML=courseDetailHtml({detail:controller.getState().preview.detail});
+  assert.ok(sameView.querySelector('[data-course-action="catalog"]'),'Actual learner course details keep their catalog navigation');
   assert.equal(root.querySelector('.course-detail-layout').outerHTML,sameView.querySelector('.course-detail-layout').outerHTML,'Detail preview uses identical learner markup, not a second presentation');
   await action('lesson',`[data-lesson="${knowledgeId}"]`);
   assert.equal(root.querySelectorAll('.course-lesson-content .course-knowledge-content figure').length,2);
