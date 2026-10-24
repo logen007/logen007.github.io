@@ -187,7 +187,7 @@ assert.ok(studentHomeHtml({data,user:{id:'s',name:'Student'},levelFilter:'B1.1'}
 assert.ok(studentHomeHtml({data,user:{id:'s',name:'Student'}}).includes('class="khung student-catalog"'));
 const catalogStyles=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(catalogStyles,/\.student-catalog\{[^}]*text-size-adjust:100%/);
-assert.match(catalogStyles,/\.student-catalog \.learner-actions \.nut\{[^}]*min-height:44px[^}]*white-space:normal/);
+assert.match(catalogStyles,/\.learner-actions>\[data-action="share-profile"\]\{[^}]*height:var\(--control-height\);min-height:var\(--control-height\);[^}]*border:1px solid var\(--control-border\);[^}]*color:var\(--phu\);font:400 var\(--control-font-size\)\/var\(--control-line-height\)/,'Share matches adjacent code/filter controls instead of secondary-button theme');
 assert.match(catalogStyles,/\.student-catalog \.learner-stats \.exam-latest-result\{font-size:16px/);
 assert.match(catalogStyles,/--student-exam-title-size:18px/);
 assert.match(catalogStyles,/\.student-catalog \.the-de h3\{font-size:var\(--student-exam-title-size\)/);
@@ -207,6 +207,7 @@ assert.ok(visitorProfile.includes('Học viên Vãng lai'));
 assert.doesNotMatch(visitorProfile,/Lớp Extend/);
 assert.ok(profile.includes('B1'));
 assert.ok(profile.includes('data-action="share-profile"'));
+assert.match(profile,/data-action="share-profile"><svg/,'Share uses the shared outline icon instead of a platform-dependent arrow glyph');
 assert.ok(profile.includes('data-edit-student-name'));
 for(const text of ['learner-steps','HỒ SƠ HỌC VIÊN','Mã lớp ·','Hạng theo trình độ','Bài đã chấm'])assert.ok(!profile.includes(text));
 assert.ok(profile.includes('Bài đã thi'));
