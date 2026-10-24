@@ -158,6 +158,9 @@ The catalog filter row uses two equal 132px maximum desktop tracks and a
 compact 120px inline exam-code input. On mobile the dropdowns share two equal
 columns beside a 110px code input on the same row; use compact dropdown padding.
 Class-code inputs stay 120px wide rather than growing with the Share action.
+The adjacent profile Share action uses the same field height, border, surface,
+regular control typography and muted text, with the shared outline Share icon;
+do not inherit a separately themed secondary-button border or bold label.
 Short placeholders are Mã lớp / Mã đề; full accessible input labels remain.
 Inline code controls use the same white/light or charcoal/dark `--mat` surface
 and shared form typography as dropdowns, not their own larger font. Touch fields

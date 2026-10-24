@@ -1325,7 +1325,8 @@ select:focus,textarea:focus { outline:none; box-shadow:none; border-color:var(--
 .student-catalog .learner-stats span{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
 .student-catalog .learner-stats strong{font-size:22px;line-height:1.3;font-variant-numeric:tabular-nums}
 .student-catalog .learner-stats .exam-latest-result{font-size:16px;line-height:1.5;overflow-wrap:anywhere}
-.student-catalog .learner-actions .nut{min-width:0;min-height:44px;white-space:normal;overflow-wrap:anywhere;line-height:1.4}
+.learner-actions>[data-action="share-profile"]{min-width:0;height:var(--control-height);min-height:var(--control-height);padding:0 var(--control-pad-x);border:1px solid var(--control-border);background:var(--mat);color:var(--phu);font:400 var(--control-font-size)/var(--control-line-height) var(--font-ui);white-space:nowrap}
+.learner-actions>[data-action="share-profile"]:hover:not(:disabled){background:var(--mat);border-color:var(--control-border-hover)}
 .student-catalog .the-de h3{font-size:var(--student-exam-title-size);line-height:1.45;height:2.9em;letter-spacing:-.02em}
 .student-catalog .exam-card-status,.student-catalog .the-de .meta{font-size:13px;line-height:1.5}
 .student-catalog .exam-card-tags .nhan{font-size:12px;line-height:1.4}
