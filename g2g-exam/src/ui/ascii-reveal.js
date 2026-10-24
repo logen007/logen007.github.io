@@ -1,6 +1,7 @@
 // Original framework-free treatment inspired by ASCII reveal. Real DOM stays intact.
 export const ASCII_REVEAL_SELECTOR='[data-ascii-reveal],.admin-dashboard h2,.admin-dashboard h3,.course-card h2,.student-catalog .the-de h3,.exam-list-heading h1,.student-results-heading h1,.course-shell>.tieu-de-trang h1';
-const selector=ASCII_REVEAL_SELECTOR,glyphs=' .:-=+*#%@',duration=640;
+const selector=ASCII_REVEAL_SELECTOR,glyphs=' .:-=+*#%@',duration=1100,hold=220;
+const variants=[' ','.`',':;','-_','=~','+x','*o','#H','%8','@&'];
 const excluded='.course-authoring,.course-learning-layout,.exam-paper,.goethe-editor,.grading-detail,.grading-review,table,[role=dialog],[role=alert],[role=status],button,a,summary,form,input,textarea,[contenteditable]';
 
 export function bindAsciiReveals(root){
@@ -15,18 +16,32 @@ export function bindAsciiReveals(root){
     for(let node=element;node;node=node.parentElement){const color=win.getComputedStyle(node).backgroundColor;if(color&&color!=='transparent'&&color!=='rgba(0, 0, 0, 0)')return color;}
     return win.getComputedStyle(doc.documentElement).getPropertyValue('--mat').trim()||'#fff';
   };
+  function paint(item,until,phase){
+    const {context,canvas,cellW,cellH}=item;
+    context.fillStyle=item.background;context.fillRect(0,0,canvas.width,canvas.height);
+    for(let y=0;y<item.rows;y++)for(let x=0;x<item.cols;x++)if(x+y<until)context.clearRect(x*cellW,y*cellH,cellW+1,cellH+1);
+    for(const cell of item.cells)if(cell.x+cell.y>=until){
+      const family=variants[cell.density];context.fillStyle=cell.color;
+      context.fillText(family[(phase+cell.x+cell.y)%family.length],cell.x*cellW,cell.y*cellH);
+    }
+    item.phase=phase;item.until=until;
+  }
   function tick(now){
     frame=0;if(!allowed()){stop();return;}
     if(now-lastPaint<32){if(active.size)frame=win.requestAnimationFrame(tick);return;}lastPaint=now;
+    const started=win.performance.now();
     for(const item of [...active]){
       if(!item.element.isConnected){remove(item);continue;}
       item.start??=now;
-      const progress=Math.min(1,(now-item.start)/duration);
+      const elapsed=now-item.start,progress=Math.max(0,Math.min(1,(elapsed-hold)/(duration-hold)));
       if(progress===1){remove(item);continue;}
-      // One deterministic diagonal decode, never a random blinking character loop.
+      // Shape/color stay stable; only similar-density glyphs change before decoding.
       const until=Math.floor(progress*(item.cols+item.rows));
-      for(let y=0;y<item.rows;y++)for(let x=0;x<item.cols;x++)if(x+y<until)item.context.clearRect(x*item.cellW,y*item.cellH,item.cellW+1,item.cellH+1);
+      const phase=Math.floor(elapsed/100);
+      if(phase!==item.phase)paint(item,until,phase);
+      else if(until!==item.until){for(let y=0;y<item.rows;y++)for(let x=0;x<item.cols;x++)if(x+y>=item.until&&x+y<until)item.context.clearRect(x*item.cellW,y*item.cellH,item.cellW+1,item.cellH+1);item.until=until;}
     }
+    if(win.performance.now()-started>24){stop();return;}
     if(active.size)frame=win.requestAnimationFrame(tick);
   }
   function reveal(element){
@@ -78,17 +93,18 @@ export function bindAsciiReveals(root){
       Object.assign(canvas.style,{left:box.left+'px',top:box.top+'px',width:box.width+'px',height:box.height+'px',borderRadius:style.borderRadius});
       const context=canvas.getContext('2d');if(!context)return;
       const cellW=box.width/cols,cellH=box.height/rows;
-      context.fillStyle=background(element);context.fillRect(0,0,canvas.width,canvas.height);
       context.font=Math.max(7,cellH)+'px monospace';context.textBaseline='top';
+      const cells=[];
       for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
         const at=(y*cols+x)*4,alpha=pixels[at+3]/255;
         if(alpha<.02)continue;
         const tone=image?(pixels[at]*.2126+pixels[at+1]*.7152+pixels[at+2]*.0722)/255:Math.sqrt(alpha);
-        context.fillStyle=image?`rgb(${pixels[at]},${pixels[at+1]},${pixels[at+2]})`:style.color;
-        context.fillText(glyphs[Math.max(1,Math.round(tone*(glyphs.length-1)))],x*cellW,y*cellH);
+        cells.push({x,y,density:Math.max(1,Math.round(tone*(glyphs.length-1))),color:image?`rgb(${pixels[at]},${pixels[at+1]},${pixels[at+2]})`:style.color});
       }
+      const item={element,canvas,context,cols,rows,cellW,cellH,image,cells,background:background(element),start:null};
+      paint(item,0,0);
       if(win.performance.now()-started>(image?32:80))return;
-      doc.body.append(canvas);active.add({element,canvas,context,cols,rows,cellW,cellH,image,start:null});
+      doc.body.append(canvas);active.add(item);
       if(!frame)frame=win.requestAnimationFrame(tick);
     }catch{canvas?.remove();} // Decoration must never prevent navigation or content.
   }
