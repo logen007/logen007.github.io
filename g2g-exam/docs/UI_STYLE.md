@@ -15,7 +15,7 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
 
 - Owner ASCII reveal reference (24 October 2026):
   [ascii-reveal](https://github.com/quanhoangindex/ascii-reveal) is an approved
-  inspiration for dashboard section headings, catalog card/list-page titles,
+  inspiration for dashboard card contents/charts, catalog cards/list-page titles,
   course-cover images and marketing/featured blocks,
   not a site-wide replacement for every loading state. Glyphs should resolve into
   the actual image/content silhouette rather than unrelated random decoration.
@@ -33,15 +33,20 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   implementation review, not a framework migration or duplicated per-page effects.
   Review canvas/CORS, performance and fallback behavior before rollout; preserve
   the upstream MIT notice if reusing its code. Implemented via the original shared
-  `src/ui/ascii-reveal.js` adapter owns the selector policy: dashboard h2/h3,
-  course/student exam card titles, list-page headings, opt-in course covers and
+  `src/ui/ascii-reveal.js` adapter owns the selector policy: entire dashboard
+  activity/distribution/top-student/CPU/resource/R2/AI cards, course/student exam
+  cards and learner statistics, list-page headings, opt-in course covers and
   featured login/course headings. Owner refinement: use a 1.1s decode with a brief
   220ms glyph phase, then a diagonal reveal. Animate similar-density ASCII glyphs
   about 10 times/second without changing their source silhouette/color; no strobe
   or continuous loop. Reuse sampled pixels and stop if frame work is too expensive.
-  Keep at most two image
-  canvases, 12 small heading layers and a shared 9,000-cell/30fps work budget.
-  Heading identities remain stable across dashboard refreshes; changed content
+  `ascii-snapshot.js` captures local bar fills, loaded images and themed SVG
+  geometry once; skip external avatars rather than taint an entire card. Cut
+  transparent holes around controls, tables, badges, errors and critical statuses
+  so they remain readable. Nested heading/cover targets do not duplicate the card.
+  Keep at most two standalone image
+  canvases, 12 layers and a shared 36,000-cell/30fps work budget.
+  Card identities remain stable across dashboard refreshes; changed content
   cancels its old overlay immediately. Pointer/keyboard interaction also cancels.
   It samples already loaded assets without new requests; tainted images
   fall back unchanged. No React or upstream code/dependency is bundled.
