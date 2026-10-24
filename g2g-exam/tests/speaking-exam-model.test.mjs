@@ -27,8 +27,10 @@ assert.equal(SPEAKING_MAX_SECONDS,40*60);
 
 const invalidExam=mutate=>{const value=clone(exam);mutate(value);assert.ok(speakingExamErrors(value).length);};
 for(const provider of ['GOETHE','TELC','FID',null])assert.deepEqual(speakingExamErrors({...clone(exam),provider}),[],'Provider metadata is independent of speaking kind');
+assert.deepEqual(speakingExamErrors({...clone(exam),provider:'GOETHE',learningLevel:'A1'}),[],'Audience metadata cannot turn a speaking exam into written structure');
+assert.deepEqual(speakingExamErrors({...clone(exam),sections:undefined}),[],'Legacy missing written sections means no written sections');
 for(const mutate of [
- e=>e.title='',e=>e.level='A0',e=>e.provider='UNKNOWN',e=>e.learningLevel='B2',
+ e=>e.title='',e=>e.level='A0',e=>e.provider='UNKNOWN',
  e=>e.sections=[{skillKey:'speaking'}],e=>e.sections={},e=>e.speaking.stages=[],
  e=>e.speaking.stages[0].promptA='',e=>e.speaking.stages[0].promptB='',
  e=>e.speaking.stages[0].instruction='x'.repeat(3001),e=>e.speaking.stages[0].speakerSeat='C',

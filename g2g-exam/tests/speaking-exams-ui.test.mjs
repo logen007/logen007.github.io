@@ -1,5 +1,6 @@
 // Synthetic DOM/provider tests only: no camera, microphone, 100ms, Drive or VPS.
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
 import {createSpeakingExamsController} from '../src/speaking/exams.js';
 import {createSpeakingAutosave} from '../src/speaking/exam-autosave.js';
 import {createSpeakingExamCall} from '../src/speaking/exam-call.js';
@@ -9,6 +10,7 @@ const {JSDOM}=await import(process.env.G2G_JSDOM_PATH);
 const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost/?view=speaking-exams',pretendToBeVisual:true});
 const savedGlobals=new Map(['window','document','location','navigator'].map(name=>[name,Object.getOwnPropertyDescriptor(globalThis,name)]));
 for(const name of savedGlobals.keys())Object.defineProperty(globalThis,name,{configurable:true,value:dom.window[name],writable:true});
+const speakingStyle=document.createElement('style');speakingStyle.textContent=await readFile(new URL('../speaking-exams.css',import.meta.url),'utf8');document.head.append(speakingStyle);
 dom.window.HTMLMediaElement.prototype.play=async()=>{};
 const root=document.querySelector('#app'),el=selector=>root.querySelector(selector),clone=value=>structuredClone(value);
 const settle=async()=>{for(let i=0;i<10;i++)await new Promise(resolve=>setImmediate(resolve));};
@@ -45,7 +47,7 @@ try{
  validationSave.changed();await assert.rejects(validationSave.flush(),/Title required/);assert.equal(validationSave.dirty(),true);content='Corrected title';validationSave.changed();await validationSave.flush();
  assert.deepEqual(invalidWrites,[{value:{content:''},version:3},{value:{content:'Corrected title'},version:3}]);assert.equal(validationSave.dirty(),false);validationSave.dispose();
 
- let authored=clone(exam),requests=[];
+ let authored={...clone(exam),learningLevel:'A1'},requests=[];
  fixture({currentUser:teacher,request:async(path,options={})=>{
   requests.push({path,...options});
   if(path==='/exam-a'&&options.method==='PUT'){assert.equal(options.body.version,authored.version);authored={...clone(options.body.exam),version:authored.version+1};return {exam:clone(authored)};}
@@ -67,7 +69,7 @@ try{
  assert.equal(el('.goethe-outline'),null);assert.equal(el('[data-sx-action="part-add"]'),null);
  assert.equal(root.querySelectorAll('[data-sx-part]').length,1);assert.equal(contentEditors.length,2);
  assert.equal(el('[data-sx-minutes]'),null);assert.equal(el('[data-sx-field="stages.0.instruction"]'),null);
- await click('settings');assert.equal(document.querySelector('#sx-level'),null);assert.equal(document.querySelector('#sx-provider'),null);
+ await click('settings');const timingField=document.querySelector('.sx-editor-dialog>.sx-field');assert.equal(window.getComputedStyle(timingField).display,'grid');assert.equal(window.getComputedStyle(timingField.querySelector('input')).width,'100%');assert.equal(document.querySelector('#sx-level'),null);assert.equal(document.querySelector('#sx-provider'),null);
  const callMinutes=document.querySelector('#sx-call-minutes'),prepMinutes=document.querySelector('#sx-prep-minutes');assert.equal(callMinutes.value,'1');assert.equal(prepMinutes.value,'20');
  callMinutes.value='2.5';callMinutes.dispatchEvent(new dom.window.Event('input',{bubbles:true}));prepMinutes.value='3';prepMinutes.dispatchEvent(new dom.window.Event('input',{bubbles:true}));document.querySelector('[data-dismiss]').click();
  const richA=[{id:'text-a',type:'text',text:'**Updated first A**',align:'center'},{id:'image-a',type:'image',url:'/media/synthetic-a',alt:'A image',align:'right',width:50}];

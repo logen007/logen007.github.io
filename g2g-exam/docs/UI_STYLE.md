@@ -190,6 +190,12 @@ with a 2px offset. Forced colors use Highlight. Do not use focus for selection.
 Owner exception (23 October): the course knowledge writing canvas has no focus
 rectangle; its formatting toolbar, resize handles and form fields retain keyboard focus.
 
+Settings popups use a vertical field layout: label above the full-width control,
+8px between label and control, 20px between fields. Use the same control tokens
+and equal widths; never let label length determine the input's horizontal position.
+Shared popups have a maximum width of 600px and fit inside the viewport. These
+rules apply to popups appended outside the page container too.
+
 Filter dropdowns, profile forms and exam access controls use the shared form rule in styles.css:
 44px height, 14px horizontal padding, one native chevron and common focus/hover states.
 All dropdown triggers are pill-shaped (`--pill`) across the site, including
