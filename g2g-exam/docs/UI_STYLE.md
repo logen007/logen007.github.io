@@ -13,6 +13,27 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
 
 ## Visual hierarchy
 
+- Owner ASCII reveal reference (24 October 2026):
+  [ascii-reveal](https://github.com/quanhoangindex/ascii-reveal) is an approved
+  inspiration for selected course-cover/card images and marketing/featured blocks,
+  not a site-wide replacement for every loading state. Glyphs should resolve into
+  the actual image/content silhouette rather than unrelated random decoration.
+  Use one short reveal after a genuine load/navigation; never delay ready content,
+  fake progress or replay on autosave, polling, theme changes or ordinary rerenders.
+  Preserve the existing neutral startup rule: no initial page-wide ASCII skeleton.
+  Keep exam questions, answer controls, editors, timers, grading, tables and critical
+  status/error text immediately readable and outside the decorative layer.
+  Reserve final dimensions to avoid layout shift; keep real semantic DOM/alt text,
+  mark decorative glyphs aria-hidden and pointer-inert, and do not move focus.
+  Reduced motion, forced colors, slow devices or animation/image failures show the
+  real content without scrambling. Stop work offscreen/when hidden and clean up on
+  navigation; use shared theme tokens, no flashing or continuous decorative loops.
+  This app does not use React: prefer a shared framework-free adapter/core after
+  implementation review, not a framework migration or duplicated per-page effects.
+  Review canvas/CORS, performance and fallback behavior before rollout; preserve
+  the upstream MIT notice if reusing its code. This rule records visual direction,
+  not an installed dependency or an already implemented effect.
+
 - Owner featured-surface reference (24 October 2026): inspired by Cloudflare's
   colored feature blocks and login pattern. Use the configured primary/background
   contrast pair, a low-opacity fine-line pattern and slow background-only motion
