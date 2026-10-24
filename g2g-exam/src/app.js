@@ -1,4 +1,5 @@
 import {examDurationSeconds} from './domain/exam-clock.js';
+import {bindAsciiReveals} from './ui/ascii-reveal.js';
 import {createCoursesController} from './courses/controller.js';
 import {readCourseRoute,writeCourseRoute,courseRequest,coursePath} from './courses/api.js';
 import {bindExamQuestionSidebar} from './ui/exam-question-sidebar.js';
@@ -109,6 +110,7 @@ import {startSpeakingArrival} from './speaking/arrival.js';
 
 initializeTheme();
 const app=document.getElementById('app');
+bindAsciiReveals(app);
 const toast=document.getElementById('toast');
 bindImagePaste(document,{notify,confirmReplace:apply=>new Promise(resolve=>confirmAction('Thay ảnh hiện tại bằng ảnh vừa dán?',()=>{apply();resolve();},{confirmLabel:'Thay ảnh',onCancel:resolve}))});
 const repo=await createRepository();

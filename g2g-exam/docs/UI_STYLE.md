@@ -31,8 +31,11 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
   This app does not use React: prefer a shared framework-free adapter/core after
   implementation review, not a framework migration or duplicated per-page effects.
   Review canvas/CORS, performance and fallback behavior before rollout; preserve
-  the upstream MIT notice if reusing its code. This rule records visual direction,
-  not an installed dependency or an already implemented effect.
+  the upstream MIT notice if reusing its code. Implemented via the original shared
+  `src/ui/ascii-reveal.js` adapter: opt-in course catalog/detail covers and featured
+  login/course headings only, 360ms diagonal decode, at most two canvases and about
+  30fps. It samples already loaded assets without new requests; tainted images
+  fall back unchanged. No React or upstream code/dependency is bundled.
 
 - Owner featured-surface reference (24 October 2026): inspired by Cloudflare's
   colored feature blocks and login pattern. Use the configured primary/background

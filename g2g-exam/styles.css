@@ -465,6 +465,8 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .hanh-dong-bang { display:flex; gap:6px; flex-wrap:wrap; min-width:max-content; }.bang td:last-child,.bang th:last-child { white-space:nowrap; }
 .table-link { padding:0; border:0; background:none; color:var(--chu); font:600 14px/1.4 var(--font-ui); text-align:left; cursor:pointer; }.table-link:hover { color:var(--brand-text); }.table-link:focus-visible { outline:1px solid var(--focus-ring); outline-offset:2px; border-radius:4px; }
 
+.ascii-reveal-layer { position:fixed; z-index:40; pointer-events:none; user-select:none; contain:strict; }
+@media(prefers-reduced-motion:reduce),(forced-colors:active) { .ascii-reveal-layer { display:none; } }
 /* Shared forms and dialogs. Inner score/file controls are deliberately excluded. */
 :where(input:not([type]):not(.exam-title-input),input:is([type=text],[type=search],[type=email],[type=password],[type=number],[type=tel],[type=url],[type=date],[type=time],[type=datetime-local]):not(.exam-title-input),select:not([multiple])),
 .truong,.cai-dat input:not([type=checkbox]):not([type=radio]):not([type=file]),.cai-dat select,.cai-dat textarea,
