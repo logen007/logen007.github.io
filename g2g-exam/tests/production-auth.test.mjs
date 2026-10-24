@@ -12,6 +12,16 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 let passed=0;
 async function test(name,fn){await fn();passed++;console.log(`✓ ${name}`);}
 
+await test('Default landing is Courses for students and Dashboard for master admins',()=>{
+  const source=read('src/app.js'),helper=source.match(/function defaultLanding\(user\)\{[\s\S]*?\n\}/)?.[0];assert.ok(helper);
+  const context={isStudent:user=>user?.role==='student',isMaster:user=>user?.role==='master'};
+  vm.createContext(context);vm.runInContext(helper+';this.landing=defaultLanding;',context);
+  for(const [user,view,tab] of [[null,'login','exams'],[{role:'student'},'courses','exams'],[{role:'master'},'admin','dashboard'],[{role:'teacher'},'admin','exams']]){
+    const result=context.landing(user);assert.equal(result.view,view);assert.equal(result.adminTab,tab);assert.equal(result.courseRoute.page,'catalog');
+  }
+  assert.match(source,/requestedView==='home'&&isStudent\(user\)\)ui.view='student-home'/,'Explicit exam catalog URLs remain available');
+});
+
 await test('Production config ignores route/demo identity and never loads the retired bypass',()=>{
   for(const pathname of ['/','/adm','/teacher','/student']){
     const window={G2G_DEMO_BYPASS:true};
