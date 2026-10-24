@@ -9,6 +9,7 @@ export async function expireCodes(client={query}){
 }
 function assertOwner(user,exam){
   if(!isTeacher(user)||(user.role!=='master'&&exam.ownerId!==user.id))throw appError(403,'Chỉ người tạo đề hoặc quản trị viên được cài đặt đề.');
+  if(exam.kind==='speaking')throw appError(409,'Đề nói dùng cài đặt và ghép cặp riêng.');
 }
 export async function saveExamAccess(user,{examId,hidden,learningLevel}){
   if(typeof hidden!=='boolean'||(learningLevel&&!STUDENT_LEVELS.includes(learningLevel)))throw appError(400,'Cài đặt đề không hợp lệ.');

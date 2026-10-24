@@ -84,6 +84,7 @@ Không giấu baseline bằng allowlist rỗng hoặc `continue-on-error`.
 | Error log privacy | `error-reporting.test.mjs` (HIGH + CI): real Fastify/Pino synthetic credential regression, 4xx validation, 5xx privacy and worker wiring; no real secrets or live logs |
 | Media/R2 | `test:r2`, `media-gc`, `copy-media`, `image-paste`; references, fallback, upload limits |
 | Speaking/delete/archive | `speaking-lab`, `speaking-devices`, SQL `speaking-lab`/`speaking-archive`, DOM `speaking-phone`; retries, CSRF, Drive ownership |
+| Paired G2G speaking exams | `speaking-exam-model`, `speaking-exam-entry`, SQL `speaking-exams`/`speaking-exam-guards`, DOM `speaking-exams-ui`; private prompts, matching/version, persisted clocks, recording gate, archive retry and per-candidate publication. Providers are mocked; no real video/Drive verification is implied. |
 | Backup/restore/deployment | `backup-*`, isolated restore workflow, Docker import closure `vps-backend`; do not run a real restore on production |
 | Deploy health | `test:workflow` kiểm tra semantic probe; `deploy-health.test.mjs` chạy deploy shell với command doubles, retry và last-good SHA; HIGH/CI gọi cả hai, không phải deploy VPS thật |
 | Audit security/accessibility | `request-origin.test.mjs`, `confirm-accessibility.test.mjs` (jsdom), `r2-routes` và `performance-http.integration` kiểm tra origin, keyboard lifecycle, upload extension và safe legacy delivery; HIGH/CI gọi các bài này |

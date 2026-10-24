@@ -111,6 +111,47 @@ CREATE TABLE IF NOT EXISTS exam_releases (
   PRIMARY KEY(exam_id,version)
 );
 
+-- Paired speaking exams retain their immutable release, including after unpublish.
+-- No legacy exam, attempt or trial rows are rewritten by this expansion.
+CREATE TABLE IF NOT EXISTS speaking_exam_queue (
+  student_id text PRIMARY KEY REFERENCES users(id),
+  exam_id text NOT NULL,
+  publication_version integer NOT NULL,
+  level text NOT NULL,
+  class_id text,
+  joined_at bigint NOT NULL,
+  heartbeat_at bigint NOT NULL,
+  expires_at bigint NOT NULL,
+  FOREIGN KEY(exam_id,publication_version) REFERENCES exam_releases(exam_id,version)
+);
+CREATE INDEX IF NOT EXISTS speaking_exam_queue_match_idx
+  ON speaking_exam_queue(exam_id,publication_version,level,joined_at);
+CREATE INDEX IF NOT EXISTS speaking_exam_queue_expiry_idx ON speaking_exam_queue(expires_at);
+CREATE TABLE IF NOT EXISTS speaking_exam_sessions (
+  id text PRIMARY KEY,
+  owner_id text NOT NULL REFERENCES users(id),
+  exam_id text NOT NULL,
+  publication_version integer NOT NULL,
+  state text NOT NULL CHECK(state IN ('preparing','joining','starting','running','paused','finishing','processing','completed','cancelled','interrupted')),
+  data jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  FOREIGN KEY(exam_id,publication_version) REFERENCES exam_releases(exam_id,version)
+);
+CREATE INDEX IF NOT EXISTS speaking_exam_session_owner_idx ON speaking_exam_sessions(owner_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS speaking_exam_session_state_idx ON speaking_exam_sessions(state,created_at);
+CREATE INDEX IF NOT EXISTS speaking_exam_session_exam_idx ON speaking_exam_sessions(exam_id,publication_version);
+CREATE TABLE IF NOT EXISTS speaking_exam_members (
+  session_id text NOT NULL REFERENCES speaking_exam_sessions(id),
+  student_id text NOT NULL REFERENCES users(id),
+  active boolean NOT NULL DEFAULT true,
+  seat text NOT NULL CHECK(seat IN ('A','B')),
+  PRIMARY KEY(session_id,student_id),
+  UNIQUE(session_id,seat)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS speaking_exam_member_active_idx ON speaking_exam_members(student_id) WHERE active;
+CREATE INDEX IF NOT EXISTS speaking_exam_member_history_idx ON speaking_exam_members(student_id,session_id);
+
 ALTER TABLE exams ADD COLUMN IF NOT EXISTS trashed_at timestamptz;
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS trashed_at timestamptz;
 UPDATE exams SET trashed_at=updated_at WHERE status='trash' AND trashed_at IS NULL;

@@ -6,7 +6,7 @@ import {esc,fmtDate,statusText} from '../ui/format.js';
 export function studentResultsHtml({data,user}){
   const attempts=getStudentResults(data,user.id);
   const number=value=>Number(value).toLocaleString('vi-VN',{maximumFractionDigits:2});
-  return `<main class="khung student-results"><div class="tieu-de-trang student-results-heading"><h1>Kết quả thi</h1><span>${attempts.length} bài thi</span></div>
+  return `<main class="khung student-results"><div class="tieu-de-trang student-results-heading"><h1>Kết quả thi</h1><span>${attempts.length} bài thi</span><button class="nut" data-action="speaking-results">Kết quả Đề nói ${iconHtml('arrowRight')}</button></div>
     <div class="student-result-list">${attempts.map(attempt=>{
       const published=attempt.status===ATTEMPT_STATUS.PUBLISHED;
       const result=resultLabel(attempt.result);

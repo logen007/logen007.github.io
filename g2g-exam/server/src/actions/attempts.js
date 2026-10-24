@@ -23,6 +23,7 @@ async function resolveStartExam(user,{examId,code},client,{lock=false}={}){
   if(lock)await client.query('SELECT id FROM exams WHERE id=$1 FOR UPDATE',[examId]);
   const currentExam=await examById(examId,client);
   const exam=await releasedExam(currentExam,client);
+  if(exam.kind==='speaking')throw appError(409,'Đề nói cần ghép cặp. Hãy mở phòng thi nói.');
   if(exam.status!=='published')throw appError(409,'Bài thi chưa mở cho học viên.');
   if(exam.hidden&&!access)throw appError(403,'Vui lòng nhập mã thi.');
   if(access&&(await client.query('SELECT 1 FROM exam_code_uses WHERE code_id=$1 AND student_id=$2',[access.id,user.id])).rowCount)throw appError(409,'Bạn đã sử dụng mã thi này.');

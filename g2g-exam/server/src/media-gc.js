@@ -26,6 +26,7 @@ export async function referencedUploadNames({query=databaseQuery}={}){
     'SELECT data FROM questions',
     'SELECT data FROM exams',
     'SELECT snapshot FROM exam_releases',
+    'SELECT data FROM speaking_exam_sessions',
     'SELECT draft FROM courses',
     'SELECT snapshot FROM course_releases',
     'SELECT public_data,private_data FROM attempts',

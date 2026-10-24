@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import {readSpeakingExamRoute,writeSpeakingExamRoute} from '../src/speaking/exam-route.js';
+import {speakingExamCardHtml,speakingType} from '../src/speaking/catalog.js';
+import {studentExamCardHtml,studentHomeHtml} from '../src/views/student.js';
+import {examAdminHtml} from '../src/views/admin.js';
+import {topbarHtml} from '../src/ui/layout.js';
+import {initialStateScope,viewStateScope} from '../src/repositories/state-scope.js';
+import {loginReturnPath} from '../server/src/auth-routing.js';
+const exam={id:'paired',kind:'speaking',title:'Paired <G2G>',level:'B1',status:'published',ownerId:'teacher',ownerName:'Teacher',sections:[],partCount:2,durationSeconds:240};
+const data={exams:[exam],questions:[],attempts:[],users:[],classes:[]},user={id:'student',role:'student',name:'A'};
+const card=studentExamCardHtml(exam,[],data);
+assert.equal(card,speakingExamCardHtml(exam));
+assert.match(card,/data-action="start-speaking"/);
+assert.doesNotMatch(card,/data-action="start"|4 kỹ năng|promptA|promptB/);
+assert.match(card,/Paired &lt;G2G&gt;/);
+assert.match(studentHomeHtml({data,user,filter:'SPEAKING'}),/Ghép cặp thi nói/);
+assert.doesNotMatch(studentHomeHtml({data,user,filter:'GOETHE'}),/Ghép cặp thi nói/);
+assert.equal(speakingType(exam),'SPEAKING');
+const owner=examAdminHtml({data,user:{id:'teacher',role:'teacher'},filters:{provider:'SPEAKING'}});
+assert.match(owner,/Chấm Đề nói/);assert.doesNotMatch(owner,/data-action="exam-access-settings"/);
+const stranger=examAdminHtml({data,user:{id:'other',role:'teacher'}});
+assert.match(stranger,/data-action="edit-exam"[^>]*disabled/);
+assert.match(topbarHtml({user:{id:'master',role:'master'},online:true}),/data-action="speaking-reviews"/);
+assert.doesNotMatch(topbarHtml({user,online:true}),/data-action="speaking-reviews"/);
+for(const route of [{page:'edit',examId:'a b'},{page:'session',id:'s1'},{page:'reviews'},{page:'grade',id:'s2'},{page:'results'}]){
+ const url=new URL('https://local.test/');writeSpeakingExamRoute(url,route);
+ assert.deepEqual(readSpeakingExamRoute(url.href,user),{examId:'',id:'',...route});
+ assert.equal(initialStateScope(user,url.href),'catalog');
+}
+assert.equal(viewStateScope('speaking-exams'),'catalog');
+assert.equal(loginReturnPath('/?view=speaking-exams&speaking-page=queue&speaking-exam=exam-123','student'),'/student?view=speaking-exams&speaking-page=queue&speaking-exam=exam-123');
+assert.equal(loginReturnPath('/?view=speaking-exams&speaking-page=session&speaking-session=session-123&evil=ignored','student'),'/student?view=speaking-exams&speaking-page=session&speaking-session=session-123');
+assert.equal(loginReturnPath('/?view=speaking-exams&speaking-page=edit&speaking-exam=exam-123','student'),'/student');
+assert.equal(loginReturnPath('//evil.test/?view=speaking-exams&speaking-page=results','student'),'/student');
+console.log('Speaking entry: distinct catalog/type/action, safe titles, owner controls, role navigation and direct routes passed.');

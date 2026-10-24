@@ -39,7 +39,7 @@ for(const [file,metadata] of Object.entries(result.metafile.outputs)){
   html=html.replace(new RegExp(`\\./src/${original}\\.js\\?[^" ]+`),'/assets/'+path.basename(file));
 }
 const cssAssets={};
-for(const file of ['styles.css','enhancements.css']){
+for(const file of ['styles.css','enhancements.css','speaking-exams.css']){
   const content=await fs.readFile(path.join(root,file));
   const name=file.replace('.css','-'+createHash('sha256').update(content).digest('hex').slice(0,12)+'.css');
   cssAssets[file]='/assets/'+name;

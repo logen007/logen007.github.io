@@ -2,6 +2,7 @@ import {query} from './db.js';
 import {examLastEdit} from '../../src/domain/exam-last-edit.js';
 import {examDurationSeconds} from '../../src/domain/exam-clock.js';
 import {isPrefilledQuestion} from '../../src/domain/question-display.js';
+import {speakingMetadata} from './state-projection.js';
 
 // Project in SQL: never move passages, answer keys, media or attempt snapshots
 // through the catalog path, even temporarily in the application server.
@@ -15,8 +16,8 @@ export async function loadExamCatalog(user){
         'sections',coalesce((SELECT jsonb_agg(jsonb_build_object(
           'id',s->'id','name',s->'name','skill',s->'skill','skillKey',s->'skillKey',
           'timeMinutes',s->'timeMinutes','questionIds',s->'questionIds') ORDER BY ord)
-          FROM jsonb_array_elements(coalesce(display.data->'sections','[]')) WITH ORDINALITY AS parts(s,ord)),'[]')) AS data,
-      CASE WHEN $3 THEN 0 ELSE (SELECT count(*)::int FROM attempts a WHERE a.exam_id=e.id AND a.status<>'abandoned') END AS attempt_count,
+          FROM jsonb_array_elements(coalesce(display.data->'sections','[]')) WITH ORDINALITY AS parts(s,ord)),'[]')) || ${speakingMetadata('display.data')} AS data,
+      CASE WHEN $3 THEN 0 WHEN display.data->>'kind'='speaking' THEN (SELECT count(*)::int FROM speaking_exam_sessions s WHERE s.exam_id=e.id) ELSE (SELECT count(*)::int FROM attempts a WHERE a.exam_id=e.id AND a.status<>'abandoned') END AS attempt_count,
       EXISTS(SELECT 1 FROM exam_codes c WHERE c.exam_id=e.id AND c.expires_at>now()) AS has_codes,
       EXISTS(SELECT 1 FROM exam_codes c WHERE c.exam_id=e.id AND c.expires_at>now()
         AND NOT EXISTS(SELECT 1 FROM exam_code_uses cu WHERE cu.code_id=c.id AND cu.student_id=$1)) AS unused_codes
@@ -52,7 +53,7 @@ export async function loadExamCatalog(user){
         exam.updatedAt=examLastEdit(exam,r.updated_at,questionEdits);
       }else delete exam.updatedAt;
       exam.questionCount=student&&r.release_question_count!=null?Number(r.release_question_count):exam.sections.reduce((count,s)=>count+(s.questionIds||[]).filter(id=>scored.has(id)).length,0);
-      exam.durationSeconds=examDurationSeconds(exam);
+      if(exam.kind!=='speaking')exam.durationSeconds=examDurationSeconds(exam);
       exam.sections=exam.sections.map(({questionIds,...s})=>s);
       if(!student)exam.attemptCount=r.attempt_count;
       if(student){exam.hasActiveCodes=r.has_codes;exam.allCodesUsed=r.has_codes&&!r.unused_codes;}
