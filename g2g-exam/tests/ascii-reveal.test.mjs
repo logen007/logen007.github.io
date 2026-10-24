@@ -14,7 +14,7 @@ function fixture(options={}){
     requestAnimationFrame:fn=>{frames.set(++id,fn);return id;},cancelAnimationFrame:key=>frames.delete(key),
     IntersectionObserver:class{constructor(fn){intersections=fn;}observe(node){observed.add(node);}unobserve(node){observed.delete(node);}disconnect(){observed.clear();}},
     MutationObserver:class{constructor(fn){mutations=fn;}observe(){}disconnect(){mutations=()=>{};}}};
-  const doc={...events(),defaultView:win,hidden:false,fonts:{status:'loaded'},documentElement:{},body:{append(canvas){layers.push(canvas);}},
+  const doc={...events(),defaultView:win,hidden:false,fonts:{status:'loaded'},documentElement:{dataset:{asciiReveal:options.disabled?'off':'on'}},body:{append(canvas){layers.push(canvas);}},
     createElement(){
       const canvas={style:{},setAttribute(name,value){this[name]=value;},remove(){const at=layers.indexOf(this);if(at>=0)layers.splice(at,1);},
         getContext(){return {
@@ -74,11 +74,19 @@ for(const options of [{reduced:true},{slow:true},{saveData:true},{tainted:true}]
   const f=fixture(options);assert.doesNotThrow(()=>f.visible(f.initial));assert.equal(f.layers.length,0,'Unsupported/inaccessible images retain normal content');f.cleanup();
 }
 {
-  const f=fixture();f.doc.documentElement.dataset={asciiReveal:'off'};f.visible(f.initial);
+  const f=fixture({disabled:true});f.visible(f.initial);
   assert.equal(f.layers.length,0,'Saved global off preference prevents initial ASCII reveal');
-  f.doc.documentElement.dataset.asciiReveal='on';const next=f.target({id:'enabled'});f.discover(next);f.visible(next);assert.equal(f.layers.length,1);
+  f.win.emit('g2g-ascii-preference');
+  f.doc.documentElement.dataset.asciiReveal='on';f.win.emit('g2g-ascii-preference');
+  assert.equal(f.observed.has(f.initial),true,'Enabling re-observes existing nodes skipped while off');
+  f.visible(f.initial);assert.equal(f.layers.length,1,'Existing content runs without a reload or a new DOM node');
   f.doc.documentElement.dataset.asciiReveal='off';f.win.emit('g2g-ascii-preference');
   assert.equal(f.layers.length,0,'Turning ASCII off immediately cancels active decorative layers');assert.equal(f.frames.size,0);
+  f.doc.documentElement.dataset.asciiReveal='on';f.win.emit('g2g-ascii-preference');f.visible(f.initial);
+  assert.equal(f.layers.length,1,'Off/on resets seen identities so previously revealed cards run again');
+  const repeated=f.target();f.discover(repeated);f.visible(repeated);
+  assert.equal(f.layers.length,1,'Ordinary rerenders still do not replay the same card');
+  f.win.emit('g2g-ascii-preference');assert.equal(f.layers.length,1,'Repeated enabled notifications do not restart an active session');
   f.cleanup();assert.equal(f.win.listeners.get('g2g-ascii-preference').size,0,'Preference listener is disposed');
 }
 {
