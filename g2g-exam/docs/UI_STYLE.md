@@ -116,11 +116,16 @@ and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
 
 ## Shared ownership
 
-Focus uses one thin 1px neutral `--focus-ring` outline with a 2px offset,
-derived from the active theme text rather than saturated brand yellow. Keep
-keyboard focus visible on buttons, links and fields; do not use it for selection.
-Inline code fields draw the input focus around their rounded shared shell only;
-the submit arrow retains its own keyboard focus. Forced colors use Highlight.
+Owner update (24 October): single-line text inputs and dropdowns share the same
+outer height, 1px `--control-border`, `--control-font-size`/line-height/font-weight
+and `--chu` value color everywhere. Empty placeholders/default filter options use
+`--phu`. Use 44px normal / 40px builder density, both 44px on touch; never add
+inner-control height on top of shell borders. Textareas retain growing height.
+Focus changes only the existing border color to `--focus-ring`: no outline,
+outer ring, shadow, border-width, font, color, background or size change. Composite
+code/score fields focus the shared shell border, not the inner input. Buttons,
+links, the submit arrow and non-text controls retain their 1px keyboard outline
+with a 2px offset. Forced colors use Highlight. Do not use focus for selection.
 Owner exception (23 October): the course knowledge writing canvas has no focus
 rectangle; its formatting toolbar, resize handles and form fields retain keyboard focus.
 
