@@ -72,6 +72,13 @@ const userA={id:'a',role:'student'},userB={id:'b',role:'student'},owner={id:'own
 const row={id:'session-1',owner_id:'owner',data:{examId:'exam-1',publicationVersion:1,examSnapshot:clone(exam),state:'preparing',revision:3,prepDeadline:1700001200000,stageIndex:0,members:[{id:'a',name:'An',seat:'A',classId:'class-secret-a'},{id:'b',name:'Bình',seat:'B',classId:'class-secret-b'}],ready:{a:true},votes:{},presence:[{id:'a',connected:true,devices:1,audio:true,video:true,providerPeerId:'secret-provider-peer'}],roomId:'secret-room-id',recordingId:'secret-recording-id',assetId:'secret-asset-id',recordingStatus:'running',driveArchive:{state:'saved',fileId:'secret-drive-file',checksum:'secret-checksum',lease:'secret-lease',savedAt:1700000000000},markers:[{note:'staff marker'}],reviews:{a:{...clone(review),version:2,publishedAt:null,reviewerId:'owner',reviewerName:'Teacher',updatedAt:1700000000000},b:{...clone(review),feedback:'ONLY_B_PRIVATE_FEEDBACK',version:1,publishedAt:1700000000010}},deadline:1700000005000,remaining:50}};
 const now=1700000000000;
 for(const stranger of [null,{id:'other',role:'student'},{id:'other',role:'teacher'},{id:'owner',role:'student'}])assert.throws(()=>speakingSessionView(row,stranger,now),error=>error.statusCode===403);
+const richRow=clone(row);
+for(const seat of ['A','B'])richRow.data.examSnapshot.speaking.stages[0]['prompt'+seat+'Blocks']=[{id:'text-'+seat,type:'text',text:'PRIVATE RICH '+seat,align:'center'},{id:'image-'+seat,type:'image',url:'/media/private-rich-'+seat,alt:seat,align:'right',width:45}];
+const normalizedRich=normalizeSpeakingConfig(richRow.data.examSnapshot.speaking);
+assert.equal(normalizedRich.stages[0].promptA,'PRIVATE RICH A');assert.equal(normalizedRich.stages[0].promptABlocks[1].width,45);
+const projectedRich=speakingSessionView(richRow,userA,now);
+assert.equal(projectedRich.preparation[0].blocks[1].url,'/media/private-rich-A');assert.ok(!JSON.stringify(projectedRich).includes('private-rich-B'));
+assert.throws(()=>normalizeSpeakingConfig({stages:[stage('bad',{promptABlocks:[{id:'bad',type:'image',url:'https://outside.test/image',width:50}]})]}));
 const a=speakingSessionView(row,userA,now),b=speakingSessionView(row,userB,now);
 assert.equal(a.serverNow,now);assert.equal(a.revision,3);assert.equal(a.prepDeadline,row.data.prepDeadline);
 assert.equal(a.canJoin,false,'A pre-existing room ID cannot bypass preparation');

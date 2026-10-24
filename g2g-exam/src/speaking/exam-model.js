@@ -1,3 +1,5 @@
+import {normalizeKnowledgeBlocks} from '../domain/course-knowledge.js';
+
 // Custom G2G paired speaking policy; independent of official exam and trial rules.
 export const SPEAKING_PREP_SECONDS=1200;
 export const SPEAKING_CLASS_PRIORITY_SECONDS=60;
@@ -28,6 +30,10 @@ function imageUrl(value){
  return url;
 }
 
+export function speakingPromptContent(stage,seat){
+ return {id:stage.id+'-'+seat,body:stage['prompt'+seat]||'',imageUrl:stage['image'+seat+'Url']||'',...(Array.isArray(stage['prompt'+seat+'Blocks'])?{blocks:stage['prompt'+seat+'Blocks']}:{})};
+}
+
 export function normalizeSpeakingConfig(input={}){
  if(!object(input)||input.stages!=null&&!Array.isArray(input.stages))fail('Cấu trúc đề nói không hợp lệ.');
  const stages=input.stages||[];
@@ -36,7 +42,10 @@ export function normalizeSpeakingConfig(input={}){
   if(!object(stage)||stage.criteria!=null&&!Array.isArray(stage.criteria))fail('Cấu trúc phần thi hoặc tiêu chí không hợp lệ.');
   const seconds=number(stage.seconds);
   if(seconds!==null&&!Number.isFinite(seconds))fail('Thời lượng phần thi không hợp lệ.');
-  return {id:text(stage.id),title:text(stage.title),instruction:text(stage.instruction),promptA:text(stage.promptA),promptB:text(stage.promptB),imageAUrl:imageUrl(stage.imageAUrl),imageBUrl:imageUrl(stage.imageBUrl),seconds,speakerSeat:text(stage.speakerSeat)||'both',criteria:(stage.criteria||[]).map(criterion=>{
+  const rich={};for(const seat of ['A','B'])if(stage['prompt'+seat+'Blocks']!==undefined){
+   const content=normalizeKnowledgeBlocks(stage['prompt'+seat+'Blocks'],imageUrl);rich['prompt'+seat+'Blocks']=content.blocks;rich['prompt'+seat]=content.body;
+  }
+  return {id:text(stage.id),title:text(stage.title),instruction:text(stage.instruction),promptA:text(stage.promptA),promptB:text(stage.promptB),imageAUrl:imageUrl(stage.imageAUrl),imageBUrl:imageUrl(stage.imageBUrl),seconds,speakerSeat:text(stage.speakerSeat)||'both',...rich,criteria:(stage.criteria||[]).map(criterion=>{
    if(!object(criterion))fail('Cấu trúc tiêu chí không hợp lệ.');
    const maxScore=number(criterion.maxScore);
    if(maxScore!==null&&!Number.isFinite(maxScore))fail('Điểm tối đa của tiêu chí không hợp lệ.');
@@ -54,8 +63,8 @@ function configErrors(config){
   stageIds.add(stage.id);
   if(!stage.title||stage.title.length>100)errors.push(label+': cần tiêu đề từ 1 đến 100 ký tự.');
   if(!stage.instruction||stage.instruction.length>3000)errors.push(label+': cần hướng dẫn từ 1 đến 3.000 ký tự.');
-  if(!stage.promptA||!stage.promptB||stage.promptA.length>10000||stage.promptB.length>10000)errors.push(label+': cần đề A và B, mỗi đề tối đa 10.000 ký tự.');
-  if(!Number.isInteger(stage.seconds)||stage.seconds<SPEAKING_STAGE_MIN_SECONDS||stage.seconds>SPEAKING_STAGE_MAX_SECONDS)errors.push(label+': thời lượng phải từ 30 đến 1.200 giây.');
+  if(!['A','B'].every(seat=>stage['prompt'+seat]||stage['prompt'+seat+'Blocks']?.some(block=>block.type==='image'))||stage.promptA.length>10000||stage.promptB.length>10000)errors.push(label+': cần đề A và B, mỗi đề tối đa 10.000 ký tự.');
+  if(!Number.isInteger(stage.seconds)||stage.seconds<SPEAKING_STAGE_MIN_SECONDS||stage.seconds>SPEAKING_STAGE_MAX_SECONDS)errors.push(label+': thời lượng phải từ 0,5 đến 20 phút.');
   if(!['both','A','B'].includes(stage.speakerSeat))errors.push(label+': lượt nói không hợp lệ.');
   if(!stage.criteria.length)errors.push(label+': cần ít nhất một tiêu chí chấm điểm.');
   for(const criterion of stage.criteria){
@@ -124,7 +133,7 @@ function privateStage(stage,seat,members,preparing=false){
  const speaker=stage.speakerSeat==='A'||stage.speakerSeat==='B'?members.find(member=>member.seat===stage.speakerSeat):null;
  const isSpeaker=Boolean(seat)&&(!speaker||speaker.seat===seat);
  const visible=Boolean(seat)&&(preparing||isSpeaker);
- return {id:stage.id,title:stage.title,instruction:stage.instruction,prompt:visible?stage[seat==='A'?'promptA':'promptB']||'':'',image:visible?stage[seat==='A'?'imageAUrl':'imageBUrl']||'':'',seconds:stage.seconds,speakerSeat:stage.speakerSeat,isSpeaker,speakerName:speaker?.name||''};
+ return {id:stage.id,title:stage.title,instruction:stage.instruction,prompt:visible?stage[seat==='A'?'promptA':'promptB']||'':'',image:visible?stage[seat==='A'?'imageAUrl':'imageBUrl']||'':'',...(visible&&Array.isArray(stage['prompt'+seat+'Blocks'])?{blocks:copy(stage['prompt'+seat+'Blocks'])}:{}),seconds:stage.seconds,speakerSeat:stage.speakerSeat,isSpeaker,speakerName:speaker?.name||''};
 }
 
 // Result-list SQL needs only the rubric; never fetch A/B prompts to validate marks.
