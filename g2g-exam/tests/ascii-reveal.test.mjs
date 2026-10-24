@@ -14,7 +14,15 @@ function fixture(options={}){
     IntersectionObserver:class{constructor(fn){intersections=fn;}observe(node){observed.add(node);}unobserve(node){observed.delete(node);}disconnect(){observed.clear();}},
     MutationObserver:class{constructor(fn){mutations=fn;}observe(){}disconnect(){mutations=()=>{};}}};
   const doc={...events(),defaultView:win,hidden:false,fonts:{status:'loaded'},documentElement:{},body:{append(canvas){layers.push(canvas);}},
-    createElement(){const canvas={style:{},setAttribute(name,value){this[name]=value;},remove(){const at=layers.indexOf(this);if(at>=0)layers.splice(at,1);},getContext(){return {drawImage(){},fillRect(){},clearRect(){},fillText(){painted++;},getImageData(){reads++;if(options.tainted)throw Error('Tainted image');return {data:Uint8ClampedArray.from({length:canvas.width*canvas.height*4},(_,i)=>[128,64,32,255][i%4])};}}};return canvas;},
+    createElement(){
+      const canvas={style:{},setAttribute(name,value){this[name]=value;},remove(){const at=layers.indexOf(this);if(at>=0)layers.splice(at,1);},
+        getContext(){return {
+          drawImage(){},fillRect(){},clearRect(){},fillText(){painted++;},
+          getImageData(){reads++;if(options.tainted)throw Error('Tainted image');return {data:Uint8ClampedArray.from({length:canvas.width*canvas.height*4},(_,i)=>[128,64,32,255][i%4])};},
+        };},
+      };
+      return canvas;
+    },
     createTreeWalker(element){let done=false;return {nextNode(){if(done)return null;done=true;return {textContent:'Hi',parentElement:element};}};},
     createRange(){return {setStart(){},setEnd(){},getBoundingClientRect:()=>({left:0,top:0,width:20,height:32})};}};
   const root={ownerDocument:doc,nodeType:1,matches:()=>false,querySelectorAll:()=>targets};
