@@ -461,6 +461,7 @@ h1 { font-size:36px; } h2 { font-size:24px; } h3 { font-size:20px; }
 .bang tbody td:first-child { font-size:14px; font-weight:600; color:var(--chu); }
 .bang .phu { display:block; color:var(--phu); font-size:12px; font-weight:400; line-height:1.4; margin-top:2px; }.bang td b { font-weight:600; overflow-wrap:anywhere; }
 .table-link.exam-title-status.is-published { color:var(--status-title-success); }
+.table-link.grade-attempt--graded { color:var(--status-title-success); }
 .table-link.exam-title-status.is-draft { color:var(--phu); }
 .table-link.exam-title-status:hover { text-decoration:underline; text-underline-offset:3px; }
 .hanh-dong-bang { display:flex; gap:6px; flex-wrap:wrap; min-width:max-content; }.bang td:last-child,.bang th:last-child { white-space:nowrap; }

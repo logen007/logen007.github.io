@@ -146,7 +146,7 @@ const ui={
 courses=createCoursesController({root:app,context:()=>({user,mode:repo.mode}),layout,notify,repaint:()=>render(),bindAudio:bindSectionAudio,
   navigate:route=>{ui.courseRoute=route;ui.view='courses';ui.adminTab='courses';render();}});
 const speakingExams=createSpeakingExamsController({root:app,context:()=>({user,mode:repo.mode}),layout,notify,
-  navigate:route=>{if(route.page==='catalog'){ui.view='student-home';render();return;}if(route.page==='manage'){ui.view='admin';ui.adminTab='exams';render();return;}ui.speakingRoute=route;ui.view='speaking-exams';render();},
+  navigate:route=>{if(route.page==='catalog'){ui.view='student-home';render();return;}if(route.page==='manage'){ui.view='admin';ui.adminTab='exams';render();return;}if(['reviews','grade'].includes(route.page))ui.gradeKind='speaking';ui.speakingRoute=route;ui.view='speaking-exams';render();},
   afterRender:()=>{bindGlobal();bindViewSpecific();},
   onChanged:async()=>{if(repo.mode==='api')await repo.reload();data=await repo.getState();}});
 let speakingMounted=false;
@@ -284,7 +284,7 @@ function restoreSignedInRoute(){
   else ui.view=isStudent(user)?'student-home':'admin';
 }
 
-function studentHomeView(){app.innerHTML=layout(studentHomeHtml({data,user,filter:ui.examFilter,levelFilter:ui.examLevelFilter}));}
+function studentHomeView(){app.innerHTML=layout(studentHomeHtml({data,user,filter:ui.examFilter,levelFilter:ui.examLevelFilter,kindFilter:ui.examKindFilter||'written'}));}
 function studentResultsView(){app.innerHTML=layout(studentResultsHtml({data,user}));}
 function submittedView(){app.innerHTML=layout(submittedHtml(byId(data.attempts,ui.attemptId)));}
 
@@ -1125,10 +1125,19 @@ function bindGlobal(){
     render();
   });
   app.querySelectorAll('[data-action="student-results"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;ui.view='student-results';render();});
-  app.querySelectorAll('[data-action="speaking-results"],[data-action="speaking-reviews"],[data-action="start-speaking"]').forEach(button=>button.onclick=async()=>{
+  app.querySelectorAll('[data-action="speaking-results"],[data-action="start-speaking"]').forEach(button=>button.onclick=async()=>{
     if(ui.view!=='speaking-exams'&&!await flushBuilderDraft())return;
     if(repo.mode!=='api'){notify('Thi nói trực tuyến cần kết nối máy chủ.');return;}
-    await speakingExams.open(button.dataset.action==='start-speaking'?{page:'queue',examId:button.dataset.exam}:{page:button.dataset.action==='speaking-reviews'?'reviews':'results'});
+    await speakingExams.open(button.dataset.action==='start-speaking'?{page:'queue',examId:button.dataset.exam}:{page:'results'});
+  });
+  app.querySelectorAll('[data-action="toggle-grade-kind"]').forEach(button=>button.onclick=async()=>{
+    if(ui.view==='speaking-exams'){if(!await speakingExams.beforeLeave())return;ui.gradeKind='written';ui.view='admin';ui.adminTab='grades';render();}
+    else{if(!await flushBuilderDraft())return;ui.gradeKind='speaking';await speakingExams.open({page:'reviews'});}
+  });
+  app.querySelectorAll('[data-action="toggle-exam-kind"]').forEach(button=>button.onclick=()=>{
+    if(ui.view==='student-home')ui.examKindFilter=ui.examKindFilter==='speaking'?'written':'speaking';
+    else ui.adminExamFilters={...ui.adminExamFilters,kind:ui.adminExamFilters?.kind==='speaking'?'written':'speaking'};
+    render();
   });
   app.querySelectorAll('[data-action="student-attempt-detail"]').forEach(b=>b.onclick=async event=>{
     if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
@@ -1173,7 +1182,15 @@ function bindViewSpecific(){
   app.querySelectorAll('[data-action="preview-select-section"]').forEach(select=>select.onchange=()=>showPreviewSection(Number(select.value)||0));
   app.querySelectorAll('[data-action="reset-preview"]').forEach(b=>b.onclick=()=>{ui.previewAnswers={};ui.previewSectionIndex=0;window.scrollTo(0,0);render();notify('Đã làm lại phần xem trước.');});
   app.querySelectorAll('[data-action="close-preview"]').forEach(b=>b.onclick=()=>{ui.builderExamId=ui.previewExamId;ui.previewAnswers={};ui.view=ui.previewReturnView==='admin'?'admin':'builder';render();window.scrollTo(0,0);});
-  app.querySelectorAll('[data-action="admin-tab"]').forEach(b=>b.onclick=async()=>{if(!await flushBuilderDraft())return;if(b.dataset.tab==='courses'){await courses.open({page:'manage'});return;}ui.adminTab=b.dataset.tab;ui.view='admin';render();});
+  app.querySelectorAll('[data-action="admin-tab"]').forEach(b=>b.onclick=async()=>{
+    if(b.dataset.tab==='grades'&&ui.gradeKind==='speaking'){
+      if(ui.view!=='speaking-exams'&&!await flushBuilderDraft())return;
+      await speakingExams.open({page:'reviews'});return;
+    }
+    if(!await flushBuilderDraft())return;
+    if(b.dataset.tab==='courses'){await courses.open({page:'manage'});return;}
+    ui.adminTab=b.dataset.tab;ui.view='admin';render();
+  });
   app.querySelectorAll('[data-action="retry-ai-grading"]').forEach(button=>button.onclick=async()=>{
     button.disabled=true;
     try{const result=await repo.call('retryFailedWritingAiJobs');ui.infrastructure=await refreshInfrastructure({summaryOnly:false});notify(result.retriedJobs?`Đã đưa ${result.retriedJobs} bài lỗi vào hàng đợi AI.`:'Không có bài lỗi cần chạy lại.');render();}
@@ -1340,30 +1357,31 @@ async function createNewExam(){
     heading.id='newExamDialogTitle';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby',heading.id);
     modal.querySelector('[data-close]').setAttribute('aria-label','Đóng');
     bindDialogKeyboard(modal,{onDismiss:()=>resolve(null)});
-    const speakingButton=document.createElement('button');speakingButton.type='button';speakingButton.dataset.provider='SPEAKING';speakingButton.textContent='Đề nói G2G';modal.querySelector('#newExamProviders').append(speakingButton);
+    const kindButton=document.createElement('button');kindButton.type='button';kindButton.className='nut';kindButton.id='newExamKind';kindButton.textContent='Kiểu đề: Viết';kindButton.setAttribute('aria-pressed','false');modal.querySelector('.dau-hop').insertAdjacentElement('afterend',kindButton);
     for(const nextLevel of ['C1','C2']){const button=document.createElement('button');button.type='button';button.dataset.level=nextLevel;button.textContent=nextLevel;modal.querySelector('#newExamLevels').append(button);}
-    let provider='GOETHE',level='A1';
+    let provider='GOETHE',level='A1',kind='written';
     const syncLevels=()=>{
-      const available=provider==='SPEAKING'?['A1','A2','B1','B2','C1','C2']:getProviderLevels(provider);
+      const available=getProviderLevels(provider);
       if(!available.includes(level))level=available[0];
       modal.querySelectorAll('[data-level]').forEach(button=>{button.classList.toggle('an',!available.includes(button.dataset.level));button.classList.toggle('active',button.dataset.level===level);});
       modal.querySelectorAll('[data-provider]').forEach(button=>button.classList.toggle('active',button.dataset.provider===provider));
       suggest();
     };
-    const suggest=()=>{if(!title.value)title.placeholder=`Ví dụ: ${provider==='SPEAKING'?'Đề nói G2G':provider} ${level} – Đề thi thử 01`;};
+    const suggest=()=>{if(!title.value)title.placeholder=`Ví dụ: ${provider} ${level} – ${kind==='speaking'?'Đề nói':'Đề thi thử'} 01`;};
     modal.querySelectorAll('[data-level]').forEach(button=>button.onclick=()=>{level=button.dataset.level;syncLevels();});
     modal.querySelectorAll('[data-provider]').forEach(button=>button.onclick=()=>{provider=button.dataset.provider;syncLevels();});
+    kindButton.onclick=()=>{kind=kind==='written'?'speaking':'written';kindButton.textContent='Kiểu đề: '+(kind==='speaking'?'Nói':'Viết');kindButton.setAttribute('aria-pressed',String(kind==='speaking'));suggest();};
     syncLevels();
     modal.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{modal.remove();resolve(null);});
-    modal.querySelector('#confirmNewExam').onclick=()=>{const value=title.value.trim()||(provider==='SPEAKING'?`Đề nói G2G ${level} – Đề mới`:`${provider} ${level} – Bản nháp`);modal.remove();resolve({level,provider,title:value});};
+    modal.querySelector('#confirmNewExam').onclick=()=>{const value=title.value.trim()||(kind==='speaking'?`${provider} ${level} – Đề nói mới`:`${provider} ${level} – Bản nháp`);modal.remove();resolve({level,provider,kind,title:value});};
     const initialFocus=window.matchMedia('(any-pointer:coarse)').matches?modal.querySelector('[data-close]'):title;
     initialFocus?.focus({preventScroll:true});
   });
   if(!setup)return;
-  const {level,provider,title}=setup;
-  if(provider==='SPEAKING'){
+  const {level,provider,kind,title}=setup;
+  if(kind==='speaking'){
     if(repo.mode!=='api'){notify('Biên soạn đề nói trực tuyến cần kết nối máy chủ.');return;}
-    const result=await act(()=>speakingExamRequest('',{method:'POST',body:{level,title}}),null,{rerender:false});
+    const result=await act(()=>speakingExamRequest('',{method:'POST',body:{level,provider,title}}),null,{rerender:false});
     if(result?.exam){await repo.reload();data=await repo.getState();await speakingExams.open({page:'edit',examId:result.exam.id});}
     return;
   }
@@ -1663,7 +1681,7 @@ if(directBuilderExam&&user&&!isStudent(user)){
 else{
   const previewId=initialUrl.searchParams.get('preview'),previewExam=previewId&&byId(data.exams,previewId);
   const requestedView=initialUrl.searchParams.get('view'),requestedAttempt=initialUrl.searchParams.get('attempt');
-  if(user&&requestedView==='speaking-exams'){ui.speakingRoute=readSpeakingExamRoute(initialUrl.href,user);ui.view='speaking-exams';}
+  if(user&&requestedView==='speaking-exams'){ui.speakingRoute=readSpeakingExamRoute(initialUrl.href,user);if(['reviews','grade'].includes(ui.speakingRoute.page))ui.gradeKind='speaking';ui.view='speaking-exams';}
   else if(user&&(requestedView==='courses'||initialUrl.searchParams.get('tab')==='courses')){ui.courseRoute=readCourseRoute(initialUrl.href,user);ui.view='courses';ui.adminTab='courses';}
   else if(previewExam&&user&&!isStudent(user)){ui.previewExamId=previewId;ui.previewSectionIndex=Math.max(0,Number(initialUrl.searchParams.get('section'))||0);ui.view='preview-exam';}
   else if(requestedView==='results'&&isStudent(user)){

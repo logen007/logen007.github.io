@@ -52,26 +52,28 @@ export function createSpeakingExamService(options={}){
  function titleLevel(input){
   const title=String(input?.title||'').trim(),level=String(input?.level||'');
   if(!title||title.length>200||!LEVELS.has(level))throw appError(400,'Tên đề tối đa 200 ký tự và cần chọn trình độ hợp lệ.');
-  return {title,level};
+  const provider=input?.provider==null?null:String(input.provider).toUpperCase();
+  if(provider!==null&&!['GOETHE','TELC','FID'].includes(provider))throw appError(400,'Loại đề không hợp lệ.');
+  return {title,level,provider};
  }
  async function insert(c,user,input,extra={}){
   const values=titleLevel(input),id='exam-'+crypto.randomUUID(),time=new Date(clock()).toISOString();
-  const exam={...values,kind:'speaking',provider:null,learningLevel:null,sections:[],speaking:{stages:[]},status:'draft',version:1,ownerId:user.id,ownerName:user.name||'',hidden:false,locked:false,createdAt:time,updatedAt:time,...extra,id};
+  const exam={...values,kind:'speaking',learningLevel:null,sections:[],speaking:{stages:[]},status:'draft',version:1,ownerId:user.id,ownerName:user.name||'',hidden:false,locked:false,createdAt:time,updatedAt:time,...extra,id};
   await c.query("INSERT INTO exams(id,owner_id,status,data) VALUES($1,$2,'draft',$3::jsonb)",[id,user.id,JSON.stringify(exam)]);
   await writeAudit(user,'create_speaking','exam',id,{},c);return {exam};
  }
  async function create(user,input){return db.withTx(c=>insert(c,user,input));}
  async function get(user,id){return {exam:examView(await owned(db,user,id))};}
- async function copy(user,id){return db.withTx(async c=>{const source=await owned(c,user,id,true);return insert(c,user,{title:(source.data.title+' - Copy').slice(0,200),level:source.data.level},{speaking:structuredClone(source.data.speaking),copiedFrom:id});});}
+ async function copy(user,id){return db.withTx(async c=>{const source=await owned(c,user,id,true);return insert(c,user,{title:(source.data.title+' - Copy').slice(0,200),level:source.data.level,provider:source.data.provider},{speaking:structuredClone(source.data.speaking),copiedFrom:id});});}
  async function update(user,id,input){return db.withTx(async c=>{
   const row=await owned(c,user,id,true);editable(row);
-  const values=titleLevel(input.exam);let speaking;
+  const values=titleLevel({...input.exam,provider:input.exam?.provider??row.data.provider});let speaking;
   try{speaking=normalizeSpeakingConfig(input.exam?.speaking);}catch(error){throw appError(400,error.message);}
   if(!Number.isInteger(input?.version)||input.version!==Number(row.data.version||1)){
-   if(input?.version===Number(row.data.version||1)-1&&equal({...values,speaking},{title:row.data.title,level:row.data.level,speaking:row.data.speaking}))return {exam:examView(row)};
+   if(input?.version===Number(row.data.version||1)-1&&equal({...values,speaking},{title:row.data.title,level:row.data.level,provider:row.data.provider??null,speaking:row.data.speaking}))return {exam:examView(row)};
    throw conflict();
   }
-  row.data={...row.data,...values,speaking,kind:'speaking',provider:null,learningLevel:null,sections:[],hidden:false,status:'draft',locked:false,version:input.version+1,updatedAt:new Date(clock()).toISOString()};
+  row.data={...row.data,...values,speaking,kind:'speaking',learningLevel:null,sections:[],hidden:false,status:'draft',locked:false,version:input.version+1,updatedAt:new Date(clock()).toISOString()};
   await c.query('UPDATE exams SET data=$2::jsonb,updated_at=now() WHERE id=$1',[id,JSON.stringify(row.data)]);
   return {exam:examView(row)};
  });}
@@ -183,7 +185,7 @@ export function createSpeakingExamService(options={}){
   const offset=pageOffset(input),found=(await db.query(`SELECT id,exam_id,publication_version,state,
    data->'examSnapshot'->>'title' AS title,data->'examSnapshot'->>'level' AS level,data->'members' AS members,data->'finishedAt' AS finished_at,
    data->'driveArchive'->>'state' AS archive_state,data->>'assetId' IS NOT NULL AND data->'driveArchive'->>'state'='saved' AS has_recording,
-   COALESCE((SELECT jsonb_object_agg(m->>'id',jsonb_build_object('version',COALESCE(data->'reviews'->(m->>'id')->'version','0'::jsonb),'publishedAt',data->'reviews'->(m->>'id')->'publishedAt')) FROM jsonb_array_elements(data->'members') m),'{}'::jsonb) AS review_meta
+   COALESCE((SELECT jsonb_object_agg(m->>'id',jsonb_build_object('version',COALESCE(data->'reviews'->(m->>'id')->'version','0'::jsonb),'publishedAt',data->'reviews'->(m->>'id')->'publishedAt','complete',COALESCE(data->'reviews'->(m->>'id')->'complete','false'::jsonb))) FROM jsonb_array_elements(data->'members') m),'{}'::jsonb) AS review_meta
    FROM speaking_exam_sessions WHERE ($1::boolean OR owner_id=$2) ORDER BY created_at DESC,id DESC LIMIT 101 OFFSET $3`,[user.role==='master',user.id,offset])).rows,rows=found.slice(0,100);
   // List only metadata; private prompts and the full rubric load on grading GET.
   return {sessions:rows.map(row=>({id:row.id,examId:row.exam_id,title:row.title,level:row.level,publicationVersion:row.publication_version,state:row.state,members:row.members.map(({id,name,seat})=>({id,name,seat})),finishedAt:row.finished_at||null,hasRecording:Boolean(row.has_recording),archiveState:row.archive_state||null,reviews:row.review_meta})),nextOffset:found.length>100?offset+100:null};
