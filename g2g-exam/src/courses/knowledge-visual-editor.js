@@ -1,3 +1,4 @@
+import {sanitizeKnowledgePaste} from './knowledge-paste.js';
 import {Editor,Extension,Mark,mergeAttributes} from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -44,7 +45,7 @@ export function bindKnowledgeVisualEditor(root,{lesson,onChange,onFiles,notify,l
     editorProps:{attributes:{role:'textbox','aria-label':label,'aria-multiline':'true',spellcheck:'true'},
       handlePaste:(_view,event)=>{const files=imageFiles(event.clipboardData);if(files.length){event.preventDefault();onFiles(files,{point:capture()});return true;}return false;},
       handleDrop:(view,event,_slice,moved)=>{const files=imageFiles(event.dataTransfer);if(files.length){event.preventDefault();onFiles(files,{point:capture(view.posAtCoords({left:event.clientX,top:event.clientY})?.pos??null)});return true;}return !moved&&Boolean(event.dataTransfer?.getData('text/html')?.match(/<img\b/i));},
-      transformPastedHTML:html=>{const holder=root.ownerDocument.createElement('div');holder.innerHTML=html;holder.querySelectorAll('img').forEach(img=>img.remove());return holder.innerHTML;},
+      transformPastedHTML:html=>sanitizeKnowledgePaste(html,root.ownerDocument),
     },
     onUpdate:()=>{if(editor){onChange(documentKnowledgeBlocks(editor.getJSON()));refresh();}},onSelectionUpdate:()=>refresh(),
     onTransaction:({transaction})=>{for(const point of points)point.bookmark=point.bookmark.map(transaction.mapping);refresh();},

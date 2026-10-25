@@ -19,6 +19,28 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 
+-- Opaque, revocable sessions. Old user-ID cookies intentionally stop authenticating.
+CREATE TABLE IF NOT EXISTS auth_sessions (
+  token_hash text PRIMARY KEY,
+  user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS auth_sessions_user_idx ON auth_sessions(user_id);
+CREATE INDEX IF NOT EXISTS auth_sessions_expiry_idx ON auth_sessions(expires_at);
+CREATE OR REPLACE FUNCTION revoke_changed_user_sessions() RETURNS trigger AS $$
+BEGIN
+  IF NEW.role IS DISTINCT FROM OLD.role OR NEW.active IS DISTINCT FROM OLD.active THEN
+    DELETE FROM auth_sessions WHERE user_id=NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS users_revoke_sessions ON users;
+CREATE TRIGGER users_revoke_sessions AFTER UPDATE OF role,active ON users
+FOR EACH ROW EXECUTE FUNCTION revoke_changed_user_sessions();
+
+
 -- Additive course module. Releases/enrollments preserve prior learning content.
 CREATE TABLE IF NOT EXISTS courses (
   id text PRIMARY KEY,

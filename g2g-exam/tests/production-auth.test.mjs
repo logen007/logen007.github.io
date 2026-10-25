@@ -91,25 +91,34 @@ await test('API is authoritative, initial state is ready, and edits are persiste
   }
 });
 
-function authHarness({existing=null,payload={sub:'new',email:'student@example.test',email_verified:true},master=false}={}){
-  const routes=new Map(),writes=[],cookies=[];let exchanges=0;
+function authHarness({existing=null,payload=null,master=false}={}){
+  payload??={sub:existing?.id?.replace(/^google:/,'')||'new',email:existing?.email||'student@example.test',email_verified:true};
+  const routes=new Map(),writes=[],cookies=[];let exchanges=0,account=existing;const sessions=new Map();
   const appError=(code,text)=>Object.assign(new Error(text),{statusCode:code});
   const context={crypto,URL,process:{env:{NODE_ENV:'production',PUBLIC_URL:'https://exam.g2gcareer.com',GOOGLE_CLIENT_ID:'test-id',GOOGLE_CLIENT_SECRET:'test-secret'}},
     loginReturnPath,appError,externalClassId:async()=>'class-extend',now:()=>new Date().toISOString(),normalizeEmail:x=>x.trim().toLowerCase(),isPrimaryMasterEmail:()=>master,
     getSettings:async()=>({auth:{googleLoginEnabled:true,allowNewStudents:true,teacherEmails:[]}}),
-    query:async(sql,args)=>{if(sql.startsWith('SELECT'))return {rowCount:existing?1:0,rows:existing?[existing]:[]};writes.push({sql,args});return {rowCount:1};},
+    query:async(sql,args)=>{
+      if(sql.startsWith('SELECT')&&sql.includes('FROM auth_sessions')){const session=sessions.get(args[0]);return {rowCount:session&&session.userId===account?.id&&session.expires>Date.now()&&account?.active?1:0,rows:session&&session.userId===account?.id&&session.expires>Date.now()&&account?.active?[account]:[]};}
+      if(sql.startsWith('INSERT INTO auth_sessions')){sessions.set(args[0],{userId:args[1],expires:Date.now()+30*86400000});return {rowCount:1};}
+      if(sql.startsWith('DELETE FROM auth_sessions')){if(args?.length)sessions.delete(args[0]);return {rowCount:1};}
+      if(sql.startsWith('SELECT'))return {rowCount:account?1:0,rows:account?[account]:[]};
+      writes.push({sql,args});if(sql.startsWith('INSERT INTO users'))account={id:args[0],email:args[1],role:args[2],active:true,data:JSON.parse(args[3])};
+      if(sql.startsWith('UPDATE users'))account={...account,email:args[1],role:args[2]};return {rowCount:1};
+    },
     OAuth2Client:class{
       generateAuthUrl(options){return `https://accounts.google.com/?state=${options.state}`;}
       async getToken(){exchanges++;return {tokens:{id_token:'verified-test-token'}};}
       async verifyIdToken(options){assert.equal(options.audience,'test-id');return {getPayload:()=>payload};}
     }
   };
+  context.withTx=fn=>fn({query:context.query});
   const source=read('server/src/auth.js').replace(/^import .*;\n/gm,'').replace(/export /g,'');
   vm.runInNewContext(source,context);
   const registered=context.registerAuthRoutes({get:(url,fn)=>routes.set(url,fn),post:(url,fn)=>routes.set(url,fn)});
   const request={cookies:{g2g_oauth_state:'valid-state',g2g_return_to:'/adm?edit=server-draft'},query:{code:'test-code',state:'valid-state'},unsignCookie:value=>({valid:Boolean(value),value})};
   const reply={setCookie:(name,value,options)=>cookies.push({name,value,options}),clearCookie:()=>{},redirect:value=>value};
-  return {routes,writes,cookies,request,reply,registered,context,exchanges:()=>exchanges};
+  return {routes,writes,cookies,request,reply,registered,context,sessions,exchanges:()=>exchanges};
 }
 
 await test('One Tap validates origin, signed challenge, nonce and verified identity before sharing the login path',async()=>{
@@ -129,7 +138,7 @@ await test('One Tap validates origin, signed challenge, nonce and verified ident
   assert.equal(result.returnTo,'/teacher?edit=test');
   assert.equal(h.writes.length,1);assert.match(h.writes[0].sql,/^UPDATE users/);
   assert.equal(JSON.parse(h.writes[0].args[3]).name,'Saved name');
-  assert.equal(h.cookies[0].name,'g2g_session');assert.equal(h.cookies[0].options.httpOnly,true);
+  assert.equal(h.cookies[0].name,'g2g_session');assert.equal(h.cookies[0].options.httpOnly,true);assert.match(h.cookies[0].value,/^[a-f0-9]{64}$/);
 });
 
 await test('One Tap frontend keeps fallback, posts credentials only to our server and suppresses prompt after logout',async()=>{
@@ -193,7 +202,8 @@ await test('New Google accounts are students; primary master uses server authori
       assert.equal(profile.profileCompletedAt,undefined);
     }
     const session=h.cookies.find(c=>c.name==='g2g_session');
-    assert.equal(session.value,'google:new');
+    assert.match(session.value,/^[a-f0-9]{64}$/);assert.notEqual(session.value,'google:new');
+    assert.ok(h.sessions.has(crypto.createHash('sha256').update(session.value).digest('hex')));
     assert.equal(session.options.httpOnly,true);assert.equal(session.options.signed,true);assert.equal(session.options.secure,true);
   }
 });
@@ -212,7 +222,8 @@ await test('Inactive accounts cannot login and JSON profile cannot override auth
 await test('Only the database master can switch the signed test role without changing stored permissions',async()=>{
   const existing={id:'google:master',email:'master@example.test',role:'master',active:true,data:{name:'Admin'}};
   const h=authHarness({existing});await h.registered;
-  h.request.cookies.g2g_session=existing.id;h.request.body={role:'student'};
+  await h.routes.get('/api/auth/google/callback')(h.request,h.reply);h.writes.length=0;
+  h.request.cookies.g2g_session=h.cookies.find(c=>c.name==='g2g_session').value;h.request.body={role:'student'};
   const result=await h.routes.get('/api/auth/test-role')(h.request,h.reply);
   assert.equal(result.user.role,'student');assert.equal(result.user.canTestRoles,true);
   const roleCookie=h.cookies.find(cookie=>cookie.name==='g2g_test_role');
@@ -223,8 +234,22 @@ await test('Only the database master can switch the signed test role without cha
   assert.equal(h.writes.length,0,'Switching test role must not update the users table.');
 
   const student=authHarness({existing:{...existing,id:'google:student',role:'student'}});await student.registered;
-  student.request.cookies.g2g_session='google:student';student.request.body={role:'teacher'};
+  await student.routes.get('/api/auth/google/callback')(student.request,student.reply);
+  student.request.cookies.g2g_session=student.cookies.find(c=>c.name==='g2g_session').value;student.request.body={role:'teacher'};
   await assert.rejects(student.routes.get('/api/auth/test-role')(student.request,student.reply),/Chỉ tài khoản Admin/);
+});
+
+await test('Opaque sessions reject legacy IDs, forged tokens, expiry and retained cookies after logout',async()=>{
+  const existing={id:'google:existing',email:'student@example.test',role:'student',active:true,data:{}};
+  const h=authHarness({existing});await h.registered;
+  h.request.cookies.g2g_session=existing.id;assert.equal(await h.context.currentUser(h.request),null);
+  await h.routes.get('/api/auth/google/callback')(h.request,h.reply);
+  const token=h.cookies.find(c=>c.name==='g2g_session').value,key=crypto.createHash('sha256').update(token).digest('hex');
+  h.request.cookies.g2g_session=token;assert.equal((await h.context.currentUser(h.request)).id,existing.id);
+  h.request.cookies.g2g_session='a'.repeat(64);assert.equal(await h.context.currentUser(h.request),null);
+  h.request.cookies.g2g_session=token;h.sessions.get(key).expires=Date.now()-1;assert.equal(await h.context.currentUser(h.request),null);
+  h.sessions.get(key).expires=Date.now()+60000;await h.routes.get('/api/auth/logout')(h.request,h.reply);
+  assert.equal(await h.context.currentUser(h.request),null);assert.equal(h.sessions.has(key),false);
 });
 
 await test('Cutover backs up before app deployment and performs no browser import',()=>{

@@ -7,7 +7,7 @@ import os from 'node:os';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {registerHooks} from 'node:module';
 import {gunzipSync,inflateSync} from 'node:zlib';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 import Fastify from '../server/node_modules/fastify/fastify.js';
 import {sign} from '../server/node_modules/@fastify/cookie/signer.js';
 import {DEFAULT_SETTINGS} from '../server/src/defaults.js';
@@ -24,6 +24,10 @@ const query=async(sql,args)=>{
   return {...result,rowCount:Math.max(result.affectedRows||0,result.rows.length)};
 };
 const secret='synthetic-test-cookie-secret';
+const fixtureToken=id=>createHash('sha256').update('fixture-session:'+id).digest('hex');
+const tokenHash=token=>createHash('sha256').update(token).digest('hex');
+const cookie=id=>'g2g_session='+encodeURIComponent(sign(fixtureToken(id),secret));
+const seedSession=async id=>query(`INSERT INTO auth_sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '30 days')`,[tokenHash(fixtureToken(id)),id]);
 process.env.COOKIE_SECRET=secret;process.env.NODE_ENV='test';
 process.env.BACKUP_MEDIA_GUARD_ENABLED='true';
 process.env.SETTINGS_ENCRYPTION_KEY='synthetic-sharing-encryption-key';
@@ -46,8 +50,8 @@ globalThis.__testFastify=options=>{
       if(dropSaveReceipts&&request.url==='/api/actions/saveAnswers'&&reply.statusCode===200){reply.hijack();reply.raw.destroy();}
       done(null,payload);
     });
-    app.get('/__fixture/admin',(_request,reply)=>reply.header('Set-Cookie','g2g_session='+encodeURIComponent(sign('admin',secret))+'; Path=/; HttpOnly; SameSite=Lax').redirect('/adm'));
-    for(const [role,id,page] of [['teacher','course-teacher','manage'],['student','s0','catalog'],['master','admin','manage']])app.get('/__fixture/course-'+role,(_request,reply)=>reply.header('Set-Cookie','g2g_session='+encodeURIComponent(sign(id,secret))+'; Path=/; HttpOnly; SameSite=Lax').redirect('/?view=courses&course-page='+page));
+    app.get('/__fixture/admin',(_request,reply)=>reply.header('Set-Cookie',cookie('admin')+'; Path=/; HttpOnly; SameSite=Lax').redirect('/adm'));
+    for(const [role,id,page] of [['teacher','course-teacher','manage'],['student','s0','catalog'],['master','admin','manage']])app.get('/__fixture/course-'+role,(_request,reply)=>reply.header('Set-Cookie',cookie(id)+'; Path=/; HttpOnly; SameSite=Lax').redirect('/?view=courses&course-page='+page));
     app.get('/__fixture/stalled.wav',(_request,reply)=>{
       reply.hijack();reply.raw.writeHead(200,{'Content-Type':'audio/wav'});reply.raw.flushHeaders();
     });
@@ -96,8 +100,24 @@ try{
   await query("INSERT INTO questions(id,owner_id,data) VALUES('q','admin',$1)",[JSON.stringify(question)]);
   const deadline=Date.now()+600000;
   await query("INSERT INTO attempts(id,student_id,exam_id,status,attempt_no,public_data,private_data) SELECT 'a'||i,'s'||i,'e','in_progress',1,jsonb_build_object('studentId','s'||i,'examId','e','status','in_progress','answers',jsonb_build_object('q',0),'startedAt',$1::text,'examDeadlineMs',$2::numeric),$3 FROM generate_series(0,199) i",[new Date().toISOString(),deadline,JSON.stringify({examSnapshot:{...exam,questionSnapshot:[question]}})]);
+  for(const row of (await query('SELECT id FROM users')).rows)await seedSession(row.id);
   ({app}=await import('../server/src/index.js'));
-  const cookie=id=>'g2g_session='+encodeURIComponent(sign(id,secret));
+  // Exercise real signed-cookie verification and SQL expiry/revocation without Google.
+  await query("INSERT INTO users(id,email,role,data) VALUES('session-user','session@example.test','student','{}')");
+  const sessionHeaders={cookie:cookie('session-user')};
+  const me=async(headers=sessionHeaders)=>(await app.inject({url:'/api/auth/me',headers})).json().user;
+  assert.equal(await me({cookie:'g2g_session='+encodeURIComponent(sign('session-user',secret))}),null,'Legacy user-ID cookie fails closed');
+  await seedSession('session-user');assert.equal((await me()).id,'session-user');
+  assert.equal(await me({cookie:'g2g_session='+encodeURIComponent(sign('b'.repeat(64),secret))}),null,'Unknown validly signed token fails closed');
+  assert.equal(await me({cookie:'g2g_session=forged.invalid-signature'}),null);
+  await app.inject({method:'POST',url:'/api/auth/logout',headers:sessionHeaders});assert.equal(await me(),null,'Retained cookie is revoked in SQL');
+  await seedSession('session-user');await query("UPDATE auth_sessions SET expires_at=now()-interval '1 second' WHERE user_id='session-user'");assert.equal(await me(),null,'Server rejects expiry independently of browser');
+  await query("DELETE FROM auth_sessions WHERE user_id='session-user'");await seedSession('session-user');
+  await query("UPDATE users SET role='teacher' WHERE id='session-user'");assert.equal(await me(),null,'Role changes revoke sessions');
+  await seedSession('session-user');assert.equal((await me()).role,'teacher');
+  await query("UPDATE users SET active=false WHERE id='session-user'");assert.equal(await me(),null);
+  await query("UPDATE users SET active=true WHERE id='session-user'");assert.equal(await me(),null,'Reactivation cannot resurrect an old cookie');
+  await query("DELETE FROM users WHERE id='session-user'");
   const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNg+A8AAQIBAEK+vGgAAAAASUVORK5CYII=','base64');
   assert.deepEqual(inflateSync(png.subarray(41,52)),Buffer.from([0,0,255]),'Positive PNG fixture has a decodable scanline');
   const upload=async(route,type,filename,user='admin',bytes=type==='image/png'?png:Buffer.from('synthetic bytes'))=>{
@@ -154,6 +174,7 @@ try{
   assert.equal(sheetStatus.statusCode,200);assert.deepEqual(sheetStatus.json(),{ready:false,url:null,lastSync:null,result:null});
   assert.equal((await app.inject({url:'/api/exam-images/export',headers:{cookie:cookie('s0')}})).statusCode,403);
   await query("INSERT INTO users(id,email,role,data) VALUES('inventory-teacher','teacher@example.test','teacher','{}')");
+  await seedSession('inventory-teacher');
   assert.equal((await app.inject({url:'/api/exam-images/export',headers:{cookie:cookie('inventory-teacher')}})).statusCode,403);
   await query("UPDATE questions SET data=jsonb_set(data,'{imageUrl}',to_jsonb($1::text)) WHERE id='q'",[image.json().url]);
   const imageExport=await app.inject({url:'/api/exam-images/export',headers:{cookie:cookie('admin')}});

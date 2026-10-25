@@ -1,5 +1,6 @@
 // Real Tiptap/ProseMirror transactions in JSDOM, not browser/geometry evidence.
 import assert from 'node:assert/strict';
+import {sanitizeKnowledgePaste} from '../src/courses/knowledge-paste.js';
 import {knowledgeEditorHtml} from '../src/courses/knowledge-editor.js';
 import {knowledgeDocument,documentKnowledgeBlocks} from '../src/courses/knowledge-document.js';
 import {normalizeKnowledgeBlocks} from '../src/domain/course-knowledge.js';
@@ -12,6 +13,12 @@ globalThis.getComputedStyle=window.getComputedStyle.bind(window);globalThis.requ
 Range.prototype.getBoundingClientRect=()=>({left:0,right:0,top:0,bottom:0,width:0,height:0});Range.prototype.getClientRects=()=>[];
 window.scrollTo=()=>{};
 const {bindKnowledgeVisualEditor}=await import('../src/courses/knowledge-visual-editor.js');
+// The sanitizer receives only inert-document creation, never a live DOM parser sink.
+const pasteDocument={implementation:document.implementation};
+const clean=sanitizeKnowledgePaste('<p onclick="bad()" style="text-align:right;background:url(https://bad.invalid)">Safe <b>bold</b><i>italic</i><u>under</u><br><a href="javascript:bad()">link text</a><img src="https://bad.invalid" onerror="bad()"><svg onload="bad()"><text>bad</text></svg><script>bad()</script><iframe srcdoc="bad"></iframe></p><h2>Heading</h2><span class="text-signature" id="clobber">Sign</span>',pasteDocument);
+assert.match(clean,/<b>bold<\/b>/);assert.match(clean,/<i>italic<\/i>/);assert.match(clean,/<u>under<\/u>/);assert.match(clean,/<h2>Heading<\/h2>/);assert.match(clean,/text-align: right/);assert.match(clean,/link text/);assert.match(clean,/class="text-signature"/);
+assert.doesNotMatch(clean,/onclick|onerror|onload|background|https:|javascript:|<img|<svg|<script|<iframe| id=/i);
+assert.equal(sanitizeKnowledgePaste('<template><img onerror="bad()"></template><p>&lt;img&gt; &amp; text</p>',pasteDocument),'<p>&lt;img&gt; &amp; text</p>');
 const main=document.querySelector('main'),notices=[],pastes=[];let saved=[],binding;
 const legacy={id:'legacy',body:'[b]Đậm[/b] [i]Nghiêng[/i] [u]Gạch[/u]\n[box]a[/box] [signature]Ký[/signature] [headline]Đầu[/headline]',imageUrl:'/uploads/legacy.jpg'};
 const converted=documentKnowledgeBlocks(knowledgeDocument(legacy,document));assert.equal(converted[1].text,legacy.body);assert.equal(converted[0].url,legacy.imageUrl);
