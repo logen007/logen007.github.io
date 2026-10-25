@@ -38,3 +38,18 @@ Keep UI changes separate from grading, transport and persistence changes.
 `tests/maintainability.test.mjs` covers the scoring and result-loading boundaries
 with an isolated database double. It neither connects to production nor creates
 real student results. Existing UI rules remain in `docs/UI_STYLE.md`.
+
+## Auth session và nội dung dán
+
+- `server/src/auth.js` + bảng `auth_sessions`: cookie là token ngẫu nhiên 32 byte,
+  DB chỉ giữ SHA-256, hết hạn tuyệt đối sau 30 ngày. Logout xóa phiên; trigger trên
+  `users.role/active` thu hồi toàn bộ phiên khi quyền/trạng thái đổi. Mỗi request
+  vẫn đọc quyền hiện tại. Không chấp nhận cookie user-ID cũ: cập nhật này yêu cầu
+  đăng nhập lại một lần. Schema bổ sung chạy trước khi server nhận request; rollback
+  code vẫn giữ bảng nhưng người dùng cần đăng nhập lại, không phục hồi cookie cũ.
+- `src/courses/knowledge-paste.js`: clipboard HTML chỉ parse trong template của
+  document inert rồi dựng lại allowlist định dạng, không copy attribute/URL tùy ý.
+  Dùng chung qua visual editor cho kiến thức, mô tả khóa học và đề nói; ảnh tiếp tục
+  qua upload/chèn ảnh hiện có. Không thêm định dạng ngoài schema editor đang hỗ trợ.
+- Regression: `production-auth.test.mjs`, SQL/HTTP `performance-http.integration.mjs`
+  và DOM `knowledge-visual.test.mjs` trong CI; DOM không chứng minh browser rendering.

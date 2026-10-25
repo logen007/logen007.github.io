@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import {OAuth2Client} from 'google-auth-library';
-import {query,getSettings,appError,now} from './db.js';
+import {query,withTx,getSettings,appError,now} from './db.js';
 import {isPrimaryMasterEmail,normalizeEmail} from './roles.js';
 import {loginReturnPath} from './auth-routing.js';
 
@@ -10,10 +10,17 @@ const COOKIE_DOMAIN=process.env.COOKIE_DOMAIN||undefined;
 const secure=process.env.NODE_ENV==='production';
 const oauth=()=>new OAuth2Client(process.env.GOOGLE_CLIENT_ID,process.env.GOOGLE_CLIENT_SECRET,REDIRECT_URI);
 
-function cookieOpts(maxAge=60*60*24*30){return {path:'/',httpOnly:true,sameSite:'lax',secure,signed:true,maxAge,domain:COOKIE_DOMAIN};}
+const SESSION_SECONDS=60*60*24*30;
+const sessionHash=token=>crypto.createHash('sha256').update(token).digest('hex');
+function sessionToken(request){const signed=request.unsignCookie(request.cookies.g2g_session||'');return signed.valid&&/^[a-f0-9]{64}$/.test(signed.value||'')?signed.value:null;}
+function cookieOpts(maxAge=SESSION_SECONDS){return {path:'/',httpOnly:true,sameSite:'lax',secure,signed:true,maxAge,domain:COOKIE_DOMAIN};}
 function teacherEmailSet(settings){return new Set((settings?.auth?.teacherEmails||[]).map(normalizeEmail).filter(Boolean));}
 export async function userById(id){const r=await query(`SELECT id,email,role,active,data FROM users WHERE id=$1`,[id]);if(!r.rowCount)return null;const x=r.rows[0];return {...(x.data||{}),id:x.id,email:x.email,role:x.role,active:x.active};}
-async function sessionUser(request){const raw=request.cookies.g2g_session;if(!raw)return null;const u=request.unsignCookie(raw);if(!u.valid||!u.value)return null;const user=await userById(u.value);return user?.active===false?null:user;}
+async function sessionUser(request){
+  const token=sessionToken(request);if(!token)return null;
+  const result=await query(`SELECT u.id,u.email,u.role,u.active,u.data FROM auth_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND u.active=true`,[sessionHash(token)]);
+  if(!result.rowCount)return null;const x=result.rows[0];return {...(x.data||{}),id:x.id,email:x.email,role:x.role,active:x.active};
+}
 export async function currentUser(request){
   const user=await sessionUser(request);if(!user)return null;
   if(user.role!=='master')return user;
@@ -42,7 +49,15 @@ async function finishGoogleLogin(p,reply){
       delete data.id;delete data.email;delete data.role;delete data.active;
       await query(`UPDATE users SET email=$2,role=$3,data=data||$4::jsonb,updated_at=now() WHERE id=$1`,[id,email,role,JSON.stringify(data)]);
     }
-    reply.setCookie('g2g_session',id,cookieOpts());
+    const token=crypto.randomBytes(32).toString('hex');
+    await query(`DELETE FROM auth_sessions WHERE expires_at<=now()`);
+    await withTx(async client=>{
+      const current=await client.query(`SELECT role,active FROM users WHERE id=$1 FOR UPDATE`,[id]);
+      if(!current.rowCount||!current.rows[0].active||current.rows[0].role!==role)throw appError(401,'Tài khoản đã thay đổi. Vui lòng đăng nhập lại.');
+      await client.query(`INSERT INTO auth_sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '30 days')`,[sessionHash(token),id]);
+    });
+    reply.clearCookie('g2g_test_role',{path:'/',domain:COOKIE_DOMAIN});
+    reply.setCookie('g2g_session',token,cookieOpts());
 
     return {id,role};
 }
@@ -108,5 +123,5 @@ export async function registerAuthRoutes(fastify){
     const {role}=await finishGoogleLogin(p,reply);
     return reply.redirect(loginReturnPath(returnCookie.valid?returnCookie.value:'/',role));
   });
-  fastify.post('/api/auth/logout',async(_request,reply)=>{reply.clearCookie('g2g_session',{path:'/',domain:COOKIE_DOMAIN});reply.clearCookie('g2g_test_role',{path:'/',domain:COOKIE_DOMAIN});return {ok:true};});
+  fastify.post('/api/auth/logout',async(request,reply)=>{const token=sessionToken(request);if(token)await query(`DELETE FROM auth_sessions WHERE token_hash=$1`,[sessionHash(token)]);reply.clearCookie('g2g_session',{path:'/',domain:COOKIE_DOMAIN});reply.clearCookie('g2g_test_role',{path:'/',domain:COOKIE_DOMAIN});return {ok:true};});
 }
