@@ -27,6 +27,32 @@ Rule floating: tại mọi bố cục nhiều cột, toàn bộ nội dung trong
 được gom thành một khối và di chuyển cùng nhau; không floating riêng từng phần
 trong cùng cột. Chi tiết trình bày theo `docs/UI_STYLE.md`.
 
+## Security review với Cloudflare security-audit
+
+Owner yêu cầu tích hợp. Dùng skill `security-audit` từ
+[repository chính thức Cloudflare](https://github.com/cloudflare/security-audit-skill),
+đường dẫn upstream `skills/security-audit`; bản đã cài được ghim tại commit
+`c1c8a8c1471069fb0e188eeaff69b8e8db6564a8` trong `~/.codex/skills/security-audit`.
+Máy khác dùng skill-installer để cài đúng nguồn/ref này; không tải hoặc chạy mã
+cài đặt ngẫu nhiên. Không coi skill là công cụ runtime hay một check CI tự chạy.
+
+- Với thay đổi auth/quyền, dữ liệu học viên, upload, AI/tool, secret, webhook,
+  dependency hoặc triển khai: dùng guidance mode để review đúng phần thay đổi
+  và các trust boundary liên quan. Chỉnh sửa giao diện/text nhỏ không cần audit
+  toàn bộ và vẫn theo luồng gọn ở mục 11.1.
+- Full audit sáu giai đoạn chỉ chạy khi owner yêu cầu audit codebase đầy đủ hoặc
+  báo cáo audit. Khi đó làm theo SKILL.md và các tài liệu upstream, bao gồm
+  verifier độc lập, coverage ledger và validator; không tự suy đã audit xong
+  chỉ vì đã cài skill. Lưu báo cáo riêng ngoài repository, không commit finding
+  chưa công bố vào repository công khai.
+- Kiểm tra source mặc định chỉ đọc. Không thử trên VPS, dịch vụ thật hoặc dữ liệu
+  học viên. Việc cài/tích hợp không cấp quyền chạy test/build local; mục 10 vẫn
+  áp dụng. Kiểm chứng động cần quyền phù hợp và môi trường cô lập đúng yêu cầu
+  của skill; thiếu điều kiện thì ghi `needs_validation`, không nâng thành confirmed.
+- Findings cần bằng chứng đường đi dữ liệu và ảnh hưởng thực tế; phân biệt
+  `confirmed`, `needs_validation`, `rejected`. Skill bổ sung cho CI hiện hữu,
+  không thay thế kiểm thử, không bypass gate và không bảo đảm hết lỗ hổng.
+
 ## 1. Mục tiêu
 
 G2G Exam là hệ thống thi thử tiếng Đức.
