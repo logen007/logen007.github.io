@@ -99,7 +99,7 @@ function authHarness({existing=null,payload=null,master=false}={}){
     loginReturnPath,appError,externalClassId:async()=>'class-extend',now:()=>new Date().toISOString(),normalizeEmail:x=>x.trim().toLowerCase(),isPrimaryMasterEmail:()=>master,
     getSettings:async()=>({auth:{googleLoginEnabled:true,allowNewStudents:true,teacherEmails:[]}}),
     query:async(sql,args)=>{
-      if(sql.includes('FROM auth_sessions')){const session=sessions.get(args[0]);return {rowCount:session&&session.userId===account?.id&&session.expires>Date.now()&&account?.active?1:0,rows:session&&session.userId===account?.id&&session.expires>Date.now()&&account?.active?[account]:[]};}
+      if(sql.startsWith('SELECT')&&sql.includes('FROM auth_sessions')){const session=sessions.get(args[0]);return {rowCount:session&&session.userId===account?.id&&session.expires>Date.now()&&account?.active?1:0,rows:session&&session.userId===account?.id&&session.expires>Date.now()&&account?.active?[account]:[]};}
       if(sql.startsWith('INSERT INTO auth_sessions')){sessions.set(args[0],{userId:args[1],expires:Date.now()+30*86400000});return {rowCount:1};}
       if(sql.startsWith('DELETE FROM auth_sessions')){if(args?.length)sessions.delete(args[0]);return {rowCount:1};}
       if(sql.startsWith('SELECT'))return {rowCount:account?1:0,rows:account?[account]:[]};
