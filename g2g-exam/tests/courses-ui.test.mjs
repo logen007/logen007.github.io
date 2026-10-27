@@ -155,7 +155,7 @@ try{
   assert.match(css,/\.course-authoring \.builder-meta>\.exam-level \{ align-self:center;/);
   assert.match(css,/\.course-outline-chapter \{[^}]*grid-template-columns:minmax\(0,1fr\);/,'Chapter track must shrink inside the sidebar, not inherit a long title minimum');
   assert.match(css,/\.course-outline-chapter-title \{[^}]*min-width:0;/,'Title button must shrink before its child can ellipsize');
-  assert.match(css,/\.course-outline-chapter-title>span \{[^}]*text-overflow:ellipsis;[^}]*white-space:nowrap;/);
+  assert.match(css,/\.course-outline-chapter-title>span \{[^}]*-webkit-line-clamp:3;[^}]*white-space:normal;/);
   assert.match(css,/\.course-outline-categories \{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   fill('[data-course-field="title"]','Khóa A1 thử nghiệm');
   assert.equal(root.querySelector('[data-course-dirty]').hidden,false,'Editing the heading marks the draft dirty');
@@ -188,6 +188,7 @@ try{
   await action('add-chapter');
   assert.equal((await service.getCourse(teacher,courseId,{edit:true})).course.coverUrl,'/uploads/synthetic-cover.png');
   const chapterId=controller.getState().editor.course.chapters[0].id;
+  assert.equal(root.querySelector('.course-outline-chapter-title').textContent,root.querySelector('.course-outline-chapter-title').title,'Chapter title has no generated number');
   assert.equal(root.querySelector('.course-outline-chapter-title .ui-icon'),null,'Chapter titles remain clickable without gear icons');
   assert.doesNotMatch(root.querySelector('.course-builder-outline').textContent,/Thông tin khóa học|Chưa có bài/,'No redundant settings or empty placeholders');
   assert.deepEqual([...root.querySelectorAll('.course-outline-categories button')].map(button=>button.textContent.trim()),['Kiến thức','Bài tập']);
