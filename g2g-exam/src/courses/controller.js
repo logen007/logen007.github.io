@@ -15,7 +15,7 @@ import {questionProfileAt} from '../domain/question-profile.js';
 
 const fresh=route=>({route,loading:true,error:'',filters:{search:'',level:'',fee:''},catalog:null,dirty:false,practiceDirty:false,practiceAnswers:{},practiceResult:null,editLesson:'',pendingAudio:new Map()});
 const uuid=prefix=>prefix+'-'+crypto.randomUUID();
-const publishedActions=new Set(['catalog','mine','manage','detail','edit','members','learn','reload','more','preview-managed','editor-step','edit-chapter','edit-category','edit-lesson','close-lesson','preview-exercise','preview-course','close-preview','unpublish','archive']);
+const publishedActions=new Set(['catalog','mine','manage','detail','edit','members','learn','reload','more','preview-managed','editor-step','edit-chapter','edit-category','edit-lesson','close-lesson','preview-exercise','preview-course','close-preview','unpublish','archive','permalink-edit']);
 const ask=(message,confirmLabel='Tiếp tục',options={})=>new Promise(resolve=>confirmAction(message,()=>resolve(true),{...options,confirmLabel,onCancel:()=>resolve(false)}));
 
 export function createCoursesController({root,context,layout,navigate,repaint,notify,bindAudio,request=courseRequest,uploadImage=uploadCourseImage}){
@@ -190,6 +190,11 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     }
     if(published()&&!publishedActions.has(name))throw Error('Hãy bỏ xuất bản khóa học trước khi chỉnh sửa.');
     if(name==='permalink-edit'){
+      if(published()){
+        if(!await ask('Bỏ xuất bản khóa học để sửa permalink? Học viên đã đăng ký vẫn giữ phiên bản hiện tại.','Bỏ xuất bản'))return;
+        const receipt=await api(coursePath(state.editor.id,'/unpublish'),{method:'POST',body:{version:state.editor.version}});
+        Object.assign(state.editor,receipt);repaint();
+      }
       await saveEditor();state.permalinkDraft=state.editor.course.slug||courseSlugFromTitle(state.editor.course.title);refreshPermalink();
       const input=root.querySelector('[data-course-permalink-input]');input?.focus();input?.select();return;
     }

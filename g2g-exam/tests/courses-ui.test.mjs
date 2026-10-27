@@ -363,7 +363,14 @@ try{
   route={page:'learn',id:'',slug:'hoc-a1',lesson:source.chapters[0].knowledge[0].id};paint();await idle();
   assert.equal(controller.getState().lesson.lesson.id,source.chapters[0].knowledge[0].id,'F5-style lesson URL resolves the course before lesson access');
   await controller.open({page:'catalog'});await idle();await action('detail','[data-id="url-dom"]');assert.equal(route.slug,'hoc-a1','Catalog navigation uses the custom URL');
-  user=teacher;await service.unpublish(teacher,'url-dom',{version:2});route={page:'edit',id:'url-dom',step:'info'};paint();await idle();
+  user=teacher;route={page:'edit',id:'url-dom',step:'info'};paint();await idle();
+  assert.equal(root.querySelector('[data-course-action="permalink-edit"]').disabled,false,'Published courses still show a usable Edit action');
+  root.querySelector('[data-course-action="permalink-edit"]').click();await until(()=>document.querySelector('[data-confirm-cancel]'),'permalink unpublish confirmation');
+  document.querySelector('[data-confirm-cancel]').click();await idle();assert.equal(controller.getState().editor.status,'published','Cancel keeps the course published and URL unchanged');
+  root.querySelector('[data-course-action="permalink-edit"]').click();await until(()=>document.querySelector('[data-confirm-accept]'),'permalink unpublish acceptance');
+  document.querySelector('[data-confirm-accept]').click();await idle();
+  assert.equal(controller.getState().editor.status,'draft');assert.ok(root.querySelector('[data-course-permalink-input]'),'Accepted unpublish opens the inline slug editor');
+  await action('permalink-cancel');
   assert.equal(root.querySelector('.course-info-card [data-course-field="slug"]'),null,'Permalink lives beneath the title, not in general settings');
   assert.ok(root.querySelector('.builder-title [data-course-permalink] .course-permalink-link'));
   assert.match(root.querySelector('.course-permalink-link').href,/\/khoa-hoc\/hoc-a1\/$/);
