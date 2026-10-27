@@ -1,3 +1,5 @@
+import {courseUrlSlug} from '../src/domain/course-url.js';
+import {writeCourseRoute} from '../src/courses/api.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
@@ -35,7 +37,7 @@ guard.dispose();
 
 const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
 const sync=source.slice(source.indexOf('function syncViewUrl(){'),source.indexOf('\nasync function act('));
-const context={URL,window:{location:{href:'https://exam.test/?edit=old&class=old'}},user:{role:'master'},isMaster:u=>u.role==='master',writeSettingsRoute,pageHistory:{sync:url=>context.url=new URL(url)},ui:{}};
+const context={URL,courseUrlSlug,writeCourseRoute,window:{location:{href:'https://exam.test/?edit=old&class=old'}},user:{role:'master'},isMaster:u=>u.role==='master',writeSettingsRoute,pageHistory:{sync:url=>context.url=new URL(url)},ui:{}};
 vm.createContext(context);vm.runInContext(sync,context);
 for(const [ui,expected] of [
   [{view:'admin',adminTab:'classes',classId:'class-1'},'?tab=classes&class=class-1'],
@@ -49,5 +51,7 @@ for(const [ui,expected] of [
   [{view:'submitted',attemptId:'a'},'?view=submitted&attempt=a'],
   [{view:'expired'},'?view=expired'],
 ]){context.ui=ui;context.syncViewUrl();assert.equal(context.url.search,expected);}
+context.window.location.href='https://exam.test/khoa-hoc/a1';context.ui={view:'student-home'};context.syncViewUrl();assert.equal(context.url.pathname,'/');
+context.ui={view:'courses',courseRoute:{page:'detail',id:'course',slug:'a1'}};context.syncViewUrl();assert.equal(context.url.pathname,'/khoa-hoc/a1');assert.equal(context.url.search,'');
 assert.equal(initialStateScope({role:'student'},'https://exam.test/?view=home'),'catalog');
 console.log('Page history: direct URLs, Back/Forward, reload, deduplication and failed-save protection passed.');

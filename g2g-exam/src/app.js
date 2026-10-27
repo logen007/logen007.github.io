@@ -1,3 +1,4 @@
+import {courseUrlSlug} from './domain/course-url.js';
 import {examDurationSeconds} from './domain/exam-clock.js';
 import {bindAsciiReveals} from './ui/ascii-reveal.js';
 import {createCoursesController} from './courses/controller.js';
@@ -205,6 +206,7 @@ function syncViewUrl(){
   if(!user)return;
   const url=new URL(window.location.href);
   for(const key of ['edit','preview','section','view','tab','attempt','settings','class','course','chapter','lesson','course-kind','course-page','course-step','speaking-page','speaking-exam','speaking-session'])url.searchParams.delete(key);
+  if(courseUrlSlug(url.pathname)&&ui.view!=='courses')url.pathname='/';
   if(ui.view==='courses')writeCourseRoute(url,ui.courseRoute||{page:isStudent(user)?'catalog':'manage'});
   else if(ui.view==='speaking-exams')writeSpeakingExamRoute(url,ui.speakingRoute);
   else if(ui.view==='builder'&&ui.builderExamId){
@@ -283,7 +285,7 @@ function loginView(){
 function restoreSignedInRoute(){
   const route=readSpeakingExamRoute(initialUrl.href,user);
   if(route){ui.speakingRoute=route;ui.view='speaking-exams';}
-  else{Object.assign(ui,defaultLanding(user));if(isStudent(user)&&initialUrl.searchParams.get('view')==='home')ui.view='student-home';else if(initialUrl.searchParams.get('view')==='courses')ui.courseRoute=readCourseRoute(initialUrl.href,user);}
+  else{Object.assign(ui,defaultLanding(user));if(isStudent(user)&&initialUrl.searchParams.get('view')==='home')ui.view='student-home';else if(initialUrl.searchParams.get('view')==='courses'||courseUrlSlug(initialUrl.pathname)){ui.courseRoute=readCourseRoute(initialUrl.href,user);ui.view='courses';ui.adminTab='courses';}}
 }
 
 function studentHomeView(){app.innerHTML=layout(studentHomeHtml({data,user,filter:ui.examFilter,levelFilter:ui.examLevelFilter,kindFilter:ui.examKindFilter||''}));}
@@ -1685,7 +1687,7 @@ else{
   const previewId=initialUrl.searchParams.get('preview'),previewExam=previewId&&byId(data.exams,previewId);
   const requestedView=initialUrl.searchParams.get('view'),requestedAttempt=initialUrl.searchParams.get('attempt');
   if(user&&requestedView==='speaking-exams'){ui.speakingRoute=readSpeakingExamRoute(initialUrl.href,user);if(['reviews','grade'].includes(ui.speakingRoute.page))ui.gradeKind='speaking';ui.view='speaking-exams';}
-  else if(user&&(requestedView==='courses'||initialUrl.searchParams.get('tab')==='courses')){ui.courseRoute=readCourseRoute(initialUrl.href,user);ui.view='courses';ui.adminTab='courses';}
+  else if(user&&(requestedView==='courses'||initialUrl.searchParams.get('tab')==='courses'||courseUrlSlug(initialUrl.pathname))){ui.courseRoute=readCourseRoute(initialUrl.href,user);ui.view='courses';ui.adminTab='courses';}
   else if(requestedView==='home'&&isStudent(user))ui.view='student-home';
   else if(previewExam&&user&&!isStudent(user)){ui.previewExamId=previewId;ui.previewSectionIndex=Math.max(0,Number(initialUrl.searchParams.get('section'))||0);ui.view='preview-exam';}
   else if(requestedView==='results'&&isStudent(user)){

@@ -1,3 +1,4 @@
+import {normalizeCourseSlug,courseUrlPath,courseUrlSlug} from '../src/domain/course-url.js';
 import assert from 'node:assert/strict';
 import './course-image-limit.test.mjs';
 import {normalizeCourse,normalizeCourseExercise,assertCoursePublishable,courseMediaUrl,publicCourseExercise,gradeCourseExercise,validateCourseAnswers} from '../src/domain/courses.js';
@@ -9,6 +10,13 @@ assert.deepEqual(readCourseRoute(editorUrl.href,{role:'teacher'}),{page:'edit',i
 writeCourseRoute(editorUrl,{page:'edit',id:'course-1',step:'info'});
 assert.equal(editorUrl.searchParams.has('chapter'),false);assert.equal(editorUrl.searchParams.has('lesson'),false,'Settings navigation clears stale content selections');
 assert.equal(editorUrl.searchParams.has('course-kind'),false);
+assert.equal(normalizeCourseSlug('  Tiếng Đức A1  '),'tieng-duc-a1');
+for(const value of ['https://evil.test','../course','abc?x=1','a'.repeat(81)])assert.throws(()=>normalizeCourseSlug(value));
+assert.equal(courseUrlSlug('/khoa-hoc/tieng-duc-a1'),'tieng-duc-a1');assert.equal(courseUrlPath('tieng-duc-a1'),'/khoa-hoc/tieng-duc-a1');
+const publicUrl=new URL('https://fixture.invalid/');writeCourseRoute(publicUrl,{page:'detail',id:'course-1',slug:'tieng-duc-a1'});
+assert.equal(publicUrl.href,'https://fixture.invalid/khoa-hoc/tieng-duc-a1');assert.equal(readCourseRoute(publicUrl.href,{role:'student'}).slug,'tieng-duc-a1');
+writeCourseRoute(publicUrl,{page:'learn',id:'course-1',slug:'tieng-duc-a1',lesson:'lesson'});assert.equal(readCourseRoute(publicUrl.href,{}).page,'learn');
+writeCourseRoute(publicUrl,{page:'catalog'});assert.equal(publicUrl.pathname,'/');assert.equal(publicUrl.searchParams.has('course'),false);
 const exercise=normalizeCourseExercise({section:{id:'part',questionProfile:{layout:'choices'}},questions:[{id:'q',type:'single',title:'Hallo?',choices:['Hallo','Nein'],correctAnswer:0,maxScore:2,explanation:'Lời chào.'}]});
 const course=normalizeCourse({title:'A1',coverUrl:'/uploads/course.jpg',price:0,shortDescription:'Tiếng Đức A1',chapters:[{id:'c1',title:'Chào hỏi',knowledge:[{id:'k1',title:'Kiến thức',body:'Hallo!'}],exercises:[{id:'e1',title:'Bài tập',exercise}]}]});
 assert.doesNotThrow(()=>assertCoursePublishable(course));

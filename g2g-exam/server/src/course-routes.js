@@ -5,6 +5,7 @@ export function registerCourseRoutes(app,{service,userFor}){
   route('GET','/api/courses',(u,p,b,q)=>service.catalog(u,q));
   route('GET','/api/courses/exercise-sources',u=>service.sources(u));
   route('GET','/api/courses/exercise-sources/:examId/:sectionId',(u,p)=>service.sources(u,p.examId,p.sectionId));
+  route('GET','/api/courses/url/:slug',(u,p)=>service.byUrl(u,p.slug));
   route('GET','/api/courses/:id',(u,p,b,q)=>service.getCourse(u,p.id,{edit:q.edit==='1'}));
   route('PUT','/api/courses/:id',(u,p,b)=>service.save(u,p.id,b));
   route('POST','/api/courses/:id/publish',(u,p,b)=>service.publish(u,p.id,b));

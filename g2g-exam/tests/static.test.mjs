@@ -129,14 +129,15 @@ test('Trang tiếng Việt có vùng ứng dụng và nạp module chính',()=>{
   const html=read('vi.html');
   assert.match(html,/id=["']app["']/);
   assert.match(html,/runtime-config\.js/);
-  assert.match(html,/type=["']module["'][^>]+src=["']\.\/src\/app\.js/);
-  assert.match(html,/type=["']module["'][^>]+src=["']\.\/src\/feature-loader\.js/);
+  assert.match(html,/type=["']module["'][^>]+src=["']\/src\/app\.js/);
+  assert.match(html,/type=["']module["'][^>]+src=["']\/src\/feature-loader\.js/);
 });
 
 test('Các tài nguyên CSS/JS mà vi.html tham chiếu đều tồn tại và không rỗng',()=>{
   const html=read('vi.html');
-  const refs=[...html.matchAll(/(?:src|href)=["']\.\/([^"'#?]+)/g)].map(match=>match[1]);
+  const refs=[...html.matchAll(/(?:src|href)=["']\/(?!\/)([^"'#?]+)/g)].map(match=>match[1]);
   assert.ok(refs.length>=4);
+  for(const ref of refs)assert.equal(new URL('/'+ref,'https://exam.test/khoa-hoc/a1').pathname,'/'+ref,'Assets resolve from root on a direct course URL');
   for(const ref of refs)assert.ok(existsNonEmpty(ref),`Thiếu hoặc rỗng: ${ref}`);
 });
 
@@ -217,7 +218,7 @@ test('Trang Quản trị có module Cài đặt Google, SMTP, email và vận h�
   const controller=read('src/settings.js');
   const view=read('src/settings/view.js');
   const api=read('src/settings/api.js');
-  assert.match(html,/src=["']\.\/src\/feature-loader\.js/);
+  assert.match(html,/src=["']\/src\/feature-loader\.js/);
   assert.ok(loader.includes("load('./settings.js')"));
   assert.ok(!view.includes('Quyền làm bài'));
   assert.ok(!controller.includes("allowRestart:chk('sRestart')"));

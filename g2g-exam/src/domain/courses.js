@@ -1,3 +1,4 @@
+import {normalizeCourseSlug} from './course-url.js';
 import {scoreQuestion} from './question-score.js';
 import {letterAnswerError} from './letter-answers.js';
 import {isPrefilledQuestion} from './question-display.js';
@@ -82,6 +83,7 @@ export function normalizeCourse(input={}){
   }));
   const result={title:text(input.title,200),coverUrl:courseMediaUrl(input.coverUrl),price,level:COURSE_LEVELS.includes(input.level)?input.level:'A1',
     shortDescription:text(input.shortDescription,600),description:text(input.description,30000),chapters};
+  if(input.slug!==undefined)result.slug=normalizeCourseSlug(input.slug);
   if(input.descriptionBlocks!==undefined){
     const content=normalizeKnowledgeBlocks(input.descriptionBlocks,courseMediaUrl);
     if(content.body.length>30000)throw new Error('Mô tả khóa học tối đa 30.000 ký tự.');
@@ -115,7 +117,7 @@ export function assertCoursePublishable(course){
   }
 }
 
-export function courseMetadata(course){return {title:course.title,coverUrl:course.coverUrl,price:course.price,level:course.level,shortDescription:course.shortDescription,chapterCount:course.chapters.length,lessonCount:courseLessons(course).length};}
+export function courseMetadata(course){return {...(course.slug!==undefined?{slug:course.slug}:{}),title:course.title,coverUrl:course.coverUrl,price:course.price,level:course.level,shortDescription:course.shortDescription,chapterCount:course.chapters.length,lessonCount:courseLessons(course).length};}
 export function courseOutline(course){return course.chapters.map(chapter=>({id:chapter.id,title:chapter.title,knowledge:chapter.knowledge.map(outlineLesson),exercises:chapter.exercises.map(outlineLesson)}));}
 const outlineLesson=lesson=>({id:lesson.id,title:lesson.title,kind:lesson.kind,trial:lesson.trial,questionCount:lesson.kind==='exercise'?lesson.exercise.questions.filter(q=>!isPrefilledQuestion(q)).length:0});
 

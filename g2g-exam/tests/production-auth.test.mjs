@@ -40,6 +40,8 @@ await test('Login returns to the correct role with safe editing links',()=>{
   assert.equal(loginReturnPath('/adm?edit=exam-123','teacher'),'/teacher?edit=exam-123');
   assert.equal(loginReturnPath('/teacher?edit=exam-123','master'),'/adm?edit=exam-123');
   assert.equal(loginReturnPath('/adm?edit=exam-123','student'),'/student');
+  assert.equal(loginReturnPath('/khoa-hoc/tieng-duc-a1','student'),'/khoa-hoc/tieng-duc-a1');
+  assert.equal(loginReturnPath('/khoa-hoc/../api/auth/logout','student'),'/student');
   for(const path of ['https://evil.test','//evil.test','/\\evil.test','/%2f%2fevil.test','/api/auth/logout','/\nevil.test']){
     assert.equal(loginReturnPath(path,'master'),'/adm');
   }

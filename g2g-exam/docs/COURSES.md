@@ -215,3 +215,14 @@ Do not claim production/visual verification from static or mocked evidence.
 No gateway, refund policy, time-limited access, paid-seat expiration, marketing
 landing page, scheduled live teaching, manual grading or speculative Goethe/TELC
 rules. These require separate owner choices.
+
+### URL khóa học
+
+Cài đặt khóa học có URL tùy chọn `/khoa-hoc/<slug>` (tối đa 80 ký tự chữ/số/gạch
+ngang; tiếng Việt được chuyển không dấu). Để trống giữ liên kết theo ID cũ. URL
+chỉ lưu khi kết thúc chỉnh trường; khóa đã xuất bản phải bỏ xuất bản trước khi sửa.
+Máy chủ giữ slug duy nhất trong `course_urls`, giữ các URL trước đây khi đổi và không
+chuyển chúng cho khóa khác. API theo slug vẫn dùng cùng quyền/xuất bản/enrollment
+như theo ID; không làm nội dung thành công khai. Bản sao bắt đầu với URL trống.
+Slug hiện tại là địa chỉ khóa học, không thay snapshot đã đăng ký. Khởi động lại
+không xóa alias; schema thêm bảng, không đổi ID hoặc phiên đăng nhập.

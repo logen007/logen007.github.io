@@ -9,6 +9,7 @@ export function loginReturnPath(value,role){
   try{
     const url=new URL(value,'https://g2g.invalid');
     if(url.origin==='https://g2g.invalid'&&url.pathname==='/speaking-lab.html'&&/^[a-f0-9-]{36}$/.test(url.searchParams.get('session')||''))return '/speaking-lab.html?session='+encodeURIComponent(url.searchParams.get('session'));
+    if(url.origin==='https://g2g.invalid'&&/^\/khoa-hoc\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/.test(url.pathname))return url.pathname+url.search;
     if(url.origin!=='https://g2g.invalid'||!['/','/adm','/teacher','/student'].includes(url.pathname))return home;
     if(role==='student'){
       const page=url.searchParams.get('speaking-page'),idKey=page==='queue'?'speaking-exam':'speaking-session',id=url.searchParams.get(idKey)||'';
