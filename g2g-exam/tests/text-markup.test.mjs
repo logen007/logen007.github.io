@@ -200,7 +200,7 @@ assert.match(css,/\.writing-form-question \.writing-paper \{ width:100%;[^}]*tra
 assert.match(css,/\.writing-form-question \.writing-paper \{[^}]*padding:20px 18px;/);
 assert.match(css,/\.exam-paper:has\(\.writing-form-question\) \{ padding-inline:12px;/);
 assert.match(css,/\.text-link\.navigation-arrow \{ width:auto; min-width:0; padding-inline:0;/);
-assert.match(css,/select:not\(\[multiple\]\), \.inline-gap-trigger \{ border-radius:var\(--pill\)!important;/);
+assert.match(css,/select:not\(\[multiple\]\),input:not\(\[type\]\),input:is\([^}]*\[type=text\][^}]*\),\.inline-gap-trigger \{ border-radius:var\(--pill\)!important;/);
 assert.match(css,/\.preview-outline \{[^}]*margin-left:auto;/);
 const studentView=readFileSync(new URL('../src/views/student.js',import.meta.url),'utf8');
 assert.match(studentView,/section-arrow" aria-label="Vorheriger Teil"/);
