@@ -151,7 +151,7 @@ try{
   assert.ok(root.querySelector('[data-course-field="shortDescription"]').closest('label').querySelector('span.sr-only'));
   assert.ok(root.querySelector('.course-info-description [data-knowledge-editor] .tiptap[aria-label="Mô tả khóa học"]'),'Description uses the shared knowledge editor');
   const describe=value=>rich().commands.setContent(knowledgeDocument({id:'description',body:value},document));
-  assert.match(root.querySelector('.course-cover-field').textContent,/Tối đa 1 MB/);
+  assert.doesNotMatch(root.querySelector('.course-cover-field').textContent,/Tối đa/);
   assert.match(css,/\.course-authoring \.builder-meta>\.exam-level \{ align-self:center;/);
   assert.match(css,/\.course-outline-chapter \{[^}]*grid-template-columns:minmax\(0,1fr\);/,'Chapter track must shrink inside the sidebar, not inherit a long title minimum');
   assert.match(css,/\.course-outline-chapter-title \{[^}]*min-width:0;/,'Title button must shrink before its child can ellipsize');

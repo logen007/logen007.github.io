@@ -138,11 +138,11 @@ try{
     assert.deepEqual(await fs.readFile(path.join(process.env.UPLOAD_DIR,path.basename(response.json().url))),bytes,'Upload preserves every byte while the guard waits');
   }
   const courseImage=await upload('course-image','image/png','course.png');assert.equal(courseImage.statusCode,200);
-  const oneMB=Buffer.alloc(1024*1024);jpeg.copy(oneMB);
-  const exactLimit=await upload('course-image','image/jpeg','limit.jpg','admin',oneMB);assert.equal(exactLimit.statusCode,200,'Course image at 1 MB is accepted');
-  assert.deepEqual(await fs.readFile(path.join(process.env.UPLOAD_DIR,path.basename(exactLimit.json().url))),oneMB);
-  const filesBeforeLimit=await fs.readdir(process.env.UPLOAD_DIR),overLimit=Buffer.concat([oneMB,Buffer.from([0])]);
-  const rejected=await upload('course-image','image/jpeg','over.jpg','admin',overLimit);assert.equal(rejected.statusCode,413);assert.match(rejected.body,/1 MB/);
+  const twoMB=Buffer.alloc(2*1024*1024);jpeg.copy(twoMB);
+  const exactLimit=await upload('course-image','image/jpeg','limit.jpg','admin',twoMB);assert.equal(exactLimit.statusCode,200,'Course image at 2 MB is accepted');
+  assert.deepEqual(await fs.readFile(path.join(process.env.UPLOAD_DIR,path.basename(exactLimit.json().url))),twoMB);
+  const filesBeforeLimit=await fs.readdir(process.env.UPLOAD_DIR),overLimit=Buffer.concat([twoMB,Buffer.from([0])]);
+  const rejected=await upload('course-image','image/jpeg','over.jpg','admin',overLimit);assert.equal(rejected.statusCode,413);assert.match(rejected.body,/2 MB/);
   assert.deepEqual(await fs.readdir(process.env.UPLOAD_DIR),filesBeforeLimit,'Rejected course images leave no partial file');
   assert.equal((await upload('course-image','image/png','student.png','s0')).statusCode,403);
   assert.equal((await app.inject({method:'POST',url:'/api/media/course-image'})).statusCode,401);
