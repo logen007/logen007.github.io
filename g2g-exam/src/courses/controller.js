@@ -14,7 +14,7 @@ import {COURSE_IMAGE_MAX_BYTES} from '../domain/media-limits.js';
 import {knowledgeBlocks,courseDescriptionContent,MAX_KNOWLEDGE_BLOCKS,KNOWLEDGE_LAYOUT_VERSION} from '../domain/course-knowledge.js';
 import {questionProfileAt} from '../domain/question-profile.js';
 
-const fresh=route=>({route,loading:true,error:'',filters:{search:'',level:'',fee:''},catalog:null,dirty:false,practiceDirty:false,practiceAnswers:{},practiceResult:null,editLesson:'',pendingAudio:new Map()});
+const fresh=route=>({route,loading:true,error:'',filters:{search:'',level:'',fee:'',tag:''},catalog:null,dirty:false,practiceDirty:false,practiceAnswers:{},practiceResult:null,editLesson:'',pendingAudio:new Map()});
 const uuid=prefix=>prefix+'-'+crypto.randomUUID();
 const publishedActions=new Set(['catalog','mine','manage','detail','edit','members','learn','reload','more','preview-managed','editor-step','edit-chapter','edit-category','edit-lesson','close-lesson','preview-exercise','preview-course','close-preview','unpublish','archive','permalink-edit']);
 const ask=(message,confirmLabel='Tiếp tục',options={})=>new Promise(resolve=>confirmAction(message,()=>resolve(true),{...options,confirmLabel,onCancel:()=>resolve(false)}));
@@ -180,6 +180,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     finally{busy=false;if(button.isConnected)button.disabled=false;root.removeAttribute('aria-busy');queueEditor();}
   }
   async function action(name,button){
+    if(name==='filter-tag'){state.filters.tag=button.dataset.tag||'';clearTimeout(searchTimer);await load();return;}
     const id=button.dataset.id||state.route.id,course=state.editor?.course;
     if(state.preview){
       const answers=state.preview.current?.lesson.lesson.kind==='exercise'&&!state.preview.current.practiceResult?readPractice():undefined;
@@ -366,6 +367,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     }
     if(state.route.page==='edit'){
       if(readOnly())return;
+      if(field.hasAttribute('data-course-tags'))state.editor.course.tags=field.value.split(',').map(tag=>tag.trim()).filter(Boolean);
       if(field.dataset.courseField)state.editor.course[field.dataset.courseField]=field.type==='number'?Number(field.value):field.value;
       if(field.dataset.courseChapterTitle){const chapter=state.editor.course.chapters.find(c=>c.id===field.dataset.courseChapterTitle);if(chapter)chapter.title=field.value;}
       if(field.dataset.courseLessonField){const lesson=currentLesson();if(lesson)lesson[field.dataset.courseLessonField]=field.type==='checkbox'?field.checked:field.value;}

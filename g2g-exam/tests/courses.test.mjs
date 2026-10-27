@@ -1,7 +1,7 @@
 import {normalizeCourseSlug,courseUrlPath,courseUrlSlug,courseSlugFromTitle} from '../src/domain/course-url.js';
 import assert from 'node:assert/strict';
 import './course-image-limit.test.mjs';
-import {normalizeCourse,normalizeCourseExercise,assertCoursePublishable,courseMediaUrl,publicCourseExercise,gradeCourseExercise,validateCourseAnswers} from '../src/domain/courses.js';
+import {normalizeCourseTags,normalizeCourse,normalizeCourseExercise,assertCoursePublishable,courseMediaUrl,publicCourseExercise,gradeCourseExercise,validateCourseAnswers} from '../src/domain/courses.js';
 import {readCourseRoute,writeCourseRoute} from '../src/courses/api.js';
 import {knowledgeBlocks,normalizeKnowledgeBlocks,moveKnowledgeBlock} from '../src/domain/course-knowledge.js';
 const editorUrl=new URL('https://fixture.invalid/?view=courses');
@@ -75,3 +75,8 @@ assert.equal(normalizeCourse({...course,description:'Legacy text'}).descriptionB
 assert.throws(()=>normalizeCourse({...course,descriptionBlocks:[{id:'long',type:'text',text:'x'.repeat(30001)}]}),/30.000/);
 assert.throws(()=>normalizeCourse({...course,descriptionBlocks:[{id:'bad',type:'image',url:'javascript:alert(1)'}]}));
 console.log('Courses domain: validation, private projection, objective scoring, examples, matching and gap structure passed.');
+
+assert.deepEqual(normalizeCourseTags([' A ','a','B','']),['A','B']);
+assert.throws(()=>normalizeCourseTags(Array(21).fill('Tag')),/20/);
+assert.throws(()=>normalizeCourseTags(['x'.repeat(41)]),/40/);
+assert.throws(()=>normalizeCourseTags([{}]));

@@ -73,6 +73,15 @@ export function normalizeCourseExercise(value={}){
   return {section,questions};
 }
 
+export function normalizeCourseTags(value=[]){
+  if(!Array.isArray(value)||value.length>20)throw Error('Mỗi khóa học tối đa 20 tag.');
+  const seen=new Set();return value.flatMap(item=>{
+    if(typeof item!=='string')throw Error('Tag khóa học phải là văn bản.');
+    const tag=item.normalize('NFC').trim().replace(/\s+/g,' ');
+    if(tag.length>40)throw Error('Mỗi tag tối đa 40 ký tự.');
+    const key=tag.toLowerCase();if(!tag||seen.has(key))return [];seen.add(key);return [tag];
+  });
+}
 export function courseLessons(course){return (course.chapters||[]).flatMap(chapter=>[...(chapter.knowledge||[]),...(chapter.exercises||[])]);}
 export function normalizeCourse(input={}){
   const seen=new Set(),takeId=value=>{const key=id(value);if(seen.has(key))throw new Error('Mã chương/bài học bị trùng.');seen.add(key);return key;};
@@ -81,7 +90,7 @@ export function normalizeCourse(input={}){
     knowledge:list(chapter.knowledge||[],100).map(lesson=>({id:takeId(lesson.id),kind:'knowledge',title:text(lesson.title,200),body:text(lesson.body,100000),imageUrl:courseMediaUrl(lesson.imageUrl),trial:Boolean(lesson.trial),...(lesson.blocks!==undefined?normalizeKnowledgeBlocks(lesson.blocks,courseMediaUrl):{})})),
     exercises:list(chapter.exercises||[],100).map(lesson=>({id:takeId(lesson.id),kind:'exercise',title:text(lesson.title,200),trial:Boolean(lesson.trial),exercise:normalizeCourseExercise(lesson.exercise)})),
   }));
-  const result={title:text(input.title,200),coverUrl:courseMediaUrl(input.coverUrl),price,level:COURSE_LEVELS.includes(input.level)?input.level:'A1',
+  const result={tags:normalizeCourseTags(input.tags),title:text(input.title,200),coverUrl:courseMediaUrl(input.coverUrl),price,level:COURSE_LEVELS.includes(input.level)?input.level:'A1',
     shortDescription:text(input.shortDescription,600),description:text(input.description,30000),chapters};
   if(input.slug!==undefined)result.slug=normalizeCourseSlug(input.slug);
   if(input.descriptionBlocks!==undefined){
@@ -117,7 +126,7 @@ export function assertCoursePublishable(course){
   }
 }
 
-export function courseMetadata(course){return {...(course.slug!==undefined?{slug:course.slug}:{}),title:course.title,coverUrl:course.coverUrl,price:course.price,level:course.level,shortDescription:course.shortDescription,chapterCount:course.chapters.length,lessonCount:courseLessons(course).length};}
+export function courseMetadata(course){return {...(course.slug!==undefined?{slug:course.slug}:{}),tags:course.tags||[],title:course.title,coverUrl:course.coverUrl,price:course.price,level:course.level,shortDescription:course.shortDescription,chapterCount:course.chapters.length,lessonCount:courseLessons(course).length};}
 export function courseOutline(course){return course.chapters.map(chapter=>({id:chapter.id,title:chapter.title,knowledge:chapter.knowledge.map(outlineLesson),exercises:chapter.exercises.map(outlineLesson)}));}
 const outlineLesson=lesson=>({id:lesson.id,title:lesson.title,kind:lesson.kind,trial:lesson.trial,questionCount:lesson.kind==='exercise'?lesson.exercise.questions.filter(q=>!isPrefilledQuestion(q)).length:0});
 
