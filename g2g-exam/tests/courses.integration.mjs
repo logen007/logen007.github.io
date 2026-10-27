@@ -199,6 +199,6 @@ try{
   const legacyTagged={...tagged.course};delete legacyTagged.tags;
   await service.unpublish(teacher,'tagged-course',{version:tagged.version+1});
   const liveTagged=await service.getCourse(teacher,'tagged-course',{edit:true});
-  const retained=await service.save(teacher,'tagged-course',{version:liveTagged.version,course:{...legacyTagged,title:'Legacy tag edit'}});assert.deepEqual(retained.course.tags,tagged.course.tags);
+  const retainedTags=await service.save(teacher,'tagged-course',{version:liveTagged.version,course:{...legacyTagged,title:'Legacy tag edit'}});assert.deepEqual(retainedTags.course.tags,tagged.course.tags);
   console.log('Courses isolated SQL/HTTP: schema retry, ownership, answer secrecy, enrollment, revisions, grading, idempotency and archive passed.');
 }finally{await db.close();}
