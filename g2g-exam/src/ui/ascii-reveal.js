@@ -1,10 +1,14 @@
 import {prepareAsciiGraphics,paintAsciiBlock} from './ascii-snapshot.js';
 // One treatment for entire non-critical card content, not heading-only animation.
-export const ASCII_REVEAL_SELECTOR='[data-ascii-reveal],.admin-dashboard .dashboard-panel,.admin-dashboard .dashboard-ai-queue,.admin-dashboard .dashboard-cpu-card,.admin-dashboard .dashboard-capacity-card,.admin-dashboard .dashboard-r2-card,.admin-dashboard .dashboard-backup-card,.admin-dashboard h2,.admin-dashboard h3,.course-card,.student-catalog .the-de,.student-catalog .learner-card,.exam-catalog-table thead,.exam-catalog-table tbody tr,.exam-list-heading h1,.student-results-heading h1,.course-shell>.tieu-de-trang h1';
+export const ASCII_REVEAL_SELECTOR='[data-ascii-reveal],.admin-dashboard .dashboard-panel,.admin-dashboard .dashboard-ai-queue,.admin-dashboard .dashboard-cpu-card,.admin-dashboard .dashboard-capacity-card,.admin-dashboard .dashboard-r2-card,.admin-dashboard .dashboard-backup-card,.admin-dashboard h2,.admin-dashboard h3,.course-card,.student-catalog .the-de,.student-catalog .learner-card,.exam-catalog-table thead,.exam-catalog-table tbody tr,.exam-list-heading h1,.student-results-heading h1,.course-shell>.tieu-de-trang h1,button,input:not([type=password]):not([type=hidden]):not([type=file]),select,textarea:not(.exam-title-input),[role=status],.exam-card-status,.exam-latest-result,.nhan';
 const selector=ASCII_REVEAL_SELECTOR,glyphs=' .:-=+*#%@',duration=1100,hold=220;
 const variants=[' ','.`',':;','-_','=~','+x','*o','#H','%8','@&'];
-export const ASCII_REVEAL_EXCLUDED='.course-authoring,.course-learning-layout,.exam-paper,.goethe-editor,.grading-detail,.grading-review,table:not(.exam-catalog-table),[role=dialog],[role=alert],[role=status],[role=group],.dashboard-state,.dashboard-services,.dashboard-warning,.exam-card-status:not(.exam-new-label),.exam-latest-result,.nhan:not(.exam-provider):not(.exam-level),button,a,summary,form,input,select,textarea,[contenteditable]';
+export const ASCII_REVEAL_EXCLUDED='.course-authoring,.course-learning-layout,.exam-paper,.goethe-editor,.grading-detail,.grading-review,table:not(.exam-catalog-table),[role=dialog],[role=alert],.dashboard-state,.dashboard-services,.dashboard-warning,[contenteditable],input[type=password],input[type=hidden],input[type=file]';
 const excluded=ASCII_REVEAL_EXCLUDED;
+const isControl=element=>['INPUT','BUTTON','SELECT','TEXTAREA'].includes(element.tagName)||element.getAttribute?.('role')==='status'||['exam-card-status','exam-latest-result','nhan'].some(name=>element.classList?.contains(name));
+const controlExcluded='.exam-paper,.grading-detail,.grading-review,[contenteditable],[role=alert],input[type=password],input[type=hidden],input[type=file]';
+const eligible=element=>!element.closest(isControl(element)?controlExcluded:excluded);
+
 
 export function bindAsciiReveals(root){
   const doc=root.ownerDocument,win=doc.defaultView;
@@ -53,11 +57,11 @@ export function bindAsciiReveals(root){
   }
   function reveal(element,graphics=[]){
     deferred.delete(element);
-    if(!allowed()||!element.isConnected||element.closest(excluded))return;
+    if(!allowed()||!element.isConnected||!eligible(element)||doc.activeElement===element||doc.activeElement&&element.contains(doc.activeElement))return;
     const image=element.tagName==='IMG',block=!image&&!/^H[1-6]$/.test(element.tagName),dashboard=element.closest('.admin-dashboard');
     let identity=element.getAttribute?.('data-ascii-key')||element.id;
-    if(!identity&&dashboard){
-      const path=[];for(let node=element;node&&node!==dashboard;node=node.parentElement)path.push(node.tagName+':'+Array.from(node.parentElement?.children||[]).indexOf(node));
+    if(!identity&&(dashboard||isControl(element))){
+      const path=[];for(let node=element;node&&node!==(dashboard||root);node=node.parentElement)path.push(node.tagName+':'+Array.from(node.parentElement?.children||[]).indexOf(node));
       identity='dashboard:'+path.reverse().join('/');
     }
     const key=win.location.pathname+win.location.search+'|'+(identity||(image?element.currentSrc||element.src:element.textContent));
@@ -79,11 +83,11 @@ export function bindAsciiReveals(root){
         const width=element.naturalWidth*scale,height=element.naturalHeight*scale;
         sourceContext.drawImage(element,(box.width-width)/2,(box.height-height)/2,width,height);
       }else{
-        if(block)paintAsciiBlock(element,sourceContext,box,graphics,win,excluded);
+        if(block)paintAsciiBlock(element,sourceContext,box,graphics,win,isControl(element)?controlExcluded:excluded);
         const walker=doc.createTreeWalker(element,win.NodeFilter.SHOW_TEXT),range=doc.createRange();let node;
         sourceContext.fillStyle='#fff';sourceContext.textBaseline='top';
         while((node=walker.nextNode())){
-          if(node.parentElement.closest(excluded)||node.parentElement.closest('svg'))continue;
+          if(node.parentElement.closest(isControl(element)?controlExcluded:excluded)||node.parentElement.closest('svg'))continue;
           const textStyle=win.getComputedStyle(node.parentElement);
           if(textStyle.display==='none'||textStyle.visibility==='hidden')continue;
           sourceContext.fillStyle=block?textStyle.color:'#fff';
@@ -146,7 +150,7 @@ export function bindAsciiReveals(root){
   },{threshold:.15});
   const scan=node=>{
     if(node.nodeType!==1)return;
-    for(const element of [...(node.matches(selector)?[node]:[]),...node.querySelectorAll(selector)])if(!registered.has(element)&&!element.closest(excluded)&&!element.parentElement?.closest(selector)){registered.add(element);visibility.observe(element);}
+    for(const element of [...(node.matches(selector)?[node]:[]),...node.querySelectorAll(selector)])if(!registered.has(element)&&eligible(element)&&(!element.parentElement?.closest(selector)||!eligible(element.parentElement.closest(selector)))){registered.add(element);visibility.observe(element);}
   };
   const changes=new win.MutationObserver(records=>{
     for(const record of records)for(const node of record.addedNodes)scan(node);
@@ -156,7 +160,7 @@ export function bindAsciiReveals(root){
     for(const item of [...active])if(!item.element.isConnected||records.some(record=>record.target&&item.element.contains(record.target)))remove(item);
   });
   changes.observe(root,{childList:true,characterData:true,subtree:true});scan(root);
-  for(const event of ['scroll','resize','pagehide','pointerdown','keydown'])win.addEventListener(event,stop,{passive:true,capture:true});
+  for(const event of ['scroll','resize','pagehide','pointerdown','keydown','focusin'])win.addEventListener(event,stop,{passive:true,capture:true});
   doc.addEventListener('visibilitychange',stop);reduced.addEventListener('change',stop);forced.addEventListener('change',stop);
   const preferenceChanged=()=>{
     const enabled=doc.documentElement.dataset?.asciiEnabled!=='off',wasEnabled=preferenceEnabled;
@@ -170,5 +174,5 @@ export function bindAsciiReveals(root){
     }
   };
   win.addEventListener('g2g-ascii-preference',preferenceChanged);
-  return ()=>{disposed=true;stop();changes.disconnect();visibility.disconnect();for(const clear of [...waiting.values()])clear();for(const event of ['scroll','resize','pagehide','pointerdown','keydown'])win.removeEventListener(event,stop,true);win.removeEventListener('g2g-ascii-preference',preferenceChanged);doc.removeEventListener('visibilitychange',stop);reduced.removeEventListener('change',stop);forced.removeEventListener('change',stop);};
+  return ()=>{disposed=true;stop();changes.disconnect();visibility.disconnect();for(const clear of [...waiting.values()])clear();for(const event of ['scroll','resize','pagehide','pointerdown','keydown','focusin'])win.removeEventListener(event,stop,true);win.removeEventListener('g2g-ascii-preference',preferenceChanged);doc.removeEventListener('visibilitychange',stop);reduced.removeEventListener('change',stop);forced.removeEventListener('change',stop);};
 }

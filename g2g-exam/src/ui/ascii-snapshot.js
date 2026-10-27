@@ -25,12 +25,16 @@ export function prepareAsciiGraphics(element,win,ready){
 
 export function paintAsciiBlock(element,context,box,graphics,win,excluded){
   // Capture filled bars/tracks and local images, not just text outlines.
-  for(const node of element.querySelectorAll('*')){
+  for(const node of [...(['INPUT','BUTTON','SELECT','TEXTAREA'].includes(element.tagName)?[element]:[]),...element.querySelectorAll('*')]){
     if(node.closest(excluded)||node.closest('svg'))continue;
     const rect=node.getBoundingClientRect(),style=win.getComputedStyle(node);
     if(!rect.width||!rect.height||style.display==='none'||style.visibility==='hidden')continue;
     if(style.backgroundColor&&!['transparent','rgba(0, 0, 0, 0)'].includes(style.backgroundColor)){
       context.fillStyle=style.backgroundColor;context.fillRect(rect.left-box.left,rect.top-box.top,rect.width,rect.height);
+    }
+    if(['INPUT','SELECT','TEXTAREA'].includes(node.tagName)){
+      const value=node.tagName==='SELECT'?node.selectedOptions?.[0]?.textContent:node.value||node.placeholder;
+      if(value){context.save();context.beginPath();context.rect(rect.left-box.left,rect.top-box.top,rect.width,rect.height);context.clip();context.fillStyle=style.color;context.font=style.font;context.textBaseline='middle';context.fillText(value,rect.left-box.left+(parseFloat(style.paddingLeft)||12),rect.top-box.top+rect.height/2);context.restore();}
     }
     if(node.tagName==='IMG'&&node.complete&&node.naturalWidth){
       // Third-party avatar URLs must not taint the entire card canvas.
