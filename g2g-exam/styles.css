@@ -1987,3 +1987,6 @@ button.course-lesson-row:focus-visible { outline:1px solid var(--focus-ring); ou
 .course-tag-menu { display:flex; flex-wrap:wrap; gap:8px; min-width:0; }
 .course-tag-menu>.nut { max-width:100%; white-space:normal; overflow-wrap:anywhere; }
 .course-tags-field { min-width:0; }
+
+.ten-he-thong .brand-subline { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.brand-version { white-space:nowrap; font-variant-numeric:tabular-nums; }
