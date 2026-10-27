@@ -1,3 +1,5 @@
+import {topbarHtml} from '../src/ui/layout.js';
+import {APP_VERSION} from '../src/release.js';
 // Real course controller, shared exam editors and HTTP/SQL service. Synthetic DB only.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -31,6 +33,13 @@ assert.equal(courseTitles[2].getAttribute('aria-label'),'Course archived â€” Ngá
 asciiScope.innerHTML='<main class="student-catalog"><article class="the-de"><h3>Exam card</h3><button>Start</button></article></main>';
 assert.equal(asciiScope.querySelectorAll(ASCII_REVEAL_SELECTOR).length,1,'Student exam card body participates, not buttons');
 const asciiUser={id:'ascii-student',role:'student',name:'Synthetic learner',level:'A1'},asciiData={users:[asciiUser],classes:[],attempts:[],questions:[],exams:[{id:'exam-a',title:'Same title',provider:'GOETHE',level:'A1',status:'published',questionCount:4,durationSeconds:3900},{id:'exam-b',title:'Same title',provider:'GOETHE',level:'A1',status:'published',questionCount:4,durationSeconds:3900}]};
+const searchData={...asciiData,exams:asciiData.exams.map((exam,index)=>({...exam,title:index?'Other exam':'Find this exam'}))};
+asciiScope.innerHTML=studentHomeHtml({data:searchData,user:asciiUser,search:'find THIS'});
+assert.equal(asciiScope.querySelectorAll('.the-de').length,1);assert.equal(asciiScope.querySelector('[data-student-exam-search]').value,'find THIS');assert.ok(asciiScope.querySelector('.exam-filter').firstElementChild.matches('.student-exam-search'));
+asciiScope.innerHTML=topbarHtml({user:asciiUser,mode:'local',online:true});
+const brandingSource=await fs.readFile(new URL('../src/settings.js',import.meta.url),'utf8'),organizationSelector=brandingSource.match(/querySelectorAll\('([^']*brand-organization[^']*)'\)/)[1];
+for(const target of asciiScope.querySelectorAll(organizationSelector))target.textContent='Updated organization';
+assert.equal(asciiScope.querySelector('.brand-version').textContent,'v'+APP_VERSION);assert.equal(asciiScope.querySelector('[data-brand-organization]').textContent,'Updated organization');
 asciiScope.innerHTML=studentHomeHtml({data:asciiData,user:asciiUser});
 assert.ok(asciiScope.querySelector('.learner-card').matches(ASCII_REVEAL_SELECTOR),'Whole learner identity/emblem/stats participate');
 for(const node of asciiScope.querySelectorAll('.exam-provider,.exam-level,.exam-new-label'))assert.equal(node.closest(ASCII_REVEAL_EXCLUDED),null,'Non-critical exam metadata is no longer excluded');

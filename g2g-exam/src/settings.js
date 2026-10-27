@@ -69,7 +69,7 @@ function applyBrand(){
   const name=pub.general?.systemName==='Thi thử tiếng Đức'?'Luyện thi tiếng Đức':pub.general?.systemName||'Luyện thi tiếng Đức';
   for(const title of document.querySelectorAll('.ten-he-thong strong,[data-brand-name]'))if(title.textContent!==name)title.textContent=name;
   const organization=pub.general?.organizationName||'G2G Career';
-  for(const target of document.querySelectorAll('.ten-he-thong small,[data-brand-organization]'))if(target.textContent!==organization)target.textContent=organization;
+  for(const target of document.querySelectorAll('.ten-he-thong small:not(.brand-subline),[data-brand-organization]'))if(target.textContent!==organization)target.textContent=organization;
   const logo=document.querySelector('.thuong-hieu .logo');
   if(logo&&pub.general?.logoUrl){
     const url=`/brand/logo?v=${encodeURIComponent(pub.general.logoUrl)}`;
