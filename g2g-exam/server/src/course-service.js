@@ -1,3 +1,4 @@
+import {courseSlugFromTitle} from '../../src/domain/course-url.js';
 import {normalizeCourse,assertCoursePublishable,courseMetadata,courseOutline,courseLessons,publicCourseExercise,validateCourseAnswers,gradeCourseExercise,normalizeCourseExercise} from '../../src/domain/courses.js';
 import {KNOWLEDGE_LAYOUT_VERSION} from '../../src/domain/course-knowledge.js';
 import {createHash} from 'node:crypto';
@@ -89,6 +90,8 @@ export function createCourseService({query,withTx,uid,audit}){
     const course=normalize(()=>normalizeCourse(input.course));
     return withTx(async client=>{
       const found=(await client.query('SELECT * FROM courses WHERE id=$1 FOR UPDATE',[id])).rows[0];
+      const autoSlug=Boolean(input.autoSlug)&&!course.slug;
+      if(autoSlug)course.slug=found?.draft.slug||courseSlugFromTitle(course.title);
       if(found&&input.course.slug===undefined&&found.draft.slug!==undefined)course.slug=found.draft.slug;
       if(found){if(found.owner_id!==user.id&&user.role!=='master')fail(403,'Bạn không quản lý khóa học này.');
         if(found.metadata.deletedAt)fail(409,'Khóa học đã được xóa. Vui lòng tải lại danh sách.');
@@ -104,9 +107,15 @@ export function createCourseService({query,withTx,uid,audit}){
         await client.query('INSERT INTO courses(id,owner_id,draft,metadata) VALUES($1,$2,$3::jsonb,$4::jsonb)',[id,user.id,JSON.stringify(course),JSON.stringify(courseMetadata(course))]);
       }
       if(course.slug){
-        await client.query('INSERT INTO course_urls(slug,course_id) VALUES($1,$2) ON CONFLICT(slug) DO NOTHING',[course.slug,id]);
-        const reserved=(await client.query('SELECT course_id FROM course_urls WHERE slug=$1',[course.slug])).rows[0];
-        if(reserved?.course_id!==id)fail(409,'URL này đã được khóa học khác sử dụng. Vui lòng chọn URL khác.');
+        const base=course.slug;let suffix=1;
+        while(true){
+          await client.query('INSERT INTO course_urls(slug,course_id) VALUES($1,$2) ON CONFLICT(slug) DO NOTHING',[course.slug,id]);
+          const reserved=(await client.query('SELECT course_id FROM course_urls WHERE slug=$1',[course.slug])).rows[0];
+          if(reserved?.course_id===id)break;
+          if(!autoSlug||suffix>=1000)fail(409,'URL này đã được khóa học khác sử dụng. Vui lòng chọn URL khác.');
+          const tail='-'+(++suffix);course.slug=base.slice(0,80-tail.length).replace(/-$/,'')+tail;
+        }
+        if(course.slug!==base)await client.query('UPDATE courses SET draft=$2::jsonb,metadata=$3::jsonb WHERE id=$1',[id,JSON.stringify(course),JSON.stringify(courseMetadata(course))]);
       }
       await audit(user,'save_course','course',id,{},client);
       return {id,version:(found?.version||0)+1,status:found?.status||'draft',publishedVersion:found?.published_version||null,course};

@@ -135,6 +135,7 @@ try{
   assert.match(css,/\.course-management \.bang :is\(th,td\):first-child \{ width:40%; min-width:320px; \}/,'Title column cannot collapse into a narrow stack of words');
   await action('create');
   const courseId=controller.getState().editor.id;
+  assert.equal(root.querySelector('[data-course-permalink]').textContent,'','Empty new course has no fake permalink');
   assert.ok(root.querySelector('.course-authoring>.tieu-de-trang .builder-title .exam-title-input[data-course-field="title"]'));
   assert.ok(root.querySelector('.goethe-layout>.goethe-outline.course-builder-outline'));
   assert.ok(root.querySelector('.goethe-layout>.goethe-editor.course-editor-main'));
@@ -162,6 +163,8 @@ try{
   const heading=root.querySelector('[data-course-field="title"]');
   await until(()=>!controller.getState().dirty,'debounced authoring autosave');
   assert.equal((await service.getCourse(teacher,courseId,{edit:true})).course.title,'Khóa A1 thử nghiệm');
+  assert.equal(controller.getState().editor.course.slug,'khoa-a1-thu-nghiem','First saved title generates a permalink');
+  assert.match(root.querySelector('.course-permalink-link').href,/khoa-a1-thu-nghiem\/$/);
   assert.equal(root.querySelector('[data-course-field="title"]'),heading,'Autosave does not rebuild the active editor');
   assert.equal(root.querySelector('[data-course-dirty]').hidden,true,'Successful autosave stays quiet');
   let release,entered;holdEditorSave=new Promise(resolve=>{release=resolve;});const started=new Promise(resolve=>{entered=resolve;});editorSaveEntered=entered;
@@ -333,7 +336,7 @@ try{
   const chapter=source.chapters[0],many={id:courseId,...source,lessonCount:4,chapters:[{...chapter,knowledge:[chapter.knowledge[0],{...chapter.knowledge[0],id:'extra-knowledge'}],exercises:[chapter.exercises[0],{...chapter.exercises[0],id:'extra-exercise'}]}]};
   const fragment=document.createElement('div');fragment.innerHTML=courseLearningHtml({detail:many,lesson:{lesson:chapter.knowledge[0]},practiceAnswers:{}});
   assert.deepEqual([...fragment.querySelectorAll('.course-outline .course-lesson-row')].map(button=>button.textContent.trim()),['Kiến thức 1','Kiến thức 2','Bài tập 1','Bài tập 2'],'Compact labels retain access to every lesson, not just the first');
-  await service.save(teacher,'paid-ui',{version:0,course:{...source,price:690000}});await service.publish(teacher,'paid-ui',{version:1});
+  await service.save(teacher,'paid-ui',{version:0,course:{...source,slug:'paid-ui',price:690000}});await service.publish(teacher,'paid-ui',{version:1});
   route={page:'detail',id:'paid-ui'};paint();await idle();await action('enroll');
   assert.equal(controller.getState().detail.enrollment.status,'pending');
   assert.match(root.textContent,/Đăng ký đang chờ/);assert.equal(root.querySelector('[data-course-action="enroll"]'),null,'Same-route enrollment refreshes without leaving a misleading register button');
@@ -361,14 +364,20 @@ try{
   assert.equal(controller.getState().lesson.lesson.id,source.chapters[0].knowledge[0].id,'F5-style lesson URL resolves the course before lesson access');
   await controller.open({page:'catalog'});await idle();await action('detail','[data-id="url-dom"]');assert.equal(route.slug,'hoc-a1','Catalog navigation uses the custom URL');
   user=teacher;await service.unpublish(teacher,'url-dom',{version:2});route={page:'edit',id:'url-dom',step:'info'};paint();await idle();
-  const slugField=fill('[data-course-field="slug"]','Học A1 mới');assert.equal(controller.getState().editor.course.slug,'hoc-a1','Typing does not reserve partial URLs');
-  slugField.dispatchEvent(new Event('change',{bubbles:true}));await controller.flushEditor();assert.equal(controller.getState().editor.course.slug,'hoc-a1-moi');
-  assert.equal(root.querySelector('#courseUrlHint').textContent,'/khoa-hoc/hoc-a1-moi');
+  assert.equal(root.querySelector('.course-info-card [data-course-field="slug"]'),null,'Permalink lives beneath the title, not in general settings');
+  assert.ok(root.querySelector('.builder-title [data-course-permalink] .course-permalink-link'));
+  assert.match(root.querySelector('.course-permalink-link').href,/\/khoa-hoc\/hoc-a1\/$/);
+  await action('permalink-edit');
+  const slugField=fill('[data-course-permalink-input]','Học A1 mới');assert.equal(controller.getState().editor.course.slug,'hoc-a1','Typing does not save or reserve a URL');
+  slugField.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await idle();assert.equal(controller.getState().editor.course.slug,'hoc-a1');assert.equal(root.querySelector('[data-course-permalink-input]'),null);
+  await action('permalink-edit');fill('[data-course-permalink-input]','Học A1 mới');await action('permalink-save');
+  assert.equal(controller.getState().editor.course.slug,'hoc-a1-moi');assert.match(root.querySelector('.course-permalink-link').href,/hoc-a1-moi\/$/);
   await service.save(teacher,'url-dom-conflict',{version:0,course:{...source,slug:'da-su-dung'}});
-  const duplicate=fill('[data-course-field="slug"]','da-su-dung');duplicate.dispatchEvent(new Event('change',{bubbles:true}));
-  await assert.rejects(controller.flushEditor(),/URL này/);
-  duplicate.value='da-sua-url';duplicate.dispatchEvent(new Event('change',{bubbles:true}));await controller.flushEditor();
-  assert.equal(controller.getState().editor.course.slug,'da-sua-url','A rejected duplicate can be corrected without replaying the rejected save forever');
+  await action('permalink-edit');fill('[data-course-permalink-input]','da-su-dung');await action('permalink-save');
+  assert.ok(root.querySelector('[data-course-permalink-input]'),'Conflict retains the inline editor and typed URL');
+  assert.equal(controller.getState().editor.course.slug,'hoc-a1-moi','Rejected URL does not overwrite the original');
+  fill('[data-course-permalink-input]','da-sua-url').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));await idle();
+  assert.equal(controller.getState().editor.course.slug,'da-sua-url','Rejected URL can be corrected');
 
   // Exercise editor round trips every supported family through the actual shared editor.
   for(const type of ['choices','binary','listening','multiple','letters','matching','headings','gaps']){

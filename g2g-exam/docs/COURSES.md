@@ -218,9 +218,13 @@ rules. These require separate owner choices.
 
 ### URL khóa học
 
-Cài đặt khóa học có URL tùy chọn `/khoa-hoc/<slug>` (tối đa 80 ký tự chữ/số/gạch
-ngang; tiếng Việt được chuyển không dấu). Để trống giữ liên kết theo ID cũ. URL
-chỉ lưu khi kết thúc chỉnh trường; khóa đã xuất bản phải bỏ xuất bản trước khi sửa.
+Permalink nằm ngay dưới tên khóa học, với link đầy đủ và nút Sửa như WordPress.
+Khi sửa chỉ phần slug là input; Đồng ý lưu, Hủy/Escape bỏ thay đổi, Enter xác nhận.
+Tiêu đề đầu tiên được lưu sẽ tự tạo slug; nếu trùng, máy chủ thêm -2, -3…; đổi tên
+không đổi permalink đã có. Khóa học cũ chưa có slug vẫn giữ link ID cho tới khi sửa.
+Đường dẫn có dạng `/khoa-hoc/<slug>` (tối đa 80 ký tự chữ/số/gạch
+ngang; tiếng Việt được chuyển không dấu). Khi xác nhận slug trống, dùng lại tiêu đề. URL
+chỉ lưu khi bấm Đồng ý; khóa đã xuất bản phải bỏ xuất bản trước khi sửa.
 Máy chủ giữ slug duy nhất trong `course_urls`, giữ các URL trước đây khi đổi và không
 chuyển chúng cho khóa khác. API theo slug vẫn dùng cùng quyền/xuất bản/enrollment
 như theo ID; không làm nội dung thành công khai. Bản sao bắt đầu với URL trống.

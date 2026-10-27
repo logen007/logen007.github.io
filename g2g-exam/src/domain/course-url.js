@@ -5,3 +5,7 @@ export function normalizeCourseSlug(value){
 }
 export function courseUrlPath(slug){return '/khoa-hoc/'+encodeURIComponent(normalizeCourseSlug(slug));}
 export function courseUrlSlug(pathname){return /^\/khoa-hoc\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/.exec(pathname)?.[1]||'';}
+
+export function courseSlugFromTitle(title){
+  return String(title??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[đĐ]/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,80).replace(/-$/,'');
+}
