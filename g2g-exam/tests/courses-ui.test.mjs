@@ -95,7 +95,7 @@ const request=async(suffix,options={})=>{
   const authoring=options.method==='PUT'&&options.body?.course;
   if(authoring){editorSaveEntered();if(holdEditorSave)await holdEditorSave;}
   const response=await app.inject({method:options.method||'GET',url:'/api/courses'+suffix,headers:{'x-user':user.id},...(options.body===undefined?{}:{payload:options.body})});
-  const data=response.json();if(response.statusCode>=400)throw Error(data.message||data.error);
+  const data=response.json();if(response.statusCode>=400)throw Object.assign(Error(data.message||data.error),{status:response.statusCode});
   if(dropPublicationReceipt&&suffix.endsWith('/publish')&&options.method==='POST'){dropPublicationReceipt=false;throw Error('Synthetic lost publication receipt');}
   if(authoring&&dropEditorReceipt){dropEditorReceipt=false;throw Error('Synthetic lost editor receipt');}
   if(dropProgressReceipt&&suffix.endsWith('/progress')&&options.method==='PUT'){dropProgressReceipt=false;throw Error('Synthetic lost save receipt');}
@@ -364,6 +364,12 @@ try{
   const slugField=fill('[data-course-field="slug"]','Học A1 mới');assert.equal(controller.getState().editor.course.slug,'hoc-a1','Typing does not reserve partial URLs');
   slugField.dispatchEvent(new Event('change',{bubbles:true}));await controller.flushEditor();assert.equal(controller.getState().editor.course.slug,'hoc-a1-moi');
   assert.equal(root.querySelector('#courseUrlHint').textContent,'/khoa-hoc/hoc-a1-moi');
+  await service.save(teacher,'url-dom-conflict',{version:0,course:{...source,slug:'da-su-dung'}});
+  const duplicate=fill('[data-course-field="slug"]','da-su-dung');duplicate.dispatchEvent(new Event('change',{bubbles:true}));
+  await assert.rejects(controller.flushEditor(),/URL này/);
+  duplicate.value='da-sua-url';duplicate.dispatchEvent(new Event('change',{bubbles:true}));await controller.flushEditor();
+  assert.equal(controller.getState().editor.course.slug,'da-sua-url','A rejected duplicate can be corrected without replaying the rejected save forever');
+
   // Exercise editor round trips every supported family through the actual shared editor.
   for(const type of ['choices','binary','listening','multiple','letters','matching','headings','gaps']){
     const exercise=newCourseExercise(type),context=courseEditorContext(exercise,teacher),pending=new Map();

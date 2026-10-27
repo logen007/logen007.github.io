@@ -116,7 +116,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
           target.pendingEditorSave=null;
         }
         if(target===state)editorStatus('');
-      }catch(error){if(target===state){target.dirty=true;editorStatus(error.message||'Chưa lưu được thay đổi.',true);}throw error;}
+      }catch(error){if(target===state){if([400,409].includes(error.status))target.pendingEditorSave=null;target.dirty=true;editorStatus(error.message||'Chưa lưu được thay đổi.',true);}throw error;}
     })();
     try{await savingEditor;}finally{savingEditor=null;}
   }
