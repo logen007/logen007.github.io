@@ -89,10 +89,10 @@ function lessonEditorHtml(state){
 export function coursePermalinkHtml(state){
   const {editor}=state,course=editor.course,slug=course.slug||'',editing=state.permalinkDraft!==undefined;
   const origin=globalThis.location?.origin||globalThis.window?.location?.origin||'';
-  const prefix=origin+'/khoa-hoc/';
+  const prefix='/khoa-hoc/';
   if(!slug&&!course.title.trim())return '';
-  const target=slug?prefix+slug+'/':origin+'/?view=courses&course-page=detail&course='+encodeURIComponent(editor.id);
-  return `<span class="phu-de">Permalink</span><div class="course-permalink-value">${editing?`<span class="course-permalink-prefix" title="${esc(prefix)}">${esc(prefix)}</span><input class="truong" data-course-permalink-input aria-label="Đường dẫn khóa học" maxlength="80" value="${esc(state.permalinkDraft)}"><span>/</span>`:`<a class="course-permalink-link" href="${esc(target)}" target="_blank" rel="noopener" title="${esc(target)}">${slug?`<span>${esc(prefix)}</span><strong>${esc(slug)}</strong><span>/</span>`:esc(target)}</a>`}</div><div class="course-permalink-actions">${editing?`<button type="button" class="nut" data-course-action="permalink-save">Đồng ý</button><button type="button" class="text-link" data-course-action="permalink-cancel">Hủy</button>`:`<button type="button" class="nut" data-course-action="permalink-edit">Sửa</button>`}</div>`;
+  const target=slug?origin+prefix+slug+'/':origin+'/?view=courses&course-page=detail&course='+encodeURIComponent(editor.id);
+  return `<span class="phu-de">Permalink</span><div class="course-permalink-value">${editing?`<span class="course-permalink-prefix" title="${esc(prefix)}">${esc(prefix)}</span><input class="truong" data-course-permalink-input aria-label="Đường dẫn khóa học" maxlength="80" value="${esc(state.permalinkDraft)}"><span>/</span>`:`<a class="course-permalink-link" href="${esc(target)}" target="_blank" rel="noopener" title="${esc(target)}">${slug?`<span>${esc(prefix)}</span><strong>${esc(slug)}</strong><span>/</span>`:esc(target.slice(origin.length))}</a>`}</div><div class="course-permalink-actions">${editing?`<button type="button" class="nut" data-course-action="permalink-save">Đồng ý</button><button type="button" class="text-link" data-course-action="permalink-cancel">Hủy</button>`:`<button type="button" class="nut" data-course-action="permalink-edit">Sửa</button>`}</div>`;
 }
 export function courseEditorHtml(state){
   const editor=state.editor,course=editor.course,step=state.route.step||'info',locked=editor.status==='published';

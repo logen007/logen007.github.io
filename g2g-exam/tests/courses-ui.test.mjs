@@ -375,6 +375,7 @@ try{
   assert.equal(root.querySelector('.course-info-card [data-course-field="slug"]'),null,'Permalink lives beneath the title, not in general settings');
   assert.ok(root.querySelector('.course-info-identity > [data-course-permalink] .course-permalink-link'));
   assert.match(root.querySelector('.course-permalink-link').href,/\/khoa-hoc\/hoc-a1\/$/);
+  assert.equal(root.querySelector('.course-permalink-link').textContent,'/khoa-hoc/hoc-a1/','Permalink displays only the path');
   await action('permalink-edit');
   const slugField=fill('[data-course-permalink-input]','Học A1 mới');assert.equal(controller.getState().editor.course.slug,'hoc-a1','Typing does not save or reserve a URL');
   slugField.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await idle();assert.equal(controller.getState().editor.course.slug,'hoc-a1');assert.equal(root.querySelector('[data-course-permalink-input]'),null);
