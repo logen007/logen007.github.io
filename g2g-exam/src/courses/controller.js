@@ -1,7 +1,7 @@
 import {beginNavigationLoading} from '../ui/navigation-loading.js';
 import {normalizeCourseSlug,courseSlugFromTitle} from '../domain/course-url.js';
 import {courseRequest,coursePath} from './api.js';
-import {coursePageHtml,coursePermalinkHtml} from './views.js';
+import {coursePageHtml,coursePermalinkHtml,courseTagSuggestionsHtml} from './views.js';
 import {createCoursePreview,coursePreviewAction} from './preview.js';
 import {courseLessons,normalizeCourse,validateCourseAnswers} from '../domain/courses.js';
 import {newCourseExercise,newCourseQuestion,courseEditorContext,bindCourseExerciseEditor,collectCourseExercise,changeCoursePrompt} from './exercise-editor.js';
@@ -44,7 +44,9 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
         const params=new URLSearchParams({...state.filters,...(route.page==='manage'?{manage:'1'}:route.page==='mine'?{mine:'1'}:{}),offset:String(append?state.catalog?.courses.length||0:0)});
         const catalog=await api('?'+params,options);
         data.catalog=append?{...catalog,courses:[...(state.catalog?.courses||[]),...catalog.courses]}:catalog;
-      }else if(route.page==='edit')data.editor=await api(coursePath(route.id,'?edit=1'),options);
+      }else if(route.page==='edit'){
+        const [editor,tags]=await Promise.all([api(coursePath(route.id,'?edit=1'),options),api('?manage=1&limit=1',options).then(result=>result.tags||[]).catch(()=>[])]);data.editor=editor;data.tagSuggestions=tags;
+      }
       else if(route.page==='members')data.members=await api(coursePath(route.id,'/members'),options);
       else{
         data.detail=await api(route.slug&&!route.id?'/url/'+encodeURIComponent(route.slug):coursePath(route.id),options);
@@ -367,7 +369,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     }
     if(state.route.page==='edit'){
       if(readOnly())return;
-      if(field.hasAttribute('data-course-tags'))state.editor.course.tags=field.value.split(',').map(tag=>tag.trim()).filter(Boolean);
+      if(field.hasAttribute('data-course-tags')){state.editor.course.tags=field.value.split(',').map(tag=>tag.trim()).filter(Boolean);const suggestions=root.querySelector('#courseTagSuggestions');if(suggestions)suggestions.innerHTML=courseTagSuggestionsHtml(state.tagSuggestions||[],field.value);}
       if(field.dataset.courseField)state.editor.course[field.dataset.courseField]=field.type==='number'?Number(field.value):field.value;
       if(field.dataset.courseChapterTitle){const chapter=state.editor.course.chapters.find(c=>c.id===field.dataset.courseChapterTitle);if(chapter)chapter.title=field.value;}
       if(field.dataset.courseLessonField){const lesson=currentLesson();if(lesson)lesson[field.dataset.courseLessonField]=field.type==='checkbox'?field.checked:field.value;}

@@ -6,7 +6,7 @@ import {randomUUID} from 'node:crypto';
 import {createCourseService} from '../server/src/course-service.js';
 import {registerCourseRoutes} from '../server/src/course-routes.js';
 import {knowledgeDocument,documentKnowledgeBlocks} from '../src/courses/knowledge-document.js';
-import {courseLearningHtml,courseCatalogHtml,courseDetailHtml} from '../src/courses/views.js';
+import {courseTagSuggestionsHtml,courseLearningHtml,courseCatalogHtml,courseDetailHtml} from '../src/courses/views.js';
 import {dashboardHtml} from '../src/views/dashboard.js';
 import {ASCII_REVEAL_SELECTOR,ASCII_REVEAL_EXCLUDED,bindAsciiReveals} from '../src/ui/ascii-reveal.js';
 import {studentHomeHtml} from '../src/views/student.js';
@@ -416,3 +416,6 @@ try{
   }
   assert.ok(chapterId);console.log('Courses DOM/HTTP/SQL: first-click cover/lesson pickers with global image paste, failed-upload retry, compact authoring, failed-save retention, publication, enrollment, completion, autosave, retake, resume and 8 shared exercise families passed.');
 }finally{unbindImagePaste();await app.close();await db.close();dom.window.close();}
+
+assert.equal(courseTagSuggestionsHtml(['Ngữ pháp','Giao tiếp','Luyện thi'],'Ngữ pháp, lu'),'<option value="Ngữ pháp, Luyện thi" label="Luyện thi"></option>');
+assert.equal(courseTagSuggestionsHtml(['Ngữ pháp'],'Ngữ pháp, '),'');
