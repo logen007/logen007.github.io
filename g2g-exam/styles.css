@@ -1980,3 +1980,6 @@ button.course-lesson-row:focus-visible { outline:1px solid var(--focus-ring); ou
 .course-knowledge-video-form { display:flex; gap:8px; padding:12px; border-bottom:1px solid var(--vien); }
 .course-knowledge-video-form[hidden] { display:none; }
 .course-knowledge-video-form>.truong { flex:1; min-width:0; }
+
+:is(.nut,.icon-btn):is([data-action="unpublish-exam"],[data-course-action="unpublish"],[data-sx-action="unpublish"]) { background:var(--danger-bg); border-color:var(--danger-border); color:var(--do); }
+:is(.nut,.icon-btn):is([data-action="unpublish-exam"],[data-course-action="unpublish"],[data-sx-action="unpublish"]):hover:not(:disabled) { background:var(--danger-bg); border-color:var(--do); color:var(--do); }
