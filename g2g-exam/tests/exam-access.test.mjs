@@ -193,7 +193,7 @@ assert.match(catalogStyles,/--student-exam-title-size:18px/);
 assert.match(catalogStyles,/\.student-catalog \.the-de h3\{font-size:var\(--student-exam-title-size\)/);
 assert.match(catalogStyles,/\.result-page \.result-heading h2,\.student-result-info h2\{font-size:var\(--student-exam-title-size\)/);
 assert.match(catalogStyles,/\.student-catalog \.exam-filter>\.nut\{justify-self:end/);
-assert.match(catalogStyles,/grid-template-columns:repeat\(2,minmax\(0,132px\)\) var\(--code-entry-width\)/);
+assert.match(catalogStyles,/grid-template-columns:minmax\(180px,1fr\) repeat\(3,minmax\(0,132px\)\) var\(--code-entry-width\)/);
 assert.match(catalogStyles,/\.student-catalog \.exam-filter\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\) var\(--code-entry-width\)/);
 assert.match(catalogStyles,/\.result-page \.result-hero \.result-stats \.result-stat-total>strong\{font-size:28px/);
 console.log('Access UI, TELC gates, exact exam-level assignment passed.');
