@@ -23,11 +23,11 @@ const main=document.querySelector('main'),notices=[],pastes=[];let saved=[],bind
 const legacy={id:'legacy',body:'[b]Đậm[/b] [i]Nghiêng[/i] [u]Gạch[/u]\n[box]a[/box] [signature]Ký[/signature] [headline]Đầu[/headline]',imageUrl:'/uploads/legacy.jpg'};
 const converted=documentKnowledgeBlocks(knowledgeDocument(legacy,document));assert.equal(converted[1].text,legacy.body);assert.equal(converted[0].url,legacy.imageUrl);
 const mount=lesson=>{main.innerHTML=knowledgeEditorHtml();binding=bindKnowledgeVisualEditor(main.firstElementChild,{lesson,onChange:blocks=>{saved=normalizeKnowledgeBlocks(blocks,courseMediaUrl).blocks;},onFiles:(files,options)=>pastes.push({files,options}),notify:message=>notices.push(message)});return binding.editor;};
-const command=name=>main.querySelector(`[data-knowledge-command="${name}"]`).click();
+const command=name=>['undo','redo'].includes(name)?binding.editor.commands[name]():main.querySelector(`[data-knowledge-command="${name}"]`).click();
 const blocks=()=>documentKnowledgeBlocks(binding.editor.getJSON());
 const selectImage=id=>{binding.editor.state.doc.forEach((node,pos)=>{if(node.type.name==='image'&&node.attrs.blockId===id)binding.editor.commands.setNodeSelection(pos);});};
 try{
-  const editor=mount({id:'first',body:'Hallo Welt'});assert.equal(main.querySelectorAll('[contenteditable="true"]').length,1);assert.equal(main.querySelector('textarea'),null);
+  const editor=mount({id:'first',body:'Hallo Welt'});assert.equal(main.querySelector('[data-knowledge-command="undo"],[data-knowledge-command="redo"]'),null);assert.equal(main.querySelector('.course-knowledge-toolbar [data-course-pick]').textContent.trim(),'');assert.equal(main.querySelector('.course-knowledge-toolbar [data-course-pick]').getAttribute('aria-label'),'Chèn ảnh');assert.equal(main.querySelectorAll('[contenteditable="true"]').length,1);assert.equal(main.querySelector('textarea'),null);
   editor.commands.setTextSelection({from:1,to:6});command('bold');assert.equal(blocks()[0].text,'[b]Hallo[/b] Welt');assert.ok(main.querySelector('.tiptap strong'));
   command('undo');assert.equal(blocks()[0].text,'Hallo Welt');command('redo');assert.equal(blocks()[0].text,'[b]Hallo[/b] Welt');
   for(const align of ['center','right','justify','left']){command('align-'+align);assert.equal(blocks()[0].align,align==='left'?undefined:align);assert.equal(main.querySelector('.tiptap p').style.textAlign,align);assert.equal(main.querySelector(`[data-knowledge-command="align-${align}"]`).getAttribute('aria-pressed'),'true');}
