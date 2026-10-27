@@ -1854,10 +1854,10 @@ button.course-lesson-row:focus-visible { outline:1px solid var(--focus-ring); ou
 .course-result-image { display:inline-block; width:auto; max-width:150px; max-height:100px; vertical-align:middle; margin:6px; border-radius:8px; }
 .course-authoring { gap:0; }
 .course-authoring>.tieu-de-trang { margin-bottom:24px; }
-.course-permalink { display:grid; grid-template-columns:auto minmax(0,1fr) 144px; align-items:center; gap:8px; min-width:0; min-height:var(--control-height); margin:0; font-size:13px; }
+.course-permalink { display:grid; grid-template-columns:auto minmax(0,1fr) 144px; align-items:center; gap:8px; width:100%; min-width:0; min-height:var(--control-height); margin:0; font-size:13px; }
 .course-permalink:empty { display:none; }
-.course-permalink-value { display:flex; align-items:center; gap:4px; min-width:0; height:var(--control-height); overflow:hidden; }
-.course-permalink-link { display:block; min-width:0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--brand-text); text-decoration:underline; }
+.course-permalink-value { display:flex; align-items:center; gap:4px; width:100%; min-width:0; height:var(--control-height); overflow:hidden; }
+.course-permalink-link { display:block; width:100%; min-width:0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--brand-text); text-decoration:underline; }
 .course-permalink-prefix { flex:0 1 auto; max-width:45%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--phu); }
 .course-permalink .truong { flex:1; width:0; min-width:0; height:var(--control-height); }
 .course-permalink-actions { display:flex; align-items:center; gap:8px; min-width:0; height:var(--control-height); }
