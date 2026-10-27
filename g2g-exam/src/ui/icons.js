@@ -17,6 +17,8 @@ const paths={
   arrowRight:'<path d="M4 12h16m-7-7 7 7-7 7"/>',
   undo:'<path d="m9 4-5 5 5 5M4 9h10a6 6 0 0 1 0 12"/>',
   redo:'<path d="m15 4 5 5-5 5m5-5H10a6 6 0 0 0 0 12"/>',
+  listBullet:'<circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/><path d="M9 6h12M9 12h12M9 18h12"/>',
+  listOrdered:'<path d="M3 3h1v6M3 9h2M2 14c0-2 4-2 4 0s-4 3-4 6h4M10 6h11M10 12h11M10 18h11"/>',
   alignLeft:'<path d="M4 5h16M4 10h10M4 15h16M4 20h10"/>',
   alignCenter:'<path d="M4 5h16M7 10h10M4 15h16M7 20h10"/>',
   alignRight:'<path d="M4 5h16M10 10h10M4 15h16M10 20h10"/>',

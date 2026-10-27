@@ -1,7 +1,7 @@
 // Real Tiptap/ProseMirror transactions in JSDOM, not browser/geometry evidence.
 import assert from 'node:assert/strict';
 import {sanitizeKnowledgePaste} from '../src/courses/knowledge-paste.js';
-import {knowledgeEditorHtml} from '../src/courses/knowledge-editor.js';
+import {knowledgeEditorHtml,knowledgeContentHtml} from '../src/courses/knowledge-editor.js';
 import {knowledgeDocument,documentKnowledgeBlocks} from '../src/courses/knowledge-document.js';
 import {normalizeKnowledgeBlocks} from '../src/domain/course-knowledge.js';
 import {courseMediaUrl} from '../src/domain/courses.js';
@@ -79,5 +79,28 @@ try{
   const final=saved;selectImage(firstImage);pointer(imageView().querySelector('[data-knowledge-resize="right"]'),'pointerdown',500);binding.destroy();pointer(document,'pointermove',100);pointer(document,'pointerup',100);assert.equal(editor.isDestroyed,true);mount({id:'reopen',blocks:final});assert.deepEqual(normalizeKnowledgeBlocks(blocks(),courseMediaUrl).blocks,final,'Visual content reopens with text alignment and custom image size; destroyed drag has no pending writes');
   binding.editor.commands.setContent(knowledgeDocument({blocks:[{id:'paragraph',type:'text',text:'Paragraph'},{id:'heading',type:'text',text:'[headline]Heading[/headline]'}]},document));
   binding.editor.commands.setTextSelection({from:1,to:binding.editor.state.doc.content.size-1});command('align-justify');assert.ok(blocks().every(block=>block.align==='justify'),'One selection aligns paragraphs and headings together');
+  binding.destroy();const listEditor=mount({id:'lists',body:'First'});
+  listEditor.commands.setTextSelection(2);command('bulletList');
+  assert.equal(blocks()[0].list.ordered,false);assert.ok(main.querySelector('.tiptap ul li'));
+  assert.equal(main.querySelector('[data-knowledge-command="bulletList"]').getAttribute('aria-pressed'),'true');
+  command('orderedList');assert.equal(blocks()[0].list.ordered,true);assert.ok(main.querySelector('.tiptap ol li'));
+  command('orderedList');assert.equal(blocks()[0].list,undefined,'Toggle off retains paragraph text');
+  const listMarkup=sanitizeKnowledgePaste('<ol start="3" onclick="bad()"><li><p><b>First</b></p><ul><li>Nested</li></ul></li><li>Second</li></ol>',pasteDocument);
+  assert.doesNotMatch(listMarkup,/onclick/);assert.match(listMarkup,/start="3"/);
+  listEditor.commands.setContent(listMarkup);
+  const listSaved=normalizeKnowledgeBlocks(blocks(),courseMediaUrl);
+  assert.equal(listSaved.contentVersion,3);assert.equal(listSaved.blocks[0].list.start,3);
+  assert.equal(listSaved.blocks[0].list.items.length,2);
+  assert.match(listSaved.body,/Nested/);assert.match(listSaved.body,/\[b\]First/);
+  const learner=knowledgeContentHtml({blocks:listSaved.blocks});
+  assert.match(learner,/<ol start="3">/);assert.match(learner,/<ul><li>/);assert.match(learner,/<strong[^>]*>First<\/strong>/);
+  listEditor.commands.setContent(knowledgeDocument({blocks:listSaved.blocks},document));
+  assert.deepEqual(normalizeKnowledgeBlocks(blocks(),courseMediaUrl).blocks,listSaved.blocks,'Nested lists, numbering and marks survive reopening');
+  listEditor.commands.setTextSelection(3);listEditor.commands.splitListItem('listItem');
+  assert.equal(blocks()[0].list.items.length,3,'Enter creates a new list item');
+  const invalidList=structuredClone(listSaved.blocks);invalidList[0].list.items[0].content.push({type:'image',url:'javascript:bad()'});
+  assert.throws(()=>normalizeKnowledgeBlocks(invalidList,courseMediaUrl),/ngoài danh sách/);
+  const oversized=structuredClone(listSaved.blocks);oversized[0].list.items[0].content[0].text='x'.repeat(100001);
+  assert.throws(()=>normalizeKnowledgeBlocks(oversized,courseMediaUrl),/100.000/);
   console.log('Visual knowledge editor: real formatting/history, caret image batches, mapped async insertion, image controls, paste/drop entry, IDs/limits, safe markup and reopen passed.');
 }finally{binding?.destroy();dom.window.close();}
