@@ -1,3 +1,4 @@
+import {KNOWLEDGE_LAYOUT_VERSION} from '../domain/course-knowledge.js';
 import {speakingExamRequest as request} from './exam-route.js';
 import {speakingExamErrors,validateSpeakingReview,speakingPreparationSeconds,SPEAKING_DEFAULT_CALL_SECONDS} from './exam-model.js';
 import {speakingEditorHtml,speakingQueueHtml,speakingSessionHtml,preparationHtml,stageHtml,terminalHtml,speakingReviewsHtml,speakingGradingHtml,speakingResultsHtml,speakingStateLabel,sxButton} from './exam-views.js';
@@ -73,7 +74,7 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
   modal.querySelector('button')?.focus();
  }
  function editorSave(){
-  save=createSpeakingAutosave({version:exam.version,read:()=>exam,write:async(value,version)=>(await api('/'+encodeURIComponent(exam.id),{method:'PUT',body:{version,exam:value}})).exam,
+  save=createSpeakingAutosave({version:exam.version,read:()=>exam,write:async(value,version)=>(await api('/'+encodeURIComponent(exam.id),{method:'PUT',body:{version,exam:value,knowledgeLayout:KNOWLEDGE_LAYOUT_VERSION}})).exam,
    accept:updated=>{exam.version=updated.version;exam.updatedAt=updated.updatedAt;},status});
  }
  function readReview(){

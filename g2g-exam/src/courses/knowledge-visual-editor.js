@@ -24,7 +24,7 @@ const KnowledgeImage=Image.extend({
 });
 export function bindKnowledgeVisualEditor(root,{lesson,onChange,onFiles,notify,label='Nội dung kiến thức'}){
   const canvas=root.querySelector('[data-knowledge-canvas]'),points=new Set();let editor;
-  const ids=Extension.create({name:'knowledgeIds',addGlobalAttributes:()=>[{types:['paragraph','heading','image'],attributes:{blockId:{default:null,parseHTML:element=>element.dataset.knowledgeId,renderHTML:attrs=>attrs.blockId?{'data-knowledge-id':attrs.blockId}:{}}}}],
+  const ids=Extension.create({name:'knowledgeIds',addGlobalAttributes:()=>[{types:['paragraph','heading','image','bulletList','orderedList'],attributes:{blockId:{default:null,parseHTML:element=>element.dataset.knowledgeId,renderHTML:attrs=>attrs.blockId?{'data-knowledge-id':attrs.blockId}:{}}}}],
     addProseMirrorPlugins:()=>[new Plugin({
       filterTransaction:transaction=>{if(!transaction.docChanged)return true;try{const value=documentKnowledgeBlocks(transaction.doc.toJSON());value.forEach(block=>{block.id=id();});normalizeKnowledgeBlocks(value,courseMediaUrl);return true;}catch(error){notify(error.message);return false;}},
       appendTransaction:(_transactions,_old,state)=>{const tr=state.tr,seen=new Set();state.doc.forEach((node,pos)=>{let key=node.attrs.blockId;if(!/^[\w-]{1,100}$/.test(key||'')||seen.has(key)){key=id();tr.setNodeMarkup(pos,undefined,{...node.attrs,blockId:key});}seen.add(key);});return tr.docChanged?tr:null;},
@@ -35,13 +35,13 @@ export function bindKnowledgeVisualEditor(root,{lesson,onChange,onFiles,notify,l
     const image=editor.isActive('image'),attrs=editor.getAttributes('image');let hasImage=false;editor.state.doc.forEach(node=>{if(node.type.name==='image')hasImage=true;});
     root.dataset.empty=String(!editor.getText()&&!hasImage);root.querySelector('[data-knowledge-image-tools]').hidden=!image;
     for(const input of root.querySelectorAll('[data-knowledge-image-field]'))if(root.ownerDocument.activeElement!==input)input.value=attrs[input.dataset.knowledgeImageField]??'';
-    for(const button of root.querySelectorAll('[data-knowledge-command]')){const name=button.dataset.knowledgeCommand;button.disabled=name==='undo'?!editor.can().undo():name==='redo'?!editor.can().redo():name.startsWith('image-')?!image:name==='align-justify'&&image;if(['bold','italic','underline','heading'].includes(name))button.setAttribute('aria-pressed',String(editor.isActive(name)));if(name.startsWith('align-'))button.setAttribute('aria-pressed',String(image?(attrs.align||'center')===name.slice(6):editor.isActive({textAlign:name.slice(6)})));}
+    for(const button of root.querySelectorAll('[data-knowledge-command]')){const name=button.dataset.knowledgeCommand;button.disabled=name==='undo'?!editor.can().undo():name==='redo'?!editor.can().redo():name.startsWith('image-')?!image:name==='align-justify'&&image;if(['bold','italic','underline','heading','bulletList','orderedList'].includes(name))button.setAttribute('aria-pressed',String(editor.isActive(name)));if(name.startsWith('align-'))button.setAttribute('aria-pressed',String(image?(attrs.align||'center')===name.slice(6):editor.isActive({textAlign:name.slice(6)})));}
     root.querySelectorAll('[data-course-pick]').forEach(button=>{button.disabled=false;});
   };
   const imageFiles=transfer=>{const files=Array.from(transfer?.files||[]);if(!files.length)files.push(...Array.from(transfer?.items||[]).filter(item=>item.kind==='file').map(item=>item.getAsFile()).filter(Boolean));return files.filter(file=>file.type.startsWith('image/'));};
   const capture=(position=null)=>{const selection=position===null?editor.state.selection:Selection.near(editor.state.doc.resolve(position)),point={bookmark:selection.getBookmark(),afterNode:selection instanceof NodeSelection};points.add(point);return point;};
   canvas.innerHTML='';
-  editor=new Editor({element:canvas,content:knowledgeDocument(lesson,root.ownerDocument),extensions:[StarterKit.configure({heading:{levels:[2]},code:false,codeBlock:false,blockquote:false,horizontalRule:false,bulletList:false,orderedList:false,listItem:false,listKeymap:false,link:false,strike:false}),KnowledgeImage,LegacyMarkup,ids,alignment],
+  editor=new Editor({element:canvas,content:knowledgeDocument(lesson,root.ownerDocument),extensions:[StarterKit.configure({heading:{levels:[2]},code:false,codeBlock:false,blockquote:false,horizontalRule:false,link:false,strike:false}),KnowledgeImage,LegacyMarkup,ids,alignment],
     editorProps:{attributes:{role:'textbox','aria-label':label,'aria-multiline':'true',spellcheck:'true'},
       handlePaste:(_view,event)=>{const files=imageFiles(event.clipboardData);if(files.length){event.preventDefault();onFiles(files,{point:capture()});return true;}return false;},
       handleDrop:(view,event,_slice,moved)=>{const files=imageFiles(event.dataTransfer);if(files.length){event.preventDefault();onFiles(files,{point:capture(view.posAtCoords({left:event.clientX,top:event.clientY})?.pos??null)});return true;}return !moved&&Boolean(event.dataTransfer?.getData('text/html')?.match(/<img\b/i));},
@@ -54,6 +54,7 @@ export function bindKnowledgeVisualEditor(root,{lesson,onChange,onFiles,notify,l
     const button=event.target.closest('[data-knowledge-command]');if(!button||button.disabled)return;
     event.preventDefault();const name=button.dataset.knowledgeCommand;
     if(name.startsWith('align-')){const value=name.slice(6);if(editor.isActive('image'))editor.chain().focus().updateAttributes('image',{align:value}).run();else editor.chain().focus().updateAttributes('paragraph',{textAlign:value}).updateAttributes('heading',{textAlign:value}).run();}
+    else if(['bulletList','orderedList'].includes(name))editor.chain().focus()[name==='bulletList'?'toggleBulletList':'toggleOrderedList']().run();
     else if(name==='heading')editor.chain().focus().toggleHeading({level:2}).run();
     else if(['bold','italic','underline'].includes(name))editor.chain().focus()[{bold:'toggleBold',italic:'toggleItalic',underline:'toggleUnderline'}[name]]().run();
     else if(['undo','redo'].includes(name))editor.chain().focus()[name]().run();

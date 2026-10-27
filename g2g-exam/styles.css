@@ -1918,6 +1918,11 @@ button.course-lesson-row:focus-visible { outline:1px solid var(--focus-ring); ou
 .course-knowledge-canvas .tiptap { min-height:380px; min-width:0; overflow-wrap:anywhere; line-height:1.7; }
 .course-knowledge-canvas .tiptap,.course-knowledge-canvas .tiptap:focus,.course-knowledge-canvas .tiptap:focus-visible { outline:none; border:0; box-shadow:none; }
 .course-knowledge-canvas .tiptap p { margin:0 0 12px; min-height:1.7em; white-space:pre-wrap; }
+.course-knowledge-content :is(ul,ol),.course-knowledge-canvas .tiptap :is(ul,ol) { padding-left:1.6em; margin:8px 0 12px; white-space:normal; }
+.course-knowledge-content ul,.course-knowledge-canvas .tiptap ul { list-style-type:disc; }
+.course-knowledge-content ol,.course-knowledge-canvas .tiptap ol { list-style-type:decimal; }
+.course-knowledge-content li,.course-knowledge-canvas .tiptap li { display:list-item; margin:4px 0; }
+.course-knowledge-content li>p,.course-knowledge-canvas .tiptap li>p { margin:0; white-space:pre-wrap; }
 .course-knowledge-canvas .tiptap h2 { margin:20px 0 12px; }
 .course-knowledge-canvas .tiptap img { display:block; max-width:100%; height:auto; max-height:none; object-fit:contain; cursor:grab; }
 .course-knowledge-canvas .tiptap .ProseMirror-selectednode { outline:none; }
