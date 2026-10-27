@@ -53,6 +53,8 @@ export function createCourseService({query,withTx,uid,audit}){
     if(manage){where.push("c.metadata->>'deletedAt' IS NULL");if(user.role!=='master')where.push('c.owner_id=$1');}
     else if(mine)where.push('e.id IS NOT NULL');
     else where.push("c.status='published'");
+    const tagScope=[...where];
+    if(params.tag)where.push(`EXISTS (SELECT 1 FROM jsonb_array_elements_text(coalesce(m.metadata->'tags','[]'::jsonb)) AS tag(value) WHERE lower(tag.value)=lower(${add(String(params.tag).slice(0,40))}))`);
     if(params.search)where.push(`m.metadata->>'title' ILIKE ${add('%'+String(params.search).slice(0,150)+'%')}`);
     if(params.level)where.push(`m.metadata->>'level'=${add(String(params.level))}`);
     if(params.fee==='free')where.push("(m.metadata->>'price')::numeric=0");
@@ -67,7 +69,14 @@ export function createCourseService({query,withTx,uid,audit}){
       LEFT JOIN course_releases r ON r.course_id=c.id AND r.version=${mine?'e.release_version':'c.published_version'}
       CROSS JOIN LATERAL (SELECT ${manage?'c.metadata':'r.metadata'} AS metadata) m
       ${where.length?'WHERE '+where.join(' AND '):''} ORDER BY c.updated_at DESC,c.id LIMIT ${add(limit)} OFFSET ${add(offset)}`,values);
-    return {courses:result.rows.map(row=>({id:row.id,...row.metadata,slug:row.current_slug||'',teacherName:row.teacher_name,status:row.status,version:row.version,updatedAt:row.updated_at,completed:row.completed,
+    const availableTags=await query(`SELECT DISTINCT tag.value AS tag
+      FROM courses c LEFT JOIN course_enrollments e ON e.course_id=c.id AND e.student_id=$1
+      LEFT JOIN course_releases r ON r.course_id=c.id AND r.version=${mine?'e.release_version':'c.published_version'}
+      CROSS JOIN LATERAL (SELECT ${manage?'c.metadata':'r.metadata'} AS metadata) m
+      CROSS JOIN LATERAL jsonb_array_elements_text(coalesce(m.metadata->'tags','[]'::jsonb)) AS tag(value)
+      ${tagScope.length?'WHERE '+tagScope.join(' AND '):''} ORDER BY tag.value`,[user.id]);
+    const tags=[...new Map(availableTags.rows.map(row=>[row.tag.toLowerCase(),row.tag])).values()];
+    return {tags,courses:result.rows.map(row=>({id:row.id,...row.metadata,slug:row.current_slug||'',teacherName:row.teacher_name,status:row.status,version:row.version,updatedAt:row.updated_at,completed:row.completed,
       enrollment:row.enrollment_id?{id:row.enrollment_id,status:row.enrollment_status,amount:row.amount}:null})),total:result.rows[0]?.total||0};
   }
   async function getCourse(user,id,{edit=false}={}){
@@ -90,6 +99,7 @@ export function createCourseService({query,withTx,uid,audit}){
     const course=normalize(()=>normalizeCourse(input.course));
     return withTx(async client=>{
       const found=(await client.query('SELECT * FROM courses WHERE id=$1 FOR UPDATE',[id])).rows[0];
+      if(found&&input.course.tags===undefined)course.tags=found.draft.tags||[];
       const autoSlug=Boolean(input.autoSlug)&&!course.slug;
       if(autoSlug)course.slug=found?.draft.slug||courseSlugFromTitle(course.title);
       if(found&&input.course.slug===undefined&&found.draft.slug!==undefined)course.slug=found.draft.slug;

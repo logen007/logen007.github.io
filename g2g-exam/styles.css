@@ -1983,3 +1983,7 @@ button.course-lesson-row:focus-visible { outline:1px solid var(--focus-ring); ou
 
 :is(.nut,.icon-btn):is([data-action="unpublish-exam"],[data-course-action="unpublish"],[data-sx-action="unpublish"]) { background:var(--danger-bg); border-color:var(--danger-border); color:var(--do); }
 :is(.nut,.icon-btn):is([data-action="unpublish-exam"],[data-course-action="unpublish"],[data-sx-action="unpublish"]):hover:not(:disabled) { background:var(--danger-bg); border-color:var(--do); color:var(--do); }
+
+.course-tag-menu { display:flex; flex-wrap:wrap; gap:8px; min-width:0; }
+.course-tag-menu>.nut { max-width:100%; white-space:normal; overflow-wrap:anywhere; }
+.course-tags-field { min-width:0; }

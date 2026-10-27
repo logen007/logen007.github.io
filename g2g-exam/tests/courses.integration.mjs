@@ -187,5 +187,18 @@ try{
   assert.equal((await service.save(teacher,'auto-one',{version:0,autoSlug:true,course:{...makeCourse(),title:'Tiếng Đức A1!'}})).version,1,'Lost autoslug receipt reuses the existing URL');
   const renamed=await service.save(teacher,'auto-one',{version:1,autoSlug:true,course:{...autoOne.course,title:'Tên khác'}});
   assert.equal(renamed.course.slug,autoOne.course.slug,'Changing the title preserves an established permalink');
+  const tagged=await service.save(teacher,'tagged-course',{version:0,course:{...makeCourse(),tags:[' Giao tiếp ','giao tiếp','Ngữ pháp']}});
+  assert.deepEqual(tagged.course.tags,['Giao tiếp','Ngữ pháp']);
+  assert.equal((await service.catalog(student)).tags.includes('Giao tiếp'),false,'Draft tags are private');
+  await service.publish(teacher,'tagged-course',{version:tagged.version});
+  const byTag=await service.catalog(student,{tag:'giao tiếp',limit:1});assert.equal(byTag.total,1);assert.equal(byTag.courses[0].id,'tagged-course');assert.ok(byTag.tags.includes('Ngữ pháp'),'Menu includes tags outside selected tag and page');
+  assert.equal((await service.catalog(student,{tag:"' OR 1=1 --"})).total,0);
+  const privateTagged=await service.save(other,'private-tags',{version:0,course:{...makeCourse(),tags:['Private tag']}});
+  assert.equal((await service.catalog(teacher,{manage:'1'})).tags.includes('Private tag'),false,'Other teachers draft tags are hidden');
+  assert.ok((await service.catalog(master,{manage:'1'})).tags.includes('Private tag'));
+  const legacyTagged={...tagged.course};delete legacyTagged.tags;
+  await service.unpublish(teacher,'tagged-course',{version:tagged.version+1});
+  const liveTagged=await service.getCourse(teacher,'tagged-course',{edit:true});
+  const retained=await service.save(teacher,'tagged-course',{version:liveTagged.version,course:{...legacyTagged,title:'Legacy tag edit'}});assert.deepEqual(retained.course.tags,tagged.course.tags);
   console.log('Courses isolated SQL/HTTP: schema retry, ownership, answer secrecy, enrollment, revisions, grading, idempotency and archive passed.');
 }finally{await db.close();}

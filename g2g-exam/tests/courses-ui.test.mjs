@@ -136,6 +136,7 @@ try{
   await action('create');
   const courseId=controller.getState().editor.id;
   assert.equal(root.querySelector('[data-course-permalink]').textContent,'','Empty new course has no fake permalink');
+  fill('[data-course-tags]','Ngữ pháp, Giao tiếp');assert.deepEqual(controller.getState().editor.course.tags,['Ngữ pháp','Giao tiếp']);
   assert.ok(root.querySelector('.course-authoring>.tieu-de-trang .builder-title .exam-title-input[data-course-field="title"]'));
   assert.ok(root.querySelector('.goethe-layout>.goethe-outline.course-builder-outline'));
   assert.ok(root.querySelector('.goethe-layout>.goethe-editor.course-editor-main'));
