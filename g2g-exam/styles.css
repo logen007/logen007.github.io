@@ -1970,3 +1970,13 @@ button.course-lesson-row:focus-visible { outline:1px solid var(--focus-ring); ou
 @media(max-width:850px) { .course-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }.course-detail-layout,.course-learning-layout { grid-template-columns:minmax(0,1fr); }.course-enroll-card,.course-outline { position:static; max-height:none; }.course-enroll-card { grid-row:1; }.course-outline { max-height:360px; }.course-filters { grid-template-columns:repeat(2,minmax(0,1fr)); }.course-filters label:first-child { grid-column:1/-1; } }
 @media(max-width:680px) { .course-builder-outline { grid-template-columns:minmax(0,1fr); }.course-info-layout { grid-template-columns:minmax(0,1fr); }.course-cover-field { width:min(100%,320px); }.course-cover-picker { height:auto; aspect-ratio:4/3; }.course-info-identity { gap:12px; }.course-management .exam-filter { flex-wrap:wrap; }.course-management .course-manage-search { flex-basis:100%; max-width:none; } }
 @media(max-width:540px) { .thanh-dau[data-current-role="student"] .site-nav { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); width:100%; }.thanh-dau[data-current-role="student"] .site-nav .muc-ben { min-width:0; padding-inline:8px; font-size:clamp(12px,3.5vw,14px); }.site-nav>.student-exam-nav>.muc-ben { width:100%; }.course-shell:not(.course-authoring) { gap:20px; }.course-grid,.course-chapter-columns { grid-template-columns:minmax(0,1fr); }.course-card,.course-lesson-content { padding:20px; }.course-filters { gap:12px; }.course-lesson-footer>.nut { flex:1; }.course-result-item h3 { flex-wrap:wrap; }.course-pair { grid-template-columns:minmax(0,1fr); }.course-pair .icon-btn { justify-self:end; }.course-toolbar>.nut { min-height:44px; } }
+
+.course-knowledge-video { margin:16px 0; min-width:0; }
+.course-knowledge-video iframe,.course-knowledge-video-node iframe { display:block; width:100%; aspect-ratio:16/9; height:auto; border:0; border-radius:12px; }
+.course-knowledge-video>a { display:inline-block; margin-top:6px; font-size:13px; color:var(--phu); }
+.course-knowledge-video-node { margin:16px 0; border-radius:12px; }
+.course-knowledge-video-node iframe { pointer-events:none; }
+.course-knowledge-video-node.ProseMirror-selectednode { outline:1px solid var(--brand-border); outline-offset:3px; }
+.course-knowledge-video-form { display:flex; gap:8px; padding:12px; border-bottom:1px solid var(--vien); }
+.course-knowledge-video-form[hidden] { display:none; }
+.course-knowledge-video-form>.truong { flex:1; min-width:0; }

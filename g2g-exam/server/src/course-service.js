@@ -95,7 +95,7 @@ export function createCourseService({query,withTx,uid,audit}){
       if(found&&input.course.slug===undefined&&found.draft.slug!==undefined)course.slug=found.draft.slug;
       if(found){if(found.owner_id!==user.id&&user.role!=='master')fail(403,'Bạn không quản lý khóa học này.');
         if(found.metadata.deletedAt)fail(409,'Khóa học đã được xóa. Vui lòng tải lại danh sách.');
-        if(found.draft.descriptionBlocks?.some(block=>block.list)&&input.knowledgeLayout!==KNOWLEDGE_LAYOUT_VERSION)fail(409,'Mô tả có danh sách. Vui lòng tải lại trang trước khi chỉnh sửa.');
+        if(found.draft.descriptionBlocks?.some(block=>block.list||block.type==='youtube')&&input.knowledgeLayout!==KNOWLEDGE_LAYOUT_VERSION)fail(409,'Mô tả dùng trình soạn thảo mới. Vui lòng tải lại trang trước khi chỉnh sửa.');
         if(Array.isArray(found.draft.descriptionBlocks)&&!Array.isArray(input.course.descriptionBlocks))fail(409,'Mô tả khóa học dùng trình soạn thảo mới. Vui lòng tải lại trang trước khi chỉnh sửa.');
         const incoming=new Map(courseLessons(input.course).map(lesson=>[lesson.id,lesson]));
         if(courseLessons(found.draft).some(lesson=>incoming.has(lesson.id)&&(lesson.contentVersion>=1&&!Array.isArray(incoming.get(lesson.id).blocks)||lesson.contentVersion>=2&&input.knowledgeLayout!==KNOWLEDGE_LAYOUT_VERSION)))fail(409,'Bài kiến thức dùng trình soạn thảo mới. Vui lòng tải lại trang trước khi chỉnh sửa.');

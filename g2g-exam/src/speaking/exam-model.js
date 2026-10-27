@@ -68,7 +68,7 @@ function configErrors(config){
   stageIds.add(stage.id);
   if(!stage.title||stage.title.length>100)errors.push(label+': cần tiêu đề từ 1 đến 100 ký tự.');
   if(stage.instruction.length>3000)errors.push(label+': hướng dẫn tối đa 3.000 ký tự.');
-  if(!['A','B'].every(seat=>stage['prompt'+seat]||stage['prompt'+seat+'Blocks']?.some(block=>block.type==='image'))||stage.promptA.length>10000||stage.promptB.length>10000)errors.push(label+': cần đề A và B, mỗi đề tối đa 10.000 ký tự.');
+  if(!['A','B'].every(seat=>stage['prompt'+seat]||stage['prompt'+seat+'Blocks']?.some(block=>['image','youtube'].includes(block.type)))||stage.promptA.length>10000||stage.promptB.length>10000)errors.push(label+': cần đề A và B, mỗi đề tối đa 10.000 ký tự.');
   if(!Number.isInteger(stage.seconds)||stage.seconds<SPEAKING_STAGE_MIN_SECONDS||stage.seconds>SPEAKING_STAGE_MAX_SECONDS)errors.push(label+': thời lượng phải từ 0,5 đến 20 phút.');
   if(!['both','A','B'].includes(stage.speakerSeat))errors.push(label+': lượt nói không hợp lệ.');
   for(const criterion of stage.criteria){

@@ -1,3 +1,4 @@
+import {youtubeVideoId} from '../src/domain/knowledge-youtube.js';
 // Real Tiptap/ProseMirror transactions in JSDOM, not browser/geometry evidence.
 import assert from 'node:assert/strict';
 import {sanitizeKnowledgePaste} from '../src/courses/knowledge-paste.js';
@@ -102,5 +103,17 @@ try{
   assert.throws(()=>normalizeKnowledgeBlocks(invalidList,courseMediaUrl),/ngoài danh sách/);
   const oversized=structuredClone(listSaved.blocks);oversized[0].list.items[0].content[0].text='x'.repeat(100001);
   assert.throws(()=>normalizeKnowledgeBlocks(oversized,courseMediaUrl),/100.000/);
+  for(const url of ['https://youtu.be/M7lc1UVf-VE?si=abc','https://www.youtube.com/watch?v=M7lc1UVf-VE','https://m.youtube.com/shorts/M7lc1UVf-VE','https://www.youtube.com/live/M7lc1UVf-VE'])assert.equal(youtubeVideoId(url),'M7lc1UVf-VE');
+  for(const url of ['javascript:alert(1)','https://youtube.com.evil.test/watch?v=M7lc1UVf-VE','https://evil.test/embed/M7lc1UVf-VE','https://youtube.com@evil.test/watch?v=M7lc1UVf-VE','http://youtu.be/M7lc1UVf-VE','<iframe src="https://youtu.be/M7lc1UVf-VE"></iframe>','https://youtu.be/bad'])assert.throws(()=>youtubeVideoId(url));
+  listEditor.commands.setContent(knowledgeDocument({body:'Video lesson',id:'video-test'},document));listEditor.commands.setTextSelection(2);
+  command('youtube');assert.equal(main.querySelector('[data-knowledge-video-form]').hidden,false);
+  main.querySelector('[data-knowledge-video-url]').value='https://youtu.be/M7lc1UVf-VE';command('youtube-insert');
+  assert.ok(blocks().some(block=>block.type==='youtube'&&block.videoId==='M7lc1UVf-VE'));
+  const videoSaved=normalizeKnowledgeBlocks(blocks(),courseMediaUrl);assert.equal(videoSaved.contentVersion,4);
+  const frameHtml=knowledgeContentHtml({blocks:videoSaved.blocks});assert.match(frameHtml,/https:\/\/www.youtube-nocookie.com\/embed\/M7lc1UVf-VE/);assert.doesNotMatch(frameHtml,/autoplay/);
+  listEditor.commands.setContent(knowledgeDocument({blocks:videoSaved.blocks},document));assert.deepEqual(normalizeKnowledgeBlocks(blocks(),courseMediaUrl).blocks,videoSaved.blocks);
+  binding.destroy();const videoEditor=mount({blocks:videoSaved.blocks});
+  let videoPosition;videoEditor.state.doc.forEach((node,pos)=>{if(node.type.name==='youtube')videoPosition=pos;});videoEditor.commands.setNodeSelection(videoPosition);videoEditor.commands.deleteSelection();assert.equal(blocks().some(block=>block.type==='youtube'),false);videoEditor.commands.undo();assert.ok(blocks().some(block=>block.type==='youtube'));
+  assert.throws(()=>normalizeKnowledgeBlocks([{id:'unsafe-video',type:'youtube',videoId:'bad" onload="bad()'}],courseMediaUrl));
   console.log('Visual knowledge editor: real formatting/history, caret image batches, mapped async insertion, image controls, paste/drop entry, IDs/limits, safe markup and reopen passed.');
 }finally{binding?.destroy();dom.window.close();}

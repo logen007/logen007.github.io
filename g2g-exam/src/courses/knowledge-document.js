@@ -18,6 +18,7 @@ export function knowledgeDocument(lesson,document){
   };
   const listNode=(list,blockId=null)=>({type:list.ordered?'orderedList':'bulletList',attrs:{blockId,start:list.start||1},content:list.items.map(item=>({type:'listItem',content:item.content.map(part=>part.type==='list'?listNode(part.list):{type:part.heading?'heading':'paragraph',attrs:{textAlign:part.align||'left',...(part.heading?{level:2}:{})},content:inline(part.text)})}))});
   const content=knowledgeBlocks(lesson).map(block=>{
+    if(block.type==='youtube')return {type:'youtube',attrs:{blockId:block.id,videoId:block.videoId}};
     if(block.type==='image')return {type:'image',attrs:{blockId:block.id,src:block.url,alt:block.alt||'',align:block.align||'center',width:block.width||100}};
     if(block.list)return listNode(block.list,block.id);
     const heading=block.text.match(/^\[headline\]([\s\S]*)\[\/headline\]$/i);
@@ -37,6 +38,7 @@ export function documentKnowledgeBlocks(document){
     return {type:'text',text:inline(child),...(child.attrs?.textAlign&&child.attrs.textAlign!=='left'?{align:child.attrs.textAlign}:{}),...(child.type==='heading'?{heading:true}:{})};
   })}))});
   return (document.content||[]).map(node=>{
+    if(node.type==='youtube')return {id:node.attrs.blockId,type:'youtube',videoId:node.attrs.videoId};
     if(['bulletList','orderedList'].includes(node.type)){const list=listValue(node);return {id:node.attrs.blockId,type:'text',text:knowledgeListText(list),list};}
     return node.type==='image'?{id:node.attrs.blockId,type:'image',url:node.attrs.src,alt:node.attrs.alt||'',align:node.attrs.align||'center',width:Number(node.attrs.width)||100}
       :{id:node.attrs.blockId,type:'text',text:node.type==='heading'?`[headline]${inline(node)}[/headline]`:inline(node),...(node.attrs.textAlign&&node.attrs.textAlign!=='left'?{align:node.attrs.textAlign}:{})};
