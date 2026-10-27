@@ -1894,7 +1894,7 @@ button.course-lesson-row:focus-visible { outline:1px solid var(--focus-ring); ou
 .course-info-fields { display:grid; gap:20px; min-width:0; }
 .course-info-identity { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; min-width:0; }
 .course-info-identity>.course-permalink { grid-column:1/-1; }
-@media(min-width:1200px) { .course-info-identity { grid-template-columns:minmax(100px,.55fr) minmax(140px,.75fr) minmax(0,2fr); align-items:start; }.course-info-identity>.course-permalink { grid-column:auto; grid-template-columns:minmax(0,1fr) 144px; grid-template-rows:20px var(--control-height); column-gap:8px; row-gap:8px; }.course-info-identity>.course-permalink>.phu-de { grid-column:1/-1; font-size:14px; } }
+@media(min-width:1200px) { .course-info-identity { grid-template-columns:112px 160px minmax(0,1fr); align-items:start; }.course-info-identity>.course-permalink { grid-column:auto; grid-template-columns:minmax(0,1fr) 144px; grid-template-rows:20px var(--control-height); column-gap:8px; row-gap:8px; }.course-info-identity>.course-permalink>.phu-de { grid-column:1/-1; font-size:14px; } }
 .course-info-identity .truong { border-radius:12px; }
 .course-info-identity>.course-permalink>.phu-de { color:var(--chu); }
 .course-info-identity .course-permalink-value { border:1px solid var(--vien); border-radius:12px; padding:0 12px; background:var(--mat); }
