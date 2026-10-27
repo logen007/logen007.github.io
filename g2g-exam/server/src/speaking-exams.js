@@ -68,7 +68,7 @@ export function createSpeakingExamService(options={}){
  async function copy(user,id){return db.withTx(async c=>{const source=await owned(c,user,id,true);return insert(c,user,{title:(source.data.title+' - Copy').slice(0,200),level:source.data.level,provider:source.data.provider},{speaking:structuredClone(source.data.speaking),copiedFrom:id});});}
  async function update(user,id,input){return db.withTx(async c=>{
   const row=await owned(c,user,id,true);editable(row);
-  if(row.data.speaking?.stages?.some(stage=>['A','B'].some(seat=>stage['prompt'+seat+'Blocks']?.some(block=>block.list)))&&input.knowledgeLayout!==KNOWLEDGE_LAYOUT_VERSION)throw appError(409,'Đề có danh sách. Vui lòng tải lại trình soạn thảo.');
+  if(row.data.speaking?.stages?.some(stage=>['A','B'].some(seat=>stage['prompt'+seat+'Blocks']?.some(block=>block.list||block.type==='youtube')))&&input.knowledgeLayout!==KNOWLEDGE_LAYOUT_VERSION)throw appError(409,'Đề dùng trình soạn thảo mới. Vui lòng tải lại trình soạn thảo.');
   const values=titleLevel({...input.exam,provider:input.exam?.provider??row.data.provider});let speaking;
   try{speaking=normalizeSpeakingConfig(input.exam?.speaking);}catch(error){throw appError(400,error.message);}
   if(!Number.isInteger(input?.version)||input.version!==Number(row.data.version||1)){

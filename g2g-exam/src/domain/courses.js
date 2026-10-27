@@ -100,7 +100,7 @@ export function assertCoursePublishable(course){
     if(!chapter.title.trim())throw new Error('Vui lòng đặt tên chương.');
     for(const lesson of [...chapter.knowledge,...chapter.exercises]){
       if(!lesson.title.trim())throw new Error('Vui lòng đặt tên bài học.');
-      if(lesson.kind==='knowledge'&&!knowledgeBlocks(lesson).some(block=>block.type==='image'?block.url:block.text.trim()))throw new Error(`Bài “${lesson.title}” chưa có nội dung.`);
+      if(lesson.kind==='knowledge'&&!knowledgeBlocks(lesson).some(block=>block.type==='youtube'?block.videoId:block.type==='image'?block.url:block.text.trim()))throw new Error(`Bài “${lesson.title}” chưa có nội dung.`);
       if(lesson.kind==='exercise'){
         if(lesson.exercise.section.questionProfile.pairedQuestions&&lesson.exercise.questions.length%2)throw new Error('Bài tập dạng cặp cần đủ hai câu mỗi nhóm.');
         const gapErrors=inlineGapErrors(lesson.exercise.section);if(gapErrors.length)throw new Error(gapErrors[0]);
