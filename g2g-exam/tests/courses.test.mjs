@@ -1,4 +1,4 @@
-import {normalizeCourseSlug,courseUrlPath,courseUrlSlug} from '../src/domain/course-url.js';
+import {normalizeCourseSlug,courseUrlPath,courseUrlSlug,courseSlugFromTitle} from '../src/domain/course-url.js';
 import assert from 'node:assert/strict';
 import './course-image-limit.test.mjs';
 import {normalizeCourse,normalizeCourseExercise,assertCoursePublishable,courseMediaUrl,publicCourseExercise,gradeCourseExercise,validateCourseAnswers} from '../src/domain/courses.js';
@@ -11,6 +11,8 @@ writeCourseRoute(editorUrl,{page:'edit',id:'course-1',step:'info'});
 assert.equal(editorUrl.searchParams.has('chapter'),false);assert.equal(editorUrl.searchParams.has('lesson'),false,'Settings navigation clears stale content selections');
 assert.equal(editorUrl.searchParams.has('course-kind'),false);
 assert.equal(normalizeCourseSlug('  Tiếng Đức A1  '),'tieng-duc-a1');
+assert.equal(courseSlugFromTitle('Tiếng Đức: A1 & A2!'),'tieng-duc-a1-a2');
+assert.ok(courseSlugFromTitle('a'.repeat(200)).length<=80);
 for(const value of ['https://evil.test','../course','abc?x=1','a'.repeat(81)])assert.throws(()=>normalizeCourseSlug(value));
 assert.equal(courseUrlSlug('/khoa-hoc/tieng-duc-a1'),'tieng-duc-a1');assert.equal(courseUrlPath('tieng-duc-a1'),'/khoa-hoc/tieng-duc-a1');
 const publicUrl=new URL('https://fixture.invalid/');writeCourseRoute(publicUrl,{page:'detail',id:'course-1',slug:'tieng-duc-a1'});

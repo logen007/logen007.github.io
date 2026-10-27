@@ -1,6 +1,6 @@
-import {normalizeCourseSlug} from '../domain/course-url.js';
+import {normalizeCourseSlug,courseSlugFromTitle} from '../domain/course-url.js';
 import {courseRequest,coursePath} from './api.js';
-import {coursePageHtml} from './views.js';
+import {coursePageHtml,coursePermalinkHtml} from './views.js';
 import {createCoursePreview,coursePreviewAction} from './preview.js';
 import {courseLessons,normalizeCourse,validateCourseAnswers} from '../domain/courses.js';
 import {newCourseExercise,newCourseQuestion,courseEditorContext,bindCourseExerciseEditor,collectCourseExercise,changeCoursePrompt} from './exercise-editor.js';
@@ -24,6 +24,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   const published=()=>state.editor?.status==='published';
   const readOnly=()=>published()||state.publicationBusy;
   const editorStatus=(message,error=false)=>{state.editorSaveStatus=message;state.editorSaveError=error;const indicator=root.querySelector('[data-course-dirty]');if(indicator){indicator.hidden=!message;indicator.textContent=message;indicator.dataset.state=error?'error':'pending';}const retry=root.querySelector('[data-course-action="retry-save"]');if(retry)retry.hidden=!error;};
+  const refreshPermalink=()=>{const slot=root.querySelector('[data-course-permalink]');if(slot&&state.editor)slot.innerHTML=coursePermalinkHtml(state);};
   const queueEditor=()=>{clearTimeout(editorTimer);if(state.route.page==='edit'&&state.dirty&&!state.editorSaveError)editorTimer=setTimeout(()=>{if(!busy)void saveEditor().catch(error=>notify(error.message));},600);};
   const markDirty=()=>{if(readOnly())return;state.dirty=true;editorRevision++;editorStatus('Chưa lưu…');queueEditor();};
   const api=(suffix,options)=>request(suffix,options);
@@ -106,7 +107,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
         while(target===state&&target.dirty){
           if(!target.pendingEditorSave){
             const revision=editorRevision;await collectEditor();
-            target.pendingEditorSave={revision,body:{version:target.editor.version,knowledgeLayout:KNOWLEDGE_LAYOUT_VERSION,course:normalizeCourse(target.editor.course)}};
+            target.pendingEditorSave={revision,body:{version:target.editor.version,autoSlug:!target.editor.course.slug&&Boolean(target.editor.course.title.trim()),knowledgeLayout:KNOWLEDGE_LAYOUT_VERSION,course:normalizeCourse(target.editor.course)}};
           }
           const pending=target.pendingEditorSave;editorStatus('Đang lưu…');
           const saved=await api(coursePath(target.editor.id),{method:'PUT',body:pending.body});
@@ -115,7 +116,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
           else Object.assign(target.editor,{version:saved.version,status:saved.status,publishedVersion:saved.publishedVersion});
           target.pendingEditorSave=null;
         }
-        if(target===state)editorStatus('');
+        if(target===state){editorStatus('');if(state.permalinkDraft===undefined)refreshPermalink();}
       }catch(error){if(target===state){if([400,409].includes(error.status))target.pendingEditorSave=null;target.dirty=true;editorStatus(error.message||'Chưa lưu được thay đổi.',true);}throw error;}
     })();
     try{await savingEditor;}finally{savingEditor=null;}
@@ -188,6 +189,21 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       repaint();return; // Preview actions must never reach enrollment/progress APIs.
     }
     if(published()&&!publishedActions.has(name))throw Error('Hãy bỏ xuất bản khóa học trước khi chỉnh sửa.');
+    if(name==='permalink-edit'){
+      await saveEditor();state.permalinkDraft=state.editor.course.slug||courseSlugFromTitle(state.editor.course.title);refreshPermalink();
+      const input=root.querySelector('[data-course-permalink-input]');input?.focus();input?.select();return;
+    }
+    if(name==='permalink-cancel'){
+      if(state.pendingEditorSave)await saveEditor();
+      state.permalinkDraft=undefined;editorStatus('');refreshPermalink();queueEditor();root.querySelector('[data-course-action="permalink-edit"]')?.focus();return;
+    }
+    if(name==='permalink-save'){
+      const previous=course.slug,slug=normalizeCourseSlug(state.permalinkDraft)||courseSlugFromTitle(course.title);
+      if(!slug)throw Error('Vui lòng nhập đường dẫn khóa học.');
+      course.slug=slug;markDirty();
+      try{await saveEditor();}catch(error){if([400,409].includes(error.status))course.slug=previous;throw error;}
+      state.permalinkDraft=undefined;refreshPermalink();root.querySelector('[data-course-action="permalink-edit"]')?.focus();return;
+    }
     if(['catalog','mine','manage','detail','edit','members','learn'].includes(name))return go({page:name,id:['catalog','mine','manage'].includes(name)?'':id});
     if(name==='lesson')return go({page:'learn',id,lesson:button.dataset.lesson});
     if(name==='reload'){await load();return;}
@@ -336,6 +352,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   const input=event=>{
     const field=event.target;
     if(state.preview){if(field.closest('.course-practice'))queuePractice();return;}
+    if(field.hasAttribute('data-course-permalink-input')){state.permalinkDraft=field.value;return;}
     if(field.closest('[data-knowledge-editor]'))return;
     if(field.dataset.courseFilter){
       state.filters[field.dataset.courseFilter]=field.value;clearTimeout(searchTimer);
@@ -343,19 +360,19 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     }
     if(state.route.page==='edit'){
       if(readOnly())return;
-      if(field.dataset.courseField==='slug'){
-        if(event.type!=='change')return;
-        try{field.value=normalizeCourseSlug(field.value);}catch(error){notify(error.message);return;}
-        const hint=root.querySelector('#courseUrlHint');if(hint)hint.textContent='/khoa-hoc/'+(field.value||'duong-dan-khoa-hoc');
-      }
       if(field.dataset.courseField)state.editor.course[field.dataset.courseField]=field.type==='number'?Number(field.value):field.value;
       if(field.dataset.courseChapterTitle){const chapter=state.editor.course.chapters.find(c=>c.id===field.dataset.courseChapterTitle);if(chapter)chapter.title=field.value;}
       if(field.dataset.courseLessonField){const lesson=currentLesson();if(lesson)lesson[field.dataset.courseLessonField]=field.type==='checkbox'?field.checked:field.value;}
       if(root.querySelector('.course-authoring')?.contains(field))markDirty();
+      if(field.dataset.courseField==='title'&&state.permalinkDraft===undefined)refreshPermalink();
       if(field.dataset.courseField==='level'){const badge=root.querySelector('.builder-meta .exam-level');if(badge){badge.dataset.level=field.value;badge.textContent=field.value;}}
     }
     if(field.closest('.course-practice'))queuePractice();
   };
+  root.addEventListener('keydown',event=>{
+    if(!event.target.hasAttribute('data-course-permalink-input')||!['Enter','Escape'].includes(event.key))return;
+    event.preventDefault();root.querySelector(`[data-course-action="permalink-${event.key==='Enter'?'save':'cancel'}"]`)?.click();
+  });
   root.addEventListener('input',input);root.addEventListener('change',input);
   async function uploadFiles(files,slot,button,options={}){
     const binding=knowledgeBinding;

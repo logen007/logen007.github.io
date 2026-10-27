@@ -181,5 +181,11 @@ try{
   assert.equal((await service.getLesson(student,'url-course','knowledge')).lesson.body,'PRIVATE LESSON BODY');
   await assert.rejects(service.byUrl(second,'a1-moi'),code(404),'New slug does not bypass unpublished visibility');
   await assert.rejects(service.save(other,'url-conflict',{version:0,course:{...makeCourse(),slug:'tieng-duc-a1'}}),code(409),'Historical slug cannot be reassigned');
+  const autoOne=await service.save(teacher,'auto-one',{version:0,autoSlug:true,course:{...makeCourse(),title:'Tiếng Đức A1!'}});
+  const autoTwo=await service.save(teacher,'auto-two',{version:0,autoSlug:true,course:{...makeCourse(),title:'Tiếng Đức A1!'}});
+  assert.equal(autoOne.course.slug,'tieng-duc-a1-2','Existing reserved URL gets a numeric suffix');assert.equal(autoTwo.course.slug,'tieng-duc-a1-3');
+  assert.equal((await service.save(teacher,'auto-one',{version:0,autoSlug:true,course:{...makeCourse(),title:'Tiếng Đức A1!'}})).version,1,'Lost autoslug receipt reuses the existing URL');
+  const renamed=await service.save(teacher,'auto-one',{version:1,autoSlug:true,course:{...autoOne.course,title:'Tên khác'}});
+  assert.equal(renamed.course.slug,autoOne.course.slug,'Changing the title preserves an established permalink');
   console.log('Courses isolated SQL/HTTP: schema retry, ownership, answer secrecy, enrollment, revisions, grading, idempotency and archive passed.');
 }finally{await db.close();}
