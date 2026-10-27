@@ -18,7 +18,7 @@ function fixture(options={}){
     createElement(){
       const canvas={style:{},setAttribute(name,value){this[name]=value;},remove(){const at=layers.indexOf(this);if(at>=0)layers.splice(at,1);},
         getContext(){return {
-          drawImage(){},fillRect(){},clearRect(...args){cleared.push(args);},fillText(value){painted++;paintedGlyphs.push(value);},
+          save(){},restore(){},beginPath(){},rect(){},clip(){},drawImage(){},fillRect(){},clearRect(...args){cleared.push(args);},fillText(value){painted++;paintedGlyphs.push(value);},
           getImageData(){reads++;if(options.tainted)throw Error('Tainted image');return {data:Uint8ClampedArray.from({length:canvas.width*canvas.height*4},(_,i)=>[128,64,32,255][i%4])};},
         };},
       };
@@ -39,9 +39,9 @@ function fixture(options={}){
 {
   const f=fixture();f.initial.tagName='SECTION';
   const hole={getBoundingClientRect:()=>({left:20,top:30,width:80,height:44})};
-  f.initial.querySelectorAll=selector=>selector.includes('button')?[hole]:[];
+  f.initial.querySelectorAll=selector=>selector.includes('[role=alert]')?[hole]:[];
   f.visible(f.initial);assert.equal(f.layers.length,1,'Card body receives a single content layer');
-  assert.ok(f.cleared.some(args=>JSON.stringify(args)==='[18,28,84,48]'),'Controls get transparent holes instead of being visually hidden');
+  assert.ok(f.cleared.some(args=>JSON.stringify(args)==='[18,28,84,48]'),'Alerts get transparent holes instead of being visually hidden');
   const nested=f.target({parentElement:{closest:()=>f.initial}});f.discover(nested);assert.equal(f.observed.has(nested),false,'Nested titles/covers do not create duplicate layers over a card');f.cleanup();
 }
 {
@@ -140,3 +140,7 @@ const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');assert.m
 const login=readFileSync(new URL('../src/views/login.js',import.meta.url),'utf8'),courses=readFileSync(new URL('../src/courses/views.js',import.meta.url),'utf8');
 assert.match(login,/id="landing-title" data-ascii-reveal="text"/);assert.match(courses,/<img data-ascii-reveal="image" class="course-cover/);assert.match(courses,/<h1 data-ascii-reveal="text"/);
 console.log('ASCII reveal: real-content geometry, image failures, one-shot replay, reduced motion, visibility, scroll and cleanup passed with isolated DOM/canvas doubles.');
+
+for(const type of ['INPUT','BUTTON','SELECT','SPAN']){
+  const f=fixture();const control=f.target({tagName:type,id:'control-'+type,value:'Value',placeholder:'Search',getAttribute:name=>name==='role'&&type==='SPAN'?'status':null});f.discover(control);assert.ok(f.observed.has(control),type+' is eligible');f.visible(control);assert.equal(f.layers.length,1,type+' receives ASCII decoration');f.win.emit('focusin');assert.equal(f.layers.length,0,'Focus immediately clears decoration');f.cleanup();
+}

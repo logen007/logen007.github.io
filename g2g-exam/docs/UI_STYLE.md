@@ -40,8 +40,7 @@ Use the shared top navigation loading bar for page/data entry loads, including c
   re-observe existing eligible nodes, without requiring a reload. Repeated on
   notifications, theme refreshes and polling do not reset that session. Reduced
   motion and existing device/accessibility safeguards still take precedence.
-  Keep exam questions, answer controls, editors, timers, grading, data tables and critical
-  status/error text immediately readable and outside the decorative layer.
+  Owner update (27 October 2026): input, button and ordinary status controls also use ASCII reveal, including controls in authoring views. Preserve real DOM and values; do not animate password/file inputs, active editing surfaces, exam answers, grading, timers or alerts. Stop decoration on pointer, key or focus interaction; never delay input or a status update.
   Reserve final dimensions to avoid layout shift; keep real semantic DOM/alt text,
   mark decorative glyphs aria-hidden and pointer-inert, and do not move focus.
   Reduced motion, forced colors, slow devices or animation/image failures show the
