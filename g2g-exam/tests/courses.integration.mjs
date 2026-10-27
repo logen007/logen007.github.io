@@ -155,11 +155,31 @@ try{
   const app=Fastify();registerCourseRoutes(app,{service,userFor:async request=>{const user=[student,teacher,other,master,second].find(u=>u.id===request.headers['x-test-user']);if(!user)throw Object.assign(new Error('Login required'),{statusCode:401});return user;}});
   try{
     assert.equal((await app.inject({method:'GET',url:'/api/courses'})).statusCode,401);
+    assert.equal((await app.inject({method:'GET',url:'/api/courses/url/unknown'})).statusCode,401);
+    assert.equal((await app.inject({method:'GET',url:'/api/courses/url/unknown',headers:{'x-test-user':'student'}})).statusCode,404);
     assert.equal((await app.inject({method:'GET',url:'/api/courses/paid?edit=1',headers:{'x-test-user':'student'}})).statusCode,403);
     assert.equal((await app.inject({method:'POST',url:'/api/courses/paid/delete',headers:{'x-test-user':'student'},payload:{version:2}})).statusCode,403);
     for(const actor of ['student','other'])assert.equal((await app.inject({method:'POST',url:'/api/courses/paid/unpublish',headers:{'x-test-user':actor},payload:{version:2}})).statusCode,403);
     assert.equal((await app.inject({method:'PUT',url:'/api/courses/paid',headers:{'x-test-user':'teacher'},payload:{version:2,course:{...makeCourse(600000),title:'Blocked HTTP edit'}}})).statusCode,409);
     const response=await app.inject({method:'GET',url:'/api/courses/paid',headers:{'x-test-user':'second'}});assert.equal(response.statusCode,200);assert.doesNotMatch(response.body,/PRIVATE|correctAnswer/);
   }finally{await app.close();}
+  let urlDraft=await service.save(teacher,'url-course',{version:0,course:{...makeCourse(),slug:'Tiếng Đức A1'}});
+  assert.equal(urlDraft.course.slug,'tieng-duc-a1');
+  await assert.rejects(service.byUrl(student,'tieng-duc-a1'),code(404),'Draft URL does not expose content');
+  await assert.rejects(service.save(other,'url-course',{version:1,course:{...makeCourse(),slug:'stolen'}}),code(403));
+  await assert.rejects(service.save(other,'url-conflict',{version:0,course:{...makeCourse(),slug:'tieng-duc-a1'}}),code(409));
+  assert.equal((await query("SELECT id FROM courses WHERE id='url-conflict'")).rowCount,0,'Conflict rolls back new course');
+  let urlRelease=await service.publish(teacher,'url-course',{version:1});
+  await service.enroll(student,'url-course');
+  assert.equal((await service.byUrl(student,'tieng-duc-a1')).id,'url-course');
+  assert.doesNotMatch(JSON.stringify(await service.byUrl(second,'tieng-duc-a1')),/PRIVATE LESSON BODY|correctAnswer/);
+  await service.unpublish(teacher,'url-course',{version:urlRelease.version});
+  const urlEdit=await service.getCourse(teacher,'url-course',{edit:true});
+  await service.save(teacher,'url-course',{version:urlEdit.version,course:{...urlEdit.course,slug:'a1-moi'}});
+  assert.equal((await service.byUrl(student,'tieng-duc-a1')).id,'url-course','Old slug resolves pinned enrollment');
+  assert.equal((await service.byUrl(student,'a1-moi')).slug,'a1-moi');
+  assert.equal((await service.getLesson(student,'url-course','knowledge')).lesson.body,'PRIVATE LESSON BODY');
+  await assert.rejects(service.byUrl(second,'a1-moi'),code(404),'New slug does not bypass unpublished visibility');
+  await assert.rejects(service.save(other,'url-conflict',{version:0,course:{...makeCourse(),slug:'tieng-duc-a1'}}),code(409),'Historical slug cannot be reassigned');
   console.log('Courses isolated SQL/HTTP: schema retry, ownership, answer secrecy, enrollment, revisions, grading, idempotency and archive passed.');
 }finally{await db.close();}

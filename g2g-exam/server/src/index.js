@@ -71,7 +71,7 @@ await app.register(multipart,{limits:{fileSize:25*1024*1024,files:1}});
 
 app.addHook('onSend',async(request,reply,payload)=>{
   const pathname=String(request.url||'').split('?')[0];
-  const noCache=['/', '/adm', '/teacher', '/student', '/index.html', '/vi.html', '/speaking-lab.html', '/runtime-config.js'].includes(pathname);
+  const noCache=pathname.startsWith('/khoa-hoc/')||['/', '/adm', '/teacher', '/student', '/index.html', '/vi.html', '/speaking-lab.html', '/runtime-config.js'].includes(pathname);
   const sourceAsset=['/styles.css','/enhancements.css','/speaking-exams.css'].includes(pathname)||pathname.startsWith('/src/')||pathname.startsWith('/specs/');
   if(pathname.startsWith('/api/')&&!reply.hasHeader('Cache-Control'))reply.header('Cache-Control','no-store');
   if(sourceAsset)reply.header('Cache-Control','public, max-age=0, must-revalidate');

@@ -1,3 +1,4 @@
+import {normalizeCourseSlug} from '../domain/course-url.js';
 import {courseRequest,coursePath} from './api.js';
 import {coursePageHtml} from './views.js';
 import {createCoursePreview,coursePreviewAction} from './preview.js';
@@ -44,7 +45,8 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       }else if(route.page==='edit')data.editor=await api(coursePath(route.id,'?edit=1'),options);
       else if(route.page==='members')data.members=await api(coursePath(route.id,'/members'),options);
       else{
-        data.detail=await api(coursePath(route.id),options);
+        data.detail=await api(route.slug&&!route.id?'/url/'+encodeURIComponent(route.slug):coursePath(route.id),options);
+        route.id=data.detail.id;
         if(route.page==='learn'){
           const lessons=courseLessons(data.detail),recent=data.detail.progress?.[0]?.lessonId;
           const lessonId=route.lesson||recent||lessons[0]?.id;
@@ -157,6 +159,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     catch(error){notify(error.message);return false;}
   }
   async function go(route){
+    if(['detail','learn'].includes(route.page)){const selected=state.catalog?.courses.find(c=>c.id===route.id)||(state.detail?.id===route.id?state.detail:state.editor?.id===route.id?state.editor.course:null);if(selected?.slug)route.slug=selected.slug;}
     // Internal navigation occurs inside a serialized action; it still saves drafts.
     if(state.route.page==='edit')await saveEditor();
     await flushPractice();
@@ -193,7 +196,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       if(state.route.page!=='manage')return;
       if(state.pendingCourseCopy?.sourceId!==id){
         const source=await api(coursePath(id,'?edit=1'));
-        state.pendingCourseCopy={sourceId:id,id:uuid('course'),course:normalizeCourse({...source.course,title:(source.course.title||'Khóa học').slice(0,190)+' (bản sao)'})};
+        state.pendingCourseCopy={sourceId:id,id:uuid('course'),course:normalizeCourse({...source.course,slug:'',title:(source.course.title||'Khóa học').slice(0,190)+' (bản sao)'})};
       }
       const copy=state.pendingCourseCopy;
       await api(coursePath(copy.id),{method:'PUT',body:{version:0,knowledgeLayout:KNOWLEDGE_LAYOUT_VERSION,course:copy.course}});
@@ -340,6 +343,11 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     }
     if(state.route.page==='edit'){
       if(readOnly())return;
+      if(field.dataset.courseField==='slug'){
+        if(event.type!=='change')return;
+        try{field.value=normalizeCourseSlug(field.value);}catch(error){notify(error.message);return;}
+        const hint=root.querySelector('#courseUrlHint');if(hint)hint.textContent='/khoa-hoc/'+(field.value||'duong-dan-khoa-hoc');
+      }
       if(field.dataset.courseField)state.editor.course[field.dataset.courseField]=field.type==='number'?Number(field.value):field.value;
       if(field.dataset.courseChapterTitle){const chapter=state.editor.course.chapters.find(c=>c.id===field.dataset.courseChapterTitle);if(chapter)chapter.title=field.value;}
       if(field.dataset.courseLessonField){const lesson=currentLesson();if(lesson)lesson[field.dataset.courseLessonField]=field.type==='checkbox'?field.checked:field.value;}

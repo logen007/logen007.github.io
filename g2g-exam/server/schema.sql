@@ -55,6 +55,12 @@ CREATE TABLE IF NOT EXISTS courses (
 );
 CREATE INDEX IF NOT EXISTS courses_owner_idx ON courses(owner_id,status);
 CREATE INDEX IF NOT EXISTS courses_catalog_idx ON courses(status,published_version);
+-- Reserve every published/custom URL so renames cannot transfer old links.
+CREATE TABLE IF NOT EXISTS course_urls (
+  slug text PRIMARY KEY,
+  course_id text NOT NULL REFERENCES courses(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS course_urls_course_idx ON course_urls(course_id);
 CREATE TABLE IF NOT EXISTS course_releases (
   course_id text NOT NULL REFERENCES courses(id),
   version integer NOT NULL CHECK(version>0),

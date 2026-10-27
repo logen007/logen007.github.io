@@ -352,6 +352,18 @@ try{
   root.querySelector(`[data-course-action="delete-course"][data-id="${copyId}"]`).click();await until(()=>document.querySelector('[data-confirm-cancel]'),'delete confirmation');document.querySelector('[data-confirm-cancel]').click();await idle();assert.ok(root.querySelector(`[data-course-action="delete-course"][data-id="${copyId}"]`));
   root.querySelector(`[data-course-action="delete-course"][data-id="${copyId}"]`).click();await until(()=>document.querySelector('[data-confirm-accept]'),'delete confirmation');assert.ok(document.querySelector('.site-confirm-danger'));document.querySelector('[data-confirm-accept]').click();await idle();
   assert.equal(root.querySelector(`[data-course-action="copy-course"][data-id="${copyId}"]`),null);assert.ok((await query('SELECT metadata FROM courses WHERE id=$1',[copyId])).rows[0].metadata.deletedAt,'Delete hides but retains the course');
+  // Real controller deep links resolve slugs back to immutable course IDs.
+  await service.save(teacher,'url-dom',{version:0,course:{...source,slug:'hoc-a1'}});await service.publish(teacher,'url-dom',{version:1});
+  user=student;route={page:'detail',id:'',slug:'hoc-a1'};paint();await idle();
+  assert.equal(controller.getState().detail.id,'url-dom');assert.equal(controller.getState().route.id,'url-dom');
+  await action('enroll');await idle();
+  route={page:'learn',id:'',slug:'hoc-a1',lesson:source.chapters[0].knowledge[0].id};paint();await idle();
+  assert.equal(controller.getState().lesson.lesson.id,source.chapters[0].knowledge[0].id,'F5-style lesson URL resolves the course before lesson access');
+  await action('catalog');await action('detail','[data-id="url-dom"]');assert.equal(route.slug,'hoc-a1','Catalog navigation uses the custom URL');
+  user=teacher;await service.unpublish(teacher,'url-dom',{version:2});route={page:'edit',id:'url-dom',step:'info'};paint();await idle();
+  const slugField=fill('[data-course-field="slug"]','Học A1 mới');assert.equal(controller.getState().editor.course.slug,'hoc-a1','Typing does not reserve partial URLs');
+  slugField.dispatchEvent(new Event('change',{bubbles:true}));await controller.flushEditor();assert.equal(controller.getState().editor.course.slug,'hoc-a1-moi');
+  assert.equal(root.querySelector('#courseUrlHint').textContent,'/khoa-hoc/hoc-a1-moi');
   // Exercise editor round trips every supported family through the actual shared editor.
   for(const type of ['choices','binary','listening','multiple','letters','matching','headings','gaps']){
     const exercise=newCourseExercise(type),context=courseEditorContext(exercise,teacher),pending=new Map();

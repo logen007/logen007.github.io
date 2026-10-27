@@ -36,7 +36,7 @@ for(const [file,metadata] of Object.entries(result.metafile.outputs)){
   if(metadata.entryPoint==='src/speaking/phone.js')speakingHtml=speakingHtml.replace('./src/speaking/phone.js','/assets/'+path.basename(file));
   if(!['src/app.js','src/feature-loader.js'].includes(metadata.entryPoint))continue;
   const original=metadata.entryPoint==='src/app.js'?'app':'feature-loader';
-  html=html.replace(new RegExp(`\\./src/${original}\\.js\\?[^" ]+`),'/assets/'+path.basename(file));
+  html=html.replace(new RegExp(`(?:\\./|/)src/${original}\\.js\\?[^" ]+`),'/assets/'+path.basename(file));
 }
 const cssAssets={};
 for(const file of ['styles.css','enhancements.css','speaking-exams.css']){
@@ -44,8 +44,8 @@ for(const file of ['styles.css','enhancements.css','speaking-exams.css']){
   const name=file.replace('.css','-'+createHash('sha256').update(content).digest('hex').slice(0,12)+'.css');
   cssAssets[file]='/assets/'+name;
   await fs.writeFile(path.join(out,'assets',name),content);
-  html=html.replace(new RegExp(`\\./${file.replace('.','\\.')}\\?[^" ]+`),'/assets/'+name);
-  speakingHtml=speakingHtml.replace(new RegExp(`\\./${file.replace('.','\\.')}\\?[^" ]+`),'/assets/'+name);
+  html=html.replace(new RegExp(`(?:\\./|/)${file.replace('.','\\.')}\\?[^" ]+`),'/assets/'+name);
+  speakingHtml=speakingHtml.replace(new RegExp(`(?:\\./|/)${file.replace('.','\\.')}\\?[^" ]+`),'/assets/'+name);
 }
 await fs.writeFile(path.join(out,'vi.html'),html);
 await fs.writeFile(path.join(out,'index.html'),html);
