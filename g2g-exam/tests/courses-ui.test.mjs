@@ -65,7 +65,7 @@ applyAsciiTheme(false);selected.length=0;applyAsciiTheme(true);
 assert.equal(selected.filter(node=>node.matches('.learner-card,.the-de')).length,3,'Real theme off/on event re-observes connected content, without the HTML root swallowing targets');
 stopRealAscii();selected.length=0;
 asciiScope.innerHTML='<div class="admin-dashboard"><h2>Safe panel title</h2><div role="alert"><h2>Critical error</h2></div><table><tbody><tr><td><h2>Data</h2></td></tr></tbody></table><button><h2>Action</h2></button></div><div class="course-authoring"><h1 data-ascii-reveal="text">Editor</h1></div><div class="exam-paper"><h1 data-ascii-reveal="text">Exam</h1></div>';
-const stopAsciiScope=bindAsciiReveals(asciiScope);assert.deepEqual(selected.map(node=>node.textContent),['Safe panel title'],'Actual DOM scope excludes critical/interactive/exam surfaces');stopAsciiScope();delete dom.window.IntersectionObserver;
+const stopAsciiScope=bindAsciiReveals(asciiScope);assert.deepEqual(selected.map(node=>node.textContent),['Safe panel title','Action'],'Actual DOM scope includes actions while excluding critical exam surfaces');stopAsciiScope();delete dom.window.IntersectionObserver;
 asciiScope.remove();
 // Exercise the actual cascade responsible for a hidden Retry appearing. This
 // intentionally tests only these rules, not layout or visual acceptance.
