@@ -1892,6 +1892,8 @@ button.course-lesson-row:focus-visible { outline:1px solid var(--focus-ring); ou
 .course-cover-picker.has-image .course-cover-picker-label { position:absolute; inset:auto 0 0; padding:8px; background:var(--surface-muted); color:var(--chu); }
 .course-info-fields { display:grid; gap:20px; min-width:0; }
 .course-info-identity { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; min-width:0; }
+.course-info-identity>.course-permalink { grid-column:1/-1; }
+@media(min-width:1200px) { .course-info-identity { grid-template-columns:minmax(100px,.55fr) minmax(140px,.75fr) minmax(0,2fr); align-items:start; }.course-info-identity>.course-permalink { grid-column:auto; grid-template-columns:minmax(0,1fr) 144px; grid-template-rows:20px var(--control-height); column-gap:8px; row-gap:8px; }.course-info-identity>.course-permalink>.phu-de { grid-column:1/-1; font-size:14px; } }
 .course-info-fields textarea { min-height:100px; }
 .course-info-description textarea { min-height:160px; }
 .course-chapter-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
