@@ -1,3 +1,4 @@
+import {APP_VERSION} from '../release.js';
 import {iconHtml} from '../ui/icons.js';
 import {colorModeButtonHtml} from '../settings/color-mode.js';
 import {currentPublicSettings} from '../settings/theme.js';
@@ -12,7 +13,7 @@ export function loginHtml({mode,general=currentPublicSettings().general||{}}){
   const logo=mode==='local'?iconHtml('exams'):`<img src="/brand/logo${general.logoUrl?'?v='+encodeURIComponent(general.logoUrl):''}" alt="${esc(organization)}" width="48" height="48">`;
   const demo=mode==='local'?`<details class="che-do-demo"><summary>Tài khoản thử nghiệm</summary><div class="chon-demo"><button class="nut full demo-login" data-id="student-a">Vào vai Học viên</button><button class="nut full demo-login" data-id="teacher-lan">Vào vai Cô Lan</button><button class="nut full demo-login" data-id="master-1">Vào vai Quản trị cấp cao</button></div></details>`:'';
   return `<main class="landing">
-    <header class="landing-header"><a class="landing-brand thuong-hieu" href="/" aria-label="Trang chủ"><span class="logo">${logo}</span><span class="ten-he-thong"><strong data-brand-name>${esc(name)}</strong><small data-brand-organization>${esc(organization)}</small></span></a><div class="landing-header-actions">${colorModeButtonHtml()}</div></header>
+    <header class="landing-header"><a class="landing-brand thuong-hieu" href="/" aria-label="Trang chủ"><span class="logo">${logo}</span><span class="ten-he-thong"><strong data-brand-name>${esc(name)}</strong><small class="brand-subline"><span class="brand-version">v${esc(APP_VERSION)}</span><span data-brand-organization>${esc(organization)}</span></small></span></a><div class="landing-header-actions">${colorModeButtonHtml()}</div></header>
     <div class="landing-main">
       <div class="landing-intro"><div class="landing-copy"><h1 id="landing-title" data-ascii-reveal="text">Thi thử trước.<br> <span>Tự tin khi thi thật.</span></h1></div>
       <section class="landing-signin" aria-label="Đăng nhập"><p class="landing-lead">Luyện đề tiếng Đức. Làm bài, xem kết quả và biết mình cần ôn gì.</p><div class="landing-login"><button type="button" class="dang-nhap-google landing-cta" id="googleLogin">${googleMark}<span data-google-login-label>Tiếp tục với Google</span></button><span class="landing-free">${iconHtml('example')} Hoàn toàn miễn phí</span>${demo}</div></section></div>
