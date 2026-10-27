@@ -359,7 +359,7 @@ try{
   await action('enroll');await idle();
   route={page:'learn',id:'',slug:'hoc-a1',lesson:source.chapters[0].knowledge[0].id};paint();await idle();
   assert.equal(controller.getState().lesson.lesson.id,source.chapters[0].knowledge[0].id,'F5-style lesson URL resolves the course before lesson access');
-  await action('catalog');await action('detail','[data-id="url-dom"]');assert.equal(route.slug,'hoc-a1','Catalog navigation uses the custom URL');
+  await controller.open({page:'catalog'});await idle();await action('detail','[data-id="url-dom"]');assert.equal(route.slug,'hoc-a1','Catalog navigation uses the custom URL');
   user=teacher;await service.unpublish(teacher,'url-dom',{version:2});route={page:'edit',id:'url-dom',step:'info'};paint();await idle();
   const slugField=fill('[data-course-field="slug"]','Học A1 mới');assert.equal(controller.getState().editor.course.slug,'hoc-a1','Typing does not reserve partial URLs');
   slugField.dispatchEvent(new Event('change',{bubbles:true}));await controller.flushEditor();assert.equal(controller.getState().editor.course.slug,'hoc-a1-moi');
