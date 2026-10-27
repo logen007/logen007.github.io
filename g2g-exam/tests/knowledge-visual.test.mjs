@@ -112,7 +112,8 @@ try{
   const videoSaved=normalizeKnowledgeBlocks(blocks(),courseMediaUrl);assert.equal(videoSaved.contentVersion,4);
   const frameHtml=knowledgeContentHtml({blocks:videoSaved.blocks});assert.match(frameHtml,/https:\/\/www.youtube-nocookie.com\/embed\/M7lc1UVf-VE/);assert.doesNotMatch(frameHtml,/autoplay/);
   listEditor.commands.setContent(knowledgeDocument({blocks:videoSaved.blocks},document));assert.deepEqual(normalizeKnowledgeBlocks(blocks(),courseMediaUrl).blocks,videoSaved.blocks);
-  let videoPosition;listEditor.state.doc.forEach((node,pos)=>{if(node.type.name==='youtube')videoPosition=pos;});listEditor.commands.setNodeSelection(videoPosition);listEditor.commands.deleteSelection();assert.equal(blocks().some(block=>block.type==='youtube'),false);listEditor.commands.undo();assert.ok(blocks().some(block=>block.type==='youtube'));
+  binding.destroy();const videoEditor=mount({blocks:videoSaved.blocks});
+  let videoPosition;videoEditor.state.doc.forEach((node,pos)=>{if(node.type.name==='youtube')videoPosition=pos;});videoEditor.commands.setNodeSelection(videoPosition);videoEditor.commands.deleteSelection();assert.equal(blocks().some(block=>block.type==='youtube'),false);videoEditor.commands.undo();assert.ok(blocks().some(block=>block.type==='youtube'));
   assert.throws(()=>normalizeKnowledgeBlocks([{id:'unsafe-video',type:'youtube',videoId:'bad" onload="bad()'}],courseMediaUrl));
   console.log('Visual knowledge editor: real formatting/history, caret image batches, mapped async insertion, image controls, paste/drop entry, IDs/limits, safe markup and reopen passed.');
 }finally{binding?.destroy();dom.window.close();}
