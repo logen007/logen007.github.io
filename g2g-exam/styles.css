@@ -189,7 +189,8 @@
 .text-link.navigation-arrow { width:auto; min-width:0; padding-inline:0; }
 /* Site-wide dropdown shape, including compact and feature-specific controls. */
 select:not([multiple]), .inline-gap-trigger { border-radius:var(--pill)!important; }
-html { background:var(--nen); color-scheme:light; }
+html { background:var(--nen); color-scheme:light; scrollbar-gutter:stable; }
+@supports not (scrollbar-gutter:stable) { html { overflow-y:scroll; } }
 /* Personal appearance uses the shared tokens; brand settings remain independent. */
 :root[data-color-mode="dark"] {
   color-scheme:dark;
