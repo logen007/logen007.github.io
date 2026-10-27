@@ -372,7 +372,7 @@ try{
   assert.equal(controller.getState().editor.status,'draft');assert.ok(root.querySelector('[data-course-permalink-input]'),'Accepted unpublish opens the inline slug editor');
   await action('permalink-cancel');
   assert.equal(root.querySelector('.course-info-card [data-course-field="slug"]'),null,'Permalink lives beneath the title, not in general settings');
-  assert.ok(root.querySelector('.builder-title [data-course-permalink] .course-permalink-link'));
+  assert.ok(root.querySelector('.course-info-identity + [data-course-permalink] .course-permalink-link'));
   assert.match(root.querySelector('.course-permalink-link').href,/\/khoa-hoc\/hoc-a1\/$/);
   await action('permalink-edit');
   const slugField=fill('[data-course-permalink-input]','Học A1 mới');assert.equal(controller.getState().editor.course.slug,'hoc-a1','Typing does not save or reserve a URL');

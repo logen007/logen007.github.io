@@ -218,7 +218,8 @@ rules. These require separate owner choices.
 
 ### URL khóa học
 
-Permalink nằm ngay dưới tên khóa học, với link đầy đủ và nút Sửa như WordPress.
+Permalink nằm dưới hàng Trình độ/Học phí trong cài đặt khóa học, với link đầy đủ
+và nút Sửa như WordPress.
 Khi sửa chỉ phần slug là input; Đồng ý lưu, Hủy/Escape bỏ thay đổi, Enter xác nhận.
 Tiêu đề đầu tiên được lưu sẽ tự tạo slug; nếu trùng, máy chủ thêm -2, -3…; đổi tên
 không đổi permalink đã có. Khóa học cũ chưa có slug vẫn giữ link ID cho tới khi sửa.
