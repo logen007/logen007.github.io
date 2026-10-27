@@ -45,7 +45,7 @@ export function dashboardR2Html(r2){
 }
 
 export function dashboardInfrastructureHtml(infrastructure,error='',overview={}){
-  if(!infrastructure)return `${dashboardAiQueueHtml(null,overview)}<section class="the dashboard-infrastructure dashboard-infrastructure--empty"><div class="dashboard-section-heading"><h2>Hệ thống</h2><span role="status">${error?'Không tải được dữ liệu':'Đang tải…'}</span></div>${error?'<p class="dashboard-caption">Tải lại trang để thử lại.</p>':''}</section>`;
+  if(!infrastructure)return `${dashboardAiQueueHtml(null,overview)}<section class="the dashboard-infrastructure dashboard-infrastructure--empty"><div class="dashboard-section-heading"><h2>Hệ thống</h2><span role="status">${error?'Không tải được dữ liệu':''}</span></div>${error?'<p class="dashboard-caption">Tải lại trang để thử lại.</p>':''}</section>`;
   const resources=infrastructure.resources||{},memory=resources.memory||{},disk=resources.disk,usage=resources.usage||{},tables=resources.databaseTables||{};
   const gc=resources.mediaGarbageCollection||{};
   const memoryPercent=percent(memory.usedBytes,memory.totalBytes),diskPercent=percent(disk?.usedBytes,disk?.totalBytes);

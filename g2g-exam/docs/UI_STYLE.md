@@ -11,6 +11,10 @@ This document governs presentation only. Exam rules remain in approved `specs/`.
 The design/self-review/state matrix is in `docs/ENGINEERING.md`; automated evidence
 and optional visual-regression rollout are governed by `docs/QUALITY_GATES.md`.
 
+## Page loading
+
+Use the shared top navigation loading bar for page/data entry loads, including courses, speaking exams, settings and dashboard initial requests. Do not duplicate it with visible loading sentences inside page content. Preserve errors, retry actions, upload progress and camera/call status. Overlapping controllers share one document-level indicator and always release it on success, failure or cancellation. Background polling and autosave do not start navigation loading.
+
 ## Visual hierarchy
 
 - Owner ASCII reveal reference (24 October 2026):
