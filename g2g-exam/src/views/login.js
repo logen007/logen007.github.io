@@ -24,7 +24,7 @@ export function loginHtml({mode,general=currentPublicSettings().general||{}}){
         </figure>
       </section>
     </div>
-    <section class="landing-catalog" aria-label="Đề luyện và hoạt động"><div class="landing-bottom"><div class="landing-types" id="landingTypes"><span>Đang tải đề luyện…</span></div><div class="landing-metrics" id="landingMetrics" aria-live="polite"></div></div></section>
+    <section class="landing-catalog" aria-label="Đề luyện và hoạt động"><div class="landing-bottom"><div class="landing-types" id="landingTypes"></div><div class="landing-metrics" id="landingMetrics" aria-live="polite"></div></div></section>
     <footer><div class="landing-footer-brand"><span>Công ty Cổ phần Phát triển Nhân lực Quốc tế G2G</span></div><nav class="landing-policy" aria-label="Thông tin pháp lý"><a href="/privacy.html">Chính sách bảo mật</a><span aria-hidden="true">·</span><a href="/terms.html">Điều khoản sử dụng</a></nav></footer>
   </main>`;
 }

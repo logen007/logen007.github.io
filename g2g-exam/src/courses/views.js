@@ -107,7 +107,7 @@ export function courseMembersHtml(state,user){
 }
 export function coursePageHtml(state,user){
   if(state.error)return `<main class="khung course-shell"><p role="alert">${esc(state.error)}</p>${courseButton('Thử lại','reload')}${courseButton('Khóa học','catalog')}</main>`;
-  if(state.loading)return '<main class="khung course-shell" aria-busy="true"><p role="status">Đang tải khóa học…</p></main>';
+  if(state.loading)return '<main class="khung course-shell" aria-busy="true"></main>';
   if(state.preview)return `<div class="khung course-toolbar">${courseButton(iconHtml('arrowLeft')+' Trở về biên soạn','close-preview')}</div>${state.preview.current?courseLearningHtml(state.preview.current,{showBack:false}):courseDetailHtml({detail:state.preview.detail},{showBack:false})}`;
   return ['catalog','mine','manage'].includes(state.route.page)?courseCatalogHtml(state,user):state.route.page==='detail'?courseDetailHtml(state):state.route.page==='learn'?courseLearningHtml(state):state.route.page==='edit'?courseEditorHtml(state):courseMembersHtml(state,user);
 }

@@ -1,3 +1,4 @@
+import {beginNavigationLoading} from '../ui/navigation-loading.js';
 import {KNOWLEDGE_LAYOUT_VERSION} from '../domain/course-knowledge.js';
 import {speakingExamRequest as request} from './exam-route.js';
 import {speakingExamErrors,validateSpeakingReview,speakingPreparationSeconds,SPEAKING_DEFAULT_CALL_SECONDS} from './exam-model.js';
@@ -92,7 +93,7 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
   if(!session.hasRecording)find('.tieu-de-trang').insertAdjacentHTML('beforeend',sxButton('Tải lại video','reload'));
  }
  async function load(){
-  const current=generation;paint('<main class="khung sx-shell"><p role="status">Đang mở đề nói…</p></main>');
+  const current=generation,endLoading=beginNavigationLoading(root.ownerDocument);paint('<main class="khung sx-shell" aria-busy="true"></main>');
   try{
    if(route.page==='edit'){
     const result=await api('/'+encodeURIComponent(route.examId));if(current!==generation)return;exam=result.exam;
@@ -117,7 +118,7 @@ export function createSpeakingExamsController({root,context,layout,navigate,noti
    }else if(route.page==='results'){
     const result=await api('/results');if(current!==generation)return;items=result.results||[];nextOffset=result.nextOffset??null;paint(speakingResultsHtml(items,nextOffset));
    }
-  }catch(problem){if(current!==generation)return;paint(`<main class="khung sx-shell"><p data-sx-error role="alert">${esc(problem.message)}</p>${sxButton('Thử lại','reload')}${sxButton('Trở về','home')}</main>`);}
+  }catch(problem){if(current!==generation)return;paint(`<main class="khung sx-shell"><p data-sx-error role="alert">${esc(problem.message)}</p>${sxButton('Thử lại','reload')}${sxButton('Trở về','home')}</main>`);}finally{endLoading();}
  }
  async function qr(){try{await (services.drawQr||drawQr)(find('[data-sx-qr]'),globalThis.location.href);}catch(problem){report(problem);}}
  function acceptSession(value){

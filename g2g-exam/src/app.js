@@ -253,7 +253,7 @@ function loginView(){
     document.getElementById('landingTypes').innerHTML=types.map(type=>`<span>${type.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}</span>`).join('');
     document.getElementById('landingMetrics').innerHTML=[['Học viên',data.users.filter(u=>u.role==='student').length],['Giáo viên',data.users.filter(u=>u.role==='teacher').length],['Bài thi',data.attempts.filter(a=>['grading','ready','published'].includes(a.status)).length],['Đề thi',exams.length]].map(([label,count])=>`<div><b>${count}</b><span>${label}</span></div>`).join('');
   }
-  if(repo.mode!=='local')initializeTheme().then(publicData=>{
+  if(repo.mode!=='local')withNavigationLoading(()=>initializeTheme()).then(publicData=>{
     const types=document.getElementById('landingTypes'),metrics=document.getElementById('landingMetrics');
     if(types)types.innerHTML=(publicData.stats?.examTypes||[]).map(type=>`<span>${String(type).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}</span>`).join('')||'<span>Đang cập nhật bộ đề</span>';
     if(metrics)metrics.innerHTML=[['students','Học viên'],['teachers','Giáo viên'],['attempts','Bài thi'],['exams','Đề thi']].map(([key,label])=>`<div><b>${Number(publicData.stats?.[key]||0).toLocaleString('vi-VN')}</b><span>${label}</span></div>`).join('');
@@ -686,7 +686,7 @@ function adminView(cachedAt=null){
     if(!infrastructureRefreshStarted&&!infrastructureLoading){
       infrastructureRefreshStarted=true;
       infrastructureLoading=true;
-      refreshInfrastructure({summaryOnly:false}).then(result=>{ui.infrastructure=result;ui.infrastructureError='';}).catch(error=>{if(!ui.infrastructure)ui.infrastructureError=error.message||'Không tải được thông tin hạ tầng.';}).finally(()=>{infrastructureLoading=false;if(ui.view==='admin'&&ui.adminTab==='dashboard')render();});
+      withNavigationLoading(()=>refreshInfrastructure({summaryOnly:false})).then(result=>{ui.infrastructure=result;ui.infrastructureError='';}).catch(error=>{if(!ui.infrastructure)ui.infrastructureError=error.message||'Không tải được thông tin hạ tầng.';}).finally(()=>{infrastructureLoading=false;if(ui.view==='admin'&&ui.adminTab==='dashboard')render();});
     }
   }
   else if(ui.adminTab==='exams')content=examAdminHtml({data,user,filters:ui.adminExamFilters});
@@ -696,7 +696,7 @@ function adminView(cachedAt=null){
   else if(ui.adminTab==='trash')content=trashAdminHtml({data,retentionDays:data.trashRetentionDays??30});
   else if(ui.adminTab==='backup'&&isMaster(user))content='<div data-backup-page></div>';
   else if(ui.adminTab==='speaking')content='<div data-speaking-admin></div>';
-  else if(ui.adminTab==='settings'&&isMaster(user))content='<div data-settings-route><p role="status">Đang tải cài đặt…</p></div>';
+  else if(ui.adminTab==='settings'&&isMaster(user))content='<div data-settings-route aria-busy="true"></div>';
   const current=app.querySelector('.admin-dashboard');
   if(current&&ui.adminTab==='dashboard'&&isMaster(user)){
     const template=document.createElement('template');template.innerHTML=content;
@@ -704,7 +704,7 @@ function adminView(cachedAt=null){
   }else app.innerHTML=layout(adminShellHtml({content,user,ui}));
   if(ui.adminTab==='settings'&&isMaster(user)){
     const target=app.querySelector('[data-settings-route]');
-    import('./settings.js').then(({mountSettingsPage})=>mountSettingsPage(target,ui.settingsTab,tab=>{ui.settingsTab=tab;syncViewUrl();}))
+    withNavigationLoading(()=>import('./settings.js').then(({mountSettingsPage})=>mountSettingsPage(target,ui.settingsTab,tab=>{ui.settingsTab=tab;syncViewUrl();}))).finally(()=>target.removeAttribute('aria-busy'))
       .catch(()=>{if(target.isConnected)target.textContent='Không tải được cài đặt. Hãy tải lại trang.';});
   }
   if(ui.adminTab==='backup'&&isMaster(user)){

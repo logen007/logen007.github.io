@@ -1,3 +1,4 @@
+import {beginNavigationLoading} from '../ui/navigation-loading.js';
 import {normalizeCourseSlug,courseSlugFromTitle} from '../domain/course-url.js';
 import {courseRequest,coursePath} from './api.js';
 import {coursePageHtml,coursePermalinkHtml} from './views.js';
@@ -36,7 +37,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
   async function load({append=false}={}){
     const target=state,token=++generation;loadController?.abort();loadController=new AbortController();
     if(!append){state.loading=true;state.error='';}
-    const options={signal:loadController.signal},route=state.route;
+    const options={signal:loadController.signal},route=state.route,endLoading=beginNavigationLoading(root.ownerDocument);
     try{
       const data={};
       if(['catalog','mine','manage'].includes(route.page)){
@@ -61,7 +62,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
       if(route.page==='edit'&&route.lesson&&courseLessons(state.editor.course).some(l=>l.id===route.lesson))state.editLesson=route.lesson;
       if(route.page==='edit'&&route.step==='preview')state.preview=createCoursePreview(state.editor);
       repaint();
-    }catch(error){if(target!==state||token!==generation||loadController.signal.aborted)return;state.loading=false;state.error=error.message;repaint();}
+    }catch(error){if(target!==state||token!==generation||loadController.signal.aborted)return;state.loading=false;state.error=error.message;repaint();}finally{endLoading();}
   }
   function mount(route){
     knowledgeBinding?.destroy();knowledgeBinding=null;
