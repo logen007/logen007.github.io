@@ -1335,7 +1335,7 @@ select:focus,textarea:focus { outline:none; box-shadow:none; border-color:var(--
 .student-catalog .the-de h3{font-size:var(--student-exam-title-size);line-height:1.45;height:2.9em;letter-spacing:-.02em}
 .student-catalog .exam-card-status,.student-catalog .the-de .meta{font-size:13px;line-height:1.5}
 .student-catalog .exam-card-tags .nhan{font-size:12px;line-height:1.4}
-.student-catalog .exam-filter{display:grid;grid-template-columns:repeat(2,minmax(0,132px)) var(--code-entry-width);gap:12px;align-items:start}
+.student-catalog .exam-filter{display:grid;grid-template-columns:minmax(180px,1fr) repeat(3,minmax(0,132px)) var(--code-entry-width);gap:12px;align-items:start}
 .student-catalog .exam-filter .filter-field{min-width:0;max-width:none}
 .student-catalog .exam-filter>.nut{justify-self:end;min-width:0;max-width:100%;white-space:normal;text-align:center}
 @media(max-width:600px){.student-catalog .learner-name h1{font-size:20px}.student-catalog .learner-stats{gap:16px 12px}.student-catalog .learner-stats strong{font-size:20px}.student-catalog .learner-stats .exam-latest-result{font-size:15px}.student-catalog .exam-card-status,.student-catalog .the-de .meta{font-size:12px}.student-catalog .exam-filter{grid-template-columns:repeat(2,minmax(0,1fr)) var(--code-entry-width);gap:6px}.student-catalog .exam-filter select{padding-left:6px;padding-right:16px;background-position:right 4px center;background-size:10px}}
@@ -1990,3 +1990,6 @@ button.course-lesson-row:focus-visible { outline:1px solid var(--focus-ring); ou
 
 .ten-he-thong .brand-subline { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
 .brand-version { white-space:nowrap; font-variant-numeric:tabular-nums; }
+
+@media(max-width:1000px) { .student-catalog .exam-filter { grid-template-columns:repeat(3,minmax(0,1fr)) var(--code-entry-width); }.student-catalog .student-exam-search { grid-column:1/-1; } }
+@media(max-width:600px) { .student-catalog .exam-filter { grid-template-columns:repeat(2,minmax(0,1fr)); }.student-catalog .exam-filter>.inline-code-entry { width:100%; } }

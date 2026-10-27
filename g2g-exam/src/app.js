@@ -288,7 +288,7 @@ function restoreSignedInRoute(){
   else{Object.assign(ui,defaultLanding(user));if(isStudent(user)&&initialUrl.searchParams.get('view')==='home')ui.view='student-home';else if(initialUrl.searchParams.get('view')==='courses'||courseUrlSlug(initialUrl.pathname)){ui.courseRoute=readCourseRoute(initialUrl.href,user);ui.view='courses';ui.adminTab='courses';}}
 }
 
-function studentHomeView(){app.innerHTML=layout(studentHomeHtml({data,user,filter:ui.examFilter,levelFilter:ui.examLevelFilter,kindFilter:ui.examKindFilter||''}));}
+function studentHomeView(){app.innerHTML=layout(studentHomeHtml({data,user,filter:ui.examFilter,levelFilter:ui.examLevelFilter,kindFilter:ui.examKindFilter||'',search:ui.studentExamSearch||''}));}
 function studentResultsView(){app.innerHTML=layout(studentResultsHtml({data,user}));}
 function submittedView(){app.innerHTML=layout(submittedHtml(byId(data.attempts,ui.attemptId)));}
 
@@ -1153,6 +1153,7 @@ function bindGlobal(){
       ui.review=review;ui.view='student-attempt-detail';render();
     }catch(error){notify(error.message||'Không mở được bài làm.');}
   });
+  app.querySelector('[data-student-exam-search]')?.addEventListener('input',event=>{const input=event.target,start=input.selectionStart,end=input.selectionEnd;ui.studentExamSearch=input.value;render();const next=app.querySelector('[data-student-exam-search]');if(next){next.focus();try{next.setSelectionRange(start,end);}catch{}}});
   app.querySelectorAll('[data-action="exam-filter"]').forEach(b=>b.onclick=()=>{ui.examFilter=b.dataset.filter;render();});
 }
 
