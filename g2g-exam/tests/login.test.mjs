@@ -5,7 +5,7 @@ import {loginHtml} from '../src/views/login.js';
 import {loginDemoHtml} from '../src/views/login-demo.js';
 import {themePalette,darkThemePalette,colorContrast} from '../src/settings/palette.js';
 const api=loginHtml({mode:'api'}),local=loginHtml({mode:'local'});
-assert.match(api,/class="landing-copy feature-surface"/);assert.equal((api.match(/feature-surface/g)||[]).length,1,'Only the marketing heading gets decorative motion, not the sign-in form');
+assert.match(api,/class="landing-copy"/);assert.equal((api.match(/feature-surface/g)||[]).length,0,'Landing heading has no colored decorative surface');
 const featuredCss=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 assert.match(featuredCss,/\.feature-surface::before\s*\{[^}]*pointer-events:none;[^}]*animation:feature-wave 26s ease-in-out infinite alternate;/);
 assert.match(featuredCss,/@media\(prefers-reduced-motion:reduce\)\s*\{\s*\.feature-surface::before\s*\{\s*animation:none; transform:none;/);

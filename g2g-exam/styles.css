@@ -1790,8 +1790,8 @@ select:focus,textarea:focus { outline:none; box-shadow:none; border-color:var(--
 @keyframes feature-wave { from { transform:translate3d(-2%,-2%,0) rotate(-8deg); } to { transform:translate3d(3%,3%,0) rotate(4deg) scale(1.03); } }
 .feature-surface h1,.feature-surface p,.feature-surface .course-detail-meta { color:inherit; }
 .feature-surface .exam-level { background:color-mix(in srgb,var(--brand-on-primary) 10%,transparent); color:inherit; }
-.landing-copy.feature-surface { padding:clamp(24px,3vw,36px); border-radius:24px; }
-.landing-copy.feature-surface h1 { font-size:clamp(32px,3.6vw,48px); }
+.landing-copy { padding:clamp(24px,3vw,36px); border-radius:24px; }
+.landing-copy h1 { font-size:clamp(32px,3.6vw,48px); }
 @media(prefers-reduced-motion:reduce) { .feature-surface::before { animation:none; transform:none; } }
 @media(forced-colors:active) { .feature-surface::before { display:none; } }
 .course-detail-meta { display:flex; flex-wrap:wrap; align-items:center; gap:12px; color:var(--phu); font-size:14px; }
