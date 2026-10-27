@@ -336,7 +336,7 @@ try{
   const chapter=source.chapters[0],many={id:courseId,...source,lessonCount:4,chapters:[{...chapter,knowledge:[chapter.knowledge[0],{...chapter.knowledge[0],id:'extra-knowledge'}],exercises:[chapter.exercises[0],{...chapter.exercises[0],id:'extra-exercise'}]}]};
   const fragment=document.createElement('div');fragment.innerHTML=courseLearningHtml({detail:many,lesson:{lesson:chapter.knowledge[0]},practiceAnswers:{}});
   assert.deepEqual([...fragment.querySelectorAll('.course-outline .course-lesson-row')].map(button=>button.textContent.trim()),['Kiến thức 1','Kiến thức 2','Bài tập 1','Bài tập 2'],'Compact labels retain access to every lesson, not just the first');
-  await service.save(teacher,'paid-ui',{version:0,course:{...source,price:690000}});await service.publish(teacher,'paid-ui',{version:1});
+  await service.save(teacher,'paid-ui',{version:0,course:{...source,slug:'paid-ui',price:690000}});await service.publish(teacher,'paid-ui',{version:1});
   route={page:'detail',id:'paid-ui'};paint();await idle();await action('enroll');
   assert.equal(controller.getState().detail.enrollment.status,'pending');
   assert.match(root.textContent,/Đăng ký đang chờ/);assert.equal(root.querySelector('[data-course-action="enroll"]'),null,'Same-route enrollment refreshes without leaving a misleading register button');
