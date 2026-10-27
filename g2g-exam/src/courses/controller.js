@@ -281,7 +281,7 @@ export function createCoursesController({root,context,layout,navigate,repaint,no
     if(name==='preview-exercise'){await saveEditor();state.preview=createCoursePreview(state.editor,state.editLesson);repaint();return;}
     if(name==='preview-course'){await saveEditor();state.preview=createCoursePreview(state.editor);repaint();return;}
     if(name==='publish'){
-      await saveEditor();state.publicationBusy=true;repaint();
+      await saveEditor();state.permalinkDraft=undefined;state.publicationBusy=true;repaint();
       try{Object.assign(state.editor,await api(coursePath(state.editor.id,'/publish'),{method:'POST',body:{version:state.editor.version}}));}
       catch(error){await load();throw error;}
       finally{state.publicationBusy=false;repaint();}
