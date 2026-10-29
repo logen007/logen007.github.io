@@ -112,6 +112,8 @@ export function permanentlyDeleteQuestion(state,user,id){
   if(!isMaster(user))throw new Error('Chỉ quản trị cấp cao được xóa vĩnh viễn.');
   const question=byId(state.questions,id);
   if(!question)throw new Error('Không tìm thấy câu hỏi.');
+  if(question.status!=='trash')throw new Error('Chỉ xóa vĩnh viễn câu hỏi trong Thùng rác.');
+  if((state.attempts||[]).some(attempt=>Object.hasOwn(attempt.answers||{},id)||(attempt.examSnapshot?.sections||[]).some(section=>section.questionIds?.includes(id))||(attempt.examSnapshot?.questionSnapshot||[]).some(item=>item.id===id)))throw new Error('Câu hỏi còn được tham chiếu trong lịch sử bài làm.');
   const refs=(state.exams||[]).filter(exam=>(exam.sections||[]).some(section=>(section.questionIds||[]).includes(id)));
   if(refs.length)throw new Error('Câu hỏi vẫn đang được dùng trong bài thi. Hãy gỡ câu khỏi các bài thi trước khi xóa vĩnh viễn.');
   state.questions=state.questions.filter(x=>x.id!==id);
