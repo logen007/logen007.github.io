@@ -343,6 +343,14 @@ try{
   assert.deepEqual(await emptyTrash({id:'m',role:'master'}),{exams:0,questions:0});
   await query("UPDATE questions SET status='active' WHERE id='trash-snapshot'");
   assert.equal((await query("SELECT trashed_at FROM questions WHERE id='trash-snapshot'")).rows[0].trashed_at,null);
+  await assert.rejects(()=>commitOperations({id:'m',role:'master'},[{collection:'questions',id:'trash-snapshot',kind:'delete'}]),/Thùng rác/,'Manual deletion requires trash status');
+  await query("UPDATE questions SET status='trash' WHERE id='trash-snapshot'");
+  await assert.rejects(()=>commitOperations({id:'m',role:'master'},[{collection:'questions',id:'trash-snapshot',kind:'delete'}]),/lịch sử/,'Manual deletion protects historical snapshot references just like garbage collection');
+  assert.equal((await query("SELECT id FROM questions WHERE id='trash-snapshot'")).rowCount,1);
+  await query("INSERT INTO questions(id,owner_id,status,data) VALUES('manual-trash-free','t','trash','{}')");
+  await assert.rejects(()=>commitOperations(teacher,[{collection:'questions',id:'manual-trash-free',kind:'delete'}]),/Quản trị/);
+  await commitOperations({id:'m',role:'master'},[{collection:'questions',id:'manual-trash-free',kind:'delete'}]);
+  assert.equal((await query("SELECT id FROM questions WHERE id='manual-trash-free'")).rowCount,0);
   // Instruction audio survives both writes and repeated schema initialization.
   const mediaExam=(await loadState(copier)).exams.find(e=>e.id===serverExam.id);
   await commitOperations(copier,[{collection:'exams',id:mediaExam.id,item:{...mediaExam,sections:mediaExam.sections.map(s=>({...s,instructionAudioUrl:'/uploads/retired.mp3'}))}}]);

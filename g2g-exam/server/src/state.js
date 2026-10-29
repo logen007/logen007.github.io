@@ -125,6 +125,12 @@ async function applyQuestion(c,user,op){
   const current=await c.query(`SELECT * FROM questions WHERE id=$1 FOR UPDATE`,[op.id]);
   if(op.kind==='delete'){
     if(user.role!=='master')throw appError(403,'Chỉ Quản trị cấp cao được xóa vĩnh viễn câu hỏi.');
+    if(!current.rowCount)return;
+    if(current.rows[0].status!=='trash')throw appError(409,'Chỉ xóa vĩnh viễn câu hỏi trong Thùng rác.');
+    const history=await c.query(`SELECT 1 FROM attempts a WHERE a.public_data->'answers' ? $1
+      OR EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(a.private_data#>'{examSnapshot,sections}','[]')) s WHERE s->'questionIds' ? $1)
+      OR EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(a.private_data#>'{examSnapshot,questionSnapshot}','[]')) x WHERE x->>'id'=$1) LIMIT 1`,[op.id]);
+    if(history.rowCount)throw appError(409,'Câu hỏi còn được tham chiếu trong lịch sử bài làm.');
     const ex=(await c.query(`SELECT data FROM exams`)).rows.some(r=>(r.data.sections||[]).some(s=>(s.questionIds||[]).includes(op.id)));
     if(ex)throw appError(409,'Câu hỏi vẫn đang được dùng trong bài thi.');await c.query(`DELETE FROM questions WHERE id=$1`,[op.id]);return;
   }
