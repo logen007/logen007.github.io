@@ -45,13 +45,20 @@ function fixture(options={}){
   const nested=f.target({parentElement:{closest:()=>f.initial}});f.discover(nested);assert.equal(f.observed.has(nested),false,'Nested titles/covers do not create duplicate layers over a card');f.cleanup();
 }
 {
-  const images=[],timers=new Map();let next=0,received;
-  const svg={closest:()=>null,querySelectorAll:()=>[],getBoundingClientRect:()=>({width:120,height:90}),cloneNode:()=>({style:{setProperty(){}},setAttribute(){},querySelectorAll:()=>[]})};
-  const win={setTimeout:fn=>{timers.set(++next,fn);return next;},clearTimeout:id=>timers.delete(id),getComputedStyle:()=>({getPropertyValue:()=>''}),Image:class{constructor(){images.push(this);}},XMLSerializer:class{serializeToString(){return '<svg/>';}}};
-  const element={querySelectorAll:()=>[svg]},cancel=prepareAsciiGraphics(element,win,value=>received=value);
-  cancel();assert.equal(images[0].onload,null);assert.equal(timers.size,0,'Cancelled chart preparation leaves no timer/load listener');assert.equal(received,undefined);
-  prepareAsciiGraphics(element,win,value=>received=value);images.at(-1).onerror();assert.deepEqual(received,[],'Failed SVG decode falls back without blocking content');
-  prepareAsciiGraphics(element,win,value=>received=value);images.at(-1).onload();assert.equal(received[0].element,svg,'Decoded chart is tied to its real DOM geometry');
+  const calls=[];let received;
+  const context={save(){},restore(){},setTransform(...args){calls.push(['transform',...args]);},fill(){},stroke(){calls.push(['stroke']);},setLineDash(value){calls.push(['dash',value]);}};
+  const style={fill:'none',stroke:'rgb(255, 200, 0)',strokeWidth:'2',strokeDasharray:'25 75',strokeDashoffset:'-10',opacity:'1'};
+  const circle={tagName:'circle',parentElement:null,getScreenCTM:()=>({a:2,b:0,c:0,d:2,e:30,f:40}),getAttribute:name=>({cx:'50',cy:'50',r:'38',pathLength:'100'}[name]||null),getTotalLength:()=>200};
+  const svg={closest:()=>null,parentElement:null,ownerDocument:{createElement:()=>({getContext:()=>context})},getScreenCTM(){},querySelector:()=>null,querySelectorAll:()=>[circle],getBoundingClientRect:()=>({left:10,top:20,width:120,height:90})};circle.parentElement=svg;
+  const win={getComputedStyle:()=>style,Path2D:class{arc(...args){calls.push(['circle',...args]);}}};
+  prepareAsciiGraphics({querySelectorAll:()=>[svg]},win,value=>received=value);
+  assert.equal(received[0].element,svg,'Chart capture completes synchronously, without an image load or next-frame deadline');
+  assert.deepEqual(calls.find(call=>call[0]==='transform'),['transform',2,0,0,2,20,20],'SVG viewport transform is retained');
+  assert.deepEqual(calls.find(call=>call[0]==='dash'),['dash',[50,150]],'Normalized pathLength keeps donut proportions');
+  assert.equal(context.lineDashOffset,-20);
+  svg.querySelector=()=>({});prepareAsciiGraphics({querySelectorAll:()=>[svg]},win,value=>received=value);
+  assert.deepEqual(received,[],'Complex SVG retains its original rendering without delaying the card');
+
 }
 {
   const calls=[],box={left:10,top:20},bar={tagName:'SPAN',closest:()=>null,getBoundingClientRect:()=>({left:30,top:50,width:12,height:80})};
@@ -150,4 +157,17 @@ for(const type of ['INPUT','BUTTON','SELECT','SPAN']){
 }
 {
   const f=fixture();const target=f.target({tagName:'BUTTON',id:'immediate',getClientRects:()=>[{}]});f.discover(target);assert.equal(f.layers.length,1,'Visible DOM additions start synchronously before paint');f.win.emit('pointerdown');assert.equal(f.layers.length,0);f.cleanup();
+}
+
+{
+  const f=fixture();const card=f.target({tagName:'SECTION',id:'new-dashboard-card',getClientRects:()=>[{}]});
+  f.mutate([{addedNodes:[card],target:f.doc.body},{addedNodes:[],target:card}]);
+  assert.equal(f.layers.length,1,'Changes within a newly inserted card do not cancel its first reveal in the same mutation batch');f.cleanup();
+}
+{
+  const f=fixture();
+  for(let i=0;i<24;i++){const button=f.target({tagName:'BUTTON',id:'nav-'+i,getBoundingClientRect:()=>({left:0,top:0,bottom:44,width:100,height:44})});f.discover(button);f.visible(button);}
+  const cards=[];
+  for(let i=0;i<6;i++){const card=f.target({tagName:'SECTION',id:'card-'+i,getBoundingClientRect:()=>({left:0,top:0,bottom:500,width:600,height:500})});cards.push(card);f.discover(card);f.visible(card);}
+  assert.equal(f.layers.length,30,'Header controls cannot consume the dashboard card layer allowance or shared cell budget');f.cleanup();
 }

@@ -15,10 +15,10 @@ export function bindAsciiReveals(root){
   if(!win.IntersectionObserver||!win.MutationObserver||!win.requestAnimationFrame)return ()=>{};
   const reduced=win.matchMedia('(prefers-reduced-motion: reduce)'),forced=win.matchMedia('(forced-colors: active)');
   let registered=new WeakSet(),preferenceEnabled=doc.documentElement.dataset?.asciiEnabled!=='off';
-  const seen=new Set(),active=new Set(),waiting=new Map(),preparing=new Map();let firstVisible=new WeakMap(),frame=0,disposed=false,lastPaint=-Infinity;
+  const seen=new Set(),active=new Set(),waiting=new Map();let firstVisible=new WeakMap(),frame=0,disposed=false,lastPaint=-Infinity;
   const allowed=()=>!disposed&&doc.documentElement.dataset?.asciiEnabled!=='off'&&!doc.hidden&&!reduced.matches&&!forced.matches&&!win.navigator.connection?.saveData&&!(win.navigator.hardwareConcurrency>0&&win.navigator.hardwareConcurrency<=2);
   const remove=item=>{item.canvas.remove();active.delete(item);};
-  const stop=()=>{win.cancelAnimationFrame(frame);frame=0;for(const clear of [...waiting.values()])clear();for(const cancel of preparing.values())cancel();preparing.clear();for(const item of [...active])remove(item);};
+  const stop=()=>{win.cancelAnimationFrame(frame);frame=0;for(const clear of [...waiting.values()])clear();for(const item of [...active])remove(item);};
   const background=element=>{
     for(let node=element;node;node=node.parentElement){const color=win.getComputedStyle(node).backgroundColor;if(color&&color!=='transparent'&&color!=='rgba(0, 0, 0, 0)')return color;}
     return win.getComputedStyle(doc.documentElement).getPropertyValue('--mat').trim()||'#fff';
@@ -66,8 +66,10 @@ export function bindAsciiReveals(root){
     if(seen.has(key))return;
     const box=element.getBoundingClientRect();
     if(box.width<24||box.height<14||box.width*box.height>900000||box.bottom<=0||box.top>=win.innerHeight)return;
-    const cols=Math.min(image||block?100:140,Math.ceil(box.width/(image||block?8:5))),rows=Math.min(60,Math.ceil(box.height/(image||block?10:7)));
-    if(active.size>=12||[...active].reduce((sum,item)=>sum+item.cols*item.rows,cols*rows)>36000||image&&[...active].filter(item=>item.image).length>=2){seen.add(key);return;}
+    let cols=Math.min(image||block?100:140,Math.ceil(box.width/(image||block?8:5))),rows=Math.min(60,Math.ceil(box.height/(image||block?10:7)));
+    if(block&&cols*rows>2000){const scale=Math.sqrt(2000/(cols*rows));cols=Math.max(1,Math.floor(cols*scale));rows=Math.max(1,Math.floor(rows*scale));}
+    const control=isControl(element);
+    if([...active].filter(item=>item.control===control).length>=(control?24:12)||[...active].reduce((sum,item)=>sum+item.cols*item.rows,cols*rows)>36000||image&&[...active].filter(item=>item.image).length>=2){seen.add(key);return;}
     seen.add(key);if(seen.size>500)seen.delete(seen.values().next().value);
     let canvas;
     try{
@@ -118,10 +120,10 @@ export function bindAsciiReveals(root){
         cells.push({x,y,density:Math.max(1,Math.round(tone*(glyphs.length-1))),color:image||block?`rgb(${pixels[at]},${pixels[at+1]},${pixels[at+2]})`:style.color});
       }
       const protectedNodes=[...element.querySelectorAll(excluded),...element.querySelectorAll('img')].filter(node=>node.tagName!=='IMG'||!node.complete||!node.naturalWidth||new URL(node.currentSrc||node.src,win.location.href).origin!==win.location.origin);
-      // A failed/timed-out chart decode leaves the real chart visible, never blank.
+      // Unsupported chart geometry stays visible through a transparent hole.
       protectedNodes.push(...[...element.querySelectorAll('svg')].filter(svg=>!graphics.some(graphic=>graphic.element===svg)));
       const holes=protectedNodes.map(node=>node.getBoundingClientRect()).map(rect=>({x:rect.left-box.left-2,y:rect.top-box.top-2,width:rect.width+4,height:rect.height+4}));
-      const item={element,canvas,context,cols,rows,cellW,cellH,image,cells,holes,background:backdrop,start:null};
+      const item={element,canvas,context,cols,rows,cellW,cellH,image,control,cells,holes,background:backdrop,start:null};
       paint(item,0,0);
       if(win.performance.now()-started>(image?32:80))return;
       doc.body.append(canvas);active.add(item);
@@ -131,15 +133,8 @@ export function bindAsciiReveals(root){
   const start=element=>{
     if(!allowed()||win.performance.now()-(firstVisible.get(element)??win.performance.now())>80)return;
     if(!firstVisible.has(element))firstVisible.set(element,win.performance.now());
-    let complete=false,cancel=()=>{},deadline=0;
-    const abandon=()=>{complete=true;cancel();win.cancelAnimationFrame(deadline);preparing.delete(element);};
-    try{
-      cancel=prepareAsciiGraphics(element,win,graphics=>{
-        if(complete)return;complete=true;win.cancelAnimationFrame(deadline);preparing.delete(element);reveal(element,graphics);
-      });
-      // Never install an overlay after the next opportunity to paint real content.
-      if(!complete){preparing.set(element,abandon);deadline=win.requestAnimationFrame(abandon);}
-    }catch{if(!complete){complete=true;reveal(element);}}
+    try{prepareAsciiGraphics(element,win,graphics=>reveal(element,graphics));}
+    catch{reveal(element);}
   };
   const enter=element=>{
     if(!firstVisible.has(element))firstVisible.set(element,win.performance.now());
@@ -163,10 +158,10 @@ export function bindAsciiReveals(root){
       else visibility.observe(element);}
   };
   const changes=new win.MutationObserver(records=>{
-    for(const record of records)for(const node of record.addedNodes)scan(node);
     for(const [element,clear] of waiting)if(!element.isConnected)clear();
-    for(const [element,cancel] of preparing)if(!element.isConnected||records.some(record=>record.target&&element.contains(record.target))){cancel();preparing.delete(element);}
     for(const item of [...active])if(!item.element.isConnected||records.some(record=>record.target&&item.element.contains(record.target)))remove(item);
+    // Invalidate old snapshots before discovering new content in the same batch.
+    for(const record of records)for(const node of record.addedNodes)scan(node);
   });
   changes.observe(root,{childList:true,characterData:true,subtree:true});scan(root);
   for(const event of ['scroll','resize','pagehide','pointerdown','keydown','focusin'])win.addEventListener(event,stop,{passive:true,capture:true});
