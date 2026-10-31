@@ -25,7 +25,7 @@ Use the shared top navigation loading bar for page/data entry loads, including c
   course-cover images and marketing/featured blocks,
   not a site-wide replacement for every loading state. Glyphs should resolve into
   the actual image/content silhouette rather than unrelated random decoration.
-  Use one short reveal after a genuine load/navigation; never delay ready content,
+  Use one short reveal at the first paint of a genuine load/navigation; never queue a later overlay over already readable content; skip excess/late targets and cancel preparation at the next paint. Never delay ready content,
   fake progress or replay on autosave, polling, theme changes or ordinary rerenders.
   Preserve the existing neutral startup rule: no initial page-wide ASCII skeleton.
   The shared switch is Settings → Chung → Giao diện thương hiệu → Hiệu ứng ASCII

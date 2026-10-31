@@ -15,10 +15,10 @@ export function bindAsciiReveals(root){
   if(!win.IntersectionObserver||!win.MutationObserver||!win.requestAnimationFrame)return ()=>{};
   const reduced=win.matchMedia('(prefers-reduced-motion: reduce)'),forced=win.matchMedia('(forced-colors: active)');
   let registered=new WeakSet(),preferenceEnabled=doc.documentElement.dataset?.asciiEnabled!=='off';
-  const seen=new Set(),active=new Set(),waiting=new Map(),preparing=new Map(),deferred=new Map();let frame=0,disposed=false,lastPaint=-Infinity;
+  const seen=new Set(),active=new Set(),waiting=new Map(),preparing=new Map(),firstVisible=new WeakMap();let frame=0,disposed=false,lastPaint=-Infinity;
   const allowed=()=>!disposed&&doc.documentElement.dataset?.asciiEnabled!=='off'&&!doc.hidden&&!reduced.matches&&!forced.matches&&!win.navigator.connection?.saveData&&!(win.navigator.hardwareConcurrency>0&&win.navigator.hardwareConcurrency<=2);
   const remove=item=>{item.canvas.remove();active.delete(item);};
-  const stop=()=>{win.cancelAnimationFrame(frame);frame=0;deferred.clear();for(const cancel of preparing.values())cancel();preparing.clear();for(const item of [...active])remove(item);};
+  const stop=()=>{win.cancelAnimationFrame(frame);frame=0;for(const clear of [...waiting.values()])clear();for(const cancel of preparing.values())cancel();preparing.clear();for(const item of [...active])remove(item);};
   const background=element=>{
     for(let node=element;node;node=node.parentElement){const color=win.getComputedStyle(node).backgroundColor;if(color&&color!=='transparent'&&color!=='rgba(0, 0, 0, 0)')return color;}
     return win.getComputedStyle(doc.documentElement).getPropertyValue('--mat').trim()||'#fff';
@@ -51,12 +51,10 @@ export function bindAsciiReveals(root){
       else if(until!==item.until){for(let y=0;y<item.rows;y++)for(let x=0;x<item.cols;x++)if(x+y>=item.until&&x+y<until)item.context.clearRect(x*item.cellW,y*item.cellH,item.cellW+1,item.cellH+1);item.until=until;}
     }
     if(win.performance.now()-started>24){stop();return;}
-    // A full viewport can exceed the simultaneous-work cap. Queue, don't discard.
-    for(const [element,graphics] of [...deferred].slice(0,2))reveal(element,graphics);
-    if((active.size||deferred.size)&&!frame)frame=win.requestAnimationFrame(tick);
+    if(active.size&&!frame)frame=win.requestAnimationFrame(tick);
   }
   function reveal(element,graphics=[]){
-    deferred.delete(element);
+    if(win.performance.now()-(firstVisible.get(element)??win.performance.now())>80)return;
     if(!allowed()||!element.isConnected||!eligible(element)||doc.activeElement===element||doc.activeElement&&element.contains(doc.activeElement))return;
     const image=element.tagName==='IMG',block=!image&&!/^H[1-6]$/.test(element.tagName),dashboard=element.closest('.admin-dashboard');
     let identity=element.getAttribute?.('data-ascii-key')||element.id;
@@ -69,7 +67,7 @@ export function bindAsciiReveals(root){
     const box=element.getBoundingClientRect();
     if(box.width<24||box.height<14||box.width*box.height>900000||box.bottom<=0||box.top>=win.innerHeight)return;
     const cols=Math.min(image||block?100:140,Math.ceil(box.width/(image||block?8:5))),rows=Math.min(60,Math.ceil(box.height/(image||block?10:7)));
-    if(active.size>=12||[...active].reduce((sum,item)=>sum+item.cols*item.rows,cols*rows)>36000||image&&[...active].filter(item=>item.image).length>=2){deferred.set(element,graphics);return;}
+    if(active.size>=12||[...active].reduce((sum,item)=>sum+item.cols*item.rows,cols*rows)>36000||image&&[...active].filter(item=>item.image).length>=2){seen.add(key);return;}
     seen.add(key);if(seen.size>500)seen.delete(seen.values().next().value);
     let canvas;
     try{
@@ -131,31 +129,42 @@ export function bindAsciiReveals(root){
     }catch{canvas?.remove();} // Decoration must never prevent navigation or content.
   }
   const start=element=>{
-    if(!allowed())return;
-    let complete=false;
+    if(!allowed()||win.performance.now()-(firstVisible.get(element)??win.performance.now())>80)return;
+    if(!firstVisible.has(element))firstVisible.set(element,win.performance.now());
+    let complete=false,cancel=()=>{},deadline=0;
+    const abandon=()=>{complete=true;cancel();win.cancelAnimationFrame(deadline);preparing.delete(element);};
     try{
-      const cancel=prepareAsciiGraphics(element,win,graphics=>{complete=true;preparing.delete(element);reveal(element,graphics);});
-      if(!complete)preparing.set(element,cancel);
-    }catch{reveal(element);}
+      cancel=prepareAsciiGraphics(element,win,graphics=>{
+        if(complete)return;complete=true;win.cancelAnimationFrame(deadline);preparing.delete(element);reveal(element,graphics);
+      });
+      // Never install an overlay after the next opportunity to paint real content.
+      if(!complete){preparing.set(element,abandon);deadline=win.requestAnimationFrame(abandon);}
+    }catch{if(!complete){complete=true;reveal(element);}}
+  };
+  const enter=element=>{
+    if(!firstVisible.has(element))firstVisible.set(element,win.performance.now());
+    if(element.tagName==='IMG'&&!element.complete){
+      const clear=()=>{element.removeEventListener('load',loaded);element.removeEventListener('error',clear);waiting.delete(element);};
+      const loaded=()=>{clear();if(win.performance.now()-(firstVisible.get(element)??0)<=80)start(element);};
+      waiting.set(element,clear);element.addEventListener('load',loaded,{once:true});element.addEventListener('error',clear,{once:true});
+    }else start(element);
   };
   const visibility=new win.IntersectionObserver(entries=>{
     for(const entry of entries)if(entry.isIntersecting){
       const element=entry.target;visibility.unobserve(element);
-      if(element.tagName==='IMG'&&!element.complete){
-        const clear=()=>{element.removeEventListener('load',loaded);element.removeEventListener('error',clear);waiting.delete(element);};
-        const loaded=()=>{clear();start(element);};
-        waiting.set(element,clear);element.addEventListener('load',loaded,{once:true});element.addEventListener('error',clear,{once:true});
-      }else start(element);
+      enter(element);
     }
   },{threshold:.15});
   const scan=node=>{
     if(node.nodeType!==1)return;
-    for(const element of [...(node.matches(selector)?[node]:[]),...node.querySelectorAll(selector)])if(!registered.has(element)&&eligible(element)&&(!element.parentElement?.closest(selector)||!eligible(element.parentElement.closest(selector)))){registered.add(element);visibility.observe(element);}
+    for(const element of [...(node.matches(selector)?[node]:[]),...node.querySelectorAll(selector)])if(!registered.has(element)&&eligible(element)&&(!element.parentElement?.closest(selector)||!eligible(element.parentElement.closest(selector)))){registered.add(element);
+      const box=element.getBoundingClientRect();
+      if(element.getClientRects&&box.width>0&&box.height>0&&box.bottom>0&&box.top<win.innerHeight)enter(element);
+      else visibility.observe(element);}
   };
   const changes=new win.MutationObserver(records=>{
     for(const record of records)for(const node of record.addedNodes)scan(node);
     for(const [element,clear] of waiting)if(!element.isConnected)clear();
-    for(const element of deferred.keys())if(!element.isConnected||records.some(record=>record.target&&element.contains(record.target)))deferred.delete(element);
     for(const [element,cancel] of preparing)if(!element.isConnected||records.some(record=>record.target&&element.contains(record.target))){cancel();preparing.delete(element);}
     for(const item of [...active])if(!item.element.isConnected||records.some(record=>record.target&&item.element.contains(record.target)))remove(item);
   });
@@ -170,7 +179,7 @@ export function bindAsciiReveals(root){
     }
     if(enabled&&!wasEnabled){
       // Off/on is an explicit new reveal session, unlike polling or theme refresh.
-      visibility.disconnect();registered=new WeakSet();seen.clear();lastPaint=-Infinity;scan(root);
+      visibility.disconnect();registered=new WeakSet();firstVisible=new WeakMap();seen.clear();lastPaint=-Infinity;scan(root);
     }
   };
   win.addEventListener('g2g-ascii-preference',preferenceChanged);

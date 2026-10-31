@@ -6,10 +6,10 @@ import {paintAsciiBlock,prepareAsciiGraphics} from '../src/ui/ascii-snapshot.js'
 // Deterministic DOM/canvas boundary, not browser rendering or a visual baseline.
 function fixture(options={}){
   const events=()=>({listeners:new Map(),addEventListener(name,fn){if(!this.listeners.has(name))this.listeners.set(name,new Set());this.listeners.get(name).add(fn);},removeEventListener(name,fn){this.listeners.get(name)?.delete(fn);},emit(name){for(const fn of [...this.listeners.get(name)||[]])fn();}});
-  const layers=[],targets=[],frames=new Map(),observed=new Set(),paintedGlyphs=[],cleared=[];let mutations,intersections,id=0,reads=0,painted=0;
+  let now=0;const layers=[],targets=[],frames=new Map(),observed=new Set(),paintedGlyphs=[],cleared=[];let mutations,intersections,id=0,reads=0,painted=0;
   const reduced={...events(),matches:Boolean(options.reduced)},forced={...events(),matches:false};
   const style={backgroundColor:'rgb(255, 255, 255)',color:'rgb(0, 0, 0)',font:'400 32px sans-serif',borderRadius:'18px',objectFit:'cover'};
-  const win={...events(),navigator:{hardwareConcurrency:options.slow?2:8,connection:{saveData:Boolean(options.saveData)}},location:{pathname:'/courses',search:''},innerHeight:900,performance:{now:()=>0},NodeFilter:{SHOW_TEXT:4},
+  const win={...events(),navigator:{hardwareConcurrency:options.slow?2:8,connection:{saveData:Boolean(options.saveData)}},location:{pathname:'/courses',search:''},innerHeight:900,performance:{now:()=>now},NodeFilter:{SHOW_TEXT:4},
     matchMedia:query=>query.includes('reduced')?reduced:forced,getComputedStyle:()=>style,
     requestAnimationFrame:fn=>{frames.set(++id,fn);return id;},cancelAnimationFrame:key=>frames.delete(key),
     IntersectionObserver:class{constructor(fn){intersections=fn;}observe(node){observed.add(node);}unobserve(node){observed.delete(node);}disconnect(){observed.clear();}},
@@ -29,7 +29,7 @@ function fixture(options={}){
   const root={ownerDocument:doc,nodeType:1,matches:()=>false,querySelectorAll:()=>targets};
   function target(extra={}){const element={...events(),ownerDocument:doc,nodeType:1,tagName:'IMG',src:'/cover.jpg',currentSrc:'/cover.jpg',complete:true,naturalWidth:640,naturalHeight:320,isConnected:true,textContent:'Hi',parentElement:null,matches:()=>true,querySelectorAll:()=>[],closest:()=>null,contains(node){return node===this;},getBoundingClientRect:()=>({left:0,top:0,bottom:160,width:320,height:160}),...extra};targets.push(element);return element;}
   const initial=target(options.text?{tagName:'H1'}:{}),cleanup=bindAsciiReveals(root);
-  return {win,doc,reduced,forced,layers,observed,initial,cleanup,frames,target,cleared,
+  return {win,doc,reduced,forced,layers,observed,initial,cleanup,frames,target,cleared,advance:value=>{now=value;},
     visible:element=>intersections([{target:element,isIntersecting:true}]),
     discover:element=>mutations([{addedNodes:[element]}]),
     mutate:records=>mutations(records),
@@ -133,7 +133,7 @@ for(const options of [{reduced:true},{slow:true},{saveData:true},{tainted:true}]
     f.discover(heading);f.visible(heading);
   }
   assert.equal(f.layers.length,12,'Simultaneous work remains bounded');
-  f.step(0);f.step(1200);assert.equal(f.layers.length,1,'Overflow targets are queued and reveal after capacity is released, not silently discarded');
+  f.step(0);f.step(1200);assert.equal(f.layers.length,0,'Overflow targets stay readable and never replay after capacity is released');
   f.step(1232);f.step(2400);assert.equal(f.layers.length,0);assert.equal(f.frames.size,0);f.cleanup();
 }
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');assert.match(css,/\.ascii-reveal-layer \{[^}]*pointer-events:none; user-select:none/);
@@ -143,4 +143,11 @@ console.log('ASCII reveal: real-content geometry, image failures, one-shot repla
 
 for(const type of ['INPUT','BUTTON','SELECT','SPAN']){
   const f=fixture();const control=f.target({tagName:type,id:'control-'+type,value:'Value',placeholder:'Search',getAttribute:name=>name==='role'&&type==='SPAN'?'status':null});f.discover(control);assert.ok(f.observed.has(control),type+' is eligible');f.visible(control);assert.equal(f.layers.length,1,type+' receives ASCII decoration');f.win.emit('focusin');assert.equal(f.layers.length,0,'Focus immediately clears decoration');f.cleanup();
+}
+
+{
+  const f=fixture();f.initial.complete=false;f.visible(f.initial);f.advance(1500);f.initial.complete=true;f.initial.emit('load');assert.equal(f.layers.length,0,'A delayed image load cannot cover content 1.5 seconds later');f.cleanup();
+}
+{
+  const f=fixture();const target=f.target({tagName:'BUTTON',id:'immediate',getClientRects:()=>[{}]});f.discover(target);assert.equal(f.layers.length,1,'Visible DOM additions start synchronously before paint');f.win.emit('pointerdown');assert.equal(f.layers.length,0);f.cleanup();
 }
