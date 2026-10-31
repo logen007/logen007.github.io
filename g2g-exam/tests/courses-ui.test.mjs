@@ -25,6 +25,10 @@ assert.ok(asciiScope.querySelector('.distribution-chart').closest(ASCII_REVEAL_S
 asciiScope.innerHTML=courseCatalogHtml({route:{page:'catalog'},filters:{},catalog:{courses:[{id:'ascii-course',title:'Course title',price:0,chapterCount:1,lessonCount:2,coverUrl:'/uploads/ascii.jpg'}]}},{role:'student'});
 assert.ok(asciiScope.querySelector('.course-card').matches(ASCII_REVEAL_SELECTOR),'Whole course card content participates');
 asciiScope.innerHTML=courseCatalogHtml({route:{page:'manage'},filters:{},catalog:{courses:['published','draft','archived'].map(status=>({id:status,title:'Course '+status,status,price:0,level:'A1'}))}},{role:'teacher'});
+const courseListTargets=[...asciiScope.querySelectorAll('[data-ascii-table] thead,[data-ascii-table] tbody tr')];
+assert.equal(courseListTargets.length,4,'The actual course management header and every metadata row use the shared list treatment');
+for(const node of courseListTargets){assert.ok(node.matches(ASCII_REVEAL_SELECTOR));assert.equal(node.closest(ASCII_REVEAL_EXCLUDED),null,'Course names, creators, fees and dates must not be excluded as a generic table');}
+assert.deepEqual(courseListTargets.slice(1).map(node=>node.dataset.asciiKey),['course-row:published','course-row:draft','course-row:archived']);
 const courseTitles=[...asciiScope.querySelectorAll('.course-title')];
 assert.ok(courseTitles[0].matches('.exam-title-status.is-published'),'Published course titles reuse the exam success color');
 for(const title of courseTitles.slice(1))assert.ok(title.matches('.exam-title-status.is-draft'),'Unpublished/archived course titles reuse the neutral exam color');
@@ -39,6 +43,7 @@ assert.equal(asciiScope.querySelectorAll('.the-de').length,1);assert.equal(ascii
 asciiScope.innerHTML=topbarHtml({user:asciiUser,mode:'local',online:true});
 const brandingSource=await fs.readFile(new URL('../src/settings.js',import.meta.url),'utf8'),organizationSelector=brandingSource.match(/querySelectorAll\('([^']*brand-organization[^']*)'\)/)[1];
 for(const target of asciiScope.querySelectorAll(organizationSelector))target.textContent='Updated organization';
+assert.ok(asciiScope.querySelector('.thuong-hieu').matches(ASCII_REVEAL_SELECTOR),'Brand name/version participate with navigation');
 assert.equal(asciiScope.querySelector('.brand-version').textContent,'v'+APP_VERSION);assert.equal(asciiScope.querySelector('[data-brand-organization]').textContent,'Updated organization');
 asciiScope.innerHTML=studentHomeHtml({data:asciiData,user:asciiUser});
 assert.ok(asciiScope.querySelector('.learner-card').matches(ASCII_REVEAL_SELECTOR),'Whole learner identity/emblem/stats participate');

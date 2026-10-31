@@ -63,10 +63,12 @@ Use the shared top navigation loading bar for page/data entry loads, including c
   geometry once; skip external avatars rather than taint an entire card. Cut
   transparent holes around controls, data tables, semantic badges, errors and critical
   statuses so they remain readable. Exam provider/level chips and “Đề Mới” are
-  ordinary identification metadata and participate with their card. The teacher's
-  explicitly scoped `.exam-catalog-table` is the only table exception: reveal its
-  header/rows, leaving title-action buttons and other controls readable. Do not
-  apply this to question, grading, result or other administrative tables.
+  ordinary identification metadata and participate with their card. Use the shared `data-ascii-table` opt-in for non-critical management lists:
+  courses, exams, users, class lists and Trash. Reveal each header/row as a whole,
+  including names, creators, fees and dates; do not animate only nested buttons
+  or badges. Course/exam rows use stable IDs. Keep question, grading, results
+  and roster-detail tables outside this opt-in. Brand name/version and ordinary
+  page headings participate with navigation controls.
   Nested heading/cover targets do not duplicate the card.
   Use a shared 36,000-cell work budget, with at most 2,000 cells per visible
   target. Coarsen all active grids when necessary; no count cap that silently
