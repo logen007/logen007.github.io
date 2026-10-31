@@ -108,7 +108,7 @@ for(const options of [{reduced:true},{slow:true},{saveData:true},{tainted:true}]
 {
   const f=fixture();f.visible(f.initial);
   const second=f.target({src:'/second.jpg',currentSrc:'/second.jpg'}),third=f.target({src:'/third.jpg',currentSrc:'/third.jpg'});
-  for(const item of [second,third]){f.discover(item);f.visible(item);}assert.equal(f.layers.length,2,'Visible grid work is capped, remaining content renders normally');
+  for(const item of [second,third]){f.discover(item);f.visible(item);}assert.equal(f.layers.length,3,'All visible images participate instead of silently dropping the third image');
   f.doc.hidden=true;f.doc.emit('visibilitychange');assert.equal(f.layers.length,0);f.cleanup();
 }
 {
@@ -124,7 +124,7 @@ for(const options of [{reduced:true},{slow:true},{saveData:true},{tainted:true}]
 }
 {
   const f=fixture({text:true});f.initial.id='dashboard-growth';f.visible(f.initial);
-  f.mutate([{addedNodes:[],target:f.initial}]);assert.equal(f.layers.length,0,'Fresh polling data cancels the stale overlay immediately');
+  f.advance(1200);f.step(1200);f.mutate([{addedNodes:[],target:f.initial}]);assert.equal(f.layers.length,0,'Polling after the original reveal cannot restart decoration');
   const updated=f.target({tagName:'H2',id:'dashboard-growth',textContent:'42 học viên'});f.discover(updated);f.visible(updated);
   assert.equal(f.layers.length,0,'Stable heading identities do not replay on changed background values');f.cleanup();
 }
@@ -139,7 +139,7 @@ for(const options of [{reduced:true},{slow:true},{saveData:true},{tainted:true}]
     const heading=f.target({tagName:'H3',id:'exam-'+i,getBoundingClientRect:()=>({left:0,top:0,bottom:28,width:160,height:28})});
     f.discover(heading);f.visible(heading);
   }
-  assert.equal(f.layers.length,12,'Simultaneous work remains bounded');
+  assert.equal(f.layers.length,13,'All visible content participates; detail adapts to the shared work budget');
   f.step(0);f.step(1200);assert.equal(f.layers.length,0,'Overflow targets stay readable and never replay after capacity is released');
   f.step(1232);f.step(2400);assert.equal(f.layers.length,0);assert.equal(f.frames.size,0);f.cleanup();
 }
@@ -170,4 +170,38 @@ for(const type of ['INPUT','BUTTON','SELECT','SPAN']){
   const cards=[];
   for(let i=0;i<6;i++){const card=f.target({tagName:'SECTION',id:'card-'+i,getBoundingClientRect:()=>({left:0,top:0,bottom:500,width:600,height:500})});cards.push(card);f.discover(card);f.visible(card);}
   assert.equal(f.layers.length,30,'Header controls cannot consume the dashboard card layer allowance or shared cell budget');f.cleanup();
+}
+
+// The first decode is one continuous session even when live data replaces DOM.
+{
+  const f=fixture({text:true});f.initial.id='live-card';f.visible(f.initial);f.step(0);f.advance(400);f.step(400);
+  f.initial.isConnected=false;
+  const replacement=f.target({tagName:'H2',id:'live-card',getClientRects:()=>[{}]});f.discover(replacement);
+  assert.equal(f.layers.length,1,'A same-key replacement inherits the active reveal instead of disappearing');
+  f.advance(1150);f.step(1150);assert.equal(f.layers.length,0,'Replacement finishes on the original deadline, not 1.1s after refresh');
+  const later=f.target({tagName:'H2',id:'live-card',getClientRects:()=>[{}]});f.discover(later);assert.equal(f.layers.length,0,'Later polling cannot replay a completed reveal');f.cleanup();
+}
+{
+  const f=fixture({text:true});f.initial.id='mutable';f.visible(f.initial);f.step(0);f.advance(500);
+  f.mutate([{target:f.initial,addedNodes:[]}]);assert.equal(f.layers.length,1,'In-place data changes update the active snapshot');
+  f.advance(1150);f.step(1150);assert.equal(f.layers.length,0,'In-place refresh also retains the initial deadline');f.cleanup();
+}
+{
+  const f=fixture({text:true});f.initial.id='route-title';f.visible(f.initial);f.step(1200);
+  f.win.location.search='?tab=exams';const next=f.target({tagName:'H1',id:'route-title',getClientRects:()=>[{}]});f.discover(next);assert.equal(f.layers.length,1,'A genuine navigation starts its own reveal session');
+  f.win.emit('pointerdown');f.win.location.search='';const back=f.target({tagName:'H1',id:'route-title',getClientRects:()=>[{}]});f.discover(back);assert.equal(f.layers.length,1,'Returning to a previous route is not mistaken for polling');f.cleanup();
+}
+{
+  const f=fixture();const large=f.target({tagName:'SECTION',id:'large',getClientRects:()=>[{}],getBoundingClientRect:()=>({left:0,top:100,bottom:2100,width:1800,height:2000})});
+  f.discover(large);assert.equal(f.layers.length,1,'A large card uses its visible intersection instead of silently skipping it');assert.equal(f.layers[0].height,800);f.cleanup();
+}
+{
+  const f=fixture();
+  for(let i=0;i<40;i++){const card=f.target({tagName:'SECTION',id:'dense-'+i,getBoundingClientRect:()=>({left:0,top:0,bottom:160,width:600,height:160})});f.discover(card);f.visible(card);}
+  assert.equal(f.layers.length,40,'Dense visible content is coarsened, not discarded by an item count cap');f.cleanup();
+}
+
+{
+  const f=fixture();f.visible(f.initial);let clock=0;f.win.performance.now=()=>clock+=30;
+  f.step(0);assert.equal(f.layers.length,1,'An expensive frame slows the shared cadence instead of cancelling every active reveal');f.cleanup();
 }
