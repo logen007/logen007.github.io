@@ -23,7 +23,7 @@ Use the shared top navigation loading bar for page/data entry loads, including c
   [ascii-reveal](https://github.com/quanhoangindex/ascii-reveal) is an approved
   inspiration for dashboard card contents/charts, catalog cards/list-page titles,
   course-cover images and marketing/featured blocks,
-  not a site-wide replacement for every loading state. Glyphs should resolve into
+  a reveal of ready content, not a replacement for the shared loading indicator. Glyphs should resolve into
   the actual image/content silhouette rather than unrelated random decoration.
   Use one short reveal at the first paint of a genuine load/navigation; never queue a later overlay over already readable content; capture local SVG geometry synchronously before paint; reduce detail across visible targets rather than dropping later targets. Never add a delayed image overlay. Never delay ready content,
   fake progress or replay on autosave, polling, theme changes or ordinary rerenders.
@@ -50,26 +50,27 @@ Use the shared top navigation loading bar for page/data entry loads, including c
   navigation; use shared theme tokens, no flashing or continuous decorative loops.
   This app does not use React: prefer a shared framework-free adapter/core after
   implementation review, not a framework migration or duplicated per-page effects.
-  Review canvas/CORS, performance and fallback behavior before rollout; preserve
-  the upstream MIT notice if reusing its code. Implemented via the original shared
-  `src/ui/ascii-reveal.js` adapter owns the selector policy: entire dashboard
-  activity/distribution/top-student/CPU/resource/R2/AI cards, course/student exam
-  cards and the full learner profile/level emblem, list-page headings, opt-in course covers and
-  featured login/course headings. Owner refinement: use a 1.1s decode with a brief
-  220ms glyph phase, then a diagonal reveal. Animate similar-density ASCII glyphs
-  about 10 times/second without changing their source silhouette/color; no strobe
-  or continuous loop. Reuse sampled pixels and lower the shared frame cadence when work is expensive, instead of randomly cancelling all cards.
-  `ascii-snapshot.js` captures local bar fills, loaded images and themed SVG
-  geometry once; skip external avatars rather than taint an entire card. Cut
-  transparent holes around controls, data tables, semantic badges, errors and critical
-  statuses so they remain readable. Exam provider/level chips and “Đề Mới” are
-  ordinary identification metadata and participate with their card. Use the shared `data-ascii-table` opt-in for non-critical management lists:
-  courses, exams, users, class lists and Trash. Reveal each header/row as a whole,
-  including names, creators, fees and dates; do not animate only nested buttons
-  or badges. Course/exam rows use stable IDs. Keep question, grading, results
-  and roster-detail tables outside this opt-in. Brand name/version and ordinary
-  page headings participate with navigation controls.
-  Nested heading/cover targets do not duplicate the card.
+  Owner update (31 October 2026): ordinary visible content participates by default,
+  including new components without known classes, tables without opt-in markers,
+  static authoring labels, and floating dialogs. `ascii-policy.js` discovers actual
+  text nodes, media and controls and groups leaf semantic surfaces; do not add page
+  or component allowlists. `ascii-reveal.js` renders them from `document.body` so
+  portals are not missed. Keep editor contents, active exam/grade surfaces, alerts,
+  timers, bootstrap/loading indicators and engine-owned overlays protected.
+  Newly inserted text/elements get their first reveal before paint. A new child
+  cannot inherit a completed ancestor's coverage; offscreen descendants wait for
+  their own first visibility. Background-loaded content is discovered on foreground.
+  Preserve similar-density glyphs, the 220ms hold and 1.1s total decode; reuse sampled
+  pixels and adapt detail/cadence to the shared work budget. Capture local SVGs and
+  loaded raster assets without new requests; leave unsafe/failed media readable.
+  The binding's read-only `coverage()` independently inventories visible content
+  units and reports covered, pending, protected, fallback and uncovered counts.
+  An empty/failed capture is a named fallback, never reported as successful reveal.
+  No text, input values, account data or outbound telemetry is collected. Regression
+  tests must assert zero unaccounted units on unmarked/new markup and rendered views,
+  including text-node insertion, offscreen children, background tabs and dialogs;
+  counting only selected targets is not coverage proof. Do not duplicate this policy
+  in individual views. Existing opt-in markers may group content but are unnecessary.
   Use a shared 36,000-cell work budget, with at most 2,000 cells per visible
   target. Coarsen all active grids when necessary; no count cap that silently
   excludes later rows, controls or images. Crop oversized targets to the viewport.

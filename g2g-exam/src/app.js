@@ -113,7 +113,7 @@ import {readSpeakingExamRoute,writeSpeakingExamRoute,speakingExamRequest} from '
 
 initializeTheme();
 const app=document.getElementById('app');
-bindAsciiReveals(app);
+bindAsciiReveals(document.body);
 const toast=document.getElementById('toast');
 bindImagePaste(document,{notify,confirmReplace:apply=>new Promise(resolve=>confirmAction('Thay ảnh hiện tại bằng ảnh vừa dán?',()=>{apply();resolve();},{confirmLabel:'Thay ảnh',onCancel:resolve}))});
 const repo=await createRepository();

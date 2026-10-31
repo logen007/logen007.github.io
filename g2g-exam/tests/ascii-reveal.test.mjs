@@ -27,7 +27,7 @@ function fixture(options={}){
     createTreeWalker(element){let done=false;return {nextNode(){if(done)return null;done=true;return {textContent:'Hi',parentElement:element};}};},
     createRange(){return {setStart(){},setEnd(){},getBoundingClientRect:()=>({left:0,top:0,width:20,height:32})};}};
   const root={ownerDocument:doc,nodeType:1,matches:()=>false,querySelectorAll:()=>targets};
-  function target(extra={}){const element={...events(),ownerDocument:doc,nodeType:1,tagName:'IMG',src:'/cover.jpg',currentSrc:'/cover.jpg',complete:true,naturalWidth:640,naturalHeight:320,isConnected:true,textContent:'Hi',parentElement:null,matches:()=>true,querySelectorAll:()=>[],closest:()=>null,contains(node){return node===this;},getBoundingClientRect:()=>({left:0,top:0,bottom:160,width:320,height:160}),...extra};targets.push(element);return element;}
+  function target(extra={}){const element={...events(),ownerDocument:doc,nodeType:1,tagName:'IMG',src:'/cover.jpg',currentSrc:'/cover.jpg',complete:true,naturalWidth:640,naturalHeight:320,isConnected:true,textContent:'Hi',parentElement:null,matches:()=>true,querySelectorAll:()=>[],closest:()=>null,contains(node){for(let parent=node;parent;parent=parent.parentElement)if(parent===this)return true;return false;},getBoundingClientRect:()=>({left:0,top:0,bottom:160,width:320,height:160}),...extra};targets.push(element);return element;}
   const initial=target(options.text?{tagName:'H1'}:{}),cleanup=bindAsciiReveals(root);
   return {win,doc,reduced,forced,layers,observed,initial,cleanup,frames,target,cleared,advance:value=>{now=value;},
     visible:element=>intersections([{target:element,isIntersecting:true}]),
@@ -38,11 +38,11 @@ function fixture(options={}){
 }
 {
   const f=fixture();f.initial.tagName='SECTION';
-  const hole={getBoundingClientRect:()=>({left:20,top:30,width:80,height:44})};
+  const hole={tagName:'SPAN',closest:selector=>selector.includes('[role=alert]')?{}:null,getBoundingClientRect:()=>({left:20,top:30,width:80,height:44})};
   f.initial.querySelectorAll=selector=>selector.includes('[role=alert]')?[hole]:[];
   f.visible(f.initial);assert.equal(f.layers.length,1,'Card body receives a single content layer');
   assert.ok(f.cleared.some(args=>JSON.stringify(args)==='[18,28,84,48]'),'Alerts get transparent holes instead of being visually hidden');
-  const nested=f.target({parentElement:{closest:()=>f.initial}});f.discover(nested);assert.equal(f.observed.has(nested),false,'Nested titles/covers do not create duplicate layers over a card');f.cleanup();
+  const nested=f.target({parentElement:f.initial});f.discover(nested);assert.equal(f.observed.has(nested),false,'Nested titles/covers do not create duplicate layers over a card');f.cleanup();
 }
 {
   const calls=[];let received;
