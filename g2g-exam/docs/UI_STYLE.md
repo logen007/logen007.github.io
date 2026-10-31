@@ -25,7 +25,7 @@ Use the shared top navigation loading bar for page/data entry loads, including c
   course-cover images and marketing/featured blocks,
   not a site-wide replacement for every loading state. Glyphs should resolve into
   the actual image/content silhouette rather than unrelated random decoration.
-  Use one short reveal at the first paint of a genuine load/navigation; never queue a later overlay over already readable content; skip excess/late targets and cancel preparation at the next paint. Never delay ready content,
+  Use one short reveal at the first paint of a genuine load/navigation; never queue a later overlay over already readable content; capture local SVG geometry synchronously before paint and skip excess/late targets. Never delay ready content,
   fake progress or replay on autosave, polling, theme changes or ordinary rerenders.
   Preserve the existing neutral startup rule: no initial page-wide ASCII skeleton.
   The shared switch is Settings → Chung → Giao diện thương hiệu → Hiệu ứng ASCII
@@ -69,9 +69,10 @@ Use the shared top navigation loading bar for page/data entry loads, including c
   apply this to question, grading, result or other administrative tables.
   Nested heading/cover targets do not duplicate the card.
   Keep at most two standalone image
-  canvases, 12 layers and a shared 36,000-cell/30fps work budget. Queue excess
-  visible targets until capacity is available instead of silently dropping them;
-  scrolling, interaction or stale data cancels that queue. Exam card/row identity
+  canvases, 12 content layers and 24 control layers with a shared 36,000-cell/30fps
+  work budget. Limit card grids to 2,000 cells so controls cannot consume their
+  layer allowance. Never queue overflow over already readable content. Invalidate
+  stale snapshots before registering newly inserted content in a mutation batch. Exam card/row identity
   uses the actual exam ID, not its possibly duplicated title.
   Card identities remain stable across dashboard refreshes; changed content
   cancels its old overlay immediately. Pointer/keyboard interaction also cancels.
