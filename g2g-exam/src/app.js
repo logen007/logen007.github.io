@@ -702,6 +702,7 @@ function adminView(cachedAt=null){
     const template=document.createElement('template');template.innerHTML=content;
     patchDashboard(current,template.content.firstElementChild);
   }else app.innerHTML=layout(adminShellHtml({content,user,ui}));
+  if(cachedAt)app.querySelector('.admin-dashboard')?.setAttribute('data-ascii-cached','');
   if(ui.adminTab==='settings'&&isMaster(user)){
     const target=app.querySelector('[data-settings-route]');
     withNavigationLoading(()=>import('./settings.js').then(({mountSettingsPage})=>mountSettingsPage(target,ui.settingsTab,tab=>{ui.settingsTab=tab;syncViewUrl();}))).finally(()=>target.removeAttribute('aria-busy'))

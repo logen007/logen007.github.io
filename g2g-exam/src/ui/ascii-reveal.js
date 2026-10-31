@@ -1,3 +1,4 @@
+import {createAsciiHistory} from './ascii-history.js';
 import {prepareAsciiGraphics,paintAsciiBlock,asciiFont} from './ascii-snapshot.js';
 import {ASCII_REVEAL_EXCLUDED,ASCII_CONTROL_EXCLUDED,isAsciiControl,asciiExclusion,collectAsciiTargets,asciiContentUnits,asciiCoverage} from './ascii-policy.js';
 export {ASCII_REVEAL_SELECTOR,ASCII_REVEAL_EXCLUDED} from './ascii-policy.js';
@@ -12,7 +13,7 @@ export function bindAsciiReveals(root){
   if(!win.IntersectionObserver||!win.MutationObserver||!win.requestAnimationFrame)return ()=>{};
   const reduced=win.matchMedia('(prefers-reduced-motion: reduce)'),forced=win.matchMedia('(forced-colors: active)');
   let registered=new WeakSet(),outcomes=new WeakMap(),preferenceEnabled=doc.documentElement.dataset?.asciiEnabled!=='off';
-  const seen=new Set(),active=new Set(),waiting=new Map(),continuations=new Map();let route=win.location.pathname+win.location.search,paintInterval=32,batchStart=null,firstVisible=new WeakMap(),frame=0,disposed=false,lastPaint=-Infinity;
+  const seen=createAsciiHistory(win),active=new Set(),waiting=new Map(),continuations=new Map();let route=win.location.pathname+win.location.search,paintInterval=32,batchStart=null,firstVisible=new WeakMap(),frame=0,disposed=false,lastPaint=-Infinity;
   const allowed=()=>!disposed&&doc.documentElement.dataset?.asciiEnabled!=='off'&&!doc.hidden&&!reduced.matches&&!forced.matches&&!win.navigator.connection?.saveData&&!(win.navigator.hardwareConcurrency>0&&win.navigator.hardwareConcurrency<=2);
   const record=(element,status)=>{
     outcomes.set(element,status);
@@ -75,17 +76,22 @@ export function bindAsciiReveals(root){
     if(win.performance.now()-started>24)paintInterval=Math.min(100,paintInterval*2);
     if(active.size&&!frame)frame=win.requestAnimationFrame(tick);
   }
-  function reveal(element,graphics=[]){
-    if(!allowed()||!element.isConnected||!eligible(element)||doc.activeElement===element||doc.activeElement&&element.contains(doc.activeElement)){record(element,{state:'excluded',reason:!allowed()?'preference-or-accessibility':'protected-or-focused'});return;}
-    const image=['IMG','CANVAS'].includes(element.tagName),block=!image&&!/^H[1-6]$/.test(element.tagName),dashboard=element.closest('.admin-dashboard');
+  const keyFor=element=>{
+    const dashboard=element.closest('.admin-dashboard');
     let identity=element.getAttribute?.('data-ascii-key')||element.id;
     if(!identity){
       const path=[];for(let node=element;node&&node!==(dashboard||root);node=node.parentElement)path.push(node.tagName+':'+Array.from(node.parentElement?.children||[]).indexOf(node));
-      identity='target:'+path.reverse().join('/')+(image?'|'+(element.currentSrc||element.src):'');
+      identity='target:'+path.reverse().join('/')+(element.tagName==='IMG'?'|'+(element.currentSrc||element.src):'');
     }
-    const key=win.location.pathname+win.location.search+'|'+(identity||(image?element.currentSrc||element.src:element.textContent));
+    const namespace=element.closest?.('.thanh-dau')?'shared-header':win.location.pathname+win.location.search;
+    return namespace+'|'+(identity||(element.tagName==='IMG'?element.currentSrc||element.src:element.textContent));
+  };
+  const cached=element=>{seen.add(keyFor(element));for(const unit of asciiContentUnits(element))if(!asciiExclusion(unit))seen.add(keyFor(unit));record(element,{state:'completed',reason:'cached-content'});};
+  function reveal(element,graphics=[]){
+    if(!allowed()||!element.isConnected||!eligible(element)||doc.activeElement===element||doc.activeElement&&element.contains(doc.activeElement)){record(element,{state:'excluded',reason:!allowed()?'preference-or-accessibility':'protected-or-focused'});return;}
+    const image=['IMG','CANVAS'].includes(element.tagName),block=!image&&!/^H[1-6]$/.test(element.tagName),key=keyFor(element);
     const continuation=continuations.get(key),now=win.performance.now();
-    if(seen.has(key)&&(!continuation||now-continuation.start>=duration)){record(element,{state:'completed',reason:'already-revealed'});return;}
+    if(element.closest?.('[data-ascii-cached]')||seen.has(key)&&(!continuation||now-continuation.start>=duration)){cached(element);return;}
     const raw=element.getBoundingClientRect(),left=Math.max(0,raw.left),top=Math.max(0,raw.top);
     // Snapshot only the visible intersection, including large or horizontally scrolled rows.
     const box={left,top,width:Math.min(raw.left+raw.width,win.innerWidth||raw.left+raw.width)-left,height:Math.min(raw.top+raw.height,win.innerHeight)-top};
@@ -94,7 +100,6 @@ export function bindAsciiReveals(root){
     if(cols*rows>2000){const scale=Math.sqrt(2000/(cols*rows));cols=Math.max(1,Math.floor(cols*scale));rows=Math.max(1,Math.floor(rows*scale));}
     if(box.width<32&&box.height<32){cols=Math.max(1,Math.ceil(box.width/2));rows=Math.max(1,Math.ceil(box.height/2));}
     const control=isControl(element);
-    seen.add(key);if(seen.size>500)seen.delete(seen.values().next().value);
     let canvas;
     try{
       const source=doc.createElement('canvas');source.width=Math.ceil(box.width);source.height=Math.ceil(box.height);
@@ -156,17 +161,18 @@ export function bindAsciiReveals(root){
       const item={key,element,canvas,context,cols,rows,cellW,cellH,image,control,cells,holes,background:backdrop,start:continuation?.start??batchStart??now};
       doc.body.append(canvas);active.add(item);item.status=record(element,{state:'active'});
       for(const node of protectedNodes)if(!asciiExclusion(node))record(node,{state:'fallback',reason:'unsupported-or-unloaded-media'});
-      rebalance();paintAt(item,win.performance.now());
+      rebalance();paintAt(item,win.performance.now());seen.add(key);
       if(!frame)frame=win.requestAnimationFrame(tick);
     }catch(error){canvas?.remove();const reason=error?.name==='SecurityError'?'cross-origin-media':['empty-snapshot','canvas-unavailable','image-unavailable'].includes(error?.message)?error.message:'snapshot-unavailable';record(element,{state:'fallback',reason});} // Decoration must never prevent navigation or content.
   }
   const start=element=>{
-    if(!allowed()){record(element,{state:doc.hidden?'pending':'excluded',reason:doc.hidden?'hidden-document':'preference-or-accessibility'});return;}
+    if(!allowed()){if(!doc.hidden)seen.add(keyFor(element));record(element,{state:doc.hidden?'pending':'excluded',reason:doc.hidden?'hidden-document':'preference-or-accessibility'});return;}
     if(!firstVisible.has(element))firstVisible.set(element,win.performance.now());
     try{prepareAsciiGraphics(element,win,graphics=>reveal(element,graphics));}
     catch{reveal(element);}
   };
   const enter=element=>{
+    if(element.closest?.('[data-ascii-cached]')){cached(element);return;}
     if(!firstVisible.has(element))firstVisible.set(element,win.performance.now());
     if(element.tagName==='IMG'&&!element.complete){
       const clear=()=>{element.removeEventListener('load',loaded);element.removeEventListener('error',failed);waiting.delete(element);};
@@ -183,7 +189,7 @@ export function bindAsciiReveals(root){
   },{threshold:0});
   const scan=nodes=>{
     const currentRoute=win.location.pathname+win.location.search;
-    if(currentRoute!==route){stop();visibility.disconnect();registered=new WeakSet();firstVisible=new WeakMap();seen.clear();route=currentRoute;paintInterval=32;}
+    if(currentRoute!==route){stop();visibility.disconnect();registered=new WeakSet();firstVisible=new WeakMap();route=currentRoute;paintInterval=32;}
     batchStart=win.performance.now();
     for(const element of collectAsciiTargets(nodes))if(!registered.has(element)&&outcomes.get(element)?.state!=='completed'&&![...active].some(item=>item.element!==element&&item.element.contains(element))){
       registered.add(element);record(element,{state:'pending',reason:'visibility'});const box=element.getBoundingClientRect();
@@ -217,7 +223,7 @@ export function bindAsciiReveals(root){
     }
     if(enabled&&!wasEnabled){
       // Off/on is an explicit new reveal session, unlike polling or theme refresh.
-      visibility.disconnect();registered=new WeakSet();outcomes=new WeakMap();firstVisible=new WeakMap();seen.clear();lastPaint=-Infinity;paintInterval=32;scan(root);
+      visibility.disconnect();registered=new WeakSet();outcomes=new WeakMap();firstVisible=new WeakMap();lastPaint=-Infinity;paintInterval=32;scan(root);
     }
   };
   win.addEventListener('g2g-ascii-preference',preferenceChanged);

@@ -62,5 +62,16 @@ assert.equal(stopFold.coverage().pending,1,'Offscreen descendants cannot inherit
 intersections([{target:below,isIntersecting:true}]);assert.equal(stopFold.coverage().pending,0);assert.ok(drawn.includes('Below'));
 stopFold();doc.body.innerHTML='<input type="checkbox"><input type="checkbox" checked><input type="radio" checked><input type="range" value="0"><input type="color" value="#ffcc00"><progress value="0" max="100"></progress><meter value="0" max="100"></meter>';
 const stopNative=bindAsciiReveals(doc.body);assert.equal(stopNative.coverage().covered,7,'Native controls and zero-valued indicators have render adapters');assert.equal(stopNative.coverage().uncovered,0);assert.equal(stopNative.coverage().fallback,0);
-stopNative();dom.window.close();
+await flush();stopNative();
+const stopCached=bindAsciiReveals(doc.body);await flush();assert.equal(doc.querySelectorAll('.ascii-reveal-layer').length,0,'Rebinding/reloading with the tab history does not replay known controls');assert.equal(stopCached.coverage().uncovered,0);stopCached();
+const stored=JSON.parse(win.sessionStorage.getItem('g2g.ascii.history.v1'));assert.ok(stored.length);assert.ok(stored.every(key=>/^[a-f0-9]{16}$/.test(key)),'Animation cache persists only opaque identity digests');
+doc.body.innerHTML='<section data-ascii-cached><p>Warm cached content</p><b>Cached fee</b></section>';
+const stopWarm=bindAsciiReveals(doc.body);assert.equal(doc.querySelectorAll('.ascii-reveal-layer').length,0,'A preexisting ready data-cache projection never starts ASCII');assert.equal(stopWarm.coverage().covered,2);stopWarm();
+win.history.pushState({},'','/first');doc.body.innerHTML='<header class="thanh-dau"><strong>Shared brand</strong></header><main>First page</main>';
+const stopFirst=bindAsciiReveals(doc.body);await flush();stopFirst();
+win.history.pushState({},'','/second');doc.body.innerHTML='<header class="thanh-dau"><strong>Shared brand</strong></header><main>Second page</main>';
+const stopSecond=bindAsciiReveals(doc.body);assert.equal(doc.querySelectorAll('.ascii-reveal-layer').length,1,'Only new page content reveals; the cached shared header does not');await flush();stopSecond();
+win.history.pushState({},'','/first');doc.body.innerHTML='<header class="thanh-dau"><strong>Shared brand</strong></header><main>First page</main>';
+const stopBack=bindAsciiReveals(doc.body);assert.equal(doc.querySelectorAll('.ascii-reveal-layer').length,0,'Returning to the first page is entirely cache-first');stopBack();
+dom.window.close();
 console.log('Automatic ASCII coverage: unmarked text/custom elements/tables/controls, new async children/text nodes, protected regions, honest capture failures and OFF preference passed on real DOM.');

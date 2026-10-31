@@ -86,14 +86,14 @@ for(const options of [{reduced:true},{slow:true},{saveData:true},{tainted:true}]
   f.win.emit('g2g-ascii-preference');
   f.doc.documentElement.dataset.asciiEnabled='on';f.win.emit('g2g-ascii-preference');
   assert.equal(f.observed.has(f.initial),true,'Enabling re-observes existing nodes skipped while off');
-  f.visible(f.initial);assert.equal(f.layers.length,1,'Existing content runs without a reload or a new DOM node');
+  f.visible(f.initial);assert.equal(f.layers.length,0,'Enabling does not animate content already displayed while off');
   f.doc.documentElement.dataset.asciiEnabled='off';f.win.emit('g2g-ascii-preference');
   assert.equal(f.layers.length,0,'Turning ASCII off immediately cancels active decorative layers');assert.equal(f.frames.size,0);
   f.doc.documentElement.dataset.asciiEnabled='on';f.win.emit('g2g-ascii-preference');f.visible(f.initial);
-  assert.equal(f.layers.length,1,'Off/on resets seen identities so previously revealed cards run again');
+  assert.equal(f.layers.length,0,'Off/on respects cached history instead of replaying known cards');
   const repeated=f.target();f.discover(repeated);f.visible(repeated);
-  assert.equal(f.layers.length,1,'Ordinary rerenders still do not replay the same card');
-  f.win.emit('g2g-ascii-preference');assert.equal(f.layers.length,1,'Repeated enabled notifications do not restart an active session');
+  assert.equal(f.layers.length,0,'Ordinary rerenders still do not replay the same card');
+  f.win.emit('g2g-ascii-preference');assert.equal(f.layers.length,0,'Repeated enabled notifications do not replay cached content');
   f.cleanup();assert.equal(f.win.listeners.get('g2g-ascii-preference').size,0,'Preference listener is disposed');
 }
 {
@@ -189,7 +189,7 @@ for(const type of ['INPUT','BUTTON','SELECT','SPAN']){
 {
   const f=fixture({text:true});f.initial.id='route-title';f.visible(f.initial);f.step(1200);
   f.win.location.search='?tab=exams';const next=f.target({tagName:'H1',id:'route-title',getClientRects:()=>[{}]});f.discover(next);assert.equal(f.layers.length,1,'A genuine navigation starts its own reveal session');
-  f.win.emit('pointerdown');f.win.location.search='';const back=f.target({tagName:'H1',id:'route-title',getClientRects:()=>[{}]});f.discover(back);assert.equal(f.layers.length,1,'Returning to a previous route is not mistaken for polling');f.cleanup();
+  f.win.emit('pointerdown');f.win.location.search='';const back=f.target({tagName:'H1',id:'route-title',getClientRects:()=>[{}]});f.discover(back);assert.equal(f.layers.length,0,'Returning to a cached route does not replay its reveal');f.cleanup();
 }
 {
   const f=fixture();const large=f.target({tagName:'SECTION',id:'large',getClientRects:()=>[{}],getBoundingClientRect:()=>({left:0,top:100,bottom:2100,width:1800,height:2000})});
@@ -204,4 +204,9 @@ for(const type of ['INPUT','BUTTON','SELECT','SPAN']){
 {
   const f=fixture();f.visible(f.initial);let clock=0;f.win.performance.now=()=>clock+=30;
   f.step(0);assert.equal(f.layers.length,1,'An expensive frame slows the shared cadence instead of cancelling every active reveal');f.cleanup();
+}
+
+{
+  const {createAsciiHistory}=await import('../src/ui/ascii-history.js');
+  const history=createAsciiHistory({get sessionStorage(){throw Error('storage blocked');}});history.add('known-ui');assert.equal(history.has('known-ui'),true,'Blocked storage retains in-memory one-shot behavior');
 }
