@@ -38,8 +38,8 @@ Use the shared top navigation loading bar for page/data entry loads, including c
   existing Save action, public theme projection and startup cache; demo changes
   remain browser-local. A saved off value stops active/queued reveals immediately
   and suppresses subsequent reveals without affecting other animations. A saved
-  off→on transition starts a fresh reveal session: clear seen identities and
-  re-observe existing eligible nodes, without requiring a reload. Repeated on
+  off→on transition re-observes eligible nodes, but never replays already cached
+  content. Only previously unseen content may reveal, without requiring a reload. Repeated on
   notifications, theme refreshes and polling do not reset that session. Reduced
   motion and existing device/accessibility safeguards still take precedence.
   Owner update (27 October 2026): input, button and ordinary status controls also use ASCII reveal, including controls in authoring views. Preserve real DOM and values; do not animate password/file inputs, active editing surfaces, exam answers, grading, timers or alerts. Stop decoration on pointer, key or focus interaction; never delay input or a status update.
@@ -75,8 +75,12 @@ Use the shared top navigation loading bar for page/data entry loads, including c
   target. Coarsen all active grids when necessary; no count cap that silently
   excludes later rows, controls or images. Crop oversized targets to the viewport.
   Exam card/row identity uses the actual exam ID, not its possibly duplicated title.
-  Returning to a route starts a new session. Ordinary data refreshes do not replay
-  completed reveals. If DOM is patched/replaced during an active reveal, refresh
+  Owner update (31 October 2026): reveal each content identity once per tab-cache
+  lifetime. Persist only opaque identity digests in sessionStorage; retain history
+  across route changes, reloads and off/on toggles. Shared header identity is global
+  across routes. Ready cache projections (`data-ascii-cached`) display immediately
+  and seed history without animating. Storage failure retains in-memory one-shot
+  behavior. Ordinary data refreshes do not replay completed reveals. If DOM is patched/replaced during an active reveal, refresh
   that snapshot before paint while preserving its original clock and reveal phase;
   do not cancel it or restart its duration. Interaction still cancels immediately.
   It samples already loaded assets without new requests; tainted images
