@@ -25,7 +25,7 @@ Use the shared top navigation loading bar for page/data entry loads, including c
   course-cover images and marketing/featured blocks,
   not a site-wide replacement for every loading state. Glyphs should resolve into
   the actual image/content silhouette rather than unrelated random decoration.
-  Use one short reveal at the first paint of a genuine load/navigation; never queue a later overlay over already readable content; capture local SVG geometry synchronously before paint and skip excess/late targets. Never delay ready content,
+  Use one short reveal at the first paint of a genuine load/navigation; never queue a later overlay over already readable content; capture local SVG geometry synchronously before paint; reduce detail across visible targets rather than dropping later targets. Never add a delayed image overlay. Never delay ready content,
   fake progress or replay on autosave, polling, theme changes or ordinary rerenders.
   Preserve the existing neutral startup rule: no initial page-wide ASCII skeleton.
   The shared switch is Settings → Chung → Giao diện thương hiệu → Hiệu ứng ASCII
@@ -58,7 +58,7 @@ Use the shared top navigation loading bar for page/data entry loads, including c
   featured login/course headings. Owner refinement: use a 1.1s decode with a brief
   220ms glyph phase, then a diagonal reveal. Animate similar-density ASCII glyphs
   about 10 times/second without changing their source silhouette/color; no strobe
-  or continuous loop. Reuse sampled pixels and stop if frame work is too expensive.
+  or continuous loop. Reuse sampled pixels and lower the shared frame cadence when work is expensive, instead of randomly cancelling all cards.
   `ascii-snapshot.js` captures local bar fills, loaded images and themed SVG
   geometry once; skip external avatars rather than taint an entire card. Cut
   transparent holes around controls, data tables, semantic badges, errors and critical
@@ -68,14 +68,14 @@ Use the shared top navigation loading bar for page/data entry loads, including c
   header/rows, leaving title-action buttons and other controls readable. Do not
   apply this to question, grading, result or other administrative tables.
   Nested heading/cover targets do not duplicate the card.
-  Keep at most two standalone image
-  canvases, 12 content layers and 24 control layers with a shared 36,000-cell/30fps
-  work budget. Limit card grids to 2,000 cells so controls cannot consume their
-  layer allowance. Never queue overflow over already readable content. Invalidate
-  stale snapshots before registering newly inserted content in a mutation batch. Exam card/row identity
-  uses the actual exam ID, not its possibly duplicated title.
-  Card identities remain stable across dashboard refreshes; changed content
-  cancels its old overlay immediately. Pointer/keyboard interaction also cancels.
+  Use a shared 36,000-cell work budget, with at most 2,000 cells per visible
+  target. Coarsen all active grids when necessary; no count cap that silently
+  excludes later rows, controls or images. Crop oversized targets to the viewport.
+  Exam card/row identity uses the actual exam ID, not its possibly duplicated title.
+  Returning to a route starts a new session. Ordinary data refreshes do not replay
+  completed reveals. If DOM is patched/replaced during an active reveal, refresh
+  that snapshot before paint while preserving its original clock and reveal phase;
+  do not cancel it or restart its duration. Interaction still cancels immediately.
   It samples already loaded assets without new requests; tainted images
   fall back unchanged. No React or upstream code/dependency is bundled.
 

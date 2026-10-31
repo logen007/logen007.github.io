@@ -2,7 +2,7 @@
 export function prepareAsciiGraphics(element,win,ready){
   const graphics=[];
   for(const svg of element.querySelectorAll('svg')){
-    if(svg.closest('button,a,summary,[role=status],[role=alert]'))continue;
+    if(svg.closest('[role=alert]'))continue;
     try{
       if(!win.Path2D||!svg.getScreenCTM)continue;
       const box=svg.getBoundingClientRect(),image=svg.ownerDocument.createElement('canvas');

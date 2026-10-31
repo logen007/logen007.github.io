@@ -15,10 +15,10 @@ export function bindAsciiReveals(root){
   if(!win.IntersectionObserver||!win.MutationObserver||!win.requestAnimationFrame)return ()=>{};
   const reduced=win.matchMedia('(prefers-reduced-motion: reduce)'),forced=win.matchMedia('(forced-colors: active)');
   let registered=new WeakSet(),preferenceEnabled=doc.documentElement.dataset?.asciiEnabled!=='off';
-  const seen=new Set(),active=new Set(),waiting=new Map();let firstVisible=new WeakMap(),frame=0,disposed=false,lastPaint=-Infinity;
+  const seen=new Set(),active=new Set(),waiting=new Map(),continuations=new Map();let route=win.location.pathname+win.location.search,paintInterval=32,batchStart=null,firstVisible=new WeakMap(),frame=0,disposed=false,lastPaint=-Infinity;
   const allowed=()=>!disposed&&doc.documentElement.dataset?.asciiEnabled!=='off'&&!doc.hidden&&!reduced.matches&&!forced.matches&&!win.navigator.connection?.saveData&&!(win.navigator.hardwareConcurrency>0&&win.navigator.hardwareConcurrency<=2);
   const remove=item=>{item.canvas.remove();active.delete(item);};
-  const stop=()=>{win.cancelAnimationFrame(frame);frame=0;for(const clear of [...waiting.values()])clear();for(const item of [...active])remove(item);};
+  const stop=()=>{win.cancelAnimationFrame(frame);frame=0;continuations.clear();for(const clear of [...waiting.values()])clear();for(const item of [...active])remove(item);};
   const background=element=>{
     for(let node=element;node;node=node.parentElement){const color=win.getComputedStyle(node).backgroundColor;if(color&&color!=='transparent'&&color!=='rgba(0, 0, 0, 0)')return color;}
     return win.getComputedStyle(doc.documentElement).getPropertyValue('--mat').trim()||'#fff';
@@ -35,9 +35,23 @@ export function bindAsciiReveals(root){
     for(const rect of item.holes)context.clearRect(rect.x,rect.y,rect.width,rect.height);
     item.phase=phase;item.until=until;
   }
+  function paintAt(item,now){
+    const elapsed=now-item.start,progress=Math.max(0,Math.min(1,(elapsed-hold)/(duration-hold)));
+    paint(item,Math.floor(progress*(item.cols+item.rows)),Math.floor(elapsed/100));
+  }
+  function rebalance(){
+    // Reduce detail evenly rather than dropping later cards/rows/images altogether.
+    const limit=Math.max(1,Math.floor(36000/active.size));
+    for(const item of active)if(item.cols*item.rows>limit){
+      const scale=Math.sqrt(limit/(item.cols*item.rows)),cols=Math.max(1,Math.floor(item.cols*scale)),rows=Math.max(1,Math.floor(item.rows*scale)),cells=new Map();
+      for(const cell of item.cells){const x=Math.min(cols-1,Math.floor(cell.x*cols/item.cols)),y=Math.min(rows-1,Math.floor(cell.y*rows/item.rows));cells.set(y*cols+x,{...cell,x,y});}
+      item.cols=cols;item.rows=rows;item.cellW=item.canvas.width/cols;item.cellH=item.canvas.height/rows;item.cells=[...cells.values()];
+      item.context.font=Math.max(7,item.cellH)+'px monospace';paintAt(item,win.performance.now());
+    }
+  }
   function tick(now){
     frame=0;if(!allowed()){stop();return;}
-    if(now-lastPaint<32){if(active.size)frame=win.requestAnimationFrame(tick);return;}lastPaint=now;
+    if(now-lastPaint<paintInterval){if(active.size)frame=win.requestAnimationFrame(tick);return;}lastPaint=now;
     const started=win.performance.now();
     for(const item of [...active]){
       if(!item.element.isConnected){remove(item);continue;}
@@ -50,38 +64,38 @@ export function bindAsciiReveals(root){
       if(phase!==item.phase)paint(item,until,phase);
       else if(until!==item.until){for(let y=0;y<item.rows;y++)for(let x=0;x<item.cols;x++)if(x+y>=item.until&&x+y<until)item.context.clearRect(x*item.cellW,y*item.cellH,item.cellW+1,item.cellH+1);item.until=until;}
     }
-    if(win.performance.now()-started>24){stop();return;}
+    if(win.performance.now()-started>24)paintInterval=Math.min(100,paintInterval*2);
     if(active.size&&!frame)frame=win.requestAnimationFrame(tick);
   }
   function reveal(element,graphics=[]){
-    if(win.performance.now()-(firstVisible.get(element)??win.performance.now())>80)return;
     if(!allowed()||!element.isConnected||!eligible(element)||doc.activeElement===element||doc.activeElement&&element.contains(doc.activeElement))return;
     const image=element.tagName==='IMG',block=!image&&!/^H[1-6]$/.test(element.tagName),dashboard=element.closest('.admin-dashboard');
     let identity=element.getAttribute?.('data-ascii-key')||element.id;
-    if(!identity&&(dashboard||isControl(element))){
+    if(!identity){
       const path=[];for(let node=element;node&&node!==(dashboard||root);node=node.parentElement)path.push(node.tagName+':'+Array.from(node.parentElement?.children||[]).indexOf(node));
-      identity='dashboard:'+path.reverse().join('/');
+      identity='target:'+path.reverse().join('/')+(image?'|'+(element.currentSrc||element.src):'');
     }
     const key=win.location.pathname+win.location.search+'|'+(identity||(image?element.currentSrc||element.src:element.textContent));
-    if(seen.has(key))return;
-    const box=element.getBoundingClientRect();
-    if(box.width<24||box.height<14||box.width*box.height>900000||box.bottom<=0||box.top>=win.innerHeight)return;
+    const continuation=continuations.get(key),now=win.performance.now();
+    if(seen.has(key)&&(!continuation||now-continuation.start>=duration))return;
+    const raw=element.getBoundingClientRect(),left=Math.max(0,raw.left),top=Math.max(0,raw.top);
+    // Snapshot only the visible intersection, including large or horizontally scrolled rows.
+    const box={left,top,width:Math.min(raw.left+raw.width,win.innerWidth||raw.left+raw.width)-left,height:Math.min(raw.top+raw.height,win.innerHeight)-top};
+    if(box.width<24||box.height<14)return;
     let cols=Math.min(image||block?100:140,Math.ceil(box.width/(image||block?8:5))),rows=Math.min(60,Math.ceil(box.height/(image||block?10:7)));
-    if(block&&cols*rows>2000){const scale=Math.sqrt(2000/(cols*rows));cols=Math.max(1,Math.floor(cols*scale));rows=Math.max(1,Math.floor(rows*scale));}
+    if(cols*rows>2000){const scale=Math.sqrt(2000/(cols*rows));cols=Math.max(1,Math.floor(cols*scale));rows=Math.max(1,Math.floor(rows*scale));}
     const control=isControl(element);
-    if([...active].filter(item=>item.control===control).length>=(control?24:12)||[...active].reduce((sum,item)=>sum+item.cols*item.rows,cols*rows)>36000||image&&[...active].filter(item=>item.image).length>=2){seen.add(key);return;}
     seen.add(key);if(seen.size>500)seen.delete(seen.values().next().value);
     let canvas;
     try{
-      const started=win.performance.now();
       const source=doc.createElement('canvas');source.width=Math.ceil(box.width);source.height=Math.ceil(box.height);
       const sourceContext=source.getContext('2d');if(!sourceContext)return;
       const style=win.getComputedStyle(element);
       if(image){
         if(!element.naturalWidth||!element.naturalHeight)return;
-        const scale=style.objectFit==='contain'?Math.min(box.width/element.naturalWidth,box.height/element.naturalHeight):Math.max(box.width/element.naturalWidth,box.height/element.naturalHeight);
+        const scale=style.objectFit==='contain'?Math.min(raw.width/element.naturalWidth,raw.height/element.naturalHeight):Math.max(raw.width/element.naturalWidth,raw.height/element.naturalHeight);
         const width=element.naturalWidth*scale,height=element.naturalHeight*scale;
-        sourceContext.drawImage(element,(box.width-width)/2,(box.height-height)/2,width,height);
+        sourceContext.drawImage(element,raw.left-box.left+(raw.width-width)/2,raw.top-box.top+(raw.height-height)/2,width,height);
       }else{
         if(block)paintAsciiBlock(element,sourceContext,box,graphics,win,isControl(element)?controlExcluded:excluded);
         const walker=doc.createTreeWalker(element,win.NodeFilter.SHOW_TEXT),range=doc.createRange();let node;
@@ -92,9 +106,15 @@ export function bindAsciiReveals(root){
           if(textStyle.display==='none'||textStyle.visibility==='hidden')continue;
           sourceContext.fillStyle=block?textStyle.color:'#fff';
           sourceContext.font=textStyle.font||`${textStyle.fontWeight} ${textStyle.fontSize} ${textStyle.fontFamily}`;
-          for(let index=0;index<node.textContent.length;index++){
-            range.setStart(node,index);range.setEnd(node,index+1);const rect=range.getBoundingClientRect();
-            if(rect.width&&rect.height)sourceContext.fillText(node.textContent[index],rect.left-box.left,rect.top-box.top);
+          // Measure words, not every glyph; fall back only for a word that wraps.
+          for(const match of node.textContent.matchAll(/\S+/g)){
+            range.setStart(node,match.index);range.setEnd(node,match.index+match[0].length);const rect=range.getBoundingClientRect();
+            if(!rect.width||!rect.height)continue;
+            if(rect.height<=(parseFloat(textStyle.fontSize)||32)*1.5)sourceContext.fillText(match[0],rect.left-box.left,rect.top-box.top,rect.width);
+            else for(let index=match.index;index<match.index+match[0].length;index++){
+              range.setStart(node,index);range.setEnd(node,index+1);const char=range.getBoundingClientRect();
+              if(char.width&&char.height)sourceContext.fillText(node.textContent[index],char.left-box.left,char.top-box.top);
+            }
           }
         }
       }
@@ -123,15 +143,14 @@ export function bindAsciiReveals(root){
       // Unsupported chart geometry stays visible through a transparent hole.
       protectedNodes.push(...[...element.querySelectorAll('svg')].filter(svg=>!graphics.some(graphic=>graphic.element===svg)));
       const holes=protectedNodes.map(node=>node.getBoundingClientRect()).map(rect=>({x:rect.left-box.left-2,y:rect.top-box.top-2,width:rect.width+4,height:rect.height+4}));
-      const item={element,canvas,context,cols,rows,cellW,cellH,image,control,cells,holes,background:backdrop,start:null};
-      paint(item,0,0);
-      if(win.performance.now()-started>(image?32:80))return;
+      const item={key,element,canvas,context,cols,rows,cellW,cellH,image,control,cells,holes,background:backdrop,start:continuation?.start??batchStart??now};
       doc.body.append(canvas);active.add(item);
+      rebalance();paintAt(item,win.performance.now());
       if(!frame)frame=win.requestAnimationFrame(tick);
     }catch{canvas?.remove();} // Decoration must never prevent navigation or content.
   }
   const start=element=>{
-    if(!allowed()||win.performance.now()-(firstVisible.get(element)??win.performance.now())>80)return;
+    if(!allowed())return;
     if(!firstVisible.has(element))firstVisible.set(element,win.performance.now());
     try{prepareAsciiGraphics(element,win,graphics=>reveal(element,graphics));}
     catch{reveal(element);}
@@ -149,19 +168,35 @@ export function bindAsciiReveals(root){
       const element=entry.target;visibility.unobserve(element);
       enter(element);
     }
-  },{threshold:.15});
-  const scan=node=>{
-    if(node.nodeType!==1)return;
-    for(const element of [...(node.matches(selector)?[node]:[]),...node.querySelectorAll(selector)])if(!registered.has(element)&&eligible(element)&&(!element.parentElement?.closest(selector)||!eligible(element.parentElement.closest(selector)))){registered.add(element);
-      const box=element.getBoundingClientRect();
+  },{threshold:0});
+  const scan=nodes=>{
+    const currentRoute=win.location.pathname+win.location.search;
+    if(currentRoute!==route){stop();visibility.disconnect();registered=new WeakSet();firstVisible=new WeakMap();seen.clear();route=currentRoute;paintInterval=32;}
+    const candidates=new Set();
+    for(const node of Array.isArray(nodes)?nodes:[nodes]){
+      if(node.nodeType!==1)continue;
+      for(const element of [...(node.matches(selector)?[node]:[]),...node.querySelectorAll(selector)])candidates.add(element);
+    }
+    batchStart=win.performance.now();
+    for(const element of candidates)if(!registered.has(element)&&eligible(element)&&(!element.parentElement?.closest(selector)||!eligible(element.parentElement.closest(selector)))){
+      registered.add(element);const box=element.getBoundingClientRect();
       if(element.getClientRects&&box.width>0&&box.height>0&&box.bottom>0&&box.top<win.innerHeight)enter(element);
-      else visibility.observe(element);}
+      else visibility.observe(element);
+    }
+    batchStart=null;
   };
   const changes=new win.MutationObserver(records=>{
     for(const [element,clear] of waiting)if(!element.isConnected)clear();
-    for(const item of [...active])if(!item.element.isConnected||records.some(record=>record.target&&item.element.contains(record.target)))remove(item);
-    // Invalidate old snapshots before discovering new content in the same batch.
-    for(const record of records)for(const node of record.addedNodes)scan(node);
+    const refresh=[];
+    for(const item of [...active])if(!item.element.isConnected||records.some(record=>record.target&&item.element.contains(record.target))){
+      if(win.performance.now()-item.start<duration)continuations.set(item.key,{start:item.start});
+      if(item.element.isConnected)refresh.push(item.element);
+      remove(item);
+    }
+    // Replace snapshots before paint, preserving the existing decode clock/phase.
+    for(const element of refresh)start(element);
+    scan(records.flatMap(record=>[...record.addedNodes]));
+    continuations.clear();
   });
   changes.observe(root,{childList:true,characterData:true,subtree:true});scan(root);
   for(const event of ['scroll','resize','pagehide','pointerdown','keydown','focusin'])win.addEventListener(event,stop,{passive:true,capture:true});
@@ -174,7 +209,7 @@ export function bindAsciiReveals(root){
     }
     if(enabled&&!wasEnabled){
       // Off/on is an explicit new reveal session, unlike polling or theme refresh.
-      visibility.disconnect();registered=new WeakSet();firstVisible=new WeakMap();seen.clear();lastPaint=-Infinity;scan(root);
+      visibility.disconnect();registered=new WeakSet();firstVisible=new WeakMap();seen.clear();lastPaint=-Infinity;paintInterval=32;scan(root);
     }
   };
   win.addEventListener('g2g-ascii-preference',preferenceChanged);
