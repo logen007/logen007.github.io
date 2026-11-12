@@ -26,9 +26,16 @@ export function isAsciiCandidate(element){
 }
 export function collectAsciiTargets(nodes){
   const candidates=new Set();
+  const roots=new Set();
   for(let node of Array.isArray(nodes)?nodes:[nodes]){
     if(node.nodeType===3)node=node.parentElement;
-    if(node?.nodeType!==1)continue;
+    if(node?.nodeType!==1||node.closest?.('.ascii-reveal-layer'))continue;
+    roots.add(node);
+  }
+  for(const node of roots){
+    let nested=false;
+    for(let parent=node.parentElement;parent;parent=parent.parentElement)if(roots.has(parent)){nested=true;break;}
+    if(nested)continue;
     for(const element of [node,...node.querySelectorAll(ASCII_REVEAL_SELECTOR)])if(isAsciiCandidate(element))candidates.add(element);
   }
   return [...candidates].filter(element=>{

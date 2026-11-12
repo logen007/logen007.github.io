@@ -199,6 +199,10 @@ export function bindAsciiReveals(root){
     batchStart=null;
   };
   const changes=new win.MutationObserver(records=>{
+    // Our canvases are siblings of app content. Their insertion/removal must
+    // never invalidate another surface or trigger discovery/layout work.
+    records=records.filter(record=>record.type==='characterData'||[...(record.addedNodes||[]),...(record.removedNodes||[])].some(node=>!node.closest?.('.ascii-reveal-layer')));
+    if(!records.length)return;
     for(const [element,clear] of waiting)if(!element.isConnected)clear();
     const refresh=[];
     for(const item of [...active])if(!item.element.isConnected||records.some(record=>record.target&&item.element.contains(record.target))){

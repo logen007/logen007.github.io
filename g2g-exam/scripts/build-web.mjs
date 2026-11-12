@@ -4,6 +4,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import {gzipSync,brotliCompressSync} from 'node:zlib';
+import {modulePreloads} from './module-preloads.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const out=path.resolve(process.env.G2G_WEB_OUT||path.join(root,'.web-build'));
@@ -32,6 +33,8 @@ const result=await build({
 });
 let html=await fs.readFile(path.join(root,'vi.html'),'utf8');
 let speakingHtml=await fs.readFile(path.join(root,'speaking-lab.html'),'utf8');
+html=html.replace('</head>',modulePreloads(result.metafile.outputs,['src/app.js','src/feature-loader.js'])+'\n</head>');
+speakingHtml=speakingHtml.replace('</head>',modulePreloads(result.metafile.outputs,['src/speaking/phone.js'])+'\n</head>');
 for(const [file,metadata] of Object.entries(result.metafile.outputs)){
   if(metadata.entryPoint==='src/speaking/phone.js')speakingHtml=speakingHtml.replace('./src/speaking/phone.js','/assets/'+path.basename(file));
   if(!['src/app.js','src/feature-loader.js'].includes(metadata.entryPoint))continue;

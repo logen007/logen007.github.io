@@ -21,6 +21,16 @@ const step=time=>{now=time;const callbacks=[...frames.values()];frames.clear();f
 // Deliberately no project classes, opt-ins, IDs on content, or known page templates.
 root.innerHTML='<div>Unmarked opening text <em>inline word</em></div><custom-tile><b>Arbitrary custom content</b><small>7</small></custom-tile><p>Ordinary paragraph</p><table><thead><tr><th>Unknown column</th></tr></thead><tbody><tr><td>Unknown fee</td></tr></tbody></table><button>Action</button><input placeholder="New field"><select><option>New dropdown</option></select><section><h2>New section</h2><p>Nested body</p></section><div contenteditable="true">Editor secret</div><div role="alert">Urgent secret</div><div class="exam-paper">Answer secret</div>';
 const targets=collectAsciiTargets(root);
+let subtreeScans=0;
+const originalQuery=root.querySelectorAll.bind(root);
+root.querySelectorAll=(...args)=>{subtreeScans++;return originalQuery(...args);};
+const overlapping=collectAsciiTargets([root,...root.querySelectorAll('*')]);
+assert.deepEqual(overlapping,targets,'Overlapping mutation roots preserve full discovery');
+assert.equal(subtreeScans,2,'One caller enumeration and only one discovery scan of the common subtree');
+root.querySelectorAll=originalQuery;
+const overlay=doc.createElement('canvas');overlay.className='ascii-reveal-layer';
+overlay.querySelectorAll=()=>{throw Error('Engine overlay must not be scanned');};
+assert.deepEqual(collectAsciiTargets([overlay]),[]);
 for(const unit of asciiContentUnits(root).filter(unit=>!asciiExclusion(unit)))assert.ok(targets.some(target=>target===unit||target.contains(unit)),'Every independently enumerated content unit has an owner');
 const stop=bindAsciiReveals(root);
 let report=stop.coverage();assert.equal(report.uncovered,0);assert.equal(report.pending,0);assert.equal(report.fallback,0);assert.equal(report.covered,12,'All twelve ordinary text/control units in the fixture participate');assert.ok(report.excluded>=3);
