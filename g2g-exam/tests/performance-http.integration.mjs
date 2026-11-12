@@ -205,8 +205,14 @@ try{
     assert.doesNotMatch(policy.body,/\/src\/app.js|\/assets\/app-/,'Policies remain independent of login and application bootstrap');
     assert.match(policy.body,/<article>[\s\S]+<h1>/,'Policy content is static and remains available without JavaScript');
   }
-  const assets=[...html.body.matchAll(/(?:src|href)="(\/assets\/[^" ]+)"/g)].map(match=>match[1]);
-  assert.equal(assets.length,5);
+  const entryTags=[...html.body.matchAll(/<(?:script|link)\b[^>]*>/g)].map(match=>match[0]).filter(tag=>!tag.includes('rel="modulepreload"'));
+  const entryAssets=entryTags.flatMap(tag=>[...tag.matchAll(/(?:src|href)="(\/assets\/[^" ]+)"/g)].map(match=>match[1]));
+  assert.equal(entryAssets.length,5,'Two executable entries and three stylesheets remain unchanged');
+  const preloads=[...html.body.matchAll(/rel="modulepreload" href="([^"]+)"/g)].map(match=>match[1]);
+  assert.ok(preloads.length>2,'Static module dependencies are discoverable directly from HTML');
+  assert.equal(new Set(preloads).size,preloads.length,'Shared chunks are preloaded once');
+  for(const entry of entryAssets.filter(url=>url.endsWith('.js')))assert.ok(preloads.includes(entry));
+  const assets=[...new Set([...entryAssets,...preloads])];
   assert.ok(assets.some(url=>/^\/assets\/speaking-exams-[a-f0-9]+\.css$/.test(url)),'The paired speaking stylesheet is hashed and served with the application');
   for(const url of assets){const response=await app.inject({url,headers:{'accept-encoding':'br,gzip'}});assert.equal(response.statusCode,200);assert.ok(response.headers['cache-control'].includes('immutable'));assert.equal(response.headers['content-encoding'],'br');assert.ok(response.headers.vary.includes('Accept-Encoding'));}
   assert.equal((await app.inject('/assets/missing-old-chunk.js')).statusCode,404);
